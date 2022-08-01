@@ -1,3 +1,9 @@
+use std
+use fmt
+use os
+use utils
+use ast
+
 Parser::parseEnumDef(){
     
     scanner.scan()
@@ -9,7 +15,8 @@ Parser::parseEnumDef(){
     while scanner.curToken != ast.RBRACE {
         gv = new VarExpr(scanner.curLex,line,column)
         gv.structtype = true
-        gv.ivalue = defaulte ++;        
+        //TODO: gv.ivalue = defaulte ++
+        gv.ivalue = defaulte        
         gvars[gv.varname] = gv
         gv.is_local = false
         gv.package  = this.package
@@ -19,17 +26,19 @@ Parser::parseEnumDef(){
         scanner.scan()
         if scanner.curToken == ast.COMMA
             scanner.scan()
+
+        defaulte += 1
     }
     scanner.scan()
 }
 Parser::parseStructVar(varname)
 {
-    check(scanner.curToken == LT)
+    check(scanner.curToken == ast.LT )
     var = parseVarExpr(varname)
     varexpr = var
     check(varexpr.structtype)
     
-    if scanner.curToken == ASSIGN{
+    if scanner.curToken == ast.ASSIGN {
         
         scanner.scan()
         check(scanner.curToken == ast.INT)
@@ -74,8 +83,8 @@ Parser::parseGlobalDef()
     
     scanner.scan()
     match scanner.curToken{
-        LT: return parseStructVar(var)
-         ast.COLON: return parseClassFunc(var)
-        _ : return parseFlatVar(var)
+        ast.LT   : return parseStructVar(var)
+        ast.COLON: return parseClassFunc(var)
+        _        : return parseFlatVar(var)
     }
 }

@@ -58,7 +58,7 @@ Package::getFunc(name , is_extern){
 
 Package::addClass(name, f)
 {
-    if std.exist(this.classes,name) {
+    if std.exist(name,this.classes) {
         for(i : classes[name].funcs)
             f.funcs[] = i
     }
@@ -67,14 +67,14 @@ Package::addClass(name, f)
 
 Package::addStruct(name, f)
 {
-    if std.exist(structs,name) {
+    if std.exist(name,structs) {
         return true
     }
     this.structs[name] = f
 }
 Package::getStruct(name)
 {    
-    if std.exist(structs,name) 
+    if std.exist(name,structs) 
         return f.second
     return null
 }
@@ -83,7 +83,7 @@ Package::getStruct(package,name)
     pkgname = package
     if pkgname == "" pkgname = compile.currentFunc.parser.getpkgname(); 
 
-    if std.exist(packages,pkgname) < 1 {
+    if std.exist(pkgname,packages) < 1 {
         return null
     }
     pkg = packages[pkgname]
@@ -91,7 +91,7 @@ Package::getStruct(package,name)
 }
 Package::addClassFunc(name,f)
 {
-    if std.exist(classes,name) {
+    if std.exist(name,classes) {
         this.classes[name].funcs[] = f
         return null
     }
@@ -103,12 +103,12 @@ Package::addClassFunc(name,f)
 }
 Package::hasClass(name)
 {
-    return std.exist(classes,name)
+    return std.exist(name,classes)
 }
 
 Package::getGlobalVar(name){
     for(parser : parsers){
-        if std.exist(parser.gvars,name){
+        if std.exist(name,parser.gvars){
             return parser.gvars[name]
         }
     }
@@ -116,14 +116,14 @@ Package::getGlobalVar(name){
 }
 Package::getClass(name)
 {    
-    if std.exist(this.clsses,name) 
+    if std.exist(name,this.clsses) 
         return this.classes[name]
     return null
 }
 
 Package::checkClassFunc(name , fc)
 {
-    if std.exist(this.classes,name)
+    if std.exist(name,this.classes)
         return false
     cs = classes[name]
     for(var : cs.funcs){

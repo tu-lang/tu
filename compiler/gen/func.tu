@@ -90,7 +90,7 @@ func funcexec(ctx , fc , fce , package)
 	for(arg : args){
 		if  type(arg) == type(ast.VarExpr) && cfunc {
 			var = arg
-			if std.exist(cfunc.params_var,var.varname){
+			if std.exist(var.varname,cfunc.params_var){
 				VarExpr* var2  = res.second
 				if(var2 && var2.is_variadic)
 					have_variadic = true

@@ -85,7 +85,7 @@ Parser::parseParameterList()
 
                 scanner.scan()
                 
-                if scanner.curToken == LT{
+                if scanner.curToken == ast.LT {
                     var.structtype = true
                     scanner.scan()
                     if scanner.curToken == ast.VAR{

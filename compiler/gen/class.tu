@@ -14,7 +14,7 @@ NewExpr::compile(ctx)
 		 return this
 	 }
 	 package = this.obj.parser.import[this.package]
-	 if std.exist(parser.packages.count(package)) > 0 {
+	 if std.exist(packge,parser.packages)  {
 		s = null
 		if s = parser.packages[package].getStruct(name) && s != null {
 			internal.gc_malloc(s.size)

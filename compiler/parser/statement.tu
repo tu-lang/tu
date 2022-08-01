@@ -118,13 +118,13 @@ Parser::parseForStmt()
             if obj != null   node.obj   = obj
 
             if node.key != null 
-               && !std.exist(currentFunc.params_var,node.key.varname) 
-               && !std.exist(currentFunc.locals,node.key.varname)
+               && !std.exist(node.key.varname,currentFunc.params_var) 
+               && !std.exist(node.key.varname,currentFunc.locals)
                 currentFunc.locals[node.key.varname] = node.key
 
             if node.value != null 
-               && !std.exist(currentFunc.params_var,node.value.varname)
-               && !std.exist(currentFunc.locals,node.value.varname)
+               && !std.exist(node.value.varname,currentFunc.params_var)
+               && !std.exist(node.value.varname,currentFunc.locals)
                 currentFunc.locals[node.value.varname] = node.value
             
             fmt.assert(scanner.curToken == ast.RPAREN)

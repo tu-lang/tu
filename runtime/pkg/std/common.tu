@@ -26,7 +26,7 @@ func merge(v1<runtime.Value>,v2<runtime.Value>){
 	}
 	return false
 }
-func exist(v<runtime.Value>,key){
+func exist(key,v<runtime.Value>){
 	type<i8> = v.type
 	data<i8> = v.data
 	match type {

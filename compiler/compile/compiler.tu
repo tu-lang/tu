@@ -22,7 +22,7 @@ Compiler::init(filename)
     parser.packages["main"] = pkg
 
     //check runtime has been parsered
-    if std.exist(parser.packages,"runtime") {
+    if std.exist("runtime",parser.packages) {
         pkg = new parser.Package("runtime","runtime",false) 
         //recursively scan code files
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")

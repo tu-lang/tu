@@ -80,7 +80,7 @@ Compiler::Push_arg(prevCtxChain,fc,fce)
     for(arg : fce.args){
         if (type(arg) == type(VarExpr) && currentFunc){
             var = arg
-            if std.exist(currentFunc.params_var,var.varname) {
+            if std.exist(var.varname,currentFunc.params_var) {
                 var2 = currentFunc.params_var[var.varname]
                 if var2 && var2.is_variadic {
                     current_call_have_im = true

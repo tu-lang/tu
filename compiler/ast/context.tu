@@ -15,7 +15,7 @@ class Context{
 }
 Context::hasVar(varname)
 {
-    return std.exist(vars,varname)
+    return std.exist(varname,vars)
 }
 
 Context::createVar(varname,ident)
@@ -25,7 +25,7 @@ Context::createVar(varname,ident)
 Context::getVar(varname)
 {
     if std.len(vars) < 1 return null
-    if std.exist(vars,varname) {
+    if std.exist(varname,vars) {
         return vars[varname]
     } 
     return null

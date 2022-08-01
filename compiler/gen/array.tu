@@ -67,7 +67,7 @@ IndexExpr::compile(ctx) {
 
             goto INDEX
         }
-        this.check(!std.exist(parser.packages,package),"package not exist: " + package)
+        this.check(!std.exist(package,parser.packages),"package not exist: " + package)
 
         var  = parser.packages[package].getGlobalVar(varname)
 

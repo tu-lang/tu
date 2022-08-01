@@ -280,7 +280,7 @@ Parser::parseImportDef()
     }
 
     
-    if !std.exist(package.packages,path) {
+    if !std.exist(path,package.packages) {
         pkg = new Package(package,path,multi)
         package.packages[path] = pkg
         
