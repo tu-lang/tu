@@ -149,6 +149,21 @@ func array_push(a<Array>){
     a.used += 1
     return elt
 }
+//NOTICE: only support plain memory data
+func array_in(v1<Value>,v2<Array>){
+    size<u64> = v2.size
+    p<u64*>   = v2.addr 
+    used<u32> = v2.used
+    for( i<i32> = 0 ; i < used ; i += 1 ){
+        //TODO:   for dyn data
+		//if value_equal(v1,*p,True){
+        if v1 == *p {
+			return True
+		}
+        p += size 
+    }
+    return False
+}
 func array_merge(v1<Array>,v2<Array>){
     if v1.size != v2.size {
         fmt.println("[warn] array_merge: incompact with size")

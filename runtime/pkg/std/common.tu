@@ -30,7 +30,11 @@ func exist(v<runtime.Value>,key){
 	type<i8> = v.type
 	data<i8> = v.data
 	match type {
-		runtime.Array : fmt.println("[warn] unsupport exist(array)")
+		runtime.Array : {
+			if runtime.array_in(key,v.data) == runtime.True {
+				return true
+			}
+		}
 		runtime.Map   : {
 			has<i32> = runtime.map_find(v,key)
 			if has != null return true
