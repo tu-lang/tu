@@ -1,16 +1,19 @@
 
+use std
+use fmt
+use ast
+use string
 
 Parser::parseStatementList()
 {
     node = []
-    p = null
-    while((p = parseStatement()) != null)
+    while( (p = parseStatement()) != null )
     {
         node[] = p
         
-        if (type(p) == type(ast.ExpressionStmt)  {
+        if type(p) == type(ast.ExpressionStmt)  {
             pe = p
-            if (type(pe.expr) != type(AssignExpr)  continue
+            if type(pe.expr) != type(AssignExpr)  continue
             expr = pe.expr
             
             check(expr.lhs != null && expr.rhs != null)
@@ -25,7 +28,7 @@ Parser::parseStatementList()
                 }
                 check(pkg != null)
                 
-                call = new FunCallExpr(expr.line,expr.column)
+                call = new ast.FunCallExpr(expr.line,expr.column)
                 call.package = obj.varname
                 call.funcname = "init"
                 call.args = ne.args
@@ -34,7 +37,6 @@ Parser::parseStatementList()
 
                 call.args = []
                 call.args[] = obj
-                //TODO: merge arr  => call.args[] = ...params
                 std.merge(call.args,params)
 
                 nd = new ExpressionStmt(call,call.line,call.column)
@@ -47,7 +49,7 @@ Parser::parseStatementList()
     return node
 }
 
-Block* Parser::parseBlock()
+Parser::parseBlock()
 {
     node = new ast.Block()
     scanner.scan()
@@ -65,16 +67,14 @@ Parser::parseParameterList()
     
     if scanner.curToken == ast.RPAREN {
         scanner.scan()
-        return std::move(node)
+        return node
     }
 
-    
-    while scanner.curToken != ast.RPAREN {
-        
+    while scanner.curToken != ast.RPAREN 
+    {
         if scanner.curToken == ast.VAR
         {
-            
-            if currentFunc{
+            if currentFunc {
                 var = new VarExpr(scanner.curLex,line,column)
                 
                 var.type = ast.U64
@@ -88,11 +88,11 @@ Parser::parseParameterList()
                 if scanner.curToken == ast.LT {
                     var.structtype = true
                     scanner.scan()
-                    if scanner.curToken == ast.VAR{
+                    if scanner.curToken == ast.VAR {
                         sname = scanner.curLex
                         var.structname = sname
                         scanner.scan()
-                        if scanner.curToken == ast.DOT{
+                        if scanner.curToken == ast.DOT {
                             scanner.scan()
                             assert(scanner.curToken == ast.VAR)
                             var.package = sname
@@ -109,16 +109,15 @@ Parser::parseParameterList()
                         if i >= ast.U8 && i <= ast.U64
                             var.isunsigned = true
                         scanner.scan()
-                        if scanner.curToken == ast.MUL{
+                        if scanner.curToken == ast.MUL {
                             var.pointer = true
                             scanner.scan()
                         }
-
                     }else{
-                        panic("unknown token " + getTokenString(scanner.curToken))
+                        panic("unknown token " + ast.getTokenString(scanner.curToken))
                     }
    
-                    check(scanner.curToken == GT)
+                    check(scanner.curToken == ast.GT )
                     scanner.scan()
                     
                     continue
@@ -128,12 +127,12 @@ Parser::parseParameterList()
                 if scanner.curToken == ast.RPAREN continue
 
                 
-                if scanner.curToken != ast.DOT{
+                if scanner.curToken != ast.DOT {
                     panic("SynatxError: should be , or . but got " + scanner.curLex)
                 }
                 
                 scanner.scan()
-                if scanner.curToken != ast.DOT{
+                if scanner.curToken != ast.DOT {
                     panic("SynatxError: must be . but got :" + scanner.curLex)
                 }
                 
@@ -148,13 +147,13 @@ Parser::parseParameterList()
             node[] = scanner.curLex
         }
         else{
-            check(scanner.curToken == ast.COMMA)
+            check( scanner.curToken == ast.COMMA )
         }
         
         scanner.scan()
     }
     
-    assert(scanner.curToken == ast.RPAREN)
+    assert( scanner.curToken == ast.RPAREN )
     scanner.scan()
-    return move(node)
+    return node
 }
