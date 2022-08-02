@@ -1,34 +1,32 @@
+use std
+use fmt
 
 Parser::addFunc(name, f)
 {
-    if f.isExtern
-        extern_funcs.insert(std::make_pair(name,f))
-    else
-        funcs.insert(std::make_pair(name,f))
+    if f.isExtern   extern_funcs[name] = f
+    else            funcs[name] = f
 }
 
 Parser::hasFunc(name, is_extern)
 {
-    if is_extern
-        return extern_funcs.count(name) == 1
-    else
-        return funcs.count(name) == 1
+    if is_extern  return std.exist(name,extern_funcs)
+    else          return std.exist(name,funcs)
 }
 
 Parser::getFunc(name, is_extern)
 {
-    if is_extern{
-        if f = extern_funcs.find(name;f != funcs.end())
-            return f.second
-    }else{
-        if f = funcs.find(name;f != funcs.end())
-            return f.second
+    if is_extern {
+        if std.exist(name,extern_funcs) 
+            return extern_funcs[name]
+    }else {
+        if std.exist(name,funcs)
+            return funcs[name]
     }
     return null
 }
 
 Parser::getGvar(name){
-    if std.len(gvars,name)
+    if std.exist(name,gvars) 
         return gvars[name]
     return null
 }
