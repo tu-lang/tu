@@ -87,7 +87,7 @@ Scanner::consumeLine()
 {
     c = next()
     ret
-    while c != EOF && c != '\n' ){
+    while c != ast.EOF && c != '\n' ){
         ret += c
         c = next()
     }
@@ -394,12 +394,12 @@ Scanner::get_next() {
     return token(ast.ILLEGAL,"invalid")
 }
 
-Scanner::precedence(Token op)
+Scanner::precedence(op)
 {
     match op {
-        LOGOR:  return 1
-        LOGAND: return 2
-        EQ  | NE  | GT | GE | LT | LE:        return 3
+        ast.LOGOR:  return 1
+        ast.LOGAND: return 2
+        ast.EQ:   | NE  | GT | GE | LT | LE:        return 3
         ADD | SUB | BITOR:                    return 4
         ast.MUL | MOD | DIV | BITAND | SHL | SHR: return 5
         _ :     return 0
@@ -410,7 +410,7 @@ Scanner::precedence(Token op)
 Scanner::print()
 {
     get_next()
-    while curToken != END {
+    while curToken != ast.END {
         fmt.println(getTokenString(curToken,curLex))
         get_next()
     }
