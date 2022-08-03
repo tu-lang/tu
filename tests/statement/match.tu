@@ -69,9 +69,22 @@ func test_no_brace(){
 	}
 	fmt.println("test no brace success")
 }
+func test_logor(){
+	fmt.println("test logor")
+	cond = "world"
+	match cond {
+		100 			  : os.die("should be world")
+		//new syntax: v1==cond || v2==cond 
+		"hello" | "world" : fmt.println("yes")
+		"xxxx"			  : os.die("not here")
+		_				  : os.die("not here")
+	}
+	fmt.println("test logor success")
+}
 func main(){
 	test_int()
 	test_string()
 	test_kv()
 	test_no_brace()
+	test_logor()
 }
