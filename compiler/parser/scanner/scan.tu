@@ -397,12 +397,15 @@ Scanner::get_next() {
 Scanner::precedence(op)
 {
     match op {
-        ast.LOGOR:  return 1
-        ast.LOGAND: return 2
-        ast.EQ:   | NE  | GT | GE | LT | LE:        return 3
-        ADD | SUB | BITOR:                    return 4
-        ast.MUL | MOD | DIV | BITAND | SHL | SHR: return 5
-        _ :     return 0
+        ast.LOGOR :  return 1
+        ast.LOGAND:  return 2
+        ast.EQ|ast.NE|ast.GT|ast.GE|ast.LT|ast.LE :        
+                     return 3
+        ast.ADD|ast.SUB|ast.BITOR :
+                     return 4
+        ast.MUL|ast.MOD|ast.DIV|ast.BITAND|ast.SHL|ast.SHR : 
+                     return 5
+        _ :          return 0
     }
 
 }
@@ -411,7 +414,7 @@ Scanner::print()
 {
     get_next()
     while curToken != ast.END {
-        fmt.println(getTokenString(curToken,curLex))
+        fmt.println(ast.getTokenString(curToken,curLex))
         get_next()
     }
 
