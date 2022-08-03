@@ -1,4 +1,5 @@
 use std
+use std.regex
 
 # map{name: Package}
 packages
@@ -9,8 +10,7 @@ Package::init(name , path , multi) {
     this.path         = path
     this.full_package = path
     if multi {
-        //TODO: support regex
-        this.path = std.regex_replace(path,std.regex("_"),"/")
+        this.path = regex.replace(path,"_","/")
     }
 
 }
@@ -127,7 +127,7 @@ Package::checkClassFunc(name , fc)
         return false
     cs = classes[name]
     for(var : cs.funcs){
-        if var.name == func
+        if var.name == fc
             return true
     }
     return false
