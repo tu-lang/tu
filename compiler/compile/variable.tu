@@ -1,13 +1,11 @@
-Compiler::registerStrings()
-{
+func registerStrings(){
     for(&var:parser.strs){
         r = "L" + ast.incr_compileridx() 
         var.name = r
         CreateGlobalString(var)
     }
 }
-Compiler::registerVars()
-{
+func registerVars(){
     for(name,v : parser.gvars){
         gname = parser.getpkgname() + "_" + name
         writeln("    .global %s",gname)
@@ -28,8 +26,7 @@ Compiler::registerVars()
         writeln("    .%s   %s",mt,value)
     }
 }
-Compiler::CreateGlobalString(StringExpr *var)
-{
+func CreateGlobalString(var){
     writeln("%s:", var.name)
     writeln("    .\"%s\"",var.literal)
 }

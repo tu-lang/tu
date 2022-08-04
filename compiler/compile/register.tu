@@ -1,6 +1,5 @@
 
-Compiler::GenAddr(VarExpr *var)
-{
+func GenAddr(VarExpr *var){
     
     if var.is_local {
         writeln("    lea %d(%%rbp), %%rax", var.offset)
@@ -14,7 +13,7 @@ Compiler::GenAddr(VarExpr *var)
     parse_err("AsmError:not support global variable read :%s at line %d co %d\n",
               var.varname,var.line,var.column)
 }
-Compiler::Load(m){
+func Load(m){
     if m.isclass && !m.pointer return
     if m.pointer
         Load(8,true)
@@ -28,12 +27,10 @@ Compiler::Load(m){
             writeln("	sar $%d, %%rax", 64 - m.bitwidth)
     }
 }
-Compiler::Load()
-{
+func Load(){
     writeln("    mov (%%rax), %%rax")
 }
-Compiler::Load(size , isunsigned)
-{
+func Load(size , isunsigned){
     prefix = if isunsigned  "movz" else  "movs"
     match size {
         1 : writeln("   %sbl (%%rax), %%eax",prefix)
@@ -44,37 +41,30 @@ Compiler::Load(size , isunsigned)
     }
 
 }
-Compiler::CreateCmp(size)
-{
+func CreateCmp(size){
     if size <= 4    writeln("  cmp $0, %%eax")
     else            writeln("  cmp $0, %%rax")
 }
 /**
  * @param type
  */
-Compiler::CreateCmp()
-{
+func CreateCmp(){
     writeln("    cmp $0, %%rax")
 }
-Compiler::PushV(v)
-{
+func PushV(v){
     writeln("    mov $%d,%%rax",v)
     Push()
 }
-Compiler::PushS(arg)
-{
+func PushS(arg){
     writeln("    push %s",arg)
 }
-Compiler::Push()
-{
+func Push(){
     writeln("    push %%rax")
 }
-Compiler::Pop(arg)
-{
+func Pop(arg){
     writeln("    pop %s",arg)
 }
-Compiler::Push_arg(prevCtxChain,fc,fce)
-{
+func Push_arg(prevCtxChain,fc,fce){
     stack = 0 gp = 0
     current_call_have_im = false
     for(arg : fce.args){

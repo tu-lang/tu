@@ -68,8 +68,8 @@ Parser::init(filepath,pkg,package,full_package) {
     
     this.import[""]  = full_package
 }
-
-
+//TODO: proxy
+Parser::writeln(args..){}
 Parser::parse()
 {
     scanner.scan()

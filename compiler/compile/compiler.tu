@@ -3,35 +3,8 @@ use parser
 use os 
 use internal
 
-class Compiler {
-    ctx # arr[Context*,Context*..]
-}
 
-Compiler::init(filename) 
-{
-    utils.debug("Compiler::init:",filename)
-
-    pkg = new parser.Packge("main","main",false)
-
-    mparser = new parser.Parser(filename,pkg,"main","main")
-    mparser.fileno = 1
-    mparser.parser()    # token parsering
-
-    pkg.parsers[filename] = mparser
-
-    parser.packages["main"] = pkg
-
-    //check runtime has been parsered
-    if std.exist("runtime",parser.packages) {
-        pkg = new parser.Package("runtime","runtime",false) 
-        //recursively scan code files
-        if !pkg.parse() utils.error("AsmError: runtime lib import failed")
-        parser.packages["runtime"] = pkg 
-    }
-}
-
-Compiler::compile()
-{
+func compile(){
     //compute structs
     for(pkg : parser.packages){
         //need compute the memeber offset early
@@ -44,8 +17,7 @@ Compiler::compile()
         p.compile()
     }
 }
-Compiler::link() 
-{
+func link(){
     args = "asmer -p . -p /usr/local/lib/coasm/"
     for(pkg : parser.packages){
         for(p : pkg.parsers){
@@ -57,7 +29,7 @@ Compiler::link()
     }
     os.shell(args)
 }
-Compiler::registerMain()
+func registerMain()
 {
     writeln("    .global main")
     writeln("main:")
@@ -85,7 +57,7 @@ Compiler::registerMain()
     writeln("    ret")
 
 }
-Compiler::funcs_offsets(fn)
+func funcs_offsets(fn)
 {
     for ( closure : fn.closures ) {
         funcs_offsets(closure)
@@ -94,14 +66,14 @@ Compiler::funcs_offsets(fn)
     assign_offsets(fn)
 
 }
-Compiler::funcs_offsets() 
+func funcs_offsets() 
 {
     for (f : parser.funcs) {
         funcs_offsets(f)
     }
 
 }
-Compiler::classs_offsets() 
+func classs_offsets() 
 {
     for(c : parser.pkg.classes){
         for(fn : c.funcs){
@@ -111,7 +83,7 @@ Compiler::classs_offsets()
 
 }
 
-Compiler::assign_offsets(fn)
+func assign_offsets(fn)
 {
     top = 16
     bottom = 0
@@ -164,16 +136,14 @@ Compiler::assign_offsets(fn)
     }
 }
 
-Compiler::enterContext(ctx)
-{
+func enterContext(ctx){
     temp = new Context()
     temp.end_str = ""
     temp.start_str = ""
     temp.continue_str = ""
     ctx[] = temp
 }
-Compiler::leaveContext(ctx){
-{
+func leaveContext(ctx){
     tempContext = ctx.back()
     std.pop(ctx)
 }

@@ -3,6 +3,9 @@ class Ast {
         this.line = line
         this.column = column
     }
+    //TODO: proxy
+    func writeln(arg...){
+    }
     func toString() { return "Ast()" }
     line
     column

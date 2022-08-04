@@ -39,7 +39,7 @@ func init_cast(){
 }
 
 
-Compiler::Cast(from ,to) {
+func Cast(from ,to) {
   f = types[from]
   t = types[to]
   if cast_table[f][t] != null {

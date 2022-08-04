@@ -1,6 +1,5 @@
 
-Compiler::Store_gp(r, offset, sz)
-{
+func Store_gp(r, offset, sz){
     match sz {
         1:  writeln("    mov %s, %d(%%rbp)", args8[r], offset)
         2:  writeln("    mov %s, %d(%%rbp)", args16[r], offset)
@@ -16,13 +15,11 @@ Compiler::Store_gp(r, offset, sz)
 
 }
 
-Compiler::Store()
-{
+func Store(){
     Pop("%rdi")
     writeln("    mov %%rax, (%%rdi)")
 }
-Compiler::Store(size)
-{
+func Store(size){
     Pop("%rdi")
     match size {
         1 : writeln("   mov %%al, (%%rdi)")

@@ -1,5 +1,5 @@
-Compiler::registerFunc(fn)
-{
+func registerFunc(fn){
+
     if std.len(fn.closures)
     {
         for(closure : fn.closures){
@@ -14,16 +14,14 @@ Compiler::registerFunc(fn)
     CreateFunction(fn)
     currentFunc = null
 }
-Compiler::registerFuncs()
-{
+func registerFuncs(){
     utils.debug("register functions")
     sign = 0
     for(p :parser.funcs){
         registerFunc(p.second)
     }
 }
-Compiler::CreateFunction(fn,Class* c)
-{
+func CreateFunction(fn,Class* c){
     if fn.clsName != "" {
         c = fn.parser.pkg.getClass(fn.clsName)
         if (c == null) {
