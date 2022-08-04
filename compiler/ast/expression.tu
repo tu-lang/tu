@@ -92,9 +92,43 @@ class MatchCaseExpr : Ast {
 
     defaultCase
     matchCond
+    logor # this case is multi complex bitor expression
 
     label 
     endLabel
+    func bitOrToLogOr(expr){
+        if type(expr) != type(BinaryExpr) return expr
+        node = expr
+        //only edit BITOR case ast
+        if node.opt != BITOR return expr
+        
+        this.logor = true
+        node.opt = LOGOR
+    
+        if node.lhs != null {
+            if type(node.lhs) != type(BinaryExpr) {
+                be = new BinaryExpr(this.line,this.column)
+                be.lhs = this.matchCond
+                be.opt = EQ
+                be.rhs = node.lhs
+                node.lhs = be
+            }else{
+                node.lhs = this.bitOrToLogOr(node.lhs)
+            }
+        }
+        if node.rhs != null {
+            if type(node.rhs) != type(BinaryExpr) {
+                be = new BinaryExpr(this.line,this.column)
+                be.lhs = this.matchCond
+                be.opt = EQ
+                be.rhs = node.rhs
+                node.rhs = be
+            }else{
+                node.rhs = this.bitOrToLogOr(node.rhs)
+            }
+        }
+        return node
+    }
 }
 class IfCaseExpr : Ast {
     cond

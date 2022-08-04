@@ -157,8 +157,7 @@ Parser::parseMatchSmt(){
     check(scanner.curToken == ast.LBRACE)
     scanner.scan()
     while scanner.curToken != ast.RBRACE {
-        cs = parseMatchCase()
-        cs.matchCond = ms.cond
+        cs = parseMatchCase(ms.cond)
         if cs.defaultCase {
             ms.defaultCase = cs
             continue
@@ -168,11 +167,12 @@ Parser::parseMatchSmt(){
     scanner.scan()
     return ms
 }
-Parser::parseMatchCase()
+Parser::parseMatchCase(cond)
 {
     cs = new ast.MatchCaseExpr(line,column)
-    
-    cs.cond  = parseExpression()
+    cs.matchCond = cond 
+
+    cs.cond  = cs.bitOrToLogOr(parseExpression())
     cs.block = null
     
     if type(cs.cond == type(ast.VarExpr) {
