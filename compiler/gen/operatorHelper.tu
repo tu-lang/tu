@@ -256,9 +256,15 @@ OperatorHelper::genRight(isleft,expr)
 {
 	match type(this.expr) {
 		type(IntExpr) : {
-			IntExpr* ie = expr;	
+			ie = expr;	
 			Compiler::writeln("	mov $%s,%%rax",ie.literal)
 			initcond(isleft,8,8,I64,false,false)
+			return ie
+		}
+		type(StringExpr): {
+			ie = expr;
+			writeln("	lea %s(%%rip), %%rax",ie.name)
+			initcond(isleft,8,8,U64,true,true);
 			return ie
 		}
 		type(NullExpr) : {

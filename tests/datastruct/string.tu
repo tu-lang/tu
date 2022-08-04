@@ -43,8 +43,23 @@ func test_index(){
     if str[5] != 0   os.die("stro[5] should be outbound")
     fmt.println("test string index success")
 }
+use string
+func test_nativeop(){
+    fmt.println("test string native memory operate")
+    native<u8*> = "this is native const char *"
+    wrap = string.new(native)
+    if wrap == "this is not native const char *" {
+        os.die("not should be here")
+    }
+    if wrap != "this is native const char *" {
+        os.die("wrap failed")
+    }
+    fmt.println("test string native memory operate success")
+}
+//native memory operte
 func main(){
     test_string()
     test_string_int(99,"test")
     test_index()
+    test_nativeop()
 }
