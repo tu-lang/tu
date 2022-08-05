@@ -111,7 +111,8 @@ func main(){
     match map["hello"] {
         arr[0] : os.die("not this one")
         999    : os.die("not this one")
-        "world": {
+
+        "hello" | "world": {
             fmt.println("got it",map["hello"])
         }
         _      : {
