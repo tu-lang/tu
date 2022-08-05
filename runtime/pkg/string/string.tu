@@ -396,7 +396,13 @@ func string_realloc(ptr<u64*>, size<u64>) {
 func string_free(ptr<u64*>) {
     gc.gc_free(ptr) 
 }
-
+// %s  origin char*
+// %S  wrap  string*
+// %i  signed int  
+// %I  long signed int
+// %u  unsigned int
+// %U  long unsigned int
+// %%  to '%'
 func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
     initlen<u64> = stringlen(s)
     f<i8*> = fmt
@@ -411,8 +417,6 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
  	pp<u64*> = &args
 	stack<i32> = 4   
     while *f != null {
-
-
         next<i8> = 0
         str<i8*> = 0
         l<u64>   = 0
@@ -421,16 +425,13 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
         if stringavail(s) == runtime.Zero {
             s = stringMakeRoomFor(s,single)
         }
-
         match *f 
         {
-            flag_percent: {
+            '%': {
                 f   += 1
                 next = *f
                 match next {
-                    flag_s: goto match_flag_S
-                    flag_S:{
-                        match_flag_S:
+                    's' | 'S' :{
                         //init stack
                         curr = *pp
                         if stack < 1  pp += 8	else pp -= 8
@@ -438,7 +439,7 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
                         stack -= 1
                         //stack end
                         str = curr
-                        if next == flag_s 
+                        if next == 's' 
                             l = std.strlen(str)
                         else 
                             l = stringlen(str)
@@ -449,9 +450,7 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
                         stringinclen(s,l)
                         i += l
                     }
-                    flag_i: goto match_flag_I
-                    flag_I:{
-                        match_flag_I:
+                    'i' | 'I' : {
                         //init stack
                         curr = *pp
                         if stack < 1  pp += 8	else pp -= 8
@@ -470,9 +469,7 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
                         stringinclen(s,l)
                         i += l
                     }
-                    flag_u: goto match_flag_U
-                    flag_U:{
-                        match_flag_U:
+                    'u' | 'U' : {
                         //init stack
                         curr = *pp
                         if stack < 1  pp += 8	else pp -= 8
