@@ -108,7 +108,7 @@ FunCallExpr::getType(ctx){
 	
 }
 AssignExpr::getType(ctx){
-	panic("getType: unsupport Assign\n")
+	return this.lhs.getType(ctx)
 }
 NewClassExpr::getType(ctx){
 	panic("getType: unsupport new class\n")

@@ -276,7 +276,7 @@ OperatorHelper::genRight(isleft,expr)
 	
 	ret = expr.compile(ctx)
 	match type(this.expr) {
-		type(BinaryExpr) : {
+		type(BinaryExpr) | type(AssignExpr) : {
 			Token t = expr.getType(ctx)
 			size = typesize[t]
 			iu = false
