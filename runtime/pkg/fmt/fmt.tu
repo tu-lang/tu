@@ -21,7 +21,7 @@ func println(count<runtime.Value>,args...){
 		else 		  p -= 8
 		if stack == 1 {
 			p = &args
-			p += 24
+			p += 32
 		}		
 		stack -= 1
 
@@ -56,7 +56,7 @@ func print(count<runtime.Value> , args...){
 		else 		  p -= 8
 		if stack == 1 {
 			p = &args
-			p += 24
+			p += 32
 		}		
 		stack -= 1
 
