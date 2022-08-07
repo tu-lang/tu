@@ -1,4 +1,4 @@
-func vsnprintf(dstr<i8*>, format<i8*>, args...)
+func vsnprintf(dstr<i8*>, format<i8*>, args,args1,args2,args3)
 {
 	translating<u64>	= 0
 	ret<u64>	= 0
