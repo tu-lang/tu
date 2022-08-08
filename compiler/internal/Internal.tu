@@ -1,4 +1,4 @@
-Internal::call_operator(opt,name)
+func call_operator(opt,name)
 {
     compile.writeln("    mov $%ld, %%rdi", opt)
     
@@ -8,7 +8,7 @@ Internal::call_operator(opt,name)
     call(name)
 }
 
-Internal::call_object_operator(opt, name,method) {
+func call_object_operator(opt, name,method) {
     
     compile.writeln("    mov $%ld, %%rdi", opt)
     compile.Pop("%rcx")
@@ -20,23 +20,23 @@ Internal::call_object_operator(opt, name,method) {
     compile.Pop("%rsi")
     call(method)
 }
-Internal::gc_malloc(size)
+func gc_malloc(size)
 {
     compile.writeln("    mov $%ld, %%rdi", size)
     call("runtime_gc_gc_malloc")
 }
-Internal::gc_malloc()
+func gc_malloc()
 {
     compile.writeln("    mov %%rax, %%rdi")
     call("runtime_gc_gc_malloc")
 }
-Internal::malloc(size)
+func malloc(size)
 {
     compile.writeln("    mov $%ld, %%rdi", size)
     call("malloc")
 }
 
-Internal::newobject(typ, long data)
+func newobject(typ, long data)
 {
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
@@ -50,7 +50,7 @@ Internal::newobject(typ, long data)
     compile.writeln("    pop %%rsi")
     compile.writeln("    pop %%rdi")
 }
-Internal::newint(typ, data)
+func newint(typ, data)
 {
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
@@ -62,7 +62,7 @@ Internal::newint(typ, data)
     compile.writeln("    pop %%rdi")
 }
 
-Internal::newobject2(typ)
+func newobject2(typ)
 {
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
@@ -75,12 +75,12 @@ Internal::newobject2(typ)
     compile.writeln("    pop %%rsi")
     compile.writeln("    pop %%rdi")
 }
-Internal::isTrue()
+func isTrue()
 {
     compile.writeln("    mov %%rax, %%rdi")
     call("runtime_isTrue")
 }
-Internal::get_object_value()
+func get_object_value()
 {
     compile.writeln("    push %%rdi")
     compile.writeln("    mov %%rax, %%rdi")
@@ -88,7 +88,7 @@ Internal::get_object_value()
     compile.writeln("    pop %%rdi")
 }
 
-Internal::arr_pushone() {
+func arr_pushone() {
     
     compile.Pop("%rsi")
     
@@ -96,7 +96,7 @@ Internal::arr_pushone() {
     call("runtime_arr_pushone")
 }
 
-Internal::kv_update() {
+func kv_update() {
     
     compile.Pop("%rdx")
     
@@ -106,21 +106,21 @@ Internal::kv_update() {
     call("runtime_kv_update")
 }
 
-Internal::kv_get() {
+func kv_get() {
     
     compile.Pop("%rsi")
     
     compile.Pop("%rdi")
     call("runtime_kv_get")
 }
-Internal::call(funcname)
+func call(funcname)
 {
     compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
     compile.writeln("    mov %%rax, %%r10")
     compile.writeln("    mov $%d, %%rax", 0)
     compile.writeln("    call *%%r10")
 }
-Internal::object_member_get(name)
+func object_member_get(name)
 {
     compile.Pop("%rdi")
     //FIXME: 
@@ -131,7 +131,7 @@ Internal::object_member_get(name)
     call("runtime_object_member_get")
 
 }
-Internal::object_func_add(name)
+func object_func_add(name)
 {
     compile.Pop("%rdx")
     //FIXME: 
@@ -144,7 +144,7 @@ Internal::object_func_add(name)
 
     call("runtime_object_func_add")
 }
-Internal::object_func_addr(name)
+func object_func_addr(name)
 {
     
     compile.Pop("%rdi")
