@@ -53,13 +53,13 @@ OperatorHelper::assign()
 	if lmember && lmember.bitfield
 	{
 		compile.writeln("	mov %%rax, %%rdi")
-		compile.writeln("   and $%ld, %%rdi", (1L << lmember.bitwidth) - 1)
+		compile.writeln("   and $%I, %%rdi", (1L << lmember.bitwidth) - 1)
 		compile.writeln("	shl $%d, %%rdi", lmember.bitoffset)
 		compile.writeln("   mov (%%rsp), %%rax")
 		compile.Load(lmember.size,lmember.isunsigned)
 		//FIXME: 
 		//mask = ((1L << lmember.bitwidth) - 1) << lmember.bitoffset
-		compile.writeln("  mov $%ld, %%r9", ~mask)
+		compile.writeln("  mov $%I, %%r9", ~mask)
 		compile.writeln("  and %%r9, %%rax")
 		compile.writeln("  or %%rdi, %%rax")
 	}

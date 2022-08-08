@@ -1,9 +1,16 @@
 use std
 use std.regex
+use utils
 
-# map{name: Package}
-packages
-func init(){ packages = {} }
+class Package {
+    parsers # parsers map[filepath + name] = parser
+    package
+    path
+    full_package
+
+    classes # map[string] Class
+    structs # map[string] Struct
+}
 
 Package::init(name , path , multi) {
     this.package      = name
@@ -13,12 +20,15 @@ Package::init(name , path , multi) {
         this.path = regex.replace(path,"_","/")
     }
 
+    this.classes = {}
+    this.structs = {}
+
 }
 Package::parse()
 {
     utils.debug("found import.start parser..")
 
-    abpath = std.current_path()
+    abpath = utils.pwd()
     abpath += "/" + this.path
 
     if !std.is_dir(abpath) {
@@ -78,17 +88,7 @@ Package::getStruct(name)
         return f.second
     return null
 }
-Package::getStruct(package,name)
-{    
-    pkgname = package
-    if pkgname == "" pkgname = compile.currentFunc.parser.getpkgname(); 
 
-    if std.exist(pkgname,packages) < 1 {
-        return null
-    }
-    pkg = packages[pkgname]
-    return pkg.getStruct(name)
-}
 Package::addClassFunc(name,f)
 {
     if std.exist(name,classes) {

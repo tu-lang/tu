@@ -48,6 +48,7 @@ func init(){
     code_file = ""
     args      = []
     run       = false
+    uitils.init()
 }
 func main() {
     if os.argc < 3 return print_help() 

@@ -1,5 +1,5 @@
 VarExpr::isMemtype(ctx){
-    v = getVar(ctx)
+    v = this.getVar(ctx)
     if v.structtype {
         acualPkg = compile.parser.import[v.package]
         dst = Package::getStruct(acualPkg,v.structname)
