@@ -512,3 +512,113 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
     *tp = 0
     return s
 }
+func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
+    s<i8*> = stringempty()
+    initlen<u64> = stringlen(s)
+    f<i8*> = fmt
+    i<u64> = 0
+    db<i32> = 2
+    single<i32> = 1
+    s = stringMakeRoomFor(s, initlen + std.strlen(fmt) * db)
+    f = fmt    
+    i = initlen 
+    curr<u64> = 0
+
+ 	pp<u64*> = &args
+	stack<i32> = 5   
+    while *f != null {
+        next<i8> = 0
+        str<i8*> = 0
+        l<u64>   = 0
+        num<i64> = 0
+        unum<u64> = 0
+        if stringavail(s) == runtime.Zero {
+            s = stringMakeRoomFor(s,single)
+        }
+        match *f 
+        {
+            '%': {
+                f   += 1
+                next = *f
+                match next {
+                    's' | 'S' :{
+                        //init stack
+                        curr = *pp
+                        if stack < 1  pp += 8	else pp -= 8
+                        if stack == 1 {	pp = &fmt	pp += 24 }		
+                        stack -= 1
+                        //stack end
+                        str = curr
+                        if next == 's' 
+                            l = std.strlen(str)
+                        else 
+                            l = stringlen(str)
+                        if stringavail(s) < l {
+                            s = stringMakeRoomFor(s,l)
+                        }
+                        std.memcpy(s + i,str,l)
+                        stringinclen(s,l)
+                        i += l
+                    }
+                    'i' | 'I' : {
+                        //init stack
+                        curr = *pp
+                        if stack < 1  pp += 8	else pp -= 8
+                        if stack == 1 {	pp = &fmt	pp += 24 }		
+                        stack -= 1
+                        //stack end
+                        num = curr
+
+                        buf_o<i8:21> = 0
+                        buf<i8*> = &buf_o
+                        l = stringll2str(buf,num)
+                        if stringavail(s) < l {
+                            s = stringMakeRoomFor(s,l)
+                        }
+                        std.memcpy(s + i,buf,l)
+                        stringinclen(s,l)
+                        i += l
+                    }
+                    'u' | 'U' : {
+                        //init stack
+                        curr = *pp
+                        if stack < 1  pp += 8	else pp -= 8
+                        if stack == 1 {	pp = &fmt	pp += 24 }		
+                        stack -= 1
+                        //stack end
+                        unum = curr
+
+                        buf_o<i8:21> = 0
+                        buf<i8*> = &buf_o
+                        l = stringull2str(buf,unum)
+                        if stringavail(s) < l {
+                            s = stringMakeRoomFor(s,l)
+                        }
+                        std.memcpy(s + i,buf,l)
+                        stringinclen(s,l)
+                        i += l
+                    }
+                    _ : {
+                        # s[i++] = next
+                        tp<i8*> = s + i
+                        i += 1
+                        *tp = next
+                        stringinclen(s,single)
+                    } 
+                }
+            }
+            _ : {
+                # s[i++] = *f
+                tp<i8*> = s + i
+                i += 1
+                *tp = *f
+                stringinclen(s,1)
+            }
+        }
+        f += 1
+    }
+    # s[i] = '\0'
+    tp<i8*> = s + i
+    *tp = 0
+    return s
+}
