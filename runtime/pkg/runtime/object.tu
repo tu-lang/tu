@@ -40,9 +40,12 @@ func newinherit_object(father<Value>,typeid<i32>){
 
     return ret
 }
+// NOTICE: get_object_value called by compiler
+// so it didn't save the %rdi,%rsi,%rdx,%rcx,%r8,%r9
+// don't do anything in those who called by compiler,will cause terriable problem
 func get_object_value(obj<Value>){
     if obj == null {
-        fmt.println("[get obj] null")
+        //FIXME: fmt.println("[get obj] null")
         return Null
     }
     return obj.data
