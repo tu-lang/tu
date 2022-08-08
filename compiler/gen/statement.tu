@@ -28,42 +28,42 @@ ForStmt::rangeFor(ctx)
         parse_err("statement: for(x,y : obj) obj should pass value. line:%d column:%d",line,column)
     
     this.obj.compile(ctx)
-    Compiler::Push()
+    compile.Push()
     
-    Compiler::writeln("   mov (%%rsp),%%rdi")
+    compile.writeln("   mov (%%rsp),%%rdi")
     internal.call("runtime_for_first")
-    Compiler::Push()
+    compile.Push()
     
     
-    Compiler::writeln("L.forr.begin.%d:", c)
+    compile.writeln("L.forr.begin.%d:", c)
     
-    Compiler::CreateCmp()
-    Compiler::writeln("    je  L.forr.end.%d", c)
+    compile.CreateCmp()
+    compile.writeln("    je  L.forr.end.%d", c)
 
     
     if this.key{
         (std.back(ctx)).createVar(this.key.varname,this.key)
-        Compiler::writeln("   mov 8(%%rsp),%%rdi")
-        Compiler::writeln("   mov (%%rsp),%%rsi")
+        compile.writeln("   mov 8(%%rsp),%%rdi")
+        compile.writeln("   mov (%%rsp),%%rsi")
         internal.call("runtime_for_get_key")
-        Compiler::Push()
+        compile.Push()
 
-        Compiler::GenAddr(this.key)
-        Compiler::Pop("%rdi")
-        Compiler::writeln("   mov %%rdi,(%%rax)")
+        compile.GenAddr(this.key)
+        compile.Pop("%rdi")
+        compile.writeln("   mov %%rdi,(%%rax)")
     }
     if this.value {
         (std.back(ctx)).createVar(this.value.varname,this.value)
-        Compiler::writeln("   mov 8(%%rsp),%%rdi")
-        Compiler::writeln("   mov (%%rsp),%%rsi")
+        compile.writeln("   mov 8(%%rsp),%%rdi")
+        compile.writeln("   mov (%%rsp),%%rsi")
         internal.call("runtime_for_get_value")
-        Compiler::Push()
-        Compiler::GenAddr(this.value)
-        Compiler::Pop("%rdi")
-        Compiler::writeln("   mov %%rdi,(%%rax)")
+        compile.Push()
+        compile.GenAddr(this.value)
+        compile.Pop("%rdi")
+        compile.writeln("   mov %%rdi,(%%rax)")
     }
 
-    Compiler::this.enterContext(ctx)
+    compile.this.enterContext(ctx)
     
     std.back(ctx).po= c
     std.back(ctx).end_str   = "L.forr.end"
@@ -74,33 +74,33 @@ ForStmt::rangeFor(ctx)
     for(stmt : block.stmts){
         stmt.compile(ctx)
     }
-    Compiler::this.leaveContext(ctx)
+    compile.this.leaveContext(ctx)
 
-    Compiler::writeln("L.for.continue.%d:",c)
-    Compiler::writeln("   mov 8(%%rsp),%%rdi")
-    Compiler::Pop("%rsi")
+    compile.writeln("L.for.continue.%d:",c)
+    compile.writeln("   mov 8(%%rsp),%%rdi")
+    compile.Pop("%rsi")
     internal.call("runtime_for_get_next")
-    Compiler::Push()
+    compile.Push()
 
-    Compiler::writeln("    jmp L.forr.begin.%d",c)
-    Compiler::writeln("L.forr.end.%d:", c)
+    compile.writeln("    jmp L.forr.begin.%d",c)
+    compile.writeln("L.forr.end.%d:", c)
     
-    Compiler::writeln("   add $16,%%rsp")
+    compile.writeln("   add $16,%%rsp")
     return null
 }
 ForStmt::triFor(ctx)
 {
     c = ast.incr_compileridx()
-    Compiler::this.enterContext(ctx)
+    compile.this.enterContext(ctx)
     this.init.compile(ctx)
     
-    Compiler::writeln("L.for.begin.%d:", c)
+    compile.writeln("L.for.begin.%d:", c)
     this.cond.compile(ctx)
     if !condIsMtype(this.cond,ctx) {
         internal.isTrue()
     }
-    Compiler::CreateCmp()
-    Compiler::writeln("    je  L.for.end.%d", c)
+    compile.CreateCmp()
+    compile.writeln("    je  L.for.end.%d", c)
 
     std.back(ctx).po= c
     std.back(ctx).end_str   = "L.for.end"
@@ -112,13 +112,13 @@ ForStmt::triFor(ctx)
         stmt.compile(ctx)
     }
     
-    Compiler::writeln("L.for.continue.%d:",c)
+    compile.writeln("L.for.continue.%d:",c)
     
     this.after.compile(ctx)
-    Compiler::this.leaveContext(ctx)
+    compile.this.leaveContext(ctx)
 
-    Compiler::writeln("    jmp L.for.begin.%d",c)
-    Compiler::writeln("L.for.end.%d:", c)
+    compile.writeln("    jmp L.for.begin.%d",c)
+    compile.writeln("L.for.end.%d:", c)
 
 }
 
@@ -127,16 +127,16 @@ WhileStmt::compile(ctx)
     record()
     c = ast.incr_compileridx()
     
-    Compiler::writeln("L.while.begin.%d:", c)
+    compile.writeln("L.while.begin.%d:", c)
     
     this.cond.compile(ctx)
     if !condIsMtype(this.cond,ctx){
         internal.isTrue()
     }
-    Compiler::CreateCmp()
-    Compiler::writeln("    je  L.while.end.%d", c)
+    compile.CreateCmp()
+    compile.writeln("    je  L.while.end.%d", c)
 
-    Compiler::this.enterContext(ctx)
+    compile.this.enterContext(ctx)
     
     std.back(ctx).po= c
     std.back(ctx).end_str   = "L.while.end"
@@ -145,10 +145,10 @@ WhileStmt::compile(ctx)
     for(stmt : block.stmts){
         stmt.compile(ctx)
     }
-    Compiler::this.leaveContext(ctx)
+    compile.this.leaveContext(ctx)
 
-    Compiler::writeln("    jmp L.while.begin.%d",c)
-    Compiler::writeln("L.while.end.%d:", c)
+    compile.writeln("    jmp L.while.begin.%d",c)
+    compile.writeln("L.while.end.%d:", c)
 }
 ExpressionStmt::compile(ctx)
 {
@@ -161,26 +161,26 @@ ReturnStmt::compile(ctx)
     record()
     
     if ret == null{
-        Compiler::writeln("   mov $0,%%rax")
+        compile.writeln("   mov $0,%%rax")
     }else{
         ret = this.ret.compile(ctx)
         if ret && type(ret) == type(ast.StructMemberExpr) {
             sm = ret
             m = sm.ret
             
-            Compiler::Load(m)
+            compile.Load(m)
         
         }else if ret && type(ret) == type(ChainExpr) {
             ce = ret
             if ce.ret {
-                Compiler::Load(ce.ret)
+                compile.Load(ce.ret)
             }
         }
     }
     for(p : ctx ) {
         funcName = p.cur_funcname
         if funcName != "" 
-            Compiler::writeln("    jmp L.return.%s",funcName)
+            compile.writeln("    jmp L.return.%s",funcName)
     }
 }
 
@@ -190,7 +190,7 @@ BreakStmt::compile(ctx)
     
     for(c : ctx ) {
         if c.po && c.end_str != ""  {
-            Compiler::writeln("    jmp %s.%d",c.end_str,c.point)
+            compile.writeln("    jmp %s.%d",c.end_str,c.point)
         }
     }
 }
@@ -201,24 +201,24 @@ ContinueStmt::compile(ctx)
     
     for ( c : ctx) {
         if c.po&& !c.continue_str.empty(){
-            Compiler::writeln("    jmp %s.%d", c.continue_str, c.point)
+            compile.writeln("    jmp %s.%d", c.continue_str, c.point)
         }
         if (c.po&& !c.start_str.empty()) {
-            Compiler::writeln("    jmp %s.%d", c.start_str, c.point)
+            compile.writeln("    jmp %s.%d", c.start_str, c.point)
         }
     }
 }
 
 MatchCaseExpr::compile(ctx){
     record()
-    Compiler::writeln("%s:",label)
+    compile.writeln("%s:",label)
     
     if block{
         for(stmt : block.stmts){
             stmt.compile(ctx)
         } 
     }
-    Compiler::writeln("   jmp %s", endLabel)
+    compile.writeln("   jmp %s", endLabel)
     return this
 }
 
@@ -237,7 +237,7 @@ MatchStmt::compile(ctx){
         defaultCase = new MatchCaseExpr(line,column)
         defaultCase.matchCond = this.cond
     }
-    defaultCase.label = "L.match.default." + Compiler::count++
+    defaultCase.label = "L.match.default." + compile.count++
     defaultCase.endLabel = endLabel
     
     for(cs : this.cases){
@@ -250,34 +250,34 @@ MatchStmt::compile(ctx){
         if !condIsMtype(&be,ctx)
             internal.isTrue()
         
-        Compiler::writeln("    cmp $1, %%rax")
-        Compiler::writeln("    je  %s", cs.label)
+        compile.writeln("    cmp $1, %%rax")
+        compile.writeln("    je  %s", cs.label)
     }
     
-    Compiler::writeln("   jmp %s", defaultCase.label)
+    compile.writeln("   jmp %s", defaultCase.label)
     
-    Compiler::this.enterContext(ctx)
+    compile.this.enterContext(ctx)
     for(cs : this.cases){
         
         cs.compile(ctx)
     }
     defaultCase.compile(ctx)
-    Compiler::this.leaveContext(ctx)
+    compile.this.leaveContext(ctx)
 
     
-    Compiler::writeln("L.match.end.%d:",mainPoint)
+    compile.writeln("L.match.end.%d:",mainPoint)
     return null
 }
 
 IfCaseExpr::compile(ctx){
     record()
-    Compiler::writeln("%s:",label)
+    compile.writeln("%s:",label)
     if block {
         for(stmt : block.stmts){
             stmt.compile(ctx)
         } 
     }
-    Compiler::writeln("   jmp %s", endLabel)
+    compile.writeln("   jmp %s", endLabel)
     return this
 }
 
@@ -287,11 +287,11 @@ IfStmt::compile(ctx){
     endLabel = "L.if.end." + mainPoint
     
     for(cs : this.cases){
-        cs.label  = "L.if.case." + Compiler::count ++
+        cs.label  = "L.if.case." + compile.count ++
         cs.endLabel = endLabel
     }
     if elseCase {
-        elseCase.label = "L.if.case." + Compiler::count ++
+        elseCase.label = "L.if.case." + compile.count ++
         elseCase.endLabel = endLabel
     }
 
@@ -299,27 +299,27 @@ IfStmt::compile(ctx){
         cs.cond.compile(ctx)
         if !condIsMtype(cs.cond,ctx)
             internal.isTrue()
-        Compiler::writeln("    cmp $1, %%rax")
-        Compiler::writeln("    je  %s", cs.label)
+        compile.writeln("    cmp $1, %%rax")
+        compile.writeln("    je  %s", cs.label)
     }
     
-    if (elseCase) Compiler::writeln("   jmp %s", elseCase.label)
+    if (elseCase) compile.writeln("   jmp %s", elseCase.label)
     
-    Compiler::writeln("   jmp L.if.end.%d", mainPoint)
+    compile.writeln("   jmp L.if.end.%d", mainPoint)
     
-    Compiler::this.enterContext(ctx)
+    compile.this.enterContext(ctx)
     for(cs : this.cases){
         cs.compile(ctx)
     }
     if elseCase elseCase.compile(ctx)
-    Compiler::this.leaveContext(ctx)
+    compile.this.leaveContext(ctx)
 
-    Compiler::writeln("L.if.end.%d:",mainPoint)
+    compile.writeln("L.if.end.%d:",mainPoint)
     return null
 }
 
 GotoStmt::compile(ctx){
     record()
-    Compiler::writeln("   jmp %s",label)
+    compile.writeln("   jmp %s",label)
     return null
 }

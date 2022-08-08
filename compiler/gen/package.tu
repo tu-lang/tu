@@ -68,7 +68,7 @@ Package::compile()
         asmfile  = "co_" + package + "_" + asmfile
 
     out = std.fopen(asmfile)
-    Compiler::out = out
+    compile.out = out
 
     if out <= 0 {
         parse_err("genrate assembly file failed package:%s file:sysinit.s",package)
@@ -78,13 +78,13 @@ Package::compile()
       if !checkClassFunc(it.first,"init"){
         funcname = full_package + "_" + it.first + "_init"
         
-        Compiler::writeln(".global %s", funcname)
-        Compiler::writeln("%s:", funcname)
-        Compiler::writeln("    ret")
+        compile.writeln(".global %s", funcname)
+        compile.writeln("%s:", funcname)
+        compile.writeln("    ret")
       }
     }
     out.close()
-    Compiler::out = null
+    compile.out = null
 
     for(p : parsers){
         p.compile()

@@ -5,7 +5,7 @@ ctx # arr[Context*,Context*..]
 
 func init(filename) 
 {
-    utils.debug("Compiler::init:",filename)
+    utils.debug("compile.init:",filename)
     ctx = [] # arr[Context*,Context*]
 
     pkg = new parser.Packge("main","main",false)

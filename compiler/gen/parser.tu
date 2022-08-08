@@ -14,15 +14,15 @@ Parser::compile()
 
     compile.C.parser = this
     writeln(".data")
-    Compiler::funcs_offsets()
-    Compiler::registerVars()
-    Compiler::registerStrings()
-    Compiler::writeln(".text")
+    compile.funcs_offsets()
+    compile.registerVars()
+    compile.registerStrings()
+    compile.writeln(".text")
     
-    Compiler::registerFuncs()
-    Compiler::parser = null
+    compile.registerFuncs()
+    compile.parser = null
 
     std.fclose(out)
-    Compiler::out = null
+    compile.out = null
 
 }

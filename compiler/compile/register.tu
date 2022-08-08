@@ -88,7 +88,7 @@ func Push_arg(prevCtxChain,fc,fce){
             for (i = 0; i < 5; ++i) {
                 writeln("    mov %d(%%rbp),%%rax",params)
                 internal.get_object_value()
-                writeln("    mov %%rax,%s",Compiler::args64[i])
+                writeln("    mov %%rax,%s",compile.args64[i])
                 params += -8
             }
             writeln("    mov 16(%%rbp),%%rax");

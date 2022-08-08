@@ -1,7 +1,7 @@
 VarExpr::isMemtype(ctx){
     v = getVar(ctx)
     if v.structtype {
-        acualPkg = Compiler::parser.import[v.package]
+        acualPkg = compile.parser.import[v.package]
         dst = Package::getStruct(acualPkg,v.structname)
         
         if (dst == null && v.structname != ""){
@@ -28,7 +28,7 @@ VarType VarExpr::getVarType(ctx)
             
             if ret return Var_Extern_Global
         }
-        cpkg = Compiler::currentFunc.parser.getpkgname()
+        cpkg = compile.currentFunc.parser.getpkgname()
         
         if std.len(Package::packages,cpkg){
             ret = Package::packages[cpkg].getGlobalVar(package)
@@ -36,13 +36,13 @@ VarType VarExpr::getVarType(ctx)
         }
     }
     
-    package = Compiler::currentFunc.parser.getpkgname()
+    package = compile.currentFunc.parser.getpkgname()
     ret  = Package::packages[package].getGlobalVar(varname)
     if ret return Var_Local_Global
     
     ret = Context::getVar(ctx,this.varname)
     if ret != null{
-        f = Compiler::currentFunc
+        f = compile.currentFunc
         
         if std.len(f.locals,varname)
             ret = f.locals[varname]
@@ -55,7 +55,7 @@ VarType VarExpr::getVarType(ctx)
         return Var_Local
     }
     if (ret = Context::getVar(ctx,"this");ret != null) {
-        fn =Compiler::currentFunc
+        fn =compile.currentFunc
         if (!fn.clsName.empty()){
             c = fn.parser.pkg.getClass(fn.clsName)
             if (c != null && !c.getMember(this.varname).empty()) {
@@ -71,7 +71,7 @@ VarType VarExpr::getVarType(ctx)
         func = Package::packages[funcpkg].getFunc(varname,false)
     }
     if !func{
-        funcpkg = Compiler::currentFunc.parser.getpkgname()
+        funcpkg = compile.currentFunc.parser.getpkgname()
         if (std.len(Package::packages,funcpkg)){
             func = Package::packages[funcpkg].getFunc(varname,false)
         }
@@ -81,16 +81,16 @@ VarType VarExpr::getVarType(ctx)
         return Var_Func
     }    
     parse_err("AsmError:get var type use of undefined variable %s at line %d co %d filename:%s\n",
-          varname,this.line,this.column,Compiler::currentFunc.parser.filepath)
+          varname,this.line,this.column,compile.currentFunc.parser.filepath)
 }
 VarExpr::compile(ctx){
     record()
     match getVarType(ctx)
     {
         Var_Obj_Member : { 
-            Compiler::GenAddr(ret)
-            Compiler::Load()
-            Compiler::Push()
+            compile.GenAddr(ret)
+            compile.Load()
+            compile.Push()
             
             internal.object_member_get(varname)
         }
@@ -104,17 +104,17 @@ VarExpr::compile(ctx){
         Var_Extern_Global: 
         Var_Local_Global:
         Var_Local : { 
-            Compiler::GenAddr(ret)
+            compile.GenAddr(ret)
             
             if ret.structtype && !ret.pointer && ret.type <= ast.U64 && ret.type >= ast.I8    
-                Compiler::Load(ret.size,ret.isunsigned)
+                compile.Load(ret.size,ret.isunsigned)
             else                                    
-                Compiler::Load()
+                compile.Load()
         }
         Var_Func : {  
             fn = funcpkg + "_" + funcname
             utils.debug("found function pointer:%s",fn)
-            Compiler::writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn)
+            compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn)
         }
     }
     return ret

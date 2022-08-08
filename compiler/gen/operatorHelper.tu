@@ -25,16 +25,16 @@ OperatorHelper::gen()
 {
 	if needassign {
 		genLeft()
-		Compiler::Push()
+		compile.Push()
 		
 		if opt != ASSIGN {
-			if lmember Compiler::Load(lmember)
-			else        Compiler::Load(ltypesize,lisunsigned)
-			Compiler::Push()
+			if lmember compile.Load(lmember)
+			else        compile.Load(ltypesize,lisunsigned)
+			compile.Push()
 		}
 	} else {
 		genRight(true,lhs)
-		Compiler::Push()
+		compile.Push()
 	}
 	
 	if this.rhs genRight(false,rhs) 
@@ -52,38 +52,38 @@ OperatorHelper::assign()
 	if !needassign return ret
 	if lmember && lmember.bitfield
 	{
-		Compiler::writeln("	mov %%rax, %%rdi")
-		Compiler::writeln("   and $%ld, %%rdi", (1L << lmember.bitwidth) - 1)
-		Compiler::writeln("	shl $%d, %%rdi", lmember.bitoffset)
-		Compiler::writeln("   mov (%%rsp), %%rax")
-		Compiler::Load(lmember.size,lmember.isunsigned)
+		compile.writeln("	mov %%rax, %%rdi")
+		compile.writeln("   and $%ld, %%rdi", (1L << lmember.bitwidth) - 1)
+		compile.writeln("	shl $%d, %%rdi", lmember.bitoffset)
+		compile.writeln("   mov (%%rsp), %%rax")
+		compile.Load(lmember.size,lmember.isunsigned)
 		//FIXME: 
 		//mask = ((1L << lmember.bitwidth) - 1) << lmember.bitoffset
-		Compiler::writeln("  mov $%ld, %%r9", ~mask)
-		Compiler::writeln("  and %%r9, %%rax")
-		Compiler::writeln("  or %%rdi, %%rax")
+		compile.writeln("  mov $%ld, %%r9", ~mask)
+		compile.writeln("  and %%r9, %%rax")
+		compile.writeln("  or %%rdi, %%rax")
 	}
 	
 	if type(lhs) == type(ast.DelRefExpr) {
-		Compiler::Cast(rtoken,ltoken)
-		Compiler::Store(lvarsize)
+		compile.Cast(rtoken,ltoken)
+		compile.Store(lvarsize)
 		return null
 	}
-	Compiler::Store(ltypesize)
+	compile.Store(ltypesize)
 }
 OperatorHelper::binary()
 {
 	if !this.rhs{
-		Compiler::Pop("%rax")
+		compile.Pop("%rax")
 		match opt {
 			LOGNOT: {
-				Compiler::CreateCmp(ltypesize)
-				Compiler::writeln("	sete %%al")
-				Compiler::writeln("	movzx %%al, %%rax")
+				compile.CreateCmp(ltypesize)
+				compile.writeln("	sete %%al")
+				compile.writeln("	movzx %%al, %%rax")
 				return null
 			}
 			BITNOT: {
-				Compiler::writeln("	not %%rax")
+				compile.writeln("	not %%rax")
 				return null
 			}
 			_ :	parse_err("asmgen: must !,~ at unary expression,not %s\n",getTokenString(opt))
@@ -99,30 +99,30 @@ OperatorHelper::binary()
 	
 	if opt == ASSIGN return null
 	
-	Compiler::Cast(rtoken,base)
-	Compiler::writeln("	mov %%rax,%%rdi")
-	Compiler::Pop("%rax")
-	Compiler::Cast(ltoken,base)
+	compile.Cast(rtoken,base)
+	compile.writeln("	mov %%rax,%%rdi")
+	compile.Pop("%rax")
+	compile.Cast(ltoken,base)
 	
 	match opt{
-		ADD_ASSIGN | ADD:	Compiler::writeln("	add %s, %s", di, ax)
-		SUB_ASSIGN | SUB:	Compiler::writeln("	sub %s,%s",di,ax)
-		MUL_ASSIGN | ast.MUL:	Compiler::writeln("	imul %s,%s",di,ax)
-		BITAND | BITAND_ASSIGN:	Compiler::writeln("	and %s,%s",di,ax)
-		BITOR  | BITOR_ASSIGN:	Compiler::writeln("	or %s,%s",di,ax)
+		ADD_ASSIGN | ADD:	compile.writeln("	add %s, %s", di, ax)
+		SUB_ASSIGN | SUB:	compile.writeln("	sub %s,%s",di,ax)
+		MUL_ASSIGN | ast.MUL:	compile.writeln("	imul %s,%s",di,ax)
+		BITAND | BITAND_ASSIGN:	compile.writeln("	and %s,%s",di,ax)
+		BITOR  | BITOR_ASSIGN:	compile.writeln("	or %s,%s",di,ax)
 
 		DIV_ASSIGN | DIV | MOD_ASSIGN | MOD : {
 			if lisunsigned
 			{
-				Compiler::writeln("	mov $0,%s",dx)
-				Compiler::writeln("	div %s",di)
+				compile.writeln("	mov $0,%s",dx)
+				compile.writeln("	div %s",di)
 			}else{
-				if ltypesize == 8	Compiler::writeln("	cqo")
-				else				Compiler::writeln("	cdq")
-				Compiler::writeln("	idiv %s",di)
+				if ltypesize == 8	compile.writeln("	cqo")
+				else				compile.writeln("	cdq")
+				compile.writeln("	idiv %s",di)
 			}
 			if opt == MOD_ASSIGN || opt == MOD
-      			Compiler::writeln("	mov %%rdx, %%rax")
+      			compile.writeln("	mov %%rdx, %%rax")
 		}
 		EQ | NE | LE | LT | GE | GT: {
 			cmp = "sete"
@@ -141,53 +141,53 @@ OperatorHelper::binary()
 				GT : cmp = "setg"
 			}
 			
-			Compiler::writeln("	cmp %s,%s",di,ax)
-			Compiler::writeln("	%s %%al",cmp)
-			Compiler::writeln("	movzb %%al, %%rax")
+			compile.writeln("	cmp %s,%s",di,ax)
+			compile.writeln("	%s %%al",cmp)
+			compile.writeln("	movzb %%al, %%rax")
 		}
 		SHL_ASSIGN | SHL : {
-    		Compiler::writeln("	mov %%rdi, %%rcx")
-    		Compiler::writeln("	shl %%cl, %s", ax)
+    		compile.writeln("	mov %%rdi, %%rcx")
+    		compile.writeln("	shl %%cl, %s", ax)
 		}
 		SHR_ASSIGN | SHR : {
-    		Compiler::writeln("	mov %%rdi, %%rcx")
-			if lisunsigned	Compiler::writeln("	shr %%cl, %s", ax)
-    		else			Compiler::writeln("	sar %%cl, %s", ax)
+    		compile.writeln("	mov %%rdi, %%rcx")
+			if lisunsigned	compile.writeln("	shr %%cl, %s", ax)
+    		else			compile.writeln("	sar %%cl, %s", ax)
 		}
 		LOGOR : { 
 			c = ast.incr_compileridx()
 			
-			if ltypesize <= 4	Compiler::writeln("	cmp $0,%%eax")
-			else				Compiler::writeln("	cmp $0,%%rax")
-			Compiler::writeln("	jne .L.true.%d", c)
+			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
+			else				compile.writeln("	cmp $0,%%rax")
+			compile.writeln("	jne .L.true.%d", c)
 			
-			Compiler::writeln("	mov %%rdi,%%rax")
-			if rtypesize <= 4	Compiler::writeln("	cmp $0,%%eax")
-			else				Compiler::writeln("	cmp $0,%%rax")
-			Compiler::writeln("	jne .L.true.%d", c)
-			Compiler::writeln("	mov $0, %%rax")
-			Compiler::writeln("	jmp .L.end.%d", c)
-			Compiler::writeln(".L.true.%d:", c)
-			Compiler::writeln("	mov $1, %%rax")
-			Compiler::writeln(".L.end.%d:", c)
+			compile.writeln("	mov %%rdi,%%rax")
+			if rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
+			else				compile.writeln("	cmp $0,%%rax")
+			compile.writeln("	jne .L.true.%d", c)
+			compile.writeln("	mov $0, %%rax")
+			compile.writeln("	jmp .L.end.%d", c)
+			compile.writeln(".L.true.%d:", c)
+			compile.writeln("	mov $1, %%rax")
+			compile.writeln(".L.end.%d:", c)
 			break
 		}
 		LOGAND : { 
 			c = ast.incr_compileridx()
 			
-			if ltypesize <= 4	Compiler::writeln("	cmp $0,%%eax")
-			else				Compiler::writeln("	cmp $0,%%rax")
-			Compiler::writeln("	je .L.false.%d", c)
+			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
+			else				compile.writeln("	cmp $0,%%rax")
+			compile.writeln("	je .L.false.%d", c)
 			
-			Compiler::writeln("	mov %%rdi,%%rax")
-			if rtypesize <= 4	Compiler::writeln("	cmp $0,%%eax")
-			else				Compiler::writeln("	cmp $0,%%rax")
-			Compiler::writeln("	je .L.false.%d", c)
-			Compiler::writeln("	mov $1, %%rax")
-			Compiler::writeln("	jmp .L.end.%d", c)
-			Compiler::writeln(".L.false.%d:", c)
-			Compiler::writeln("	mov $0, %%rax")
-			Compiler::writeln(".L.end.%d:", c)
+			compile.writeln("	mov %%rdi,%%rax")
+			if rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
+			else				compile.writeln("	cmp $0,%%rax")
+			compile.writeln("	je .L.false.%d", c)
+			compile.writeln("	mov $1, %%rax")
+			compile.writeln("	jmp .L.end.%d", c)
+			compile.writeln(".L.false.%d:", c)
+			compile.writeln("	mov $0, %%rax")
+			compile.writeln(".L.end.%d:", c)
 			break
 		}
 	}
@@ -204,7 +204,7 @@ OperatorHelper::genLeft()
 			if type(ret) == type(ChainExpr) {
 				ce = ret
 				m = ce.ret
-				if m.pointer Compiler::Load()
+				if m.pointer compile.Load()
 				lmember = m
 				tk = m.type
 				if m.isclass tk = ast.U64
@@ -246,7 +246,7 @@ OperatorHelper::genLeft()
 			
 			initcond(true,var.pointer ? 8 : var.size,var.size,var.type,var.isunsigned,var.pointer)
 			
-			Compiler::GenAddr(var)
+			compile.GenAddr(var)
 			return var
 		}
 		_ : parse_err("genLeft: unknow left type")
@@ -257,7 +257,7 @@ OperatorHelper::genRight(isleft,expr)
 	match type(this.expr) {
 		type(IntExpr) : {
 			ie = expr;	
-			Compiler::writeln("	mov $%s,%%rax",ie.literal)
+			compile.writeln("	mov $%s,%%rax",ie.literal)
 			initcond(isleft,8,8,I64,false,false)
 			return ie
 		}
@@ -268,7 +268,7 @@ OperatorHelper::genRight(isleft,expr)
 			return ie
 		}
 		type(NullExpr) : {
-			Compiler::writeln("	mov $0,%%rax")
+			compile.writeln("	mov $0,%%rax")
 			initcond(isleft,8,8,I64,false,false)
 			return null
 		}
@@ -318,7 +318,7 @@ OperatorHelper::genRight(isleft,expr)
 		initcond(isleft,v.pointer ? 8 : v.size,v.size,v.type,v.isunsigned,v.pointer)
 		
 		if type(expr) != type(ast.AddrExpr){
-			Compiler::Load(v)
+			compile.Load(v)
 		}
 	}
 	else if type(ret) == type(ChainExpr) {
@@ -331,9 +331,9 @@ OperatorHelper::genRight(isleft,expr)
 		if type(expr) == type(ast.AddrExpr) {
 			
 		}else if type(expr) == type(ast.DelRefExpr) {
-			Compiler::Load(v.size,v.isunsigned)
+			compile.Load(v.size,v.isunsigned)
 		}else{
-			Compiler::Load(v)
+			compile.Load(v)
 		}
 	}else{
 		parse_err("not allowed expression in memory operator:%s\n",ret.toString())

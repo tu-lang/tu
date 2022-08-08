@@ -3,7 +3,7 @@ MapExpr::compile(ctx){
     utils.debug("MapExpr: gen... ")
     
     internal.newobject(ast.Map, 0)
-    Compiler::Push()
+    compile.Push()
 
     for(element: this.literal){
         
@@ -11,6 +11,6 @@ MapExpr::compile(ctx){
         internal.kv_update()
     }
 
-    Compiler::Pop("%rax")
+    compile.Pop("%rax")
     return null
 }

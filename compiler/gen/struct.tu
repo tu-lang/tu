@@ -14,7 +14,7 @@ StructMemberExpr::getStruct()
 	package = var.package
 	s = null
 	
-	package = Compiler::parser.import[package]
+	package = compile.parser.import[package]
 	if std.len(Package::packages,package < 1){
 		check(false,"mem package not exist:" + package)
 	}
@@ -28,15 +28,15 @@ StructMemberExpr::getStruct()
 StructMemberExpr::compile(ctx)
 {
 	record()
-	filename = Compiler::parser.filename
+	filename = compile.parser.filename
 	
 	m = getMember()
 	if m == null{
         parse_err("struct.member: class member:%s not exist  file:%s\n",this.member,filename)
 	}
-	Compiler::GenAddr(this.var)
-	Compiler::Load()
-	Compiler::writeln("	add $%d, %%rax", m.offset)
+	compile.GenAddr(this.var)
+	compile.Load()
+	compile.writeln("	add $%d, %%rax", m.offset)
 	
 	this.ret = m
 	return this

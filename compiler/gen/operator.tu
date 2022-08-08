@@ -8,10 +8,10 @@ AssignExpr::compile(ctx){
     if !this.rhs
         panic("AsmError: right expression is wrong expression:" + this.toString())
     
-    f = Compiler::currentFunc
+    f = compile.currentFunc
     if type(lhs) == type(VarExpr) {
         varExpr = lhs
-        package = Compiler::currentFunc.parser.getpkgname() 
+        package = compile.currentFunc.parser.getpkgname() 
         varname = varExpr.varname
 
         if !varExpr.is_local {
@@ -19,18 +19,18 @@ AssignExpr::compile(ctx){
             package = varExpr.package
             if (*var = Context::getVar(ctx,package);var != null) {
                 
-                Compiler::GenAddr(var)
-                Compiler::Load()
-                Compiler::Push()
+                compile.GenAddr(var)
+                compile.Load()
+                compile.Push()
 
                 this.rhs.compile(ctx)
-                Compiler::Push()
+                compile.Push()
                 
                 internal.call_object_operator(this.opt,varname,"runtime_object_unary_operator")
                 return null
             }
             
-            cpkg = Compiler::currentFunc.parser.getpkgname()
+            cpkg = compile.currentFunc.parser.getpkgname()
             if std.len(Package::packages,package){
                 varExpr = Package::packages[package].getGlobalVar(varname)
             }else if std.len(Package::packages,cpkg) {
@@ -62,11 +62,11 @@ AssignExpr::compile(ctx){
             return oh.gen()
         }
 
-        Compiler::GenAddr(varExpr)
-        Compiler::Push()
+        compile.GenAddr(varExpr)
+        compile.Push()
 
         this.rhs.compile(ctx)
-        Compiler::Push()
+        compile.Push()
         
         internal.call_operator(this.opt,"runtime_unary_operator")
         return null
@@ -76,7 +76,7 @@ AssignExpr::compile(ctx){
         IndexExpr* index    = lhs
         varname = index.varname
         varExpr
-        package    = Compiler::currentFunc.parser.getpkgname()
+        package    = compile.currentFunc.parser.getpkgname()
 
         is_member = false
         if index.is_pkgcall {
@@ -98,35 +98,35 @@ AssignExpr::compile(ctx){
             varExpr = f.locals[varname]
         }
         if !varExpr
-            parse_err("SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", varname,line,column,Compiler::currentFunc.parser.filepath)
+            parse_err("SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", varname,line,column,compile.currentFunc.parser.filepath)
         std.back(ctx).createVar(varExpr.varname,varExpr
 
-        Compiler::GenAddr(varExpr)
-        Compiler::Load()
-        Compiler::Push()
+        compile.GenAddr(varExpr)
+        compile.Load()
+        compile.Push()
         if is_member {
             internal.object_member_get(varname)
-            Compiler::Push()
+            compile.Push()
         }
         
         if !index.index {
             rhs.compile(ctx)
-            Compiler::Push()
+            compile.Push()
 
             internal.arr_pushone()
-            Compiler::Pop("%rdi")
+            compile.Pop("%rdi")
            return null
         }
 
         index.index.compile(ctx)
-        Compiler::Push()
+        compile.Push()
 
         rhs.compile(ctx)
-        Compiler::Push()
+        compile.Push()
 
         internal.kv_update()
         
-        Compiler::Pop("%rdi")
+        compile.Pop("%rdi")
         return null
     }else if type(lhs) == type(ast.StructMemberExpr) 
     {
@@ -208,12 +208,12 @@ BinaryExpr::compile(ctx)
 
     
     this.lhs.compile(ctx)
-    Compiler::Push()
+    compile.Push()
 
     
     if this.rhs   this.rhs.compile(ctx)
-    else            Compiler::writeln("   mov $0,%%rax")
-    Compiler::Push()
+    else            compile.writeln("   mov $0,%%rax")
+    compile.Push()
 
     
     internal.call_operator(this.opt,"runtime_binary_operator")
@@ -224,7 +224,7 @@ DelRefExpr::compile(ctx){
     
     if type(this.expr == type(StringExpr) {
         StringExpr* se = this.expr
-        Compiler::writeln("    lea %s(%%rip), %%rax", se.name)
+        compile.writeln("    lea %s(%%rip), %%rax", se.name)
         return this
     }
     ret = this.expr.compile(ctx)
@@ -245,7 +245,7 @@ DelRefExpr::compile(ctx){
             parse_err("type must be [i8 - u64]:%s\n",this.expr.toString())
         }
         
-        Compiler::Load(var.size,var.isunsigned)
+        compile.Load(var.size,var.isunsigned)
         return ret
     }else if type(ret) == type(ast.StructMemberExpr) {
         sm = ret
@@ -255,9 +255,9 @@ DelRefExpr::compile(ctx){
         }
         if type(expr) != type(ast.DelRefExpr) {
             
-            Compiler::Load(m)
+            compile.Load(m)
         }
-        Compiler::Load(m.size,m.isunsigned)
+        compile.Load(m.size,m.isunsigned)
         return ret
     
     }else if type(ret) == type(ChainExpr) {
@@ -265,7 +265,7 @@ DelRefExpr::compile(ctx){
         
         if ce.ret{
             Member* m = ce.ret
-            Compiler::Load(m)
+            compile.Load(m)
 
             return ret
         }
@@ -296,11 +296,11 @@ AddrExpr::compile(ctx){
             Member* m = sm.getMember()
             if m != null{
                 
-                Compiler::GenAddr(var)
+                compile.GenAddr(var)
                 
-                Compiler::Load()
+                compile.Load()
                 
-                Compiler::writeln("	add $%d, %%rax", m.offset)
+                compile.writeln("	add $%d, %%rax", m.offset)
                 
                 if m.bitfield{
                     parse_err(
@@ -319,7 +319,7 @@ AddrExpr::compile(ctx){
     if var == null
         parse_err("AddExpr: var:%s not exist\n",varname)
     realVar = var.getVar(ctx)
-    Compiler::GenAddr(realVar)
+    compile.GenAddr(realVar)
 
     return this
 }
