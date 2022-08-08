@@ -130,17 +130,25 @@ func funcexec(ctx , fc , fce , package)
 
 
 	if this.obj.currentFunc && this.obj.currentFunc.is_variadic && have_variadic {
-		c = this.obj.incr_count()
-		this.obj.writeln("    mov -8(%%rbp),%%rdi")
-		this.obj.writeln("    mov %%rdi,%d(%%rbp)",this.obj.currentFunc.stack)
-		this.obj.writeln("    sub $-7,%d(%%rbp)",this.obj.currentFunc.stack)
-		this.obj.writeln("    cmp $0,%d(%%rbp)",this.obj.currentFunc.stack)
-		this.obj.writeln("    jle L.if.end.%d",c)
-		this.obj.writeln("    cmp %d(%%rbp),%%rdi",this.obj.currentFunc.stack)
-		this.obj.writeln("    add %%rdi, %%rsp", stack_args * 8)
-		this.obj.writeln("L.if.end.%d:",c)
+		c = compile.incr_count()
+		compile.writeln("    mov -8(%%rbp),%%rdi")
+		compile.Push()
+		internal.call("runtime_get_object_value")
+		compile.writeln("	 mov %%rax,%d(%%rbp",compile.currentFunc.stack)
+		compile.Pop("%rax")
+		if fce.is_delrefo
+			compile.writeln("	add $-6,%d(%%rbp)",compile.currentFunc.stack)
+		else
+			compile.writeln("	add $-5,%d(%%rbp)",compile.currentFunc.stack)
+
+		compile.writeln("    cmp $0,%d(%%rbp)",this.obj.currentFunc.stack)
+		compile.writeln("    jle L.if.end.%d",c)
+		compile.writeln("	 mov %d(%%rbp),%%rdi",compile.currentFunc.stack)
+		compile.writeln("	 imul $8,%%rdi")
+		compile.writeln("    add %%rdi, %%rsp")
+		compile.writeln("L.if.end.%d:",c)
 	}else{
-		this.obj.writeln("    add $%d, %%rsp", stack_args * 8)
+		compile.writeln("    add $%d, %%rsp", stack_args * 8)
 	}
 	return null
 }

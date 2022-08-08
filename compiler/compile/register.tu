@@ -91,7 +91,10 @@ func Push_arg(prevCtxChain,fc,fce){
                 writeln("    mov %%rax,%s",Compiler::args64[i])
                 params += -8
             }
-            writeln("    mov %%rax,%%r9")
+            writeln("    mov 16(%%rbp),%%rax");
+            if(fce->is_delref)
+                internal.get_object_value()
+            writeln("    mov %%rax,%%r9");
 
             stack_offset = 16
         }else
@@ -107,8 +110,11 @@ func Push_arg(prevCtxChain,fc,fce){
 
         writeln("    mov -8(%%rbp),%%rax")
         internal.get_object_value()
+        if fce.is_delref 
+            writeln("    sub $6,%%rax")
+        else
+            writeln("    sub $5,%%rax")
 
-        writeln("    sub $5,%%rax")
         writeln("    mov %%rax,%d(%%rbp)",currentFunc.size)
         writeln("    mov $%d,%%rax",stack_offset)
         writeln("    mov %%rax,%d(%%rbp)",currentFunc.stack)
