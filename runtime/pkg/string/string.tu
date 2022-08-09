@@ -560,7 +560,7 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                         stringinclen(s,l)
                         i += l
                     }
-                    'i' | 'I' : {
+                    'd' | 'D' | 'i' | 'I' : {
                         //init stack
                         curr = *pp
                         if stack < 1  pp += 8	else pp -= 8
