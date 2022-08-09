@@ -3,7 +3,7 @@
 <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/tu-lang/tu">
 </p>
 
-tu-lang(凸）是一种编程语言，旨在创造一种非常简单的语言(防秃)，已屏蔽了基于c/c++实现的compiler、asmer、linker，目前正在自举中...
+tu-lang(凸）是一种编程语言，旨在创造一种非常简单的零依赖(no glibc)编译性动态语言,全静态链接，已屏蔽了基于c/c++实现的compiler、asmer、linker，目前正在自举中...
 ```asciidoc
 tu      [options] file.tu        
     -s    file  ast -> asm       编译.tu代码 生成.s汇编文件
@@ -17,7 +17,7 @@ tl      [options|file.o...]
     -p    path ... -> a.out      指定多个目录,自动扫描所有.0文件进行链接生成可执行程序
     file.o  ...-> a.out          指定多个file.o进行链接    
 ```
-## progress
+## @进度
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
 
 - [ ] compiler
@@ -46,7 +46,7 @@ tl      [options|file.o...]
 > sh tests_linker.sh
 
 ```
-## @data struct
+## @数据结构
 - [x] long int
 - [x] string
 - [x] bool
@@ -86,7 +86,7 @@ func main(){
     
 }
 ```
-## @keywords
+## @关键字
 - [x] func
 - [x] return
 - [x] use
