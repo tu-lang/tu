@@ -89,3 +89,9 @@ func sprintf(count<runtime.Value>,args...){
     ret<i8*> = __.string_stringfmt(args)
     return string.new(ret)
 }
+func printf(count<runtime.Value>,args...){
+    ret<i8*> = __.string_stringfmt(args)
+    if ret != null {
+		vfprintf(std.STDOUT,ret)
+    }
+}
