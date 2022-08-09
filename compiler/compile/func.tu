@@ -23,7 +23,7 @@ func registerFuncs(){
 }
 func CreateFunction(fn,Class* c){
     if fn.clsName != "" {
-        c = fn.parser.pkg.getClass(fn.clsName)
+        c = fn.package.getClass(fn.clsName)
         if (c == null) {
             os.die("fn exception")
         }

@@ -17,7 +17,7 @@ AssignExpr::compile(ctx){
         if !varExpr.is_local {
 
             package = varExpr.package
-            if (*var = Context::getVar(ctx,package);var != null) {
+            if (*var = ast.getVar(ctx,package);var != null) {
                 
                 compile.GenAddr(var)
                 compile.Load()
@@ -287,7 +287,7 @@ AddrExpr::compile(ctx){
     }
     if package != ""{
         
-        var = Context::getVar(ctx,this.package)
+        var = ast.getVar(ctx,this.package)
         if var != null && var.structtype{
             
             StructMemberExpr sm(package,line,column)
@@ -315,7 +315,7 @@ AddrExpr::compile(ctx){
         
         parse_err("not support &p.globalvar\n")
     }
-    var = Context::getVar(ctx,this.varname)
+    var = ast.getVar(ctx,this.varname)
     if var == null
         parse_err("AddExpr: var:%s not exist\n",varname)
     realVar = var.getVar(ctx)

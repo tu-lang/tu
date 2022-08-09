@@ -75,6 +75,33 @@ Parser::parseClassFunc(var){
     this.addFunc(f.name,f)
     return
 }
+Parser::parseExternClassFunc(pkgname){
+    check(scanner.curToken == ast.DOT)
+    scanner.scan()
+    check(scanner.curToken == VAR)
+    clsname = scanner.curLex
+    scanner.scan()
+    if !std.exist(this.import,pkgname){
+        check(false,fmt.sprintf("consider import package: use %s",package))
+    }
+    check(scanner.curToken ==  ast.COLON)
+    
+    scanner.scan()
+    assert(scanner.curToken ==  ast.COLON)
+    
+    scanner.curToken  = ast.FUNC
+    
+    f = parseFuncDef(true)
+    assert(f != null)
+    
+    f.clsName = clsname
+    pkg = package.packages[import[pkgname]]
+    pkg.addClassFunc(clsname,f)
+    f.package = pkg
+    
+    this.addFunc(clsname + f.name,f)
+    return
+}
 Parser::parseGlobalDef()
 {
     if scanner.curToken != ast.VAR

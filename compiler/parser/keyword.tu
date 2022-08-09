@@ -172,6 +172,7 @@ Parser::parseFuncDef(member,closure)
     scanner.scan()
     node = new Function()
     node.parser = this
+    node.package = this.pkg
     currentFunc = node
 
     if !closure {

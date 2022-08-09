@@ -1,4 +1,6 @@
 use parser.package
+use ast
+use std
 
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx)
@@ -25,14 +27,14 @@ VarExpr::getVarType(ctx)
         if (ret = ast.getVar(ctx,package);ret != null)
             return ast.Var_Obj_Member
 
-        if (std.len(package.packages,package)){
+        if (std.exist(package.packages,package)){
             ret  = package.packages[package].getGlobalVar(varname)
             
             if ret return ast.Var_Extern_Global
         }
         cpkg = compile.currentFunc.parser.getpkgname()
         
-        if std.len(package.packages,cpkg){
+        if std.exist(package.packages,cpkg){
             ret = package.packages[cpkg].getGlobalVar(package)
             if ret return ast.Var_Local_Mem_Global
         }
@@ -42,7 +44,7 @@ VarExpr::getVarType(ctx)
     ret  = package.packages[package].getGlobalVar(varname)
     if ret return ast.Var_Local_Global
     
-    ret = Context::getVar(ctx,this.varname)
+    ret = ast.getVar(ctx,this.varname)
     if ret != null{
         f = compile.currentFunc
         
@@ -56,7 +58,7 @@ VarExpr::getVarType(ctx)
             
         return ast.Var_Local
     }
-    if (ret = Context::getVar(ctx,"this");ret != null) {
+    if (ret = ast.getVar(ctx,"this");ret != null) {
         fn = compile.currentFunc
         if (!fn.clsName.empty()){
             c = fn.parser.pkg.getClass(fn.clsName)
@@ -74,7 +76,7 @@ VarExpr::getVarType(ctx)
     }
     if !func{
         funcpkg = compile.currentFunc.parser.getpkgname()
-        if (std.len(package.packages,funcpkg)){
+        if (std.exist(package.packages,funcpkg)){
             func = package.packages[funcpkg].getFunc(varname,false)
         }
     }
