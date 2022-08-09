@@ -10,19 +10,19 @@ func test_int2_add()
     b = 20
     a += b
     if  a == 30 {
-        fmt.println("test %d + %d add agn ok\n",a,b)
+        fmt.printf("test %d + %d add agn ok\n",a,b)
     }else{
-        fmt.println("test %d + %d failed\n",a,b)
+        fmt.printf("test %d + %d failed\n",a,b)
         os.exit(1)
     }
-    fmt.println("test %d + %d add agn ok\n",a,b)
+    fmt.printf("test %d + %d add agn ok\n",a,b)
 
     c += b
     if  c != 20 {
-        fmt.println("test %d += %d add agn failed\n",c,b)
+        fmt.printf("test %d += %d add agn failed\n",c,b)
         os.exit(1)
     }
-    fmt.println("test %d += %d add agn success\n",c,b)
+    fmt.printf("test %d += %d add agn success\n",c,b)
 }
 func test_string2_add(){
     fmt.println("test string- add agn\n")
@@ -39,7 +39,7 @@ func test_string2_add(){
     if  c == "variable-b " {
         fmt.println("test string-int add agn ok\n")
     }else{
-        fmt.println("test string-int add agn failed %s\n",c)
+        fmt.printf("test string-int add agn failed %s\n",c)
         os.exit(1)
     }
 

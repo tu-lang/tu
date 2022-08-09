@@ -7,7 +7,7 @@ func test_map(){
 	fmt.println("range for: test map")
 	map = {"a":"b","c":"d"}
 	for(k,v : map){
-		fmt.println("[%s]:%s\n",k,v)
+		fmt.printf("[%s]:%s\n",k,v)
 	}
 	fmt.println("range for: test map success")
 	return map

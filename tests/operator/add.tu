@@ -11,18 +11,18 @@ func test_int2_add()
     b = 20
     c = a + b
     if  c == 30 {
-        fmt.println("test %d + %d add ok\n",a,b)
+        fmt.printf("test %d + %d add ok\n",a,b)
     }else{
-        fmt.println("test %d + %d failed\n",a,b)
+        fmt.printf("test %d + %d failed\n",a,b)
         os.exit(1)
     }
-    fmt.println("test %d + %d add ok\n",a,b)
+    fmt.printf("test %d + %d add ok\n",a,b)
     c += b
     if  c != 50 {
-        fmt.println("test %d += %d add failed\n",c,b)
+        fmt.printf("test %d += %d add failed\n",c,b)
         os.exit(1)
     }
-    fmt.println("test %d += %d add success\n",c,b)
+    fmt.printf("test %d += %d add success\n",c,b)
 }
 func test_string2_add(){
     fmt.println("test string- add\n")
@@ -39,14 +39,14 @@ func test_string2_add(){
     if  c == "variable-a 10" {
         fmt.println("test string-int add ok\n")
     }else{
-        fmt.println("test string-int add failed %s\n",c)
+        fmt.printf("test string-int add failed %s\n",c)
         os.exit(1)
     }
 
 }
 func test_addintcall(a){
     if  a == 3 {
-        fmt.println("test addintcall  ok 1+2=%d\n",a)
+        fmt.printf("test addintcall  ok 1+2=%d\n",a)
     }else{
         fmt.println("test addintcall  failed\n")
         os.exit(1)
@@ -56,7 +56,7 @@ func test_addintcall(a){
 
 func test_addstringcall(a){
     if  a == "test" {
-        fmt.println("test addstringcall  ok tes+t=%s\n",a)
+        fmt.printf("test addstringcall  ok tes+t=%s\n",a)
     }else{
         fmt.println("test addstringcall  failed\n")
         os.exit(1)

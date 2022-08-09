@@ -30,17 +30,17 @@ func test_string_lowerthan(){
     a = "abc"
     b = "ab"
     if  b < a {
-        fmt.println("test %s < %s success...\n",b,a)
+        fmt.printf("test %s < %s success...\n",b,a)
     }else{
-        fmt.println("test %s < %s failed...\n",b,a)
+        fmt.printf("test %s < %s failed...\n",b,a)
         os.exit(1)
     }
     b = "ac"
     // a(b)c < a(c)
     if  a < b {
-        fmt.println("test %s < %s success...\n",a,b)
+        fmt.printf("test %s < %s success...\n",a,b)
     }else{
-        fmt.println("test %s < %s failed...\n",a,b)
+        fmt.printf("test %s < %s failed...\n",a,b)
         os.exit(1)
     }
 

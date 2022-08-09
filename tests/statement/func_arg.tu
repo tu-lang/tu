@@ -4,7 +4,7 @@ use os
 
 func equal_6(a,b,c,d,e,f){
     fmt.println("equal_6:\n")
-    fmt.println("res:%d %d %d %d %d %d \n",a,b,c,d,e,f)
+    fmt.printf("res:%d %d %d %d %d %d \n",a,b,c,d,e,f)
 }
 func over_6(a,b,c,d,e,f,h,i,j)
 {
@@ -45,7 +45,7 @@ func over_6(a,b,c,d,e,f,h,i,j)
         fmt.println("j == this is j failed",j)
         os.exit(1)
     }
-    fmt.println("res:%d %d %d %d %d %d %d %d %s\n",a,b,c,d,e,f,h,i,j)
+    fmt.printf("res:%d %d %d %d %d %d %d %d %s\n",a,b,c,d,e,f,h,i,j)
 }
 
 func main(){

@@ -9,7 +9,7 @@ func test_while_break(){
             break
         }
         a = a - 1
-        fmt.println("break %d\n",a)
+        fmt.printf("break %d\n",a)
     }
 }
 func break_double(){

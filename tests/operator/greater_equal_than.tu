@@ -16,9 +16,9 @@ func test_int_greater_equal_than()
     a = 30
     b = 20
     if   a >= b {
-        fmt.println("test %d >= %d sucess...\n",a,b)
+        fmt.printf("test %d >= %d sucess...\n",a,b)
     }else{
-        fmt.println("test %d >= %d failed...\n",a,b)
+        fmt.printf("test %d >= %d failed...\n",a,b)
         os.exit(1)
     }
     if   10 >= 10 {
@@ -37,16 +37,16 @@ func test_string_greater_equal_than(){
     a = "abc"
     b = "ab"
     if  a >= b {
-        fmt.println("test %s > %s success...\n",a,b)
+        fmt.printf("test %s > %s success...\n",a,b)
     }else{
-        fmt.println("test %s > %s failed...\n",b,a)
+        fmt.printf("test %s > %s failed...\n",b,a)
         os.exit(1)
     }
     b = "ac"
     if  b >= a {
-        fmt.println("test %s > %s success...\n",b,a)
+        fmt.printf("test %s > %s success...\n",b,a)
     }else{
-        fmt.println("test %s > %s failed...\n",b,a)
+        fmt.printf("test %s > %s failed...\n",b,a)
         os.exit(1)
     }
 
