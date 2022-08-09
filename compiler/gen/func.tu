@@ -8,7 +8,7 @@ use utils
 
 ast.LabelExpr::compile(ctx){
 	record()
-	this.obj.writeln("%s:",label)
+	compile.writeln("%s:",label)
 	return this
 }
 
@@ -19,7 +19,7 @@ ast.BuiltinFuncExpr::compile(ctx){
 		mem = package.getStruct(ve.package,ve.varname)
 		this.check(mem != null,"mem not exist\n")
 
-		this.obj.writeln("   mov $%d , %%rax",mem.size)
+		compile.writeln("   mov $%d , %%rax",mem.size)
 		return null
 	}
 	//2. 如果是值类型
@@ -76,7 +76,7 @@ ast.BuiltinFuncExpr::compile(ctx){
 }
 
 ast.ClosureExpr::compile(ctx){
-	this.obj.writeln("    mov %s@GOTPCREL(%%rip), %%rax", varname)
+	compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", varname)
 	return null
 }
 func funcexec(ctx , fc , fce , package)
@@ -109,23 +109,23 @@ func funcexec(ctx , fc , fce , package)
 		}
 	if !fc.isObj {
 		if func.isExtern {
-			this.obj.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
+			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
 		}else{
 			realfuncname = package + "_" + funcname
-			this.obj.writeln("    mov %s@GOTPCREL(%%rip), %%rax", realfuncname)
+			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", realfuncname)
 		}
 
-		this.obj.writeln("    mov %%rax, %%r10")
-		this.obj.writeln("    mov $%d, %%rax", fp)
-		this.obj.writeln("    call *%%r10")
+		compile.writeln("    mov %%rax, %%r10")
+		compile.writeln("    mov $%d, %%rax", fp)
+		compile.writeln("    call *%%r10")
 	}else{
 		if std.len(args) > 6 {
-			this.obj.writeln("   mov %d(%%rsp),%r10",(args.size() - 6) * 8)
+			compile.writeln("   mov %d(%%rsp),%r10",(args.size() - 6) * 8)
 		}else{
 			this.obj.Pop("%r10")
 		}
-		this.obj.writeln("    mov $%d, %%rax", fp)
-		this.obj.writeln("    call *%%r10")
+		compile.writeln("    mov $%d, %%rax", fp)
+		compile.writeln("    call *%%r10")
 	}
 
 
@@ -171,7 +171,7 @@ ast.FunCallExpr::compile(std::ctx)
 		funcexec(ctx,fc,this,package)
 
 		if std.len(this.args)  > 6 {
-			this.obj.writeln("   add $8,%%rsp")
+			compile.writeln("   add $8,%%rsp")
 		}
 		return null
 	}else if ast.getVar(ctx,package) != null  {
@@ -187,7 +187,7 @@ ast.FunCallExpr::compile(std::ctx)
 		funcexec(ctx,fc,this,package)
 
 		if std.len(this.args) > 6 {
-			this.obj.writeln("   add $8,%%rsp")
+			compile.writeln("   add $8,%%rsp")
 		}
 		return null
 	}else if ast.getVar(ctx.funcname) != null {
@@ -200,7 +200,7 @@ ast.FunCallExpr::compile(std::ctx)
 		fc.is_variadic = false
 		funcexec(ctx,fc,this,package)
 		if std.len(this.args) > 6 {
-			this.obj.writeln("   add $8,%%rsp")
+			compile.writeln("   add $8,%%rsp")
 		}
 		return null
 	}else{

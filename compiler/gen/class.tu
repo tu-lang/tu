@@ -32,7 +32,7 @@ ast.NewExpr::compile(ctx)
 		}
 	 }
 	 parse_err("asmgen: New(%s.%s) not right maybe package(%s) not import? line:%d column:%d\n",this.package,this.name,this.package,line,column)
-	 this.obj.writeln("   mov $0,%%rax")
+	 compile.writeln("   mov $0,%%rax")
 	 return this
  }
  
@@ -64,13 +64,13 @@ ast.NewClassExpr::compile(ctx)
 		funcname = fc.parser.getpkgname() +
 							"_" + s.name + "_" + fc.name
 
-		this.obj.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
+		compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
 		this.obj.Push()
 		internal.object_func_add(fc.name)
 	}
 	if !exist_init {
 		funcname = s.pkg + "_" + s.name + "_init"
-		this.obj.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
+		compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
 		this.obj.Push()
 		internal.object_func_add("init")
 	}

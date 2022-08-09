@@ -1,3 +1,8 @@
+use ast
+use compile
+use std
+
+
 ast.StructMemberExpr::getMember()
 {
 	s = getStruct()
@@ -5,7 +10,9 @@ ast.StructMemberExpr::getMember()
 
 	m = s.getMember(this.member)
 	if m == null {
-        panic("mem.member: mem:" + s.name + " member:" + this.member + " not exist")
+        panic("mem.member: mem:%s member:%s not exist"
+			s.name,this.member
+		)
 	}
 	return m
 }
@@ -16,11 +23,11 @@ ast.StructMemberExpr::getStruct()
 	
 	package = compile.parser.import[package]
 	if std.len(package.packages,package < 1){
-		check(false,"mem package not exist:" + package)
+		panic("mem package not exist:%s" ,package)
 	}
 	s = package.packages[package].getStruct(var.structname)
 	if s == null{
-        check(false,"mem type not exist :" + var.structname)
+        panic("mem type not exist :%s" ,var.structname)
 	}
 	return s
 }
@@ -31,8 +38,10 @@ ast.StructMemberExpr::compile(ctx)
 	filename = compile.parser.filename
 	
 	m = getMember()
-	if m == null{
-        parse_err("struct.member: class member:%s not exist  file:%s\n",this.member,filename)
+	if m == null {
+        panic("struct.member: class member:%s not exist  file:%s\n",
+			this.member,filename
+		)
 	}
 	compile.GenAddr(this.var)
 	compile.Load()

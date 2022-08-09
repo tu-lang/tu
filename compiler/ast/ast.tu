@@ -1,10 +1,14 @@
+use std
+use os
+use fmt
+
 class Ast {
     func init(line,column) {
         this.line = line
         this.column = column
     }
-    //TODO: proxy
-    func writeln(arg...){
+    func parse_err(arg...){
+        os.die(fmt.sprintf(args))
     }
     func toString() { return "Ast()" }
     line

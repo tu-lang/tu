@@ -2,6 +2,7 @@ use parser
 use std
 use fmt
 use ast
+use compile
 
 ast.NullExpr::compile(ctx)
 {
@@ -37,20 +38,21 @@ ast.StringExpr::compile(ctx) {
     record()
     if this.name != "" this.check(false,this.toString())
     
-    this.obj.writeln("    lea %s(%%rip), %%rsi", name)
+    compile.writeln("    lea %s(%%rip), %%rsi", name)
     internal.newobject(ast.String,0)
     return null
 }
 
 ast.Expression::record(){
     cfunc = this.obj.currentFunc
-    this.obj.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
+    compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
 }
 ast.Statement::record(){
     cfunc = this.obj.currentFunc
-    this.obj.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
+    compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
 }
-ast.Expression::panic(err){
+ast.Expression::panic(args...){
+    err = fmt.sprintf(args)
     cfunc = this.obj.currentFunc
     parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,line,column,cfunc.parser.filepath)
 }

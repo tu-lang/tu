@@ -1,4 +1,5 @@
 use ast
+use std
 
 func condIsMtype(cond,ctx){
     ismtype = false
@@ -43,7 +44,7 @@ ast.ForStmt::rangeFor(ctx)
 
     
     if this.key{
-        (std.back(ctx)).createVar(this.key.varname,this.key)
+        std.tail(ctx).createVar(this.key.varname,this.key)
         compile.writeln("   mov 8(%%rsp),%%rdi")
         compile.writeln("   mov (%%rsp),%%rsi")
         internal.call("runtime_for_get_key")
@@ -54,7 +55,7 @@ ast.ForStmt::rangeFor(ctx)
         compile.writeln("   mov %%rdi,(%%rax)")
     }
     if this.value {
-        (std.back(ctx)).createVar(this.value.varname,this.value)
+        std.tail(ctx).createVar(this.value.varname,this.value)
         compile.writeln("   mov 8(%%rsp),%%rdi")
         compile.writeln("   mov (%%rsp),%%rsi")
         internal.call("runtime_for_get_value")
@@ -64,18 +65,18 @@ ast.ForStmt::rangeFor(ctx)
         compile.writeln("   mov %%rdi,(%%rax)")
     }
 
-    compile.this.enterContext(ctx)
+    compile.enterContext(ctx)
     
-    std.back(ctx).po= c
-    std.back(ctx).end_str   = "L.forr.end"
-    std.back(ctx).start_str = "L.forr.begin"
-    std.back(ctx).continue_str = "L.for.continue"
+    std.tail(ctx).point = c
+    std.tail(ctx).end_str   = "L.forr.end"
+    std.tail(ctx).start_str = "L.forr.begin"
+    std.tail(ctx).continue_str = "L.for.continue"
     
     
     for(stmt : block.stmts){
         stmt.compile(ctx)
     }
-    compile.this.leaveContext(ctx)
+    compile.leaveContext(ctx)
 
     compile.writeln("L.for.continue.%d:",c)
     compile.writeln("   mov 8(%%rsp),%%rdi")
@@ -103,10 +104,10 @@ ast.ForStmt::triFor(ctx)
     compile.CreateCmp()
     compile.writeln("    je  L.for.end.%d", c)
 
-    std.back(ctx).po= c
-    std.back(ctx).end_str   = "L.for.end"
-    std.back(ctx).start_str = "L.for.begin"
-    std.back(ctx).continue_str = "L.for.continue"
+    std.tail(ctx).point = c
+    std.tail(ctx).end_str   = "L.for.end"
+    std.tail(ctx).start_str = "L.for.begin"
+    std.tail(ctx).continue_str = "L.for.continue"
     
     
     for(stmt : block.stmts){
@@ -137,16 +138,16 @@ ast.WhileStmt::compile(ctx)
     compile.CreateCmp()
     compile.writeln("    je  L.while.end.%d", c)
 
-    compile.this.enterContext(ctx)
+    compile.enterContext(ctx)
     
-    std.back(ctx).po= c
-    std.back(ctx).end_str   = "L.while.end"
-    std.back(ctx).start_str = "L.while.begin"
+    std.tail(ctx).po= c
+    std.tail(ctx).end_str   = "L.while.end"
+    std.tail(ctx).start_str = "L.while.begin"
     
     for(stmt : block.stmts){
         stmt.compile(ctx)
     }
-    compile.this.leaveContext(ctx)
+    compile.leaveContext(ctx)
 
     compile.writeln("    jmp L.while.begin.%d",c)
     compile.writeln("L.while.end.%d:", c)
@@ -171,7 +172,7 @@ ast.ReturnStmt::compile(ctx)
             
             compile.Load(m)
         
-        }else if ret && type(ret) == type(ChainExpr) {
+        }else if ret && type(ret) == type(ast.ChainExpr) {
             ce = ret
             if ce.ret {
                 compile.Load(ce.ret)
@@ -201,10 +202,10 @@ ast.ContinueStmt::compile(ctx)
     record()
     
     for ( c : ctx) {
-        if c.po&& !c.continue_str.empty(){
+        if c.po && c.continue_str != "" {
             compile.writeln("    jmp %s.%d", c.continue_str, c.point)
         }
-        if (c.po&& !c.start_str.empty()) {
+        if (c.po && c.start_str != "") {
             compile.writeln("    jmp %s.%d", c.start_str, c.point)
         }
     }
@@ -242,7 +243,7 @@ ast.MatchStmt::compile(ctx){
     defaultCase.endLabel = endLabel
     
     for(cs : this.cases){
-        BinaryExpr be(cs.line,cs.column)
+        be = new BinaryExpr(cs.line,cs.column)
         be.lhs = cs.matchCond
         be.opt = EQ
         be.rhs = cs.cond
@@ -257,13 +258,13 @@ ast.MatchStmt::compile(ctx){
     
     compile.writeln("   jmp %s", defaultCase.label)
     
-    compile.this.enterContext(ctx)
+    compile.enterContext(ctx)
     for(cs : this.cases){
         
         cs.compile(ctx)
     }
     defaultCase.compile(ctx)
-    compile.this.leaveContext(ctx)
+    compile.leaveContext(ctx)
 
     
     compile.writeln("L.match.end.%d:",mainPoint)

@@ -9,7 +9,7 @@ ast.VarExpr::isMemtype(ctx){
         dst = package.getStruct(acualPkg,v.structname)
         
         if (dst == null && v.structname != ""){
-            this.check(false,"memtype:"+v.package+"."+v.structname+" not define")
+            this.check(false,fmt.sprintf("memtype:%s.%s not define" ,v.package , v.structname))
         }
         return true
     }
@@ -105,9 +105,8 @@ ast.VarExpr::compile(ctx){
             sm.compile(ctx)
             return sm
         }
-        ast.Var_Extern_Global: 
-        ast.Var_Local_Global:
-        ast.Var_Local : { 
+        ast.Var_Local | ast.Var_Local_Global | ast.Var_Extern_Global: 
+        { 
             compile.GenAddr(ret)
             
             if ret.structtype && !ret.pointer && ret.type <= ast.U64 && ret.type >= ast.I8    

@@ -55,7 +55,7 @@ ast.ChainExpr::memgen(ctx)
 		this.check(member != null,"mem not exist field:" + me.membername)
 		this.check(member.isstruct,"middle field must be mem type in chain expression")
 
-		this.obj.writeln("	add $%d, %rax",member.offset)
+		compile.writeln("	add $%d, %rax",member.offset)
 		if member.pointer {
 			this.obj.Load()
 		}
@@ -67,7 +67,7 @@ ast.ChainExpr::memgen(ctx)
 	ss = member.structref
 	member = ss.getMember(me.membername)
 	check(member != null,"mem not exist field:" + me.membername)
-	this.obj.writeln("	add $%d, %rax",member.offset)
+	compile.writeln("	add $%d, %rax",member.offset)
 	this.ret = member
 	return this
 }

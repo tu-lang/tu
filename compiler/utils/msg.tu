@@ -4,7 +4,7 @@ debug_mode<i32> = 0
 
 func debug(size,args...){
     if debug_mode == 1 {
-        fmt.println(args)
+        fmt.printf(args)
     }
 }
 func print_green(red){
