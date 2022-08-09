@@ -12,10 +12,10 @@ class Ast {
 }
 enum VarType
 {
-   Var_Obj_Member = -1, 
+   Var_Obj_Member , 
    Var_Extern_Global, Var_Local_Global,Var_Local_Mem_Global, 
    Var_Local, 
-   Var_Func,
+   Var_Func
 }
 
 func getTokenString(tk) {

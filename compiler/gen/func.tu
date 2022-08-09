@@ -16,7 +16,7 @@ BuiltinFuncExpr::compile(ctx){
 	if funcname == "sizeof" {
 		this.check(type(*this.expr) == type(VarExpr),"must be varexpr in sizeof()")
 		ve = this.expr
-		mem = Package::getStruct(ve.package,ve.varname)
+		mem = package.getStruct(ve.package,ve.varname)
 		this.check(mem != null,"mem not exist\n")
 
 		this.obj.writeln("   mov $%d , %%rax",mem.size)

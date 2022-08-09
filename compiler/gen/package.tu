@@ -9,7 +9,7 @@ Package::genStruct(s)
     if mem.isstruct {
         ps = (Parser*)s.parser
         acualPkg = ps.import[mem.structpkg]
-        dst = Package::getStruct(acualPkg,mem.structname)
+        dst = getStruct(acualPkg,mem.structname)
         if dst == null
             parse_err("struct.member: inner class not exist <%s.%s> line:%d column:%d file:%s\n"
             ,mem.structpkg,mem.structname,

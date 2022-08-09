@@ -31,10 +31,10 @@ AssignExpr::compile(ctx){
             }
             
             cpkg = compile.currentFunc.parser.getpkgname()
-            if std.len(Package::packages,package){
-                varExpr = Package::packages[package].getGlobalVar(varname)
-            }else if std.len(Package::packages,cpkg) {
-                varExpr = Package::packages[cpkg].getGlobalVar(package)
+            if std.len(package.packages,package){
+                varExpr = package.packages[package].getGlobalVar(varname)
+            }else if std.len(package.packages,cpkg) {
+                varExpr = package.packages[cpkg].getGlobalVar(package)
                 sm = new StructMemberExpr(package,this.line,this.column)
                 sm.member = varname;
                 sm.var    = varExpr;
@@ -45,8 +45,8 @@ AssignExpr::compile(ctx){
             if !varExpr parse_err("AsmError: assignexpr use of undefined global variable %s at line %d co %d\n",
                 varname,this.line,this.column)
         
-        }else if Package::packages[package].getGlobalVar(varname){
-            varExpr = Package::packages[package].getGlobalVar(varname)
+        }else if package.packages[package].getGlobalVar(varname){
+            varExpr = package.packages[package].getGlobalVar(varname)
         }else if std.len(f.params_var,varExpr.varname){
             
             varExpr = f.params_var[varExpr.varname]
@@ -85,12 +85,12 @@ AssignExpr::compile(ctx){
                 varExpr = f.params_var[package]
                 is_member = true
             }else{
-                check(Package::packages[package] != null,package)
-                varExpr = Package::packages[package].getGlobalVar(varname)
+                check(package.packages[package] != null,package)
+                varExpr = package.packages[package].getGlobalVar(varname)
                 if !varExpr panic("AsmError:use of undefined global variable" + varname)
             }
-        }else if Package::packages[package].getGlobalVar(varname){
-            varExpr = Package::packages[package].getGlobalVar(varname)
+        }else if package.packages[package].getGlobalVar(varname){
+            varExpr = package.packages[package].getGlobalVar(varname)
         }else if std.len(f.params_var,varname){
             
             varExpr = f.params_var[varname]

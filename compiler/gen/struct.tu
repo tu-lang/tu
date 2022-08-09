@@ -15,10 +15,10 @@ StructMemberExpr::getStruct()
 	s = null
 	
 	package = compile.parser.import[package]
-	if std.len(Package::packages,package < 1){
+	if std.len(package.packages,package < 1){
 		check(false,"mem package not exist:" + package)
 	}
-	s = Package::packages[package].getStruct(var.structname)
+	s = package.packages[package].getStruct(var.structname)
 	if s == null{
         check(false,"mem type not exist :" + var.structname)
 	}

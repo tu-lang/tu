@@ -1,8 +1,10 @@
+use parser.package
+
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx)
     if v.structtype {
         acualPkg = compile.parser.import[v.package]
-        dst = Package::getStruct(acualPkg,v.structname)
+        dst = package.getStruct(acualPkg,v.structname)
         
         if (dst == null && v.structname != ""){
             this.check(false,"memtype:"+v.package+"."+v.structname+" not define")
@@ -13,32 +15,32 @@ VarExpr::isMemtype(ctx){
 }
 VarExpr::getVar(ctx){
     getVarType(ctx)
-    return ret
+    return this.ret
 }
 
-VarType VarExpr::getVarType(ctx)
+VarExpr::getVarType(ctx)
 {
     package = this.package
-    if !is_local{
-        if (ret = Context::getVar(ctx,package);ret != null)
-            return Var_Obj_Member
+    if !is_local {
+        if (ret = ast.getVar(ctx,package);ret != null)
+            return ast.Var_Obj_Member
 
-        if (std.len(Package::packages,package)){
-            ret  = Package::packages[package].getGlobalVar(varname)
+        if (std.len(package.packages,package)){
+            ret  = package.packages[package].getGlobalVar(varname)
             
-            if ret return Var_Extern_Global
+            if ret return ast.Var_Extern_Global
         }
         cpkg = compile.currentFunc.parser.getpkgname()
         
-        if std.len(Package::packages,cpkg){
-            ret = Package::packages[cpkg].getGlobalVar(package)
-            if ret return Var_Local_Mem_Global
+        if std.len(package.packages,cpkg){
+            ret = package.packages[cpkg].getGlobalVar(package)
+            if ret return ast.Var_Local_Mem_Global
         }
     }
     
     package = compile.currentFunc.parser.getpkgname()
-    ret  = Package::packages[package].getGlobalVar(varname)
-    if ret return Var_Local_Global
+    ret  = package.packages[package].getGlobalVar(varname)
+    if ret return ast.Var_Local_Global
     
     ret = Context::getVar(ctx,this.varname)
     if ret != null{
@@ -52,14 +54,14 @@ VarType VarExpr::getVarType(ctx)
             parse_err("AsmError:vaiable:%s not define in local or params  at line %d co %d\n",
                 varname,this.line,this.column)
             
-        return Var_Local
+        return ast.Var_Local
     }
     if (ret = Context::getVar(ctx,"this");ret != null) {
-        fn =compile.currentFunc
+        fn = compile.currentFunc
         if (!fn.clsName.empty()){
             c = fn.parser.pkg.getClass(fn.clsName)
             if (c != null && !c.getMember(this.varname).empty()) {
-                return Var_Obj_Member
+                return ast.Var_Obj_Member
             }
         }
         
@@ -67,18 +69,18 @@ VarType VarExpr::getVarType(ctx)
 
     func = null
     funcpkg = this.package
-    if (std.len(Package::packages,funcpkg)){
-        func = Package::packages[funcpkg].getFunc(varname,false)
+    if (std.len(package.packages,funcpkg)){
+        func = package.packages[funcpkg].getFunc(varname,false)
     }
     if !func{
         funcpkg = compile.currentFunc.parser.getpkgname()
-        if (std.len(Package::packages,funcpkg)){
-            func = Package::packages[funcpkg].getFunc(varname,false)
+        if (std.len(package.packages,funcpkg)){
+            func = package.packages[funcpkg].getFunc(varname,false)
         }
     }
     if func{
         funcname = func.name
-        return Var_Func
+        return ast.Var_Func
     }    
     parse_err("AsmError:get var type use of undefined variable %s at line %d co %d filename:%s\n",
           varname,this.line,this.column,compile.currentFunc.parser.filepath)
@@ -87,23 +89,23 @@ VarExpr::compile(ctx){
     record()
     match getVarType(ctx)
     {
-        Var_Obj_Member : { 
+        ast.Var_Obj_Member : { 
             compile.GenAddr(ret)
             compile.Load()
             compile.Push()
             
             internal.object_member_get(varname)
         }
-        Var_Local_Mem_Global : {
+        ast.Var_Local_Mem_Global : {
             sm = new StructMemberExpr(this.package,this.line,this.column)
             sm.member = this.varname
             sm.var    = this.ret
             sm.compile(ctx)
             return sm
         }
-        Var_Extern_Global: 
-        Var_Local_Global:
-        Var_Local : { 
+        ast.Var_Extern_Global: 
+        ast.Var_Local_Global:
+        ast.Var_Local : { 
             compile.GenAddr(ret)
             
             if ret.structtype && !ret.pointer && ret.type <= ast.U64 && ret.type >= ast.I8    
@@ -111,7 +113,7 @@ VarExpr::compile(ctx){
             else                                    
                 compile.Load()
         }
-        Var_Func : {  
+        ast.Var_Func : {  
             fn = funcpkg + "_" + funcname
             utils.debug("found function pointer:%s",fn)
             compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn)
