@@ -108,23 +108,17 @@ func array_create(n<u32>,size<u64>){
 func array_destroy(a<Array>){
     gc.gc_free(a)
 }
-func array_pop_head(arr<Array>){
-    if  arr == null os.die("[arr_pop_head] not array_type")
-
+func array_tail(arr<Array>){
+    if  arr == null os.die("[arr_tail] not array_type")
     if arr.used <= 0 {
-        fmt.println("[warn] array_pop_head for empty array")
+        fmt.println("[warn] array_tail for empty array")
         return newobject(Null,Null)
     }
-
-    var<u64*> = arr.addr
-    //pop one 
-    arr.used -= 1
-
-    //moved to next pointer
-    arr.addr += arr.size
-
+    i<i32> = arr.used - 1
+    var<u64*> = arr.addr + i * arr.size
     return *var
 }
+
 func array_pop(arr<Array>){
     if  arr == null os.die("[arr_pop] not array_type")
 

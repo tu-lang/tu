@@ -157,6 +157,9 @@ func object_member_get(obj<Value>, k<u32>){
     c<Object> = obj.data 
     v<Value> = member_find(c.members,key)
     if  v == null {
+        v = member_find(c.funcs,key)
+    }
+    if  v == null {
         //fmt.println("object_get] not find the memeber:%d value\n",key)
         return null
     }

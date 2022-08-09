@@ -4,11 +4,15 @@ use runtime
 func len(v){
 	return runtime.len(v)
 }
-func pop_head(v){
-	return runtime.pop_head(v)
-}
 func pop(v){
 	return runtime.pop(v)	
+}
+func tail(v<runtime.Value>){
+	match v.type {
+		runtime.Array : return runtime.array_tail(v.data)
+		_: fmt.println("[warn] std.back unsupport type")
+	}
+	return null
 }
 func merge(v1<runtime.Value>,v2<runtime.Value>){
 	match v1.type {

@@ -51,12 +51,3 @@ func pop(v<Value>){
 	}
 	return null
 }
-
-func pop_head(v<Value>){
-	type<i8> = v.type
-	match type {
-		Array  : return array_pop_head(v.data)
-		_      : return null
-	}
-	return null
-}
