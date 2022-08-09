@@ -5,7 +5,7 @@ use parser
 use std
 use utils
 
-NewExpr::compile(ctx)
+ast.NewExpr::compile(ctx)
 {
 	record()
 	//1. new 100
@@ -37,7 +37,7 @@ NewExpr::compile(ctx)
  }
  
 
-NewClassExpr::compile(ctx)
+ast.NewClassExpr::compile(ctx)
  {
 	record()
 	utils.debug("new expr got: type:%s",this.name)
@@ -78,7 +78,7 @@ NewClassExpr::compile(ctx)
 
 	return null
 }
-MemberExpr::compile(ctx)
+ast.MemberExpr::compile(ctx)
 {
 	record()
 	if this.varname == "" {
@@ -92,7 +92,7 @@ MemberExpr::compile(ctx)
 	internal.object_member_get(membername)
 	return null
 }
-MemberCallExpr::compile(ctx)
+ast.MemberCallExpr::compile(ctx)
 {
 	record()
 	utils.debug("membercall : ")

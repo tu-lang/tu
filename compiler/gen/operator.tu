@@ -1,4 +1,4 @@
-AssignExpr::compile(ctx){
+ast.AssignExpr::compile(ctx){
     record()
 
     utils.debug("AssignExpr: parsing... lhs:%s opt:%s rhs:%s",
@@ -145,7 +145,7 @@ AssignExpr::compile(ctx){
     panic("SyntaxError: can not assign to " + string(type(lhs).name()))
 }
 
-BinaryExpr::isMemtype(ctx)
+ast.BinaryExpr::isMemtype(ctx)
 {    
     mhandle = false
     var
@@ -190,7 +190,7 @@ BinaryExpr::isMemtype(ctx)
     return mhandle
 }
 
-BinaryExpr::compile(ctx)
+ast.BinaryExpr::compile(ctx)
 {
     record()
 
@@ -219,7 +219,7 @@ BinaryExpr::compile(ctx)
     internal.call_operator(this.opt,"runtime_binary_operator")
     return null
 }
-DelRefExpr::compile(ctx){
+ast.DelRefExpr::compile(ctx){
     record()
     
     if type(this.expr == type(StringExpr) {
@@ -273,7 +273,7 @@ DelRefExpr::compile(ctx){
     parse_err("only support del ref for expression :%s\n",this.expr.toString())
 }
 
-AddrExpr::compile(ctx){
+ast.AddrExpr::compile(ctx){
     record()
     
     if expr != null && type(expr) == type(ChainExpr) {

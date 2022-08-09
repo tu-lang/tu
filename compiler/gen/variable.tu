@@ -2,7 +2,7 @@ use parser.package
 use ast
 use std
 
-VarExpr::isMemtype(ctx){
+ast.VarExpr::isMemtype(ctx){
     v = this.getVar(ctx)
     if v.structtype {
         acualPkg = compile.parser.import[v.package]
@@ -15,12 +15,12 @@ VarExpr::isMemtype(ctx){
     }
     return false
 }
-VarExpr::getVar(ctx){
+ast.VarExpr::getVar(ctx){
     getVarType(ctx)
     return this.ret
 }
 
-VarExpr::getVarType(ctx)
+ast.VarExpr::getVarType(ctx)
 {
     package = this.package
     if !is_local {
@@ -87,7 +87,7 @@ VarExpr::getVarType(ctx)
     parse_err("AsmError:get var type use of undefined variable %s at line %d co %d filename:%s\n",
           varname,this.line,this.column,compile.currentFunc.parser.filepath)
 }
-VarExpr::compile(ctx){
+ast.VarExpr::compile(ctx){
     record()
     match getVarType(ctx)
     {

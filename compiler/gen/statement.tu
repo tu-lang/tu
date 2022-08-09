@@ -1,5 +1,6 @@
+use ast
 
-condIsMtype(cond,ctx){
+func condIsMtype(cond,ctx){
     ismtype = false
     match type(cond) {
         type(ast.StructMemberExpr) : ismtype = true
@@ -15,13 +16,13 @@ condIsMtype(cond,ctx){
     return ismtype
 }
 
-ForStmt::compile(ctx)
+ast.ForStmt::compile(ctx)
 {
     record()
     if  range  return rangeFor(ctx)
     return triFor(ctx)
 }
-ForStmt::rangeFor(ctx)
+ast.ForStmt::rangeFor(ctx)
 {
     c = ast.incr_compileridx()
     if this.obj == null 
@@ -88,7 +89,7 @@ ForStmt::rangeFor(ctx)
     compile.writeln("   add $16,%%rsp")
     return null
 }
-ForStmt::triFor(ctx)
+ast.ForStmt::triFor(ctx)
 {
     c = ast.incr_compileridx()
     compile.this.enterContext(ctx)
@@ -122,7 +123,7 @@ ForStmt::triFor(ctx)
 
 }
 
-WhileStmt::compile(ctx)
+ast.WhileStmt::compile(ctx)
 {
     record()
     c = ast.incr_compileridx()
@@ -156,7 +157,7 @@ ExpressionStmt::compile(ctx)
     this.expr.compile(ctx)
 }
 
-ReturnStmt::compile(ctx)
+ast.ReturnStmt::compile(ctx)
 {
     record()
     
@@ -184,7 +185,7 @@ ReturnStmt::compile(ctx)
     }
 }
 
-BreakStmt::compile(ctx)
+ast.BreakStmt::compile(ctx)
 {
     record()
     
@@ -195,7 +196,7 @@ BreakStmt::compile(ctx)
     }
 }
 
-ContinueStmt::compile(ctx)
+ast.ContinueStmt::compile(ctx)
 {
     record()
     
@@ -209,7 +210,7 @@ ContinueStmt::compile(ctx)
     }
 }
 
-MatchCaseExpr::compile(ctx){
+ast.MatchCaseExpr::compile(ctx){
     record()
     compile.writeln("%s:",label)
     
@@ -222,7 +223,7 @@ MatchCaseExpr::compile(ctx){
     return this
 }
 
-MatchStmt::compile(ctx){
+ast.MatchStmt::compile(ctx){
     record()
     mainPo= ast.incr_compileridx()
     endLabel = "L.match.end." + mainPoint
@@ -269,7 +270,7 @@ MatchStmt::compile(ctx){
     return null
 }
 
-IfCaseExpr::compile(ctx){
+ast.IfCaseExpr::compile(ctx){
     record()
     compile.writeln("%s:",label)
     if block {
@@ -281,7 +282,7 @@ IfCaseExpr::compile(ctx){
     return this
 }
 
-IfStmt::compile(ctx){
+ast.IfStmt::compile(ctx){
     record()
     mainPo = ast.incr_compileridx()
     endLabel = "L.if.end." + mainPoint
@@ -318,7 +319,7 @@ IfStmt::compile(ctx){
     return null
 }
 
-GotoStmt::compile(ctx){
+ast.GotoStmt::compile(ctx){
     record()
     compile.writeln("   jmp %s",label)
     return null

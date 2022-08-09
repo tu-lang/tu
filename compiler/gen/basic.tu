@@ -3,37 +3,37 @@ use std
 use fmt
 use ast
 
-NullExpr::compile(ctx)
+ast.NullExpr::compile(ctx)
 {
     record()
     internal.newobject(ast.Null,0)
     return null
 
 }
-BoolExpr::compile(ctx)
+ast.BoolExpr::compile(ctx)
 {
     record()
     internal.newobject(ast.Bool,this.literal)
     return null
 }
-CharExpr::compile(ctx) {
+ast.CharExpr::compile(ctx) {
     record()
     internal.newobject(ast.Char,this.literal)
     return null
 }
-IntExpr::compile( ctx) {
+ast.IntExpr::compile( ctx) {
     record()
     internal.newint(ast.Int,this.literal)
     return null
 }
 
-DoubleExpr::compile(ctx) {
+ast.DoubleExpr::compile(ctx) {
     record()
     internal.newobject(ast.Double,this.literal)
     return null
 }
 
-StringExpr::compile(ctx) {
+ast.StringExpr::compile(ctx) {
     record()
     if this.name != "" this.check(false,this.toString())
     
@@ -42,19 +42,19 @@ StringExpr::compile(ctx) {
     return null
 }
 
-Expression::record(){
+ast.Expression::record(){
     cfunc = this.obj.currentFunc
     this.obj.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
 }
-Statement::record(){
+ast.Statement::record(){
     cfunc = this.obj.currentFunc
     this.obj.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
 }
-Expression::panic(err){
+ast.Expression::panic(err){
     cfunc = this.obj.currentFunc
     parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,line,column,cfunc.parser.filepath)
 }
-Expression::check( check , err)
+ast.Expression::check( check , err)
 {
     if(check) return err 
 

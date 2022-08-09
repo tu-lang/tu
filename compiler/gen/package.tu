@@ -1,4 +1,6 @@
-Package::genStruct(s)
+use parser.package
+
+package.Package::genStruct(s)
 {
   
   bits = 0
@@ -61,7 +63,7 @@ Package::genStruct(s)
   s.iscomputed = true
 }
 
-Package::compile()
+pacakge.Package::compile()
 {
     asmfile  =   "sysinit.s"
     if package != "main"

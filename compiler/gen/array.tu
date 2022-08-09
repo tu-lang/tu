@@ -6,7 +6,7 @@ use parser
 
 // @param ctx [Context]
 // @return Expression
-ArrayExpr::compile(ctx){
+ast.ArrayExpr::compile(ctx){
     record()
     //new Array & push array
     internal.newobject(ast.Array, 0)
@@ -27,7 +27,7 @@ ArrayExpr::compile(ctx){
     return null
 }
 
-KVExpr::compile(ctx){
+ast.KVExpr::compile(ctx){
     record()
     utils.debug("KVExpr: gen... k:%s v:%s",key,value)
 
@@ -40,7 +40,7 @@ KVExpr::compile(ctx){
     return null
 }
 
-IndexExpr::compile(ctx) {
+ast.IndexExpr::compile(ctx) {
     record()
     f = this.obj.currentFunc
 

@@ -1,4 +1,4 @@
-StructMemberExpr::getMember()
+ast.StructMemberExpr::getMember()
 {
 	s = getStruct()
 	if s == null return null
@@ -9,7 +9,7 @@ StructMemberExpr::getMember()
 	}
 	return m
 }
-StructMemberExpr::getStruct()
+ast.StructMemberExpr::getStruct()
 {
 	package = var.package
 	s = null
@@ -25,7 +25,7 @@ StructMemberExpr::getStruct()
 	return s
 }
 
-StructMemberExpr::compile(ctx)
+ast.StructMemberExpr::compile(ctx)
 {
 	record()
 	filename = compile.parser.filename

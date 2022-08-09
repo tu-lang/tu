@@ -6,13 +6,13 @@ use parser
 use std
 use utils
 
-LabelExpr::compile(ctx){
+ast.LabelExpr::compile(ctx){
 	record()
 	this.obj.writeln("%s:",label)
 	return this
 }
 
-BuiltinFuncExpr::compile(ctx){
+ast.BuiltinFuncExpr::compile(ctx){
 	if funcname == "sizeof" {
 		this.check(type(*this.expr) == type(VarExpr),"must be varexpr in sizeof()")
 		ve = this.expr
@@ -75,7 +75,7 @@ BuiltinFuncExpr::compile(ctx){
 	}
 }
 
-ClosureExpr::compile(ctx){
+ast.ClosureExpr::compile(ctx){
 	this.obj.writeln("    mov %s@GOTPCREL(%%rip), %%rax", varname)
 	return null
 }
@@ -153,7 +153,7 @@ func funcexec(ctx , fc , fce , package)
 	return null
 }
 
-FunCallExpr::compile(std::ctx)
+ast.FunCallExpr::compile(std::ctx)
 {
 	record()
 	utils.debug("FunCallExpr: parsing... package:%s func:%s",package,funcname)

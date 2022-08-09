@@ -3,7 +3,7 @@ use parser
 use compile
 use std
 
-ChainExpr::ismem(ctx) {
+ast.ChainExpr::ismem(ctx) {
 	//TODO: support type keyword
 	if type(first) == type(ast.VarExpr) {
 		varexpr = first
@@ -18,7 +18,7 @@ ChainExpr::ismem(ctx) {
 	 }	
 	 return false
 }
-ChainExpr::compile(ctx)
+ast.ChainExpr::compile(ctx)
 {
 	record()
     if type(first) == type(ast.StructMemberExpr) return this.memgen(ctx)
@@ -37,7 +37,7 @@ ChainExpr::compile(ctx)
 	return this.objgen(ctx)
 }
 
-ChainExpr::memgen(ctx)
+ast.ChainExpr::memgen(ctx)
 {
 	this.first.compile(ctx)
 	s = this.first
@@ -72,7 +72,7 @@ ChainExpr::memgen(ctx)
 	return this
 }
 
-ChainExpr::objgen(ctx)
+ast.ChainExpr::objgen(ctx)
 {
 	record()
     this.first.compile(ctx)

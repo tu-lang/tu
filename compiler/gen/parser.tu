@@ -1,7 +1,8 @@
 use compile
 use std
+use parser
 
-Parser::compile()
+parser.Parser::compile()
 {    
     out = new std.File(this.asmfile)
 	if !out.IsOpen() {

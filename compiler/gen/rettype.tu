@@ -1,31 +1,31 @@
-BoolExpr::getType(ctx){
+ast.BoolExpr::getType(ctx){
 	return ast.U8
 }
-CharExpr::getType(ctx){
+ast.CharExpr::getType(ctx){
 	return ast.I8
 }
-NullExpr::getType(ctx){
+ast.NullExpr::getType(ctx){
 	return ast.U8
 }
-IntExpr::getType(ctx){
+ast.IntExpr::getType(ctx){
 	return ast.I64
 }
-DoubleExpr::getType(ctx){
+ast.DoubleExpr::getType(ctx){
 	panic("getType: unsupport double\n")
 }
-StringExpr::getType(ctx){
+ast.StringExpr::getType(ctx){
 	return ast.U64
 }
-ArrayExpr::getType(ctx){
+ast.ArrayExpr::getType(ctx){
 	panic("getType: unsupport array\n")
 }
-MapExpr::getType(ctx){
+ast.MapExpr::getType(ctx){
 	panic("getType: unsupport map\n")
 }
-KVExpr::getType(ctx){
+ast.KVExpr::getType(ctx){
 	panic("getType: unsupport kv\n")
 }
-ChainExpr::getType(ctx){
+ast.ChainExpr::getType(ctx){
 	check(ismem(ctx),"gettype: unsuport chain")
 
 	s 	= this.first
@@ -56,24 +56,24 @@ ChainExpr::getType(ctx){
 	}
 	return ast.U64
 }
-VarExpr::getType(ctx){
+ast.VarExpr::getType(ctx){
 	getVarType(ctx)
 	if ret.pointer return ast.U64
 
 	return ret.type
 }
-ClosureExpr::getType(ctx){
+ast.ClosureExpr::getType(ctx){
 	panic("getType: unsupport closure\n")
 }
-StructMemberExpr::getType(ctx){
+ast.StructMemberExpr::getType(ctx){
 	m = getMember()
 	if m.pointer || m.isclass return ast.U64
 	return m.type
 }
-AddrExpr::getType(ctx){
+ast.AddrExpr::getType(ctx){
 	return ast.U64
 }
-DelRefExpr::getType(ctx){
+ast.DelRefExpr::getType(ctx){
 	if type(expr) == type(VarExpr) {
 		var = expr
 		var = var.getVar(ctx)
@@ -93,46 +93,46 @@ DelRefExpr::getType(ctx){
 	}
 	return expr.getType(ctx)
 }
-IndexExpr::getType(ctx){
+ast.IndexExpr::getType(ctx){
 	panic("getType: unsupport IndexExpr\n")
 }
-BinaryExpr::getType(ctx){
+ast.BinaryExpr::getType(ctx){
 	
 	if !this.rhs return lhs.getType(ctx)
 	l = lhs.getType(ctx)
 	r = rhs.getType(ctx)
 	return max(l,r)
 }
-FunCallExpr::getType(ctx){
+ast.FunCallExpr::getType(ctx){
 	return ast.U64
 	
 }
-AssignExpr::getType(ctx){
+ast.AssignExpr::getType(ctx){
 	return this.lhs.getType(ctx)
 }
-NewClassExpr::getType(ctx){
+ast.NewClassExpr::getType(ctx){
 	panic("getType: unsupport new class\n")
 }
-BuiltinFuncExpr::getType(ctx){
+ast.BuiltinFuncExpr::getType(ctx){
 	return ast.U64
 	panic("getType: unsupport builtin\n")
 }
-NewExpr::getType(ctx){
+ast.NewExpr::getType(ctx){
 	return ast.U64
 	
 }
-MemberExpr::getType(ctx){
+ast.MemberExpr::getType(ctx){
 	panic("getType: unsupport Member\n")
 }
-MemberCallExpr::getType(ctx){
+ast.MemberCallExpr::getType(ctx){
 	panic("getType: unsupport MemberCall\n")
 }
-MatchCaseExpr::getType(ctx){
+ast.MatchCaseExpr::getType(ctx){
 	panic("getType: unsupport MatchCaseExpr\n")
 }
-IfCaseExpr::getType(ctx){
+ast.IfCaseExpr::getType(ctx){
 	panic("getType: unsupport IfCaseExpr\n")
 }
-LabelExpr::getType(ctx){
+ast.LabelExpr::getType(ctx){
 	panic("getType: unsupport LabelExpr\n")
 }

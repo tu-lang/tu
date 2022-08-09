@@ -1,4 +1,4 @@
-MapExpr::compile(ctx){
+ast.MapExpr::compile(ctx){
     record()
     utils.debug("MapExpr: gen... ")
     
