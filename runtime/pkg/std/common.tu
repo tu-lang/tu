@@ -1,6 +1,16 @@
 use runtime
+use fmt
 
-
+func empty(v<runtime.Value>){
+	match v.type {
+		runtime.String: {
+			ret<i8> = strlen(v.data)
+			if ret == 0 return std_true
+		}
+		_: fmt.println("[warn] empty: unsuport type")
+	}	
+	return std_false
+}
 func len(v){
 	return runtime.len(v)
 }

@@ -32,7 +32,10 @@ func println(count<runtime.Value>,args...){
 		match var.type {
             runtime.Null:   vfprintf(std.STDOUT,*"null")
             runtime.Int:    vfprintf(std.STDOUT,*"%d",var.data)
-            runtime.Bool:   vfprintf(std.STDOUT,*"%d",var.data)
+            runtime.Bool:   {
+                if var.data == 0 vfprintf(std.STDOUT,*"false")
+                else             vfprintf(std.STDOUT,*"true")
+            }
             runtime.String: vfprintf(std.STDOUT,*"%s",var.data)
             runtime.Char:   vfprintf(std.STDOUT,*"%d",var.data)
             runtime.Array:	vfprintf(std.STDOUT,*"%s",runtime.arr_tostring(var))

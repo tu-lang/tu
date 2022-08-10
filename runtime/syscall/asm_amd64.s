@@ -7,6 +7,7 @@ main:
     lea 16(%rsp),%rsi
     lea 24(%rsp),%rdx
 	call runtime_args_init
+	call std_init
 	call main_main
 	mov $0,%rdi
 	call std_die
