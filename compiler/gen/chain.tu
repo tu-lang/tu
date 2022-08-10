@@ -47,7 +47,7 @@ ast.ChainExpr::memgen(ctx)
 		this.obj.Load()
 	}
 	for (i : fields) {
-		this.check(type(*i) == type(MemberExpr),"field must be member expression at mem chain expression")
+		this.check(type(*i) == type(ast.MemberExpr),"field must be member expression at mem chain expression")
 		me = i
 		this.check(member.structref != null,"must be memref in chain expr")
 		s = member.structref

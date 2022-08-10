@@ -68,7 +68,7 @@ func Push_arg(prevCtxChain,fc,fce){
     stack = 0 gp = 0
     current_call_have_im = false
     for(arg : fce.args){
-        if (type(arg) == type(VarExpr) && currentFunc){
+        if (type(arg) == type(ast.VarExpr) && currentFunc){
             var = arg
             if std.exist(var.varname,currentFunc.params_var) {
                 var2 = currentFunc.params_var[var.varname]
@@ -91,10 +91,10 @@ func Push_arg(prevCtxChain,fc,fce){
                 writeln("    mov %%rax,%s",compile.args64[i])
                 params += -8
             }
-            writeln("    mov 16(%%rbp),%%rax");
+            writeln("    mov 16(%%rbp),%%rax")
             if(fce->is_delref)
                 internal.get_object_value()
-            writeln("    mov %%rax,%%r9");
+            writeln("    mov %%rax,%%r9")
 
             stack_offset = 16
         }else
@@ -156,7 +156,7 @@ func Push_arg(prevCtxChain,fc,fce){
             if ret != null && type(ret) == type(ast.StructMemberExpr) {
                 sm = ret
                 Load(sm.getMember())
-            }else if ret != null && type(ret) == type(ChainExpr) {
+            }else if ret != null && type(ret) == type(ast.ChainExpr) {
                 ce = ret
                 if type(fce.args[i] != type(ast.AddrExpr) {
                     Load(ce.ret)

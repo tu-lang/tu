@@ -5,7 +5,7 @@ func condIsMtype(cond,ctx){
     ismtype = false
     match type(cond) {
         type(ast.StructMemberExpr) : ismtype = true
-        type(VarExpr) : {
+        type(ast.VarExpr) : {
             tvar = cond
             ismtype = tvar.isMemtype(ctx)
         }

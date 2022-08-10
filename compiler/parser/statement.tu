@@ -66,7 +66,7 @@ Parser::parseIfStmt()
                 ice.block = parseBlock()
             }else {
                 ice.block = new Block()
-                ice.block.stmts[] = parseStatement();
+                ice.block.stmts[] = parseStatement()
             }
             node.cases[] = ice
         
@@ -185,7 +185,7 @@ Parser::parseMatchCase(cond)
     check(scanner.curToken == ast.COLON)
     scanner.scan()
     if scanner.curToken == ast.LBRACE {
-        cs.block = parseBlock(); 
+        cs.block = parseBlock() 
     }else{
         cs.block = new Block()
         cs.block.stmts[] = parseStatement()

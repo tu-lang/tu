@@ -240,13 +240,13 @@ Scanner::get_next() {
         lexeme += c
         return token(ast.COLON,lexeme)
     }
-    if c == ';'{
+    if c == ';' {
         lexeme
         lexeme += c
         return token(ast.SEMI ast.COLON,lexeme)
     }
     
-    if (c == '\'') {
+    if c == '\'' {
         lexeme
         lexeme += next()
         if (peek() != '\'') {

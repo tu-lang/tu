@@ -74,11 +74,11 @@ Parser::parseExpression(oldPrecedence)
         ]
     ){
         check(p != null)
-        if (type(p) != type(VarExpr) &&
-            type(p) != type(ChainExpr) &&
-            type(p) != type(IndexExpr) &&
-            type(p) != type(MemberExpr) &&
-            type(p) != type(DelRefExpr) &&
+        if (type(p) != type(ast.VarExpr) &&
+            type(p) != type(ast.ChainExpr) &&
+            type(p) != type(ast.IndexExpr) &&
+            type(p) != type(ast.MemberExpr) &&
+            type(p) != type(ast.DelRefExpr) &&
             type(p) != type(ast.StructMemberExpr)  
         {
             check(false,"ParseError: can not assign to " + string(type(p).name()))
@@ -88,7 +88,7 @@ Parser::parseExpression(oldPrecedence)
             sm = p
             sm.assign = true
         }
-        if (type(p) == type(VarExpr) && currentFunc){
+        if (type(p) == type(ast.VarExpr) && currentFunc){
             var = p
             
             if !std.exist(var.varname,currentFunc.params_var) && !std.exist(currentFunc.locals,var.varname) {
@@ -511,7 +511,7 @@ Parser::parseFuncallExpr(callname)
     
     assert(scanner.curToken == ast.RPAREN)
     scanner.scan()
-    return val;  
+    return val  
 }
 Parser::parseIndexExpr(varname){
     

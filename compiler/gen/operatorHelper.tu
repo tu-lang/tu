@@ -241,12 +241,11 @@ OperatorHelper::genLeft()
 			initcond(true,m.size,m.type,m.pointer)
 			return smember
 		}
-		type(VarExpr) : {
+		type(ast.VarExpr) : {
 			if !var.structtype
-				parse_err("genLeft: lhs not structExpr %s \n",lhs.toString())
+				lhs.panic("genLeft: lhs not structExpr %s \n",lhs.toString())
 			
 			initcond(true,var.size,var.type,var.pointer)
-			
 			compile.GenAddr(var)
 			return var
 		}
@@ -256,19 +255,19 @@ OperatorHelper::genLeft()
 OperatorHelper::genRight(isleft,expr)
 {
 	match type(this.expr) {
-		type(IntExpr) : {
-			ie = expr;	
+		type(ast.IntExpr) : {
+			ie = expr	
 			compile.writeln("	mov $%s,%%rax",ie.literal)
 			initcond(isleft,8,I64,false)
 			return ie
 		}
-		type(StringExpr): {
-			ie = expr;
+		type(ast.StringExpr): {
+			ie = expr
 			writeln("	lea %s(%%rip), %%rax",ie.name)
-			initcond(isleft,8,U64,true);
+			initcond(isleft,8,U64,true)
 			return ie
 		}
-		type(NullExpr) : {
+		type(ast.NullExpr) : {
 			compile.writeln("	mov $0,%%rax")
 			initcond(isleft,8,I64,false)
 			return null
@@ -287,11 +286,11 @@ OperatorHelper::genRight(isleft,expr)
 			initcond(isleft,8,U64,true)
 			return ret
 		}
-		type(FunCallExpr) : {
+		type(ast.FunCallExpr) : {
 			initcond(isleft,8,U64,false)
 			return ret
 		}
-		type(BuiltinFuncExpr) : {
+		type(ast.BuiltinFuncExpr) : {
 			initcond(isleft,8,U64,false)
 			return ret
 		}
@@ -299,10 +298,9 @@ OperatorHelper::genRight(isleft,expr)
 	
 	if ret == null{
 		initcond(isleft,8,U64,false)
-		
 	}else if type(ret) == type(NewExpr) {
 		initcond(isleft,8,U64,false)
-	}else if type(ret) == type(VarExpr) 
+	}else if type(ret) == type(ast.VarExpr) 
 	{
 		v = ret
 		if !v.structtype
@@ -312,14 +310,14 @@ OperatorHelper::genRight(isleft,expr)
 	}else if type(ret) == type(ast.StructMemberExpr) 
 	{
 		m = ret
-		v = m.getMember(); 
+		v = m.getMember() 
 		initcond(isleft,v.size,v.type,v.pointer)
 		
 		if type(expr) != type(ast.AddrExpr){
 			compile.Load(v)
 		}
 	}
-	else if type(ret) == type(ChainExpr) {
+	else if type(ret) == type(ast.ChainExpr) {
 		m = ret
 		v = m.ret
 		tk = v.type
@@ -334,7 +332,7 @@ OperatorHelper::genRight(isleft,expr)
 			compile.Load(v)
 		}
 	}else{
-		parse_err("not allowed expression in memory operator:%s\n",ret.toString())
+		ret.panic("not allowed expression in memory operator:%s\n",ret.toString())
 	}
 	return ret
 }

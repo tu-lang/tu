@@ -17,7 +17,7 @@ Parser::parseStatementList()
             expr = pe.expr
             
             check(expr.lhs != null && expr.rhs != null)
-            if type(expr.rhs == type(NewClassExpr) && type(expr.lhs) == type(VarExpr) {
+            if type(expr.rhs == type(NewClassExpr) && type(expr.lhs) == type(ast.VarExpr) {
                 ne = expr.rhs
                 obj = expr.lhs
                 

@@ -73,7 +73,7 @@ Parser::parseStructDef()
         tk  = scanner.curToken
         
         if tk == ast.VAR {
-            lex = scanner.curLex; 
+            lex = scanner.curLex 
 
             member = new Member()
             member.isunsigned = true

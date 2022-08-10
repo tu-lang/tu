@@ -9,7 +9,7 @@ func init(){
 
 func getStruct(package,name) {    
     pkgname = package
-    if pkgname == "" pkgname = compile.currentFunc.parser.getpkgname(); 
+    if pkgname == "" pkgname = compile.currentFunc.parser.getpkgname() 
 
     if std.exist(pkgname,packages) < 1 {
         return null

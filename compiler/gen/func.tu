@@ -14,7 +14,7 @@ ast.LabelExpr::compile(ctx){
 
 ast.BuiltinFuncExpr::compile(ctx){
 	if funcname == "sizeof" {
-		this.check(type(*this.expr) == type(VarExpr),"must be varexpr in sizeof()")
+		this.check(type(*this.expr) == type(ast.VarExpr),"must be varexpr in sizeof()")
 		ve = this.expr
 		mem = package.getStruct(ve.package,ve.varname)
 		this.check(mem != null,"mem not exist\n")
@@ -24,7 +24,7 @@ ast.BuiltinFuncExpr::compile(ctx){
 	}
 	//2. 如果是值类型
 	check(type(*expr) != type(IntExpr))
-	check(type(*expr) != type(StringExpr))
+	check(type(*expr) != type(ast.StringExpr))
 	check(type(*expr) != type(ArrayExpr))
 	check(type(*expr) != type(MapExpr))
 	check(type(*expr) != type(NullExpr))
@@ -41,7 +41,7 @@ ast.BuiltinFuncExpr::compile(ctx){
 	Token tk = ast.I64
 	if (ret == null){
 	}
-	else if  type(ret) == type(VarExpr) {
+	else if  type(ret) == type(ast.VarExpr) {
 		if ret.type >= ast.I8 && ret.type <= ast.U64 
 			tk = ret.type
 	}
