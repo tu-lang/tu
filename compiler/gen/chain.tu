@@ -44,7 +44,7 @@ ast.ChainExpr::memgen(ctx)
 	member = s.getMember()
 	this.check(member.isstruct,"field must be mem at chain expression")
 	if member.pointer {
-		this.obj.Load()
+		compile.Load()
 	}
 	for (i : fields) {
 		this.check(type(*i) == type(ast.MemberExpr),"field must be member expression at mem chain expression")
@@ -57,7 +57,7 @@ ast.ChainExpr::memgen(ctx)
 
 		compile.writeln("	add $%d, %rax",member.offset)
 		if member.pointer {
-			this.obj.Load()
+			compile.Load()
 		}
 	}
 	//遍历最后一个节点，如果没有那肯定parser出错了
@@ -76,11 +76,11 @@ ast.ChainExpr::objgen(ctx)
 {
 	record()
     this.first.compile(ctx)
-	this.obj.Push()
+	compile.Push()
 
 	for(i : this.fields){
 		i.compile(ctx)
-		this.obj.Push()
+		compile.Push()
 	}
 	this.last.compile(ctx)
     return null

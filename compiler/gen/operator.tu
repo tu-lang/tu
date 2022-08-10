@@ -22,7 +22,7 @@ ast.AssignExpr::compile(ctx){
         if !varExpr.is_local {
 
             package = varExpr.package
-            if (*var = ast.getVar(ctx,package);var != null) {
+            if (var = ast.getVar(ctx,package) != null) {
                 
                 compile.GenAddr(var)
                 compile.Load()
@@ -231,7 +231,7 @@ ast.DelRefExpr::compile(ctx){
     record()
     
     if type(this.expr) == type(ast.StringExpr) {
-        StringExpr* se = this.expr
+        se = this.expr
         compile.writeln("    lea %s(%%rip), %%rax", se.name)
         return this
     }
@@ -239,14 +239,14 @@ ast.DelRefExpr::compile(ctx){
     
     if (ret == null){
         this.check(false,"del refexpr error")
-    }else if (type(ret) == type(ast.VarExpr) {
+    }else if type(ret) == type(ast.VarExpr) {
         var = ret
         
         if !var.structtype {
             internal.get_object_value() return ret
         }
         
-        if !var.pointer{
+        if !var.pointer {
             panic("var must be pointer " + this.expr.toString())
         }
         if var.size != 1 && var.size != 2 && var.size != 4 && var.size != 8{
@@ -257,7 +257,7 @@ ast.DelRefExpr::compile(ctx){
         return ret
     }else if type(ret) == type(ast.StructMemberExpr) {
         sm = ret
-        Member* m = sm.ret
+        m = sm.ret
         if m == null{
             parse_err("del ref can't find the class member:%s\n",this.expr.toString())
         }
@@ -271,8 +271,8 @@ ast.DelRefExpr::compile(ctx){
     }else if type(ret) == type(ast.ChainExpr) {
         ce = ret
         
-        if ce.ret{
-            Member* m = ce.ret
+        if ce.ret {
+            m = ce.ret
             compile.Load(m)
 
             return ret
@@ -301,7 +301,7 @@ ast.AddrExpr::compile(ctx){
             StructMemberExpr sm(package,line,column)
             sm.member = varname
             sm.var    = var
-            Member* m = sm.getMember()
+            m = sm.getMember()
             if m != null{
                 
                 compile.GenAddr(var)
@@ -310,7 +310,7 @@ ast.AddrExpr::compile(ctx){
                 
                 compile.writeln("	add $%d, %%rax", m.offset)
                 
-                if m.bitfield{
+                if m.bitfield {
                     parse_err(
                         "AsmError: adress to bitfield error! "
                         "line:%d column:%d \n\n"
@@ -325,7 +325,7 @@ ast.AddrExpr::compile(ctx){
     }
     var = ast.getVar(ctx,this.varname)
     if var == null
-        parse_err("AddExpr: var:%s not exist\n",varname)
+        panic("AddExpr: var:%s not exist\n",varname)
     realVar = var.getVar(ctx)
     compile.GenAddr(realVar)
 

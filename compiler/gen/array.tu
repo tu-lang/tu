@@ -11,18 +11,18 @@ ast.ArrayExpr::compile(ctx){
     //new Array & push array
     internal.newobject(ast.Array, 0)
 
-    this.obj.push()
+    compile.Push()
 
     for(element: this.literal){
         //new element & push element
         element.compile(ctx)
-        this.obj.push()
+        compile.Push()
 
         internal.arr_pushone() 
     }
 
     //pop array
-    this.obj.pop("%rax")
+    compile.Pop("%rax")
 
     return null
 }
@@ -33,20 +33,20 @@ ast.KVExpr::compile(ctx){
 
     //push key
     this.key.compile(ctx)
-    this.obj.push()
+    compile.Push()
     //push value
     this.value.compile(ctx)
-    this.obj.push()
+    compile.Push()
     return null
 }
 
 ast.IndexExpr::compile(ctx) {
     record()
-    f = this.obj.currentFunc
+    f = compile.currentFunc
 
     if varname == "" {
         this.index.compile(ctx)
-        this.obj.push()
+        compile.Push()
 
         //call arr_get(arr,index)
         internal.kv_get()
@@ -58,12 +58,12 @@ ast.IndexExpr::compile(ctx) {
     if this.is_pkgcall {
         var = ast.getVar(ctx.package)
         if var != null {
-            this.obj.GenAddr(var)
-            this.obj.Load()
-            this.obj.Push()
+            compile.GenAddr(var)
+            compile.Load()
+            compile.Push()
 
             internal.object_member_get(varname)
-            this.obj.Push()
+            compile.Push()
 
             goto INDEX
         }
@@ -74,16 +74,16 @@ ast.IndexExpr::compile(ctx) {
         if var == null panic("AsmError:use of undefined global variable " + varname)
     }else{
 
-        package = this.obj.currentFunc.parser.getpkgname()
+        package = compile.currentFunc.parser.getpkgname()
         var  = parser.packages[package].getGlobalVar(varname)
     }
     if var != null {
-        this.obj.GenAddr(var)
-        this.obj.Load()
-        this.obj.Push()
+        compile.GenAddr(var)
+        compile.Load()
+        compile.Push()
 INDEX:
         this.index.compile(ctx)
-        this.obj.Push()
+        compile.Push()
 
         //call arr_get(arr,index)
         internal.kv_get()
@@ -91,12 +91,12 @@ INDEX:
     }
     var = ast.getVar(ctx,this.varname)
     if var != null {
-        this.obj.GenAddr(var)
-        this.obj.Load()
-        this.obj.Push()
+        compile.GenAddr(var)
+        compile.Load()
+        compile.Push()
 
         this.index.compile(ctx)
-        this.obj.Push()
+        compile.Push()
 
         internal.kv_get()
         return null

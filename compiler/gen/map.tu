@@ -1,3 +1,8 @@
+use ast
+use compile
+use utils
+
+
 ast.MapExpr::compile(ctx){
     record()
     utils.debug("MapExpr: gen... ")

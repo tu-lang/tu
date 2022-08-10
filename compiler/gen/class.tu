@@ -13,7 +13,7 @@ ast.NewExpr::compile(ctx)
 		internal.gc_malloc(len)
 		 return this
 	 }
-	 package = this.obj.parser.import[this.package]
+	 package = compile.parser.import[this.package]
 	 if std.exist(packge,parser.packages)  {
 		s = null
 		if s = parser.packages[package].getStruct(name) && s != null {
@@ -43,19 +43,19 @@ ast.NewClassExpr::compile(ctx)
 	utils.debug("new expr got: type:%s",this.name)
 	s = null
 	if this.package != "" {
-		realPkg = this.obj.parser.import[package]
+		realPkg = compile.parser.import[package]
 		pkg = parser.packages[realPkg]
 		if pkg != null {
 			s = pkg.getClass(this.name)
 		}
 	}else{
-		s = this.obj.parser.pkg.getClass(this.name)
+		s = compile.parser.pkg.getClass(this.name)
 	}
 	if !s {
 		this.panic("AsmError: class is not define of " + name)
 	}
 	internal.newobject(Object,s.funcs.size())
-	this.obj.Push()
+	compile.Push()
 	
 	exist_init = false
 	for(fc : s.funcs){
@@ -65,16 +65,16 @@ ast.NewClassExpr::compile(ctx)
 							"_" + s.name + "_" + fc.name
 
 		compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
-		this.obj.Push()
+		compile.Push()
 		internal.object_func_add(fc.name)
 	}
 	if !exist_init {
 		funcname = s.pkg + "_" + s.name + "_init"
 		compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
-		this.obj.Push()
+		compile.Push()
 		internal.object_func_add("init")
 	}
-	this.obj.Pop("%rax")
+	compile.Pop("%rax")
 
 	return null
 }
@@ -86,9 +86,9 @@ ast.MemberExpr::compile(ctx)
 		return null
 	}
 	var = ast.getVar(ctx,varname)
-	this.obj.GenAddr(var)
-	this.obj.Load()
-	this.obj.Push()
+	compile.GenAddr(var)
+	compile.Load()
+	compile.Push()
 	internal.object_member_get(membername)
 	return null
 }

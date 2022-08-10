@@ -44,23 +44,23 @@ ast.StringExpr::compile(ctx) {
 }
 
 ast.Expression::record(){
-    cfunc = this.obj.currentFunc
+    cfunc = compile.currentFunc
     compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
 }
 ast.Statement::record(){
-    cfunc = this.obj.currentFunc
+    cfunc = compile.currentFunc
     compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
 }
 ast.Expression::panic(args...){
     err = fmt.sprintf(args)
-    cfunc = this.obj.currentFunc
+    cfunc = compile.currentFunc
     parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,line,column,cfunc.parser.filepath)
 }
 ast.Expression::check( check , err)
 {
     if(check) return err 
 
-    cfunc = this.obj.currentFunc
+    cfunc = compile.currentFunc
     if err != "" {
         fmt.println("AsmError:%s \n"
                 "line:%d column:%d file:%s\n\n"
