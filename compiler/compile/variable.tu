@@ -1,6 +1,6 @@
 func registerStrings(){
     for(&var:parser.strs){
-        r = "L" + ast.incr_compileridx() 
+        r = "L" + ast.incr_lableid() 
         var.name = r
         CreateGlobalString(var)
     }

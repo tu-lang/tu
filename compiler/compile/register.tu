@@ -81,7 +81,7 @@ func Push_arg(prevCtxChain,fc,fce){
 
     if currentFunc && currentFunc.is_variadic && current_call_have_im
     {
-        c = ast.incr_compileridx()
+        c = ast.incr_lableid()
         stack_offset
         if fce.is_delref {
             params = -16

@@ -7,20 +7,20 @@ use ast
 
 func compile(){
     //compute structs
-    for(pkg : parser.packages){
+    for(pkg : package.packages){
         //need compute the memeber offset early
         for(s : pkg.structs){
             if !s.iscomputed pkg.genStruct(s)
         }
     }
     //register package
-    for(p : parser.packages){
+    for(p : package.packages){
         p.compile()
     }
 }
 func link(){
     args = "asmer -p . -p /usr/local/lib/coasm/"
-    for(pkg : parser.packages){
+    for(pkg : package.packages){
         for(p : pkg.parsers){
             //add external library
             for(auto l : p.links){

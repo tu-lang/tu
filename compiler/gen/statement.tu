@@ -25,7 +25,7 @@ ast.ForStmt::compile(ctx)
 }
 ast.ForStmt::rangeFor(ctx)
 {
-    c = ast.incr_compileridx()
+    c = ast.incr_lableid()
     if this.obj == null 
         parse_err("statement: for(x,y : obj) obj should pass value. line:%d column:%d",line,column)
     
@@ -92,7 +92,7 @@ ast.ForStmt::rangeFor(ctx)
 }
 ast.ForStmt::triFor(ctx)
 {
-    c = ast.incr_compileridx()
+    c = ast.incr_lableid()
     compile.blockcreate(ctx)
     this.init.compile(ctx)
     
@@ -127,7 +127,7 @@ ast.ForStmt::triFor(ctx)
 ast.WhileStmt::compile(ctx)
 {
     record()
-    c = ast.incr_compileridx()
+    c = ast.incr_lableid()
     
     compile.writeln("L.while.begin.%d:", c)
     
@@ -226,11 +226,11 @@ ast.MatchCaseExpr::compile(ctx){
 
 ast.MatchStmt::compile(ctx){
     record()
-    mainPoint = ast.incr_compileridx()
+    mainPoint = ast.incr_lableid()
     endLabel = "L.match.end." + mainPoint
     
     for(cs : this.cases){
-        c = ast.incr_compileridx()
+        c = ast.incr_lableid()
         cs.label = "L.match.case." + c
         cs.endLabel = endLabel
     }
@@ -283,11 +283,11 @@ ast.IfCaseExpr::compile(ctx){
 
 ast.IfStmt::compile(ctx){
     record()
-    mainPoint = ast.incr_compileridx()
+    mainPoint = ast.incr_lableid()
     endLabel = "L.if.end." + mainPoint
     
     for(cs : this.cases){
-        cs.label  = "L.if.case." + ast.incr_compileridx()
+        cs.label  = "L.if.case." + ast.incr_lableid()
         cs.endLabel = endLabel
     }
     if elseCase {

@@ -48,15 +48,15 @@ class Function {
 closureidx
 
 # auto increment count
-compileridx
+labelidx
 
 func incr_closureidx(){
     idx = closureidx
     closureidx += 1
     return idx
 }
-func incr_compileridx(){
-    idx = compileridx
-    compileridx += 1
+func incr_lableid(){
+    idx = labelidx
+    labelidx += 1
     return idx
 }

@@ -128,7 +128,7 @@ func funcexec(ctx , fc , fce , package)
 
 
 	if compile.currentFunc && compile.currentFunc.is_variadic && have_variadic {
-		c = compile.incr_count()
+		c = ast.incr_lableid()
 		compile.writeln("    mov -8(%%rbp),%%rdi")
 		compile.Push()
 		internal.call("runtime_get_object_value")
@@ -151,28 +151,28 @@ func funcexec(ctx , fc , fce , package)
 	return null
 }
 
-ast.FunCallExpr::compile(std::ctx)
+ast.FunCallExpr::compile(ctx)
 {
 	record()
 	utils.debug("FunCallExpr: parsing... package:%s func:%s",package,funcname)
 	cfunc = compile.currentFunc
-	package = this.package
+	packagename = this.package
 	fc = null
 	if !is_pkgcall || is_extern {
-		package      = cfunc.parser.getpkgname()
+		packagename      = cfunc.parser.getpkgname()
 	}
 	if  std.empty(funcname) {
-		fc = new Function
+		fc = new Function()
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this,package)
+		funcexec(ctx,fc,this,packagename)
 
 		if std.len(this.args)  > 6 {
 			compile.writeln("   add $8,%%rsp")
 		}
 		return null
-	}else if ast.getVar(ctx,package) != null  {
+	}else if ast.getVar(ctx,packagename) != null  {
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
@@ -182,7 +182,7 @@ ast.FunCallExpr::compile(std::ctx)
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this,package)
+		funcexec(ctx,fc,this,packagename)
 
 		if std.len(this.args) > 6 {
 			compile.writeln("   add $8,%%rsp")
@@ -196,13 +196,13 @@ ast.FunCallExpr::compile(std::ctx)
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this,package)
+		funcexec(ctx,fc,this,packagename)
 		if std.len(this.args) > 6 {
 			compile.writeln("   add $8,%%rsp")
 		}
 		return null
 	}else{
-		pkg  = parser.packages[package]
+		pkg  = package.packages[packagename]
 		if !pkg {
 			check(false,
 					"AsmError: can not find package definition of " + package)
@@ -215,6 +215,6 @@ ast.FunCallExpr::compile(std::ctx)
 			check(false,
 					"AsmError: can not find function definition of " + package)
 	}
-	funcexec(ctx,fc,this,package)
+	funcexec(ctx,fc,this,packagename)
 	return null
 }

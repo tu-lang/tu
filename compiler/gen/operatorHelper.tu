@@ -156,7 +156,7 @@ OperatorHelper::binary()
     		else			compile.writeln("	sar %%cl, %s", ax)
 		}
 		ast.LOGOR : { 
-			c = ast.incr_compileridx()
+			c = ast.incr_lableid()
 			
 			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
@@ -174,7 +174,7 @@ OperatorHelper::binary()
 			break
 		}
 		ast.LOGAND : { 
-			c = ast.incr_compileridx()
+			c = ast.incr_lableid()
 			
 			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")

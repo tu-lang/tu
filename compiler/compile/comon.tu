@@ -16,14 +16,14 @@ func init(filename)
 
     pkg.parsers[filename] = mparser
 
-    parser.packages["main"] = pkg
+    package.packages["main"] = pkg
 
     //check runtime has been parsered
-    if std.exist("runtime",parser.packages) {
+    if std.exist("runtime",package.packages) {
         pkg = new parser.Package("runtime","runtime",false) 
         //recursively scan code files
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")
-        parser.packages["runtime"] = pkg 
+        package.packages["runtime"] = pkg 
     }
 }
 func writeln(count,args...) {

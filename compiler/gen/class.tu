@@ -14,14 +14,14 @@ ast.NewExpr::compile(ctx)
 		 return this
 	 }
 	 package = compile.parser.import[this.package]
-	 if std.exist(packge,parser.packages)  {
+	 if std.exist(packge,package.packages)  {
 		s = null
-		if s = parser.packages[package].getStruct(name) && s != null {
+		if s = package.packages[package].getStruct(name) && s != null {
 			internal.gc_malloc(s.size)
 			return this
 		}else{
 			var = new VarExpr(name,0,0)
-			var.package = package
+			var.package = this.package
 			if !var.isMemtype(ctx) {
 				this.panic("AsmError: var must be memtype in (new var)")
 			}
@@ -44,7 +44,7 @@ ast.NewClassExpr::compile(ctx)
 	s = null
 	if this.package != "" {
 		realPkg = compile.parser.import[package]
-		pkg = parser.packages[realPkg]
+		pkg = package.packages[realPkg]
 		if pkg != null {
 			s = pkg.getClass(this.name)
 		}
@@ -54,7 +54,7 @@ ast.NewClassExpr::compile(ctx)
 	if !s {
 		this.panic("AsmError: class is not define of " + name)
 	}
-	internal.newobject(Object,s.funcs.size())
+	internal.newobject(Object,std.len(s.funcs))
 	compile.Push()
 	
 	exist_init = false

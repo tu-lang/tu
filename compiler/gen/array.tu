@@ -3,6 +3,7 @@ use ast
 use internal
 use compile
 use parser
+use parser.package
 
 // @param ctx [Context]
 // @return Expression
@@ -53,10 +54,10 @@ ast.IndexExpr::compile(ctx) {
         return null
     }
     var = null
-    package = this.package
+    packagename = this.package
 
     if this.is_pkgcall {
-        var = ast.getVar(ctx.package)
+        var = ast.getVar(ctx,packagename)
         if var != null {
             compile.GenAddr(var)
             compile.Load()
@@ -67,15 +68,15 @@ ast.IndexExpr::compile(ctx) {
 
             goto INDEX
         }
-        this.check(!std.exist(package,parser.packages),"package not exist: " + package)
+        this.check(!std.exist(packagename,package.packages),"package not exist: " + package)
 
-        var  = parser.packages[package].getGlobalVar(varname)
+        var  = package.packages[packagename].getGlobalVar(varname)
 
         if var == null panic("AsmError:use of undefined global variable " + varname)
     }else{
 
-        package = compile.currentFunc.parser.getpkgname()
-        var  = parser.packages[package].getGlobalVar(varname)
+        packagename = compile.currentFunc.parser.getpkgname()
+        var  = package.packages[packagename].getGlobalVar(varname)
     }
     if var != null {
         compile.GenAddr(var)
