@@ -132,5 +132,8 @@ class File {
 		}
 		return true
 	}
+	func Close(){
+		close(this.fd)
+	}
 }
 
