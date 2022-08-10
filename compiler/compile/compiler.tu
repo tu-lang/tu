@@ -2,6 +2,7 @@ use utils
 use parser
 use os 
 use internal
+use ast
 
 
 func compile(){
@@ -136,14 +137,13 @@ func assign_offsets(fn)
     }
 }
 
-func enterContext(ctx){
-    temp = new Context()
+func blockcreate(ctx){
+    temp = new ast.Context()
     temp.end_str = ""
     temp.start_str = ""
     temp.continue_str = ""
     ctx[] = temp
 }
-func leaveContext(ctx){
-    tempContext = ctx.back()
-    std.pop(ctx)
+func blockdestroy(ctx){
+    return std.pop(ctx)
 }

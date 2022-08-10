@@ -98,7 +98,8 @@ Parser::getpkgname()
 {
     return this.full_package
 }
-Parser::panic(err){
+Parser::panic(args...){
+    err = fmt.sprintf(args)
     this.check(false,err)
 }
 Parser::check(check , err)

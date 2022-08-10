@@ -65,7 +65,7 @@ ast.ForStmt::rangeFor(ctx)
         compile.writeln("   mov %%rdi,(%%rax)")
     }
 
-    compile.enterContext(ctx)
+    compile.blockcreate(ctx)
     
     std.tail(ctx).point = c
     std.tail(ctx).end_str   = "L.forr.end"
@@ -76,7 +76,7 @@ ast.ForStmt::rangeFor(ctx)
     for(stmt : block.stmts){
         stmt.compile(ctx)
     }
-    compile.leaveContext(ctx)
+    compile.blockdestroy(ctx)
 
     compile.writeln("L.for.continue.%d:",c)
     compile.writeln("   mov 8(%%rsp),%%rdi")
@@ -93,7 +93,7 @@ ast.ForStmt::rangeFor(ctx)
 ast.ForStmt::triFor(ctx)
 {
     c = ast.incr_compileridx()
-    compile.this.enterContext(ctx)
+    compile.blockcreate(ctx)
     this.init.compile(ctx)
     
     compile.writeln("L.for.begin.%d:", c)
@@ -117,7 +117,7 @@ ast.ForStmt::triFor(ctx)
     compile.writeln("L.for.continue.%d:",c)
     
     this.after.compile(ctx)
-    compile.this.leaveContext(ctx)
+    compile.blockdestroy(ctx)
 
     compile.writeln("    jmp L.for.begin.%d",c)
     compile.writeln("L.for.end.%d:", c)
@@ -138,7 +138,7 @@ ast.WhileStmt::compile(ctx)
     compile.CreateCmp()
     compile.writeln("    je  L.while.end.%d", c)
 
-    compile.enterContext(ctx)
+    compile.blockcreate(ctx)
     
     std.tail(ctx).po= c
     std.tail(ctx).end_str   = "L.while.end"
@@ -147,7 +147,7 @@ ast.WhileStmt::compile(ctx)
     for(stmt : block.stmts){
         stmt.compile(ctx)
     }
-    compile.leaveContext(ctx)
+    compile.blockdestroy(ctx)
 
     compile.writeln("    jmp L.while.begin.%d",c)
     compile.writeln("L.while.end.%d:", c)
@@ -162,7 +162,7 @@ ast.ReturnStmt::compile(ctx)
 {
     record()
     
-    if ret == null{
+    if ret == null {
         compile.writeln("   mov $0,%%rax")
     }else{
         ret = this.ret.compile(ctx)
@@ -205,7 +205,7 @@ ast.ContinueStmt::compile(ctx)
         if c.po && c.continue_str != "" {
             compile.writeln("    jmp %s.%d", c.continue_str, c.point)
         }
-        if (c.po && c.start_str != "") {
+        if c.po && c.start_str != "" {
             compile.writeln("    jmp %s.%d", c.start_str, c.point)
         }
     }
@@ -215,7 +215,7 @@ ast.MatchCaseExpr::compile(ctx){
     record()
     compile.writeln("%s:",label)
     
-    if block{
+    if block != null {
         for(stmt : block.stmts){
             stmt.compile(ctx)
         } 
@@ -226,7 +226,7 @@ ast.MatchCaseExpr::compile(ctx){
 
 ast.MatchStmt::compile(ctx){
     record()
-    mainPo= ast.incr_compileridx()
+    mainPoint = ast.incr_compileridx()
     endLabel = "L.match.end." + mainPoint
     
     for(cs : this.cases){
@@ -235,7 +235,7 @@ ast.MatchStmt::compile(ctx){
         cs.endLabel = endLabel
     }
     
-    if defaultCase == null{
+    if defaultCase == null {
         defaultCase = new MatchCaseExpr(line,column)
         defaultCase.matchCond = this.cond
     }
@@ -245,11 +245,11 @@ ast.MatchStmt::compile(ctx){
     for(cs : this.cases){
         be = new BinaryExpr(cs.line,cs.column)
         be.lhs = cs.matchCond
-        be.opt = EQ
+        be.opt = ast.EQ
         be.rhs = cs.cond
         be.compile(ctx)
         
-        if !condIsMtype(&be,ctx)
+        if !condIsMtype(be,ctx)
             internal.isTrue()
         
         compile.writeln("    cmp $1, %%rax")
@@ -258,15 +258,13 @@ ast.MatchStmt::compile(ctx){
     
     compile.writeln("   jmp %s", defaultCase.label)
     
-    compile.enterContext(ctx)
+    compile.blockcreate(ctx)
     for(cs : this.cases){
-        
         cs.compile(ctx)
     }
     defaultCase.compile(ctx)
-    compile.leaveContext(ctx)
+    compile.blockdestroy(ctx)
 
-    
     compile.writeln("L.match.end.%d:",mainPoint)
     return null
 }
@@ -285,15 +283,15 @@ ast.IfCaseExpr::compile(ctx){
 
 ast.IfStmt::compile(ctx){
     record()
-    mainPo = ast.incr_compileridx()
+    mainPoint = ast.incr_compileridx()
     endLabel = "L.if.end." + mainPoint
     
     for(cs : this.cases){
-        cs.label  = "L.if.case." + compile.count ++
+        cs.label  = "L.if.case." + ast.incr_compileridx()
         cs.endLabel = endLabel
     }
     if elseCase {
-        elseCase.label = "L.if.case." + compile.count ++
+        elseCase.label = "L.if.case." + ast.incr_compileidx()
         elseCase.endLabel = endLabel
     }
 
@@ -305,16 +303,16 @@ ast.IfStmt::compile(ctx){
         compile.writeln("    je  %s", cs.label)
     }
     
-    if (elseCase) compile.writeln("   jmp %s", elseCase.label)
+    if elseCase compile.writeln("   jmp %s", elseCase.label)
     
     compile.writeln("   jmp L.if.end.%d", mainPoint)
     
-    compile.this.enterContext(ctx)
+    compile.blockcreate(ctx)
     for(cs : this.cases){
         cs.compile(ctx)
     }
     if elseCase elseCase.compile(ctx)
-    compile.this.leaveContext(ctx)
+    compile.blockdestroy(ctx)
 
     compile.writeln("L.if.end.%d:",mainPoint)
     return null

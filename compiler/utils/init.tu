@@ -11,9 +11,3 @@ func init(){
 	}
 }
 
-func pwd(){
-	if std.exist(envs,"PWD") {
-		return envs["PWD"]
-	}	
-	return ""
-}

@@ -4,17 +4,17 @@ use parser
 
 parser.Parser::compile()
 {    
-    out = new std.File(this.asmfile)
-	if !out.IsOpen() {
-		os.die("open file failed")
+    asm = new std.File(this.asmfile)
+	if !asm.IsOpen() {
+        panic("genrate assembly file failed package:%s file:%s",
+            pkg.package,filename
+        )
 	}
-    compile.C.out = out
-    if out <= 0 
-        parse_err("genrate assembly file failed package:%s file:%s",pkg.package,
-        filename)
+    //asm file generate start
+    compile.out = asm
+    compile.parser = this
 
-    compile.C.parser = this
-    writeln(".data")
+    compile.writeln(".data")
     compile.funcs_offsets()
     compile.registerVars()
     compile.registerStrings()
@@ -23,7 +23,7 @@ parser.Parser::compile()
     compile.registerFuncs()
     compile.parser = null
 
-    std.fclose(out)
+    asm.Close()
     compile.out = null
 
 }

@@ -1,3 +1,6 @@
+use ast
+use utils 
+
 ast.BoolExpr::getType(ctx){
 	return ast.U8
 }
@@ -33,11 +36,11 @@ ast.ChainExpr::getType(ctx){
 	
 	check(member.isstruct,"must be memtype in chain expr")
 	for(i : fields){
-		check(type(i) == type(MemberExpr),"field must be member expression at mem chain expression")
+		check(type(i) == type(ast.MemberExpr),"field must be member expression at mem chain expression")
 		me = i
 		check(member.structref != null,"must be memref in chain expr")
 		
-		s = (Struct*)(member.structref)
+		s = member.structref # Struct
 		member = s.getMember(me.membername)
 		check(member != null,"mem not exist field:" + me.membername)
 		
@@ -74,7 +77,8 @@ ast.AddrExpr::getType(ctx){
 	return ast.U64
 }
 ast.DelRefExpr::getType(ctx){
-	if type(expr) == type(VarExpr) {
+	if type(expr) == type(ast.VarExpr) 
+	{
 		var = expr
 		var = var.getVar(ctx)
 		if var.pointer 
@@ -101,11 +105,10 @@ ast.BinaryExpr::getType(ctx){
 	if !this.rhs return lhs.getType(ctx)
 	l = lhs.getType(ctx)
 	r = rhs.getType(ctx)
-	return max(l,r)
+	return utils.max(l,r)
 }
 ast.FunCallExpr::getType(ctx){
 	return ast.U64
-	
 }
 ast.AssignExpr::getType(ctx){
 	return this.lhs.getType(ctx)
@@ -119,7 +122,6 @@ ast.BuiltinFuncExpr::getType(ctx){
 }
 ast.NewExpr::getType(ctx){
 	return ast.U64
-	
 }
 ast.MemberExpr::getType(ctx){
 	panic("getType: unsupport Member\n")

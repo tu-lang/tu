@@ -1,3 +1,6 @@
+use ast
+use compile
+
 OperatorHelper::init(ctx,lhs,rhs,Token opt) {
 	this.ctx = ctx
 	this.lhs = lhs
@@ -53,12 +56,13 @@ OperatorHelper::assign()
 	if lmember && lmember.bitfield
 	{
 		compile.writeln("	mov %%rax, %%rdi")
-		compile.writeln("   and $%I, %%rdi", (1L << lmember.bitwidth) - 1)
+		//NOTICE: 1L << bitwidth - 1
+		compile.writeln("   and $%I, %%rdi", (1 << lmember.bitwidth) - 1)
 		compile.writeln("	shl $%d, %%rdi", lmember.bitoffset)
 		compile.writeln("   mov (%%rsp), %%rax")
 		compile.Load(lmember.size,lmember.isunsigned)
-		//FIXME: 
-		//mask = ((1L << lmember.bitwidth) - 1) << lmember.bitoffset
+		//FIXME: mask = ((1L << lmember.bitwidth) - 1) << lmember.bitoffset
+		mask = ((1 << lmember.bitwidth) - 1) << lmember.bitoffset
 		compile.writeln("  mov $%I, %%r9", ~mask)
 		compile.writeln("  and %%r9, %%rax")
 		compile.writeln("  or %%rdi, %%rax")
@@ -73,47 +77,44 @@ OperatorHelper::assign()
 }
 OperatorHelper::binary()
 {
-	if !this.rhs{
+	if !this.rhs {
 		compile.Pop("%rax")
 		match opt {
-			LOGNOT: {
+			ast.LOGNOT: {
 				compile.CreateCmp(ltypesize)
 				compile.writeln("	sete %%al")
 				compile.writeln("	movzx %%al, %%rax")
 				return null
 			}
-			BITNOT: {
+			ast.BITNOT: {
 				compile.writeln("	not %%rax")
 				return null
 			}
-			_ :	parse_err("asmgen: must !,~ at unary expression,not %s\n",getTokenString(opt))
+			_ :	this.lhs.panic("asmgen: must !,~ at unary expression,not %s\n",getTokenString(opt))
 		}
 	}
 	Token base = max(rtoken,ltoken)
-	tke = "token_max(lhs,rhs) should in(i8,u64)"
-	tke += " ltoken:" + std::ltoken + " rtoken:" + std::rtoken
-	tke += "\n"
-	tke += lhs.toString() + "\n"
-	tke += rhs.toString() + "\n"
+	tke = fmt.sprintf("token_max(lhs,rhs) should in(i8,u64) ltoken:%s rtoken:%s\n %s\n %s\n",
+			ltoken,rtoken,lhs.toString(),rhs.toString()
+	)
 	this.lhs.check(base >= ast.I8 && base <= ast.U64,tke)
 	
-	if opt == ASSIGN return null
+	if opt == ast.ASSIGN return null
 	
 	compile.Cast(rtoken,base)
 	compile.writeln("	mov %%rax,%%rdi")
 	compile.Pop("%rax")
 	compile.Cast(ltoken,base)
 	
-	match opt{
-		ADD_ASSIGN | ADD:	compile.writeln("	add %s, %s", di, ax)
-		SUB_ASSIGN | SUB:	compile.writeln("	sub %s,%s",di,ax)
-		MUL_ASSIGN | ast.MUL:	compile.writeln("	imul %s,%s",di,ax)
-		BITAND | BITAND_ASSIGN:	compile.writeln("	and %s,%s",di,ax)
-		BITOR  | BITOR_ASSIGN:	compile.writeln("	or %s,%s",di,ax)
+	match opt {
+		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add %s, %s", di, ax)
+		ast.SUB_ASSIGN | ast.SUB:	compile.writeln("	sub %s,%s",di,ax)
+		ast.MUL_ASSIGN | ast.MUL:	compile.writeln("	imul %s,%s",di,ax)
+		ast.BITAND | ast.BITAND_ASSIGN:	compile.writeln("	and %s,%s",di,ax)
+		ast.BITOR  | ast.BITOR_ASSIGN:	compile.writeln("	or %s,%s",di,ax)
 
-		DIV_ASSIGN | DIV | MOD_ASSIGN | MOD : {
-			if lisunsigned
-			{
+		ast.DIV_ASSIGN | ast.DIV | ast.MOD_ASSIGN | ast.MOD : {
+			if lisunsigned {
 				compile.writeln("	mov $0,%s",dx)
 				compile.writeln("	div %s",di)
 			}else{
@@ -121,40 +122,40 @@ OperatorHelper::binary()
 				else				compile.writeln("	cdq")
 				compile.writeln("	idiv %s",di)
 			}
-			if opt == MOD_ASSIGN || opt == MOD
+			if opt == ast.MOD_ASSIGN || opt == ast.MOD
       			compile.writeln("	mov %%rdx, %%rax")
 		}
-		EQ | NE | LE | LT | GE | GT: {
+		ast.EQ | ast.NE | ast.LE | ast.LT | ast.GE | ast.GT: {
 			cmp = "sete"
 			match opt {
-				EQ : cmp = "sete"
-				NE : cmp = "setne"
-				LE : {
+				ast.EQ : cmp = "sete"
+				ast.NE : cmp = "setne"
+				ast.LE : {
 					if lisunsigned cmp = "setbe"
 					else            cmp = "setle"
 				}
-				LT : {
+				ast.LT : {
 					if lisunsigned cmp = "setb"
 					else			cmp = "setl"
 				}
-				GE : cmp = "setge"
-				GT : cmp = "setg"
+				ast.GE : cmp = "setge"
+				ast.GT : cmp = "setg"
 			}
 			
 			compile.writeln("	cmp %s,%s",di,ax)
 			compile.writeln("	%s %%al",cmp)
 			compile.writeln("	movzb %%al, %%rax")
 		}
-		SHL_ASSIGN | SHL : {
+		ast.SHL_ASSIGN | ast.SHL : {
     		compile.writeln("	mov %%rdi, %%rcx")
     		compile.writeln("	shl %%cl, %s", ax)
 		}
-		SHR_ASSIGN | SHR : {
+		ast.SHR_ASSIGN | ast.SHR : {
     		compile.writeln("	mov %%rdi, %%rcx")
 			if lisunsigned	compile.writeln("	shr %%cl, %s", ax)
     		else			compile.writeln("	sar %%cl, %s", ax)
 		}
-		LOGOR : { 
+		ast.LOGOR : { 
 			c = ast.incr_compileridx()
 			
 			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
@@ -172,7 +173,7 @@ OperatorHelper::binary()
 			compile.writeln(".L.end.%d:", c)
 			break
 		}
-		LOGAND : { 
+		ast.LOGAND : { 
 			c = ast.incr_compileridx()
 			
 			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
@@ -201,24 +202,24 @@ OperatorHelper::genLeft()
 			dr = lhs
 			ret = dr.expr.compile(ctx)
 
-			if type(ret) == type(ChainExpr) {
+			if type(ret) == type(ast.ChainExpr) {
 				ce = ret
 				m = ce.ret
 				if m.pointer compile.Load()
 				lmember = m
 				tk = m.type
 				if m.isclass tk = ast.U64
-				initcond(true,m.pointer ? 8 : m.size,m.size,tk,m.isunsigned,m.pointer)
+				initcond(true,m.size,tk,m.pointer)
 				return ce
 			}
 
-			if ret == null || type(ret) != type(VarExpr) 
+			if ret == null || type(ret) != type(ast.VarExpr) 
 				parse_err("not VarExpr,only support *(class var) = expression :%s %d\n",lhs.toString(),lhs.line)
 			rv = ret
 			if !rv.structtype
 				parse_err("not structtype,only support *(class var) = expression :%s\n",lhs.toString())
 			
-			initcond(true,rv.pointer ? 8 : rv.size,rv.size,rv.type,rv.isunsigned,rv.pointer)
+			initcond(true,rv.size,rv.type,rv.pointer)
 			return rv
 		}
 		type(ast.ChainExpr) : {
@@ -229,7 +230,7 @@ OperatorHelper::genLeft()
 			
 			tk = m.type
 			if m.isclass tk = ast.U64
-			initcond(true,m.pointer ? 8 : m.size,m.size,tk,m.isunsigned,m.pointer)
+			initcond(true,m.size,tk,m.pointer)
 			return ce
 		}
 		type(ast.StructMemberExpr) : {
@@ -237,14 +238,14 @@ OperatorHelper::genLeft()
 			smember.compile(ctx)
 			m = smember.getMember()
 			lmember = m
-			initcond(true,m.pointer ? 8 : m.size,m.size,m.type,m.isunsigned,m.pointer)
+			initcond(true,m.size,m.type,m.pointer)
 			return smember
 		}
 		type(VarExpr) : {
 			if !var.structtype
 				parse_err("genLeft: lhs not structExpr %s \n",lhs.toString())
 			
-			initcond(true,var.pointer ? 8 : var.size,var.size,var.type,var.isunsigned,var.pointer)
+			initcond(true,var.size,var.type,var.pointer)
 			
 			compile.GenAddr(var)
 			return var
@@ -258,18 +259,18 @@ OperatorHelper::genRight(isleft,expr)
 		type(IntExpr) : {
 			ie = expr;	
 			compile.writeln("	mov $%s,%%rax",ie.literal)
-			initcond(isleft,8,8,I64,false,false)
+			initcond(isleft,8,I64,false)
 			return ie
 		}
 		type(StringExpr): {
 			ie = expr;
 			writeln("	lea %s(%%rip), %%rax",ie.name)
-			initcond(isleft,8,8,U64,true,true);
+			initcond(isleft,8,U64,true);
 			return ie
 		}
 		type(NullExpr) : {
 			compile.writeln("	mov $0,%%rax")
-			initcond(isleft,8,8,I64,false,false)
+			initcond(isleft,8,I64,false)
 			return null
 		}
 	}
@@ -279,43 +280,40 @@ OperatorHelper::genRight(isleft,expr)
 		type(BinaryExpr) | type(AssignExpr) : {
 			Token t = expr.getType(ctx)
 			size = typesize[t]
-			iu = false
-			if t == ast.U8 || t == ast.U16 || t == ast.U32 || t == ast.U64
-				iu = true
-			initcond(isleft,size,size,t,iu,false)
+			initcond(isleft,size,t,false)
 			return ret
 		}
 		type(ast.AddrExpr) : {
-			initcond(isleft,8,8,U64,true,true)
+			initcond(isleft,8,U64,true)
 			return ret
 		}
 		type(FunCallExpr) : {
-			initcond(isleft,8,8,U64,true,false)
+			initcond(isleft,8,U64,false)
 			return ret
 		}
 		type(BuiltinFuncExpr) : {
-			initcond(isleft,8,8,U64,true,false)
+			initcond(isleft,8,U64,false)
 			return ret
 		}
 	}
 	
 	if ret == null{
-		initcond(isleft,8,8,U64,true,false)
+		initcond(isleft,8,U64,false)
 		
 	}else if type(ret) == type(NewExpr) {
-		initcond(isleft,8,8,U64,true,false)
+		initcond(isleft,8,U64,false)
 	}else if type(ret) == type(VarExpr) 
 	{
 		v = ret
 		if !v.structtype
-			initcond(isleft,8,8,I64,false,false)
+			initcond(isleft,8,I64,false)
 		else
-			initcond(isleft,v.pointer ? 8 : v.size,v.size,v.type,v.isunsigned,v.pointer)
+			initcond(isleft,v.size,v.type,v.pointer)
 	}else if type(ret) == type(ast.StructMemberExpr) 
 	{
 		m = ret
 		v = m.getMember(); 
-		initcond(isleft,v.pointer ? 8 : v.size,v.size,v.type,v.isunsigned,v.pointer)
+		initcond(isleft,v.size,v.type,v.pointer)
 		
 		if type(expr) != type(ast.AddrExpr){
 			compile.Load(v)
@@ -326,7 +324,7 @@ OperatorHelper::genRight(isleft,expr)
 		v = m.ret
 		tk = v.type
 		if v.isclass tk = ast.U64
-		initcond(isleft,v.pointer ? 8 : v.size,v.size,tk,v.isunsigned,v.pointer)
+		initcond(isleft,v.size,tk,v.pointer)
 		
 		if type(expr) == type(ast.AddrExpr) {
 			
@@ -341,9 +339,14 @@ OperatorHelper::genRight(isleft,expr)
 	return ret
 }
 
-OperatorHelper::initcond(left,typesize,varsize,Token type,isunsigned,ispointer)
+OperatorHelper::initcond(left,varsize,Token type,ispointer)
 {
-	if left{
+	typesize = varsize
+	if ispointer typesize = 8
+	isunsigned = false
+	if type >= ast.U8 && type <= ast.U64 isunsigned = true
+
+	if left {
 		ltypesize = typesize
 		lvarsize  = varsize
 		ltoken    = type
