@@ -2,8 +2,7 @@ use internal
 use runtime
 
 
-# map[runtime.type] = int
-types
+types # map[runtime.type] = int
 
 # the table for type casts
 i32i8  i32u8 i32i16 i32u16 i32i64 u32i64

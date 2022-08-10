@@ -1,9 +1,15 @@
 
+use ast
+use utils
+use parser
+use parser.package
+
+
 out    # current file fd
 parser # current parser
 ctx # arr[Context*,Context*..]
 
-func init(filename) 
+func compile(filename) 
 {
     utils.debug("compile.init:",filename)
     ctx = [] # arr[Context*,Context*]
@@ -20,7 +26,7 @@ func init(filename)
 
     //check runtime has been parsered
     if std.exist("runtime",package.packages) {
-        pkg = new parser.Package("runtime","runtime",false) 
+        pkg = new package.Package("runtime","runtime",false) 
         //recursively scan code files
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")
         package.packages["runtime"] = pkg 
@@ -29,4 +35,9 @@ func init(filename)
 func writeln(count,args...) {
     str = fmt.sprintf(args) 
     out.Write(str)
+}
+func panic(args...){
+    err = fmt.sprintf(args)
+    cfunc = compile.currentFunc
+    parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,line,column,cfunc.parser.filepath)
 }

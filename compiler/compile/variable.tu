@@ -1,5 +1,9 @@
+use ast
+use parser
+use parser.package
+
 func registerStrings(){
-    for(&var:parser.strs){
+    for(var : parser.strs){
         r = "L" + ast.incr_lableid() 
         var.name = r
         CreateGlobalString(var)
@@ -15,8 +19,9 @@ func registerVars(){
             continue
         }
         mt = "byte"
-        value = v.ivalue == "" ? "0" : v.ivalue
-        //TODO: support `|` multi condition match
+        value = "0"
+        if !std.empty(v.ivalue) value = v.ivalue
+        //TODO: value = v.ivalue == "" ? "0" : v.ivalue
         match v.type {
             ast.I8  | ast.U8  :  mt = "byte"
             ast.I16 | ast.U16 :  mt = "value"

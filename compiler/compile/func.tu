@@ -1,3 +1,9 @@
+use std
+use ast
+use parser
+use parser.package
+use utils
+
 func registerFunc(fn){
 
     if std.len(fn.closures)
@@ -44,11 +50,11 @@ func CreateFunction(fn,Class* c){
     writeln("    sub $%d, %%rsp", fn.stack_size)
     
     for (i = 0; i < 6; ++i)
-        this.Store_gp(i, -8*(i+1), 8)
+        Store_gp(i, -8*(i+1), 8)
     
     if fn.block != null {
         funcCtxChain = []
-        this.enterContext(funcCtxChain)
+        blockcreate(funcCtxChain)
         funcCtx = std.back(funcCtxChain)
         funcCtx.cur_funcname = funcname
 
@@ -59,7 +65,7 @@ func CreateFunction(fn,Class* c){
         for(stmt : fn.block.stmts){
             stmt.compile(funcCtxChain)
         }
-        this.leaveContext(funcCtxChain)
+        blockdestroy(funcCtxChain)
     }
     if fn.name == "main"
         writeln("    mov $0, %%rax")

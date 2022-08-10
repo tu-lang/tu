@@ -20,11 +20,14 @@ args16  # 16bit
 args32  # 32bit
 args64  # 64bit
 
+GP_MAX 
+FP_MAX 
+
 
 func init() {
-    utils.debug("init")
-    # TODO: init global object
-    obj = new Compiler()
+    utils.debug("compiler.init")
+    GP_MAX = 6
+    FP_MAX = 8
 
     # init registers
     args8  = ["%dil" , "%sil" , "%dl"  , "%cl"  , "%r8b" , "%r9b"]

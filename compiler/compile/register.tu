@@ -1,5 +1,9 @@
 
-func GenAddr(VarExpr *var){
+use ast
+use std
+use fmt
+
+func GenAddr(var){
     
     if var.is_local {
         writeln("    lea %d(%%rbp), %%rax", var.offset)
@@ -10,8 +14,10 @@ func GenAddr(VarExpr *var){
         writeln("    lea %s(%%rip), %%rax", name)
         return var
     }
-    parse_err("AsmError:not support global variable read :%s at line %d co %d\n",
-              var.varname,var.line,var.column)
+    var.panic(
+        "AsmError:not support global variable read :%s at line %d co %d\n",
+        var.varname,var.line,var.column
+    )
 }
 func Load(m){
     if m.isclass && !m.pointer return
@@ -37,7 +43,7 @@ func Load(size , isunsigned){
         2 : writeln("   %swl (%%rax), %%eax",prefix)
         4 : writeln("  movsxd (%%rax), %%rax")
         8 : writeln("  mov (%%rax), %%rax")
-        _ : parse_err("Load size error :%d ",size)
+        _ : panic("Load size error :%d ",size)
     }
 
 }
@@ -141,15 +147,17 @@ func Push_arg(prevCtxChain,fc,fce){
         writeln("    jg  L.while.%d",c)
 
     }else{
-        argsize = if fc.is_variadic  5 else 6
-        if fce.args.size( < argsize)
-            for (std.len(i = 0; i < (argsize - (int)fce.args)); ++i){
+        if fc.is_variadic argsize = 5
+        else              argsize = 6
+
+        if std.len(fce.args) < argsize)
+            for (i = 0; i < (argsize - std.len(fce.args)); ++i){
                 writeln("    push $0")
             }
         
         for (i = std.len(fce.args) - 1; i >= 0; i--) {
             if gp >= GP_MAX {
-                stack++
+                stack += 1
             }
             gp += 1
             ret = fce.args[i].compile(prevCtxChain)
@@ -167,14 +175,15 @@ func Push_arg(prevCtxChain,fc,fce){
         
         if func.is_variadic {
             
-            if fce.args.size( >= 6 ){
-                stack ++
+            if std.len(fce.args.size) >= 6 ){
+                stack += 1
             }
-            internal.newobject(std.len(Int,fce.args))
+            internal.newobject(ast.Int,len(fce.args))
 
             Push()
         }
     }
 
-    return stack < 0 ? 0 : stack
+    if stack < 0 return 0
+    else         return stack
 }
