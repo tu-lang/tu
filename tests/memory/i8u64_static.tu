@@ -126,7 +126,6 @@ func init(){
 	fmt.println("test i8 - u6 assign success")
 }
 func main(){
-	init()
 	i8_u8()
 	i16_u16()
 	i32_u32()
