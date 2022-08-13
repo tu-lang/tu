@@ -29,8 +29,8 @@ func llvmgen(){
 }
 func compile(){
     utils.debug("assembly generate")
-    codegen = new compile.Compiler(code_file)
-    codegen.compile()
+    compile.compiler(code_file)
+    compile.compile()
 
     if run {
         codegen.link() # link automaticlly

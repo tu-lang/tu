@@ -8,11 +8,15 @@ class Package {
     path
     full_package
 
+    inits
+    initid
     classes # map[string] Class
     structs # map[string] Struct
 }
 
 Package::init(name , path , multi) {
+    this.inits = []
+    this.initid = 0
     this.package      = name
     this.path         = path
     this.full_package = path
@@ -57,7 +61,14 @@ Package::parse()
     }
     return true
 }
-
+Package::getFullName(){
+    return this.full_package
+}
+Package::geninitid(){
+    id = this.initid
+    this.initid += 1
+    return id
+}
 Package::getFunc(name , is_extern){
     for(parser : parsers){
         ret  = parser.getFunc(name,is_extern)

@@ -9,7 +9,7 @@ out    # current file fd
 parser # current parser
 ctx # arr[Context*,Context*..]
 
-func compile(filename) 
+func compiler(filename) 
 {
     utils.debug("compile.init:",filename)
     ctx = [] # arr[Context*,Context*]
@@ -31,6 +31,8 @@ func compile(filename)
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")
         package.packages["runtime"] = pkg 
     }
+    parseinit(pacakge.packages["main"]);
+    geninit(package.packages["main"]);
 }
 func writeln(count,args...) {
     str = fmt.sprintf(args) 
