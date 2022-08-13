@@ -107,11 +107,53 @@ Parser::parseGlobalDef()
     if scanner.curToken != ast.VAR
         panic("SyntaxError: global var define invalid token:" + getTokenString(scanner.curToken))
     var = scanner.curLex
-    
+    tx = scanner.transaction() 
     scanner.scan()
     match scanner.curToken{
-        ast.LT   : return parseStructVar(var)
         ast.COLON: return parseClassFunc(var)
-        _        : return parseFlatVar(var)
+        // ast.LT   : return parseStructVar(var)
+        // _        : return parseFlatVar(var)
+        _ : {
+            scanner.rollback(tx)
+            return parseGlobalAssign()
+        }
     }
 }
+
+Parser::parseGlobalAssign()
+{
+    bool needinit = true
+    expr = parseExpression()
+    if expr == null this.panic("parseGlobalAssign wrong")
+
+    var = null
+    assign = null
+    match type(expr) {
+        type(ast.AssignExpr) : {
+            ae = expr
+            if type(ae.lhs) != typeid(ast.VarExpr)) 
+                this.panic("unsupport global synatix: " + expr.toString(""))
+            var = ae.lhs
+            assign = ae
+            if (type(ae.rhs) == type(ast.IntExpr)){
+                var.ivalue = ae.rhs.literal
+                if var.structtype needinit = false 
+            }
+        }
+        type(ast.VarExpr) : {
+            var   = expr
+            assign         = new ast.AssignExpr(this.line,this.column)
+            assign.opt = ast.ASSIGN
+            assign.lhs = var
+            assign.rhs = new ast.NullExpr(line,column)
+            if var.structtype needinit = false     
+        }
+        _ : this.panic("unsupport global synatix: " + expr.toString(""))
+    }
+    gvars[var.varname] = var
+    var.is_local = false 
+    var.package  = this.package
+    if !needinit return
+
+    this.pkg.InsertInitVarExpression(assign)
+} 

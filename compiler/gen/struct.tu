@@ -18,7 +18,7 @@ ast.StructMemberExpr::getMember()
 }
 ast.StructMemberExpr::getStruct()
 {
-	package = var.package
+	package = var.structpkg
 	s = null
 	
 	package = compile.parser.import[package]

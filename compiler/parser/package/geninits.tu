@@ -11,6 +11,7 @@
     f.parser = p
     f.package = this
     p.addFunc(f.name,f)
+	return f
 }
  hashInit = {} # map{string:bool}
  Package::parseinit(pkg){
@@ -33,8 +34,7 @@
 	 }
 	 
 	 if (pkg.package == "main" && std.len(pkg.inits) == 0){
-		 p = std.head(pkg.parsers)
-		 this->InsertInitFunc(p)
+		 panic("main_init0 should be created before")
 	 }
 	 
 	 return hashInit[pkg.getFullName()] 

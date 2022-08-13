@@ -25,7 +25,7 @@ class VarExpr : Ast {
     package
     ivalue
     
-    structname  structtype  pointer
+    structname  structtype structpkg  pointer
     
     type
     size    isunsigned

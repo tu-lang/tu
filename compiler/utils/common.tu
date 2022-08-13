@@ -10,3 +10,7 @@ func pwd(){
 	}	
 	return ""
 }
+string strRand() {			
+	v = std.rand(1000000000)
+	return fmt.sprintf("%D",v)
+}

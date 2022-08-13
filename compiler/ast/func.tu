@@ -66,11 +66,21 @@ Function::InsertFuncall(fullpackage,funcname){
 	call.package = fullpackage
 	call.funcname = funcname
 	call.is_pkgcall = true
-	if (this.block == nullptr){
+	if this.block == null {
 		this.block = new Block()
 	}
 	this.block.stmts[] = new ExpressionStmt(
         call,
+        this.parser.line,
+        this.parser.column
+    )
+} 
+Function::InsertExpression(expr){
+	if this.block == null {
+		this.block = new Block()
+	}
+	this.block.stmts[] = new ExpressionStmt(
+        expr,
         this.parser.line,
         this.parser.column
     )

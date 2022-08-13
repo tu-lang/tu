@@ -10,6 +10,7 @@ class Package {
 
     inits
     initid
+    initvars 
     classes # map[string] Class
     structs # map[string] Struct
 }
@@ -55,8 +56,8 @@ Package::parse()
             parser = new Parser(filepath,this,package,full_package)
             
             parser.fileno = 1
-            parser.parse()
             this.parsers[filepath] = parser
+            parser.parse()
         }
     }
     return true

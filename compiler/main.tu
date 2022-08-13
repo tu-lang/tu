@@ -29,7 +29,8 @@ func llvmgen(){
 }
 func compile(){
     utils.debug("assembly generate")
-    compile.compiler(code_file)
+    compile.genast(code_file)
+    compile.editast()
     compile.compile()
 
     if run {

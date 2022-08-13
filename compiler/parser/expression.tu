@@ -381,10 +381,14 @@ Parser::parseVarExpr(var)
                 call.is_delref = package == "__"
                 
                 obj = null
-                if std.exist(var,currentFunc.locals)
-                    obj = currentFunc.locals[var]
-                else
-                    obj = currentFunc.params_var[var]
+                if currentFunc != null {
+                    if std.exist(var,currentFunc.locals)
+                        obj = currentFunc.locals[var]
+                    else
+                        obj = currentFunc.params_var[var]
+                }else if std.exist(var,gvars) {
+                    obj = gvars[var]
+                }
                 
                 if obj {
                     params = call.args
@@ -401,7 +405,8 @@ Parser::parseVarExpr(var)
                 return index
             }else{
                 mvar = null
-                if (mvar = currentFunc.getVar(package) && mvar.structname != ""){
+                //FIXME: currentFunc is empty pointer
+                if (currentFunc != null && ((mvar = currentFunc.getVar(package)) != null) && mvar.structname != ""){
                     
                     mexpr = new StructMemberExpr(package,scanner.line,scanner.column)
                     
@@ -443,6 +448,7 @@ Parser::parseVarExpr(var)
                     scanner.scan()
                     assert(scanner.curToken == ast.VAR)
                     expr.package = sname
+                    expr.structpkg = sname
                     expr.structname = scanner.curLex
                     scanner.scan()
                 }

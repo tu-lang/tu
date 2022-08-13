@@ -7,19 +7,15 @@ use parser.package
 
 out    # current file fd
 parser # current parser
-ctx # arr[Context*,Context*..]
+ctx = [] # arr[Context*,Context*..]
 
-func compiler(filename) 
+func genast(filename)
 {
-    utils.debug("compile.init:",filename)
-    ctx = [] # arr[Context*,Context*]
-
     mpkg = new parser.Packge("main","main",false)
     mparser = new parser.Parser(filename,mpkg,"main","main")
     mparser.fileno = 1
-    mparser.parser()    # token parsering
-
     mpkg.parsers[filename] = mparser
+    mparser.parser()    # token parsering
     package.packages["main"] = mpkg
     //check runtime has been parsered
     if std.exist("runtime",package.packages) {
@@ -28,6 +24,9 @@ func compiler(filename)
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")
         package.packages["runtime"] = pkg 
     }
+func editast(){
+    mpkg = package.packages["main"]
+    mpkg.genvarsinit()
     mpkg.parseinit()
     mpkg.geninit()
 }

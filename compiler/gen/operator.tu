@@ -36,8 +36,12 @@ ast.AssignExpr::compile(ctx){
             }
             
             cpkg = compile.currentFunc.parser.getpkgname()
-            if std.len(package.packages,package){
-                varExpr = package.packages[package].getGlobalVar(varname)
+            full_package = ""
+            if std.exist(package,compile.currentFunc.parser.import)
+                full_package = compile.currentFunc.parser.import
+
+            if std.exist(full_package.packages,package){
+                varExpr = package.packages[full_package].getGlobalVar(varname)
             }else if std.len(package.packages,cpkg) {
                 varExpr = package.packages[cpkg].getGlobalVar(package)
                 sm = new ast.StructMemberExpr(package,this.line,this.column)

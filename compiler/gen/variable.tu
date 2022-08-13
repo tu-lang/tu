@@ -5,7 +5,7 @@ use std
 ast.VarExpr::isMemtype(ctx){
     v = this.getVar(ctx)
     if v.structtype {
-        acualPkg = compile.parser.import[v.package]
+        acualPkg = compile.parser.import[v.structpkg]
         dst = package.getStruct(acualPkg,v.structname)
         
         if (dst == null && v.structname != ""){

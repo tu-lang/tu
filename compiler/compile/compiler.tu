@@ -5,10 +5,6 @@ use os
 use internal
 use ast
 
-func parseinit(pkg)
-func geninit(pkg){
-
-}
 func compile(){
     //compute structs
     for(pkg : package.packages){

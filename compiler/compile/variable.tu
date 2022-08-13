@@ -27,7 +27,9 @@ func registerVars(){
             ast.I16 | ast.U16 :  mt = "value"
             ast.I32 | ast.U32 :  mt = "long"
             ast.I64 | ast.U64 :  mt = "quad"
+            // _ : mt = "quad"
         }
+        if v.pointer mt = "quad"
         writeln("    .%s   %s",mt,value)
     }
 }

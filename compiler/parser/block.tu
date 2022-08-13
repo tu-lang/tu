@@ -96,6 +96,7 @@ Parser::parseParameterList()
                             scanner.scan()
                             assert(scanner.curToken == ast.VAR)
                             var.package = sname
+                            var.structpkg = sname
                             var.structname = scanner.curLex
                             scanner.scan()
                         }
