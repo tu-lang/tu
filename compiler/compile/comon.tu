@@ -14,16 +14,13 @@ func compiler(filename)
     utils.debug("compile.init:",filename)
     ctx = [] # arr[Context*,Context*]
 
-    pkg = new parser.Packge("main","main",false)
-
-    mparser = new parser.Parser(filename,pkg,"main","main")
+    mpkg = new parser.Packge("main","main",false)
+    mparser = new parser.Parser(filename,mpkg,"main","main")
     mparser.fileno = 1
     mparser.parser()    # token parsering
 
-    pkg.parsers[filename] = mparser
-
-    package.packages["main"] = pkg
-
+    mpkg.parsers[filename] = mparser
+    package.packages["main"] = mpkg
     //check runtime has been parsered
     if std.exist("runtime",package.packages) {
         pkg = new package.Package("runtime","runtime",false) 
@@ -31,8 +28,8 @@ func compiler(filename)
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")
         package.packages["runtime"] = pkg 
     }
-    parseinit(pacakge.packages["main"]);
-    geninit(package.packages["main"]);
+    mpkg.parseinit()
+    mpkg.geninit()
 }
 func writeln(count,args...) {
     str = fmt.sprintf(args) 

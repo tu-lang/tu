@@ -60,3 +60,18 @@ func incr_lableid(){
     labelidx += 1
     return idx
 }
+Function::InsertFuncall(fullpackage,funcname){
+    call = new FunCallExpr(this.parser.line,this.parser.column)
+
+	call.package = fullpackage
+	call.funcname = funcname
+	call.is_pkgcall = true
+	if (this.block == nullptr){
+		this.block = new Block()
+	}
+	this.block.stmts[] = new ExpressionStmt(
+        call,
+        this.parser.line,
+        this.parser.column
+    )
+} 
