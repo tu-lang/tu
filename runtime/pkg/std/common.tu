@@ -1,6 +1,16 @@
 use runtime
 use fmt
 
+func rand(v<runtime.Value>){
+
+	seed = (seed * 1103515245) + 12345
+	ret<u64> = (seed / 65536) % 32768
+	if v != null {
+		ret %= v.data
+	}
+	return int(ret)
+}
+
 func empty(v<runtime.Value>){
 	match v.type {
 		runtime.String: {

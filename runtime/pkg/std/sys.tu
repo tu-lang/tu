@@ -1,6 +1,9 @@
 //die;implement by asm
 func die(code<i8>)
 
+//time ; implement by asm
+func time(t<u64>)
+
 //sleep ; implement by asm
 func sleep(sec<u64>)
 

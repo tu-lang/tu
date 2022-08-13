@@ -125,3 +125,8 @@ std_execve:
      syscall
      retq
 
+.globl std_time
+std_time:
+     mov $201 , %rax
+     syscall
+     retq
