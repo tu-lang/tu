@@ -17,6 +17,12 @@ func len(v){
 func pop(v){
 	return runtime.pop(v)	
 }
+func head(v){
+	if (ret<u64> = runtime.head(v))	!= runtime.Null {
+		return ret
+	}
+	return null
+}
 func tail(v<runtime.Value>){
 	match v.type {
 		runtime.Array : return runtime.array_tail(v.data)

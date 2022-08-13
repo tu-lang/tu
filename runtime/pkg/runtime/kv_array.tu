@@ -118,6 +118,15 @@ func array_tail(arr<Array>){
     var<u64*> = arr.addr + i * arr.size
     return *var
 }
+func array_head(arr<Array>){
+    if  arr == null os.die("[arr_head] not array_type")
+    if arr.used <= 0 {
+        fmt.println("[warn] array_head for empty array")
+        return Null
+    }
+    var<u64*> = arr.addr
+    return *var
+}
 
 func array_pop(arr<Array>){
     if  arr == null os.die("[arr_pop] not array_type")

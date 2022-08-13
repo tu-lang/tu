@@ -47,7 +47,22 @@ func pop(v<Value>){
 	type<i8> = v.type
 	match type {
 		Array  : return array_pop(v.data)
-		_      : return null
+		_      : {
+			fmt.println("[warn] pop(unknow type)")
+			return null
+		}
 	}
 	return null
+}
+func head(v<Value>){
+	type<i8> = v.type
+	match type {
+		Array  : return array_head(v.data)
+		Map  : return map_head(v.data)
+		_      : {
+			fmt.println("[warn] head(unknow type)")
+			return Null
+		}
+	}
+	return Null
 }

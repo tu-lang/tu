@@ -185,6 +185,17 @@ func rbtree_right_rotate(root<u64*>, sentinel<Rbtree_node>,node<Rbtree_node>)
     temp.right = node
     node.parent = temp
 }
+func map_head(tree<Rbtree>)
+{
+    node<Rbtree_node>     = tree.root
+    sentinel<Rbtree_node> = tree.sentinel
+
+
+    if  node == sentinel  {
+        return Null
+    }
+    return node.v
+}
 func rbtree_insert(tree<Rbtree>, node<Rbtree_node>)
 {
     root<u64*> = null
