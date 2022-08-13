@@ -11,6 +11,7 @@ clean() {
 failed(){
     str="$1"
     echo -e "\033[31m$str \033[0m"
+    ps aux|grep tests_asmer.sh|awk '{print $2}' |xargs kill -9
     exit 1
 }
 check(){

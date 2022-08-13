@@ -20,6 +20,14 @@ tests/tulang
 tests/*.s
 tests/class/*.s
 tests/class/*.o
+tests/common/*.s
+tests/common/*.o
+tests/native/*.s
+tests/native/*.o
+tests/operator/*.s
+tests/operator/*.o
+tests/runtime/*.o
+tests/runtime/*.s
 tests/datastruct/*.s
 tests/datastruct/*.o
 tests/internalpkg/*.s
