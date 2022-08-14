@@ -18,8 +18,9 @@ class Class
   }
   pkg
   name
-  members # [string]
-  funcs   # [Function] 
+  members     = [] # [Expression]
+  initmembers = [] # [Expression]
+  funcs       = [] # [Function] 
 }
 
 class Member
@@ -90,9 +91,17 @@ Struct::getMember(name)
 
 Class::getMember(name)
 {
-  for(i : members){
-    if i == name
-      return i
+  for(i : this.members){
+    var = assign.lhs
+    if var.varname == name {
+      return name
+    }
+  }
+  for(i : this.initmembers){
+    var = assign.lhs
+    if var.varname == name {
+      return name
+    }
   }
   return ""
 }

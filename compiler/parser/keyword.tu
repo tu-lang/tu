@@ -21,8 +21,21 @@ Parser::parseClassDef()
     while scanner.curToken != ast.RBRACE {
         
         if scanner.curToken == ast.VAR{
-            s.members[] = scanner.curLex
-            scanner.scan()
+            member = parseExpression()
+            if type(member) == type(ast.VarExpr) {
+                s.members[] = member
+            }else {
+                if type(member) != type(ast.AssignExpr) {
+                    this.panic("class member only support assign expr:%s",member.toString(""))
+                }
+                lhs = member.lhs
+                if type(lhs) != type(ast.VarExpr)
+                    this.panic("assign left should be var")
+                var = lhs
+                var.package = "this"
+                var.is_local = false
+                s.initmembers[] = member
+            }
         }else if scanner.curToken == ast.FUNC {
             f = parseFuncDef(true)
             assert(f != null)
@@ -292,4 +305,24 @@ Parser::parseImportDef()
     
     import[package] = path
 
+}
+Parser::genClassInitFunc(clsname)
+{
+    f = new ast.Function()
+    //set parser
+    f.parser = this
+    f.package = this.pkg
+    if hasFunc(clsname + "init")
+        this.check(false,"SyntaxError: already define function %s init",clsname)
+    f.name = "init"
+
+    var = new ast.VarExpr("this",this.line,this.column)
+    f.params_var["this"] = var
+    f.params_order_var[] = var
+    f.params[] = "this"
+
+    f.isObj = true
+    f.clsName = clsname
+    f.structname = clsname
+    return f
 }

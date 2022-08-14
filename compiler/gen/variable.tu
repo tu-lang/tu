@@ -58,16 +58,6 @@ ast.VarExpr::getVarType(ctx)
             
         return ast.Var_Local
     }
-    if (ret = ast.getVar(ctx,"this");ret != null) {
-        fn = compile.currentFunc
-        if (!fn.clsName.empty()){
-            c = fn.parser.pkg.getClass(fn.clsName)
-            if (c != null && !c.getMember(this.varname).empty()) {
-                return ast.Var_Obj_Member
-            }
-        }
-        
-    }
 
     func = null
     funcpkg = this.package

@@ -66,28 +66,9 @@ package.Package::genStruct(s)
 
 pacakge.Package::compile()
 {
-    asmfile  =   "sysinit.s"
-    if this.package != "main"
-        asmfile = fmt.sprintf("co_%s_%s",this.package,asmfile)
-
-    out = new std.File(asmfile)
-    if !out.IsOpen() {
-        panic("genrate assembly file failed package:%s file:sysinit.s",package)
+    for(name,class : classes){
+      this->initClassInitFunc(name)
     }
-    compile.out = out
-
-    for(it : classes){
-      if !checkClassFunc(it.first,"init"){
-        funcname = fmt.printf("%s_%s_init",full_package,it.first)
-        
-        compile.writeln(".global %s", funcname)
-        compile.writeln("%s:", funcname)
-        compile.writeln("    ret")
-      }
-    }
-    out.Close()
-    compile.out = null
-
     for(p : parsers){
         p.compile()
     }
