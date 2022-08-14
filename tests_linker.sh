@@ -76,6 +76,10 @@ install_env(){
     fi
 }
 install_env
+if [ "$1" != "" ]; then
+    read_dir $1
+    exit 0
+fi
 for dir in `ls`
 do
     if [ -d $dir ] ; then
