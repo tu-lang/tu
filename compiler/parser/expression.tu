@@ -54,7 +54,7 @@ Parser::parseChainExpr(first){
     return ret
 }
 
-Parser::parseExpression(oldPrecedence)
+Parser::parseExpression(oldPriority)
 {
     
     p = parseUnaryExpr()
@@ -114,15 +114,15 @@ Parser::parseExpression(oldPrecedence)
             LE, ADD, SUB, MOD, ast.MUL, DIV
         ]
     ){
-        currentPrecedence = scanner.precedence(scanner.curToken)
-        if (oldPrecedence > currentPrecedence)
+        currentPriority = scanner.priority(scanner.curToken)
+        if (oldPriority > currentPriority)
             return p
         
         tmp = new BinaryExpr(line, column)
         tmp.lhs = p
         tmp.opt = scanner.curToken
         scanner.scan()
-        tmp.rhs = parseExpression(currentPrecedence + 1)
+        tmp.rhs = parseExpression(currentPriority + 1)
         p = tmp
     }
     return p

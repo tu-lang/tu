@@ -394,7 +394,7 @@ Scanner::get_next() {
     return token(ast.ILLEGAL,"invalid")
 }
 
-Scanner::precedence(op)
+Scanner::priority(op)
 {
     match op {
         ast.LOGOR :  return 1

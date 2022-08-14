@@ -40,7 +40,8 @@ OperatorHelper::gen()
 		compile.Push()
 	}
 	
-	if this.rhs genRight(false,rhs) 
+	if this.rhs && this.opt != ast.LOGAND && this.opt != ast.LOGOR 
+		genRight(false,rhs) 
 	if ltypesize != 8 {
 		ax = "%eax"
 		di = "%edi"
@@ -93,18 +94,19 @@ OperatorHelper::binary()
 			_ :	this.lhs.panic("asmgen: must !,~ at unary expression,not %s\n",getTokenString(opt))
 		}
 	}
-	Token base = max(rtoken,ltoken)
-	tke = fmt.sprintf("token_max(lhs,rhs) should in(i8,u64) ltoken:%s rtoken:%s\n %s\n %s\n",
-			ltoken,rtoken,lhs.toString(),rhs.toString()
-	)
-	this.lhs.check(base >= ast.I8 && base <= ast.U64,tke)
-	
-	if opt == ast.ASSIGN return null
-	
-	compile.Cast(rtoken,base)
-	compile.writeln("	mov %%rax,%%rdi")
-	compile.Pop("%rax")
-	compile.Cast(ltoken,base)
+	if this.opt == ast.ASSIGN return null
+	if this.opt != ast.LOGAND && this.opt != ast.LOGOR  {
+		Token base = max(rtoken,ltoken)
+		tke = fmt.sprintf("token_max(lhs,rhs) should in(i8,u64) ltoken:%s rtoken:%s\n %s\n %s\n",
+				ltoken,rtoken,lhs.toString(),rhs.toString()
+		)
+		this.lhs.check(base >= ast.I8 && base <= ast.U64,tke)
+		
+		compile.Cast(rtoken,base)
+		compile.writeln("	mov %%rax,%%rdi")
+		compile.Pop("%rax")
+		compile.Cast(ltoken,base)
+	}
 	
 	match opt {
 		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add %s, %s", di, ax)
@@ -156,13 +158,13 @@ OperatorHelper::binary()
     		else			compile.writeln("	sar %%cl, %s", ax)
 		}
 		ast.LOGOR : { 
-			c = ast.incr_lableid()
-			
+			c = ast.incr_labelid()
+			compile.Pop("%rax")	
 			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	jne .L.true.%d", c)
-			
-			compile.writeln("	mov %%rdi,%%rax")
+
+			this->genRight(false,rhs)	
 			if rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	jne .L.true.%d", c)
@@ -174,13 +176,14 @@ OperatorHelper::binary()
 			break
 		}
 		ast.LOGAND : { 
-			c = ast.incr_lableid()
+			c = ast.incr_labelid()
 			
+			compile.Pop("%rax")	
 			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	je .L.false.%d", c)
-			
-			compile.writeln("	mov %%rdi,%%rax")
+
+			this->genRight(false,rhs)	
 			if rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	je .L.false.%d", c)

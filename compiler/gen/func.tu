@@ -128,7 +128,7 @@ func funcexec(ctx , fc , fce , package)
 
 
 	if compile.currentFunc && compile.currentFunc.is_variadic && have_variadic {
-		c = ast.incr_lableid()
+		c = ast.incr_labelid()
 		compile.writeln("    mov -8(%%rbp),%%rdi")
 		compile.Push()
 		internal.call("runtime_get_object_value")

@@ -217,7 +217,8 @@ ast.BinaryExpr::compile(ctx)
         oh new OperatorHelper(ctx,lhs,rhs,this.opt)
         return oh.gen()
     }
-
+    if opt == ast.LOGOR || opt == ast.LOGAND 
+        return this.FirstCompile(ctx)
     
     this.lhs.compile(ctx)
     compile.Push()
@@ -334,4 +335,48 @@ ast.AddrExpr::compile(ctx){
     compile.GenAddr(realVar)
 
     return this
+}
+BinaryExpr::FirstCompile(ctx){
+    record()
+    c = compile.incr_labelid()
+    this.lhs.compile(ctx)
+    match opt {
+        ast.LOGAND:{
+            if !condIsMtype(this.lhs,ctx)
+                internal.isTrue()
+            compile.writeln("    cmp $0, %%rax")
+			compile.writeln("	je .L.false.%d", c) 
+        }
+        ast.LOGOR: {
+            if  !condIsMtype(this.lhs,ctx)
+                internal.isTrue()
+            compile.writeln("    cmp $1, %%rax")
+			compile.writeln("	je .L.true.%d", c) 
+        }
+    }
+    this.rhs.compile(ctx)
+    match opt {
+        ast.LOGAND: {
+            if  !condIsMtype(this.rhs,ctx)
+                internal.isTrue()
+            compile.writeln("	cmp $0,%%rax")    
+            compile.writeln("	je .L.false.%d", c)
+            compile.writeln("	jmp .L.true.%d", c)
+        }
+        ast.LOGOR:{
+            if  !condIsMtype(this.rhs,ctx)
+                internal.isTrue()
+            compile.writeln("	cmp $1,%%rax")    
+            compile.writeln("	je .L.true.%d", c)
+            compile.writeln("	jmp .L.false.%d", c)
+        }
+    }
+
+    compile.writeln(".L.false.%d:", c)
+    compile.writeln("	mov $0, %%rax")
+    compile.writeln("	jmp .L.end.%d", c)
+    compile.writeln(".L.true.%d:", c) 
+    compile.writeln("	mov $1, %%rax")
+    compile.writeln(".L.end.%d:", c)
+    return null
 }

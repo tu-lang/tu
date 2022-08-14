@@ -55,7 +55,7 @@ func incr_closureidx(){
     closureidx += 1
     return idx
 }
-func incr_lableid(){
+func incr_labelid(){
     idx = labelidx
     labelidx += 1
     return idx

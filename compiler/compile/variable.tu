@@ -4,7 +4,7 @@ use parser.package
 
 func registerStrings(){
     for(var : parser.strs){
-        r = "L" + ast.incr_lableid() 
+        r = "L" + ast.incr_labelid() 
         var.name = r
         CreateGlobalString(var)
     }
