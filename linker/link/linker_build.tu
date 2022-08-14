@@ -69,7 +69,7 @@ Linker::buildExe()
 	}
 	ehdr.e_phoff = sizeof(linux.Elf64_Ehdr)
 	ehdr.e_phentsize = sizeof(linux.Elf64_Phdr)
-	segnames_len = std.len(segNames)
+	segnames_len = std.len(this.segNames)
 	ehdr.e_phnum = *segnames_len
 
 	ehdr.e_shentsize = sizeof(linux.Elf64_Shdr)

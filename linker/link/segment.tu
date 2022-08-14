@@ -83,7 +83,7 @@ Seglist::allocAddr(name,base<i32*>,off<i32*>)
 # symAddr: 重定位符号的虚拟地址
 Seglist::relocAddr(relAddr<u32>,type<u8>,symAddr<u32>,addend<i32>)
 {
-	utils.debug("Seglist::relocAddr ",baseAddr)
+	utils.debug("Seglist::relocAddr ",this.baseAddr)
 
 	baddr<u32>     = *this.baseAddr
 	relOffset<u32> = relAddr - baddr

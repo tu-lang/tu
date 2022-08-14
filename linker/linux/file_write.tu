@@ -16,8 +16,8 @@ File::writeHeader(out)
 	# elf文件头
     utils.fwrite(fp,ehdr,ehdr.e_ehsize)
 
-    if std.len(phdrTab) != 0 {  //程序头表
-        for (phd : phdrTab) {
+    if std.len(this.phdrTab) != 0 {  //程序头表
+        for (phd : this.phdrTab) {
             bytes += int(ehdr.e_phentsize)
 			# 写入程序表头
             utils.fwrite(fp,phd,ehdr.e_phentsize)
@@ -57,7 +57,7 @@ File::writeSecSym(out)
     }
     # 字符串表: 写入所有字符串
     bytes += this.shstrtabSize
-    utils.fwrite(fp,strtab,shstrtabSize)
+    utils.fwrite(fp,this.strtab,shstrtabSize)
     utils.fclose(fp)
     return bytes
 }

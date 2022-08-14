@@ -41,7 +41,7 @@ Linker::linker()
 	this.segNames[] = ".data.rel.local"
 	this.segNames[] = ".bss"
 	sl = this.segLists
-	for(name : segNames){
+	for(name : this.segNames){
 		tmp = new Seglist()
 		sl[name] = tmp
 	}
@@ -148,7 +148,7 @@ Linker::allocAddr()
 {
 	utils.msg(50,"Allocing address ")
 	curAddr<i32> = BASE_ADDR
-	curOff = int(sizeof(linux.Elf64_Ehdr)) + int(sizeof(linux.Elf64_Phdr)) * std.len(segNames)
+	curOff = int(sizeof(linux.Elf64_Ehdr)) + int(sizeof(linux.Elf64_Phdr)) * std.len(this.segNames)
 	//for reference
 	mcurOff<i32> = *curOff
 

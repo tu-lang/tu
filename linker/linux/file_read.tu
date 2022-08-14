@@ -117,7 +117,7 @@ File::getSymIndex(symname)
 {
 	index = 0
 	//TODO: len() 函数
-	sl = std.len(symNames)
+	sl = std.len(this.symNames)
 	for(i = 0 ; i < sl ; i += 1){
 		if  this.symNames[i] == symname {
 			break
@@ -146,7 +146,7 @@ File::getData(buf,offset,size)
 {
 	//utils.debug("File::getData ",elfdir)
 	# 打开 elf文件	
-	fp = utils.fopen(elfdir,"rb")
+	fp = utils.fopen(this.elfdir,"rb")
 	utils.fseek(fp,offset)
 	# 读取数据
 	utils.fread_with_buf(fp,buf,size)
