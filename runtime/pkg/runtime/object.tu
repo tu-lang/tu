@@ -40,6 +40,22 @@ func newinherit_object(father<Value>,typeid<i32>){
 
     return ret
 }
+func object_parent_get(obj<Value>){
+    if obj == null return obj
+    if obj.type != Object {
+        fmt.println("[warn] super()  not object")
+        return null
+    }
+    o<Object> = obj.data
+    if o.father == null {
+        fmt.println("[warn] super() called not in child class")
+        return null
+    }
+    ret<Value> = new Value
+    ret.type  = Object
+    ret.data  = o.father
+    return ret
+}
 // NOTICE: get_object_value called by compiler
 // so it didn't save the %rdi,%rsi,%rdx,%rcx,%r8,%r9
 // don't do anything in those who called by compiler,will cause terriable problem
@@ -147,6 +163,22 @@ func object_member_update(obj<Value>,k<u32>,v<Value>){
     c<Object> = obj.data
     member_insert(c.members,key,v)
 }
+func _object_member_get(obj<Object>,key<Value>){
+    v<Value> = member_find(obj.members,key)
+    if  v == null {
+        v = member_find(obj.funcs,key)
+    }
+
+    //need find it form father class
+    if v == null && obj.father != null {
+        v = _object_member_get(obj.father,key)
+    }
+    if  v == null {
+        //fmt.println("object_get] not find the memeber:%d value\n",key)
+        return null
+    }
+    return v
+}
 // return value
 func object_member_get(obj<Value>, k<u32>){
     key<Value> = int(k)
@@ -155,15 +187,7 @@ func object_member_get(obj<Value>, k<u32>){
         os.exit(-1)
     }
     c<Object> = obj.data 
-    v<Value> = member_find(c.members,key)
-    if  v == null {
-        v = member_find(c.funcs,key)
-    }
-    if  v == null {
-        //fmt.println("object_get] not find the memeber:%d value\n",key)
-        return null
-    }
-    return v
+    return _object_member_get(obj.data,key)
 }
 func object_unary_operator(opt<i32>,obj<Value>,k<u32>,v<Value>){
     if   obj == null || v == null  {
