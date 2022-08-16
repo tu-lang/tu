@@ -70,7 +70,7 @@ Parser::parseClassFunc(var){
     assert(f != null)
     
     f.clsName = var
-    pkg.addClassFunc(var,f)
+    pkg.addClassFunc(var,f,this)
     
     this.addFunc(f.name,f)
     return
@@ -96,7 +96,7 @@ Parser::parseExternClassFunc(pkgname){
     
     f.clsName = clsname
     pkg = package.packages[import[pkgname]]
-    pkg.addClassFunc(clsname,f)
+    pkg.addClassFunc(clsname,f,this)
     f.package = pkg
     
     this.addFunc(clsname + f.name,f)

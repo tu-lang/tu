@@ -10,7 +10,8 @@ Parser::parseClassDef()
     scanner.scan()
     
     assert(scanner.curToken == ast.VAR)
-    s = new Class(this.pkg.package)
+    s = new ast.Class(this.pkg.package)
+    s.parser = this
     s.name  = scanner.curLex
     scanner.scan()
     
@@ -209,7 +210,7 @@ Parser::parseFuncDef(member,closure)
     std.merge(node.params,params)
     node.block = null
     if (scanner.curToken == ast.LBRACE)
-        node.block = parseBlock()
+        node.block = parseBlock(member)
     
     currentFunc = null
     return node

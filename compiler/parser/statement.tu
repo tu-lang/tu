@@ -49,7 +49,7 @@ Parser::parseIfStmt()
     ifCase.cond = parseExpression()
     
     if scanner.curToken == ast.LBRACE {
-        ifCase.block = parseBlock()
+        ifCase.block = parseBlock(false)
     }else{
         ifCase.block = new Block()
         ifCase.block.stmts[] = parseStatement()
@@ -63,7 +63,7 @@ Parser::parseIfStmt()
             scanner.scan()
             ice.cond = parseExpression()
             if scanner.curToken == ast.LBRACE {
-                ice.block = parseBlock()
+                ice.block = parseBlock(false)
             }else {
                 ice.block = new Block()
                 ice.block.stmts[] = parseStatement()
@@ -72,7 +72,7 @@ Parser::parseIfStmt()
         
         }else{
             if scanner.curToken == ast.LBRACE {
-                ice.block = parseBlock()
+                ice.block = parseBlock(false)
             }else {
                 ice.block = new Block()
                 ice.block.stmts[] = parseStatement()
@@ -130,7 +130,7 @@ Parser::parseForStmt()
             fmt.assert(scanner.curToken == ast.RPAREN)
             scanner.scan()
             
-            node.block = parseBlock()
+            node.block = parseBlock(false)
             return node
         }
         
@@ -148,7 +148,7 @@ Parser::parseForStmt()
     assert(scanner.curToken == ast.RPAREN)
     scanner.scan()
     
-    node.block = parseBlock()
+    node.block = parseBlock(false)
     return node
 }
 Parser::parseMatchSmt(){
@@ -185,7 +185,7 @@ Parser::parseMatchCase(cond)
     check(scanner.curToken == ast.COLON)
     scanner.scan()
     if scanner.curToken == ast.LBRACE {
-        cs.block = parseBlock() 
+        cs.block = parseBlock(false) 
     }else{
         cs.block = new Block()
         cs.block.stmts[] = parseStatement()
@@ -205,7 +205,7 @@ Parser::parseWhileStmt() {
         scanner.scan()
     }
     
-    node.block = parseBlock()
+    node.block = parseBlock(false)
     return node
 }
 Parser::parseReturnStmt() {

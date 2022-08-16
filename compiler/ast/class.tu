@@ -17,6 +17,7 @@ class Class
     this.pkg = pkg
   }
   pkg
+  parser      # Parser
   name
   members     = [] # [Expression]
   initmembers = [] # [Expression]
@@ -105,3 +106,31 @@ Class::getMember(name)
   }
   return ""
 }
+
+Class::initClassInitFunc()
+{
+    f = null
+    for(var : this.funcs){
+        if var.name == "init" {
+            f = var
+            break
+        }
+    }
+    if f == null {
+        f = this.parser.genClassInitFunc(name) 
+        this.funcs[] = f
+        this.parser.addFunc(this.name + f.name,f)
+        if this.father != null {
+          f.block.stmts[] = this.parser.genSuperInitStmt(f)
+        }
+    }
+    if f.block == null {
+        f.block = new Block()
+    }
+    if this.father == null {
+      f.block.checkAndRmFirstSuperDefine()
+    }
+    f.block.InsertExpressionsHead(this.initmembers)
+
+    return true
+} 

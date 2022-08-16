@@ -20,15 +20,16 @@ func genast(filename)
     //check runtime has been parsered
     if std.exist("runtime",package.packages) {
         pkg = new package.Package("runtime","runtime",false) 
+        package.packages["runtime"] = pkg 
         //recursively scan code files
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")
-        package.packages["runtime"] = pkg 
     }
 func editast(){
     mpkg = package.packages["main"]
     mpkg.genvarsinit()
     mpkg.parseinit()
     mpkg.geninit()
+    mpkg.classinit()
 }
 func writeln(count,args...) {
     str = fmt.sprintf(args) 

@@ -49,12 +49,17 @@ Parser::parseStatementList()
     return node
 }
 
-Parser::parseBlock()
+Parser::parseBlock(member)
 {
     node = new ast.Block()
     scanner.scan()
-    node.stmts = parseStatementList()
-    
+    if member {
+        stmt = this.genSuperInitStmt(this.currentFunc)
+        node->stmts[] stmt
+    }
+    stmts = this.parseStatementList()
+    std.merge(node.stmts,stmts)
+
     check(scanner.curToken == ast.RBRACE)
     scanner.scan()
     return node
@@ -157,4 +162,24 @@ Parser::parseParameterList()
     assert( scanner.curToken == ast.RPAREN )
     scanner.scan()
     return node
+}
+
+Parser::genSuperInitStmt(f){
+    if this.import["runtime"] != null {
+        this.import["runtime"] = "runtime"
+    }
+    ass = new ast.AssignExpr(this.line,this.column)
+    ass.opt = ast.ASSIGN
+    lhs = new ast.VarExpr("super",this.line,this.column)
+    f.locals[lhs.varname] = lhs
+
+    rhs = new ast.FunCallExpr(this.line,this.column)
+    rhs.package = "runtime"
+    rhs.funcname = "object_parent_get"
+    var = new ast.VarExpr("this",this.line,this.column)
+    rhs.args[] = var
+    rhs.is_pkgcall = true
+    ass.lhs = lhs
+    ass.rhs = rhs
+    return new ast.ExpressionStmt(ass,this.line,this.column)
 }

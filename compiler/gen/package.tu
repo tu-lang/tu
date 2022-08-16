@@ -63,12 +63,14 @@ package.Package::genStruct(s)
   
   s.iscomputed = true
 }
-
-pacakge.Package::compile()
-{
-    for(name,class : classes){
-      this->initClassInitFunc(name)
+package.Package::classinit(){
+  for(pkg : pacakge.packages){
+    for(class : pkg.classes){
+      class->initClassInitFunc()
     }
+  }
+}
+pacakge.Package::compile(){
     for(p : parsers){
         p.compile()
     }

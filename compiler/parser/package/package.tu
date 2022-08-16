@@ -101,15 +101,16 @@ Package::getStruct(name)
     return null
 }
 
-Package::addClassFunc(name,f)
+Package::addClassFunc(name,f,p)
 {
     if std.exist(name,classes) {
         this.classes[name].funcs[] = f
         return null
     }
     
-    s = new Class(package)
+    s = new ast.Class(package)
     s.name  = name
+    s.parser = p
     s.funcs[] = f
     classes[name] = s
 }
