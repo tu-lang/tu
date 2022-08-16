@@ -27,6 +27,32 @@ func len(v){
 func pop(v){
 	return runtime.pop(v)	
 }
+func pop_head(v<runtime.Value>){
+	if v == null {
+		fmt.println("[warn] pop_head args is null")
+		return std_false
+	}
+	match v.type {
+		runtime.Array:{
+			arr<runtime.Array> = v.data
+			if  arr == null os.die("[arr_pop_head] not array_type")
+			if arr.used <= 0 {
+				fmt.println("[warn] array_pop for empty array")
+				return std_false
+			}
+			arr.used -= 1
+			addr<u64*> = arr.addr
+			var<u64*>  = addr
+			addr += arr.size
+			arr.addr = addr
+			return *var
+		}
+		_: {
+			fmt.println("[warn] pop_head args is not array")
+			return std_false
+		}
+	}
+}
 func head(v){
 	if (ret<u64> = runtime.head(v))	!= runtime.Null {
 		return ret
