@@ -3,7 +3,7 @@ use std
 class Block
 {
     # [Statement]
-    stmts
+    stmts = []
 }
 
 

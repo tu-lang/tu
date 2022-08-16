@@ -12,26 +12,33 @@ class DelRefExpr  : Ast { expr }
 class ChainExpr   : Ast {
     first
     last
-    # array[Ast] 
-    fields
+    fields = [] # array[Ast] 
     ret
 }
 class VarExpr : Ast {
     varname
     offset
     name
-    is_local
-    is_variadic
+    is_local    = true
+    is_variadic = false
     package
     ivalue
     
-    structname  structtype structpkg  pointer
+    structname
+    structtype  = false
+    structpkg  
+    pointer     = false
     
     type
-    size    isunsigned
-    stack   stacksize
+    size    
+    isunsigned  = false
+    stack       = false
+    stacksize   = 0
     
     ret funcpkg funcname
+    func init(varname,line,column){
+        this.varname = varname
+    }
 }
 class StructMemberExpr : Ast {
     varname

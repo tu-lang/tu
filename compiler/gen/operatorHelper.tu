@@ -1,21 +1,38 @@
 use ast
 use compile
 
-OperatorHelper::init(ctx,lhs,rhs,Token opt) {
+class OperatorHelper {
+	ctx # [Context]
+	lhs rhs # lhs rhs
+	opt
+
+	var 
+
+	//left
+	ltypesize   = 8
+	lvarsize    = 1
+	ltoken      = ast.I8
+	lisunsigned = false
+	lmember     = null
+	lispointer  = false
+	//right
+	rtypesize
+	rvarsize
+	rtoken
+	risunsigned
+	rispointer
+
+
+	ax = "%rax"
+	di = "%rdi",
+	dx = "$rdx"
+	needassign = false
+}
+OperatorHelper::init(ctx,lhs,rhs,opt) {
 	this.ctx = ctx
 	this.lhs = lhs
 	this.rhs = rhs
 	this.opt = opt
-	this.ltypesize = 8
-	this.lvarsize = 1
-	this.ltoken = ast.I8
-	this.lisunsigned = false
-	this.lispointer = false
-	this.needassign = false
-	this.lmember = null
-	this.ax = "%rax"
-	this.di = "%rdi"
-	this.dx = "%rdx"
 	if opt >= ASSIGN && opt <= BITOR_ASSIGN
 		this.needassign = true
 }
@@ -164,7 +181,7 @@ OperatorHelper::binary()
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	jne .L.true.%d", c)
 
-			this->genRight(false,rhs)	
+			this.genRight(false,rhs)	
 			if rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	jne .L.true.%d", c)
@@ -183,7 +200,7 @@ OperatorHelper::binary()
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	je .L.false.%d", c)
 
-			this->genRight(false,rhs)	
+			this.genRight(false,rhs)	
 			if rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	je .L.false.%d", c)

@@ -1,31 +1,28 @@
 
 class Context{
-    # map[string]VarExpr
-    vars
-    # map[string]bool
-    isFuncArg
+    vars         = {} # map{string:VarExpr}
+    isFuncArg    = {} # map{string,bool}
 
-    # context
-    cur_funcname 
-    end_str
-    start_str
-    continue_str
-    point
+    cur_funcname = ""
+    end_str      = ""
+    start_str    = ""
+    continue_str = ""
+    point        = 0
 
 }
 Context::hasVar(varname)
 {
-    return std.exist(varname,vars)
+    return this.vars[varname] != null
 }
 
 Context::createVar(varname,ident)
 {
-    vars[varname] = ident
+    this.vars[varname] = ident
 }
 Context::getVar(varname)
 {
     if std.len(vars) < 1 return null
-    if std.exist(varname,vars) {
+    if vars[varname] != null {
         return vars[varname]
     } 
     return null
@@ -34,8 +31,7 @@ Context::getVar(varname)
 func getVar(ctx , varname)
 {
     for(c : ctx){
-        var = c.getVar(varname) 
-        if var != null {
+        if var = c.getVar(varname) {
             return var
         }
     }
