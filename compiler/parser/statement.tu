@@ -87,7 +87,11 @@ Parser::parseForStmt()
 {
     node = new gen.ForStmt(line,column)
     
-    scanner.scan()
+    hashlparen = false
+    if this.scanner->curToken == ast.LPAREN {
+        this.scanner.scan()
+        hashlparen = true
+    }
     
     this.expect( ast.VAR)
 
@@ -128,28 +132,39 @@ Parser::parseForStmt()
                && !std.exist(node.value.varname,currentFunc.locals)
                 currentFunc.locals[node.value.varname] = node.value
             
-            fmt.assert(scanner.curToken == ast.RPAREN)
+            fmt.this.expect(ast.RPAREN)
             scanner.scan()
-            
-            node.block = parseBlock(false)
+            if this.scanner->curToken == ast.LBRACE {
+                node.block = parseBlock(false)
+            }else {
+                node.block = new ast.Block()
+                node.block.stmts[] = this.parseStatement()
+            } 
             return node
         }
         
         scanner.rollback(tx)
     // }
     node.init = parseExpression()
-    this.expect( ast.SEMI ast.COLON)
+    this.expect(ast.SEMICOLON)
     scanner.scan()
 
     node.cond = parseExpression()
-    assert(scanner.curToken == ast.SEMI ast.COLON)
+    this.expect(ast.SEMICOLON)
     scanner.scan()
     
     node.after = parseExpression()
-    assert(scanner.curToken == ast.RPAREN)
-    scanner.scan()
+    if (hashlparen ){
+        this.expect(ast.RPAREN)
+        scanner.scan()
+    }
     
-    node.block = parseBlock(false)
+    if this.scanner->curToken == ast.LBRACE {
+        node.block = parseBlock(false)
+    }else {
+        node.block = new ast.Block()
+        node.block.stmts[] = this.parseStatement()
+    } 
     return node
 }
 Parser::parseMatchSmt(){

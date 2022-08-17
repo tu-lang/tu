@@ -158,7 +158,7 @@ Parser::parsePrimaryExpr()
         if tk == ast.DOT {
             addr.package = addr.varname
             scanner.scan()
-            assert(scanner.curToken == ast.VAR )
+            this.expect( ast.VAR )
             addr.varname = scanner.curLex
             scanner.scan()
         }
@@ -176,7 +176,7 @@ Parser::parsePrimaryExpr()
     
     }else if tk == ast.DOT{
         scanner.scan()
-        assert(scanner.curToken == ast.VAR)
+        thi.expect(ast.VAR)
         me = new gen.MemberExpr(line,column)
         me.membername = scanner.curLex
         
@@ -185,7 +185,7 @@ Parser::parsePrimaryExpr()
     }else if tk == ast.LPAREN {
         scanner.scan()
         val = parseExpression()
-        assert(scanner.curToken == ast.RPAREN )
+        this.expect( ast.RPAREN )
         
         scanner.scan()
         return val
@@ -260,7 +260,7 @@ Parser::parsePrimaryExpr()
                 if scanner.curToken == ast.COMMA
                     scanner.scan()
             }
-            assert(scanner.curToken == ast.RBRACKET)
+            this.expect( ast.RBRACKET )
             scanner.scan()
             return ret
         }
@@ -281,7 +281,7 @@ Parser::parsePrimaryExpr()
                 if scanner.curToken == ast.COMMA
                     scanner.scan()
             }
-            assert(scanner.curToken == ast.RBRACE)
+            this.expect( ast.RBRACE )
             scanner.scan()
             return ret
         }
@@ -310,7 +310,7 @@ Parser::parseNewExpr()
     scanner.scan()
     if scanner.curToken == ast.DOT {
         scanner.scan()
-        assert(scanner.curToken == ast.VAR)
+        this.expect( ast.VAR )
         package = name
         name = scanner.curLex
         scanner.scan()
@@ -333,7 +333,7 @@ Parser::parseNewExpr()
             scanner.scan()
     }
     
-    assert(scanner.curToken == ast.RPAREN)
+    this.expect( ast.RPAREN )
     scanner.scan()
     return ret
 }
@@ -426,7 +426,7 @@ Parser::parseVarExpr(var)
                 scanner.scan()
                 if scanner.curToken == ast.DOT{
                     scanner.scan()
-                    assert(scanner.curToken == ast.VAR)
+                    this.expect( ast.VAR )
                     expr.package = sname
                     expr.structpkg = sname
                     expr.structname = scanner.curLex
@@ -495,7 +495,7 @@ Parser::parseFuncallExpr(callname)
             scanner.scan()
     }
     
-    assert(scanner.curToken == ast.RPAREN)
+    this.expect( ast.RPAREN )
     scanner.scan()
     return val  
 }
@@ -505,7 +505,7 @@ Parser::parseIndexExpr(varname){
     val = new gen.IndexExpr(line,column)
     val.varname = varname
     val.index = parseExpression()
-    assert(scanner.curToken == ast.RBRACKET)
+    this.expect( ast.RBRACKET )
     
     scanner.scan()
     return val

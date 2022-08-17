@@ -99,7 +99,7 @@ Parser::parseParameterList()
                         scanner.scan()
                         if scanner.curToken == ast.DOT {
                             scanner.scan()
-                            assert(scanner.curToken == ast.VAR)
+                            this.expect(ast.VAR)
                             var.package = sname
                             var.structpkg = sname
                             var.structname = scanner.curLex
@@ -159,7 +159,7 @@ Parser::parseParameterList()
         scanner.scan()
     }
     
-    assert( scanner.curToken == ast.RPAREN )
+    this.expect( ast.RPAREN )
     scanner.scan()
     return node
 }

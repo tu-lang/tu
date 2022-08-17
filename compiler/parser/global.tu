@@ -62,7 +62,7 @@ Parser::parseClassFunc(var){
     this.expect(  ast.COLON)
     
     scanner.scan()
-    assert(scanner.curToken ==  ast.COLON)
+    this.expect( ast.COLON )
     
     scanner.curToken  = ast.FUNC
     
@@ -78,16 +78,16 @@ Parser::parseClassFunc(var){
 Parser::parseExternClassFunc(pkgname){
     this.expect( ast.DOT)
     scanner.scan()
-    this.expect( VAR)
+    this.expect( ast.VAR)
     clsname = scanner.curLex
     scanner.scan()
     if !std.exist(this.import,pkgname){
         check(false,fmt.sprintf("consider import package: use %s",package))
     }
-    this.expect(  ast.COLON)
+    this.expect(  ast.COLON )
     
     scanner.scan()
-    assert(scanner.curToken ==  ast.COLON)
+    this.expect( ast.COLON )
     
     scanner.curToken  = ast.FUNC
     

@@ -5,17 +5,17 @@ use std
 Parser::parseClassDef()
 {
     utils.debug("found class. start parser..")
-    assert(scanner.curToken == ast.CLASS)
+    this.expect(ast.CLASS)
     
     scanner.scan()
     
-    assert(scanner.curToken == ast.VAR)
+    this.expect(ast.VAR)
     s = new ast.Class(this.pkg.package)
     s.parser = this
     s.name  = scanner.curLex
     scanner.scan()
     
-    assert(scanner.curToken == ast.LBRACE)
+    this.expect(ast.LBRACE)
 
     scanner.scan()
     
@@ -59,9 +59,9 @@ Parser::parseClassDef()
 Parser::parseStructDef()
 {
     utils.debug("found class start parser..")
-    assert(scanner.curToken == MEM)
+    this.expect(ast.MEM)
     scanner.scan()
-    assert(scanner.curToken == ast.VAR)
+    this.expect(ast.VAR)
     s = new Struct()
     s.parser = this
     s.name  = scanner.curLex
@@ -182,7 +182,7 @@ Parser::parseMember(tk,idx,pointer){
 Parser::parseFuncDef(member,closure)
 {
     utils.debug("found function. start parser..")
-    assert(scanner.curToken == ast.FUNC)
+    this.expect(ast.FUNC)
     scanner.scan()
     node = new Function()
     node.parser = this
@@ -220,7 +220,7 @@ Parser::parseExternDef()
 {
     utils.debug("found extern .start parser..")
     
-    assert(scanner.curToken == ast.EXTERN)
+    this.expect(ast.EXTERN)
     node     = new Function()
     node.isExtern = true
     node.parser   = this
@@ -233,7 +233,7 @@ Parser::parseExternDef()
     node.block    = null
 
     scanner.scan()
-    assert(scanner.curToken == ast.LPAREN)
+    this.expect(ast.LPAREN)
     
     scanner.scan()
     
@@ -245,14 +245,14 @@ Parser::parseExternDef()
         scanner.scan()
     }
     
-    assert(scanner.curToken == ast.RPAREN)
+    this.expect(ast.RPAREN)
     scanner.scan()
     return node
 }
 
 Parser::parseExtra() {
     utils.debug("found #: parser..")
-    assert(scanner.curToken == ast.EXTRA)
+    this.expect(ast.EXTRA)
     
     scanner.scan()
     
@@ -271,11 +271,11 @@ Parser::parseExtra() {
 Parser::parseImportDef()
 {
     utils.debug("found import.start parser..")
-    assert(scanner.curToken == ast.USE)
+    this.expect(ast.USE)
     
      scanner.scan()
     
-    assert(scanner.curToken == ast.VAR)
+    this.expect(ast.VAR)
     path = scanner.curLex
     package(path)
     multi = false
@@ -285,7 +285,7 @@ Parser::parseImportDef()
         
         scanner.scan()
         
-        assert(scanner.curToken == ast.VAR)
+        this.expect(ast.VAR)
         
         path += "_" + scanner.curLex
         package = scanner.curLex
