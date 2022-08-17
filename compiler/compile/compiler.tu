@@ -94,10 +94,10 @@ func assign_offsets(fn)
     for(var : fn.params_order_var){
         if gp + 1 < GP_MAX {
             bottom += 8
-            bottom = ALIGN_UP(bottom, 8)
+            bottom = utils.ALIGN_UP(bottom, 8)
             var.offset = -bottom
         } else{
-            top = ALIGN_UP(top, 8)
+            top = utils.ALIGN_UP(top, 8)
             var.offset = top
             if var.structtype && !var.pointer && var.type <= ast.U64 && var.type >= ast.I8 {
                 top += var.size
@@ -118,7 +118,7 @@ func assign_offsets(fn)
         }else{
             bottom += 8
         }
-        bottom = ALIGN_UP(bottom, 8)
+        bottom = utils.ALIGN_UP(bottom, 8)
         var.offset = -bottom
     }
     if fn.is_variadic {
@@ -131,9 +131,9 @@ func assign_offsets(fn)
         bottom += 8
         fn.g_stack = - bottom
 
-        fn.stack_size = ALIGN_UP(bottom, 16)
+        fn.stack_size = utils.ALIGN_UP(bottom, 16)
     }else{
-        fn.stack_size = ALIGN_UP(bottom, 16)
+        fn.stack_size = utils.ALIGN_UP(bottom, 16)
     }
 }
 

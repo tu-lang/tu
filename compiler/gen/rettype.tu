@@ -1,34 +1,34 @@
 use ast
 use utils 
 
-ast.BoolExpr::getType(ctx){
+NullExpr::getType(ctx){
 	return ast.U8
 }
-ast.CharExpr::getType(ctx){
+BoolExpr::getType(ctx){
+	return ast.U8
+}
+CharExpr::getType(ctx){
 	return ast.I8
 }
-ast.NullExpr::getType(ctx){
-	return ast.U8
-}
-ast.IntExpr::getType(ctx){
+IntExpr::getType(ctx){
 	return ast.I64
 }
-ast.DoubleExpr::getType(ctx){
+DoubleExpr::getType(ctx){
 	panic("getType: unsupport double\n")
 }
-ast.StringExpr::getType(ctx){
+StringExpr::getType(ctx){
 	return ast.U64
 }
-ast.ArrayExpr::getType(ctx){
+ArrayExpr::getType(ctx){
 	panic("getType: unsupport array\n")
 }
-ast.MapExpr::getType(ctx){
+MapExpr::getType(ctx){
 	panic("getType: unsupport map\n")
 }
-ast.KVExpr::getType(ctx){
+KVExpr::getType(ctx){
 	panic("getType: unsupport kv\n")
 }
-ast.ChainExpr::getType(ctx){
+ChainExpr::getType(ctx){
 	check(ismem(ctx),"gettype: unsuport chain")
 
 	s 	= this.first
@@ -36,7 +36,7 @@ ast.ChainExpr::getType(ctx){
 	
 	check(member.isstruct,"must be memtype in chain expr")
 	for(i : fields){
-		check(type(i) == type(ast.MemberExpr),"field must be member expression at mem chain expression")
+		check(type(i) == type(MemberExpr),"field must be member expression at mem chain expression")
 		me = i
 		check(member.structref != null,"must be memref in chain expr")
 		
@@ -59,25 +59,25 @@ ast.ChainExpr::getType(ctx){
 	}
 	return ast.U64
 }
-ast.VarExpr::getType(ctx){
+VarExpr::getType(ctx){
 	getVarType(ctx)
 	if ret.pointer return ast.U64
 
 	return ret.type
 }
-ast.ClosureExpr::getType(ctx){
+ClosureExpr::getType(ctx){
 	panic("getType: unsupport closure\n")
 }
-ast.StructMemberExpr::getType(ctx){
+StructMemberExpr::getType(ctx){
 	m = getMember()
 	if m.pointer || m.isclass return ast.U64
 	return m.type
 }
-ast.AddrExpr::getType(ctx){
+AddrExpr::getType(ctx){
 	return ast.U64
 }
-ast.DelRefExpr::getType(ctx){
-	if type(expr) == type(ast.VarExpr) 
+DelRefExpr::getType(ctx){
+	if type(expr) == type(VarExpr) 
 	{
 		var = expr
 		var = var.getVar(ctx)
@@ -89,7 +89,7 @@ ast.DelRefExpr::getType(ctx){
 		else 
 			return ast.I64
 
-	}else if type(expr) == type(ast.StructMemberExpr) {
+	}else if type(expr) == type(StructMemberExpr) {
 		e = expr
 		m = e.getMember()
 		if m.pointer return ast.U64
@@ -97,44 +97,44 @@ ast.DelRefExpr::getType(ctx){
 	}
 	return expr.getType(ctx)
 }
-ast.IndexExpr::getType(ctx){
+IndexExpr::getType(ctx){
 	panic("getType: unsupport IndexExpr\n")
 }
-ast.BinaryExpr::getType(ctx){
+BinaryExpr::getType(ctx){
 	
 	if !this.rhs return lhs.getType(ctx)
 	l = lhs.getType(ctx)
 	r = rhs.getType(ctx)
 	return utils.max(l,r)
 }
-ast.FunCallExpr::getType(ctx){
+FunCallExpr::getType(ctx){
 	return ast.U64
 }
-ast.AssignExpr::getType(ctx){
+AssignExpr::getType(ctx){
 	return this.lhs.getType(ctx)
 }
-ast.NewClassExpr::getType(ctx){
+NewClassExpr::getType(ctx){
 	panic("getType: unsupport new class\n")
 }
-ast.BuiltinFuncExpr::getType(ctx){
+BuiltinFuncExpr::getType(ctx){
 	return ast.U64
 	panic("getType: unsupport builtin\n")
 }
-ast.NewExpr::getType(ctx){
+NewExpr::getType(ctx){
 	return ast.U64
 }
-ast.MemberExpr::getType(ctx){
+MemberExpr::getType(ctx){
 	panic("getType: unsupport Member\n")
 }
-ast.MemberCallExpr::getType(ctx){
+MemberCallExpr::getType(ctx){
 	panic("getType: unsupport MemberCall\n")
 }
-ast.MatchCaseExpr::getType(ctx){
+MatchCaseExpr::getType(ctx){
 	panic("getType: unsupport MatchCaseExpr\n")
 }
-ast.IfCaseExpr::getType(ctx){
+IfCaseExpr::getType(ctx){
 	panic("getType: unsupport IfCaseExpr\n")
 }
-ast.LabelExpr::getType(ctx){
+LabelExpr::getType(ctx){
 	panic("getType: unsupport LabelExpr\n")
 }

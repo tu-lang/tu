@@ -34,10 +34,10 @@ Block::checkAndRmFirstSuperDefine(){
     if type(first) == type(ExpressionStmt) 
     {
         assign = stmt.expr
-        if type(assign) == type(AssignExpr) 
+        if type(assign) == type(gen.AssignExpr) 
         {
             if (assign.opt != ASSIGN) return false
-            if type(assign.lhs) == type(VarExpr) 
+            if type(assign.lhs) == type(gen.VarExpr) 
             {
                 var = assign.lhs
                 if var.varname == "super" 

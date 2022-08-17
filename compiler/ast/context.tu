@@ -1,5 +1,5 @@
 
-class Context{
+class Context {
     vars         = {} # map{string:VarExpr}
     isFuncArg    = {} # map{string,bool}
 

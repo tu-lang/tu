@@ -5,30 +5,22 @@ use compile
 use parser
 use parser.package
 
-// @param ctx [Context]
-// @return Expression
-ast.ArrayExpr::compile(ctx){
-    record()
-    //new Array & push array
-    internal.newobject(ast.Array, 0)
-
-    compile.Push()
-
-    for(element: this.literal){
-        //new element & push element
-        element.compile(ctx)
-        compile.Push()
-
-        internal.arr_pushone() 
-    }
-
-    //pop array
-    compile.Pop("%rax")
-
-    return null
+class KVExpr  : ast.Ast { 
+	key value 
+	func init(line,column){
+		super.init(line,column)
+	}
+}
+KVExpr::toString() {
+    str = "{"
+    if (key)   str += key.toString()
+    str += ":"
+    if (value) str += value.toString()
+    str += "}"
+    return str
 }
 
-ast.KVExpr::compile(ctx){
+KVExpr::compile(ctx){
     record()
     utils.debug("KVExpr: gen... k:%s v:%s",key,value)
 
@@ -41,7 +33,26 @@ ast.KVExpr::compile(ctx){
     return null
 }
 
-ast.IndexExpr::compile(ctx) {
+class IndexExpr : ast.Ast {
+    varname
+    index
+    is_pkgcall
+    package
+    func init(line,column){
+        super.init(line,column)
+    }
+}
+IndexExpr::toString() {
+    str = "IndexExpr(index="
+    if index
+        str += index.toString()
+    str += ")"
+    return str
+}
+
+
+
+IndexExpr::compile(ctx) {
     record()
     f = compile.currentFunc
 

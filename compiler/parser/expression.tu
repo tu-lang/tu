@@ -2,26 +2,27 @@ use ast
 use os
 use std
 use fmt
+use gen
 
 Parser::parseChainExpr(first){
     
-    chainExpr = new ast.ChainExpr(line,column)
+    chainExpr = new gen.ChainExpr(line,column)
     ret  = chainExpr
     chainExpr.first = first
-    if type(first) == type(ast.DelRefExpr) {
+    if type(first) == type(gen.DelRefExpr) {
         dr = first
-        check(type(dr.expr) == type(ast.StructMemberExpr))
+        check(type(dr.expr) == type(gen.StructMemberExpr))
         
         chainExpr.first = dr.expr
         dr.expr = chainExpr
         ret = dr
-    }else if type(first) == type(ast.AddrExpr) {
+    }else if type(first) == type(gen.AddrExpr) {
         ae = first
         
         var = currentFunc.getVar(ae.package)
         check(var != null && var.structtype)
         
-        sm = new StructMemberExpr(ae.package,ae.line,ae.column)
+        sm = new gen.StructMemberExpr(ae.package,ae.line,ae.column)
         sm.member = ae.varname
         sm.var    = var
         
@@ -31,14 +32,11 @@ Parser::parseChainExpr(first){
     }
     
     
-    while std.exist(
-        scanner.curToken,
-        [ast.DOT,ast.LPAREN,ast.LBRACKET]
-    ) {
+    while true { 
         match scanner.curToken {
             ast.DOT : {
                 scanner.scan()
-                me = new MemberExpr(line,column)
+                me = new gen.MemberExpr(line,column)
                 me.membername = scanner.curLex
                 chainExpr.fields[] = me
                 
@@ -46,6 +44,7 @@ Parser::parseChainExpr(first){
             }
             ast.LPAREN :   chainExpr.fields[] = parseFuncallExpr("")
             ast.LBRACKET : chainExpr.fields[] = parseIndexExpr("")
+            _ : break
         }
     }
     check(std.len(chainExpr.fields),"parse chain expression,need at least 2 field")
@@ -59,36 +58,27 @@ Parser::parseExpression(oldPriority)
     
     p = parseUnaryExpr()
     
-    if std.exist(
-        scanner.curToken,
-        [ast.DOT,ast.LPAREN,ast.LBRACKET]
-    ){
+    if this.ischain() {
         p = parseChainExpr(p)
     }
     
-    if std.exist(
-        scanner.curToken,
-        [
-            std.ASSIGN, std.ADD_ASSIGN, std.SUB_ASSIGN,std.MUL_ASSIGN, std.DIV_ASSIGN, 
-            std.MOD_ASSIGN,std.BITAND_ASSIGN,std.BITOR_ASSIGN,std.SHL_ASSIGN,std.SHR_ASSIGN
-        ]
-    ){
-        check(p != null)
-        if (type(p) != type(ast.VarExpr) &&
-            type(p) != type(ast.ChainExpr) &&
-            type(p) != type(ast.IndexExpr) &&
-            type(p) != type(ast.MemberExpr) &&
-            type(p) != type(ast.DelRefExpr) &&
-            type(p) != type(ast.StructMemberExpr)  
+    if this.isassign() {
+        this.check(p != null)
+        if (type(p) != type(gen.VarExpr) &&
+            type(p) != type(gen.ChainExpr) &&
+            type(p) != type(gen.IndexExpr) &&
+            type(p) != type(gen.MemberExpr) &&
+            type(p) != type(gen.DelRefExpr) &&
+            type(p) != type(gen.StructMemberExpr)  
         {
-            check(false,"ParseError: can not assign to " + string(type(p).name()))
+            this.check(false,"ParseError: can not assign to " + p.name())
         }
         
-        if (type(p) == type(ast.StructMemberExpr) && currentFunc){
+        if type(p) == type(gen.StructMemberExpr) && currentFunc {
             sm = p
             sm.assign = true
         }
-        if (type(p) == type(ast.VarExpr) && currentFunc){
+        if type(p) == type(gen.VarExpr) && currentFunc {
             var = p
             
             if !std.exist(var.varname,currentFunc.params_var) && !std.exist(currentFunc.locals,var.varname) {
@@ -97,7 +87,7 @@ Parser::parseExpression(oldPriority)
         }
 
         
-        assignExpr = new AssignExpr(line, column)
+        assignExpr = new gen.AssignExpr(line, column)
         assignExpr.opt = scanner.curToken
         assignExpr.lhs = p
         scanner.scan()
@@ -106,19 +96,12 @@ Parser::parseExpression(oldPriority)
     }
 
     
-    while std.exist(
-        scanner.curToken,
-        [
-            SHL,SHR,BITOR, BITAND, BITNOT, LOGOR,
-            LOGAND, LOGNOT, EQ, NE, GT, GE, LT,
-            LE, ADD, SUB, MOD, ast.MUL, DIV
-        ]
-    ){
+    while this.isbinary() {
         currentPriority = scanner.priority(scanner.curToken)
         if (oldPriority > currentPriority)
             return p
         
-        tmp = new BinaryExpr(line, column)
+        tmp = new gen.BinaryExpr(line, column)
         tmp.lhs = p
         tmp.opt = scanner.curToken
         scanner.scan()
@@ -130,17 +113,15 @@ Parser::parseExpression(oldPriority)
 
 Parser::parseUnaryExpr()
 {
-    if std.exist(scanner.curToken,[ast.SUB,ast.LOGNOT,ast.BITNOT]) {
-        val = new BinaryExpr(line,column)
+    //unary expression: like -num | !var | ~var
+    if this.isunary() {
+        val = new gen.BinaryExpr(line,column)
         val.opt = scanner.curToken
         
         scanner.scan()
         val.lhs = parseUnaryExpr()
         return val
-    }else if std.exist(scanner.curToken,[
-        FLOAT,INT,CHAR,STRING,VAR,FUNC,LPAREN,LBRACKET,
-        ast.LBRACE,RBRACE,BOOL,EMPTY,NEW,DOT,DELREF,BITAND,BUILTIN
-    ]){
+    }else if this.isprimary() {
         return parsePrimaryExpr()
     }
     utils.debug("parseUnaryExpr: not found token:%d-%s file:%s line:%d",scanner.curToken,scanner.curLex,filepath,line)
@@ -153,7 +134,7 @@ Parser::parsePrimaryExpr()
     Token prev = scanner.prevToken
     
     if tk == ast.BUILTIN {
-        builtinfunc = new BuiltinFuncExpr(scanner.curLex,scanner.line,scanner.column)
+        builtinfunc = new gen.BuiltinFuncExpr(scanner.curLex,scanner.line,scanner.column)
         check(scanner.scan() == ast.LPAREN)
         scanner.scan()
         
@@ -169,7 +150,7 @@ Parser::parsePrimaryExpr()
     }
     
     if tk == ast.BITAND {
-        addr = new AddrExpr(scanner.line,scanner.column)
+        addr = new gen.AddrExpr(scanner.line,scanner.column)
         tk = scanner.scan()
         if tk == ast.VAR {
             addr.varname = scanner.curLex
@@ -190,14 +171,14 @@ Parser::parsePrimaryExpr()
         scanner.scan()
         
         p = parsePrimaryExpr()
-        delref = new DelRefExpr(line,column)
+        delref = new gen.DelRefExpr(line,column)
         delref.expr = p
         return delref
     
     }else if tk == ast.DOT{
         scanner.scan()
         assert(scanner.curToken == ast.VAR)
-        me = new MemberExpr(line,column)
+        me = new gen.MemberExpr(line,column)
         me.membername = scanner.curLex
         
         scanner.scan()
@@ -218,7 +199,7 @@ Parser::parsePrimaryExpr()
         closure = parseFuncDef(false,true)
         prev.closures[] = closure
         
-        var = new ClosureExpr("placeholder",line,column)
+        var = new gen.ClosureExpr("placeholder",line,column)
         closure.receiver = var
         
         currentFunc = prev
@@ -230,8 +211,8 @@ Parser::parsePrimaryExpr()
         return parseVarExpr(var)
     }else if tk == ast.INT
     {
-        ret = new IntExpr(line,column)
-        ret.literal = scanner.curLex
+        ret = new gen.IntExpr(line,column)
+        ret.lit = scanner.curLex
         
         scanner.scan()
         return ret
@@ -239,23 +220,23 @@ Parser::parsePrimaryExpr()
     {
         val     = atof(scanner.curLex)
         scanner.scan()
-        ret    = new DoubleExpr(line,column)
-        ret.literal = val
+        ret    = new gen.DoubleExpr(line,column)
+        ret.lit = val
         return ret
     }else if tk == ast.STRING {
         val     = scanner.curLex
         scanner.scan()
-        ret    = new StringExpr(line,column)
+        ret    = new gen.StringExpr(line,column)
         
         strs[] = ret
-        ret.literal = val
+        ret.lit = val
         return ret
     }else if tk == ast.CHAR
     {
         val     = scanner.curLex
         scanner.scan()
-        ret    = new CharExpr(line,column)
-        ret.literal = val[0]
+        ret    = new gen.CharExpr(line,column)
+        ret.lit = val[0]
         return ret
     }else if tk == ast.BOOL
     {
@@ -263,20 +244,20 @@ Parser::parsePrimaryExpr()
         if scanner.curLex == "true"
             val = 1
         scanner.scan()
-        ret    = new BoolExpr(line,column)
-        ret.literal = val
+        ret    = new gen.BoolExpr(line,column)
+        ret.lit = val
         return ret
     }else if tk == ast.EMPTY
     {
         scanner.scan()
-        return new NullExpr(line,column)
+        return new gen.NullExpr(line,column)
     }else if tk == ast.LBRACKET
     {
         scanner.scan()
-        ret = new ArrayExpr(line,column)
+        ret = new gen.ArrayExpr(line,column)
         if scanner.curToken != ast.RBRACKET {
             while(scanner.curToken != ast.RBRACKET) {
-                ret.literal[] = parseExpression()
+                ret.lit[] = parseExpression()
                 if scanner.curToken == ast.COMMA
                     scanner.scan()
             }
@@ -289,15 +270,15 @@ Parser::parsePrimaryExpr()
     }else if tk == ast.LBRACE
     {
         scanner.scan()
-        ret = new MapExpr(line,column)
+        ret = new gen.MapExpr(line,column)
         if scanner.curToken != ast.RBRACE{
             while(scanner.curToken != ast.RBRACE) {
-                kv = new KVExpr(line,column)
+                kv = new gen.KVExpr(line,column)
                 kv.key    = parseExpression()
                 check(scanner.curToken ==  ast.COLON)
                 scanner.scan()
                 kv.value  = parseExpression()
-                ret.literal[] = kv
+                ret.lit[] = kv
                 if scanner.curToken == ast.COMMA
                     scanner.scan()
             }
@@ -319,7 +300,7 @@ Parser::parsePrimaryExpr()
 Parser::parseNewExpr()
 {
     if scanner.curToken == ast.INT {
-        ret = new NewExpr(line,column)
+        ret = new gen.NewExpr(line,column)
         ret.len = atoi(scanner.curLex)
         scanner.scan()
         return ret
@@ -336,12 +317,12 @@ Parser::parseNewExpr()
         scanner.scan()
     }
     if scanner.curToken != ast.LPAREN {
-        ret = new NewExpr(line,column)
+        ret = new gen.NewExpr(line,column)
         ret.package = package
         ret.name    = name
         return ret
     }
-    ret = new NewClassExpr(line,column)
+    ret = new gen.NewClassExpr(line,column)
     ret.package = package
     ret.name = name
     scanner.scan()
@@ -408,14 +389,14 @@ Parser::parseVarExpr(var)
                 //FIXME: currentFunc is empty pointer
                 if (currentFunc != null && ((mvar = currentFunc.getVar(package)) != null) && mvar.structname != ""){
                     
-                    mexpr = new StructMemberExpr(package,scanner.line,scanner.column)
+                    mexpr = new gen.StructMemberExpr(package,scanner.line,scanner.column)
                     
                     mexpr.var = mvar
                     mexpr.member = pfuncname
                     return mexpr
                 
                 }else if (mvar = getGvar(package) && mvar.structname != "") {
-                    mexpr = new StructMemberExpr(package,scanner.line,scanner.column)
+                    mexpr = new gen.StructMemberExpr(package,scanner.line,scanner.column)
                     
                     mexpr.var = mvar
                     mexpr.member = pfuncname
@@ -432,8 +413,8 @@ Parser::parseVarExpr(var)
         ast.LT : {
             Scanner::tx tx = scanner.transaction()
 
-            expr = new VarExpr(var,line,column)
-            varexpr = new VarExpr(var,line,column)
+            expr = new gen.VarExpr(var,line,column)
+            varexpr = new gen.VarExpr(var,line,column)
             expr.structtype = true
             expr.type = ast.U64
             expr.size = 8
@@ -491,13 +472,13 @@ Parser::parseVarExpr(var)
          ast.COLON : {
             if scanner.emptyline(){
                 scanner.scan()
-                return new LabelExpr(var,line,column)
+                return new gen.LabelExpr(var,line,column)
             }else{
-                return new VarExpr(var,line,column)
+                return new gen.VarExpr(var,line,column)
             }
         }
         _ : {
-            varexpr = new VarExpr(var,line,column)
+            varexpr = new gen.VarExpr(var,line,column)
             return varexpr
         }
     } 
@@ -505,7 +486,7 @@ Parser::parseVarExpr(var)
 Parser::parseFuncallExpr(callname)
 {
     scanner.scan()
-    val = new FunCallExpr(line,column)
+    val = new gen.FunCallExpr(line,column)
     val.funcname = callname
 
     while scanner.curToken != ast.RPAREN {
@@ -522,7 +503,7 @@ Parser::parseFuncallExpr(callname)
 Parser::parseIndexExpr(varname){
     
     scanner.scan()
-    val = new IndexExpr(line,column)
+    val = new gen.IndexExpr(line,column)
     val.varname = varname
     val.index = parseExpression()
     assert(scanner.curToken == ast.RBRACKET)

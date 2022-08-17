@@ -251,7 +251,7 @@ Scanner::get_next() {
         lexeme += next()
         if (peek() != '\'') {
             p = parser
-            parse_err("SyntaxError: a character literal should surround with single-quote %s\n",p.filepath)
+            parse_err("SyntaxError: a character lit should surround with single-quote %s\n",p.filepath)
         }
         c = next()
         return token(ast.CHAR, lexeme)

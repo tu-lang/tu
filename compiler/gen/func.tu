@@ -7,15 +7,24 @@ use parser.package
 use std
 use utils
 
-ast.LabelExpr::compile(ctx){
-	record()
-	compile.writeln("%s:",label)
-	return this
+class ClosureExpr : Ast { 
+	varname = varname
+	func init(varname,line,column){
+		super.init(line,column)
+	}
+	func toString() { return "ClosureExpr(" + varname + ")" }
 }
 
-ast.BuiltinFuncExpr::compile(ctx){
+
+class BuiltinFuncExpr : ast.Ast {
+    funcname expr from
+	func init(line,column){
+		super.init(line,column)
+	}
+}
+BuiltinFuncExpr::compile(ctx){
 	if funcname == "sizeof" {
-		this.check(type(this.expr) == type(ast.VarExpr),"must be varexpr in sizeof()")
+		this.check(type(this.expr) == type(VarExpr),"must be varexpr in sizeof()")
 		ve = this.expr
 		mem = package.getStruct(ve.package,ve.varname)
 		this.check(mem != null,"mem not exist\n")
@@ -24,13 +33,13 @@ ast.BuiltinFuncExpr::compile(ctx){
 		return null
 	}
 	//2. 如果是值类型
-	check(type(*expr) != type(ast.IntExpr))
-	check(type(*expr) != type(ast.StringExpr))
-	check(type(*expr) != type(ast.ArrayExpr))
-	check(type(*expr) != type(ast.MapExpr))
-	check(type(*expr) != type(ast.NullExpr))
-	check(type(*expr) != type(ast.CharExpr))
-	check(type(*expr) != type(ast.DoubleExpr))
+	check(type(*expr) != type(IntExpr))
+	check(type(*expr) != type(StringExpr))
+	check(type(*expr) != type(ArrayExpr))
+	check(type(*expr) != type(MapExpr))
+	check(type(*expr) != type(NullExpr))
+	check(type(*expr) != type(CharExpr))
+	check(type(*expr) != type(DoubleExpr))
 
 	//2. 其他内置函数则需要计算
 	// %rax
@@ -39,21 +48,21 @@ ast.BuiltinFuncExpr::compile(ctx){
 	//获取到 数据类型
 	Token tk = ast.I64
 	if (ret == null){
-	}else if  type(ret) == type(ast.VarExpr) {
+	}else if  type(ret) == type(VarExpr) {
 		if ret.type >= ast.I8 && ret.type <= ast.U64 
 			tk = ret.type
 	}
-	else if type(ret) == type(ast.StructMemberExpr) {
+	else if type(ret) == type(StructMemberExpr) {
 		sm = ret
 		m = sm.ret
 		if m == null {
 			panic("del ref can't find the struct member:%s\n",this.expr.toString())
 		}
-		if type(this.expr) != type(as.tDelRefExpr) {
+		if type(this.expr) != type(DelRefExpr) {
 			compile.Load(m)
 		}
 		tk = m.type
-	}else if type(ret) == type(ast.ChainExpr) {
+	}else if type(ret) == type(ChainExpr) {
 		ce = ret
 		if ce.ret == null {
 			panic("struct chain exp: something wrong here :%s\n",ret.toString())
@@ -72,8 +81,11 @@ ast.BuiltinFuncExpr::compile(ctx){
 		return null
 	}
 }
+BuiltinFuncExpr::toString(){
+    return "BuiltinFuncExpr:" + funcname +"("+expr.toString() + ")"
+}
 
-ast.ClosureExpr::compile(ctx){
+ClosureExpr::compile(ctx){
 	compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", varname)
 	return null
 }
@@ -86,7 +98,7 @@ func funcexec(ctx , fc , fce , package)
 	have_variadic = false
 	cfunc = compile.currentFunc
 	for(arg : args){
-		if  type(arg) == type(ast.VarExpr) && cfunc {
+		if  type(arg) == type(VarExpr) && cfunc {
 			var = arg
 			if std.exist(var.varname,cfunc.params_var){
 				var2  = res.second
@@ -151,7 +163,19 @@ func funcexec(ctx , fc , fce , package)
 	return null
 }
 
-ast.FunCallExpr::compile(ctx)
+
+class FunCallExpr : ast.Ast {
+    funcname
+    package
+    args = [] # [Ast]
+    is_pkgcall
+    is_extern
+    is_delref
+	func init(line,column){
+		super.init(line,column)
+	}
+}
+FunCallExpr::compile(ctx)
 {
 	record()
 	utils.debug("FunCallExpr: parsing... package:%s func:%s",package,funcname)
@@ -217,4 +241,16 @@ ast.FunCallExpr::compile(ctx)
 	}
 	funcexec(ctx,fc,this,packagename)
 	return null
+}
+
+FunCallExpr::toString() {
+    str = "FunCallExpr[func = "
+    str += package + "." + funcname
+    str += ",args = ("
+    for (arg : args) {
+        str += arg.toString()
+        str += ","
+    }
+    str += ")]"
+    return str
 }

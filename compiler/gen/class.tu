@@ -5,7 +5,23 @@ use parser
 use std
 use utils
 
-ast.NewExpr::compile(ctx)
+class NewExpr : ast.Ast {
+    package name
+    len
+	func init(line,column){
+		super.init(line,column)
+	}
+}
+NewExpr::toString(){
+    str = "NewExpr("
+    str += package
+    str += ","
+    str += name
+    str += ")"
+    return str
+}
+
+NewExpr::compile(ctx)
 {
 	record()
 	//1. new 100
@@ -36,9 +52,24 @@ ast.NewExpr::compile(ctx)
 	 return this
  }
  
+class NewClassExpr : ast.Ast {
+    package name
+    args = [] # [Ast]
+	func init(line,column){
+		super.init(line,column)
+	}
+}
+NewClassExpr::toString(){
+    str = "NewExpr("
+    str += package
+    str += ","
+    str += name
+    str += ")"
+    return str
+}
 
-ast.NewClassExpr::compile(ctx)
- {
+NewClassExpr::compile(ctx)
+{
 	record()
 	utils.debug("new expr got: type:%s",this.name)
 	s = null
@@ -78,7 +109,24 @@ ast.NewClassExpr::compile(ctx)
 
 	return null
 }
-ast.MemberExpr::compile(ctx)
+
+class MemberExpr : Ast {
+    varname  membername
+	func init(line,column){
+		super.init(line,column)
+	}
+}
+MemberExpr::toString(){
+    str = "MemberExpr("
+    str += varname
+    str += "."
+    str += membername
+    str += ")"
+    return str
+}
+
+
+MemberExpr::compile(ctx)
 {
 	record()
 	if this.varname == "" {
@@ -92,7 +140,28 @@ ast.MemberExpr::compile(ctx)
 	internal.object_member_get(membername)
 	return null
 }
-ast.MemberCallExpr::compile(ctx)
+
+class MemberCallExpr : ast.Ast {
+    varname membername
+    args = [] # [Ast]
+	func init(line,column){
+		super.init(line,column)
+	}
+}
+MemberCallExpr::toString() {
+    str = "MemberCallExpr(varname="
+    str += varname
+    str += ",func="
+    str += membername
+    str += ",args=["
+    for (arg : args) {
+        str += arg.toString()
+        str += ","
+    }
+    str += "])"
+    return str
+}
+MemberCallExpr::compile(ctx)
 {
 	record()
 	utils.debug("membercall : ")

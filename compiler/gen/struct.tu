@@ -2,8 +2,20 @@ use ast
 use compile
 use std
 
-
-ast.StructMemberExpr::getMember()
+class StructMemberExpr : Ast {
+    varname = varname
+    member
+    var
+    assign
+    ret
+	func init(varname,line,column){
+		super.init(line,column)
+	}
+}
+StructMemberExpr::toString(){
+    return "StructMemberExpr(" + varname + "<"+var.package+"."+var.structname+">"+"."+member+")"
+}
+StructMemberExpr::getMember()
 {
 	s = getStruct()
 	if s == null return null
@@ -16,7 +28,7 @@ ast.StructMemberExpr::getMember()
 	}
 	return m
 }
-ast.StructMemberExpr::getStruct()
+StructMemberExpr::getStruct()
 {
 	package = var.structpkg
 	s = null
@@ -32,7 +44,7 @@ ast.StructMemberExpr::getStruct()
 	return s
 }
 
-ast.StructMemberExpr::compile(ctx)
+StructMemberExpr::compile(ctx)
 {
 	record()
 	filename = compile.parser.filename

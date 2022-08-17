@@ -4,71 +4,107 @@ use fmt
 use ast
 use compile
 
-ast.NullExpr::compile(ctx)
-{
-    record()
-    internal.newobject(ast.Null,0)
-    return null
-
-}
-ast.BoolExpr::compile(ctx)
-{
-    record()
-    internal.newobject(ast.Bool,this.literal)
-    return null
-}
-ast.CharExpr::compile(ctx) {
-    record()
-    internal.newobject(ast.Char,this.literal)
-    return null
-}
-ast.IntExpr::compile( ctx) {
-    record()
-    internal.newint(ast.Int,this.literal)
-    return null
-}
-
-ast.DoubleExpr::compile(ctx) {
-    record()
-    internal.newobject(ast.Double,this.literal)
-    return null
-}
-
-ast.StringExpr::compile(ctx) {
-    record()
-    if this.name != "" this.check(false,this.toString())
-    
-    compile.writeln("    lea %s(%%rip), %%rsi", name)
-    internal.newobject(ast.String,0)
-    return null
-}
-
-ast.Expression::record(){
-    cfunc = compile.currentFunc
-    compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
-}
-ast.Statement::record(){
-    cfunc = compile.currentFunc
-    compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
-}
-ast.Expression::panic(args...){
-    err = fmt.sprintf(args)
-    cfunc = compile.currentFunc
-    parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,line,column,cfunc.parser.filepath)
-}
-ast.Expression::check( check , err)
-{
-    if(check) return err 
-
-    cfunc = compile.currentFunc
-    if err != "" {
-        fmt.println("AsmError:%s \n"
-                "line:%d column:%d file:%s\n\n"
-                "expression:\n%s\n",err,line,column,cfunc.parser.filepath,this.toString())
-    }else{
-        fmt.println("AsmError:\n"
-                "line:%d column:%d file:%s\n\n"
-                "expression:\n%s\n",line,column,cfunc.parser.filepath,this.toString())
+LabelExpr : ast.Ast {
+    label = label
+	func init(label,line,column){
+		super.init(line,column)
+	}
+    func toString(){
+        return "label expr: " + label
     }
-    os.exit(-1)
 }
+
+LabelExpr::compile(ctx){
+	record()
+	compile.writeln("%s:",label)
+	return this
+}
+class NullExpr    : ast.Ast {
+    func init(line,column){
+        super.init(line,column)
+    }
+    func compile(ctx)
+    {
+        record()
+        internal.newobject(ast.Null,0)
+        return null
+
+    }
+    func toString() { return "NullExpr()" }
+}
+class BoolExpr   : ast.Ast { 
+    lit 
+    func init(line,column){
+        super.init(line,column)
+    }
+    func compile(ctx)
+    {
+        record()
+        internal.newobject(ast.Bool,this.lit)
+        return null
+    }
+    func toString() {
+        return "BoolExpr(" + lit + ")"
+    }
+}
+class CharExpr    : ast.Ast { 
+    lit 
+    func init(line,column){
+        super.init(line,column)
+    }
+    func compile(ctx) {
+        record()
+        internal.newobject(ast.Char,this.lit)
+        return null
+    }
+    func toString() {
+        return "CharExpr(" + lit + ")"
+    }
+}
+class IntExpr     : ast.Ast { 
+    lit 
+    func init(line,column){
+        super.init(line,column)
+    }
+    func compile( ctx) {
+        record()
+        internal.newint(ast.Int,this.lit)
+        return null
+    }
+    func toString() {
+        return "int(" + lit + ")"
+    }
+}
+
+class DoubleExpr  : ast.Ast { 
+    lit 
+    func init(line,column){
+        super.init(line,column)
+    }
+    func compile(ctx) {
+        record()
+        internal.newobject(ast.Double,this.lit)
+        return null
+    }
+    func toString() {
+        return "DoubleExpr(" + lit + ")"
+    }
+}
+class StringExpr  : ast.Ast { 
+    lit name offset 
+    func init(line,column){
+        super.init(line,column)
+    }
+    func compile(ctx) {
+        record()
+        if this.name != "" this.check(false,this.toString())
+        
+        compile.writeln("    lea %s(%%rip), %%rsi", name)
+        internal.newobject(ast.String,0)
+        return null
+    }
+    func toString() { 
+        return "StringExpr(" + lit + ") line:" + line + " column:" + column 
+    }
+}
+

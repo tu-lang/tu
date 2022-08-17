@@ -135,8 +135,8 @@ Parser::parseGlobalAssign()
                 this.panic("unsupport global synatix: " + expr.toString(""))
             var = ae.lhs
             assign = ae
-            if (type(ae.rhs) == type(ast.IntExpr)){
-                var.ivalue = ae.rhs.literal
+            if (type(ae.rhs) == type(gen.IntExpr)){
+                var.ivalue = ae.rhs.lit
                 if var.structtype needinit = false 
             }
         }
@@ -145,7 +145,7 @@ Parser::parseGlobalAssign()
             assign         = new ast.AssignExpr(this.line,this.column)
             assign.opt = ast.ASSIGN
             assign.lhs = var
-            assign.rhs = new ast.NullExpr(line,column)
+            assign.rhs = new gen.NullExpr(line,column)
             if var.structtype needinit = false     
         }
         _ : this.panic("unsupport global synatix: " + expr.toString(""))

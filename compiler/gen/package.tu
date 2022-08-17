@@ -35,18 +35,18 @@ package.Package::genStruct(s)
 
     
     if mem.bitfield && mem.bitwidth == 0 {
-      bits = ast.ALIGN_UP(bits, mem.size * 8)
+      bits = utils.ALIGN_UP(bits, mem.size * 8)
     }else if mem.bitfield{
       sz = mem.size
       if (bits / (sz * 8) ) !=  ((bits + mem.bitwidth - 1) / (sz * 8))
-        bits = ast.ALIGN_UP(bits, sz * 8)
+        bits = utils.ALIGN_UP(bits, sz * 8)
 
       mem.offset = ast.ALIGN_DOWN(bits / 8, sz)
       mem.bitoffset = bits % (sz * 8)
       bits += mem.bitwidth
     } else 
     {
-        if !s.ispacked  bits = ast.ALIGN_UP(bits,mem.align * 8)
+        if !s.ispacked  bits = utils.ALIGN_UP(bits,mem.align * 8)
 
         mem.offset = bits / 8
         if mem.pointer
@@ -58,7 +58,7 @@ package.Package::genStruct(s)
       align = mem.align
   }
   
-  s.size = ast.ALIGN_UP(bits, align * 8) / 8
+  s.size = utils.ALIGN_UP(bits, align * 8) / 8
   s.align = align
   
   s.iscomputed = true

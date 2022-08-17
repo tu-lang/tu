@@ -3,13 +3,32 @@ use parser
 use compile
 use std
 
-ast.ChainExpr::ismem(ctx) {
+class ChainExpr   : ast.Ast {
+    first
+    last
+    fields = [] # array[Ast] 
+    ret
+	func init(line,column){
+		super.init(line,column)
+	}
+}
+ChainExpr::toString() {
+    str = "ChainExpr("
+    str += "left=" + first.toString()
+    for(i : fields){
+        str += "." + i.toString()
+    }
+    str += ",right=" + last.toString()
+    str += ")"
+    return str
+}
+ChainExpr::ismem(ctx) {
 	//TODO: support type keyword
-	if type(first) == type(ast.VarExpr) {
+	if type(first) == type(VarExpr) {
 		varexpr = first
 		realVar = varexpr.getVar(ctx)
 		if realVar && !realVar.is_local && realVar.structtype {
-			mexpr = new ast.StructMemberExpr(realVar.varname,first.line,first.column)
+			mexpr = new StructMemberExpr(realVar.varname,first.line,first.column)
             mexpr.var = realVar
             mexpr.member = varexpr.varname
 			this.first = mexpr
@@ -18,12 +37,12 @@ ast.ChainExpr::ismem(ctx) {
 	 }	
 	 return false
 }
-ast.ChainExpr::compile(ctx)
+ChainExpr::compile(ctx)
 {
 	record()
-    if type(first) == type(ast.StructMemberExpr) return this.memgen(ctx)
+    if type(first) == type(StructMemberExpr) return this.memgen(ctx)
 
-	 if type(first) == type(ast.VarExpr)){
+	 if type(first) == type(VarExpr)){
 		varexpr = first
 		realVar = varexpr.getVar(ctx)
 		if realVar && !realVar.is_local && realVar.structtype {
@@ -37,7 +56,7 @@ ast.ChainExpr::compile(ctx)
 	return this.objgen(ctx)
 }
 
-ast.ChainExpr::memgen(ctx)
+ChainExpr::memgen(ctx)
 {
 	this.first.compile(ctx)
 	s = this.first
@@ -47,7 +66,7 @@ ast.ChainExpr::memgen(ctx)
 		compile.Load()
 	}
 	for (i : fields) {
-		this.check(type(*i) == type(ast.MemberExpr),"field must be member expression at mem chain expression")
+		this.check(type(*i) == type(MemberExpr),"field must be member expression at mem chain expression")
 		me = i
 		this.check(member.structref != null,"must be memref in chain expr")
 		s = member.structref
@@ -72,7 +91,7 @@ ast.ChainExpr::memgen(ctx)
 	return this
 }
 
-ast.ChainExpr::objgen(ctx)
+ChainExpr::objgen(ctx)
 {
 	record()
     this.first.compile(ctx)

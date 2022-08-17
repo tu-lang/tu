@@ -30,7 +30,7 @@ class Parser{
     funcs        # map[string]Function
     extern_funcs # map[string]Function
 
-    strs          # [StringExpr]  all static string
+    strs          # [gen.StringExpr]  all static string
     
     links         # [string] ld link args
 
@@ -68,8 +68,6 @@ Parser::init(filepath,pkg,package,full_package) {
     
     this.import[""]  = full_package
 }
-//TODO: proxy
-Parser::writeln(args..){}
 Parser::parse()
 {
     scanner.scan()
@@ -114,3 +112,52 @@ Parser::check(check , err)
     os.exit(-1)
 }
 
+
+Parser::isunary(){
+    match scanner.curToken {
+        std.SUB | ast.SUB | ast.LOGNOT | ast.BITNOT : {
+            return true
+        }
+        _ : return false
+    }
+}
+Parser::isprimary(){
+    match scanner.curToken {
+        ast.FLOAT  | ast.INT      | ast.CHAR     | ast.STRING | ast.VAR    | 
+        ast.FUNC   | ast.LPAREN   | ast.LBRACKET | ast.LBRACE | ast.RBRACE | 
+        ast.BOOL   | ast.EMPTY    | ast.NEW      | ast.DOT    | ast.DELREF |
+        ast.BITAND | ast.BUILTIN : {
+            return true
+        }
+        _ : return false
+    }
+}
+Parser::ischain(){
+    match this.scanner.curToken {
+        ast.DOT | ast.LPAREN | ast.LBRACKET : {
+            return true
+        }
+        _ : return false
+
+    }
+}
+Parser::isassign(){
+    match scanner.curToken {
+        ast.ASSIGN | ast.ADD_ASSIGN | ast.SUB_ASSIGN | ast.MUL_ASSIGN |
+        ast.DIV_ASSIGN | ast.MOD_ASSIGN | ast.BITAND_ASSIGN | ast.BITOR_ASSIGN | 
+        ast.SHL_ASSIGN | ast.SHR_ASSIGN : {
+            return true
+        }
+        _ : return false
+    }
+}
+Parser::isbinary(){
+    match scanner.curToken {
+        ast.SHL | ast.SHR | ast.BITOR | ast.BITAND | ast.BITNOT | ast.LOGOR |  
+        ast.LOGAND | ast.LOGNOT | ast.EQ | ast.NE | ast.GT | ast.GE | ast.LT |
+        ast.LE | ast.ADD | ast.SUB | ast.MOD | ast.MUL | ast.DIV : {
+            return true
+        }
+        _ : return false
+    }
+}

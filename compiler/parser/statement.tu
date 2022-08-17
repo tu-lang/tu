@@ -22,11 +22,11 @@ Parser::parseStatement()
         }
         ast.BREAK: {
             scanner.scan()
-            node = new BreakStmt(line,column)
+            node = new gen.BreakStmt(line,column)
         }
         ast.GOTO: {
             scanner.scan()
-            node = new GotoStmt(scanner.curLex,line,column)
+            node = new gen.GotoStmt(scanner.curLex,line,column)
             scanner.scan()
         }
         ast.CONTINUE: {
@@ -37,13 +37,13 @@ Parser::parseStatement()
             scanner.scan()
             node = parseMatchSmt()
         }
-        _ : node = parseExpressionStmt()
+        _ : node = parseExpression()
     }
     return node
 }
 Parser::parseIfStmt()
 {
-    node = new ast.IfStmt(line,column)
+    node = new gen.IfStmt(line,column)
     
     ifCase = new ast.IfCaseExpr(line,column)
     ifCase.cond = parseExpression()
@@ -84,7 +84,7 @@ Parser::parseIfStmt()
 }
 Parser::parseForStmt()
 {
-    node = new ForStmt(line,column)
+    node = new gen.ForStmt(line,column)
     
     scanner.scan()
     
@@ -152,7 +152,7 @@ Parser::parseForStmt()
     return node
 }
 Parser::parseMatchSmt(){
-    ms = new MatchStmt(line,column)
+    ms = new gen.MatchStmt(line,column)
     ms.cond = parseExpression()
     check(scanner.curToken == ast.LBRACE)
     scanner.scan()
@@ -193,7 +193,7 @@ Parser::parseMatchCase(cond)
     return cs
 }
 Parser::parseWhileStmt() {
-    node = new WhileStmt(line, column)
+    node = new gen.WhileStmt(line, column)
     
     if scanner.curToken == ast.LPAREN {
         scanner.scan()
@@ -209,15 +209,8 @@ Parser::parseWhileStmt() {
     return node
 }
 Parser::parseReturnStmt() {
-    node = new ReturnStmt(line, column)
+    node = new gen.ReturnStmt(line, column)
     
     node.ret = parseExpression()
     return node
-}
-Parser::parseExpressionStmt()
-{
-    p = parseExpression()
-    if p != null
-        return new ExpressionStmt(p,line,column)
-    return null
 }

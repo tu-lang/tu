@@ -3,7 +3,42 @@ use compile
 use fmt
 use utils
 
-ast.AssignExpr::compile(ctx){
+class DelRefExpr  : ast.Ast { 
+    expr 
+    func init(line,column){
+        super.init(line,column)
+    }
+    func toString(){
+        return "DelRefExpr(" + expr.toString() + ")"
+    }
+}
+class AddrExpr   : ast.Ast {
+    package
+    varname
+    expr
+    func init(line,column){super.init(line,column)}
+    func toString(){
+        return "AddrExpr(&(" + package + ")." + varname + ")"
+    }
+}
+class AssignExpr : ast.Ast {
+    opt
+    lhs rhs
+    func init(line,column){
+        super.init(line,column)
+    }
+}
+AssignExpr::toString() {
+    str = "AssignExpr(lhs="
+    if lhs
+        str += lhs.toString()
+    str += ",rhs="
+    if rhs
+        str += rhs.toString()
+    str += ")"
+    return str
+}
+AssignExpr::compile(ctx){
     record()
 
     utils.debug("AssignExpr: parsing... lhs:%s opt:%s rhs:%s",
@@ -14,7 +49,7 @@ ast.AssignExpr::compile(ctx){
     if !this.rhs    panic("AsmError: right expression is wrong expression:" + this.toString())
     
     f = compile.currentFunc
-    if type(lhs) == type(ast.VarExpr) {
+    if type(lhs) == type(VarExpr) {
         varExpr = lhs
         package = compile.currentFunc.parser.getpkgname() 
         varname = varExpr.varname
@@ -44,7 +79,7 @@ ast.AssignExpr::compile(ctx){
                 varExpr = package.packages[full_package].getGlobalVar(varname)
             }else if std.len(package.packages,cpkg) {
                 varExpr = package.packages[cpkg].getGlobalVar(package)
-                sm = new ast.StructMemberExpr(package,this.line,this.column)
+                sm = new StructMemberExpr(package,this.line,this.column)
                 sm.member = varname
                 sm.var    = varExpr
                 this.lhs = sm
@@ -82,7 +117,7 @@ ast.AssignExpr::compile(ctx){
         internal.call_operator(this.opt,"runtime_unary_operator")
         return null
 
-    }else if type(lhs) == type(ast.IndexExpr) 
+    }else if type(lhs) == type(IndexExpr) 
     {
         index    = lhs 
         varname = index.varname
@@ -139,14 +174,14 @@ ast.AssignExpr::compile(ctx){
         
         compile.Pop("%rdi")
         return null
-    }else if type(lhs) == type(ast.StructMemberExpr) 
+    }else if type(lhs) == type(StructMemberExpr) 
     {
         oh = new OperatorHelpe(ctx,lhs,rhs,this.opt)
         return oh.gen()
-    }else if type(lhs) == type(ast.DelRefExpr) {
+    }else if type(lhs) == type(DelRefExpr) {
         oh = OperatorHelper(ctx,lhs,rhs,this.opt)
         return oh.gen()
-    }else if type(lhs) == type(ast.ChainExpr) {
+    }else if type(lhs) == type(ChainExpr) {
         ce = lhs
         if ce.ismem(ctx) {
             oh. OperatorHelper(ctx,lhs,rhs,this.opt)
@@ -155,87 +190,10 @@ ast.AssignExpr::compile(ctx){
     }
     panic("SyntaxError: can not assign to " + string(type(lhs).name()))
 }
-
-ast.BinaryExpr::isMemtype(ctx)
-{    
-    mhandle = false
-    var = null
-    this.check(this.lhs != null)
-    
-    if type(this.lhs) == type(ast.StructMemberExpr) ||  (this.rhs && type(this.rhs) == type(ast.StructMemberExpr) )
-        mhandle = true
-    
-    if type(this.lhs) == type(ast.DelRefExpr) || (this.rhs && type(this.rhs) == type(ast.DelRefExpr) )
-        mhandle = true
-    
-    if type(this.lhs) == type(ast.VarExpr) {
-        var = this.lhs
-        var = var.getVar(ctx)
-        if var.structtype
-            mhandle = true
-    }
-    if this.rhs && type(this.rhs) == type(ast.VarExpr) {
-        var = this.rhs
-        var = var.getVar(ctx)
-        if var.structtype
-            mhandle = true
-    }
-    if type(this.lhs) == type(BinaryExpr) {
-        b = this.lhs
-        if b.isMemtype(ctx) return true
-    }
-    if this.rhs && type(this.rhs) == type(BinaryExpr) {
-        b = this.rhs
-        if b.isMemtype(ctx) return true
-    }
-    if type(this.lhs) == type(ast.ChainExpr) {
-        ce = this.lhs
-        if ce.ismem(ctx)
-            return true
-    }
-    if this.rhs && type(this.rhs) == type(ast.ChainExpr) {
-        ce = this.rhs
-        if ce.ismem(ctx)
-            return true
-    }
-    return mhandle
-}
-
-ast.BinaryExpr::compile(ctx)
-{
-    record()
-
-    utils.debug("BinaryExpr: parsing... lhs:%s opt:%s rhs:%s",
-          lhs.toString(),
-          getTokenString(opt),
-          rhs.toString()
-    )
-    if !this.rhs && (this.opt != BITNOT && this.opt != LOGNOT)
-        panic("AsmError: right expression is wrong expression:" + this.toString())
-    
-    if isMemtype(ctx){
-        oh new OperatorHelper(ctx,lhs,rhs,this.opt)
-        return oh.gen()
-    }
-    if opt == ast.LOGOR || opt == ast.LOGAND 
-        return this.FirstCompile(ctx)
-    
-    this.lhs.compile(ctx)
-    compile.Push()
-
-    
-    if this.rhs   this.rhs.compile(ctx)
-    else            compile.writeln("   mov $0,%%rax")
-    compile.Push()
-
-    
-    internal.call_operator(this.opt,"runtime_binary_operator")
-    return null
-}
-ast.DelRefExpr::compile(ctx){
+DelRefExpr::compile(ctx){
     record()
     
-    if type(this.expr) == type(ast.StringExpr) {
+    if type(this.expr) == type(StringExpr) {
         se = this.expr
         compile.writeln("    lea %s(%%rip), %%rax", se.name)
         return this
@@ -244,7 +202,7 @@ ast.DelRefExpr::compile(ctx){
     
     if (ret == null){
         this.check(false,"del refexpr error")
-    }else if type(ret) == type(ast.VarExpr) {
+    }else if type(ret) == type(VarExpr) {
         var = ret
         
         if !var.structtype {
@@ -260,20 +218,20 @@ ast.DelRefExpr::compile(ctx){
         
         compile.Load(var.size,var.isunsigned)
         return ret
-    }else if type(ret) == type(ast.StructMemberExpr) {
+    }else if type(ret) == type(StructMemberExpr) {
         sm = ret
         m = sm.ret
         if m == null{
             parse_err("del ref can't find the class member:%s\n",this.expr.toString())
         }
-        if type(expr) != type(ast.DelRefExpr) {
+        if type(expr) != type(DelRefExpr) {
             
             compile.Load(m)
         }
         compile.Load(m.size,m.isunsigned)
         return ret
     
-    }else if type(ret) == type(ast.ChainExpr) {
+    }else if type(ret) == type(ChainExpr) {
         ce = ret
         
         if ce.ret {
@@ -286,10 +244,10 @@ ast.DelRefExpr::compile(ctx){
     parse_err("only support del ref for expression :%s\n",this.expr.toString())
 }
 
-ast.AddrExpr::compile(ctx){
+AddrExpr::compile(ctx){
     record()
     
-    if expr != null && type(expr) == type(ast.ChainExpr) {
+    if expr != null && type(expr) == type(ChainExpr) {
         ce = expr
         if !ce.ismem(ctx){
             parse_err("only support & struct.menber %s\n",expr.toString())
@@ -336,6 +294,90 @@ ast.AddrExpr::compile(ctx){
 
     return this
 }
+class BinaryExpr : ast.Ast {
+    opt
+    lhs rhs
+    func init(line,column){
+        super.init(line,column)
+    }
+}
+BinaryExpr::isMemtype(ctx)
+{    
+    mhandle = false
+    var = null
+    this.check(this.lhs != null)
+    
+    if type(this.lhs) == type(StructMemberExpr) ||  (this.rhs && type(this.rhs) == type(StructMemberExpr) )
+        mhandle = true
+    
+    if type(this.lhs) == type(DelRefExpr) || (this.rhs && type(this.rhs) == type(DelRefExpr) )
+        mhandle = true
+    
+    if type(this.lhs) == type(VarExpr) {
+        var = this.lhs
+        var = var.getVar(ctx)
+        if var.structtype
+            mhandle = true
+    }
+    if this.rhs && type(this.rhs) == type(VarExpr) {
+        var = this.rhs
+        var = var.getVar(ctx)
+        if var.structtype
+            mhandle = true
+    }
+    if type(this.lhs) == type(BinaryExpr) {
+        b = this.lhs
+        if b.isMemtype(ctx) return true
+    }
+    if this.rhs && type(this.rhs) == type(BinaryExpr) {
+        b = this.rhs
+        if b.isMemtype(ctx) return true
+    }
+    if type(this.lhs) == type(ChainExpr) {
+        ce = this.lhs
+        if ce.ismem(ctx)
+            return true
+    }
+    if this.rhs && type(this.rhs) == type(ChainExpr) {
+        ce = this.rhs
+        if ce.ismem(ctx)
+            return true
+    }
+    return mhandle
+}
+
+BinaryExpr::compile(ctx)
+{
+    record()
+
+    utils.debug("BinaryExpr: parsing... lhs:%s opt:%s rhs:%s",
+          lhs.toString(),
+          getTokenString(opt),
+          rhs.toString()
+    )
+    if !this.rhs && (this.opt != BITNOT && this.opt != LOGNOT)
+        panic("AsmError: right expression is wrong expression:" + this.toString())
+    
+    if isMemtype(ctx){
+        oh new OperatorHelper(ctx,lhs,rhs,this.opt)
+        return oh.gen()
+    }
+    if opt == ast.LOGOR || opt == ast.LOGAND 
+        return this.FirstCompile(ctx)
+    
+    this.lhs.compile(ctx)
+    compile.Push()
+
+    
+    if this.rhs   this.rhs.compile(ctx)
+    else            compile.writeln("   mov $0,%%rax")
+    compile.Push()
+
+    
+    internal.call_operator(this.opt,"runtime_binary_operator")
+    return null
+}
+
 BinaryExpr::FirstCompile(ctx){
     record()
     c = compile.incr_labelid()
@@ -379,4 +421,83 @@ BinaryExpr::FirstCompile(ctx){
     compile.writeln("	mov $1, %%rax")
     compile.writeln(".L.end.%d:", c)
     return null
+}
+
+
+BinaryExpr::toString() {
+    str = "BinaryExpr("
+    if opt != ast.ILLEGAL {
+        str += "opt="
+        match opt {
+            BITAND:
+                str += "&"
+                break
+            BITOR:
+                str += "|"
+                break
+            BITNOT:
+                str += "!"
+                break
+            LOGAND:
+                str += "&&"
+                break
+            LOGOR:
+                str += "||"
+                break
+            LOGNOT:
+                str += "!"
+                break
+            ADD:
+                str += "+"
+                break
+            SUB:
+                str += "-"
+                break
+            MUL:
+                str += "*"
+                break
+            DIV:
+                str += "/"
+                break
+            MOD:
+                str += "%"
+                break
+            EQ:
+                str += "=="
+                break
+            NE:
+                str += "!="
+                break
+            GT:
+                str += ">"
+                break
+            GE:
+                str += ">="
+                break
+            LT:
+                str += "<"
+                break
+            LE:
+                str += "<="
+                break
+            ASSIGN:
+                str += "="
+                break
+            _ :
+                str += opt
+                break
+        }
+    }
+    if (lhs) {
+        str += ",lhs="
+        if lhs
+            str += lhs.toString()
+    }
+    if (rhs) {
+        str += ",rhs="
+        if rhs
+            str += rhs.toString()
+    }
+    str += ")"
+    return str
 }

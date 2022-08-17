@@ -275,19 +275,19 @@ OperatorHelper::genLeft()
 OperatorHelper::genRight(isleft,expr)
 {
 	match type(this.expr) {
-		type(ast.IntExpr) : {
+		type(IntExpr) : {
 			ie = expr	
-			compile.writeln("	mov $%s,%%rax",ie.literal)
+			compile.writeln("	mov $%s,%%rax",ie.lit)
 			initcond(isleft,8,I64,false)
 			return ie
 		}
-		type(ast.StringExpr): {
+		type(StringExpr): {
 			ie = expr
 			writeln("	lea %s(%%rip), %%rax",ie.name)
 			initcond(isleft,8,U64,true)
 			return ie
 		}
-		type(ast.NullExpr) : {
+		type(NullExpr) : {
 			compile.writeln("	mov $0,%%rax")
 			initcond(isleft,8,I64,false)
 			return null

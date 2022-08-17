@@ -35,5 +35,5 @@ func registerVars(){
 }
 func CreateGlobalString(var){
     writeln("%s:", var.name)
-    writeln("    .\"%s\"",var.literal)
+    writeln("    .\"%s\"",var.lit)
 }

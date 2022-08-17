@@ -44,12 +44,6 @@ class Function {
     }
 
 }
-# auto increment closure id
-closureidx
-
-# auto increment count
-labelidx
-
 func incr_closureidx(){
     idx = closureidx
     closureidx += 1
