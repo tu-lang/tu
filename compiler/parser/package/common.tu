@@ -1,4 +1,5 @@
 use utils
+use ast
 
 uniquesig = "initvars_" + utils.strRand()
 

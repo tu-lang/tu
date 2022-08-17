@@ -15,7 +15,7 @@
 }
  hashInit = {} # map{string:bool}
  Package::parseinit(pkg){
-	 if std.exist(pkg.getFullName(),hashInit
+	 if std.exist(pkg.getFullName(),hashInit)
 		 return hashInit[pkg.getFullName()]
 	 
 	 hashInit[pkg.getFullName()] = std.len(pkg.inits)  > 0
@@ -25,7 +25,7 @@
 		 for(fullpackage : p.import )
 		 {
 			 if parseinit(packages[fullpackage]) && 
-			 	!std.exist(pkg.getFullName()) , hashInit)
+			 	!std.exist(pkg.getFullName() , hashInit)
 			 {
 				 hashInit[pkg.getFullName()] = true
 				 this.InsertInitFunc(p)
@@ -39,7 +39,7 @@
 	 
 	 return hashInit[pkg.getFullName()] 
  }
-func  geninit(Package* pkg){
+func  geninit(pkg){
 	 if std.exist(pkg.getFullName(),HasGen)
 	 	return false
 	 HasGen[pkg.getFullName()] = true
@@ -61,8 +61,8 @@ func  geninit(Package* pkg){
 	 if (pkg.package == "main"){
 		 for(init : pkg.inits){
 			if (init.funcname == mf.funcname) continue
-				mf.InsertFuncall(fullpackage,init.name)
-			)
+			mf.InsertFuncall(fullpackage,init.name)
+			
 		 }
  
 	 }

@@ -42,7 +42,7 @@ ChainExpr::compile(ctx)
 	record()
     if type(first) == type(StructMemberExpr) return this.memgen(ctx)
 
-	 if type(first) == type(VarExpr)){
+	 if type(first) == type(VarExpr) {
 		varexpr = first
 		realVar = varexpr.getVar(ctx)
 		if realVar && !realVar.is_local && realVar.structtype {

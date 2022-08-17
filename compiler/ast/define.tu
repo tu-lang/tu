@@ -4,8 +4,7 @@ closureidx = 0
 # auto increment count
 labelidx   = 0
 
-enum VarType
-{
+enum {
    Var_Obj_Member , 
    Var_Extern_Global, Var_Local_Global,Var_Local_Mem_Global, 
    Var_Local, 

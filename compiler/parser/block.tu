@@ -17,7 +17,7 @@ Parser::parseStatementList()
             expr = pe.expr
             
             check(expr.lhs != null && expr.rhs != null)
-            if type(expr.rhs == type(NewClassExpr) && type(expr.lhs) == type(ast.VarExpr) {
+            if type(expr.rhs) == type(NewClassExpr) && type(expr.lhs) == type(ast.VarExpr) {
                 ne = expr.rhs
                 obj = expr.lhs
                 
@@ -60,7 +60,7 @@ Parser::parseBlock(member)
     stmts = this.parseStatementList()
     std.merge(node.stmts,stmts)
 
-    check(scanner.curToken == ast.RBRACE)
+    this.expect(ast.RBRACE)
     scanner.scan()
     return node
 }
@@ -123,7 +123,7 @@ Parser::parseParameterList()
                         panic("unknown token " + ast.getTokenString(scanner.curToken))
                     }
    
-                    check(scanner.curToken == ast.GT )
+                    this.expect(ast.GT )
                     scanner.scan()
                     
                     continue
@@ -153,7 +153,7 @@ Parser::parseParameterList()
             node[] = scanner.curLex
         }
         else{
-            check( scanner.curToken == ast.COMMA )
+            this.expect( ast.COMMA )
         }
         
         scanner.scan()

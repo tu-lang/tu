@@ -1,33 +1,25 @@
 use std
 use std.regex
 use utils
+use ast
 
 class Package {
     parsers # parsers map[filepath + name] = parser
-    package
-    path
-    full_package
+    package = name
+    path    = path
+    full_package = path
 
-    inits
-    initid
+    inits = []
+    initid = 0
     initvars 
-    classes # map[string] Class
-    structs # map[string] Struct
+    classes = {} # map{string : Class  }
+    structs = {} # map{string : Struct }
 }
 
 Package::init(name , path , multi) {
-    this.inits = []
-    this.initid = 0
-    this.package      = name
-    this.path         = path
-    this.full_package = path
     if multi {
         this.path = regex.replace(path,"_","/")
     }
-
-    this.classes = {}
-    this.structs = {}
-
 }
 Package::parse()
 {
@@ -45,7 +37,7 @@ Package::parse()
         }
     }
 
-    fd = std.opendir(dir){
+    fd = std.opendir(dir)
     while true {
         p = std.readdir(fd)
         if !file break
@@ -80,7 +72,7 @@ Package::getFunc(name , is_extern){
 
 Package::addClass(name, f)
 {
-    if std.exist(name,this.classes) {
+    if this.classes[name] {
         for(i : classes[name].funcs)
             f.funcs[] = i
     }

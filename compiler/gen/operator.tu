@@ -426,77 +426,14 @@ BinaryExpr::FirstCompile(ctx){
 
 BinaryExpr::toString() {
     str = "BinaryExpr("
-    if opt != ast.ILLEGAL {
-        str += "opt="
-        match opt {
-            BITAND:
-                str += "&"
-                break
-            BITOR:
-                str += "|"
-                break
-            BITNOT:
-                str += "!"
-                break
-            LOGAND:
-                str += "&&"
-                break
-            LOGOR:
-                str += "||"
-                break
-            LOGNOT:
-                str += "!"
-                break
-            ADD:
-                str += "+"
-                break
-            SUB:
-                str += "-"
-                break
-            MUL:
-                str += "*"
-                break
-            DIV:
-                str += "/"
-                break
-            MOD:
-                str += "%"
-                break
-            EQ:
-                str += "=="
-                break
-            NE:
-                str += "!="
-                break
-            GT:
-                str += ">"
-                break
-            GE:
-                str += ">="
-                break
-            LT:
-                str += "<"
-                break
-            LE:
-                str += "<="
-                break
-            ASSIGN:
-                str += "="
-                break
-            _ :
-                str += opt
-                break
-        }
-    }
-    if (lhs) {
+    str += "opt=" + ast.getTokenString(this.opt)
+    if lhs {
         str += ",lhs="
-        if lhs
-            str += lhs.toString()
+        str += lhs.toString()
     }
-    if (rhs) {
+    if rhs {
         str += ",rhs="
-        if rhs
-            str += rhs.toString()
+        str += rhs.toString()
     }
     str += ")"
     return str

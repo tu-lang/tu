@@ -8,54 +8,54 @@ package.Package::genStruct(s)
   bits = 0
   align = 1
   
-  for(mem : s.member){
+  for(m : s.member){
     
-    if mem.isstruct {
+    if m.isstruct {
         ps = s.parser # Parser
-        acualPkg = ps.import[mem.structpkg]
-        dst = package.getStruct(acualPkg,mem.structname)
+        acualPkg = ps.import[m.structpkg]
+        dst = package.getStruct(acualPkg,m.structname)
         if dst == null {
             panic("struct.member: inner class not exist <%s.%s> line:%d column:%d file:%s\n",
-              mem.structpkg,mem.structname,mem.line,mem.column,mem.file
+              m.structpkg,m.structname,m.line,m.column,m.file
             )
         }
         
-        mem.align = 8
-        if !dst.iscomputed && !mem.pointer {
+        m.align = 8
+        if !dst.iscomputed && !m.pointer {
             genStruct(dst)
             assert(dst.iscomputed)
-            mem.align = dst.align
+            m.align = dst.align
         }
         // TODO: mem.size  = mem.pointer ? 8 : dst.size
-        if mem.pointer != null mem.size = 8
-        else                   mem.size = dst.size
+        if m.pointer != null m.size = 8
+        else                   m.size = dst.size
         
-        mem.structref = dst
+        m.structref = dst
     }
 
     
-    if mem.bitfield && mem.bitwidth == 0 {
-      bits = utils.ALIGN_UP(bits, mem.size * 8)
-    }else if mem.bitfield{
-      sz = mem.size
-      if (bits / (sz * 8) ) !=  ((bits + mem.bitwidth - 1) / (sz * 8))
+    if m.bitfield && m.bitwidth == 0 {
+      bits = utils.ALIGN_UP(bits, m.size * 8)
+    }else if m.bitfield{
+      sz = m.size
+      if (bits / (sz * 8) ) !=  ((bits + m.bitwidth - 1) / (sz * 8))
         bits = utils.ALIGN_UP(bits, sz * 8)
 
-      mem.offset = ast.ALIGN_DOWN(bits / 8, sz)
-      mem.bitoffset = bits % (sz * 8)
-      bits += mem.bitwidth
+      m.offset = ast.ALIGN_DOWN(bits / 8, sz)
+      m.bitoffset = bits % (sz * 8)
+      bits += m.bitwidth
     } else 
     {
-        if !s.ispacked  bits = utils.ALIGN_UP(bits,mem.align * 8)
+        if !s.ispacked  bits = utils.ALIGN_UP(bits,m.align * 8)
 
-        mem.offset = bits / 8
-        if mem.pointer
-          bits += 8 * 8 * mem.arrsize
+        m.offset = bits / 8
+        if m.pointer
+          bits += 8 * 8 * m.arrsize
         else
-          bits += mem.size * 8 * mem.arrsize
+          bits += m.size * 8 * m.arrsize
     }
-    if !s.ispacked && align < mem.align
-      align = mem.align
+    if !s.ispacked && align < m.align
+      align = m.align
   }
   
   s.size = utils.ALIGN_UP(bits, align * 8) / 8
@@ -64,14 +64,14 @@ package.Package::genStruct(s)
   s.iscomputed = true
 }
 package.Package::classinit(){
-  for(pkg : pacakge.packages){
-    for(class : pkg.classes){
-      class->initClassInitFunc()
+  for(pkg : package.packages){
+    for(cls : pkg.classes){
+      cls.initClassInitFunc()
     }
   }
 }
-pacakge.Package::compile(){
-    for(p : parsers){
+package.Package::compile(){
+    for(p : this.parsers){
         p.compile()
     }
 }

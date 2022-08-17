@@ -69,17 +69,17 @@ Parser::parseStructDef()
     scanner.scan()
     
     if scanner.curToken != ast.LBRACE {
-        check(scanner.curToken ==  ast.COLON)
+        this.expect(  ast.COLON)
         scanner.scan()
         
-        check(scanner.curToken == ast.VAR)
+        this.expect( ast.VAR)
         if (scanner.curLex == "pack" ){
             s.ispacked = true
         }
         scanner.scan()
     }
     
-    check(scanner.curToken == ast.LBRACE)
+    this.expect( ast.LBRACE)
     scanner.scan()
     
     idx = 0
@@ -104,7 +104,7 @@ Parser::parseStructDef()
             scanner.scan()
             if scanner.curToken == ast.DOT {
                 scanner.scan()
-                check(scanner.curToken == ast.VAR)
+                this.expect( ast.VAR)
                 member.structpkg = member.structname
                 member.structname = scanner.curLex
                 scanner.scan()
@@ -113,7 +113,7 @@ Parser::parseStructDef()
                 member.pointer = true
                 scanner.scan()
             }
-            check(scanner.curToken == ast.VAR)
+            this.expect( ast.VAR)
             member.name = scanner.curLex
             s.member[] = member
             scanner.scan()
@@ -157,23 +157,23 @@ Parser::parseMember(tk,idx,pointer){
         member.pointer = true
     }
 
-    check(scanner.curToken == ast.VAR)
+    this.expect( ast.VAR)
     member.name = scanner.curLex
 
     scanner.scan()
     if scanner.curToken ==  ast.COLON {
         scanner.scan()
-        check(scanner.curToken == ast.INT)
+        this.expect( ast.INT)
         member.bitfield = true
         member.bitwidth = string.tonumber(scanner.curLex)
         scanner.scan()
     }else if scanner.curToken == ast.LBRACKET{
         scanner.scan()
-        check(scanner.curToken == ast.INT)
+        this.expect( ast.INT)
         member.isarr   = true
         member.arrsize = string.tonumber(scanner.curLex)
         scanner.scan()
-        check(scanner.curToken == ast.RBRACKET)
+        this.expect( ast.RBRACKET)
         scanner.scan()
     }
     return member
@@ -197,7 +197,7 @@ Parser::parseFuncDef(member,closure)
         scanner.scan()
     }
 
-    check(scanner.curToken == ast.LPAREN)
+    this.expect( ast.LPAREN)
 
     if member {
         var = new VarExpr("this",line,column)

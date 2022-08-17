@@ -64,7 +64,7 @@ Parser::parseExpression(oldPriority)
     
     if this.isassign() {
         this.check(p != null)
-        if (type(p) != type(gen.VarExpr) &&
+        if type(p) != type(gen.VarExpr) &&
             type(p) != type(gen.ChainExpr) &&
             type(p) != type(gen.IndexExpr) &&
             type(p) != type(gen.MemberExpr) &&
@@ -135,7 +135,7 @@ Parser::parsePrimaryExpr()
     
     if tk == ast.BUILTIN {
         builtinfunc = new gen.BuiltinFuncExpr(scanner.curLex,scanner.line,scanner.column)
-        check(scanner.scan() == ast.LPAREN)
+        this.expect( ast.LPAREN )
         scanner.scan()
         
         if scanner.curToken == ast.MUL {
@@ -143,8 +143,7 @@ Parser::parsePrimaryExpr()
         }else{
             builtinfunc.expr = parseExpression()
         }
-
-        check(scanner.curToken == ast.RPAREN)
+        this.expect(ast.RPAREN)
         scanner.scan()
         return builtinfunc
     }
@@ -275,7 +274,7 @@ Parser::parsePrimaryExpr()
             while(scanner.curToken != ast.RBRACE) {
                 kv = new gen.KVExpr(line,column)
                 kv.key    = parseExpression()
-                check(scanner.curToken ==  ast.COLON)
+                this.expect( ast.COLON )
                 scanner.scan()
                 kv.value  = parseExpression()
                 ret.lit[] = kv
@@ -347,7 +346,7 @@ Parser::parseVarExpr(var)
     match scanner.curToken {
         ast.DOT : {
             scanner.scan()
-            check(scanner.curToken == ast.VAR)
+            this.expect( ast.VAR)
             pfuncname = scanner.curLex
             
             scanner.scan()
@@ -411,7 +410,7 @@ Parser::parseVarExpr(var)
         ast.LPAREN:     return parseFuncallExpr(var)
         ast.LBRACKET:   return parseIndexExpr(var)
         ast.LT : {
-            Scanner::tx tx = scanner.transaction()
+            tx = scanner.transaction()
 
             expr = new gen.VarExpr(var,line,column)
             varexpr = new gen.VarExpr(var,line,column)
@@ -456,12 +455,12 @@ Parser::parseVarExpr(var)
                 
                 if ( scanner.curToken ==  ast.COLON){
                     scanner.scan()
-                    check(scanner.curToken == ast.INT,"mut be (var<i8:-int-)")
+                    this.expect( ast.INT,"mut be (var<i8:-int-)")
                     expr.stack = true
                     expr.stacksize = atoi(scanner.curLex)
                     scanner.scan()
                 }
-                check(scanner.curToken == GT,"mut be > at var expression")
+                this.expect( GT,"mut be > at var expression")
                 scanner.scan()
                 return expr
             }

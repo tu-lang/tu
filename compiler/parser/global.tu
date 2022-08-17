@@ -8,7 +8,7 @@ Parser::parseEnumDef(){
     
     scanner.scan()
     
-    check(scanner.curToken == ast.LBRACE)
+    this.expect( ast.LBRACE)
     
     scanner.scan()
     defaulte = 0
@@ -33,7 +33,7 @@ Parser::parseEnumDef(){
 }
 Parser::parseStructVar(varname)
 {
-    check(scanner.curToken == ast.LT )
+    this.expect( ast.LT )
     var = parseVarExpr(varname)
     varexpr = var
     check(varexpr.structtype)
@@ -41,7 +41,7 @@ Parser::parseStructVar(varname)
     if scanner.curToken == ast.ASSIGN {
         
         scanner.scan()
-        check(scanner.curToken == ast.INT)
+        this.expect( ast.INT)
         varexpr.ivalue = scanner.curLex
         
         scanner.scan()
@@ -59,7 +59,7 @@ Parser::parseFlatVar(var){
 }
 
 Parser::parseClassFunc(var){
-    check(scanner.curToken ==  ast.COLON)
+    this.expect(  ast.COLON)
     
     scanner.scan()
     assert(scanner.curToken ==  ast.COLON)
@@ -76,15 +76,15 @@ Parser::parseClassFunc(var){
     return
 }
 Parser::parseExternClassFunc(pkgname){
-    check(scanner.curToken == ast.DOT)
+    this.expect( ast.DOT)
     scanner.scan()
-    check(scanner.curToken == VAR)
+    this.expect( VAR)
     clsname = scanner.curLex
     scanner.scan()
     if !std.exist(this.import,pkgname){
         check(false,fmt.sprintf("consider import package: use %s",package))
     }
-    check(scanner.curToken ==  ast.COLON)
+    this.expect(  ast.COLON)
     
     scanner.scan()
     assert(scanner.curToken ==  ast.COLON)

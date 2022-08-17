@@ -20,15 +20,16 @@ func call_object_operator(opt, name,method) {
     compile.Pop("%rsi")
     call(method)
 }
-func gc_malloc(size)
+func gc_malloc(size<i64>)
 {
-    compile.writeln("    mov $%I, %%rdi", size)
-    call("runtime_gc_gc_malloc")
-}
-func gc_malloc()
-{
-    compile.writeln("    mov %%rax, %%rdi")
-    call("runtime_gc_gc_malloc")
+    if size != null {
+        compile.writeln("    mov $%I, %%rdi", size)
+        call("runtime_gc_gc_malloc")
+    }else {
+        //pass args by prev expression.compile & %rax
+        compile.writeln("    mov %%rax, %%rdi")
+        call("runtime_gc_gc_malloc")
+    }
 }
 func malloc(size)
 {
@@ -36,7 +37,7 @@ func malloc(size)
     call("malloc")
 }
 
-func newobject(typ, long data)
+func newobject(typ,data)
 {
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")

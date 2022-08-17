@@ -24,7 +24,7 @@ class OperatorHelper {
 
 
 	ax = "%rax"
-	di = "%rdi",
+	di = "%rdi"
 	dx = "$rdx"
 	needassign = false
 }
@@ -357,7 +357,7 @@ OperatorHelper::genRight(isleft,expr)
 	return ret
 }
 
-OperatorHelper::initcond(left,varsize,Token type,ispointer)
+OperatorHelper::initcond(left,varsize,type,ispointer)
 {
 	typesize = varsize
 	if ispointer typesize = 8

@@ -26,10 +26,10 @@ BuiltinFuncExpr::compile(ctx){
 	if funcname == "sizeof" {
 		this.check(type(this.expr) == type(VarExpr),"must be varexpr in sizeof()")
 		ve = this.expr
-		mem = package.getStruct(ve.package,ve.varname)
-		this.check(mem != null,"mem not exist\n")
+		m = package.getStruct(ve.package,ve.varname)
+		this.check(m != null,"mem not exist\n")
 
-		compile.writeln("   mov $%d , %%rax",mem.size)
+		compile.writeln("   mov $%d , %%rax",m.size)
 		return null
 	}
 	//2. 如果是值类型
@@ -108,17 +108,20 @@ func funcexec(ctx , fc , fce , package)
 		}
 	}
 	if std.len(fc.params) != std.len(fce.args) 
-		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(func.params),std.len(this.args)
+		utils.debug("ArgumentError: expects %d arguments but got %d\n",
+			std.len(fc.params),
+			std.len(this.args)
+		)
 
 	stack_args = compile.Push_arg(ctx,fc,fce)
 
 	if !cfunc || !cfunc.is_variadic || !have_variadic
-		for (int i = 0 ; i < GP_MAX ; i += 1) {
+		for (i = 0 ; i < GP_MAX ; i += 1) {
 			compile.Pop(compile.argreg64[gp])
 			gp += 1
 		}
 	if !fc.isObj {
-		if func.isExtern {
+		if fc.isExtern {
 			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
 		}else{
 			realfuncname = package + "_" + funcname

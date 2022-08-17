@@ -50,10 +50,10 @@ VarExpr::getVarType(ctx)
 {
     package = this.package
     if !is_local {
-        if (ret = ast.getVar(ctx,package);ret != null)
+        if ast.getVar(ctx,package)
             return ast.Var_Obj_Member
 
-        if (std.exist(package.packages,package)){
+        if std.exist(package.packages,package) {
             ret  = package.packages[package].getGlobalVar(varname)
             
             if ret return ast.Var_Extern_Global
@@ -85,19 +85,19 @@ VarExpr::getVarType(ctx)
         return ast.Var_Local
     }
 
-    func = null
+    fc = null
     funcpkg = this.package
     if (std.len(package.packages,funcpkg)){
-        func = package.packages[funcpkg].getFunc(varname,false)
+        fc = package.packages[funcpkg].getFunc(varname,false)
     }
-    if !func{
+    if !fc {
         funcpkg = compile.currentFunc.parser.getpkgname()
         if (std.exist(package.packages,funcpkg)){
-            func = package.packages[funcpkg].getFunc(varname,false)
+            fc = package.packages[funcpkg].getFunc(varname,false)
         }
     }
-    if func{
-        funcname = func.name
+    if fc {
+        funcname = fc.name
         return ast.Var_Func
     }    
     parse_err("AsmError:get var type use of undefined variable %s at line %d co %d filename:%s\n",

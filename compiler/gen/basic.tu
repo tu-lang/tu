@@ -4,7 +4,7 @@ use fmt
 use ast
 use compile
 
-LabelExpr : ast.Ast {
+class LabelExpr : ast.Ast {
     label = label
 	func init(label,line,column){
 		super.init(line,column)

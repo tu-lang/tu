@@ -1,4 +1,5 @@
 use ast
+use gen
 
 Parser::parseStatement()
 {
@@ -31,7 +32,7 @@ Parser::parseStatement()
         }
         ast.CONTINUE: {
             scanner.scan()
-            node = new ContinueStmt(line,column)
+            node = new gen.ContinueStmt(line,column)
         }
         ast.MATCH: {
             scanner.scan()
@@ -88,10 +89,10 @@ Parser::parseForStmt()
     
     scanner.scan()
     
-    check(scanner.curToken == ast.VAR)
+    this.expect( ast.VAR)
 
     tx = scanner.transaction()
-    {
+    // {
         key = null
         value = parseExpression()
         obj = null
@@ -103,9 +104,9 @@ Parser::parseForStmt()
                 key = value
                 scanner.scan()
                 value = parseExpression()
-                check(type(value) == type(ast.VarExpr) 
+                check(type(value) == type(ast.VarExpr))
             }
-            check(scanner.curToken == ast.COLON)
+            this.expect( ast.COLON)
             scanner.scan()
             obj = parseExpression()
             check(obj != null)
@@ -135,9 +136,9 @@ Parser::parseForStmt()
         }
         
         scanner.rollback(tx)
-    }
+    // }
     node.init = parseExpression()
-    check(scanner.curToken == ast.SEMI ast.COLON)
+    this.expect( ast.SEMI ast.COLON)
     scanner.scan()
 
     node.cond = parseExpression()
@@ -154,7 +155,7 @@ Parser::parseForStmt()
 Parser::parseMatchSmt(){
     ms = new gen.MatchStmt(line,column)
     ms.cond = parseExpression()
-    check(scanner.curToken == ast.LBRACE)
+    this.expect( ast.LBRACE)
     scanner.scan()
     while scanner.curToken != ast.RBRACE {
         cs = parseMatchCase(ms.cond)
@@ -175,14 +176,14 @@ Parser::parseMatchCase(cond)
     cs.cond  = cs.bitOrToLogOr(parseExpression())
     cs.block = null
     
-    if type(cs.cond == type(ast.VarExpr) {
+    if type(cs.cond) == type(ast.VarExpr) {
         cond = cs.cond
         
         if cond.varname == "_"{
             cs.defaultCase = true
         }
     }
-    check(scanner.curToken == ast.COLON)
+    this.expect( ast.COLON)
     scanner.scan()
     if scanner.curToken == ast.LBRACE {
         cs.block = parseBlock(false) 

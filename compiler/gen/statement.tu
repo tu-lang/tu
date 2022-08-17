@@ -7,7 +7,7 @@ class ReturnStmt     : ast.Ast {
     func init(line,column){
         super.init(line,column)
     }
-    func ReturnStmt::toString() {
+    func toString() {
         str = "ReturnStmt("
         if (ret) {
             str += "ret="
