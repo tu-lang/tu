@@ -15,11 +15,11 @@ func empty(v<runtime.Value>){
 	match v.type {
 		runtime.String: {
 			ret<i8> = strlen(v.data)
-			if ret == 0 return std_true
+			if ret == 0 return True
 		}
 		_: fmt.println("[warn] empty: unsuport type")
 	}	
-	return std_false
+	return False
 }
 func len(v){
 	return runtime.len(v)
@@ -30,7 +30,7 @@ func pop(v){
 func pop_head(v<runtime.Value>){
 	if v == null {
 		fmt.println("[warn] pop_head args is null")
-		return std_false
+		return False
 	}
 	match v.type {
 		runtime.Array:{
@@ -38,7 +38,7 @@ func pop_head(v<runtime.Value>){
 			if  arr == null os.die("[arr_pop_head] not array_type")
 			if arr.used <= 0 {
 				fmt.println("[warn] array_pop for empty array")
-				return std_false
+				return False
 			}
 			arr.used -= 1
 			addr<u64*> = arr.addr
@@ -49,7 +49,7 @@ func pop_head(v<runtime.Value>){
 		}
 		_: {
 			fmt.println("[warn] pop_head args is not array")
-			return std_false
+			return False
 		}
 	}
 }
@@ -72,18 +72,18 @@ func merge(v1<runtime.Value>,v2<runtime.Value>){
 		runtime.Array   : {
 			if v2.type != runtime.Array {
 				fmt.println("[warn] merge unsupport not array value")
-				return false
+				return False
 			}
 			ret<i8> = runtime.array_merge(v1.data,v2.data)
 			if ret != runtime.True {
 				fmt.println("[warn] array merge failed")
-				return false
+				return False
 			}
-			return true
+			return True
 		}
 		_     : fmt.println("[warn] merge(unknow type)")
 	}
-	return false
+	return False
 }
 func exist(key,v<runtime.Value>){
 	type<i8> = v.type
@@ -91,14 +91,27 @@ func exist(key,v<runtime.Value>){
 	match type {
 		runtime.Array : {
 			if runtime.array_in(key,v.data) == runtime.True {
-				return true
+				return True
 			}
 		}
 		runtime.Map   : {
 			has<i32> = runtime.map_find(v,key)
-			if has != null return true
+			if has != null return True
 		}
 		_     : fmt.println("[warn] exist(unknow type)")
 	}
-	return false
+	return False
 }
+func is_map(map<runtime.Value>){
+	if  map.type == runtime.Map {
+		return True
+	}
+	return False
+}
+func is_array(arr<runtime.Value>){
+	if  arr.type == runtime.Array {
+		return True
+	}
+	return False
+}
+

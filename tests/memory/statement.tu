@@ -17,7 +17,7 @@ func test_range_for(){
 	map = test_map()
 	arr = ["1",map,2,"sdfdsf","3"]
 	for(i,v : arr){
-		if   runtime.is_map(v)  {
+		if   std.is_map(v)  {
 			for(k,v2 : v){
 				fmt.print("\t",k,"-",v2,"\n")
 			}

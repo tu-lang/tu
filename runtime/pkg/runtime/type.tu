@@ -55,19 +55,6 @@ func type_string(t<i8>){
 		_    : return "unknown type:" + int(t)
 	}
 }
-func is_map(map<Value>){
-	if  map.type == Map {
-		return true
-	}
-	return false
-}
-func is_array(arr<Value>){
-	if  arr.type == Array {
-		return true
-	}
-	return false
-}
-
 I8_MAX<i8> = 127 	 
 I8_MIN<i8> = -128 				 	
 U8_MAX<u8> = 255 						

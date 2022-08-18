@@ -1,4 +1,4 @@
-std_true = true
-std_false = false
+True = true
+False = false
 
 seed<i64> = time()

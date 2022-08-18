@@ -112,25 +112,25 @@ class File {
 	}
 	func Write(buffer<runtime.Value>){
 		if buffer.type != runtime.String {
-			return false
+			return False
 		}
 		s<i8> = 1
 		size<i32> = std.strlen(buffer.data)
 		ret<u64> = write(this.fd,buffer.data,size)
 		if ret != size {
 			fmt.print("fwrite err\n")
-			return false
+			return False
 		}
-		return true
+		return True
 	}
 	func NWrite(buffer<i8*>){
 		size<i32> = strlen(buffer)
 		ret<u64> = std.write(this.fd , buffer,size)
 		if ret != size {
 			fmt.print("fwrite err\n")
-			return false
+			return False
 		}
-		return true
+		return True
 	}
 	func Close(){
 		close(this.fd)
