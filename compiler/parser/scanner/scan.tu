@@ -262,6 +262,10 @@ Scanner::get_next() {
         cn = peek()
         while(cn != '"'){
             c = next()
+            if c == '\\'{
+                lexeme += c
+                c = next()
+            }
             lexeme += c
             cn = peek()
         }

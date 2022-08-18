@@ -3,6 +3,7 @@ use fmt
 use os
 use utils
 use ast
+use gen
 
 Parser::parseEnumDef(){
     
@@ -131,7 +132,7 @@ Parser::parseGlobalAssign()
     match type(expr) {
         type(ast.AssignExpr) : {
             ae = expr
-            if type(ae.lhs) != typeid(ast.VarExpr)) 
+            if type(ae.lhs) != typeid(ast.VarExpr)
                 this.panic("unsupport global synatix: " + expr.toString(""))
             var = ae.lhs
             assign = ae
@@ -142,7 +143,7 @@ Parser::parseGlobalAssign()
         }
         type(ast.VarExpr) : {
             var   = expr
-            assign         = new ast.AssignExpr(this.line,this.column)
+            assign     = new ast.AssignExpr(this.line,this.column)
             assign.opt = ast.ASSIGN
             assign.lhs = var
             assign.rhs = new gen.NullExpr(line,column)
@@ -153,7 +154,7 @@ Parser::parseGlobalAssign()
     gvars[var.varname] = var
     var.is_local = false 
     var.package  = this.package
-    if !needinit return
+    if !needinit return false
 
     this.pkg.InsertInitVarExpression(assign)
 } 

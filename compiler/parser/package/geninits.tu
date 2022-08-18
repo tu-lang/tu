@@ -58,11 +58,10 @@ func  geninit(pkg){
 		 }
 	 }
 	 
-	 if (pkg.package == "main"){
+	 if pkg.package == "main" {
 		 for(init : pkg.inits){
-			if (init.funcname == mf.funcname) continue
+			if init.funcname == mf.funcname continue
 			mf.InsertFuncall(fullpackage,init.name)
-			
 		 }
  
 	 }

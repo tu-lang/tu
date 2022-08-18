@@ -132,8 +132,10 @@ Parser::parseForStmt()
                && !std.exist(node.value.varname,currentFunc.locals)
                 currentFunc.locals[node.value.varname] = node.value
             
-            fmt.this.expect(ast.RPAREN)
-            scanner.scan()
+            if (hashlparen ){
+                this.expect(ast.RPAREN)
+                scanner.scan()
+            }
             if this.scanner->curToken == ast.LBRACE {
                 node.block = parseBlock(false)
             }else {
