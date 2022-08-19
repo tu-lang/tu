@@ -42,6 +42,9 @@ tests/src/*
 linker/*.s
 linker/*.o
 linker/a.out
+compiler/*.s
+compiler/*.o
+compiler/a.out
 dev
 docs
 core
