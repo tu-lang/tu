@@ -2,6 +2,7 @@ use ast
 use compile
 use internal
 use parser
+use parser.package
 use std
 use utils
 
@@ -14,29 +15,29 @@ class NewExpr : ast.Ast {
 }
 NewExpr::toString(){
     str = "NewExpr("
-    str += package
+    str += this.package
     str += ","
-    str += name
+    str += this.name
     str += ")"
     return str
 }
 
 NewExpr::compile(ctx)
 {
-	record()
+	this.record()
 	//1. new 100
-	if package == "" && name == "" {
-		internal.gc_malloc(len)
+	if this.package == "" && this.name == "" {
+		internal.gc_malloc(this.len)
 		 return this
 	 }
-	 package = compile.parser.import[this.package]
-	 if std.exist(packge,package.packages)  {
+	 fullpackage = compile.parser.import[this.package]
+	 if std.exist(fullpackage,package.packages)  {
 		s = null
-		if s = package.packages[package].getStruct(name) && s != null {
+		if s = package.packages[fullpackage].getStruct(this.name) && s != null {
 			internal.gc_malloc(s.size)
 			return this
 		}else{
-			var = new VarExpr(name,0,0)
+			var = new VarExpr(this.name,0,0)
 			var.package = this.package
 			if !var.isMemtype(ctx) {
 				this.panic("AsmError: var must be memtype in (new var)")
@@ -47,7 +48,10 @@ NewExpr::compile(ctx)
 			return this
 		}
 	 }
-	 parse_err("asmgen: New(%s.%s) not right maybe package(%s) not import? line:%d column:%d\n",this.package,this.name,this.package,line,column)
+	 this.panic(
+		"asmgen: New(%s.%s) not right maybe package(%s) not import? line:%d column:%d",
+	 	this.package,this.name,this.package,this.line,this.column
+	)
 	 compile.writeln("   mov $0,%%rax")
 	 return this
  }
@@ -61,20 +65,20 @@ class NewClassExpr : ast.Ast {
 }
 NewClassExpr::toString(){
     str = "NewExpr("
-    str += package
+    str += this.package
     str += ","
-    str += name
+    str += this.name
     str += ")"
     return str
 }
 
 NewClassExpr::compile(ctx)
 {
-	record()
+	this.record()
 	utils.debug("new expr got: type:%s",this.name)
 	s = null
 	if this.package != "" {
-		realPkg = compile.parser.import[package]
+		realPkg = compile.parser.import[this.package]
 		pkg = package.packages[realPkg]
 		if pkg != null {
 			s = pkg.getClass(this.name)
@@ -83,9 +87,9 @@ NewClassExpr::compile(ctx)
 		s = compile.parser.pkg.getClass(this.name)
 	}
 	if !s {
-		this.panic("AsmError: class is not define of " + name)
+		this.panic("AsmError: class is not define of " + this.name)
 	}
-	internal.newobject(Object,std.len(s.funcs))
+	internal.newobject(ast.Object,std.len(s.funcs))
 	compile.Push()
 	
 	exist_init = false
@@ -118,9 +122,9 @@ class MemberExpr : Ast {
 }
 MemberExpr::toString(){
     str = "MemberExpr("
-    str += varname
+    str += this.varname
     str += "."
-    str += membername
+    str += this.membername
     str += ")"
     return str
 }
@@ -128,16 +132,16 @@ MemberExpr::toString(){
 
 MemberExpr::compile(ctx)
 {
-	record()
+	this.record()
 	if this.varname == "" {
-		internal.object_member_get(membername)
+		internal.object_member_get(this.membername)
 		return null
 	}
-	var = ast.getVar(ctx,varname)
+	var = ast.getVar(ctx,this.varname)
 	compile.GenAddr(var)
 	compile.Load()
 	compile.Push()
-	internal.object_member_get(membername)
+	internal.object_member_get(this.membername)
 	return null
 }
 
@@ -150,11 +154,11 @@ class MemberCallExpr : ast.Ast {
 }
 MemberCallExpr::toString() {
     str = "MemberCallExpr(varname="
-    str += varname
+    str += this.varname
     str += ",func="
-    str += membername
+    str += this.membername
     str += ",args=["
-    for (arg : args) {
+    for (arg : this.args) {
         str += arg.toString()
         str += ","
     }
@@ -163,7 +167,7 @@ MemberCallExpr::toString() {
 }
 MemberCallExpr::compile(ctx)
 {
-	record()
+	this.record()
 	utils.debug("membercall : ")
 	return null
 }

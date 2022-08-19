@@ -20,10 +20,6 @@ Ast::record(){
     cfunc = compile.currentFunc
     compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
 }
-Ast::record(){
-    cfunc = compile.currentFunc
-    compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
-}
 Ast::panic(args...){
     err = fmt.sprintf(args)
     cfunc = compile.currentFunc

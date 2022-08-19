@@ -23,7 +23,7 @@ func link(){
     for(pkg : package.packages){
         for(p : pkg.parsers){
             //add external library
-            for(auto l : p.links){
+            for(l : p.links){
                 args += l
             }
         }
@@ -58,7 +58,7 @@ func registerMain()
     writeln("    ret")
 
 }
-func funcs_offsets(fn)
+func _funcs_offsets(fn)
 {
     for ( closure : fn.closures ) {
         funcs_offsets(closure)
@@ -70,7 +70,7 @@ func funcs_offsets(fn)
 func funcs_offsets() 
 {
     for (f : parser.funcs) {
-        funcs_offsets(f)
+        _funcs_offsets(f)
     }
 
 }

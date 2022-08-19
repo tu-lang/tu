@@ -5,9 +5,10 @@ use parser
 use parser.package
 
 
-out    # current file fd
-parser # current parser
+out    = null # current file fd
+parser = null # current parser
 ctx = [] # arr[Context*,Context*..]
+currentFunc = null # the func that is generating
 
 func genast(filename)
 {
@@ -24,6 +25,7 @@ func genast(filename)
         //recursively scan code files
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")
     }
+}
 func editast(){
     mpkg = package.packages["main"]
     mpkg.genvarsinit()
@@ -37,6 +39,6 @@ func writeln(count,args...) {
 }
 func panic(args...){
     err = fmt.sprintf(args)
-    cfunc = compile.currentFunc
+    cfunc = currentFunc
     parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,line,column,cfunc.parser.filepath)
 }

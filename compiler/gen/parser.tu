@@ -6,7 +6,7 @@ parser.Parser::compile()
 {    
     asm = new std.File(this.asmfile)
 	if !asm.IsOpen() {
-        panic("genrate assembly file failed package:%s file:%s",
+        this.panic("genrate assembly file failed package:%s file:%s",
             pkg.package,filename
         )
 	}

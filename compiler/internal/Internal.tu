@@ -36,13 +36,13 @@ func malloc(size)
     compile.writeln("    mov $%I, %%rdi", size)
     call("malloc")
 }
-
-func newobject(typ,data)
+//@typ  ast.Int ... ast.Object
+func newobject(typ<i32>,data)
 {
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
 
-    compile.writeln("    mov $%I, %%rdi", typ)
+    compile.writeln("    mov $%I, %%rdi", int(typ))
     if typ != String
         compile.writeln("    mov $%I, %%rsi", data)
 

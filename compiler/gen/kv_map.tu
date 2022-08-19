@@ -20,7 +20,7 @@ MapExpr::toString() {
     return str
 }
 MapExpr::compile(ctx){
-    record()
+    this.record()
     utils.debug("MapExpr: gen... ")
     
     internal.newobject(ast.Map, 0)

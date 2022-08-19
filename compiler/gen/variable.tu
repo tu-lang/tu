@@ -27,7 +27,7 @@ class VarExpr : ast.Ast {
         super.init(line,column)
     }
 }
-VarExpr::toString() { return "VarExpr(" + varname + ")" }
+VarExpr::toString() { return "VarExpr(" + this.varname + ")" }
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx)
     if v.structtype {
@@ -42,7 +42,7 @@ VarExpr::isMemtype(ctx){
     return false
 }
 VarExpr::getVar(ctx){
-    getVarType(ctx)
+    this.getVarType(ctx)
     return this.ret
 }
 
@@ -54,33 +54,35 @@ VarExpr::getVarType(ctx)
             return ast.Var_Obj_Member
 
         if std.exist(package.packages,package) {
-            ret  = package.packages[package].getGlobalVar(varname)
+            this.ret  = package.packages[package].getGlobalVar(this.varname)
             
             if ret return ast.Var_Extern_Global
         }
         cpkg = compile.currentFunc.parser.getpkgname()
         
         if std.exist(package.packages,cpkg){
-            ret = package.packages[cpkg].getGlobalVar(package)
+            this.ret = package.packages[cpkg].getGlobalVar(package)
             if ret return ast.Var_Local_Mem_Global
         }
     }
     
     package = compile.currentFunc.parser.getpkgname()
-    ret  = package.packages[package].getGlobalVar(varname)
+    ret  = package.packages[package].getGlobalVar(this.varname)
     if ret return ast.Var_Local_Global
     
     ret = ast.getVar(ctx,this.varname)
     if ret != null{
         f = compile.currentFunc
         
-        if std.len(f.locals,varname)
-            ret = f.locals[varname]
-        else if std.len(f.params_var,varname)
-            ret = f.params_var[varname]
+        if std.len(f.locals,this.varname)
+            ret = f.locals[this.varname]
+        else if std.len(f.params_var,this.varname)
+            ret = f.params_var[this.varname]
         else
-            parse_err("AsmError:vaiable:%s not define in local or params  at line %d co %d\n",
-                varname,this.line,this.column)
+            this.panic(
+                "AsmError:vaiable:%s not define in local or params  at line %d co %d\n",
+                this.varname,this.line,this.column
+            )
             
         return ast.Var_Local
     }
@@ -88,31 +90,33 @@ VarExpr::getVarType(ctx)
     fc = null
     funcpkg = this.package
     if (std.len(package.packages,funcpkg)){
-        fc = package.packages[funcpkg].getFunc(varname,false)
+        fc = package.packages[funcpkg].getFunc(this.varname,false)
     }
     if !fc {
         funcpkg = compile.currentFunc.parser.getpkgname()
         if (std.exist(package.packages,funcpkg)){
-            fc = package.packages[funcpkg].getFunc(varname,false)
+            fc = package.packages[funcpkg].getFunc(this.varname,false)
         }
     }
     if fc {
         funcname = fc.name
         return ast.Var_Func
     }    
-    parse_err("AsmError:get var type use of undefined variable %s at line %d co %d filename:%s\n",
-          varname,this.line,this.column,compile.currentFunc.parser.filepath)
+    this.panic(
+        "AsmError:get var type use of undefined variable %s at line %d co %d filename:%s",
+          this.varname,this.line,this.column,compile.currentFunc.parser.filepath
+    )
 }
 VarExpr::compile(ctx){
-    record()
-    match getVarType(ctx)
+    this.record()
+    match this.getVarType(ctx)
     {
         ast.Var_Obj_Member : { 
-            compile.GenAddr(ret)
+            compile.GenAddr(this.ret)
             compile.Load()
             compile.Push()
             
-            internal.object_member_get(varname)
+            internal.object_member_get(this.varname)
         }
         ast.Var_Local_Mem_Global : {
             sm = new StructMemberExpr(this.package,this.line,this.column)
@@ -123,10 +127,14 @@ VarExpr::compile(ctx){
         }
         ast.Var_Local | ast.Var_Local_Global | ast.Var_Extern_Global: 
         { 
-            compile.GenAddr(ret)
-            
-            if ret.structtype && !ret.pointer && ret.type <= ast.U64 && ret.type >= ast.I8    
-                compile.Load(ret.size,ret.isunsigned)
+            compile.GenAddr(this.ret)
+            //UNSAFE: dyn & native in same expression is unsafe      
+            if this.ret.structtype && !this.ret.pointer &&
+            if this.ret.structtype && 
+               !this.ret.pointer   && 
+               this.ret.type <= ast.U64 && 
+               this.ret.type >= ast.I8    
+                compile.LoadSize(this.ret.size,this.ret.isunsigned)
             else                                    
                 compile.Load()
         }
@@ -136,5 +144,5 @@ VarExpr::compile(ctx){
             compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn)
         }
     }
-    return ret
+    return this.ret
 }

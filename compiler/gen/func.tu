@@ -12,7 +12,7 @@ class ClosureExpr : Ast {
 	func init(varname,line,column){
 		super.init(line,column)
 	}
-	func toString() { return "ClosureExpr(" + varname + ")" }
+	func toString() { return "ClosureExpr(" + this.varname + ")" }
 }
 
 
@@ -23,30 +23,30 @@ class BuiltinFuncExpr : ast.Ast {
 	}
 }
 BuiltinFuncExpr::compile(ctx){
-	if funcname == "sizeof" {
-		this.check(type(this.expr) == type(VarExpr),"must be varexpr in sizeof()")
+	if this.funcname == "sizeof" {
+		this.check(
+			type(this.expr) == type(VarExpr),
+			"must be varexpr in sizeof()"
+		)
 		ve = this.expr
 		m = package.getStruct(ve.package,ve.varname)
-		this.check(m != null,"mem not exist\n")
+		this.check(m != null,"mem not exist")
 
 		compile.writeln("   mov $%d , %%rax",m.size)
 		return null
 	}
-	//2. 如果是值类型
-	check(type(*expr) != type(IntExpr))
-	check(type(*expr) != type(StringExpr))
-	check(type(*expr) != type(ArrayExpr))
-	check(type(*expr) != type(MapExpr))
-	check(type(*expr) != type(NullExpr))
-	check(type(*expr) != type(CharExpr))
-	check(type(*expr) != type(DoubleExpr))
+	this.check(type(this.expr) != type(IntExpr))
+	this.check(type(this.expr) != type(StringExpr))
+	this.check(type(this.expr) != type(ArrayExpr))
+	this.check(type(this.expr) != type(MapExpr))
+	this.check(type(this.expr) != type(NullExpr))
+	this.check(type(this.expr) != type(CharExpr))
+	this.check(type(this.expr) != type(DoubleExpr))
 
-	//2. 其他内置函数则需要计算
 	// %rax
 	ret = this.expr.compile(ctx)
 
-	//获取到 数据类型
-	Token tk = ast.I64
+	tk<i32> = ast.I64
 	if (ret == null){
 	}else if  type(ret) == type(VarExpr) {
 		if ret.type >= ast.I8 && ret.type <= ast.U64 
@@ -56,37 +56,42 @@ BuiltinFuncExpr::compile(ctx){
 		sm = ret
 		m = sm.ret
 		if m == null {
-			panic("del ref can't find the struct member:%s\n",this.expr.toString())
+			this.panic("del ref can't find the struct member:%s",
+				this.expr.toString()
+			)
 		}
 		if type(this.expr) != type(DelRefExpr) {
-			compile.Load(m)
+			compile.LoadMember(m)
 		}
 		tk = m.type
 	}else if type(ret) == type(ChainExpr) {
 		ce = ret
 		if ce.ret == null {
-			panic("struct chain exp: something wrong here :%s\n",ret.toString())
+			this.panic("struct chain exp: something wrong here :%s\n",ret.toString())
 		}
-		compile.Load(ce.ret)
+		compile.LoadMember(ce.ret)
 		tk = ce.ret.type
 	}
 
-	if funcname == "string" {
-		internal.newobject2(String)
+	if this.funcname == "string" {
+		internal.newobject2(ast.String)
 		return null
-	}else if funcname == "int" {
+	}else if this.funcname == "int" {
 		//TODO: cast i8 i16 i 32  to  i64
-		compile.Cast(tk,ast.I64)
+		compile.Cast(tk,parser.I64)
 		internal.newobject2(ast.Int)
 		return null
 	}
 }
 BuiltinFuncExpr::toString(){
-    return "BuiltinFuncExpr:" + funcname +"("+expr.toString() + ")"
+	return fmt.sprintf("BuiltinFuncExpr:%s(%s)"
+		this.funcname,
+		this.expr.toString("")
+	)
 }
 
 ClosureExpr::compile(ctx){
-	compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", varname)
+	compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", this.varname)
 	return null
 }
 func funcexec(ctx , fc , fce , package)
@@ -97,12 +102,12 @@ func funcexec(ctx , fc , fce , package)
 	fp = 0
 	have_variadic = false
 	cfunc = compile.currentFunc
-	for(arg : args){
+	for arg : args {
 		if  type(arg) == type(VarExpr) && cfunc {
 			var = arg
-			if std.exist(var.varname,cfunc.params_var){
-				var2  = res.second
-				if(var2 && var2.is_variadic)
+			if cfunc.params_var[var.varname] {
+				var2  = cfunc.params_var[var.varname]
+				if var2 && var2.is_variadic
 					have_variadic = true
 			}
 		}
@@ -116,8 +121,8 @@ func funcexec(ctx , fc , fce , package)
 	stack_args = compile.Push_arg(ctx,fc,fce)
 
 	if !cfunc || !cfunc.is_variadic || !have_variadic
-		for (i = 0 ; i < GP_MAX ; i += 1) {
-			compile.Pop(compile.argreg64[gp])
+		for (i = 0 ; i < compile.GP_MAX ; i += 1) {
+			compile.Pop(compile.args64[gp])
 			gp += 1
 		}
 	if !fc.isObj {
@@ -180,16 +185,16 @@ class FunCallExpr : ast.Ast {
 }
 FunCallExpr::compile(ctx)
 {
-	record()
-	utils.debug("FunCallExpr: parsing... package:%s func:%s",package,funcname)
+	this.record()
+	utils.debug("FunCallExpr: parsing... package:%s func:%s",this.package,this.funcname)
 	cfunc = compile.currentFunc
 	packagename = this.package
 	fc = null
-	if !is_pkgcall || is_extern {
+	if !this.is_pkgcall || this.is_extern {
 		packagename      = cfunc.parser.getpkgname()
 	}
-	if  std.empty(funcname) {
-		fc = new Function()
+	if  std.empty(this.funcname) {
+		fc = new ast.Function()
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
@@ -199,13 +204,13 @@ FunCallExpr::compile(ctx)
 			compile.writeln("   add $8,%%rsp")
 		}
 		return null
-	}else if ast.getVar(ctx,packagename) != null  {
+	}else if (var = ast.getVar(ctx,packagename) ) {
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
-		internal.object_func_addr(funcname)
+		internal.object_func_addr(this.funcname)
 		compile.Push()
-		fc = new Function()
+		fc = new ast.Function()
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
@@ -215,11 +220,11 @@ FunCallExpr::compile(ctx)
 			compile.writeln("   add $8,%%rsp")
 		}
 		return null
-	}else if ast.getVar(ctx.funcname) != null {
+	}else if ast.getVar(ctx,this.funcname) != null {
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
-		fc = new Function()
+		fc = new ast.Function()
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
@@ -231,16 +236,20 @@ FunCallExpr::compile(ctx)
 	}else{
 		pkg  = package.packages[packagename]
 		if !pkg {
-			check(false,
-					"AsmError: can not find package definition of " + package)
+			this.panic(
+				"AsmError: can not find package definition of %s" ,
+				this.package
+			)
 		}
-		fc = pkg.getFunc(funcname,is_extern)
-		if !fc check(false,
-					"AsmError: can not find func definition of " + funcname)
+		fc = pkg.getFunc(this.funcname,this.is_extern)
+		if !fc {
+			this.panic(
+				"AsmError: can not find func definition of %s %s",
+				this.funcname,
+				this.package
+			)
+		}
 		fc.isObj       = false
-		if fc == null
-			check(false,
-					"AsmError: can not find function definition of " + package)
 	}
 	funcexec(ctx,fc,this,packagename)
 	return null
@@ -248,9 +257,9 @@ FunCallExpr::compile(ctx)
 
 FunCallExpr::toString() {
     str = "FunCallExpr[func = "
-    str += package + "." + funcname
+    str += this.package + "." + this.funcname
     str += ",args = ("
-    for (arg : args) {
+    for arg : this.args {
         str += arg.toString()
         str += ","
     }

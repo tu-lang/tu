@@ -14,45 +14,45 @@ IntExpr::getType(ctx){
 	return ast.I64
 }
 DoubleExpr::getType(ctx){
-	panic("getType: unsupport double\n")
+	this.panic("getType: unsupport double\n")
 }
 StringExpr::getType(ctx){
 	return ast.U64
 }
 ArrayExpr::getType(ctx){
-	panic("getType: unsupport array\n")
+	this.panic("getType: unsupport array\n")
 }
 MapExpr::getType(ctx){
-	panic("getType: unsupport map\n")
+	this.panic("getType: unsupport map\n")
 }
 KVExpr::getType(ctx){
-	panic("getType: unsupport kv\n")
+	this.panic("getType: unsupport kv\n")
 }
 ChainExpr::getType(ctx){
-	check(ismem(ctx),"gettype: unsuport chain")
+	this.check(ismem(ctx),"gettype: unsuport chain")
 
 	s 	= this.first
 	member = s.getMember()
 	
-	check(member.isstruct,"must be memtype in chain expr")
+	this.check(member.isstruct,"must be memtype in chain expr")
 	for(i : fields){
-		check(type(i) == type(MemberExpr),"field must be member expression at mem chain expression")
+		this.check(type(i) == type(MemberExpr),"field must be member expression at mem chain expression")
 		me = i
-		check(member.structref != null,"must be memref in chain expr")
+		this.check(member.structref != null,"must be memref in chain expr")
 		
 		s = member.structref # Struct
 		member = s.getMember(me.membername)
-		check(member != null,"mem not exist field:" + me.membername)
+		this.check(member != null,"mem not exist field:" + me.membername)
 		
-		check(member.isstruct,"middle field must be mem type in chain expression")
+		this.check(member.isstruct,"middle field must be mem type in chain expression")
 	}
 		
-	check(last != null,"miss last field in chain expression")
+	this.check(last != null,"miss last field in chain expression")
 	me = last
-	check(member.structref != null,"must be memref in chain expr")
+	this.check(member.structref != null,"must be memref in chain expr")
 	ss = member.structref
 	member = ss.getMember(me.membername)
-	check(member != null,"mem not exist field:" + me.membername)
+	this.check(member != null,"mem not exist field:" + me.membername)
 	if member.pointer return ast.U64
 	if member.type >= ast.I8 && member.type <= ast.U64{
 		return member.type
@@ -66,7 +66,7 @@ VarExpr::getType(ctx){
 	return ret.type
 }
 ClosureExpr::getType(ctx){
-	panic("getType: unsupport closure\n")
+	this.panic("getType: unsupport closure\n")
 }
 StructMemberExpr::getType(ctx){
 	m = getMember()
@@ -98,7 +98,7 @@ DelRefExpr::getType(ctx){
 	return expr.getType(ctx)
 }
 IndexExpr::getType(ctx){
-	panic("getType: unsupport IndexExpr\n")
+	this.panic("getType: unsupport IndexExpr\n")
 }
 BinaryExpr::getType(ctx){
 	
@@ -114,27 +114,27 @@ AssignExpr::getType(ctx){
 	return this.lhs.getType(ctx)
 }
 NewClassExpr::getType(ctx){
-	panic("getType: unsupport new class\n")
+	this.panic("getType: unsupport new class\n")
 }
 BuiltinFuncExpr::getType(ctx){
 	return ast.U64
-	panic("getType: unsupport builtin\n")
+	this.panic("getType: unsupport builtin\n")
 }
 NewExpr::getType(ctx){
 	return ast.U64
 }
 MemberExpr::getType(ctx){
-	panic("getType: unsupport Member\n")
+	this.panic("getType: unsupport Member\n")
 }
 MemberCallExpr::getType(ctx){
-	panic("getType: unsupport MemberCall\n")
+	this.panic("getType: unsupport MemberCall\n")
 }
 MatchCaseExpr::getType(ctx){
-	panic("getType: unsupport MatchCaseExpr\n")
+	this.panic("getType: unsupport MatchCaseExpr\n")
 }
 IfCaseExpr::getType(ctx){
-	panic("getType: unsupport IfCaseExpr\n")
+	this.panic("getType: unsupport IfCaseExpr\n")
 }
 LabelExpr::getType(ctx){
-	panic("getType: unsupport LabelExpr\n")
+	this.panic("getType: unsupport LabelExpr\n")
 }

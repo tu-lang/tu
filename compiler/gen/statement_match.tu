@@ -12,7 +12,7 @@ MatchStmt::toString(){
     return "match stmt"
 }
 MatchStmt::compile(ctx){
-    record()
+    this.record()
     mainPoint = ast.incr_labelid()
     endLabel = "L.match.end." + mainPoint
     
@@ -110,7 +110,7 @@ MatchCaseExpr::bitOrToLogOr(expr){
 	return node
 }
 MatchCaseExpr::compile(ctx){
-    record()
+    this.record()
     compile.writeln("%s:",label)
     
     if block != null {

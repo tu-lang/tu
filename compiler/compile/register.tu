@@ -2,6 +2,7 @@
 use ast
 use std
 use fmt
+use os
 
 func GenAddr(var){
     
@@ -19,15 +20,15 @@ func GenAddr(var){
         var.varname,var.line,var.column
     )
 }
-func Load(m){
-    if m.isclass && !m.pointer return
+func LoadMember(m){
+    if m.isclass && !m.pointer return False
     if m.pointer
-        Load(8,true)
+        LoadSize(8,True)
     else
-        Load(m.size,m.isunsigned)
-    if (m.bitfield) {
+        LoadSize(m.size,m.isunsigned)
+    if m.bitfield {
         writeln("	shl $%d, %%rax", 64 - m.bitwidth - m.bitoffset)
-        if (m.isunsigned)
+        if m.isunsigned
             writeln("	shr $%d, %%rax", 64 - m.bitwidth)
         else
             writeln("	sar $%d, %%rax", 64 - m.bitwidth)
@@ -36,27 +37,28 @@ func Load(m){
 func Load(){
     writeln("    mov (%%rax), %%rax")
 }
-func Load(size , isunsigned){
-    prefix = if isunsigned  "movz" else  "movs"
+func LoadSize(size , isunsigned){
+    prefix = "movs"
+    if isunsigned prefix = "movz"
     match size {
         1 : writeln("   %sbl (%%rax), %%eax",prefix)
         2 : writeln("   %swl (%%rax), %%eax",prefix)
         4 : writeln("  movsxd (%%rax), %%rax")
         8 : writeln("  mov (%%rax), %%rax")
-        _ : panic("Load size error :%d ",size)
+        _ : os.panic("Load size error :%d ",size)
     }
 
 }
-func CreateCmp(size){
-    if size <= 4    writeln("  cmp $0, %%eax")
-    else            writeln("  cmp $0, %%rax")
+func CreateCmp(size<u64>){
+    if size == null {
+        writeln("    cmp $0, %%rax")
+    //specific bit size to cmp
+    }else {
+        if size <= 4    writeln("  cmp $0, %%eax")
+        else            writeln("  cmp $0, %%rax")
+    }
 }
-/**
- * @param type
- */
-func CreateCmp(){
-    writeln("    cmp $0, %%rax")
-}
+
 func PushV(v){
     writeln("    mov $%d,%%rax",v)
     Push()
@@ -70,7 +72,7 @@ func Push(){
 func Pop(arg){
     writeln("    pop %s",arg)
 }
-func Push_arg(prevCtxChain,fc,fce){
+func Push_arg(ctx,fc,fce){
     stack = 0 gp = 0
     current_call_have_im = false
     for(arg : fce.args){
@@ -150,7 +152,7 @@ func Push_arg(prevCtxChain,fc,fce){
         if fc.is_variadic argsize = 5
         else              argsize = 6
 
-        if std.len(fce.args) < argsize)
+        if std.len(fce.args) < argsize
             for (i = 0; i < (argsize - std.len(fce.args)); ++i){
                 writeln("    push $0")
             }
@@ -160,22 +162,22 @@ func Push_arg(prevCtxChain,fc,fce){
                 stack += 1
             }
             gp += 1
-            ret = fce.args[i].compile(prevCtxChain)
+            ret = fce.args[i].compile(ctx)
             if ret != null && type(ret) == type(ast.StructMemberExpr) {
                 sm = ret
-                Load(sm.getMember())
+                LoadMember(sm.getMember())
             }else if ret != null && type(ret) == type(ast.ChainExpr) {
                 ce = ret
-                if type(fce.args[i] != type(ast.AddrExpr) {
-                    Load(ce.ret)
+                if type(fce.args[i]) != type(ast.AddrExpr) {
+                    LoadMember(ce.ret)
                 }
             }
             Push()
         }
         
-        if func.is_variadic {
+        if fc.is_variadic {
             
-            if std.len(fce.args.size) >= 6 ){
+            if std.len(fce.args.size) >= 6 {
                 stack += 1
             }
             internal.newobject(ast.Int,len(fce.args))

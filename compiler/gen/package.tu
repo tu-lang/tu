@@ -15,7 +15,7 @@ package.Package::genStruct(s)
         acualPkg = ps.import[m.structpkg]
         dst = package.getStruct(acualPkg,m.structname)
         if dst == null {
-            panic("struct.member: inner class not exist <%s.%s> line:%d column:%d file:%s\n",
+            this.panic("struct.member: inner class not exist <%s.%s> line:%d column:%d file:%s\n",
               m.structpkg,m.structname,m.line,m.column,m.file
             )
         }

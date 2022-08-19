@@ -15,7 +15,7 @@ class LabelExpr : ast.Ast {
 }
 
 LabelExpr::compile(ctx){
-	record()
+	this.record()
 	compile.writeln("%s:",label)
 	return this
 }
@@ -25,7 +25,7 @@ class NullExpr    : ast.Ast {
     }
     func compile(ctx)
     {
-        record()
+        this.record()
         internal.newobject(ast.Null,0)
         return null
 
@@ -39,7 +39,7 @@ class BoolExpr   : ast.Ast {
     }
     func compile(ctx)
     {
-        record()
+        this.record()
         internal.newobject(ast.Bool,this.lit)
         return null
     }
@@ -53,7 +53,7 @@ class CharExpr    : ast.Ast {
         super.init(line,column)
     }
     func compile(ctx) {
-        record()
+        this.record()
         internal.newobject(ast.Char,this.lit)
         return null
     }
@@ -67,7 +67,7 @@ class IntExpr     : ast.Ast {
         super.init(line,column)
     }
     func compile( ctx) {
-        record()
+        this.record()
         internal.newint(ast.Int,this.lit)
         return null
     }
@@ -82,7 +82,7 @@ class DoubleExpr  : ast.Ast {
         super.init(line,column)
     }
     func compile(ctx) {
-        record()
+        this.record()
         internal.newobject(ast.Double,this.lit)
         return null
     }
@@ -96,7 +96,7 @@ class StringExpr  : ast.Ast {
         super.init(line,column)
     }
     func compile(ctx) {
-        record()
+        this.record()
         if this.name != "" this.check(false,this.toString())
         
         compile.writeln("    lea %s(%%rip), %%rsi", name)

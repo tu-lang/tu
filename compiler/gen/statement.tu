@@ -19,7 +19,7 @@ class ReturnStmt     : ast.Ast {
 }
 ReturnStmt::compile(ctx)
 {
-    record()
+    this.record()
     
     if ret == null {
         compile.writeln("   mov $0,%%rax")
@@ -29,12 +29,12 @@ ReturnStmt::compile(ctx)
             sm = ret
             m = sm.ret
             
-            compile.Load(m)
+            compile.LoadMember(m)
         
         }else if ret && type(ret) == type(ast.ChainExpr) {
             ce = ret
             if ce.ret {
-                compile.Load(ce.ret)
+                compile.LoadMember(ce.ret)
             }
         }
     }
@@ -53,7 +53,7 @@ class BreakStmt      : ast.Ast {
 }
 BreakStmt::compile(ctx)
 {
-    record()
+    this.record()
     
     for(c : ctx ) {
         if c.po && c.end_str != ""  {
@@ -70,7 +70,7 @@ class ContinueStmt   : ast.Ast {
 }
 ContinueStmt::compile(ctx)
 {
-    record()
+    this.record()
     
     for ( c : ctx) {
         if c.po && c.continue_str != "" {
@@ -98,7 +98,7 @@ class GotoStmt   : ast.Ast {
     }
 }
 GotoStmt::compile(ctx){
-    record()
+    this.record()
     compile.writeln("   jmp %s",label)
     return null
 }

@@ -39,14 +39,14 @@ AssignExpr::toString() {
     return str
 }
 AssignExpr::compile(ctx){
-    record()
+    this.record()
 
     utils.debug("AssignExpr: parsing... lhs:%s opt:%s rhs:%s",
           lhs.toString(),
           getTokenString(opt),
           rhs.toString()
     )
-    if !this.rhs    panic("AsmError: right expression is wrong expression:" + this.toString())
+    if !this.rhs    this.panic("AsmError: right expression is wrong expression:" + this.toString())
     
     f = compile.currentFunc
     if type(lhs) == type(VarExpr) {
@@ -87,7 +87,7 @@ AssignExpr::compile(ctx){
             }
             
             if !varExpr 
-                panic("AsmError: assignexpr use of undefined global variable %s at line %d co %d\n",
+                this.panic("AsmError: assignexpr use of undefined global variable %s at line %d co %d\n",
                     varname,this.line,this.column
                 )
         
@@ -133,7 +133,7 @@ AssignExpr::compile(ctx){
             }else{
                 check(package.packages[package] != null,package)
                 varExpr = package.packages[package].getGlobalVar(varname)
-                if !varExpr panic("AsmError:use of undefined global variable %s",varname)
+                if !varExpr this.panic("AsmError:use of undefined global variable %s",varname)
             }
         }else if package.packages[package].getGlobalVar(varname){
             varExpr = package.packages[package].getGlobalVar(varname)
@@ -144,7 +144,7 @@ AssignExpr::compile(ctx){
             varExpr = f.locals[varname]
         }
         if !varExpr
-            panic("SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", varname,line,column,compile.currentFunc.parser.filepath)
+            this.panic("SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", varname,line,column,compile.currentFunc.parser.filepath)
 
         std.tail(ctx).createVar(varExpr.varname,varExpr)
         compile.GenAddr(varExpr)
@@ -188,10 +188,10 @@ AssignExpr::compile(ctx){
             return oh.gen()
         }
     }
-    panic("SyntaxError: can not assign to " + string(type(lhs).name()))
+    this.panic("SyntaxError: can not assign to " + string(type(lhs).name()))
 }
 DelRefExpr::compile(ctx){
-    record()
+    this.record()
     
     if type(this.expr) == type(StringExpr) {
         se = this.expr
@@ -210,13 +210,13 @@ DelRefExpr::compile(ctx){
         }
         
         if !var.pointer {
-            panic("var must be pointer " + this.expr.toString())
+            this.panic("var must be pointer " + this.expr.toString())
         }
         if var.size != 1 && var.size != 2 && var.size != 4 && var.size != 8{
             parse_err("type must be [i8 - u64]:%s\n",this.expr.toString())
         }
         
-        compile.Load(var.size,var.isunsigned)
+        compile.LoadSize(var.size,var.isunsigned)
         return ret
     }else if type(ret) == type(StructMemberExpr) {
         sm = ret
@@ -226,9 +226,9 @@ DelRefExpr::compile(ctx){
         }
         if type(expr) != type(DelRefExpr) {
             
-            compile.Load(m)
+            compile.LoadMember(m)
         }
-        compile.Load(m.size,m.isunsigned)
+        compile.LoadSize(m.size,m.isunsigned)
         return ret
     
     }else if type(ret) == type(ChainExpr) {
@@ -236,7 +236,7 @@ DelRefExpr::compile(ctx){
         
         if ce.ret {
             m = ce.ret
-            compile.Load(m)
+            compile.LoadMember(m)
 
             return ret
         }
@@ -245,7 +245,7 @@ DelRefExpr::compile(ctx){
 }
 
 AddrExpr::compile(ctx){
-    record()
+    this.record()
     
     if expr != null && type(expr) == type(ChainExpr) {
         ce = expr
@@ -288,7 +288,7 @@ AddrExpr::compile(ctx){
     }
     var = ast.getVar(ctx,this.varname)
     if var == null
-        panic("AddExpr: var:%s not exist\n",varname)
+        this.panic("AddExpr: var:%s not exist\n",varname)
     realVar = var.getVar(ctx)
     compile.GenAddr(realVar)
 
@@ -348,7 +348,7 @@ BinaryExpr::isMemtype(ctx)
 
 BinaryExpr::compile(ctx)
 {
-    record()
+    this.record()
 
     utils.debug("BinaryExpr: parsing... lhs:%s opt:%s rhs:%s",
           lhs.toString(),
@@ -356,7 +356,7 @@ BinaryExpr::compile(ctx)
           rhs.toString()
     )
     if !this.rhs && (this.opt != BITNOT && this.opt != LOGNOT)
-        panic("AsmError: right expression is wrong expression:" + this.toString())
+        this.panic("AsmError: right expression is wrong expression:" + this.toString())
     
     if isMemtype(ctx){
         oh new OperatorHelper(ctx,lhs,rhs,this.opt)
@@ -379,7 +379,7 @@ BinaryExpr::compile(ctx)
 }
 
 BinaryExpr::FirstCompile(ctx){
-    record()
+    this.record()
     c = compile.incr_labelid()
     this.lhs.compile(ctx)
     match opt {

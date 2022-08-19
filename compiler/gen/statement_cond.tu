@@ -49,7 +49,7 @@ ForStmt::toString() {
 
 ForStmt::compile(ctx)
 {
-    record()
+    this.record()
     if  this.range  return rangeFor(ctx)
     return triFor(ctx)
 }
@@ -173,7 +173,7 @@ WhileStmt::toString() {
 }
 WhileStmt::compile(ctx)
 {
-    record()
+    this.record()
     c = ast.incr_labelid()
     
     compile.writeln("L.while.begin.%d:", c)
@@ -221,7 +221,7 @@ IfCaseExpr::toString(){
     return str
 }
 IfCaseExpr::compile(ctx){
-    record()
+    this.record()
     compile.writeln("%s:",label)
     if block {
         for(stmt : block.stmts){
@@ -247,7 +247,7 @@ IfStmt::toString() {
     return str
 }
 IfStmt::compile(ctx){
-    record()
+    this.record()
     mainPoint = ast.incr_labelid()
     endLabel = "L.if.end." + mainPoint
     

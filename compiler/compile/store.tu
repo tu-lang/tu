@@ -15,13 +15,17 @@ func Store_gp(r, offset, sz){
 
 }
 
-func Store(){
+func Store(size<u64>) {
+    //dyn version
+    if size == null {
+        Pop("%rdi")
+        writeln("    mov %%rax, (%%rdi)")
+        return False
+    }
+    s = size
+    //static version need control the size
     Pop("%rdi")
-    writeln("    mov %%rax, (%%rdi)")
-}
-func Store(size){
-    Pop("%rdi")
-    match size {
+    match s {
         1 : writeln("   mov %%al, (%%rdi)")
         2 : writeln("   mov %%ax, (%%rdi)")
         4 : writeln("   mov %%eax, (%%rdi)")

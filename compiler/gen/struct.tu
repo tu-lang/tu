@@ -2,7 +2,7 @@ use ast
 use compile
 use std
 
-class StructMemberExpr : Ast {
+class StructMemberExpr : ast.Ast {
     varname = varname
     member
     var
@@ -12,17 +12,21 @@ class StructMemberExpr : Ast {
 		super.init(line,column)
 	}
 }
-StructMemberExpr::toString(){
-    return "StructMemberExpr(" + varname + "<"+var.package+"."+var.structname+">"+"."+member+")"
+StructMemberExpr::toString() {
+	return fmt.sprintf(
+		"StructMemberExpr(%s<%s.%s>.%s)" ,
+		,this.varname , this.var.package , 
+		this.var.structname , this.member
+	)
 }
 StructMemberExpr::getMember()
 {
-	s = getStruct()
-	if s == null return null
+	s = this.getStruct()
+	if s == null return False
 
 	m = s.getMember(this.member)
 	if m == null {
-        panic("mem.member: mem:%s member:%s not exist"
+        this.panic("mem.member: mem:%s member:%s not exist"
 			s.name,this.member
 		)
 	}
@@ -30,28 +34,28 @@ StructMemberExpr::getMember()
 }
 StructMemberExpr::getStruct()
 {
-	package = var.structpkg
+	package = this.var.structpkg
 	s = null
 	
 	package = compile.parser.import[package]
 	if std.len(package.packages,package < 1){
-		panic("mem package not exist:%s" ,package)
+		this.panic("mem package not exist:%s" ,package)
 	}
-	s = package.packages[package].getStruct(var.structname)
-	if s == null{
-        panic("mem type not exist :%s" ,var.structname)
+	s = package.packages[package].getStruct(this.var.structname)
+	if s == null {
+        this.panic("mem type not exist :%s" , this.var.structname)
 	}
 	return s
 }
 
 StructMemberExpr::compile(ctx)
 {
-	record()
+	this.record()
 	filename = compile.parser.filename
 	
-	m = getMember()
+	m = this.getMember()
 	if m == null {
-        panic("struct.member: class member:%s not exist  file:%s\n",
+        this.panic("struct.member: class member:%s not exist  file:%s\n",
 			this.member,filename
 		)
 	}

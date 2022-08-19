@@ -27,15 +27,15 @@ func registerFuncs(){
         registerFunc(p.second)
     }
 }
-func CreateFunction(fn,Class* c){
+func CreateFunction(fn , c){
     if fn.clsName != "" {
         c = fn.package.getClass(fn.clsName)
         if (c == null) {
             os.die("fn exception")
         }
     }
-    if fn.isExtern return
-    if fn.block == null return
+    if fn.isExtern return True
+    if fn.block == null return True
     funcname = fn.parser.getpkgname() + "_" + fn.name
     
     if c {

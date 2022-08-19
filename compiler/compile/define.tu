@@ -1,45 +1,12 @@
 use utils
 
-# object
-obj 
-
-# label id generate
-count
-
-# the func that is generating
-current_func
-
-# out is the filename of assembly file 
-
-# the parser object that is processing
-parser
-
+True  = true
+False = false
 // dynamic: args registers
-args8   # 8bit
-args16  # 16bit
-args32  # 32bit
-args64  # 64bit
+args8  = ["%dil" , "%sil" , "%dl"  , "%cl"  , "%r8b" , "%r9b"] # 8bit
+args16 = ["%di"  , "%si"  , "%dx"  , "%cx"  , "%r8w" , "%r9w"] # 16bit
+args32 = ["%edi" , "%esi" , "%edx" , "%ecx" , "%r8d" , "%r9d"] # 32bit
+args64 = ["%rdi" , "%rsi" , "%rdx" , "%rcx" , "%r8"  , "%r9" ] 
 
-GP_MAX 
-FP_MAX 
-
-
-func init() {
-    utils.debug("compiler.init")
-    GP_MAX = 6
-    FP_MAX = 8
-
-    # init registers
-    args8  = ["%dil" , "%sil" , "%dl"  , "%cl"  , "%r8b" , "%r9b"]
-    args16 = ["%di"  , "%si"  , "%dx"  , "%cx"  , "%r8w" , "%r9w"]
-    args32 = ["%edi" , "%esi" , "%edx" , "%ecx" , "%r8d" , "%r9d"]
-    args64 = ["%rdi" , "%rsi" , "%rdx" , "%rcx" , "%r8"  , "%r9" ]
-
-    # init global var
-    count = 0
-    current_func = null
-    out = null
-    parser = null
-
-    init_cast()
-}
+GP_MAX  = 6
+FP_MAX  = 8

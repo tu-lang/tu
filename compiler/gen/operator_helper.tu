@@ -48,8 +48,8 @@ OperatorHelper::gen()
 		compile.Push()
 		
 		if opt != ASSIGN {
-			if lmember compile.Load(lmember)
-			else        compile.Load(ltypesize,lisunsigned)
+			if lmember compile.LoadMember(lmember)
+			else        compile.LoadSize(ltypesize,lisunsigned)
 			compile.Push()
 		}
 	} else {
@@ -78,7 +78,7 @@ OperatorHelper::assign()
 		compile.writeln("   and $%I, %%rdi", (1 << lmember.bitwidth) - 1)
 		compile.writeln("	shl $%d, %%rdi", lmember.bitoffset)
 		compile.writeln("   mov (%%rsp), %%rax")
-		compile.Load(lmember.size,lmember.isunsigned)
+		compile.LoadSize(lmember.size,lmember.isunsigned)
 		//FIXME: mask = ((1L << lmember.bitwidth) - 1) << lmember.bitoffset
 		mask = ((1 << lmember.bitwidth) - 1) << lmember.bitoffset
 		compile.writeln("  mov $%I, %%r9", ~mask)
@@ -334,7 +334,7 @@ OperatorHelper::genRight(isleft,expr)
 		initcond(isleft,v.size,v.type,v.pointer)
 		
 		if type(expr) != type(ast.AddrExpr){
-			compile.Load(v)
+			compile.LoadMember(v)
 		}
 	}
 	else if type(ret) == type(ast.ChainExpr) {
@@ -347,9 +347,9 @@ OperatorHelper::genRight(isleft,expr)
 		if type(expr) == type(ast.AddrExpr) {
 			
 		}else if type(expr) == type(ast.DelRefExpr) {
-			compile.Load(v.size,v.isunsigned)
+			compile.LoadSize(v.size,v.isunsigned)
 		}else{
-			compile.Load(v)
+			compile.LoadMember(v)
 		}
 	}else{
 		ret.panic("not allowed expression in memory operator:%s\n",ret.toString())

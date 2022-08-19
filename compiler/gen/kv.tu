@@ -21,7 +21,7 @@ KVExpr::toString() {
 }
 
 KVExpr::compile(ctx){
-    record()
+    this.record()
     utils.debug("KVExpr: gen... k:%s v:%s",key,value)
 
     //push key
@@ -53,7 +53,7 @@ IndexExpr::toString() {
 
 
 IndexExpr::compile(ctx) {
-    record()
+    this.record()
     f = compile.currentFunc
 
     if varname == "" {
@@ -83,7 +83,7 @@ IndexExpr::compile(ctx) {
 
         var  = package.packages[packagename].getGlobalVar(varname)
 
-        if var == null panic("AsmError:use of undefined global variable " + varname)
+        if var == null this.panic("AsmError:use of undefined global variable " + varname)
     }else{
 
         packagename = compile.currentFunc.parser.getpkgname()
@@ -113,6 +113,6 @@ INDEX:
         internal.kv_get()
         return null
     }
-    panic("AsmError: index-expr use of undefined variable " + varname)
+    this.panic("AsmError: index-expr use of undefined variable " + varname)
 }
 
