@@ -4,7 +4,11 @@ use std
 use string
 use fmt
 
+# start at core space init
 ori_envp<u64*>
+ori_argc<u64>
+ori_argv<u64>
+ori_envs<u64>
 
 func args_init(argc<u64> argv<u64*>,envp<u64*>){
 	c = int(argc)

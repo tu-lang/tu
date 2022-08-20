@@ -1,6 +1,8 @@
+use runtime
 
-argc
+# start at userspace init process
+argc = runtime.ori_argc
 
-argv
+argv = runtime.ori_argv
 
-envs
+envs = runtime.ori_envs
