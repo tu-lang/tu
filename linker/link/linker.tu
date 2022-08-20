@@ -66,7 +66,8 @@ Linker::collectInfo()
 		utils.debug("Collect object info " + e.elfdir)
 		# 记录段表信息
 		for(seg : this.segNames){
-			if  e.shdrTab[seg] != runtime.Null  {
+			tmp<u64> = e.shdrTab[seg]
+			if  tmp != runtime.Null  {
 				tmp = this.segLists[seg].ownerList
 				# TODO: copy on write 
 				tmp[] = e

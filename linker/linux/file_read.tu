@@ -59,7 +59,7 @@ File::readElf(file)
 	# 读取符号表
 	sh_symTab<Elf64_Shdr> = this.shdrTab[".symtab"]
 	utils.fseek(fp,sh_symTab.sh_offset)
-	symNum = sh_symTab.sh_size / sh_symTab.sh_entsize
+	symNum<i32> = sh_symTab.sh_size / sh_symTab.sh_entsize
 
 	# 记录符号表段所有符号信息，方便进行重定位
 	symList = []
