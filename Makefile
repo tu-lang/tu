@@ -1,12 +1,12 @@
 prefix = /usr/local
 
 install:
-	rm -rf $(prefix)/lib/copkg/*
-	cp -r runtime/pkg/* $(prefix)/lib/copkg/
-
-	rm -rf $(prefix)/lib/coasm/*
-	#cp -r runtime/internal/* $(prefix)/lib/coasm/
-	cp -r runtime/syscall/* $(prefix)/lib/coasm
+	@mkdir -p $(prefix)/lib/copkg
+	@rm -rf $(prefix)/lib/copkg/*
+	@cp -r runtime/pkg/* $(prefix)/lib/copkg/
+	@mkdir -p $(prefix)/lib/coasm
+	@rm -rf $(prefix)/lib/coasm/*
+	@cp -r runtime/syscall/* $(prefix)/lib/coasm
 
 test_memory:
 	sh tests_compiler.sh memory
