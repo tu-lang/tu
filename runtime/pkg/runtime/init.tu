@@ -27,8 +27,8 @@ func args_init(argc<u64> argv<u64*>,envp<u64*>){
 		argv += PointerSize
 		argc -= 1
 	}
-	os.argc = c 
-	os.argv = arr
+	ori_argc = c
+	ori_argv = arr
 	//save env
 	envs = []
 	while *envp != null {
@@ -38,6 +38,6 @@ func args_init(argc<u64> argv<u64*>,envp<u64*>){
 		arr_pushone(envs,str1)
 		envp += PointerSize
 	}
-	os.envs = envs
+	ori_envs = envs
 
 }
