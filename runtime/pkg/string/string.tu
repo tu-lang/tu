@@ -502,7 +502,7 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
                 tp<i8*> = s + i
                 i += 1
                 *tp = *f
-                stringinclen(s,1)
+                stringinclen(s,single)
             }
         }
         f += 1
@@ -612,7 +612,7 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                 tp<i8*> = s + i
                 i += 1
                 *tp = *f
-                stringinclen(s,1)
+                stringinclen(s,single)
             }
         }
         f += 1
