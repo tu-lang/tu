@@ -102,7 +102,9 @@ class File {
 	}
 	func ReadAll(){
 		s<i32> = this.size
-		buf<u64*> = new s
+		//last pos \0
+		fs<i32> = s + 1
+		buf<u64*> = new fs
 		read_size<i64> = read(this.fd,buf,s)
 		if read_size != s {
 			fmt.println("fread err,",int(read_size))
