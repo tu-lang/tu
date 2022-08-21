@@ -78,9 +78,6 @@ Seglist::allocAddr(name,base<i32*>,off<i32*>)
 	this.size = int(size)
 }
 
-# relAddr: 重定位虚拟地址
-# type: 重定位类型
-# symAddr: 重定位符号的虚拟地址
 Seglist::relocAddr(relAddr<u32>,type<u8>,symAddr<u32>,addend<i32>)
 {
 	utils.debug("Seglist::relocAddr ",this.baseAddr)
@@ -88,7 +85,6 @@ Seglist::relocAddr(relAddr<u32>,type<u8>,symAddr<u32>,addend<i32>)
 	baddr<u32>     = *this.baseAddr
 	relOffset<u32> = relAddr - baddr
 
-	# 查找带修正的地址所在pos
 	b<Block> = null
 	for(v<Block> : this.blocks){
 		if v.offset <= relOffset && v.offset + v.size > relOffset {
@@ -96,13 +92,11 @@ Seglist::relocAddr(relAddr<u32>,type<u8>,symAddr<u32>,addend<i32>)
 			break
 		}
 	}
-	# 这里需要进行内存寻址
 	base<i8*> = b.data
 	paddr<i32*> = base + relOffset - b.offset
 
-	//只针对 gplt 引用进行重写指令修正地址
 	match type {
- 		42 : {
+ 		42 | linux.R_X86_64_GOTPCREL : {
 			inst<u8*> = paddr
 			inst -= 1
 			modr<u8*> = inst
