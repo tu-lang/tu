@@ -311,8 +311,8 @@ func free(p<Block>)
 
 func gc_malloc(nbytes<u64>)
 {
-	return malloc(nbytes)
-	//return std.malloc(nbytes)
+	// return malloc(nbytes)
+	return std.malloc(nbytes)
 	hdr<Block> = malloc(nbytes + 8)
 	std.memset(hdr,Null,nbytes+8)
 	hdr.mask = BLOCK_MASK
