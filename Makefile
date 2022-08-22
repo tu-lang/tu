@@ -16,7 +16,7 @@ test_memory:
 check: install test
 
 
-cases = class common datastruct internalpkg memory native operator runtime statement
+cases = mixed class common datastruct internalpkg memory native operator runtime statement
 #make test -j9
 test: install $(cases)
 	@echo "all test passed"
