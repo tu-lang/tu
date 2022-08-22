@@ -303,47 +303,11 @@ class BinaryExpr : ast.Ast {
 }
 BinaryExpr::isMemtype(ctx)
 {    
-    mhandle = false
-    var = null
-    this.check(this.lhs != null)
-    
-    if type(this.lhs) == type(StructMemberExpr) ||  (this.rhs && type(this.rhs) == type(StructMemberExpr) )
-        mhandle = true
-    
-    if type(this.lhs) == type(DelRefExpr) || (this.rhs && type(this.rhs) == type(DelRefExpr) )
-        mhandle = true
-    
-    if type(this.lhs) == type(VarExpr) {
-        var = this.lhs
-        var = var.getVar(ctx)
-        if var.structtype
-            mhandle = true
-    }
-    if this.rhs && type(this.rhs) == type(VarExpr) {
-        var = this.rhs
-        var = var.getVar(ctx)
-        if var.structtype
-            mhandle = true
-    }
-    if type(this.lhs) == type(BinaryExpr) {
-        b = this.lhs
-        if b.isMemtype(ctx) return true
-    }
-    if this.rhs && type(this.rhs) == type(BinaryExpr) {
-        b = this.rhs
-        if b.isMemtype(ctx) return true
-    }
-    if type(this.lhs) == type(ChainExpr) {
-        ce = this.lhs
-        if ce.ismem(ctx)
-            return true
-    }
-    if this.rhs && type(this.rhs) == type(ChainExpr) {
-        ce = this.rhs
-        if ce.ismem(ctx)
-            return true
-    }
-    return mhandle
+    this.check(this.lhs != Null)
+
+    if this.lhs != null && exprIsMtype(this.lhs,ctx) return True
+    if this.rhs != null && exprIsMtype(this.lhs,ctx) return True
+    return False
 }
 
 BinaryExpr::compile(ctx)
@@ -382,32 +346,26 @@ BinaryExpr::FirstCompile(ctx){
     this.record()
     c = compile.incr_labelid()
     this.lhs.compile(ctx)
+    internal.isTrue()
     match opt {
         ast.LOGAND:{
-            if !condIsMtype(this.lhs,ctx)
-                internal.isTrue()
             compile.writeln("    cmp $0, %%rax")
 			compile.writeln("	je .L.false.%d", c) 
         }
         ast.LOGOR: {
-            if  !condIsMtype(this.lhs,ctx)
-                internal.isTrue()
             compile.writeln("    cmp $1, %%rax")
 			compile.writeln("	je .L.true.%d", c) 
         }
     }
     this.rhs.compile(ctx)
+    internal.isTrue()
     match opt {
         ast.LOGAND: {
-            if  !condIsMtype(this.rhs,ctx)
-                internal.isTrue()
             compile.writeln("	cmp $0,%%rax")    
             compile.writeln("	je .L.false.%d", c)
             compile.writeln("	jmp .L.true.%d", c)
         }
         ast.LOGOR:{
-            if  !condIsMtype(this.rhs,ctx)
-                internal.isTrue()
             compile.writeln("	cmp $1,%%rax")    
             compile.writeln("	je .L.true.%d", c)
             compile.writeln("	jmp .L.false.%d", c)
@@ -415,10 +373,10 @@ BinaryExpr::FirstCompile(ctx){
     }
 
     compile.writeln(".L.false.%d:", c)
-    compile.writeln("	mov $0, %%rax")
+    internal.gen_false()
     compile.writeln("	jmp .L.end.%d", c)
     compile.writeln(".L.true.%d:", c) 
-    compile.writeln("	mov $1, %%rax")
+    internal.gen_true()
     compile.writeln(".L.end.%d:", c)
     return null
 }

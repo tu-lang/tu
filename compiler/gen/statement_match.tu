@@ -36,7 +36,7 @@ MatchStmt::compile(ctx){
         be.rhs = cs.cond
         be.compile(ctx)
         
-        if !condIsMtype(be,ctx)
+        if !exprIsMtype(be,ctx)
             internal.isTrue()
         
         compile.writeln("    cmp $1, %%rax")

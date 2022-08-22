@@ -1,24 +1,6 @@
 use ast
 use std
 
-func condIsMtype(cond,ctx){
-    ismtype = false
-    match type(cond) {
-        type(ast.StructMemberExpr) : ismtype = true
-        type(ast.VarExpr) : {
-            tvar = cond
-            ismtype = tvar.isMemtype(ctx)
-        }
-        type(BinaryExpr) : {
-            tvar = cond
-            if tvar.opt == ast.LOGAND || tvar.opt == ast.LOGOR {
-                return true
-            }
-            ismtype = tvar.isMemtype(ctx)
-        }
-    }
-    return ismtype
-}
 class ForStmt : ast.Ast {
     func init(line,column){
         super(line,column)
@@ -128,7 +110,7 @@ ForStmt::triFor(ctx)
     
     compile.writeln("L.for.begin.%d:", c)
     this.cond.compile(ctx)
-    if !condIsMtype(this.cond,ctx) {
+    if !exprIsMtype(this.cond,ctx) {
         internal.isTrue()
     }
     compile.CreateCmp()
@@ -179,7 +161,7 @@ WhileStmt::compile(ctx)
     compile.writeln("L.while.begin.%d:", c)
     
     this.cond.compile(ctx)
-    if !condIsMtype(this.cond,ctx){
+    if !exprIsMtype(this.cond,ctx){
         internal.isTrue()
     }
     compile.CreateCmp()
@@ -262,7 +244,7 @@ IfStmt::compile(ctx){
 
     for(cs : this.cases){
         cs.cond.compile(ctx)
-        if !condIsMtype(cs.cond,ctx)
+        if !exprIsMtype(cs.cond,ctx)
             internal.isTrue()
         compile.writeln("    cmp $1, %%rax")
         compile.writeln("    je  %s", cs.label)

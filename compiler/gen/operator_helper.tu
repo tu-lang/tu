@@ -295,6 +295,9 @@ OperatorHelper::genRight(isleft,expr)
 	}
 	
 	ret = expr.compile(ctx)
+	if !exprIsMtype(expr,this.ctx) && ( this.op == ast.LOGAND || this.opt == ast.LOGOR) {
+		internal.isTrue()
+	}
 	match type(this.expr) {
 		type(BinaryExpr) | type(AssignExpr) : {
 			Token t = expr.getType(ctx)
