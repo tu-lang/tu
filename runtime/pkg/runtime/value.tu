@@ -215,9 +215,11 @@ func value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
     if lhs.type == String || rhs.type == String {
         result.data = value_string_equal(lhs,rhs,equal)
         return result
-    }
     //有int类型就进行int类型相加
-    if lhs.type == Int || rhs.type == Int || lhs.type == Char {
+    } else if lhs.type == Int || rhs.type == Int || lhs.type == Char {
+        result.data = value_int_equal(lhs,rhs,equal)
+    //other use int to compare
+    }else{
         result.data = value_int_equal(lhs,rhs,equal)
     }
     return result
