@@ -512,6 +512,20 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
     *tp = 0
     return s
 }
+func stringputc(s<i8*>,c<i8>){
+    single<i64> = 1
+    if stringavail(s) < single {
+        s = stringMakeRoomFor(s,single)
+    }
+    i<i32> = stringlen(s)
+    stringinclen(s,single)
+    tp<i8*> = s + i
+    //s[len(s)] = c 
+    *tp = c    
+    tp += 1
+    *tp = 0
+    return s
+}
 func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
     s<i8*> = stringempty()
     initlen<u64> = stringlen(s)

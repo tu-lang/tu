@@ -13,6 +13,7 @@ func value_string_plus(lhs<Value>,rhs<Value>)
             tmstr = string.stringdup(lhs.data)
             if rhs.type == Int        tmstr = string.stringcatfmt(tmstr,*"%I",rhs.data)
             else if rhs.type == Array tmstr = string.stringcat(tmstr,arr_tostring(rhs))
+            else if rhs.type == Char  tmstr = string.stringputc(tmstr,rhs.data)
             else                      tmstr = string.stringcat(tmstr,rhs.data)
         }
     }
