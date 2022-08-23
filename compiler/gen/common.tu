@@ -14,7 +14,7 @@ typesize = {
     U8 : 1 , U16 : 2 , U32 : 4 , U64 : 8
 }
 
-bool exprIsMtype(cond,ctx){
+func exprIsMtype(cond,ctx){
     ismtype = false
     match type(cond) {
         type(StructMemberExpr) | type(DelRefExpr) | type(AddExpr): {
@@ -25,5 +25,6 @@ bool exprIsMtype(cond,ctx){
         }
         type(ChainExpr): ismtype = cond.ismem(ctx)
         type(BuiltinFuncExpr) : ismtype = cond.isMem(ctx)
+    }
     return ismtype
 }

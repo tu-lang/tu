@@ -1,3 +1,5 @@
+use utils
+
 func call_operator(opt,name)
 {
     compile.writeln("    mov $%I, %%rdi", opt)
@@ -12,8 +14,7 @@ func call_object_operator(opt, name,method) {
     
     compile.writeln("    mov $%I, %%rdi", opt)
     compile.Pop("%rcx")
-    //FIXME: 
-    hk<u64> = hash_key(name)
+    hk = utils.hash(name)
     compile.writeln("# [debug] call_object_operator name:%s  hk:%I",name,hk)
     compile.writeln("    mov $%I,%%rdx",hk)
 
@@ -124,8 +125,7 @@ func call(funcname)
 func object_member_get(name)
 {
     compile.Pop("%rdi")
-    //FIXME: 
-    hk<u64> = hash_key(name)
+    hk = utils.hash(name)
     compile.writeln("# [debug] object_member_get name:%s  hk:%I",name,hk)
     compile.writeln("    mov $%I,%%rsi",hk)
 
@@ -135,8 +135,7 @@ func object_member_get(name)
 func object_func_add(name)
 {
     compile.Pop("%rdx")
-    //FIXME: 
-    hk<u64> = hash_key(name)
+    hk  = utils.hash(name)
     compile.writeln("# [debug] object_func_add  name:%s  hk:%I",name,hk)
     compile.writeln("    mov $%U,%%rsi",hk)
 
@@ -150,17 +149,17 @@ func object_func_addr(name)
     
     compile.Pop("%rdi")
 
-    hk<u64> = hash_key(name)
+    hk = utils.hash(name)
     compile.writeln("# [debug] object_func_addr name:%s  hk:%I",name,hk)
     compile.writeln("    mov $%I,%%rsi",hk)
 
     call("runtime_object_func_addr")
 }
 func gen_true(){
-    Compiler::writeln("    lea runtime_Dtrue(%%rip), %%rax");
-    Compiler::writeln("    mov (%%rax), %%rax");
+    compile.writeln("    lea runtime_Dtrue(%%rip), %%rax")
+    compile.writeln("    mov (%%rax), %%rax")
 }
 func gen_false(){
-    Compiler::writeln("    lea runtime_Dfalse(%%rip), %%rax");
-    Compiler::writeln("    mov (%%rax), %%rax");
+    compile.writeln("    lea runtime_Dfalse(%%rip), %%rax")
+    compile.writeln("    mov (%%rax), %%rax")
 }

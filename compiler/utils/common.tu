@@ -1,5 +1,9 @@
 use std
+use runtime
 
+func hash(data){
+	return int(runtime.get_hash_key(data))
+}
 func ALIGN_DOWN(x<u64>,a<u64>) {
 	return ALIGN_UP(x - a + 1,a)
 }
