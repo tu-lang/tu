@@ -157,18 +157,10 @@ func object_func_addr(name)
     call("runtime_object_func_addr")
 }
 func gen_true(){
-    compile.writeln("    mov $4 , %%rdi")
-    compile.writeln("    mov $1 , %%rsi")
-    compile.writeln("    mov runtime_newobject@GOTPCREL(%%rip), %%rax")
-    compile.writeln("    mov %%rax , %%r10")
-    compile.writeln("    mov $0 , %%rax")
-    compile.writeln("    call *%r10")
+    Compiler::writeln("    lea runtime_Dtrue(%%rip), %%rax");
+    Compiler::writeln("    mov (%%rax), %%rax");
 }
 func gen_false(){
-    compile.writeln("    mov $4 , %%rdi")
-    compile.writeln("    mov $0 , %%rsi")
-    compile.writeln("    mov runtime_newobject@GOTPCREL(%%rip), %%rax")
-    compile.writeln("    mov %%rax , %%r10")
-    compile.writeln("    mov $0 , %%rax")
-    compile.writeln("    call *%r10")
+    Compiler::writeln("    lea runtime_Dfalse(%%rip), %%rax");
+    Compiler::writeln("    mov (%%rax), %%rax");
 }

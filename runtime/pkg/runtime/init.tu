@@ -4,6 +4,8 @@ use std
 use string
 use fmt
 
+Dtrue  = true
+Dfalse = false
 # start at core space init
 ori_envp<u64*>
 ori_argc<u64>
