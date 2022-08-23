@@ -3,25 +3,12 @@ use fmt
 
 class Seglist
 {
-	baseAddr   # 分配基地址
-	offset     # 合并后的文件偏移
-	size	   # 合并后的大小
-	begin  	   # 对齐前开始位置偏移
-	ownerList  # array[ElfFile] 
-	blocks	   # array[Block]
-}
-Seglist::init(){
-	utils.debug("init")
-	#初始化数组 array[ElfFile]
-	this.ownerList = []
-	#初始化数组 array[Block]
-	this.blocks    = []
-	#初始化默认值
-	this.offset = 0
-	this.size 	= 0
-	this.baseAddr = 0
-	this.begin  = 0
-	utils.debug("Seglist::init",this.ownerList,this.blocks)	
+	baseAddr  = 0   # 分配基地址
+	offset    = 0   # 合并后的文件偏移
+	size	  = 0   # 合并后的大小
+	begin  	  = 0   # 对齐前开始位置偏移
+	ownerList = []  # array[ElfFile] 
+	blocks	  = []  # array[Block]
 }
 
 # @param name string 段名	

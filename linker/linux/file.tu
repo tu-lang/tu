@@ -1,15 +1,15 @@
 use fmt
 
 class File {
-    ehdr        # Elf64_Ehdr elf头
+    ehdr   = new Elf64_Ehdr     # Elf64_Ehdr elf头
 	# char *buf,Elf64_Off offset,Elf64_Word size)
-	phdrTab     # 程序头表 Elf64_Phdr
-	shdrTab     # 端表
-	shdrNames   # array[]
-	symTab      # 符号段表
-	symNames    # array[]
-	symbols     # 符号表 name
-	relTab      # 重定位表
+	phdrTab = []    # 程序头表 Elf64_Phdr
+	shdrTab = {}    # 端表
+	shdrNames = []  # array[]
+	symTab  = {}    # 符号段表
+	symNames = []   # array[]
+	symbols = []    # 符号表 name
+	relTab = []     # 重定位表
 
     elfdir      # 文件的目录
     shstrtab    # 段表字符串表数据
@@ -17,18 +17,7 @@ class File {
     strtab      # 字符串表数据
     strtabsize  # 字符串表数据长度
 }
-File::init(){
-    utils.debug("File::init")
-    # header头
-    this.ehdr    = new Elf64_Ehdr
-    this.phdrTab = [] # [Elf64_Phdr]
-    this.shdrTab = {} # {".text":Elf64_Shdr,}
-    this.shdrNames = [] # [".data",".text",]
-    this.symTab  = {}
-    this.symNames = []
-    this.symbols = []
-    this.relTab = []
-}
+
 
 # 添加程序表头
 File::addPhdr(type,off,vaddr,filesz,memsz,flags,align)

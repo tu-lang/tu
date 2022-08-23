@@ -10,14 +10,3 @@ func newBlock(d<i8*>,off<u32>,si<u32>){
 	r.size   = si
 	return r
 }
-
-class Block1 {
-	data
-	offset
-	size
-	func init(d,off,s){
-		data = d
-		offset = off
-		size = s
-	}
-}

@@ -6,40 +6,26 @@ bytes
 
 class Linker
 {
-	segLists		# map[string]SegList
-	symLinks		# arr[SymLink*]
-	symDef			# map[string]symLink*
-	secDef			# arr[symLink*]
-	elfs			# arr[elf,elf,elf]
-	segNames		# arr[string] 链接关心的段
-	exe				# File* 最后输出的文件
-	startOwner		# 拥有全局符号start _start的文件
-	bssaddr
+	segLists = {}		# map[string]SegList
+	symLinks = []		# arr[SymLink*]
+	symDef	 = {}		# map[string]symLink*
+	secDef	 = []		# arr[symLink*]
+	elfs	 = []		# arr[elf,elf,elf]
+	segNames = [ 		# arr[string] 链接关心的段
+		".text" , ".data" , 
+		".bss"  ,
+		".rodata" , ".data.rel.local"
+	]		
+	exe				    # File* 最后输出的文件
+	startOwner			# 拥有全局符号start _start的文件
+	bssaddr  = 0
 	bytes
 }
 Linker::init(){
 	utils.debug("Linker::init")
-	this.segNames = []
-	this.bssaddr  = 0
-	this.elfs = []
-	this.symLinks = []
-	this.symDef   = {}
-	this.secDef   = []
-	this.segLists = {}
 	file = new linux.File()
 	this.exe = file
 
-	this.linker()
-}
-# 初始化
-Linker::linker()
-{
-	utils.debug("Linker::linker")
-	this.segNames[] = ".text"
-	this.segNames[] = ".data"
-	this.segNames[] = ".rodata"
-	this.segNames[] = ".data.rel.local"
-	this.segNames[] = ".bss"
 	sl = this.segLists
 	for(name : this.segNames){
 		tmp = new Seglist()
