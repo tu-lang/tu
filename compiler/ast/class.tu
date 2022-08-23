@@ -55,3 +55,12 @@ Class::initClassInitFunc()
 
     return true
 } 
+
+Class::checkRmSupers(){
+  if this.father != null return True
+  for f : this.funcs {
+    if f.block == null  continue
+    if f.name == "init" continue
+    f.block.checkAndRmFirstSuperDefine()
+  }
+}

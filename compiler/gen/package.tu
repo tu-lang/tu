@@ -67,6 +67,7 @@ package.Package::classinit(){
   for(pkg : package.packages){
     for(cls : pkg.classes){
       cls.initClassInitFunc()
+      cls.checkRmSupers()
     }
   }
 }
