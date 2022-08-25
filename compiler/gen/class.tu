@@ -92,22 +92,13 @@ NewClassExpr::compile(ctx)
 	internal.newobject(ast.Object,std.len(s.funcs))
 	compile.Push()
 	
-	exist_init = false
 	for(fc : s.funcs){
-		if fc.name == "init"  exist_init = true
-
 		funcname = fc.parser.getpkgname() +
 							"_" + s.name + "_" + fc.name
 
 		compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
 		compile.Push()
 		internal.object_func_add(fc.name)
-	}
-	if !exist_init {
-		funcname = s.pkg + "_" + s.name + "_init"
-		compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
-		compile.Push()
-		internal.object_func_add("init")
 	}
 	compile.Pop("%rax")
 

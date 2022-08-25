@@ -22,12 +22,12 @@ MatchStmt::compile(ctx){
         cs.endLabel = endLabel
     }
     
-    if defaultCase == null {
-        defaultCase = new MatchCaseExpr(line,column)
-        defaultCase.matchCond = this.cond
+    if this.defaultCase == null {
+        this.defaultCase = new MatchCaseExpr(this.line,this.column)
+        this.defaultCase.matchCond = this.cond
     }
-    defaultCase.label = "L.match.default." + compile.count++
-    defaultCase.endLabel = endLabel
+    this.defaultCase.label = "L.match.default." + compile.count++
+    this.defaultCase.endLabel = endLabel
     
     for(cs : this.cases){
         be = new BinaryExpr(cs.line,cs.column)
@@ -43,13 +43,13 @@ MatchStmt::compile(ctx){
         compile.writeln("    je  %s", cs.label)
     }
     
-    compile.writeln("   jmp %s", defaultCase.label)
+    compile.writeln("   jmp %s", this.defaultCase.label)
     
     compile.blockcreate(ctx)
     for(cs : this.cases){
         cs.compile(ctx)
     }
-    defaultCase.compile(ctx)
+    this.defaultCase.compile(ctx)
     compile.blockdestroy(ctx)
 
     compile.writeln("L.match.end.%d:",mainPoint)

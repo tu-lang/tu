@@ -1,4 +1,6 @@
 use utils
+use ast
+use compile
 
 func call_operator(opt,name)
 {
@@ -44,7 +46,7 @@ func newobject(typ<i32>,data)
     compile.writeln("    push %%rsi")
 
     compile.writeln("    mov $%I, %%rdi", int(typ))
-    if typ != String
+    if typ != ast.String
         compile.writeln("    mov $%I, %%rsi", data)
 
     call("runtime_newobject")
