@@ -54,6 +54,11 @@ func newobject(typ<i32>,data)
     compile.writeln("    pop %%rsi")
     compile.writeln("    pop %%rdi")
 }
+func newinherit_object(type_id){
+    compile.Pop("%rdi")
+    compile.writeln("   mov $%d , %%rsi",type_id)
+    call("runtime_newinherit_object")
+}
 func newint(typ, data)
 {
     compile.writeln("    push %%rdi")

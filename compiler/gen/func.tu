@@ -56,7 +56,7 @@ func funcexec(ctx , fc , fce , package)
 		if fc.isExtern {
 			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
 		}else{
-			realfuncname = package + "_" + funcname
+			realfuncname = fc.fullname()
 			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", realfuncname)
 		}
 

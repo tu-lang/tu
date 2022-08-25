@@ -58,7 +58,8 @@ NewExpr::compile(ctx)
  
 class NewClassExpr : ast.Ast {
     package name
-    args = [] # [Ast]
+    args      = [] # [Ast]
+	childcall = false
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -76,21 +77,24 @@ NewClassExpr::compile(ctx)
 {
 	this.record()
 	utils.debug("new expr got: type:%s",this.name)
-	s = null
-	if this.package != "" {
-		realPkg = compile.parser.import[this.package]
-		pkg = package.packages[realPkg]
-		if pkg != null {
-			s = pkg.getClass(this.name)
-		}
+
+	s = this.getReal()
+	if s.father != null {
+		father = new NewClassExpr(this.line,this.column)
+		father.childcall = true
+		father.package = s.father.pkg
+		father.name = s.father.name
+		// gen father
+		father.compile(ctx)
+		compile.Push()
+
+		internal.newinherit_object(s.type_id)
+		compile.Push()
 	}else{
-		s = compile.parser.pkg.getClass(this.name)
+		internal.newobject(ast.Object,s.type_id)
+		compile.Push()
 	}
-	if !s {
-		this.panic("AsmError: class is not define of " + this.name)
-	}
-	internal.newobject(ast.Object,std.len(s.funcs))
-	compile.Push()
+
 	
 	for(fc : s.funcs){
 		funcname = fc.parser.getpkgname() +
@@ -99,6 +103,18 @@ NewClassExpr::compile(ctx)
 		compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
 		compile.Push()
 		internal.object_func_add(fc.name)
+	}
+	//init called auto
+	if !this.childcall {
+		call = new FunCallExpr(this.line,this.column)
+		call.package = s.parser.getpkgname()
+		call.funcname = s.name + "init"
+		call.is_pkgcall = true
+		params = this.args
+		pos = new ArgsPosExpr(1,this.line,this.column)
+		call.args[] = pos
+		std.merge(call.args,params)
+		call.compile(ctx)
 	}
 	compile.Pop("%rax")
 

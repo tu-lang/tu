@@ -4,11 +4,14 @@ class Class
     this.pkg = pkg
   }
   pkg
-  parser      # Parser
   name
   members     = [] # [Expression]
   initmembers = [] # [Expression]
   funcs       = [] # [Function] 
+
+  father
+  parser      # Parser
+  type_id
 }
 
 Class::getMember(name)

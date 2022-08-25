@@ -27,20 +27,11 @@ func registerFuncs(){
         registerFunc(p.second)
     }
 }
-func CreateFunction(fn , c){
-    if fn.clsName != "" {
-        c = fn.package.getClass(fn.clsName)
-        if (c == null) {
-            os.die("fn exception")
-        }
-    }
+func CreateFunction(fn , c) {
     if fn.isExtern return True
     if fn.block == null return True
-    funcname = fn.parser.getpkgname() + "_" + fn.name
-    
-    if c {
-        funcname = fn.parser.getpkgname() + "_" + c.name + "_" + fn.name
-    }
+
+    funcname = fn.fullname()
     utils.debug("create function :%s",funcname)
     
     writeln(".global %s", funcname)

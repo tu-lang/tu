@@ -10,41 +10,6 @@ Parser::parseStatementList()
     while( (p = parseStatement()) != null )
     {
         node[] = p
-        
-        if type(p) == type(ast.ExpressionStmt)  {
-            pe = p
-            if type(pe.expr) != type(AssignExpr)  continue
-            expr = pe.expr
-            
-            check(expr.lhs != null && expr.rhs != null)
-            if type(expr.rhs) == type(NewClassExpr) && type(expr.lhs) == type(ast.VarExpr) {
-                ne = expr.rhs
-                obj = expr.lhs
-                
-                pkg = this.pkg
-                if ne.package != "" {
-                    package = this.import[ne.package]
-                    pkg = packages[package]
-                }
-                check(pkg != null)
-                
-                call = new ast.FunCallExpr(expr.line,expr.column)
-                call.package = obj.varname
-                call.funcname = "init"
-                call.args = ne.args
-                call.is_pkgcall = true
-                params = call.args
-
-                call.args = []
-                call.args[] = obj
-                std.merge(call.args,params)
-
-                nd = new ExpressionStmt(call,call.line,call.column)
-                node[] = nd
-            }
-            
-        }
-
     }
     return node
 }

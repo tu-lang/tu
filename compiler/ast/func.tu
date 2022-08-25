@@ -79,3 +79,17 @@ Function::InsertExpression(expr){
         this.parser.column
     )
 } 
+
+//function signature
+Funtion::fullname(){
+    funcsig = fmt.sprintf("%s_%s",this.parser.getpkgname(),this.name)
+    //class memeber function
+    if !std.empty(this.clsname) {
+        cls = this.package.getClass(this.clsname)
+        if c == null {
+            os.die("class not define :" + this.clsname)
+        }
+        funcsig = fmt.sprintf("%s_%s_%s",this.parser.getpkgname(),cls.name,this.name)
+    }
+    return funcsig
+}

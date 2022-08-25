@@ -3,6 +3,25 @@ use std
 use fmt
 use ast
 use compile
+use os
+use utils
+
+
+class  ArgsPosExpr : ast.Ast {
+    pos = pos
+    func init(pos,line,column){super.init(line,column)}
+    func toString(){return "ArgsPosExpr"}
+}
+ArgsPosExpr::compile(ctx){
+    this.record()
+    stack = 0
+    if this.pos > 6 {
+        utils.error("argspos not support > 6")
+    }
+    stack += 6 - this.pos
+
+    compile.writeln("   mov %d(%rsp) , %rax",stack * 8)
+}
 
 class LabelExpr : ast.Ast {
     label = label

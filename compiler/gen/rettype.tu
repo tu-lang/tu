@@ -1,6 +1,8 @@
 use ast
 use utils 
-
+ArgsPosExpr::getType(ctx){
+	this.panic("getType: unsupport argsposexpr")
+}
 NullExpr::getType(ctx){
 	return ast.U8
 }
