@@ -28,15 +28,18 @@ class Http {
     }
 }
 
-func extern_func(){
+func extern_func(this,str,num){
+    //b is this
+    if str == "str" {} else  os.die("str not str")
+    if num == 100   {} else  os.die("num not 100")
     return "extern_func"
 }
 Http::test_memberfunc(){
     fmt.println("test_memberfunc")
-    if this.fc() != "extern_func" {
+    if this.fc("str",100) != "extern_func" {
         os.die("should be extern_func")
     }
-    fmt.println("test_memberfunc success",this.fc())
+    fmt.println("test_memberfunc success")
 }
 func main(){
     a = new Http()
