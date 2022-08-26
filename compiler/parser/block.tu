@@ -4,16 +4,6 @@ use fmt
 use ast
 use string
 
-Parser::parseStatementList()
-{
-    node = []
-    while( (p = parseStatement()) != null )
-    {
-        node[] = p
-    }
-    return node
-}
-
 Parser::parseBlock(member)
 {
     node = new ast.Block()
@@ -22,7 +12,12 @@ Parser::parseBlock(member)
         stmt = this.genSuperInitStmt(this.currentFunc)
         node->stmts[] stmt
     }
-    stmts = this.parseStatementList()
+    stmts = []
+    while( (p = this.parseStatement()) != null )
+    {
+        stmts[] = p
+    }
+    
     std.merge(node.stmts,stmts)
 
     this.expect(ast.RBRACE)
