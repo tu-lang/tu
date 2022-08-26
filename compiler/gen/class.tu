@@ -154,7 +154,7 @@ MemberExpr::compile(ctx)
 
 class MemberCallExpr : ast.Ast {
     varname membername
-    args = [] # [Ast]
+	call      # funcallexpr
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -164,18 +164,35 @@ MemberCallExpr::toString() {
     str += this.varname
     str += ",func="
     str += this.membername
-    str += ",args=["
-    for (arg : this.args) {
-        str += arg.toString()
-        str += ","
-    }
-    str += "])"
+    str += ",args=" + this.call.toString()
     return str
 }
 MemberCallExpr::compile(ctx)
 {
 	this.record()
 	utils.debug("membercall : ")
+    if this.varname != "" {
+        this.panic("varname should be null")
+    }
+    compile.Push()
+    internal.object_member_get(this.membername)
+    compile.Push()
+	params = this.call.args
+    
+	pos = new ArgsPosExpr(this.line,this.column)
+    //push obj
+    //push obj.func
+    //push $arg6
+    //push $arg5
+    //push $arg4
+    //push $arg3
+    //push $arg2
+    pos.pos = 0
+	call = this.call
+	call.args = [pos]
+	std.merge(call.args , params)
+    call.compile(ctx)
+    compile.writeln("    add $8, %%rsp")
 	return null
 }
 

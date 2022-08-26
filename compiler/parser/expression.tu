@@ -31,16 +31,26 @@ Parser::parseChainExpr(first){
         ret = ae
     }
     
-    
-    while true { 
+    while this.ischain() { 
         match scanner.curToken {
             ast.DOT : {
                 scanner.scan()
-                me = new gen.MemberExpr(line,column)
-                me.membername = scanner.curLex
-                chainExpr.fields[] = me
-                
-                scanner.scan()
+                this.expect(ast.Var)
+                membername = this.scanner.curLex
+                this.scanner.scan()
+                fields = chainExpr.fields
+                if this.scanner.curToken == ast.LPAREN {
+                    mc = new gen.MemberCallExpr(this.line,this.column)
+                    mc.membername = membername 
+                    mc.call = this.parseFuncallExpr("")
+                    //FIXME: chainExpr.fields[] = mc
+                    fields[] = mc
+                }else{
+                    me = new gen.MemberExpr(this.line,this.column)
+                    me.membername = membername
+                    fileds[] = me
+                    //FIXME: chainExpr.fields[] = me
+                }
             }
             ast.LPAREN :   chainExpr.fields[] = parseFuncallExpr("")
             ast.LBRACKET : chainExpr.fields[] = parseIndexExpr("")
