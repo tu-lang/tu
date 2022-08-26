@@ -11,6 +11,7 @@ write:
 
 .global die
 die:
+	mov $0 , %rdi
 	mov $60,%rax
 	syscall
 	retq
