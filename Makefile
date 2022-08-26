@@ -7,6 +7,7 @@ install:
 	@mkdir -p $(prefix)/lib/coasm
 	@rm -rf $(prefix)/lib/coasm/*
 	@cp -r runtime/syscall/* $(prefix)/lib/coasm
+	@echo "installed"
 
 test_memory:
 	sh tests_compiler.sh memory
@@ -15,10 +16,12 @@ test_memory:
 
 check: install test
 
+test_linker:
+	cd linker;sh tests_linker.sh
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 #make test -j9
-test: install $(cases)
+test: install test_linker $(cases)
 	@echo "all test passed"
 
 %: ./tests/%
