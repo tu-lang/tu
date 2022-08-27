@@ -104,3 +104,40 @@ ChainExpr::objgen(ctx)
 	this.last.compile(ctx)
     return null
 }
+
+ChainExpr::assign(ctx , opt, rhs) {
+	this.record()
+    this.first.compile(ctx)
+    compile.Push()
+	for i : this.fields {
+		i.compile(ctx)
+		compile.Push()
+	}
+	if  type(this.last) == type(MemberExpr) {
+		me  = this.last
+        rhs.compile(ctx)
+        compile.Push()
+        internal.call_object_operator(opt,me.membername,"runtime_object_unary_operator")
+	}else if type(this.last) == type(IndexExpr) {
+		index = this.last
+        if index.index == null {
+            rhs.compile(ctx)
+            compile.Push()
+
+            internal.arr_pushone()
+			compile.writeln("    add $8,%%rsp")
+           return null
+        }
+		index.index.compile(ctx)
+        compile.Push()
+
+        rhs.compile(ctx)
+        compile.Push()
+
+    	internal.kv_update()
+		compile.writeln("    add $8,%%rsp") 
+	}else{
+		this.panic(this.toString(""))
+	}
+	return null
+}

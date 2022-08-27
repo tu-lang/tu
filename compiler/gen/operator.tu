@@ -49,143 +49,147 @@ AssignExpr::compile(ctx){
     if !this.rhs    this.panic("AsmError: right expression is wrong expression:" + this.toString())
     
     f = compile.currentFunc
-    if type(lhs) == type(VarExpr) {
-        varExpr = lhs
-        package = compile.currentFunc.parser.getpkgname() 
-        varname = varExpr.varname
+    match type(lhs) {
+        type(VarExpr) : {
+            varExpr = lhs
+            package = compile.currentFunc.parser.getpkgname() 
+            varname = varExpr.varname
 
-        if !varExpr.is_local {
+            if !varExpr.is_local {
 
-            package = varExpr.package
-            if (var = ast.getVar(ctx,package) != null) {
-                
-                compile.GenAddr(var)
-                compile.Load()
-                compile.Push()
+                package = varExpr.package
+                if (var = ast.getVar(ctx,package) != null) {
+                    
+                    compile.GenAddr(var)
+                    compile.Load()
+                    compile.Push()
 
-                this.rhs.compile(ctx)
-                compile.Push()
-                
-                internal.call_object_operator(this.opt,varname,"runtime_object_unary_operator")
-                return null
-            }
+                    this.rhs.compile(ctx)
+                    compile.Push()
+                    
+                    internal.call_object_operator(this.opt,varname,"runtime_object_unary_operator")
+                    return null
+                }
             
-            cpkg = compile.currentFunc.parser.getpkgname()
-            full_package = ""
-            if std.exist(package,compile.currentFunc.parser.import)
-                full_package = compile.currentFunc.parser.import
+                cpkg = compile.currentFunc.parser.getpkgname()
+                full_package = ""
+                if std.exist(package,compile.currentFunc.parser.import)
+                    full_package = compile.currentFunc.parser.import
 
-            if std.exist(full_package.packages,package){
-                varExpr = package.packages[full_package].getGlobalVar(varname)
-            }else if std.len(package.packages,cpkg) {
-                varExpr = package.packages[cpkg].getGlobalVar(package)
-                sm = new StructMemberExpr(package,this.line,this.column)
-                sm.member = varname
-                sm.var    = varExpr
-                this.lhs = sm
-                
-            }
+                if std.exist(full_package.packages,package){
+                    varExpr = package.packages[full_package].getGlobalVar(varname)
+                }else if std.len(package.packages,cpkg) {
+                    varExpr = package.packages[cpkg].getGlobalVar(package)
+                    sm = new StructMemberExpr(package,this.line,this.column)
+                    sm.member = varname
+                    sm.var    = varExpr
+                    this.lhs = sm
+                    
+                }
             
-            if !varExpr 
-                this.panic("AsmError: assignexpr use of undefined global variable %s at line %d co %d\n",
-                    varname,this.line,this.column
-                )
+                if !varExpr 
+                    this.panic("AsmError: assignexpr use of undefined global variable %s at line %d co %d\n",
+                        varname,this.line,this.column
+                    )
         
-        }else if package.packages[package].getGlobalVar(varname){
-            varExpr = package.packages[package].getGlobalVar(varname)
-        }else if std.exist(varExpr.varname,f.params_var){
-            
-            varExpr = f.params_var[varExpr.varname]
-            std.tail(ctx).createVar(varExpr.varname,varExpr)
-        }else{
-            varExpr = f.locals[varExpr.varname]
-            std.tail(ctx).createVar(varExpr.varname,varExpr)
-        }
-        
-        if varExpr.isMemtype(ctx){
-            oh = new OperatorHelper(ctx,lhs,rhs,this.opt)
-            oh.var = varExpr
-            return oh.gen()
-        }
-
-        compile.GenAddr(varExpr)
-        compile.Push()
-
-        this.rhs.compile(ctx)
-        compile.Push()
-        
-        internal.call_operator(this.opt,"runtime_unary_operator")
-        return null
-
-    }else if type(lhs) == type(IndexExpr) 
-    {
-        index    = lhs 
-        varname = index.varname
-        varExpr
-        package    = compile.currentFunc.parser.getpkgname()
-
-        is_member = false
-        if index.is_pkgcall {
-            package = index.package
-            if package == "this" {
-                varExpr = f.params_var[package]
-                is_member = true
-            }else{
-                check(package.packages[package] != null,package)
+            }else if package.packages[package].getGlobalVar(varname){
                 varExpr = package.packages[package].getGlobalVar(varname)
-                if !varExpr this.panic("AsmError:use of undefined global variable %s",varname)
+            }else if std.exist(varExpr.varname,f.params_var){
+                
+                varExpr = f.params_var[varExpr.varname]
+                std.tail(ctx).createVar(varExpr.varname,varExpr)
+            }else{
+                varExpr = f.locals[varExpr.varname]
+                std.tail(ctx).createVar(varExpr.varname,varExpr)
             }
-        }else if package.packages[package].getGlobalVar(varname){
-            varExpr = package.packages[package].getGlobalVar(varname)
-        }else if std.exist(varname,f.params_var){
-            
-            varExpr = f.params_var[varname]
-        }else{
-            varExpr = f.locals[varname]
-        }
-        if !varExpr
-            this.panic("SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", varname,line,column,compile.currentFunc.parser.filepath)
-
-        std.tail(ctx).createVar(varExpr.varname,varExpr)
-        compile.GenAddr(varExpr)
-        compile.Load()
-        compile.Push()
-        if is_member {
-            internal.object_member_get(varname)
-            compile.Push()
-        }
         
-        if !index.index {
+            if varExpr.isMemtype(ctx){
+                oh = new OperatorHelper(ctx,lhs,rhs,this.opt)
+                oh.var = varExpr
+                return oh.gen()
+            }
+
+            compile.GenAddr(varExpr)
+            compile.Push()
+
+            this.rhs.compile(ctx)
+            compile.Push()
+            
+            internal.call_operator(this.opt,"runtime_unary_operator")
+            return null
+        }
+        type(IndexExpr) : {
+            index    = lhs 
+            varname = index.varname
+            varExpr
+            package    = compile.currentFunc.parser.getpkgname()
+
+            is_member = false
+            if index.is_pkgcall {
+                package = index.package
+                if package == "this" {
+                    varExpr = f.params_var[package]
+                    is_member = true
+                }else{
+                    check(package.packages[package] != null,package)
+                    varExpr = package.packages[package].getGlobalVar(varname)
+                    if !varExpr this.panic("AsmError:use of undefined global variable %s",varname)
+                }
+            }else if package.packages[package].getGlobalVar(varname){
+                varExpr = package.packages[package].getGlobalVar(varname)
+            }else if std.exist(varname,f.params_var){
+                
+                varExpr = f.params_var[varname]
+            }else{
+                varExpr = f.locals[varname]
+            }
+            if !varExpr
+                this.panic("SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", varname,line,column,compile.currentFunc.parser.filepath)
+
+            std.tail(ctx).createVar(varExpr.varname,varExpr)
+            compile.GenAddr(varExpr)
+            compile.Load()
+            compile.Push()
+            if is_member {
+                internal.object_member_get(varname)
+                compile.Push()
+            }
+        
+            if !index.index {
+                rhs.compile(ctx)
+                compile.Push()
+
+                internal.arr_pushone()
+                compile.Pop("%rdi")
+            return null
+            }
+
+            index.index.compile(ctx)
+            compile.Push()
+
             rhs.compile(ctx)
             compile.Push()
 
-            internal.arr_pushone()
+            internal.kv_update()
+            
             compile.Pop("%rdi")
-           return null
+            return null
         }
-
-        index.index.compile(ctx)
-        compile.Push()
-
-        rhs.compile(ctx)
-        compile.Push()
-
-        internal.kv_update()
-        
-        compile.Pop("%rdi")
-        return null
-    }else if type(lhs) == type(StructMemberExpr) 
-    {
-        oh = new OperatorHelpe(ctx,lhs,rhs,this.opt)
-        return oh.gen()
-    }else if type(lhs) == type(DelRefExpr) {
-        oh = OperatorHelper(ctx,lhs,rhs,this.opt)
-        return oh.gen()
-    }else if type(lhs) == type(ChainExpr) {
-        ce = lhs
-        if ce.ismem(ctx) {
-            oh. OperatorHelper(ctx,lhs,rhs,this.opt)
+        type(StructMemberExpr) : {
+            oh = new OperatorHelpe(ctx,lhs,rhs,this.opt)
             return oh.gen()
+        }
+        type(DelRefExpr) : {
+            oh = OperatorHelper(ctx,lhs,rhs,this.opt)
+            return oh.gen()
+        }
+        type(ChainExpr) : {
+            ce = lhs
+            if ce.ismem(ctx) {
+                oh. OperatorHelper(ctx,lhs,rhs,this.opt)
+                return oh.gen()
+            }
+            return ce.assign(ctx,this.opt,this.rhs)
         }
     }
     this.panic("SyntaxError: can not assign to " + string(type(lhs).name()))
