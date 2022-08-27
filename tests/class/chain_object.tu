@@ -51,7 +51,23 @@ func test_chain_arr(){
 	}
 	fmt.println("test chain arr success")
 }
+class B {
+	arr = [100,333]
+	func getarr(i){
+		return this.arr[i]
+	}
+}
+func test_complex(){
+	if (new B()).arr[0] != 100 {
+		os.die("arr[0] should be 100")
+	}
+	if (new B()).getarr(1) != 333 {
+		os.die("arr[1] should be 333")
+	}
+	fmt.println("test complex situation success")
+}
 func main(){
 	test_chain_member()
 	test_chain_arr()
+	test_complex()
 }
