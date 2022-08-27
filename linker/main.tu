@@ -57,8 +57,7 @@ func scan(){
     if total <= 0 utils.error("please provide at lease one .o file")
 
     i = 1
-    //FIXME: for(file : scan_files)
-    for(f : scan_files){
+    for f : scan_files {
 	    utils.smsg("[ " + i + "/" + total +"]","Reading elf object info " + f)
         linker.addElf(f)
         i += 1

@@ -28,8 +28,7 @@ Linker::init(){
 
 	sl = this.segLists
 	for(name : this.segNames){
-		tmp = new Seglist()
-		sl[name] = tmp
+		sl[name] = new Seglist()
 	}
 }
 # 1. 解析elf文件
@@ -54,9 +53,7 @@ Linker::collectInfo()
 		for(seg : this.segNames){
 			tmp<u64> = e.shdrTab[seg]
 			if  tmp != runtime.Null  {
-				tmp = this.segLists[seg].ownerList
-				# TODO: copy on write 
-				tmp[] = e
+				this.segLists[seg].ownerList[] = e
 			}
 		}
 		# 记录符号引用信息
@@ -140,10 +137,7 @@ Linker::allocAddr()
 	mcurOff<i32> = *curOff
 
 	for(seg : this.segNames){
-		//TODO: support chain access object.func
-		//this.segLists[seg].allocAddr(seg,&curAddr,&mcurOff)
-		obj = this.segLists[seg]
-		obj.allocAddr(seg,&curAddr,&mcurOff)
+		this.segLists[seg].allocAddr(seg,&curAddr,&mcurOff)
 	}
 	this.bssaddr = int(curAddr)
 }

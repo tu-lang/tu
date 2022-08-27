@@ -104,8 +104,7 @@ File::readElf(file)
 					if sym.st_shndx != SHN_UNDEF
 						name = this.shdrNames[int(sym.st_shndx)]
 				}
-				rel_item = new RelItem(string.sub(k,5),rela,name)
-				this.relTab[] = rel_item
+				this.relTab[] = new RelItem(string.sub(k,5),rela,name)
 			} 
 		}
 	}
@@ -116,12 +115,8 @@ File::readElf(file)
 File::getSymIndex(symname)
 {
 	index = 0
-	//TODO: len() 函数
-	sl = std.len(this.symNames)
-	for(i = 0 ; i < sl ; i += 1){
-		if  this.symNames[i] == symname {
-			break
-		}
+	for i : this.symNames {
+		if i == symname break
 		index += 1
 	}
 	return index
