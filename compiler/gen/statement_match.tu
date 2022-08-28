@@ -14,20 +14,20 @@ MatchStmt::toString(){
 MatchStmt::compile(ctx){
     this.record()
     mainPoint = ast.incr_labelid()
-    endLabel = "L.match.end." + mainPoint
+    this.endLabel = "L.match.end." + mainPoint
     
     for(cs : this.cases){
         c = ast.incr_labelid()
         cs.label = "L.match.case." + c
-        cs.endLabel = endLabel
+        cs.endLabel = this.endLabel
     }
     
     if this.defaultCase == null {
         this.defaultCase = new MatchCaseExpr(this.line,this.column)
         this.defaultCase.matchCond = this.cond
     }
-    this.defaultCase.label = "L.match.default." + compile.count++
-    this.defaultCase.endLabel = endLabel
+    this.defaultCase.label = "L.match.default." + ast.incr_labelid()
+    this.defaultCase.endLabel = this.endLabel
     
     for(cs : this.cases){
         be = new BinaryExpr(cs.line,cs.column)
@@ -79,17 +79,17 @@ MatchCaseExpr::toString(){
 MatchCaseExpr::bitOrToLogOr(expr){
 	if type(expr) != type(BinaryExpr) return expr
 	node = expr
-	//only edit BITOR case ast
-	if node.opt != BITOR return expr
+	//only edit ast.BITOR case ast
+	if node.opt != ast.BITOR return expr
 	
 	this.logor = true
-	node.opt = LOGOR
+	node.opt = ast.LOGOR
 
 	if node.lhs != null {
 		if type(node.lhs) != type(BinaryExpr) {
 			be = new BinaryExpr(this.line,this.column)
 			be.lhs = this.matchCond
-			be.opt = EQ
+			be.opt = ast.EQ
 			be.rhs = node.lhs
 			node.lhs = be
 		}else{
@@ -100,7 +100,7 @@ MatchCaseExpr::bitOrToLogOr(expr){
 		if type(node.rhs) != type(BinaryExpr) {
 			be = new BinaryExpr(this.line,this.column)
 			be.lhs = this.matchCond
-			be.opt = EQ
+			be.opt = ast.EQ
 			be.rhs = node.rhs
 			node.rhs = be
 		}else{
@@ -111,14 +111,14 @@ MatchCaseExpr::bitOrToLogOr(expr){
 }
 MatchCaseExpr::compile(ctx){
     this.record()
-    compile.writeln("%s:",label)
+    compile.writeln("%s:",this.label)
     
-    if block != null {
-        for(stmt : block.stmts){
+    if this.block != null {
+        for(stmt : this.block.stmts){
             stmt.compile(ctx)
         } 
     }
-    compile.writeln("   jmp %s", endLabel)
+    compile.writeln("   jmp %s", this.endLabel)
     return this
 }
 

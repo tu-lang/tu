@@ -15,7 +15,7 @@ class StructMemberExpr : ast.Ast {
 StructMemberExpr::toString() {
 	return fmt.sprintf(
 		"StructMemberExpr(%s<%s.%s>.%s)" ,
-		,this.varname , this.var.package , 
+		this.varname , this.var.package , 
 		this.var.structname , this.member
 	)
 }

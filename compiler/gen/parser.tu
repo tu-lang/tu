@@ -6,8 +6,9 @@ parser.Parser::compile()
 {    
     asm = new std.File(this.asmfile)
 	if !asm.IsOpen() {
-        this.panic("genrate assembly file failed package:%s file:%s",
-            pkg.package,filename
+        this.panic(
+            "genrate assembly file failed package:%s file:%s",
+            this.pkg.package,this.filename
         )
 	}
     //asm file generate start

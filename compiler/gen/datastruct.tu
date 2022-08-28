@@ -29,13 +29,13 @@ class LabelExpr : ast.Ast {
 		super.init(line,column)
 	}
     func toString(){
-        return "label expr: " + label
+        return "label expr: " + this.label
     }
 }
 
 LabelExpr::compile(ctx){
 	this.record()
-	compile.writeln("%s:",label)
+	compile.writeln("%s:",this.label)
 	return this
 }
 class NullExpr    : ast.Ast {
@@ -63,7 +63,7 @@ class BoolExpr   : ast.Ast {
         return null
     }
     func toString() {
-        return "BoolExpr(" + lit + ")"
+        return "BoolExpr(" + this.lit + ")"
     }
 }
 class CharExpr    : ast.Ast { 
@@ -77,7 +77,7 @@ class CharExpr    : ast.Ast {
         return null
     }
     func toString() {
-        return "CharExpr(" + lit + ")"
+        return "CharExpr(" + this.lit + ")"
     }
 }
 class IntExpr     : ast.Ast { 
@@ -91,7 +91,7 @@ class IntExpr     : ast.Ast {
         return null
     }
     func toString() {
-        return "int(" + lit + ")"
+        return "int(" + this.lit + ")"
     }
 }
 
@@ -106,7 +106,7 @@ class DoubleExpr  : ast.Ast {
         return null
     }
     func toString() {
-        return "DoubleExpr(" + lit + ")"
+        return "DoubleExpr(" + this.lit + ")"
     }
 }
 class StringExpr  : ast.Ast { 
@@ -118,12 +118,12 @@ class StringExpr  : ast.Ast {
         this.record()
         if this.name != "" this.check(false,this.toString())
         
-        compile.writeln("    lea %s(%%rip), %%rsi", name)
+        compile.writeln("    lea %s(%%rip), %%rsi", this.name)
         internal.newobject(ast.String,0)
         return null
     }
     func toString() { 
-        return "StringExpr(" + lit + ") line:" + line + " column:" + column 
+        return "StringExpr(" + this.lit + ") line:" + this.line + " column:" + this.column 
     }
 }
 

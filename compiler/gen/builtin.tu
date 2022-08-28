@@ -1,3 +1,6 @@
+use fmt
+use parser.package
+
 class BuiltinFuncExpr : ast.Ast {
     funcname expr from
 	func init(line,column){

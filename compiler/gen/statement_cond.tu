@@ -17,11 +17,11 @@ class ForStmt : ast.Ast {
 }
 ForStmt::toString() {
     str = "ForStmt("
-    str += " init="  + init.toString()
-    str += ",cond="  + cond.toString()
-    str += ",after=" + after.toString()
+    str += " init="  + this.init.toString()
+    str += ",cond="  + this.cond.toString()
+    str += ",after=" + this.after.toString()
     str += ",exprs=["
-    for (e : block.stmts) {
+    for (e : this.block.stmts) {
         str += e.toString()
         str += ","
     }
@@ -32,14 +32,14 @@ ForStmt::toString() {
 ForStmt::compile(ctx)
 {
     this.record()
-    if  this.range  return rangeFor(ctx)
-    return triFor(ctx)
+    if  this.range  return this.rangeFor(ctx)
+    return this.triFor(ctx)
 }
 ForStmt::rangeFor(ctx)
 {
     c = ast.incr_labelid()
     if this.obj == null 
-        parse_err("statement: for(x,y : obj) obj should pass value. line:%d column:%d",line,column)
+        this.panic("statement: for(x,y : obj) obj should pass value. line:%d column:%d",this.line,this.column)
     
     this.obj.compile(ctx)
     compile.Push()
@@ -85,7 +85,7 @@ ForStmt::rangeFor(ctx)
     std.tail(ctx).continue_str = "L.for.continue"
     
     
-    for(stmt : block.stmts){
+    for(stmt : this.block.stmts){
         stmt.compile(ctx)
     }
     compile.blockdestroy(ctx)
@@ -122,7 +122,7 @@ ForStmt::triFor(ctx)
     std.tail(ctx).continue_str = "L.for.continue"
     
     
-    for(stmt : block.stmts){
+    for(stmt : this.block.stmts){
         stmt.compile(ctx)
     }
     
@@ -137,16 +137,16 @@ ForStmt::triFor(ctx)
 }
 class WhileStmt : ast.Ast {
     cond
-    Block
+    block
     func init(line,column){
         super.init(line,column)
     }
 }
 WhileStmt::toString() {
     str = "WhileStmt(cond="
-    str += cond.toString()
+    str += this.cond.toString()
     str += ",exprs=["
-    for (e : block.stmts) {
+    for (e : this.block.stmts) {
         str += e.toString()
         str += ","
     }
@@ -173,7 +173,7 @@ WhileStmt::compile(ctx)
     std.tail(ctx).end_str   = "L.while.end"
     std.tail(ctx).start_str = "L.while.begin"
     
-    for(stmt : block.stmts){
+    for(stmt : this.block.stmts){
         stmt.compile(ctx)
     }
     compile.blockdestroy(ctx)
@@ -191,10 +191,10 @@ class IfCaseExpr : ast.Ast {
 }
 IfCaseExpr::toString(){
     str = "cond="
-    str += cond.toString()
+    str += this.cond.toString()
     str += ",exprs=["
-    if block{
-        for(e : block.stmts){
+    if this.block {
+        for(e : this.block.stmts){
             str += e.toString()
             str += ","
         }
@@ -204,13 +204,13 @@ IfCaseExpr::toString(){
 }
 IfCaseExpr::compile(ctx){
     this.record()
-    compile.writeln("%s:",label)
-    if block {
-        for(stmt : block.stmts){
+    compile.writeln("%s:",this.label)
+    if this.block {
+        for(stmt : this.block.stmts){
             stmt.compile(ctx)
         } 
     }
-    compile.writeln("   jmp %s", endLabel)
+    compile.writeln("   jmp %s", this.endLabel)
     return this
 }
 class IfStmt : ast.Ast {
@@ -221,11 +221,11 @@ class IfStmt : ast.Ast {
     }
 }
 IfStmt::toString() {
-    str
-    for(cs : cases){
+    str = ""
+    for(cs : this.cases){
         str += cs.toString()
     }
-    str += elseCase.toString()
+    str += this.elseCase.toString()
     return str
 }
 IfStmt::compile(ctx){
@@ -237,9 +237,9 @@ IfStmt::compile(ctx){
         cs.label  = "L.if.case." + ast.incr_labelid()
         cs.endLabel = endLabel
     }
-    if elseCase {
-        elseCase.label = "L.if.case." + ast.incr_compileidx()
-        elseCase.endLabel = endLabel
+    if this.elseCase {
+        this.elseCase.label = "L.if.case." + ast.incr_labelid()
+        this.elseCase.endLabel = endLabel
     }
 
     for(cs : this.cases){
@@ -250,7 +250,7 @@ IfStmt::compile(ctx){
         compile.writeln("    je  %s", cs.label)
     }
     
-    if elseCase compile.writeln("   jmp %s", elseCase.label)
+    if this.elseCase compile.writeln("   jmp %s", this.elseCase.label)
     
     compile.writeln("   jmp L.if.end.%d", mainPoint)
     
@@ -258,7 +258,7 @@ IfStmt::compile(ctx){
     for(cs : this.cases){
         cs.compile(ctx)
     }
-    if elseCase elseCase.compile(ctx)
+    if this.elseCase this.elseCase.compile(ctx)
     compile.blockdestroy(ctx)
 
     compile.writeln("L.if.end.%d:",mainPoint)

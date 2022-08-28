@@ -31,13 +31,13 @@ KVExpr::getType(ctx){
 	this.panic("getType: unsupport kv\n")
 }
 ChainExpr::getType(ctx){
-	this.check(ismem(ctx),"gettype: unsuport chain")
+	this.check(this.ismem(ctx),"gettype: unsuport chain")
 
 	s 	= this.first
 	member = s.getMember()
 	
 	this.check(member.isstruct,"must be memtype in chain expr")
-	for(i : fields){
+	for(i : this.fields){
 		this.check(type(i) == type(MemberExpr),"field must be member expression at mem chain expression")
 		me = i
 		this.check(member.structref != null,"must be memref in chain expr")
@@ -49,8 +49,8 @@ ChainExpr::getType(ctx){
 		this.check(member.isstruct,"middle field must be mem type in chain expression")
 	}
 		
-	this.check(last != null,"miss last field in chain expression")
-	me = last
+	this.check(this.last != null,"miss last field in chain expression")
+	me = this.last
 	this.check(member.structref != null,"must be memref in chain expr")
 	ss = member.structref
 	member = ss.getMember(me.membername)
@@ -62,16 +62,16 @@ ChainExpr::getType(ctx){
 	return ast.U64
 }
 VarExpr::getType(ctx){
-	getVarType(ctx)
-	if ret.pointer return ast.U64
+	this.getVarType(ctx)
+	if this.ret.pointer return ast.U64
 
-	return ret.type
+	return this.ret.type
 }
 ClosureExpr::getType(ctx){
 	this.panic("getType: unsupport closure\n")
 }
 StructMemberExpr::getType(ctx){
-	m = getMember()
+	m = this.getMember()
 	if m.pointer || m.isclass return ast.U64
 	return m.type
 }
@@ -79,9 +79,9 @@ AddrExpr::getType(ctx){
 	return ast.U64
 }
 DelRefExpr::getType(ctx){
-	if type(expr) == type(VarExpr) 
+	if type(this.expr) == type(VarExpr) 
 	{
-		var = expr
+		var = this.expr
 		var = var.getVar(ctx)
 		if var.pointer 
 			return ast.U64
@@ -91,22 +91,22 @@ DelRefExpr::getType(ctx){
 		else 
 			return ast.I64
 
-	}else if type(expr) == type(StructMemberExpr) {
-		e = expr
+	}else if type(this.expr) == type(StructMemberExpr) {
+		e = this.expr
 		m = e.getMember()
 		if m.pointer return ast.U64
 		return m.type
 	}
-	return expr.getType(ctx)
+	return this.expr.getType(ctx)
 }
 IndexExpr::getType(ctx){
 	this.panic("getType: unsupport IndexExpr\n")
 }
 BinaryExpr::getType(ctx){
 	
-	if !this.rhs return lhs.getType(ctx)
-	l = lhs.getType(ctx)
-	r = rhs.getType(ctx)
+	if !this.rhs return this.lhs.getType(ctx)
+	l = this.lhs.getType(ctx)
+	r = this.rhs.getType(ctx)
 	return utils.max(l,r)
 }
 FunCallExpr::getType(ctx){

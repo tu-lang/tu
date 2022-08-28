@@ -140,32 +140,29 @@ IndexExpr::assign( ctx , opt ,rhs) {
             "SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", 
             varname,this.line,this.column,this.compile.currentFunc.parser.filepath
         )
-    std.back()
-    (ctx.back()).createVar(varExpr.varname,varExpr);
-    //push arr 获取数组偏移量
-    compile.GenAddr(varExpr);
-    compile.Load();
-    compile.Push();
-    if (is_member) {
-        internal.object_member_get(varname);
-        compile.Push();
+    std.back(ctx).createVar(varExpr.varname,varExpr)
+    compile.GenAddr(varExpr)
+    compile.Load()
+    compile.Push()
+    if is_member {
+        internal.object_member_get(varname)
+        compile.Push()
     }
-    //push index 计算索引
-    if(!this.index) {
-        rhs.compile(ctx);
-        compile.Push();
-        internal.arr_pushone();
-        compile.Pop("%rdi");
-        return nullptr;
+    if this.index == null {
+        rhs.compile(ctx)
+        compile.Push()
+        internal.arr_pushone()
+        compile.Pop("%rdi")
+        return null
     }
-    this.index.compile(ctx);
-    compile.Push();
-    rhs.compile(ctx);
-    compile.Push();
+    this.index.compile(ctx)
+    compile.Push()
+    rhs.compile(ctx)
+    compile.Push()
     //call arr_updateone(arr,index,var)
-    internal.kv_update();
+    internal.kv_update()
     //rm unuse 
-    compile.Pop("%rdi");
-    return nullptr;
+    compile.Pop("%rdi")
+    return null
     
 }

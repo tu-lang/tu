@@ -17,7 +17,7 @@ typesize = {
 func exprIsMtype(cond,ctx){
     ismtype = false
     match type(cond) {
-        type(StructMemberExpr) | type(DelRefExpr) | type(AddExpr): {
+        type(StructMemberExpr) | type(DelRefExpr) | type(AddrExpr): {
             ismtype = true
         }
         type(VarExpr) | type(BinaryExpr): {
