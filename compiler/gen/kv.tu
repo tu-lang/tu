@@ -56,7 +56,7 @@ IndexExpr::compile(ctx) {
     this.record()
     f = compile.currentFunc
 
-    if varname == "" {
+    if this.varname == "" {
         this.index.compile(ctx)
         compile.Push()
 
@@ -68,23 +68,19 @@ IndexExpr::compile(ctx) {
     packagename = this.package
 
     if this.is_pkgcall {
-        var = ast.getVar(ctx,packagename)
-        if var != null {
-            compile.GenAddr(var)
-            compile.Load()
-            compile.Push()
-
-            internal.object_member_get(varname)
-            compile.Push()
-
-            goto INDEX
-        }
         this.check(!std.exist(packagename,package.packages),"package not exist: " + package)
 
-        var  = package.packages[packagename].getGlobalVar(varname)
+        var  = package.packages[packagename].getGlobalVar(this.varname)
 
         if var == null this.panic("AsmError:use of undefined global variable " + varname)
-    }else{
+    }else if (var = ast.getVar(ctx,this.package))  && var != null {
+        compile.GenAddr(var)
+        compile.Load()
+        compile.Push()
+        internal.object_member_get(varname)
+        compile.Push()
+        goto INDEX
+    }else {
 
         packagename = compile.currentFunc.parser.getpkgname()
         var  = package.packages[packagename].getGlobalVar(varname)
@@ -116,3 +112,60 @@ INDEX:
     this.panic("AsmError: index-expr use of undefined variable " + varname)
 }
 
+IndexExpr::assign( ctx , opt ,rhs) {
+    f = compile.currentFunc   
+    varname = this.varname
+    varExpr = null
+    package    = compile.currentFunc.parser.getpkgname()
+    is_member = false
+    if this.is_pkgcall {
+        this.check(std.exist(package,package.packages),"package not found:" + package)
+        varExpr = package.packages[package].getGlobalVar(varname)
+        if varExpr == null  panic("AsmError:use of undefined global variable" + varname)
+    } else if std.exist(this.package,f.params_var)  || std.exist(this.package,f.locals) {
+        is_member = true
+        if f.params_var[this.package] != null 
+            varExpr = f.params_var[this.package]
+        else    
+            varExpr = f.locals[this.package]
+    }else if(package.packages[package].getGlobalVar(varname)){
+        varExpr = package.packages[package].getGlobalVar(varname)
+    }else if(f.params_var[varname] != null ) {
+        varExpr = f.params_var[varname]
+    }else{
+        varExpr = f.locals[varname]
+    }
+    if varExpr == null
+        this.panic(
+            "SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", 
+            varname,this.line,this.column,this.compile.currentFunc.parser.filepath
+        )
+    std.back()
+    (ctx.back()).createVar(varExpr.varname,varExpr);
+    //push arr 获取数组偏移量
+    compile.GenAddr(varExpr);
+    compile.Load();
+    compile.Push();
+    if (is_member) {
+        internal.object_member_get(varname);
+        compile.Push();
+    }
+    //push index 计算索引
+    if(!this.index) {
+        rhs.compile(ctx);
+        compile.Push();
+        internal.arr_pushone();
+        compile.Pop("%rdi");
+        return nullptr;
+    }
+    this.index.compile(ctx);
+    compile.Push();
+    rhs.compile(ctx);
+    compile.Push();
+    //call arr_updateone(arr,index,var)
+    internal.kv_update();
+    //rm unuse 
+    compile.Pop("%rdi");
+    return nullptr;
+    
+}

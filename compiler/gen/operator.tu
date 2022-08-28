@@ -118,77 +118,14 @@ AssignExpr::compile(ctx){
             internal.call_operator(this.opt,"runtime_unary_operator")
             return null
         }
-        type(IndexExpr) : {
-            index    = lhs 
-            varname = index.varname
-            varExpr
-            package    = compile.currentFunc.parser.getpkgname()
-
-            is_member = false
-            if index.is_pkgcall {
-                package = index.package
-                if package == "this" {
-                    varExpr = f.params_var[package]
-                    is_member = true
-                }else{
-                    check(package.packages[package] != null,package)
-                    varExpr = package.packages[package].getGlobalVar(varname)
-                    if !varExpr this.panic("AsmError:use of undefined global variable %s",varname)
-                }
-            }else if package.packages[package].getGlobalVar(varname){
-                varExpr = package.packages[package].getGlobalVar(varname)
-            }else if std.exist(varname,f.params_var){
-                
-                varExpr = f.params_var[varname]
-            }else{
-                varExpr = f.locals[varname]
-            }
-            if !varExpr
-                this.panic("SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", varname,line,column,compile.currentFunc.parser.filepath)
-
-            std.tail(ctx).createVar(varExpr.varname,varExpr)
-            compile.GenAddr(varExpr)
-            compile.Load()
-            compile.Push()
-            if is_member {
-                internal.object_member_get(varname)
-                compile.Push()
-            }
-        
-            if !index.index {
-                rhs.compile(ctx)
-                compile.Push()
-
-                internal.arr_pushone()
-                compile.Pop("%rdi")
-            return null
-            }
-
-            index.index.compile(ctx)
-            compile.Push()
-
-            rhs.compile(ctx)
-            compile.Push()
-
-            internal.kv_update()
-            
-            compile.Pop("%rdi")
-            return null
-        }
-        type(StructMemberExpr) : {
-            oh = new OperatorHelpe(ctx,lhs,rhs,this.opt)
-            return oh.gen()
-        }
-        type(DelRefExpr) : {
-            oh = OperatorHelper(ctx,lhs,rhs,this.opt)
-            return oh.gen()
+        type(IndexExpr) : return this.lhs.assign(this.opt,this.rhs)
+        type(StructMemberExpr) | type(DelRefExpr) : {
+            return (new OperatorHelper(ctx,lhs,rhs,this.opt)).gen()
         }
         type(ChainExpr) : {
             ce = lhs
-            if ce.ismem(ctx) {
-                oh. OperatorHelper(ctx,lhs,rhs,this.opt)
-                return oh.gen()
-            }
+            if ce.ismem(ctx) 
+                return ( OperatorHelper(ctx,lhs,rhs,this.opt) ).gen()
             return ce.assign(ctx,this.opt,this.rhs)
         }
     }
