@@ -18,16 +18,15 @@ func newinit_test(){
         os.die("obj.b != test")
     }
     obj.obj = new File()
-    //FIXME: obj.obj.f() => obj.obj.f(obj.obj) not obj.obj.f(obj)
-    // obj.obj.f()
     //test again
     if obj.b != "test" {
         os.die("obj.b != test")
     }
-    // if obj.obj.b != "test2" {
-        // fmt.println(obj.obj.b)
-        // os.die("obj.obj.b != test2")
-    // }
+    obj.obj.f()
+    if obj.obj.b != "test2" {
+        fmt.println(obj.obj.b)
+        os.die("obj.obj.b != test2")
+    }
     // test arr
     arr = [0]
     arr[0] = new File()
@@ -38,10 +37,25 @@ func newinit_test(){
 
 
 }
+func arr_member_test(){
+    obj = new File()
+    obj.arr = []
+    obj.arr[] = 33
+    if obj.arr[0] != 33 {
+        os.die("obj.arr[0] should be 33")
+    }
+    obj.arr[0] = 44
+    if obj.arr[0] != 44 {
+        os.die("obj.arr[0] should be 44")
+    }
+    fmt.println("test member arr sucess")
+
+}
 func main(){
     // 测试 成员变量的查询和更新
     test_member_get_or_update()
     newinit_test()
+    arr_member_test()
 }
 
 class Http {
