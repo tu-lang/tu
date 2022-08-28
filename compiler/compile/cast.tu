@@ -26,8 +26,8 @@ casts = [
 
 
 func Cast(from ,to) {
-  f = parser.typesize[from]
-  t = parser.typesize[to]
+  f = int(parser.typesize[int(from)])
+  t = int(parser.typesize[int(to)])
   if cast_table[f][t] != null {
     writeln("  %s", cast_table[f][t])
   }

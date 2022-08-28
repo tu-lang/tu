@@ -69,7 +69,7 @@ Parser::parseParameterList()
                     
                         Token i = scanner.curToken
                         assert(i >= ast.I8 && i <= ast.U64)
-                        var.size = typesize[i]
+                        var.size = typesize[int(i)]
                         var.type = i
                         var.isunsigned = false
                         if i >= ast.U8 && i <= ast.U64
@@ -130,13 +130,13 @@ Parser::genSuperInitStmt(f){
     }
     ass = new ast.AssignExpr(this.line,this.column)
     ass.opt = ast.ASSIGN
-    lhs = new ast.VarExpr("super",this.line,this.column)
+    lhs = new gen.VarExpr("super",this.line,this.column)
     f.locals[lhs.varname] = lhs
 
-    rhs = new ast.FunCallExpr(this.line,this.column)
+    rhs = new gen.FunCallExpr(this.line,this.column)
     rhs.package = "runtime"
     rhs.funcname = "object_parent_get"
-    var = new ast.VarExpr("this",this.line,this.column)
+    var = new gen.VarExpr("this",this.line,this.column)
     rhs.args[] = var
     rhs.is_pkgcall = true
     ass.lhs = lhs

@@ -76,7 +76,7 @@ func Push_arg(ctx,fc,fce){
     stack = 0 gp = 0
     current_call_have_im = false
     for(arg : fce.args){
-        if (type(arg) == type(ast.VarExpr) && currentFunc){
+        if (type(arg) == type(gen.VarExpr) && currentFunc){
             var = arg
             if std.exist(var.varname,currentFunc.params_var) {
                 var2 = currentFunc.params_var[var.varname]
@@ -163,12 +163,12 @@ func Push_arg(ctx,fc,fce){
             }
             gp += 1
             ret = fce.args[i].compile(ctx)
-            if ret != null && type(ret) == type(ast.StructMemberExpr) {
+            if ret != null && type(ret) == type(gen.StructMemberExpr) {
                 sm = ret
                 LoadMember(sm.getMember())
-            }else if ret != null && type(ret) == type(ast.ChainExpr) {
+            }else if ret != null && type(ret) == type(gen.ChainExpr) {
                 ce = ret
-                if type(fce.args[i]) != type(ast.AddrExpr) {
+                if type(fce.args[i]) != type(gen.AddrExpr) {
                     LoadMember(ce.ret)
                 }
             }

@@ -452,7 +452,7 @@ Parser::parseVarExpr(var)
                 return expr
             }else if scanner.curToken <= ast.U64 && scanner.curToken >= ast.I8{
             
-                expr.size = typesize[scanner.curToken]
+                expr.size = typesize[int(scanner.curToken)]
                 expr.type = scanner.curToken
                 expr.isunsigned = false
                 if scanner.curToken >= ast.U8 && scanner.curToken <= ast.U64

@@ -23,14 +23,14 @@ Parser::parseClassDef()
         
         if scanner.curToken == ast.VAR{
             member = parseExpression()
-            if type(member) == type(ast.VarExpr) {
+            if type(member) == type(gen.VarExpr) {
                 s.members[] = member
             }else {
                 if type(member) != type(ast.AssignExpr) {
                     this.panic("class member only support assign expr:%s",member.toString(""))
                 }
                 lhs = member.lhs
-                if type(lhs) != type(ast.VarExpr)
+                if type(lhs) != type(gen.VarExpr)
                     this.panic("assign left should be var")
                 var = lhs
                 var.package = "this"
@@ -148,8 +148,8 @@ Parser::parseMember(tk,idx,pointer){
         member.isunsigned = true
     member.idx    = idx ++
     member.type = tk
-    member.size = typesize[tk]
-    member.align = typesize[tk]
+    member.size = typesize[int(tk)]
+    member.align = typesize[int(tk)]
     member.arrsize = 1
 
     if pointer {
@@ -317,7 +317,7 @@ Parser::genClassInitFunc(clsname)
         this.check(false,"SyntaxError: already define function %s init",clsname)
     f.name = "init"
 
-    var = new ast.VarExpr("this",this.line,this.column)
+    var = new gen.VarExpr("this",this.line,this.column)
     f.params_var["this"] = var
     f.params_order_var[] = var
     f.params[] = "this"

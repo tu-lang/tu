@@ -11,8 +11,8 @@ class MapExpr : ast.Ast {
 }
 MapExpr::toString() {
     str = "MapExpr(elements={"
-    if std.len(lit) != 0 {
-        for (e : lit) {
+    if std.len(this.lit) != 0 {
+        for (e : this.lit) {
             str += e.toString()
         }
     }

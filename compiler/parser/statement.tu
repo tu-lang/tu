@@ -101,14 +101,14 @@ Parser::parseForStmt()
         value = parseExpression()
         obj = null
         
-        if type(value) == type(ast.VarExpr) && (scanner.curToken == ast.COMMA || scanner.curToken == ast.COLON) {
+        if type(value) == type(gen.VarExpr) && (scanner.curToken == ast.COMMA || scanner.curToken == ast.COLON) {
             node.range = true
             
             if scanner.curToken == ast.COMMA {
                 key = value
                 scanner.scan()
                 value = parseExpression()
-                check(type(value) == type(ast.VarExpr))
+                check(type(value) == type(gen.VarExpr))
             }
             this.expect( ast.COLON)
             scanner.scan()
@@ -193,7 +193,7 @@ Parser::parseMatchCase(cond)
     cs.cond  = cs.bitOrToLogOr(parseExpression())
     cs.block = null
     
-    if type(cs.cond) == type(ast.VarExpr) {
+    if type(cs.cond) == type(gen.VarExpr) {
         cond = cs.cond
         
         if cond.varname == "_"{

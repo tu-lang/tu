@@ -33,7 +33,7 @@ OperatorHelper::init(ctx,lhs,rhs,opt) {
 	this.lhs = lhs
 	this.rhs = rhs
 	this.opt = opt
-	if opt >= ASSIGN && opt <= BITOR_ASSIGN
+	if opt >= ast.ASSIGN && opt <= ast.BITOR_ASSIGN
 		this.needassign = true
 }
 
@@ -43,63 +43,63 @@ OperatorHelper::memoryOp(lhs,rhs)
 }
 OperatorHelper::gen()
 {
-	if needassign {
-		genLeft()
+	if this.needassign {
+		this.genLeft()
 		compile.Push()
 		
-		if opt != ASSIGN {
-			if lmember compile.LoadMember(lmember)
-			else        compile.LoadSize(ltypesize,lisunsigned)
+		if this.opt != ast.ASSIGN {
+			if this.lmember compile.LoadMember(this.lmember)
+			else        compile.LoadSize(this.ltypesize,this.lisunsigned)
 			compile.Push()
 		}
 	} else {
-		genRight(true,lhs)
+		this.genRight(true,this.lhs)
 		compile.Push()
 	}
 	
 	if this.rhs && this.opt != ast.LOGAND && this.opt != ast.LOGOR 
-		genRight(false,rhs) 
-	if ltypesize != 8 {
-		ax = "%eax"
-		di = "%edi"
-		dx = "%edx"
+		this.genRight(false,this.rhs) 
+	if this.ltypesize != 8 {
+		this.ax = "%eax"
+		this.di = "%edi"
+		this.dx = "%edx"
 	}
-	if needassign return assign()
-	else	 	   return binary()
+	if this.needassign return this.assign()
+	else	 	   return this.binary()
 }
 OperatorHelper::assign()
 {
-	ret = binary()
-	if !needassign return ret
-	if lmember && lmember.bitfield
+	ret = this.binary()
+	if !this.needassign return ret
+	if this.lmember && this.lmember.bitfield
 	{
 		compile.writeln("	mov %%rax, %%rdi")
 		//NOTICE: 1L << bitwidth - 1
-		compile.writeln("   and $%I, %%rdi", (1 << lmember.bitwidth) - 1)
-		compile.writeln("	shl $%d, %%rdi", lmember.bitoffset)
+		compile.writeln("   and $%I, %%rdi", (1 << this.lmember.bitwidth) - 1)
+		compile.writeln("	shl $%d, %%rdi", this.lmember.bitoffset)
 		compile.writeln("   mov (%%rsp), %%rax")
-		compile.LoadSize(lmember.size,lmember.isunsigned)
+		compile.LoadSize(this.lmember.size,this.lmember.isunsigned)
 		//FIXME: mask = ((1L << lmember.bitwidth) - 1) << lmember.bitoffset
-		mask = ((1 << lmember.bitwidth) - 1) << lmember.bitoffset
+		mask = ((1 << this.lmember.bitwidth) - 1) << this.lmember.bitoffset
 		compile.writeln("  mov $%I, %%r9", ~mask)
 		compile.writeln("  and %%r9, %%rax")
 		compile.writeln("  or %%rdi, %%rax")
 	}
 	
-	if type(lhs) == type(ast.DelRefExpr) {
-		compile.Cast(rtoken,ltoken)
-		compile.Store(lvarsize)
+	if type(this.lhs) == type(DelRefExpr) {
+		compile.Cast(this.rtoken,this.ltoken)
+		compile.Store(this.lvarsize)
 		return null
 	}
-	compile.Store(ltypesize)
+	compile.Store(this.ltypesize)
 }
 OperatorHelper::binary()
 {
 	if !this.rhs {
 		compile.Pop("%rax")
-		match opt {
+		match this.opt {
 			ast.LOGNOT: {
-				compile.CreateCmp(ltypesize)
+				compile.CreateCmp(this.ltypesize)
 				compile.writeln("	sete %%al")
 				compile.writeln("	movzx %%al, %%rax")
 				return null
@@ -108,81 +108,81 @@ OperatorHelper::binary()
 				compile.writeln("	not %%rax")
 				return null
 			}
-			_ :	this.lhs.panic("asmgen: must !,~ at unary expression,not %s\n",getTokenString(opt))
+			_ :	this.lhs.panic("asmgen: must !,~ at unary expression,not %s\n",ast.getTokenString(this.opt))
 		}
 	}
 	if this.opt == ast.ASSIGN return null
 	if this.opt != ast.LOGAND && this.opt != ast.LOGOR  {
-		Token base = max(rtoken,ltoken)
+		base = utils.max(this.rtoken,this.ltoken)
 		tke = fmt.sprintf("token_max(lhs,rhs) should in(i8,u64) ltoken:%s rtoken:%s\n %s\n %s\n",
-				ltoken,rtoken,lhs.toString(),rhs.toString()
+				this.ltoken,this.rtoken,this.lhs.toString(),this.rhs.toString()
 		)
 		this.lhs.check(base >= ast.I8 && base <= ast.U64,tke)
 		
-		compile.Cast(rtoken,base)
+		compile.Cast(this.rtoken,this.base)
 		compile.writeln("	mov %%rax,%%rdi")
 		compile.Pop("%rax")
-		compile.Cast(ltoken,base)
+		compile.Cast(this.ltoken,base)
 	}
 	
-	match opt {
-		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add %s, %s", di, ax)
-		ast.SUB_ASSIGN | ast.SUB:	compile.writeln("	sub %s,%s",di,ax)
-		ast.MUL_ASSIGN | ast.MUL:	compile.writeln("	imul %s,%s",di,ax)
-		ast.BITAND | ast.BITAND_ASSIGN:	compile.writeln("	and %s,%s",di,ax)
-		ast.BITOR  | ast.BITOR_ASSIGN:	compile.writeln("	or %s,%s",di,ax)
+	match this.opt {
+		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add %s, %s", this.di, this.ax)
+		ast.SUB_ASSIGN | ast.SUB:	compile.writeln("	sub %s,%s",this.di,this.ax)
+		ast.MUL_ASSIGN | ast.MUL:	compile.writeln("	imul %s,%s",this.di,this.ax)
+		ast.BITAND | ast.BITAND_ASSIGN:	compile.writeln("	and %s,%s",this.di,this.ax)
+		ast.BITOR  | ast.BITOR_ASSIGN:	compile.writeln("	or %s,%s",this.di,this.ax)
 
 		ast.DIV_ASSIGN | ast.DIV | ast.MOD_ASSIGN | ast.MOD : {
-			if lisunsigned {
-				compile.writeln("	mov $0,%s",dx)
-				compile.writeln("	div %s",di)
+			if this.lisunsigned {
+				compile.writeln("	mov $0,%s",this.dx)
+				compile.writeln("	div %s",this.di)
 			}else{
-				if ltypesize == 8	compile.writeln("	cqo")
+				if this.ltypesize == 8	compile.writeln("	cqo")
 				else				compile.writeln("	cdq")
-				compile.writeln("	idiv %s",di)
+				compile.writeln("	idiv %s",this.di)
 			}
-			if opt == ast.MOD_ASSIGN || opt == ast.MOD
+			if this.opt == ast.MOD_ASSIGN || this.opt == ast.MOD
       			compile.writeln("	mov %%rdx, %%rax")
 		}
 		ast.EQ | ast.NE | ast.LE | ast.LT | ast.GE | ast.GT: {
 			cmp = "sete"
-			match opt {
+			match this.opt {
 				ast.EQ : cmp = "sete"
 				ast.NE : cmp = "setne"
 				ast.LE : {
-					if lisunsigned cmp = "setbe"
+					if this.lisunsigned cmp = "setbe"
 					else            cmp = "setle"
 				}
 				ast.LT : {
-					if lisunsigned cmp = "setb"
+					if this.lisunsigned cmp = "setb"
 					else			cmp = "setl"
 				}
 				ast.GE : cmp = "setge"
 				ast.GT : cmp = "setg"
 			}
 			
-			compile.writeln("	cmp %s,%s",di,ax)
+			compile.writeln("	cmp %s,%s",this.di,this.ax)
 			compile.writeln("	%s %%al",cmp)
 			compile.writeln("	movzb %%al, %%rax")
 		}
 		ast.SHL_ASSIGN | ast.SHL : {
     		compile.writeln("	mov %%rdi, %%rcx")
-    		compile.writeln("	shl %%cl, %s", ax)
+    		compile.writeln("	shl %%cl, %s", this.ax)
 		}
 		ast.SHR_ASSIGN | ast.SHR : {
     		compile.writeln("	mov %%rdi, %%rcx")
-			if lisunsigned	compile.writeln("	shr %%cl, %s", ax)
-    		else			compile.writeln("	sar %%cl, %s", ax)
+			if this.lisunsigned	compile.writeln("	shr %%cl, %s", this.ax)
+    		else			compile.writeln("	sar %%cl, %s", this.ax)
 		}
 		ast.LOGOR : { 
 			c = ast.incr_labelid()
 			compile.Pop("%rax")	
-			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
+			if this.ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	jne .L.true.%d", c)
 
-			this.genRight(false,rhs)	
-			if rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
+			this.genRight(false,this.rhs)	
+			if this.rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	jne .L.true.%d", c)
 			compile.writeln("	mov $0, %%rax")
@@ -196,12 +196,12 @@ OperatorHelper::binary()
 			c = ast.incr_labelid()
 			
 			compile.Pop("%rax")	
-			if ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
+			if this.ltypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	je .L.false.%d", c)
 
-			this.genRight(false,rhs)	
-			if rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
+			this.genRight(false,this.rhs)	
+			if this.rtypesize <= 4	compile.writeln("	cmp $0,%%eax")
 			else				compile.writeln("	cmp $0,%%rax")
 			compile.writeln("	je .L.false.%d", c)
 			compile.writeln("	mov $1, %%rax")
@@ -217,55 +217,56 @@ OperatorHelper::binary()
 
 OperatorHelper::genLeft()
 {
+	var = this.var
 	match type(this.lhs) {
-		type(ast.DelRefExpr) : {
-			dr = lhs
-			ret = dr.expr.compile(ctx)
+		type(DelRefExpr) : {
+			dr = this.lhs
+			ret = dr.expr.compile(this.ctx)
 
-			if type(ret) == type(ast.ChainExpr) {
+			if type(ret) == type(ChainExpr) {
 				ce = ret
 				m = ce.ret
 				if m.pointer compile.Load()
-				lmember = m
+				this.lmember = m
 				tk = m.type
 				if m.isclass tk = ast.U64
-				initcond(true,m.size,tk,m.pointer)
+				this.initcond(true,m.size,tk,m.pointer)
 				return ce
 			}
 
-			if ret == null || type(ret) != type(ast.VarExpr) 
-				this.lhs.panic("not VarExpr,only support *(class var) = expression :%s %d\n",lhs.toString(),lhs.line)
+			if ret == null || type(ret) != type(VarExpr) 
+				this.lhs.panic("not VarExpr,only support *(class var) = expression :%s %d\n",this.lhs.toString(),this.lhs.line)
 			rv = ret
 			if !rv.structtype
-				this.lhs.panic("not structtype,only support *(class var) = expression :%s\n",lhs.toString())
+				this.lhs.panic("not structtype,only support *(class var) = expression :%s\n",this.lhs.toString())
 			
-			initcond(true,rv.size,rv.type,rv.pointer)
+			this.initcond(true,rv.size,rv.type,rv.pointer)
 			return rv
 		}
-		type(ast.ChainExpr) : {
-			ce = lhs
-			ce.compile(ctx)
+		type(ChainExpr) : {
+			ce = this.lhs
+			ce.compile(this.ctx)
 			m = ce.ret
-			lmember = m
+			this.lmember = m
 			
 			tk = m.type
 			if m.isclass tk = ast.U64
-			initcond(true,m.size,tk,m.pointer)
+			this.initcond(true,m.size,tk,m.pointer)
 			return ce
 		}
-		type(ast.StructMemberExpr) : {
-			smember = lhs
-			smember.compile(ctx)
+		type(StructMemberExpr) : {
+			smember = this.lhs
+			smember.compile(this.ctx)
 			m = smember.getMember()
-			lmember = m
-			initcond(true,m.size,m.type,m.pointer)
+			this.lmember = m
+			this.initcond(true,m.size,m.type,m.pointer)
 			return smember
 		}
-		type(ast.VarExpr) : {
+		type(VarExpr) : {
 			if !var.structtype
-				lhs.panic("genLeft: lhs not structExpr %s \n",lhs.toString())
+				this.lhs.panic("genLeft: lhs not structExpr %s \n",this.lhs.toString())
 			
-			initcond(true,var.size,var.type,var.pointer)
+			this.initcond(true,var.size,var.type,var.pointer)
 			compile.GenAddr(var)
 			return var
 		}
@@ -278,78 +279,78 @@ OperatorHelper::genRight(isleft,expr)
 		type(IntExpr) : {
 			ie = expr	
 			compile.writeln("	mov $%s,%%rax",ie.lit)
-			initcond(isleft,8,I64,false)
+			this.initcond(isleft,8,I64,false)
 			return ie
 		}
 		type(StringExpr): {
 			ie = expr
-			writeln("	lea %s(%%rip), %%rax",ie.name)
-			initcond(isleft,8,U64,true)
+			compile.writeln("	lea %s(%%rip), %%rax",ie.name)
+			this.initcond(isleft,8,U64,true)
 			return ie
 		}
 		type(NullExpr) : {
 			compile.writeln("	mov $0,%%rax")
-			initcond(isleft,8,I64,false)
+			this.initcond(isleft,8,I64,false)
 			return null
 		}
 	}
 	
-	ret = expr.compile(ctx)
+	ret = expr.compile(this.ctx)
 	if !exprIsMtype(expr,this.ctx) && ( this.op == ast.LOGAND || this.opt == ast.LOGOR) {
 		internal.isTrue()
 	}
 	match type(this.expr) {
 		type(BinaryExpr) | type(AssignExpr) : {
-			Token t = expr.getType(ctx)
-			size = typesize[t]
-			initcond(isleft,size,t,false)
+			t = expr.getType(this.ctx)
+			size = typesize[int(t)]
+			this.initcond(isleft,size,t,false)
 			return ret
 		}
-		type(ast.AddrExpr) : {
-			initcond(isleft,8,U64,true)
+		type(AddrExpr) : {
+			this.initcond(isleft,8,U64,true)
 			return ret
 		}
-		type(ast.FunCallExpr) : {
-			initcond(isleft,8,U64,false)
+		type(FunCallExpr) : {
+			this.initcond(isleft,8,U64,false)
 			return ret
 		}
-		type(ast.BuiltinFuncExpr) : {
-			initcond(isleft,8,U64,false)
+		type(BuiltinFuncExpr) : {
+			this.initcond(isleft,8,U64,false)
 			return ret
 		}
 	}
 	
 	if ret == null{
-		initcond(isleft,8,U64,false)
+		this.initcond(isleft,8,U64,false)
 	}else if type(ret) == type(NewExpr) {
-		initcond(isleft,8,U64,false)
-	}else if type(ret) == type(ast.VarExpr) 
+		this.initcond(isleft,8,U64,false)
+	}else if type(ret) == type(VarExpr) 
 	{
 		v = ret
 		if !v.structtype
-			initcond(isleft,8,I64,false)
+			this.initcond(isleft,8,I64,false)
 		else
-			initcond(isleft,v.size,v.type,v.pointer)
-	}else if type(ret) == type(ast.StructMemberExpr) 
+			this.initcond(isleft,v.size,v.type,v.pointer)
+	}else if type(ret) == type(StructMemberExpr) 
 	{
 		m = ret
 		v = m.getMember() 
-		initcond(isleft,v.size,v.type,v.pointer)
+		this.initcond(isleft,v.size,v.type,v.pointer)
 		
-		if type(expr) != type(ast.AddrExpr){
+		if type(expr) != type(AddrExpr){
 			compile.LoadMember(v)
 		}
 	}
-	else if type(ret) == type(ast.ChainExpr) {
+	else if type(ret) == type(ChainExpr) {
 		m = ret
 		v = m.ret
 		tk = v.type
 		if v.isclass tk = ast.U64
-		initcond(isleft,v.size,tk,v.pointer)
+		this.initcond(isleft,v.size,tk,v.pointer)
 		
-		if type(expr) == type(ast.AddrExpr) {
+		if type(expr) == type(AddrExpr) {
 			
-		}else if type(expr) == type(ast.DelRefExpr) {
+		}else if type(expr) == type(DelRefExpr) {
 			compile.LoadSize(v.size,v.isunsigned)
 		}else{
 			compile.LoadMember(v)
@@ -368,19 +369,19 @@ OperatorHelper::initcond(left,varsize,type,ispointer)
 	if type >= ast.U8 && type <= ast.U64 isunsigned = true
 
 	if left {
-		ltypesize = typesize
-		lvarsize  = varsize
-		ltoken    = type
-		lisunsigned = isunsigned
-		lispointer  = ispointer
-		if ispointer ltoken = ast.U64
+		this.ltypesize = typesize
+		this.lvarsize  = varsize
+		this.ltoken    = type
+		this.lisunsigned = isunsigned
+		this.lispointer  = ispointer
+		if ispointer this.ltoken = ast.U64
 		return null
 	}
-	rtypesize = typesize
-	rvarsize  = varsize
-	rtoken    = type
-	risunsigned = isunsigned
-	rispointer  = ispointer
-	if ispointer rtoken = ast.U64
+	this.rtypesize = typesize
+	this.rvarsize  = varsize
+	this.rtoken    = type
+	this.risunsigned = isunsigned
+	this.rispointer  = ispointer
+	if ispointer this.rtoken = ast.U64
 
 }

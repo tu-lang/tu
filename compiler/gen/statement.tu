@@ -25,13 +25,13 @@ ReturnStmt::compile(ctx)
         compile.writeln("   mov $0,%%rax")
     }else{
         ret = this.ret.compile(ctx)
-        if ret && type(ret) == type(ast.StructMemberExpr) {
+        if ret && type(ret) == type(gen.StructMemberExpr) {
             sm = ret
             m = sm.ret
             
             compile.LoadMember(m)
         
-        }else if ret && type(ret) == type(ast.ChainExpr) {
+        }else if ret && type(ret) == type(gen.ChainExpr) {
             ce = ret
             if ce.ret {
                 compile.LoadMember(ce.ret)

@@ -132,7 +132,7 @@ Parser::parseGlobalAssign()
     match type(expr) {
         type(ast.AssignExpr) : {
             ae = expr
-            if type(ae.lhs) != typeid(ast.VarExpr)
+            if type(ae.lhs) != typeid(gen.VarExpr)
                 this.panic("unsupport global synatix: " + expr.toString(""))
             var = ae.lhs
             assign = ae
@@ -141,7 +141,7 @@ Parser::parseGlobalAssign()
                 if var.structtype needinit = false 
             }
         }
-        type(ast.VarExpr) : {
+        type(gen.VarExpr) : {
             var   = expr
             assign     = new ast.AssignExpr(this.line,this.column)
             assign.opt = ast.ASSIGN
