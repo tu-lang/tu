@@ -49,20 +49,20 @@ VarExpr::getVar(ctx){
 VarExpr::getVarType(ctx)
 {
     package = this.package
-    if !is_local {
+    if !this.is_local {
         if ast.getVar(ctx,package)
             return ast.Var_Obj_Member
 
         if std.exist(package.packages,package) {
             this.ret  = package.packages[package].getGlobalVar(this.varname)
             
-            if ret return ast.Var_Extern_Global
+            if this.ret return ast.Var_Extern_Global
         }
         cpkg = compile.currentFunc.parser.getpkgname()
         
         if std.exist(package.packages,cpkg){
             this.ret = package.packages[cpkg].getGlobalVar(package)
-            if ret return ast.Var_Local_Mem_Global
+            if this.ret return ast.Var_Local_Mem_Global
         }
     }
     
@@ -138,7 +138,7 @@ VarExpr::compile(ctx){
                 compile.Load()
         }
         ast.Var_Func : {  
-            fn = funcpkg + "_" + funcname
+            fn = this.funcpkg + "_" + this.funcname
             utils.debug("found function pointer:%s",fn)
             compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn)
         }

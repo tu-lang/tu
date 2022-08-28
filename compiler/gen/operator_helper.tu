@@ -217,7 +217,7 @@ OperatorHelper::binary()
 
 OperatorHelper::genLeft()
 {
-	match type(lhs) {
+	match type(this.lhs) {
 		type(ast.DelRefExpr) : {
 			dr = lhs
 			ret = dr.expr.compile(ctx)
@@ -234,10 +234,10 @@ OperatorHelper::genLeft()
 			}
 
 			if ret == null || type(ret) != type(ast.VarExpr) 
-				parse_err("not VarExpr,only support *(class var) = expression :%s %d\n",lhs.toString(),lhs.line)
+				this.lhs.panic("not VarExpr,only support *(class var) = expression :%s %d\n",lhs.toString(),lhs.line)
 			rv = ret
 			if !rv.structtype
-				parse_err("not structtype,only support *(class var) = expression :%s\n",lhs.toString())
+				this.lhs.panic("not structtype,only support *(class var) = expression :%s\n",lhs.toString())
 			
 			initcond(true,rv.size,rv.type,rv.pointer)
 			return rv
@@ -269,7 +269,7 @@ OperatorHelper::genLeft()
 			compile.GenAddr(var)
 			return var
 		}
-		_ : parse_err("genLeft: unknow left type")
+		_ : this.lhs.panic("genLeft: unknow left type")
 	}
 }
 OperatorHelper::genRight(isleft,expr)

@@ -2,6 +2,7 @@
  use internal
  use ast
  use std
+ use utils
  
  Package::InsertInitFunc(p){
 	f = new ast.Function()
@@ -48,7 +49,7 @@ func  geninit(pkg){
 	 mf = pkg.inits[0]
 	 for(filepath,parser : pkg.parsers){
 		 for(fullpackage : parser.import){
-			 if !std.exist(fullpackage,packages) parse_err("not exist: %s" , fullpackage)
+			 if !std.exist(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
 			 dpkg = packages[fullpackage]
 			 if(geninit(dpkg)){
 				 for(init : dpkg.inits){

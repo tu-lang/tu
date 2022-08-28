@@ -1,5 +1,6 @@
 use parser
 use ast
+use utils
 
 class Scanner{
     fs      // std.File
@@ -251,7 +252,7 @@ Scanner::get_next() {
         lexeme += next()
         if (peek() != '\'') {
             p = parser
-            parse_err("SyntaxError: a character lit should surround with single-quote %s\n",p.filepath)
+            utils.panic("SyntaxError: a character lit should surround with single-quote %s\n",p.filepath)
         }
         c = next()
         return token(ast.CHAR, lexeme)
@@ -394,7 +395,7 @@ Scanner::get_next() {
     }
     
     p = parser
-    parse_err("SyntaxError: unknown token '%c' line:%d column:%d  file:%s\n",c,line,column,p.filepath)
+    utils.panic("SyntaxError: unknown token '%c' line:%d column:%d  file:%s\n",c,line,column,p.filepath)
     return token(ast.ILLEGAL,"invalid")
 }
 

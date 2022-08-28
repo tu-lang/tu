@@ -13,16 +13,16 @@ class KVExpr  : ast.Ast {
 }
 KVExpr::toString() {
     str = "{"
-    if (key)   str += key.toString()
+    if this.key   str += this.key.toString()
     str += ":"
-    if (value) str += value.toString()
+    if this.value str += this.value.toString()
     str += "}"
     return str
 }
 
 KVExpr::compile(ctx){
     this.record()
-    utils.debug("KVExpr: gen... k:%s v:%s",key,value)
+    utils.debug("KVExpr: gen... k:%s v:%s",this.key,this.value)
 
     //push key
     this.key.compile(ctx)
@@ -44,8 +44,8 @@ class IndexExpr : ast.Ast {
 }
 IndexExpr::toString() {
     str = "IndexExpr(index="
-    if index
-        str += index.toString()
+    if this.index
+        str += this.index.toString()
     str += ")"
     return str
 }
@@ -68,22 +68,22 @@ IndexExpr::compile(ctx) {
     packagename = this.package
 
     if this.is_pkgcall {
-        this.check(!std.exist(packagename,package.packages),"package not exist: " + package)
+        this.check(!std.exist(packagename,package.packages),"package not exist: " + this.package)
 
         var  = package.packages[packagename].getGlobalVar(this.varname)
 
-        if var == null this.panic("AsmError:use of undefined global variable " + varname)
+        if var == null this.panic("AsmError:use of undefined global variable " + this.varname)
     }else if (var = ast.getVar(ctx,this.package))  && var != null {
         compile.GenAddr(var)
         compile.Load()
         compile.Push()
-        internal.object_member_get(varname)
+        internal.object_member_get(this.varname)
         compile.Push()
         goto INDEX
     }else {
 
         packagename = compile.currentFunc.parser.getpkgname()
-        var  = package.packages[packagename].getGlobalVar(varname)
+        var  = package.packages[packagename].getGlobalVar(this.varname)
     }
     if var != null {
         compile.GenAddr(var)
@@ -109,7 +109,7 @@ INDEX:
         internal.kv_get()
         return null
     }
-    this.panic("AsmError: index-expr use of undefined variable " + varname)
+    this.panic("AsmError: index-expr use of undefined variable " + this.varname)
 }
 
 IndexExpr::assign( ctx , opt ,rhs) {
@@ -121,7 +121,7 @@ IndexExpr::assign( ctx , opt ,rhs) {
     if this.is_pkgcall {
         this.check(std.exist(package,package.packages),"package not found:" + package)
         varExpr = package.packages[package].getGlobalVar(varname)
-        if varExpr == null  panic("AsmError:use of undefined global variable" + varname)
+        if varExpr == null  this.panic("AsmError:use of undefined global variable" + varname)
     } else if std.exist(this.package,f.params_var)  || std.exist(this.package,f.locals) {
         is_member = true
         if f.params_var[this.package] != null 
@@ -140,7 +140,7 @@ IndexExpr::assign( ctx , opt ,rhs) {
             "SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", 
             varname,this.line,this.column,this.compile.currentFunc.parser.filepath
         )
-    std.back(ctx).createVar(varExpr.varname,varExpr)
+    std.tail(ctx).createVar(varExpr.varname,varExpr)
     compile.GenAddr(varExpr)
     compile.Load()
     compile.Push()

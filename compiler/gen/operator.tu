@@ -9,16 +9,16 @@ class DelRefExpr  : ast.Ast {
         super.init(line,column)
     }
     func toString(){
-        return "DelRefExpr(" + expr.toString() + ")"
+        return "DelRefExpr(" + this.expr.toString() + ")"
     }
 }
 class AddrExpr   : ast.Ast {
     package
     varname
     expr
-    func init(line,column){super.init(line,column)}
-    func toString(){
-        return "AddrExpr(&(" + package + ")." + varname + ")"
+    func init(line,column){ super.init(line,column) }
+    func toString() {
+        return fmt.sprintf("AddrExpr(&(%s.%s))" , this.package , this.varname )
     }
 }
 class AssignExpr : ast.Ast {
@@ -30,11 +30,11 @@ class AssignExpr : ast.Ast {
 }
 AssignExpr::toString() {
     str = "AssignExpr(lhs="
-    if lhs
-        str += lhs.toString()
+    if this.lhs
+        str += this.lhs.toString()
     str += ",rhs="
-    if rhs
-        str += rhs.toString()
+    if this.rhs
+        str += this.rhs.toString()
     str += ")"
     return str
 }
@@ -42,16 +42,16 @@ AssignExpr::compile(ctx){
     this.record()
 
     utils.debug("AssignExpr: parsing... lhs:%s opt:%s rhs:%s",
-          lhs.toString(),
-          getTokenString(opt),
-          rhs.toString()
+          this.lhs.toString(),
+          ast.getTokenString(this.opt),
+          this.rhs.toString()
     )
     if !this.rhs    this.panic("AsmError: right expression is wrong expression:" + this.toString())
     
     f = compile.currentFunc
-    match type(lhs) {
+    match type(this.lhs) {
         type(VarExpr) : {
-            varExpr = lhs
+            varExpr = this.lhs
             package = compile.currentFunc.parser.getpkgname() 
             varname = varExpr.varname
 
@@ -67,7 +67,7 @@ AssignExpr::compile(ctx){
                     this.rhs.compile(ctx)
                     compile.Push()
                     
-                    internal.call_object_operator(this.opt,varname,"runtime_object_unary_operator")
+                    internal.call_object_operator(this.opt,this.varname,"runtime_object_unary_operator")
                     return null
                 }
             
@@ -104,7 +104,7 @@ AssignExpr::compile(ctx){
             }
         
             if varExpr.isMemtype(ctx){
-                oh = new OperatorHelper(ctx,lhs,rhs,this.opt)
+                oh = new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)
                 oh.var = varExpr
                 return oh.gen()
             }
@@ -120,16 +120,16 @@ AssignExpr::compile(ctx){
         }
         type(IndexExpr) : return this.lhs.assign(this.opt,this.rhs)
         type(StructMemberExpr) | type(DelRefExpr) : {
-            return (new OperatorHelper(ctx,lhs,rhs,this.opt)).gen()
+            return (new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)).gen()
         }
         type(ChainExpr) : {
-            ce = lhs
+            ce = this.lhs
             if ce.ismem(ctx) 
-                return ( OperatorHelper(ctx,lhs,rhs,this.opt) ).gen()
+                return ( new OperatorHelper(ctx,this.lhs,this.rhs,this.opt) ).gen()
             return ce.assign(ctx,this.opt,this.rhs)
         }
     }
-    this.panic("SyntaxError: can not assign to " + string(type(lhs).name()))
+    this.panic("SyntaxError: can not assign to %s" ,this.lhs.toString())
 }
 DelRefExpr::compile(ctx){
     this.record()
@@ -154,7 +154,7 @@ DelRefExpr::compile(ctx){
             this.panic("var must be pointer " + this.expr.toString())
         }
         if var.size != 1 && var.size != 2 && var.size != 4 && var.size != 8{
-            parse_err("type must be [i8 - u64]:%s\n",this.expr.toString())
+            this.panic("type must be [i8 - u64]:%s",this.expr.toString())
         }
         
         compile.LoadSize(var.size,var.isunsigned)
@@ -163,9 +163,9 @@ DelRefExpr::compile(ctx){
         sm = ret
         m = sm.ret
         if m == null{
-            parse_err("del ref can't find the class member:%s\n",this.expr.toString())
+            this.panic("del ref can't find the class member:%s",this.expr.toString())
         }
-        if type(expr) != type(DelRefExpr) {
+        if type(this.expr) != type(DelRefExpr) {
             
             compile.LoadMember(m)
         }
@@ -182,28 +182,28 @@ DelRefExpr::compile(ctx){
             return ret
         }
     }
-    parse_err("only support del ref for expression :%s\n",this.expr.toString())
+    this.panic("only support del ref for expression :%s",this.expr.toString())
 }
 
 AddrExpr::compile(ctx){
     this.record()
     
-    if expr != null && type(expr) == type(ChainExpr) {
-        ce = expr
+    if this.expr != null && type(this.expr) == type(ChainExpr) {
+        ce = this.expr
         if !ce.ismem(ctx){
-            parse_err("only support & struct.menber %s\n",expr.toString())
+            this.panic("only support & struct.menber %s\n",this.expr.toString())
         }
         ce.compile(ctx)
         
         return ce
     }
-    if package != ""{
+    if this.package != ""{
         
         var = ast.getVar(ctx,this.package)
-        if var != null && var.structtype{
+        if var != null && var.structtype {
             
-            StructMemberExpr sm(package,line,column)
-            sm.member = varname
+            sm = new StructMemberExpr(this.package,this.line,this.column)
+            sm.member = this.varname
             sm.var    = var
             m = sm.getMember()
             if m != null{
@@ -215,7 +215,7 @@ AddrExpr::compile(ctx){
                 compile.writeln("	add $%d, %%rax", m.offset)
                 
                 if m.bitfield {
-                    parse_err(
+                    this.panic(
                         "AsmError: adress to bitfield error! "
                         "line:%d column:%d \n\n"
                         "expression:\n%s\n",
@@ -225,11 +225,11 @@ AddrExpr::compile(ctx){
             }
         }
         
-        parse_err("not support &p.globalvar\n")
+        this.panic("not support &p.globalvar\n")
     }
     var = ast.getVar(ctx,this.varname)
     if var == null
-        this.panic("AddExpr: var:%s not exist\n",varname)
+        this.panic("AddExpr: var:%s not exist\n",this.varname)
     realVar = var.getVar(ctx)
     compile.GenAddr(realVar)
 
@@ -255,25 +255,23 @@ BinaryExpr::compile(ctx)
 {
     this.record()
 
-    utils.debug("BinaryExpr: parsing... lhs:%s opt:%s rhs:%s",
-          lhs.toString(),
-          getTokenString(opt),
-          rhs.toString()
+    utils.debug( "BinaryExpr: parsing... lhs:%s opt:%s rhs:%s",
+          this.lhs.toString(),
+          ast.getTokenString(this.opt),
+          this.rhs.toString()
     )
-    if !this.rhs && (this.opt != BITNOT && this.opt != LOGNOT)
+    if !this.rhs && (this.opt != ast.BITNOT && this.opt != ast.LOGNOT)
         this.panic("AsmError: right expression is wrong expression:" + this.toString())
     
-    if isMemtype(ctx){
-        oh new OperatorHelper(ctx,lhs,rhs,this.opt)
-        return oh.gen()
+    if this.isMemtype(ctx) {
+        (new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)).gen()
     }
-    if opt == ast.LOGOR || opt == ast.LOGAND 
+    if this.opt == ast.LOGOR || this.opt == ast.LOGAND 
         return this.FirstCompile(ctx)
     
     this.lhs.compile(ctx)
     compile.Push()
 
-    
     if this.rhs   this.rhs.compile(ctx)
     else            compile.writeln("   mov $0,%%rax")
     compile.Push()
@@ -285,10 +283,10 @@ BinaryExpr::compile(ctx)
 
 BinaryExpr::FirstCompile(ctx){
     this.record()
-    c = compile.incr_labelid()
+    c = ast.incr_labelid()
     this.lhs.compile(ctx)
     internal.isTrue()
-    match opt {
+    match this.opt {
         ast.LOGAND:{
             compile.writeln("    cmp $0, %%rax")
 			compile.writeln("	je .L.false.%d", c) 
@@ -300,7 +298,7 @@ BinaryExpr::FirstCompile(ctx){
     }
     this.rhs.compile(ctx)
     internal.isTrue()
-    match opt {
+    match this.opt {
         ast.LOGAND: {
             compile.writeln("	cmp $0,%%rax")    
             compile.writeln("	je .L.false.%d", c)
@@ -326,13 +324,13 @@ BinaryExpr::FirstCompile(ctx){
 BinaryExpr::toString() {
     str = "BinaryExpr("
     str += "opt=" + ast.getTokenString(this.opt)
-    if lhs {
+    if this.lhs {
         str += ",lhs="
-        str += lhs.toString()
+        str += this.lhs.toString()
     }
-    if rhs {
+    if this.rhs {
         str += ",rhs="
-        str += rhs.toString()
+        str += this.rhs.toString()
     }
     str += ")"
     return str

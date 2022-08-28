@@ -1,6 +1,7 @@
 use parser.package
 use ast
 use compile
+use utils
 
 package.Package::genStruct(s)
 {
@@ -22,8 +23,8 @@ package.Package::genStruct(s)
         
         m.align = 8
         if !dst.iscomputed && !m.pointer {
-            genStruct(dst)
-            assert(dst.iscomputed)
+            this.genStruct(dst)
+            if !dst.iscomputed os.panic("dst is not computed")
             m.align = dst.align
         }
         // TODO: mem.size  = mem.pointer ? 8 : dst.size
@@ -41,7 +42,7 @@ package.Package::genStruct(s)
       if (bits / (sz * 8) ) !=  ((bits + m.bitwidth - 1) / (sz * 8))
         bits = utils.ALIGN_UP(bits, sz * 8)
 
-      m.offset = ast.ALIGN_DOWN(bits / 8, sz)
+      m.offset = utils.ALIGN_DOWN(bits / 8, sz)
       m.bitoffset = bits % (sz * 8)
       bits += m.bitwidth
     } else 

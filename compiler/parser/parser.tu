@@ -91,7 +91,7 @@ Parser::panic(args...){
 Parser::check(check , err)
 {
     if check return  null
-    parse_err("parse: found token error token:%d:%s \n"
+    this.panic("parse: found token error token:%d:%s \n"
               "msg:%s\n"
               "line:%d column:%d file:%s\n",
               scanner.curToken,getTokenString(scanner.curToken),
