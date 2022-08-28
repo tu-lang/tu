@@ -147,7 +147,7 @@ FunCallExpr::compile(ctx)
 			compile.writeln("   add $8,%%rsp")
 		}
 		return null
-	}else if ast.getVar(ctx,this.funcname) != null {
+	}else if this.package == null && (var = ast.getVar(ctx,this.funcname)) != null {
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
