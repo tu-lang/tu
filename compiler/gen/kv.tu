@@ -74,6 +74,7 @@ IndexExpr::compile(ctx) {
 
         if var == null this.panic("AsmError:use of undefined global variable " + this.varname)
     }else if (var = ast.getVar(ctx,this.package))  && var != null {
+MEMBER_INDEX:
         compile.GenAddr(var)
         compile.Load()
         compile.Push()
@@ -81,9 +82,14 @@ IndexExpr::compile(ctx) {
         compile.Push()
         goto INDEX
     }else {
-
-        packagename = compile.currentFunc.parser.getpkgname()
-        var  = package.packages[packagename].getGlobalVar(this.varname)
+        pkg = package.packages[package]
+        if  this->package != "" && 
+            (var = pkg.getGlobalVar(this.package)) && 
+            var != nullptr)
+        {
+            goto MEMBER_INDEX
+        }
+        var  = pkg.getGlobalVar(this.varname)
     }
     if var != null {
         compile.GenAddr(var)
@@ -128,6 +134,9 @@ IndexExpr::assign( ctx , opt ,rhs) {
             varExpr = f.params_var[this.package]
         else    
             varExpr = f.locals[this.package]
+    }else if(package.packages[package].getGlobalVar(this.package)){
+        is_member = true
+        varExpr = package.packages[package].getGlobalVar(this.package)
     }else if(package.packages[package].getGlobalVar(varname)){
         varExpr = package.packages[package].getGlobalVar(varname)
     }else if(f.params_var[varname] != null ) {

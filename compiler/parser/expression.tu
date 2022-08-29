@@ -390,6 +390,11 @@ Parser::parseVarExpr(var)
                 return call
             }else if scanner.curToken == ast.LBRACKET {
                 index = parseIndexExpr(pfuncname)
+                if currentFunc != null  {
+                    if currentFunc.parser.import[package] != null {
+                        index.is_pkgcall  = true
+                    }
+                }
                 index.is_pkgcall  = true
                 index.package = package
                 return index

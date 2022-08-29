@@ -58,9 +58,9 @@ AssignExpr::compile(ctx){
             if !varExpr.is_local {
 
                 package = varExpr.package
-                if (var = ast.getVar(ctx,package) != null) {
-                    
-                    compile.GenAddr(var)
+                if (varExpr = ast.getVar(ctx,package) != null) {
+ASSIGN_OBJECT_MEMBER:                    
+                    compile.GenAddr(varExpr)
                     compile.Load()
                     compile.Push()
 
@@ -80,6 +80,9 @@ AssignExpr::compile(ctx){
                     varExpr = package.packages[full_package].getGlobalVar(varname)
                 }else if std.len(package.packages,cpkg) {
                     varExpr = package.packages[cpkg].getGlobalVar(package)
+                    if varExpr != null && !varExpr.structtype {
+                        got ASSIGN_OBJECT_MEMBER
+                    }
                     sm = new StructMemberExpr(package,this.line,this.column)
                     sm.member = varname
                     sm.var    = varExpr

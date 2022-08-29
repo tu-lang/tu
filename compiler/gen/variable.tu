@@ -27,7 +27,7 @@ class VarExpr : ast.Ast {
         super.init(line,column)
     }
 }
-VarExpr::toString() { return "VarExpr(" + this.varname + ")" }
+VarExpr::toString() { return fmt.sprintf("VarExpr(%.%s)",this.package,this.varname) }
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx)
     if v.structtype {
@@ -65,7 +65,7 @@ VarExpr::getVarType(ctx)
             if this.ret {
                 if this.ret.structtype
                     return ast.Var_Local_Mem_Global
-                else return ast.Var_Local_Global
+                else return ast.Var_Obj_Member
             }
         }
     }
