@@ -90,17 +90,17 @@ func Push_arg(ctx,fc,fce){
     if currentFunc && currentFunc.is_variadic && current_call_have_im
     {
         c = ast.incr_labelid()
-        stack_offset
+        stack_offset = 0
         if fce.is_delref {
             params = -16
-            for (i = 0; i < 5; ++i) {
+            for (i = 0; i < 5; i += 1) {
                 writeln("    mov %d(%%rbp),%%rax",params)
                 internal.get_object_value()
                 writeln("    mov %%rax,%s",compile.args64[i])
                 params += -8
             }
             writeln("    mov 16(%%rbp),%%rax")
-            if(fce->is_delref)
+            if( fce.is_delref )
                 internal.get_object_value()
             writeln("    mov %%rax,%%r9")
 
@@ -109,7 +109,7 @@ func Push_arg(ctx,fc,fce){
         {
             stack_offset = 8
             params = -8
-            for (i = 0; i < 6; ++i) {
+            for (i = 0; i < 6; i += 1) {
                 writeln("    mov %d(%%rbp),%%rax",params)
                 writeln("    mov %%rax,%s",args64[i])
                 params += -8
@@ -149,11 +149,11 @@ func Push_arg(ctx,fc,fce){
         writeln("    jg  L.while.%d",c)
 
     }else{
+        argsize = 6
         if fc.is_variadic argsize = 5
-        else              argsize = 6
 
         if std.len(fce.args) < argsize
-            for (i = 0; i < (argsize - std.len(fce.args)); ++i){
+            for (i = 0; i < (argsize - std.len(fce.args)); i += 1){
                 writeln("    push $0")
             }
         

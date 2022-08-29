@@ -10,7 +10,7 @@ Parser::parseBlock(member)
     scanner.scan()
     if member {
         stmt = this.genSuperInitStmt(this.currentFunc)
-        node->stmts[] stmt
+        node.stmts[] stmt
     }
     stmts = []
     while( (p = this.parseStatement()) != null )

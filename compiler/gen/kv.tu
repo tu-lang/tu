@@ -82,10 +82,10 @@ MEMBER_INDEX:
         compile.Push()
         goto INDEX
     }else {
-        pkg = package.packages[package]
-        if  this->package != "" && 
+        pkg = package.packages[this.package]
+        if  this.package != "" && 
             (var = pkg.getGlobalVar(this.package)) && 
-            var != nullptr)
+            var != null
         {
             goto MEMBER_INDEX
         }

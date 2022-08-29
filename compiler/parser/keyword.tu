@@ -146,7 +146,9 @@ Parser::parseMember(tk,idx,pointer){
     member.isunsigned = false
     if tk >= ast.U8 && tk <= ast.U64
         member.isunsigned = true
-    member.idx    = idx ++
+    member.idx    = idx 
+    //FIXME: reference idx here
+    idx += 1
     member.type = tk
     member.size = typesize[int(tk)]
     member.align = typesize[int(tk)]

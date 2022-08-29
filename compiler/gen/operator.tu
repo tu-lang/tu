@@ -81,7 +81,7 @@ ASSIGN_OBJECT_MEMBER:
                 }else if std.len(package.packages,cpkg) {
                     varExpr = package.packages[cpkg].getGlobalVar(package)
                     if varExpr != null && !varExpr.structtype {
-                        got ASSIGN_OBJECT_MEMBER
+                        goto ASSIGN_OBJECT_MEMBER
                     }
                     sm = new StructMemberExpr(package,this.line,this.column)
                     sm.member = varname

@@ -190,7 +190,7 @@ Scanner::get_next() {
     if c == ' ' || c == '\n' || c == '\r' || c == '\t'{
         while(c == ' ' || c == '\n' ||c == '\r' || c == '\t'){
             if c == '\n'{
-                line++
+                line += 1
                 column = 0
             }
             c = next()
@@ -215,7 +215,7 @@ Scanner::get_next() {
             c = next()
         
         while(c == '\n'){
-            line++
+            line += 1
             column = 0
             c = next()
         }

@@ -53,8 +53,8 @@ VarExpr::getVarType(ctx)
         if ast.getVar(ctx,package)
             return ast.Var_Obj_Member
 
-        if std.exist(package.packages,package) {
-            this.ret  = package.packages[package].getGlobalVar(this.varname)
+        if std.exist(this.package , package.packages) {
+            this.ret  = package.packages[this.package].getGlobalVar(this.varname)
             
             if this.ret return ast.Var_Extern_Global
         }

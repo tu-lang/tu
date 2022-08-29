@@ -88,7 +88,7 @@ Parser::parseForStmt()
     node = new gen.ForStmt(line,column)
     
     hashlparen = false
-    if this.scanner->curToken == ast.LPAREN {
+    if this.scanner.curToken == ast.LPAREN {
         this.scanner.scan()
         hashlparen = true
     }
@@ -136,7 +136,7 @@ Parser::parseForStmt()
                 this.expect(ast.RPAREN)
                 scanner.scan()
             }
-            if this.scanner->curToken == ast.LBRACE {
+            if this.scanner.curToken == ast.LBRACE {
                 node.block = parseBlock(false)
             }else {
                 node.block = new ast.Block()
@@ -161,7 +161,7 @@ Parser::parseForStmt()
         scanner.scan()
     }
     
-    if this.scanner->curToken == ast.LBRACE {
+    if this.scanner.curToken == ast.LBRACE {
         node.block = parseBlock(false)
     }else {
         node.block = new ast.Block()
