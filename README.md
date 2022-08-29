@@ -1,5 +1,5 @@
 <p>
-<img alt="GitHub" src="https://img.shields.io/github/license/tu-lang/tu">
+<!--<img alt="GitHub" src="https://img.shields.io/github/license/tu-lang/tu">-->
 <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/tu-lang/tu">
 </p>
 
