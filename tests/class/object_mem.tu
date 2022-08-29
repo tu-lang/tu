@@ -23,10 +23,26 @@ func test_local(obj){
   fmt.println("test_local success" + obj.arr)
 }
 
+gvar = new Con()
+func test_global(){
+  gvar.arr = [0,1,2]
+  for k,v : gvar.arr {
+    if k != v os.die(
+      fmt.sprintf("kv:%d should be v:%d",k,v)
+    )
+  }
+  if 0 != gvar.arr[0] os.die("gvar.arr[0] != 0")
+  gvar.arr[1] = 11
+  if 11 != gvar.arr[1] os.die("gvar.arr[1] != 11")
+  if 2 != gvar.arr[2] os.die("gvar.arr[2] != 2")
+  fmt.println("test global var object member access success")
+}
 func main(){
   obj = new Con() 
   obj.arr = [1,23]
   obj.map = {"fir":23,"sec":24,"arr":obj.arr}
   test_local(obj)
   obj.test_inner()
+
+  test_global()
 }
