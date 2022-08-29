@@ -1,7 +1,7 @@
 use std
 use ast
-use parser
 use parser.package
+use parser
 use utils
 
 func registerFunc(fn){
@@ -23,8 +23,8 @@ func registerFunc(fn){
 func registerFuncs(){
     utils.debug("register functions")
     sign = 0
-    for(p :parser.funcs){
-        registerFunc(p.second)
+    for f : parser.funcs {
+        registerFunc(f)
     }
 }
 func CreateFunction(fn , c) {
@@ -40,13 +40,13 @@ func CreateFunction(fn , c) {
     writeln("    mov %%rsp, %%rbp")
     writeln("    sub $%d, %%rsp", fn.stack_size)
     
-    for (i = 0; i < 6; ++i)
-        Store_gp(i, -8*(i+1), 8)
+    for i = 0; i < 6; i += 1
+        Store_gp(i, -8 * ( i + 1 ), 8)
     
     if fn.block != null {
         funcCtxChain = []
         blockcreate(funcCtxChain)
-        funcCtx = std.back(funcCtxChain)
+        funcCtx = std.tail(funcCtxChain)
         funcCtx.cur_funcname = funcname
 
         for(arg : fn.params_order_var){

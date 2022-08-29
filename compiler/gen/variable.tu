@@ -62,7 +62,11 @@ VarExpr::getVarType(ctx)
         
         if std.exist(package.packages,cpkg){
             this.ret = package.packages[cpkg].getGlobalVar(package)
-            if this.ret return ast.Var_Local_Mem_Global
+            if this.ret {
+                if this.ret.structtype
+                    return ast.Var_Local_Mem_Global
+                else return ast.Var_Local_Global
+            }
         }
     }
     

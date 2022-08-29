@@ -36,10 +36,8 @@ ArrayExpr::compile(ctx){
 }
 ArrayExpr::toString() {
     str = "ArrayExpr(elements=["
-    if std.len(lit) != 0 {
-        for (e : lit) {
-            str += e.toString()
-        }
+    for e : this.lit  {
+        str += e.toString()
     }
     str += "])"
     return str

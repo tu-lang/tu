@@ -6,7 +6,7 @@ func Store_gp(r, offset, sz){
         4:  writeln("    mov %s, %d(%%rbp)", args32[r], offset)
         8:  writeln("    mov %s, %d(%%rbp)", args64[r], offset)
         _ : {
-            for (i = 0; i < sz; i++) {
+            for (i = 0; i < sz; i += 1) {
                 writeln("    mov %s, %d(%%rbp)", args8[r], offset + i)
                 writeln("    shr $8, %s", args64[r])
             }

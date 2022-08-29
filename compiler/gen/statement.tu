@@ -9,9 +9,9 @@ class ReturnStmt     : ast.Ast {
     }
     func toString() {
         str = "ReturnStmt("
-        if (ret) {
+        if (this.ret) {
             str += "ret="
-            str += ret.toString()
+            str += this.ret.toString()
         }
         str += ")"
         return str
@@ -21,7 +21,7 @@ ReturnStmt::compile(ctx)
 {
     this.record()
     
-    if ret == null {
+    if this.ret == null {
         compile.writeln("   mov $0,%%rax")
     }else{
         ret = this.ret.compile(ctx)
@@ -99,6 +99,6 @@ class GotoStmt   : ast.Ast {
 }
 GotoStmt::compile(ctx){
     this.record()
-    compile.writeln("   jmp %s",label)
+    compile.writeln("   jmp %s",this.label)
     return null
 }
