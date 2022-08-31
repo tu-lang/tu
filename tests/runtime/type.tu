@@ -1,7 +1,7 @@
 use fmt
 use os
 use temp
-
+use runtime
 //测试基础类型的typeid
 func test_base(){
 	fmt.println("test base...")
@@ -38,8 +38,22 @@ func test_out_object(){
 	if type(b) != type(temp.Inner2) os.die("a should be class temp.Inner2")
 	fmt.println("test out object success",type(temp.Inner1),type(a),type(temp.Inner2),type(b))
 }
+class A{
+	arr = [2,"test",[1,"test"]]
+	func getarr(){return this.arr}
+}
+gvar = new A()
+func test_complex_expr(){
+	if type(gvar.arr) != type(array) os.die( fmt.sprintf("gvar.arr:%s should be array",runtime.type_string(type(gvar.arr))))
+	if type(gvar.arr[0]) != type(int) os.die("gvar.arr should be int")
+	if type(gvar.arr[1]) != type(string) os.die("gvar.arr should be string")
+	if type(gvar.arr[2][0]) != type(int) os.die("gvar.arr[2][0] should be int")
+	if type(gvar.getarr()[2][1]) != type(string) os.die("should be string in chain express")
+	fmt.println("test complex expression sucess")
+}
 func main(){
 	test_base()
 	test_object()
 	test_out_object()
+	test_complex_expr()
 }
