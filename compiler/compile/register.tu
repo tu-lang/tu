@@ -3,6 +3,7 @@ use ast
 use std
 use fmt
 use os
+use gen
 
 func GenAddr(var){
     
@@ -157,7 +158,7 @@ func Push_arg(ctx,fc,fce){
                 writeln("    push $0")
             }
         
-        for (i = std.len(fce.args) - 1; i >= 0; i--) {
+        for (i = std.len(fce.args) - 1; i >= 0; i -= 1) {
             if gp >= GP_MAX {
                 stack += 1
             }
@@ -180,7 +181,7 @@ func Push_arg(ctx,fc,fce){
             if std.len(fce.args.size) >= 6 {
                 stack += 1
             }
-            internal.newobject(ast.Int,len(fce.args))
+            internal.newobject(ast.Int,std.len(fce.args))
 
             Push()
         }

@@ -1,6 +1,7 @@
 use parser.package
 use ast
 use std
+use compile
 
 class VarExpr : ast.Ast {
     varname = varname

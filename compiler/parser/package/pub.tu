@@ -1,11 +1,8 @@
 use compile
 use std
 
-packages # map{name: Package}
+packages = {} # map{name: Package}
 
-func init(){ 
-    packages = {} 
-}
 
 func getStruct(package,name) {    
     pkgname = package

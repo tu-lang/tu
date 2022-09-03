@@ -12,7 +12,7 @@ currentFunc = null # the func that is generating
 
 func genast(filename)
 {
-    mpkg = new parser.Packge("main","main",false)
+    mpkg = new package.Package("main","main",false)
     mparser = new parser.Parser(filename,mpkg,"main","main")
     mparser.fileno = 1
     mpkg.parsers[filename] = mparser
@@ -40,5 +40,5 @@ func writeln(count,args...) {
 func panic(args...){
     err = fmt.sprintf(args)
     cfunc = currentFunc
-    parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,line,column,cfunc.parser.filepath)
+    os.die("asmgen error: " + fmt.sprintf(args))
 }

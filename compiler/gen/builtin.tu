@@ -1,5 +1,6 @@
 use fmt
 use parser.package
+use ast
 
 class BuiltinFuncExpr : ast.Ast {
     funcname expr from
