@@ -5,13 +5,13 @@ use utils
 use compile
 
 # origin file
-code_file
+code_file = ""
 
 # need asm compile and linker to generate executable file
-run
+run  = false
 
 # pass args to binary executor
-args
+args = []
 
 func print_help(){
     fmt.println("usage: ./toc [options|file.tu...]\n" +
@@ -40,17 +40,11 @@ func compile(){
         os.shell(args)
     }
 }
-//TODO: 
 func debug(){
-    parser = parser.Parser()
+    parser = new parser.Parser()
     parser.print()
 }
-func init(){
-    code_file = ""
-    args      = []
-    run       = false
-    uitils.init()
-}
+
 func main() {
     if os.argc < 3 return print_help() 
     code_file = ""
@@ -60,11 +54,11 @@ func main() {
         match os.argv[i] {
             "run" : run = true
             "-d"  : utils.debug_mode = 1          # debug mode
-            _     : args[] = os.argv[i]
             "-s"  : {
                 code_file = os.argv[i + 1]
                 i += 1
             }
+            _     : args[] = os.argv[i]
         }
         i += 1
     }

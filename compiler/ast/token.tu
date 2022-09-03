@@ -1,19 +1,19 @@
 
-Null    = 0#0
-Int     = 1#1
-Double  = 2#2
-String  = 3#3
-Bool    = 4#4
-Char    = 5#5
-Array   = 6#6
-Map     = 7#7
-Object  = 8#8
+Null    = 0 #0
+Int     = 1 #1
+Double  = 2 #2
+String  = 3 #3
+Bool    = 4 #4
+Char    = 5 #5
+Array   = 6 #6
+Map     = 7 #7
+Object  = 8 #8
 
 
-TRUE    = 1#1
-FALSE   = 0#0
-OK      = 0#0
-ERROR   = -1#-1
+TRUE    = 1  #1
+FALSE   = 0  #0
+OK      = 0  #0
+ERROR   = -1 #-1
 
 
 enum {

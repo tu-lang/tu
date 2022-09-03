@@ -2,7 +2,7 @@ use parser
 use ast
 use utils
 
-class Scanner{
+class Scanner {
     fs      // std.File
     buffer  // file body
     pos     //file offset
@@ -21,14 +21,10 @@ class Scanner{
 }
 
 class Tx {
-    txpos 
-    txtk
-    txlex
-    func init(pos,tk,lex){
-        this.txpos = pos
-        this.txtk = tk
-        this.txlex = lex
-    }
+    txpos = pos 
+    txtk  = tk
+    txlex = lex
+    func init(pos,tk,lex){}
 }
 
 Scanner::init(filepath,parser){

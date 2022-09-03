@@ -8,7 +8,6 @@ class Context {
     start_str    = ""
     continue_str = ""
     point        = 0
-
 }
 Context::hasVar(varname)
 {

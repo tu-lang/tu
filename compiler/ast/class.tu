@@ -1,9 +1,6 @@
 class Class 
 {
-  func init(pkg){
-    this.pkg = pkg
-  }
-  pkg
+  pkg = pkg
   name
   members     = [] # [Expression]
   initmembers = [] # [Expression]
@@ -12,6 +9,7 @@ class Class
   father
   parser      # Parser
   type_id
+  func init(pkg){}
 }
 
 Class::getMember(name)
