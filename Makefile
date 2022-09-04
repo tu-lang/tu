@@ -17,11 +17,13 @@ test_memory:
 check: install test
 
 test_linker:
-	cd linker;sh tests_linker.sh
+	cd linker;sh test.sh
+test_compiler:
+	cd compiler;sh test.sh
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 #make test -j9
-test: install test_linker $(cases)
+test: test_linker test_compiler $(cases)
 	@echo "all test passed"
 
 %: ./tests/%

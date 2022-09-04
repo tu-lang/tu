@@ -6,7 +6,7 @@ log(){
 failed(){
     str="$1"
     echo -e "\033[31m$str \033[0m"
-    ps aux|grep tests_linker.sh|awk '{print $2}' |xargs kill -9
+    ps aux|grep test.sh|awk '{print $2}' |xargs kill -9
     exit 1
 }
 clean() {
@@ -26,26 +26,12 @@ check(){
 }
 
 assert(){
-    log "[compile] tu -s linker/main.tu "
+    log "[compile] tu -s compiler/main.tu "
     tu -s main.tu
     check
     echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib"
-    gcc -g -c *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib 
-    echo "start linking..."
-    log "[linker] tl -p ."
-    tl -p .
-    check
-    chmod 777 a.out
-    mv a.out tl_test
-    cd demo;gcc -c *.s
-    cd ..
-    ./tl_test -p demo
-    check
-    chmod 777 a.out
-    echo "exec a.out..."
-    ./a.out
-    check
-    rm ./a.out ./tl_test
+    # gcc -g -c *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib 
+    # echo "start compile..."
     clean "*.s"
     clean "*.o"
     echo "exec done..."
