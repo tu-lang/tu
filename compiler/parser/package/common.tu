@@ -12,7 +12,7 @@ Package::initClassInitFunc(name)
 {
 	if this.classes[name] == null
 		return false
-	cs = classes[name]
+	cs = this.classes[name]
 	f = null
     for(var : cs.funcs){
         if var.name == "init" {

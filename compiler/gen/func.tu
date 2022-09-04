@@ -7,7 +7,7 @@ use parser.package
 use std
 use utils
 
-class ClosureExpr : Ast { 
+class ClosureExpr : ast.Ast { 
 	varname = varname
 	func init(varname,line,column){
 		super.init(line,column)

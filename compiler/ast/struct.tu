@@ -44,7 +44,7 @@ class Member
 
 Struct::getMember(name)
 {
-  for(i : member){
+  for(i : this.member){
     if i.name == name
       return i
   }

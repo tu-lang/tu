@@ -15,8 +15,9 @@ class Class
 Class::getMember(name)
 {
   for(i : this.members){
+    assign = i
     var = assign.lhs
-    if var.varname == name {
+    if var.varname == this.name {
       return name
     }
   }
@@ -39,7 +40,7 @@ Class::initClassInitFunc()
         }
     }
     if f == null {
-        f = this.parser.genClassInitFunc(name) 
+        f = this.parser.genClassInitFunc(this.name) 
         this.funcs[] = f
         this.parser.addFunc(this.name + f.name,f)
         if this.father != null {

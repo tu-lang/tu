@@ -14,3 +14,6 @@ keywords = {
 	"match" : ast.MATCH ,  "enum"  : ast.ENUM,   "goto"    : ast.GOTO,
 	"int"   : ast.BUILTIN, "sizeof": ast.BUILTIN,
 }
+builtins = {
+    "int" : true , "sizeof" : true , "type" : true,
+}

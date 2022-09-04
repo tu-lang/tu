@@ -1,6 +1,8 @@
 use ast
 use string
 use std
+use parser.package
+use gen
 
 Parser::parseClassDef()
 {
@@ -12,7 +14,7 @@ Parser::parseClassDef()
     this.expect(ast.VAR)
     s = new ast.Class(this.pkg.package)
     s.parser = this
-    s.name  = scanner.curLex
+    s.name  = this.scanner.curLex
     this.scanner.scan()
     
     this.expect(ast.LBRACE)
@@ -22,11 +24,11 @@ Parser::parseClassDef()
     while this.scanner.curToken != ast.RBRACE {
         
         if this.scanner.curToken == ast.VAR{
-            member = parseExpression()
+            member = this.parseExpression()
             if type(member) == type(gen.VarExpr) {
                 s.members[] = member
             }else {
-                if type(member) != type(ast.AssignExpr) {
+                if type(member) != type(gen.AssignExpr) {
                     this.panic("class member only support assign expr:%s",member.toString(""))
                 }
                 lhs = member.lhs
@@ -38,7 +40,7 @@ Parser::parseClassDef()
                 s.initmembers[] = member
             }
         }else if this.scanner.curToken == ast.FUNC {
-            f = parseFuncDef(true)
+            f = this.parseFuncDef(true)
             this.check(f != null)
 
             f.isObj = true
@@ -49,11 +51,11 @@ Parser::parseClassDef()
             
             this.addFunc(f.name,f)
         }else{
-            this.panic("SynatxError: token:" + getTokenString(scanner.curToken) + " string:" + scanner.curLex)
+            this.panic("SynatxError: token:" + ast.getTokenString(this.scanner.curToken) + " string:" + this.scanner.curLex)
         }
 
     }
-    pkg.addClass(s.name,s)
+    this.pkg.addClass(s.name,s)
     this.scanner.scan()
 }
 Parser::parseStructDef()
@@ -62,10 +64,10 @@ Parser::parseStructDef()
     this.expect(ast.MEM)
     this.scanner.scan()
     this.expect(ast.VAR)
-    s = new Struct()
+    s = new ast.Struct()
     s.parser = this
-    s.name  = scanner.curLex
-    s.pkg   = package
+    s.name  = this.scanner.curLex
+    s.pkg   = this.package
     this.scanner.scan()
     
     if this.scanner.curToken != ast.LBRACE {
@@ -73,7 +75,7 @@ Parser::parseStructDef()
         this.scanner.scan()
         
         this.expect( ast.VAR)
-        if (scanner.curLex == "pack" ){
+        if (this.scanner.curLex == "pack" ){
             s.ispacked = true
         }
         this.scanner.scan()
@@ -87,26 +89,26 @@ Parser::parseStructDef()
         tk  = this.scanner.curToken
         
         if tk == ast.VAR {
-            lex = scanner.curLex 
+            lex = this.scanner.curLex 
 
-            member = new Member()
+            member = new ast.Member()
             member.isunsigned = true
             member.isclass   = true
             
-            member.structpkg  = pkg.package
+            member.structpkg  = this.pkg.package
             member.structname = lex
             member.structref  = null
             member.arrsize    = 1
             
-            member.line = line
-            member.column = column
-            member.file   = filepath
+            member.line = this.line
+            member.column = this.column
+            member.file   = this.filepath
             this.scanner.scan()
             if this.scanner.curToken == ast.DOT {
                 this.scanner.scan()
                 this.expect( ast.VAR)
                 member.structpkg = member.structname
-                member.structname = scanner.curLex
+                member.structname = this.scanner.curLex
                 this.scanner.scan()
             }
             if this.scanner.curToken == ast.MUL {
@@ -114,7 +116,7 @@ Parser::parseStructDef()
                 this.scanner.scan()
             }
             this.expect( ast.VAR)
-            member.name = scanner.curLex
+            member.name = this.scanner.curLex
             s.member[] = member
             this.scanner.scan()
             continue
@@ -125,24 +127,24 @@ Parser::parseStructDef()
             pointer = true
             this.scanner.scan()
         }
-        member = parseMember(tk,idx,pointer)
+        member = this.parseMember(tk,idx,pointer)
         s.member[] = member
         
         while this.scanner.curToken == ast.COMMA {
             this.scanner.scan()
-            member = parseMember(tk,idx,pointer)
+            member = this.parseMember(tk,idx,pointer)
             s.member[] = member
         }
     }
-    pkg.addStruct(s.name,s)
+    this.pkg.addStruct(s.name,s)
     this.scanner.scan()
 }
 Parser::parseMember(tk,idx,pointer){
-    check(tk >= ast.I8 && tk <= ast.U64)
-    member = new Member()
-    member.line = line
-    member.column = column
-    member.file  = filepath
+    this.check(tk >= ast.I8 && tk <= ast.U64)
+    member = new ast.Member()
+    member.line = this.line
+    member.column = this.column
+    member.file  = this.filepath
     member.isunsigned = false
     if tk >= ast.U8 && tk <= ast.U64
         member.isunsigned = true
@@ -160,20 +162,20 @@ Parser::parseMember(tk,idx,pointer){
     }
 
     this.expect( ast.VAR)
-    member.name = scanner.curLex
+    member.name = this.scanner.curLex
 
     this.scanner.scan()
     if this.scanner.curToken ==  ast.COLON {
         this.scanner.scan()
         this.expect( ast.INT)
         member.bitfield = true
-        member.bitwidth = string.tonumber(scanner.curLex)
+        member.bitwidth = string.tonumber(this.scanner.curLex)
         this.scanner.scan()
     }else if this.scanner.curToken == ast.LBRACKET{
         this.scanner.scan()
         this.expect( ast.INT)
         member.isarr   = true
-        member.arrsize = string.tonumber(scanner.curLex)
+        member.arrsize = string.tonumber(this.scanner.curLex)
         this.scanner.scan()
         this.expect( ast.RBRACKET)
         this.scanner.scan()
@@ -186,15 +188,15 @@ Parser::parseFuncDef(member,closure)
     utils.debug("found function. start parser..")
     this.expect(ast.FUNC)
     this.scanner.scan()
-    node = new Function()
+    node = new ast.Function()
     node.parser = this
     node.package = this.pkg
     this.currentFunc = node
 
     if !closure {
-        if hasFunc(scanner.curLex)
-            check(false,"SyntaxError: already define function ")
-        node.name = scanner.curLex
+        if this.hasFunc(this.scanner.curLex)
+            this.check(false,"SyntaxError: already define function ")
+        node.name = this.scanner.curLex
         
         this.scanner.scan()
     }
@@ -202,17 +204,17 @@ Parser::parseFuncDef(member,closure)
     this.expect( ast.LPAREN)
 
     if member {
-        var = new VarExpr("this",line,column)
+        var = new gen.VarExpr("this",this.line,this.column)
         node.params_var["this"] = var
         node.params_order_var[] = var
         node.params[] = "this"
     }
 
-    params  = parseParameterList()
+    params  = this.parseParameterList()
     std.merge(node.params,params)
     node.block = null
-    if (scanner.curToken == ast.LBRACE)
-        node.block = parseBlock(member)
+    if (this.scanner.curToken == ast.LBRACE)
+        node.block = this.parseBlock(member)
     
     this.currentFunc = null
     return node
@@ -223,15 +225,15 @@ Parser::parseExternDef()
     utils.debug("found extern .start parser..")
     
     this.expect(ast.EXTERN)
-    node     = new Function()
+    node     = new ast.Function()
     node.isExtern = true
     node.parser   = this
 
     this.scanner.scan()
-    node.rettype  = scanner.curLex
+    node.rettype  = this.scanner.curLex
 
     this.scanner.scan()
-    node.name     = scanner.curLex
+    node.name     = this.scanner.curLex
     node.block    = null
 
     this.scanner.scan()
@@ -258,15 +260,15 @@ Parser::parseExtra() {
     
     this.scanner.scan()
     
-    if scanner.curLex == "link"{
-        lines = scanner.consumeLine()
+    if this.scanner.curLex == "link"{
+        lines = this.scanner.consumeLine()
         lines = lines.substr(std.len(0,lines))
         
-        links[] = lines
+        this.links[] = lines
         return
     }
     
-    scanner.consumeLine()
+    this.scanner.consumeLine()
 }
 
 
@@ -278,19 +280,19 @@ Parser::parseImportDef()
      this.scanner.scan()
     
     this.expect(ast.VAR)
-    path = scanner.curLex
-    package(path)
+    path = this.scanner.curLex
+    package = path
     multi = false
     
     this.scanner.scan()
-    while(scanner.curToken == ast.DOT){
+    while(this.scanner.curToken == ast.DOT){
         
         this.scanner.scan()
         
         this.expect(ast.VAR)
         
-        path += "_" + scanner.curLex
-        package = scanner.curLex
+        path += "_" + this.scanner.curLex
+        package = this.scanner.curLex
         multi = true
         
         this.scanner.scan()
@@ -298,15 +300,15 @@ Parser::parseImportDef()
 
     
     if !std.exist(path,package.packages) {
-        pkg = new Package(package,path,multi)
+        pkg = new package.Package(package,path,multi)
         package.packages[path] = pkg
         
         if !pkg.parse() {
-            check(false,"SyntaxError: package:" + path + " not exist in local or global ")
+            this.check(false,"SyntaxError: package:" + path + " not exist in local or global ")
         }
     }
     
-    import[package] = path
+    this.import[package] = path
 
 }
 Parser::genClassInitFunc(clsname)
@@ -315,7 +317,7 @@ Parser::genClassInitFunc(clsname)
     //set parser
     f.parser = this
     f.package = this.pkg
-    if hasFunc(clsname + "init")
+    if this.hasFunc(clsname + "init")
         this.check(false,"SyntaxError: already define function %s init",clsname)
     f.name = "init"
 

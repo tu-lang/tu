@@ -28,3 +28,6 @@ func error(str) {
     fmt.println(print_red(str))
     os.exit(-1)
 }
+func panic(args...){
+    os.die(fmt.sprintf(args))
+}

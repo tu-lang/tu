@@ -3,6 +3,7 @@ use os
 use std
 use utils
 use compile
+use parser
 
 # origin file
 code_file = ""
@@ -16,7 +17,7 @@ args = []
 func print_help(){
     fmt.println("usage: ./toc [options|file.tu...]\n" +
             "  run      编译成汇编后进行链接生成二进制可执行文件直接运行\n" +
-            "  -s       编译为linux-amd64汇编文件\n" + 
+            "  -s       编译为linux-amd64汇编文件\n"
     )
 }
 
@@ -34,7 +35,7 @@ func compile(){
     compile.compile()
 
     if run {
-        codegen.link() # link automaticlly
+        //codegen.link() # link automaticlly
         os.shell("rm *.s")
         args = "./a.out"
         os.shell(args)

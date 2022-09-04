@@ -1,6 +1,7 @@
 use parser
 use ast
 use utils
+use std
 
 class Scanner {
     fs      // std.File
@@ -31,7 +32,7 @@ Scanner::init(filepath,parser){
     this.fs = new std.File(filepath)
     this.pos = 0
 
-    if !fs.IsOpen() {
+    if !this.fs.IsOpen() {
         os.die("error opening file :" + filepath )
     }
     this.parser = parser
@@ -49,32 +50,32 @@ Scanner::rollback(x)
     this.curLex = x.txlex
 }
 Scanner::next() {
-    if pos >= std.len(this.buffer) {
+    if this.pos >= std.len(this.buffer) {
         return EOF
     }
     this.column += 1
-    ret = this.buffer[pos]
+    ret = this.buffer[this.pos]
     this.pos += 1
     return ret
 }
 Scanner::peek() {
-    if pos >= std.len(buffer) {
+    if this.pos >= std.len(this.buffer) {
         return EOF
     }
     this.column += 1
-	return this.buffer[pos]
+	return this.buffer[this.pos]
 }
 Scanner::emptyline(){
     tx = this.transaction()
     c = this.next()
     while c != EOF && c != '\n' && c !='#' && c !='/'  {
         if c != ' ' {
-            rollback(t)
+            this.rollback(tx)
             return false
         }
         c = this.next()
     }
-    rollback(t)
+    this.rollback(tx)
     return true
 }
 
@@ -133,7 +134,7 @@ Scanner::parseKeyword(c)
         return this.token(ast.VAR,lexeme)
     }
     if std.exist(lexeme,keywords){
-        return this.token(ast.keywords[lexeme],lexeme)
+        return this.token(keywords[lexeme],lexeme)
     } 
     if std.exist(lexeme,builtins) && this.peek() == '(' {
         return this.token(ast.BUILTIN,lexeme)
@@ -172,8 +173,8 @@ Scanner::scan(){
     this.get_next()
 
     p = this.parser
-    p.line = line
-    p.column = column
+    p.line = this.line
+    p.column = this.column
 }
 
 Scanner::get_next() {
@@ -184,8 +185,8 @@ Scanner::get_next() {
     if c == ' ' || c == '\n' || c == '\r' || c == '\t'{
         while(c == ' ' || c == '\n' ||c == '\r' || c == '\t'){
             if c == '\n'{
-                line += 1
-                column = 0
+                this.line += 1
+                this.column = 0
             }
             c = this.next()
         }
@@ -210,21 +211,21 @@ Scanner::get_next() {
         }
         
         while(c == '\n'){
-            line += 1
-            column = 0
+            this.line += 1
+            this.column = 0
             c = this.next()
         }
-        if c == '#' || (c == '/' && this.peek( == '/'))
+        if c == '#' || (c == '/' && this.peek()== '/') 
             goto comment
         if c == EOF
             return this.token(ast.END,"")
         goto blank
     }
-    if c >= '0' && c <= '9'{
-        return parseNumber(c)
+    if c >= '0' && c <= '9' {
+        return this.parseNumber(c)
     }
     if  c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_' {
-        return parseKeyword(c)
+        return this.parseKeyword(c)
     }
     if c == '.'{
         lexeme
@@ -239,15 +240,14 @@ Scanner::get_next() {
     if c == ';' {
         lexeme
         lexeme += c
-        return this.token(ast.SEMI ast.COLON,lexeme)
+        return this.token(ast.SEMICOLON,lexeme)
     }
     
     if c == '\'' {
         lexeme
         lexeme += this.next()
         if (this.peek() != '\'') {
-            p = parser
-            utils.panic("SyntaxError: a character lit should surround with single-quote %s\n",p.filepath)
+            utils.panic("SyntaxError: a character lit should surround with single-quote %s\n",this.parser.filepath)
         }
         c = this.next()
         return this.token(ast.CHAR, lexeme)
@@ -292,12 +292,12 @@ Scanner::get_next() {
             return this.token(ast.SUB_ASSIGN,"-=")
         }else if cn >= '0' && cn <= '9'{
             
-            return parseNumber('-')
+            return this.parseNumber('-')
         }
         return this.token(ast.SUB,"-")
     }
     if c == '*'
-        return parseMulOrDelref(c)
+        return this.parseMulOrDelref(c)
 
     if c == '/' {
         cn = this.peek()
@@ -389,8 +389,7 @@ Scanner::get_next() {
         return this.token(ast.LT, "<")
     }
     
-    p = parser
-    utils.panic("SyntaxError: unknown token '%c' line:%d column:%d  file:%s\n",c,line,column,p.filepath)
+    utils.panic("SyntaxError: unknown token '%s' line:%d column:%d  file:%s\n",c,this.line,this.column,this.parser.filepath)
     return this.token(ast.ILLEGAL,"invalid")
 }
 

@@ -1,16 +1,17 @@
 use std
 use os
 use fmt
+use compile
 
 class Ast {
     line = line
     column = column
     func init(line,column) {}
 
-    func parse_err(arg...){
+    func parse_err(args...){
         os.die(fmt.sprintf(args))
     }
-    func panic(arg...){
+    func panic(args...){
         os.die(fmt.sprintf(args))
     }
     func toString() { return "Ast()" }
@@ -18,12 +19,12 @@ class Ast {
 
 Ast::record(){
     cfunc = compile.currentFunc
-    compile.writeln("# line:%d column:%d file:%s",line,column,cfunc.parser.filepath)
+    compile.writeln("# line:%d column:%d file:%s",this.line,this.column,cfunc.parser.filepath)
 }
 Ast::panic(args...){
     err = fmt.sprintf(args)
     cfunc = compile.currentFunc
-    parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,line,column,cfunc.parser.filepath)
+    parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,this.line,this.column,cfunc.parser.filepath)
 }
 Ast::check( check , err)
 {
@@ -33,11 +34,11 @@ Ast::check( check , err)
     if err != "" {
         fmt.println("AsmError:%s \n"
                 "line:%d column:%d file:%s\n\n"
-                "expression:\n%s\n",err,line,column,cfunc.parser.filepath,this.toString())
+                "expression:\n%s\n",err,this.line,this.column,cfunc.parser.filepath,this.toString())
     }else{
         fmt.println("AsmError:\n"
                 "line:%d column:%d file:%s\n\n"
-                "expression:\n%s\n",line,column,cfunc.parser.filepath,this.toString())
+                "expression:\n%s\n",this.line,this.column,cfunc.parser.filepath,this.toString())
     }
     os.exit(-1)
 }

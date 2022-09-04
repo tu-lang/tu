@@ -27,8 +27,8 @@ Package::genvarsinit(){
     } 
 
     for(pkg : packages){
-        if(pkg.getFunc(getInitVarsFuncName(),false)){
-            mf.InsertFuncall(pkg.getFullName(),getInitVarsFuncName())
+        if(pkg.getFunc(this.getInitVarsFuncName(),false)){
+            mf.InsertFuncall(pkg.getFullName(),this.getInitVarsFuncName())
         }
     }
 }

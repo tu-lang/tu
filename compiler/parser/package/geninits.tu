@@ -25,7 +25,7 @@
 	 {
 		 for(fullpackage : p.import )
 		 {
-			 if parseinit(packages[fullpackage]) && 
+			 if this.parseinit(packages[fullpackage]) && 
 			 	!std.exist(pkg.getFullName() , hashInit)
 			 {
 				 hashInit[pkg.getFullName()] = true
@@ -40,6 +40,7 @@
 	 
 	 return hashInit[pkg.getFullName()] 
  }
+ HasGen = {}
 func  geninit(pkg){
 	 if std.exist(pkg.getFullName(),HasGen)
 	 	return false

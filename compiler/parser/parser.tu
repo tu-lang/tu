@@ -65,20 +65,20 @@ Parser::parse()
     while True {
         match this.scanner.curToken  {
             ast.FUNC : {
-                f = parseFuncDef()
+                f = this.parseFuncDef()
                 this.addFunc(f.name,f)
             }
             ast.EXTERN : {
-                f = parseExternDef()
+                f = this.parseExternDef()
                 this.addFunc(f.name, f)
             }
-            ast.EXTRA : parseExtra()
-            ast.USE   : parseImportDef()
-            ast.CLASS : parseClassDef()
-            ast.MEM   : parseStructDef()
-            ast.ENUM  : parseEnumDef()
-            ast.END   : return null # break
-            _     : parseGlobalDef()
+            ast.EXTRA : this.parseExtra()
+            ast.USE   : this.parseImportDef()
+            ast.CLASS : this.parseClassDef()
+            ast.MEM   : this.parseStructDef()
+            ast.ENUM  : this.parseEnumDef()
+            ast.END   : return null 
+            _     : this.parseGlobalDef()
         }
     }
 }
@@ -96,9 +96,9 @@ Parser::check(check , err)
     this.panic("parse: found token error token:%d:%s \n"
               "msg:%s\n"
               "line:%d column:%d file:%s\n",
-              this.scanner.curToken,getTokenString(scanner.curToken),
+              this.scanner.curToken,ast.getTokenString(this.scanner.curToken),
               err,
-              scanner.line,scanner.column,filepath)
+              this.scanner.line,this.scanner.column,this.filepath)
     os.exit(-1)
 }
 Parser::expect(tok<i32>,str<i32>){
@@ -110,15 +110,15 @@ Parser::expect(tok<i32>,str<i32>){
         msg = str
     }
     err = fmt.sprintf("parse: found token error token:%s \n msg:%s\n line:%d column:%d file:%s\n",
-            ast.getTokenString(scanner.curToken),
-            msg,this.scanner.line,scanner.column,this.filepath
+            ast.getTokenString(this.scanner.curToken),
+            msg,this.scanner.line,this.scanner.column,this.filepath
     )
     os.panic(err)
 }
 
 Parser::isunary(){
     match this.scanner.curToken {
-        std.SUB | ast.SUB | ast.LOGNOT | ast.BITNOT : {
+        ast.SUB | ast.SUB | ast.LOGNOT | ast.BITNOT : {
             return True
         }
         _ : return False

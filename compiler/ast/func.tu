@@ -1,3 +1,4 @@
+use gen
 class Function {
     clsname  = "" # class name
     name    # func name
@@ -39,7 +40,7 @@ func incr_labelid(){
     return idx
 }
 Function::InsertFuncall(fullpackage,funcname){
-    call = new FunCallExpr(this.parser.line,this.parser.column)
+    call = new gen.FunCallExpr(this.parser.line,this.parser.column)
 
 	call.package = fullpackage
 	call.funcname = funcname
@@ -47,21 +48,13 @@ Function::InsertFuncall(fullpackage,funcname){
 	if this.block == null {
 		this.block = new Block()
 	}
-	this.block.stmts[] = new ExpressionStmt(
-        call,
-        this.parser.line,
-        this.parser.column
-    )
+	this.block.stmts[] = call
 } 
 Function::InsertExpression(expr){
 	if this.block == null {
 		this.block = new Block()
 	}
-	this.block.stmts[] = new ExpressionStmt(
-        expr,
-        this.parser.line,
-        this.parser.column
-    )
+	this.block.stmts[] = expr
 } 
 
 //function signature
@@ -70,7 +63,7 @@ Funtion::fullname(){
     //class memeber function
     if !std.empty(this.clsname) {
         cls = this.package.getClass(this.clsname)
-        if c == null {
+        if cls == null {
             os.die("class not define :" + this.clsname)
         }
         funcsig = fmt.sprintf("%s_%s_%s",this.parser.getpkgname(),cls.name,this.name)

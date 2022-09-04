@@ -1,4 +1,5 @@
 use std
+use gen
 
 class Block
 {
@@ -17,11 +18,7 @@ Block::InsertStatementsHead(stmts){
 Block::InsertExpressionsHead(exprs){
     newstmts = []
     for(it : exprs){
-        newstmts[] = new ExpressionStmt(
-            it,
-            it.line,
-            it.column
-        )
+        newstmts[] = it
     }
     std.merge(newstmts,this.stmts)
     this.stmts = newstmts
@@ -31,9 +28,7 @@ Block::checkAndRmFirstSuperDefine(){
     if std.len(this.stmts) return false
 
     first = std.head(this.stmts)
-    if type(first) == type(ExpressionStmt) 
-    {
-        assign = stmt.expr
+        assign = first
         if type(assign) == type(gen.AssignExpr) 
         {
             if (assign.opt != ASSIGN) return false
@@ -46,6 +41,5 @@ Block::checkAndRmFirstSuperDefine(){
                 }
             }
         }
-    }
 
 } 

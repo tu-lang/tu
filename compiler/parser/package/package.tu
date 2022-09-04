@@ -2,6 +2,7 @@ use std
 use std.regex
 use utils
 use ast
+use parser
 
 class Package {
     parsers # parsers map[filepath + name] = parser
@@ -37,15 +38,15 @@ Package::parse()
         }
     }
 
-    fd = std.opendir(dir)
+    fd = std.opendir(abpath)
     while true {
-        p = std.readdir(fd)
+        file = std.readdir(fd)
         if !file break
         if !file.isFile() continue
 
-        filepath = p.path
+        filepath = file.path
         if string.sub(filepath,std.len(filepath) - 2) == ".tu" {
-            parser = new Parser(filepath,this,package,full_package)
+            parser = new parser.Parser(filepath,this,this.package,this.full_package)
             
             parser.fileno = 1
             this.parsers[filepath] = parser
@@ -63,7 +64,7 @@ Package::geninitid(){
     return id
 }
 Package::getFunc(name , is_extern){
-    for(parser : parsers){
+    for(parser : this.parsers){
         ret  = parser.getFunc(name,is_extern)
         if ret != null return ret
     }
@@ -73,7 +74,7 @@ Package::getFunc(name , is_extern){
 Package::addClass(name, f)
 {
     if this.classes[name] {
-        for(i : classes[name].funcs)
+        for(i : this.classes[name].funcs)
             f.funcs[] = i
     }
     this.classes[name] = f
@@ -81,40 +82,40 @@ Package::addClass(name, f)
 
 Package::addStruct(name, f)
 {
-    if std.exist(name,structs) {
+    if std.exist(name,this.structs) {
         return true
     }
     this.structs[name] = f
 }
 Package::getStruct(name)
 {    
-    if std.exist(name,structs) 
-        return f.second
+    if std.exist(name,this.structs) 
+        return this.structs[name]
     return null
 }
 
 Package::addClassFunc(name,f,p)
 {
-    if std.exist(name,classes) {
+    if std.exist(name,this.classes) {
         this.classes[name].funcs[] = f
         return null
     }
     
-    s = new ast.Class(package)
+    s = new ast.Class(this.package)
     s.name  = name
     s.parser = p
     s.funcs[] = f
-    classes[name] = s
+    this.classes[name] = s
 }
 Package::hasClass(name)
 {
-    return std.exist(name,classes)
+    return std.exist(name,this.classes)
 }
 
 Package::getGlobalVar(name){
-    for(parser : parsers){
-        if std.exist(name,parser.gvars){
-            return parser.gvars[name]
+    for(p : this.parsers){
+        if std.exist(name,p.gvars){
+            return p.gvars[name]
         }
     }
     return null
@@ -130,7 +131,7 @@ Package::checkClassFunc(name , fc)
 {
     if std.exist(name,this.classes)
         return false
-    cs = classes[name]
+    cs = this.classes[name]
     for(var : cs.funcs){
         if var.name == fc
             return true

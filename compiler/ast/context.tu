@@ -20,9 +20,9 @@ Context::createVar(varname,ident)
 }
 Context::getVar(varname)
 {
-    if std.len(vars) < 1 return null
-    if vars[varname] != null {
-        return vars[varname]
+    if std.len(this.vars) < 1 return null
+    if this.vars[varname] != null {
+        return this.vars[varname]
     } 
     return null
 }

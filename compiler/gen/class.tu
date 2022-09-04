@@ -121,7 +121,7 @@ NewClassExpr::compile(ctx)
 	return null
 }
 
-class MemberExpr : Ast {
+class MemberExpr : ast.Ast {
     varname  membername
 	func init(line,column){
 		super.init(line,column)

@@ -10,3 +10,6 @@ enum {
    Var_Local, 
    Var_Func
 }
+
+True  = true
+False = false
