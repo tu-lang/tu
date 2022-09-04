@@ -7,13 +7,13 @@ use gen
 
 Parser::parseEnumDef(){
     
-    scanner.scan()
+    this.scanner.scan()
     
     this.expect( ast.LBRACE)
     
-    scanner.scan()
+    this.scanner.scan()
     defaulte = 0
-    while scanner.curToken != ast.RBRACE {
+    while this.scanner.curToken != ast.RBRACE {
         gv = new VarExpr(scanner.curLex,line,column)
         gv.structtype = true
         //TODO: gv.ivalue = defaulte ++
@@ -24,13 +24,13 @@ Parser::parseEnumDef(){
         gv.type = ast.I32
         gv.size = 4
 
-        scanner.scan()
-        if scanner.curToken == ast.COMMA
-            scanner.scan()
+        this.scanner.scan()
+        if this.scanner.curToken == ast.COMMA
+            this.scanner.scan()
 
         defaulte += 1
     }
-    scanner.scan()
+    this.scanner.scan()
 }
 Parser::parseStructVar(varname)
 {
@@ -39,13 +39,13 @@ Parser::parseStructVar(varname)
     varexpr = var
     check(varexpr.structtype)
     
-    if scanner.curToken == ast.ASSIGN {
+    if this.scanner.curToken == ast.ASSIGN {
         
-        scanner.scan()
+        this.scanner.scan()
         this.expect( ast.INT)
         varexpr.ivalue = scanner.curLex
         
-        scanner.scan()
+        this.scanner.scan()
     }
     gvars[varname] = varexpr
     varexpr.is_local = false
@@ -62,13 +62,13 @@ Parser::parseFlatVar(var){
 Parser::parseClassFunc(var){
     this.expect(  ast.COLON)
     
-    scanner.scan()
+    this.scanner.scan()
     this.expect( ast.COLON )
     
-    scanner.curToken  = ast.FUNC
+    this.scanner.curToken  = ast.FUNC
     
     f = parseFuncDef(true)
-    assert(f != null)
+    this.check(f != null)
     
     f.clsName = var
     pkg.addClassFunc(var,f,this)
@@ -78,22 +78,22 @@ Parser::parseClassFunc(var){
 }
 Parser::parseExternClassFunc(pkgname){
     this.expect( ast.DOT)
-    scanner.scan()
+    this.scanner.scan()
     this.expect( ast.VAR)
     clsname = scanner.curLex
-    scanner.scan()
+    this.scanner.scan()
     if !std.exist(this.import,pkgname){
         check(false,fmt.sprintf("consider import package: use %s",package))
     }
     this.expect(  ast.COLON )
     
-    scanner.scan()
+    this.scanner.scan()
     this.expect( ast.COLON )
     
-    scanner.curToken  = ast.FUNC
+    this.scanner.curToken  = ast.FUNC
     
     f = parseFuncDef(true)
-    assert(f != null)
+    this.check(f != null)
     
     f.clsName = clsname
     pkg = package.packages[import[pkgname]]
@@ -105,12 +105,12 @@ Parser::parseExternClassFunc(pkgname){
 }
 Parser::parseGlobalDef()
 {
-    if scanner.curToken != ast.VAR
-        panic("SyntaxError: global var define invalid token:" + getTokenString(scanner.curToken))
+    if this.scanner.curToken != ast.VAR
+        this.panic("SyntaxError: global var define invalid token:" + getTokenString(scanner.curToken))
     var = scanner.curLex
     tx = scanner.transaction() 
-    scanner.scan()
-    match scanner.curToken{
+    this.scanner.scan()
+    match this.scanner.curToken{
         ast.COLON: return parseClassFunc(var)
         // ast.LT   : return parseStructVar(var)
         // _        : return parseFlatVar(var)

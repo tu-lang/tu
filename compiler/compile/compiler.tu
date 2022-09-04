@@ -43,11 +43,14 @@ func registerMain()
     
     internal.call("runtime_gc_gc_init")
     writeln(
-    "    pop  %%rdi\n" +
-    "    pop  %%rsi\n" +
-    "    mov runtime_args_init@GOTPCREL(%%rip), %%rax\n" +
-    "    mov %%rax,%%r10\n" +
-    "    call *%%r10\n" +
+        fmt.sprintf(
+            "%s%s%s%s%s",
+            "    pop  %%rdi\n",
+            "    pop  %%rsi\n",
+            "    mov runtime_args_init@GOTPCREL(%%rip), %%rax\n",
+            "    mov %%rax,%%r10\n",
+            "    call *%%r10\n"
+        )
     )
     writeln("    mov %s@GOTPCREL(%%rip), %%rax", "main_main")
     writeln("    mov %%rax, %%r10")
@@ -95,7 +98,7 @@ func assign_offsets(fn)
         if gp + 1 < GP_MAX {
             bottom += 8
             bottom = utils.ALIGN_UP(bottom, 8)
-            var.offset = -bottom
+            var.offset = 0 - bottom
         } else{
             top = utils.ALIGN_UP(top, 8)
             var.offset = top
@@ -119,17 +122,18 @@ func assign_offsets(fn)
             bottom += 8
         }
         bottom = utils.ALIGN_UP(bottom, 8)
-        var.offset = -bottom
+        var.offset = 0 - bottom
     }
     if fn.is_variadic {
         bottom += 8
-        fn.size = - bottom
+        //TODO: fn.size = -bottom
+        fn.size = 0 - bottom
         bottom += 8
-        fn.stack = - bottom
+        fn.stack = 0 - bottom
         bottom += 8
-        fn.l_stack = - bottom
+        fn.l_stack = 0 - bottom
         bottom += 8
-        fn.g_stack = - bottom
+        fn.g_stack = 0 - bottom
 
         fn.stack_size = utils.ALIGN_UP(bottom, 16)
     }else{

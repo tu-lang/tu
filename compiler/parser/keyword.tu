@@ -7,21 +7,21 @@ Parser::parseClassDef()
     utils.debug("found class. start parser..")
     this.expect(ast.CLASS)
     
-    scanner.scan()
+    this.scanner.scan()
     
     this.expect(ast.VAR)
     s = new ast.Class(this.pkg.package)
     s.parser = this
     s.name  = scanner.curLex
-    scanner.scan()
+    this.scanner.scan()
     
     this.expect(ast.LBRACE)
 
-    scanner.scan()
+    this.scanner.scan()
     
-    while scanner.curToken != ast.RBRACE {
+    while this.scanner.curToken != ast.RBRACE {
         
-        if scanner.curToken == ast.VAR{
+        if this.scanner.curToken == ast.VAR{
             member = parseExpression()
             if type(member) == type(gen.VarExpr) {
                 s.members[] = member
@@ -37,9 +37,9 @@ Parser::parseClassDef()
                 var.is_local = false
                 s.initmembers[] = member
             }
-        }else if scanner.curToken == ast.FUNC {
+        }else if this.scanner.curToken == ast.FUNC {
             f = parseFuncDef(true)
-            assert(f != null)
+            this.check(f != null)
 
             f.isObj = true
             
@@ -49,42 +49,42 @@ Parser::parseClassDef()
             
             this.addFunc(f.name,f)
         }else{
-            panic("SynatxError: token:" + getTokenString(scanner.curToken) + " string:" + scanner.curLex)
+            this.panic("SynatxError: token:" + getTokenString(scanner.curToken) + " string:" + scanner.curLex)
         }
 
     }
     pkg.addClass(s.name,s)
-    scanner.scan()
+    this.scanner.scan()
 }
 Parser::parseStructDef()
 {
     utils.debug("found class start parser..")
     this.expect(ast.MEM)
-    scanner.scan()
+    this.scanner.scan()
     this.expect(ast.VAR)
     s = new Struct()
     s.parser = this
     s.name  = scanner.curLex
     s.pkg   = package
-    scanner.scan()
+    this.scanner.scan()
     
-    if scanner.curToken != ast.LBRACE {
+    if this.scanner.curToken != ast.LBRACE {
         this.expect(  ast.COLON)
-        scanner.scan()
+        this.scanner.scan()
         
         this.expect( ast.VAR)
         if (scanner.curLex == "pack" ){
             s.ispacked = true
         }
-        scanner.scan()
+        this.scanner.scan()
     }
     
     this.expect( ast.LBRACE)
-    scanner.scan()
+    this.scanner.scan()
     
     idx = 0
-    while scanner.curToken != ast.RBRACE {
-        tk  = scanner.curToken
+    while this.scanner.curToken != ast.RBRACE {
+        tk  = this.scanner.curToken
         
         if tk == ast.VAR {
             lex = scanner.curLex 
@@ -101,41 +101,41 @@ Parser::parseStructDef()
             member.line = line
             member.column = column
             member.file   = filepath
-            scanner.scan()
-            if scanner.curToken == ast.DOT {
-                scanner.scan()
+            this.scanner.scan()
+            if this.scanner.curToken == ast.DOT {
+                this.scanner.scan()
                 this.expect( ast.VAR)
                 member.structpkg = member.structname
                 member.structname = scanner.curLex
-                scanner.scan()
+                this.scanner.scan()
             }
-            if scanner.curToken == ast.MUL {
+            if this.scanner.curToken == ast.MUL {
                 member.pointer = true
-                scanner.scan()
+                this.scanner.scan()
             }
             this.expect( ast.VAR)
             member.name = scanner.curLex
             s.member[] = member
-            scanner.scan()
+            this.scanner.scan()
             continue
         }
-        scanner.scan()
+        this.scanner.scan()
         pointer = false
-        if scanner.curToken == ast.MUL {
+        if this.scanner.curToken == ast.MUL {
             pointer = true
-            scanner.scan()
+            this.scanner.scan()
         }
         member = parseMember(tk,idx,pointer)
         s.member[] = member
         
-        while scanner.curToken == ast.COMMA {
-            scanner.scan()
+        while this.scanner.curToken == ast.COMMA {
+            this.scanner.scan()
             member = parseMember(tk,idx,pointer)
             s.member[] = member
         }
     }
     pkg.addStruct(s.name,s)
-    scanner.scan()
+    this.scanner.scan()
 }
 Parser::parseMember(tk,idx,pointer){
     check(tk >= ast.I8 && tk <= ast.U64)
@@ -162,21 +162,21 @@ Parser::parseMember(tk,idx,pointer){
     this.expect( ast.VAR)
     member.name = scanner.curLex
 
-    scanner.scan()
-    if scanner.curToken ==  ast.COLON {
-        scanner.scan()
+    this.scanner.scan()
+    if this.scanner.curToken ==  ast.COLON {
+        this.scanner.scan()
         this.expect( ast.INT)
         member.bitfield = true
         member.bitwidth = string.tonumber(scanner.curLex)
-        scanner.scan()
-    }else if scanner.curToken == ast.LBRACKET{
-        scanner.scan()
+        this.scanner.scan()
+    }else if this.scanner.curToken == ast.LBRACKET{
+        this.scanner.scan()
         this.expect( ast.INT)
         member.isarr   = true
         member.arrsize = string.tonumber(scanner.curLex)
-        scanner.scan()
+        this.scanner.scan()
         this.expect( ast.RBRACKET)
-        scanner.scan()
+        this.scanner.scan()
     }
     return member
 }
@@ -185,18 +185,18 @@ Parser::parseFuncDef(member,closure)
 {
     utils.debug("found function. start parser..")
     this.expect(ast.FUNC)
-    scanner.scan()
+    this.scanner.scan()
     node = new Function()
     node.parser = this
     node.package = this.pkg
-    currentFunc = node
+    this.currentFunc = node
 
     if !closure {
         if hasFunc(scanner.curLex)
             check(false,"SyntaxError: already define function ")
         node.name = scanner.curLex
         
-        scanner.scan()
+        this.scanner.scan()
     }
 
     this.expect( ast.LPAREN)
@@ -214,7 +214,7 @@ Parser::parseFuncDef(member,closure)
     if (scanner.curToken == ast.LBRACE)
         node.block = parseBlock(member)
     
-    currentFunc = null
+    this.currentFunc = null
     return node
 }
 
@@ -227,28 +227,28 @@ Parser::parseExternDef()
     node.isExtern = true
     node.parser   = this
 
-    scanner.scan()
+    this.scanner.scan()
     node.rettype  = scanner.curLex
 
-    scanner.scan()
+    this.scanner.scan()
     node.name     = scanner.curLex
     node.block    = null
 
-    scanner.scan()
+    this.scanner.scan()
     this.expect(ast.LPAREN)
     
-    scanner.scan()
+    this.scanner.scan()
     
-    if scanner.curToken == ast.RPAREN{
-        scanner.scan()
+    if this.scanner.curToken == ast.RPAREN{
+        this.scanner.scan()
         return node
     }
-    while scanner.curToken != ast.RPAREN {
-        scanner.scan()
+    while this.scanner.curToken != ast.RPAREN {
+        this.scanner.scan()
     }
     
     this.expect(ast.RPAREN)
-    scanner.scan()
+    this.scanner.scan()
     return node
 }
 
@@ -256,7 +256,7 @@ Parser::parseExtra() {
     utils.debug("found #: parser..")
     this.expect(ast.EXTRA)
     
-    scanner.scan()
+    this.scanner.scan()
     
     if scanner.curLex == "link"{
         lines = scanner.consumeLine()
@@ -275,17 +275,17 @@ Parser::parseImportDef()
     utils.debug("found import.start parser..")
     this.expect(ast.USE)
     
-     scanner.scan()
+     this.scanner.scan()
     
     this.expect(ast.VAR)
     path = scanner.curLex
     package(path)
     multi = false
     
-    scanner.scan()
+    this.scanner.scan()
     while(scanner.curToken == ast.DOT){
         
-        scanner.scan()
+        this.scanner.scan()
         
         this.expect(ast.VAR)
         
@@ -293,7 +293,7 @@ Parser::parseImportDef()
         package = scanner.curLex
         multi = true
         
-        scanner.scan()
+        this.scanner.scan()
     }
 
     

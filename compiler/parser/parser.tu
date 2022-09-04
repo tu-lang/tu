@@ -1,6 +1,7 @@
 use string
 use std
 use ast
+use parser.scanner
 
 //optimize: avoid alloc so many object like this
 True  = true
@@ -50,18 +51,19 @@ Parser::init(filepath,pkg,package,full_package) {
     asmfile  = filename + ".s"
     if package != "main"
         asmfile  = "co_" + package + "_" + asmfile
+
     this.full_package = full_package
     
-    scanner = new Scanner(filepath,this)
+    this.scanner = new scanner.Scanner(filepath,this)
     this.import[package] = full_package
     this.import[""]  = full_package
 }
 Parser::parse()
 {
-    scanner.scan()
+    this.scanner.scan()
 
     while True {
-        match scanner.curToken  {
+        match this.scanner.curToken  {
             ast.FUNC : {
                 f = parseFuncDef()
                 this.addFunc(f.name,f)
@@ -94,7 +96,7 @@ Parser::check(check , err)
     this.panic("parse: found token error token:%d:%s \n"
               "msg:%s\n"
               "line:%d column:%d file:%s\n",
-              scanner.curToken,getTokenString(scanner.curToken),
+              this.scanner.curToken,getTokenString(scanner.curToken),
               err,
               scanner.line,scanner.column,filepath)
     os.exit(-1)
@@ -115,7 +117,7 @@ Parser::expect(tok<i32>,str<i32>){
 }
 
 Parser::isunary(){
-    match scanner.curToken {
+    match this.scanner.curToken {
         std.SUB | ast.SUB | ast.LOGNOT | ast.BITNOT : {
             return True
         }
@@ -123,7 +125,7 @@ Parser::isunary(){
     }
 }
 Parser::isprimary(){
-    match scanner.curToken {
+    match this.scanner.curToken {
         ast.FLOAT  | ast.INT      | ast.CHAR     | ast.STRING | ast.VAR    | 
         ast.FUNC   | ast.LPAREN   | ast.LBRACKET | ast.LBRACE | ast.RBRACE | 
         ast.BOOL   | ast.EMPTY    | ast.NEW      | ast.DOT    | ast.DELREF |
@@ -142,7 +144,7 @@ Parser::ischain(){
     }
 }
 Parser::isassign(){
-    match scanner.curToken {
+    match this.scanner.curToken {
         ast.ASSIGN | ast.ADD_ASSIGN | ast.SUB_ASSIGN | ast.MUL_ASSIGN |
         ast.DIV_ASSIGN | ast.MOD_ASSIGN | ast.BITAND_ASSIGN | ast.BITOR_ASSIGN | 
         ast.SHL_ASSIGN | ast.SHR_ASSIGN : {
@@ -152,7 +154,7 @@ Parser::isassign(){
     }
 }
 Parser::isbinary(){
-    match scanner.curToken {
+    match this.scanner.curToken {
         ast.SHL | ast.SHR | ast.BITOR | ast.BITAND | ast.BITNOT | ast.LOGOR |  
         ast.LOGAND | ast.LOGNOT | ast.EQ | ast.NE | ast.GT | ast.GE | ast.LT |
         ast.LE | ast.ADD | ast.SUB | ast.MOD | ast.MUL | ast.DIV : {

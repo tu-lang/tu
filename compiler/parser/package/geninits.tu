@@ -35,7 +35,7 @@
 	 }
 	 
 	 if (pkg.package == "main" && std.len(pkg.inits) == 0){
-		 panic("main_init0 should be created before")
+		this.panic("main_init0 should be created before")
 	 }
 	 
 	 return hashInit[pkg.getFullName()] 

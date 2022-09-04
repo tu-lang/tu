@@ -1,7 +1,6 @@
 use internal
 use runtime
 
-
 # the table for type casts
 i32i8  = "movsbl %al, %eax"
 i32u8  = "movzbl %al, %eax"
@@ -28,7 +27,7 @@ casts = [
 func Cast(from ,to) {
   f = int(parser.typesize[int(from)])
   t = int(parser.typesize[int(to)])
-  if cast_table[f][t] != null {
-    writeln("  %s", cast_table[f][t])
+  if casts[f][t] != null {
+    writeln("  %s", casts[f][t])
   }
 }

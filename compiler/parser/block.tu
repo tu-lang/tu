@@ -3,14 +3,15 @@ use std
 use fmt
 use ast
 use string
+use gen
 
 Parser::parseBlock(member)
 {
     node = new ast.Block()
-    scanner.scan()
+    this.scanner.scan()
     if member {
         stmt = this.genSuperInitStmt(this.currentFunc)
-        node.stmts[] stmt
+        node.stmts[] = stmt
     }
     stmts = []
     while( (p = this.parseStatement()) != null )
@@ -21,106 +22,106 @@ Parser::parseBlock(member)
     std.merge(node.stmts,stmts)
 
     this.expect(ast.RBRACE)
-    scanner.scan()
+    this.scanner.scan()
     return node
 }
 
 Parser::parseParameterList()
 {
     node = []
-    scanner.scan()
+    this.scanner.scan()
     
-    if scanner.curToken == ast.RPAREN {
-        scanner.scan()
+    if this.scanner.curToken == ast.RPAREN {
+        this.scanner.scan()
         return node
     }
 
-    while scanner.curToken != ast.RPAREN 
+    while this.scanner.curToken != ast.RPAREN 
     {
-        if scanner.curToken == ast.VAR
+        if this.scanner.curToken == ast.VAR
         {
-            if currentFunc {
-                var = new VarExpr(scanner.curLex,line,column)
+            if this.currentFunc {
+                var = new gen.VarExpr(this.scanner.curLex,this.line,this.column)
                 
                 var.type = ast.U64
                 var.size = 8
                 var.isunsigned = true
-                currentFunc.params_var[scanner.curLex] = var
-                currentFunc.params_order_var[] = var
+                this.currentFunc.params_var[this.scanner.curLex] = var
+                this.currentFunc.params_order_var[] = var
 
-                scanner.scan()
+                this.scanner.scan()
                 
-                if scanner.curToken == ast.LT {
+                if this.scanner.curToken == ast.LT {
                     var.structtype = true
-                    scanner.scan()
-                    if scanner.curToken == ast.VAR {
-                        sname = scanner.curLex
+                    this.scanner.scan()
+                    if this.scanner.curToken == ast.VAR {
+                        sname = this.scanner.curLex
                         var.structname = sname
-                        scanner.scan()
-                        if scanner.curToken == ast.DOT {
-                            scanner.scan()
+                        this.scanner.scan()
+                        if this.scanner.curToken == ast.DOT {
+                            this.scanner.scan()
                             this.expect(ast.VAR)
                             var.package = sname
                             var.structpkg = sname
-                            var.structname = scanner.curLex
-                            scanner.scan()
+                            var.structname = this.scanner.curLex
+                            this.scanner.scan()
                         }
-                    }else if scanner.curToken >= ast.I8 && scanner.curToken <= ast.U64{
+                    }else if this.scanner.curToken >= ast.I8 && this.scanner.curToken <= ast.U64{
                     
-                        Token i = scanner.curToken
-                        assert(i >= ast.I8 && i <= ast.U64)
+                        i = this.scanner.curToken
+                        this.check(i >= ast.I8 && i <= ast.U64)
                         var.size = typesize[int(i)]
                         var.type = i
                         var.isunsigned = false
                         if i >= ast.U8 && i <= ast.U64
                             var.isunsigned = true
-                        scanner.scan()
-                        if scanner.curToken == ast.MUL {
+                        this.scanner.scan()
+                        if this.scanner.curToken == ast.MUL {
                             var.pointer = true
-                            scanner.scan()
+                            this.scanner.scan()
                         }
                     }else{
-                        panic("unknown token " + ast.getTokenString(scanner.curToken))
+                        this.panic("unknown token " + ast.getTokenString(this.scanner.curToken))
                     }
    
                     this.expect(ast.GT )
-                    scanner.scan()
+                    this.scanner.scan()
                     
                     continue
                 }
                 
-                if scanner.curToken == ast.COMMA continue
-                if scanner.curToken == ast.RPAREN continue
+                if this.scanner.curToken == ast.COMMA continue
+                if this.scanner.curToken == ast.RPAREN continue
 
                 
-                if scanner.curToken != ast.DOT {
-                    panic("SynatxError: should be , or . but got " + scanner.curLex)
+                if this.scanner.curToken != ast.DOT {
+                    this.panic("SynatxError: should be , or . but got " + this.scanner.curLex)
                 }
                 
-                scanner.scan()
-                if scanner.curToken != ast.DOT {
-                    panic("SynatxError: must be . but got :" + scanner.curLex)
+                this.scanner.scan()
+                if this.scanner.curToken != ast.DOT {
+                    this.panic("SynatxError: must be . but got :" + this.scanner.curLex)
                 }
                 
-                scanner.scan()
-                if scanner.curToken != ast.DOT{
-                    panic("SynatxError: should be , or . but got :" + scanner.curLex)
+                this.scanner.scan()
+                if this.scanner.curToken != ast.DOT{
+                    this.panic("SynatxError: should be , or . but got :" + this.scanner.curLex)
                 }
                 
-                currentFunc.is_variadic = true
+                this.currentFunc.is_variadic = true
                 var.is_variadic = true
             }
-            node[] = scanner.curLex
+            node[] = this.scanner.curLex
         }
         else{
             this.expect( ast.COMMA )
         }
         
-        scanner.scan()
+        this.scanner.scan()
     }
     
     this.expect( ast.RPAREN )
-    scanner.scan()
+    this.scanner.scan()
     return node
 }
 
@@ -128,7 +129,7 @@ Parser::genSuperInitStmt(f){
     if this.import["runtime"] != null {
         this.import["runtime"] = "runtime"
     }
-    ass = new ast.AssignExpr(this.line,this.column)
+    ass = new gen.AssignExpr(this.line,this.column)
     ass.opt = ast.ASSIGN
     lhs = new gen.VarExpr("super",this.line,this.column)
     f.locals[lhs.varname] = lhs
@@ -141,5 +142,5 @@ Parser::genSuperInitStmt(f){
     rhs.is_pkgcall = true
     ass.lhs = lhs
     ass.rhs = rhs
-    return new ast.ExpressionStmt(ass,this.line,this.column)
+    return ass
 }
