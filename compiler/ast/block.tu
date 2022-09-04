@@ -27,19 +27,18 @@ Block::InsertExpressionsHead(exprs){
 Block::checkAndRmFirstSuperDefine(){
     if std.len(this.stmts) return false
 
-    first = std.head(this.stmts)
-        assign = first
-        if type(assign) == type(gen.AssignExpr) 
+    assign = std.head(this.stmts)
+    if type(assign) == type(gen.AssignExpr) 
+    {
+        if (assign.opt != ASSIGN) return false
+        if type(assign.lhs) == type(gen.VarExpr) 
         {
-            if (assign.opt != ASSIGN) return false
-            if type(assign.lhs) == type(gen.VarExpr) 
+            var = assign.lhs
+            if var.varname == "super" 
             {
-                var = assign.lhs
-                if var.varname == "super" 
-                {
-                    std.pop_head(this.stmts)
-                }
+                std.pop_head(this.stmts)
             }
         }
+    }
 
 } 

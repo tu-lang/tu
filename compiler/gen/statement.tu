@@ -82,15 +82,6 @@ ContinueStmt::compile(ctx)
     }
 }
 
-class IfCaseExpr : ast.Ast {
-    cond
-    block
-    label endLabel
-    func init(line,column){
-        super.init(line,column)
-    }
-}
-
 class GotoStmt   : ast.Ast {
     label = label
     func init(label,line,column){

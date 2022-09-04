@@ -17,15 +17,15 @@ func test_base(){
 	fmt.println("test base success..")
 }
 //测试class
-class A{}
+class AA{}
 class B{}
 class C : B {}
 func test_object(){
 	fmt.println("test object")
-	a = new A()
+	a = new AA()
 	b = new B()
 	c = new C()
-	if type(a) != type(A) os.die("a should be class A")
+	if type(a) != type(AA) os.die("a should be class AA")
 	if type(b) != type(B) os.die("a should be class B")
 	if type(c) != type(C) os.die("a should be class C")
 	fmt.println("test object success")
