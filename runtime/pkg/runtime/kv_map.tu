@@ -17,6 +17,10 @@ mem Rbtree_node {
     Value* v
     u8   color
 }
+enum {
+    Insert,
+    Update
+}
 
 func rbtree_min(node<Rbtree_node>,sentinel<Rbtree_node>){
     while node.left != sentinel {
@@ -76,6 +80,7 @@ func map_find(map<Value>, key<Value>){
     }
     return Null
 }
+
 func map_insert_or_update(temp<Rbtree_node>, node<Rbtree_node>,sentinel<Rbtree_node>)
 {
     // **p
@@ -84,10 +89,11 @@ func map_insert_or_update(temp<Rbtree_node>, node<Rbtree_node>,sentinel<Rbtree_n
 
     while True {
         if  node.key == temp.key {
-            if  temp.v.type == node.v.type {
+            //compatible with mem type var
+            // if  temp.v.type == node.v.type {
                 temp.v = node.v
-                return Null
-            }
+                return Update
+            // }
         }
         if  node.key < temp.key {
             p = &temp.left 
@@ -217,7 +223,10 @@ func rbtree_insert(tree<Rbtree>, node<Rbtree_node>)
 
     //TODO: tree.insert(*root,node,sentinel)
     insert<u64> = tree.insert
-    insert(*root, node, sentinel)
+    if Update == insert(*root, node, sentinel) {
+        //update value do nothing here
+        return Null
+    }
 
     // re-balance tree 
     //TODO: condition可以判断返回值是否是memtype决定是否需要isTrue
