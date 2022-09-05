@@ -21,6 +21,7 @@ tl      [options|file.o...]
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
 
 - [ ] compiler
+  - [x]     自举代码编译成功
   - [ ] run 自动编译链接后执行
   - [ ] -s  编译为低等级汇编码
 - [ ] asmer 
@@ -55,13 +56,14 @@ tl      [options|file.o...]
 - [x] object
 - [x] closure
 - [ ] float
+- [x] native struct
 ```
 use fmt
 class Http{
     # member
     request
     func handler(){
-        fmt.println("hello world!",request,this.request)
+        fmt.println("hello world!",this.request)
     }
 }
 Http::closure(){
@@ -87,8 +89,8 @@ func main(){
 }
 ```
 ## @关键字
-- [x] func
-- [x] return
+- [x] func goto
+- [x] return type
 - [x] use
 - [x] if 
 - [x] while,for|range for
