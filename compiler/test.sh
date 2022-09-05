@@ -29,9 +29,12 @@ assert(){
     log "[compile] tu -s compiler/main.tu "
     tu -s main.tu
     check
-    echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib"
-    # gcc -g -c *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib 
-    # echo "start compile..."
+    echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
+    gcc -g  *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main 
+    check
+    ./a.out
+    check
+    clean "a.out"
     clean "*.s"
     clean "*.o"
     echo "exec done..."
