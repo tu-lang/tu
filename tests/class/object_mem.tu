@@ -37,6 +37,16 @@ func test_global(){
   if 2 != gvar.arr[2] os.die("gvar.arr[2] != 2")
   fmt.println("test global var object member access success")
 }
+class Am {
+  arr = []
+  func init(){
+    //varname as same as this.arr
+    arr = 3
+    this.arr[] = arr
+    if this.arr[0] != 3 os.die("this.arr[0] should be 3")
+    fmt.println("test arr_mem success")
+  }
+}
 func main(){
   obj = new Con() 
   obj.arr = [1,23]
@@ -45,4 +55,5 @@ func main(){
   obj.test_inner()
 
   test_global()
+  new Am() //test arr mem op
 }
