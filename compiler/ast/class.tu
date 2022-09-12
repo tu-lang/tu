@@ -8,7 +8,7 @@ class Class
 
   father
   parser      # Parser
-  type_id
+  type_id     = 0
   func init(pkg){}
 }
 
