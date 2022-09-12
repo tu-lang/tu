@@ -1,3 +1,4 @@
+use compile
 
 # auto increment closure id
 closureidx = 0
@@ -13,3 +14,10 @@ enum {
 
 True  = true
 False = false
+
+func GP(){
+   return compile.parser
+}
+func GF(){
+   return compile.currentFunc
+}

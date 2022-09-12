@@ -1,5 +1,6 @@
 use std
 use fmt
+use parser.package
 
 Parser::addFunc(name, f)
 {
@@ -36,4 +37,47 @@ Parser::getGvar(name){
     if std.exist(name,this.gvars) 
         return this.gvars[name]
     return null
+}
+Parser::getGlobalVar(pkgname ,varname){
+    entire = false
+    for(i : this.import){
+        if ( pkgname != "" && pkgname == i){
+            entire = true
+            break
+        }
+    }
+    pkg = null
+    if entire {
+        if package.packages[pkgname] != null 
+            pkg = package.packages[pkgname]
+    }else{
+        pkgname2 = ""
+        if pkgname == "" {
+            pkgname2 = this.getpkgname()
+        }else{
+            if this.import[pkgname] != null {
+                pkgname2 = this.import[pkgname]
+            }
+        }
+        if package.packages[pkgname2] != null {
+            pkg = package.packages[pkgname2]
+        }
+    }
+    if (pkg == null){
+        return null
+    }
+    return pkg.getGlobalVar(varname)
+}
+Parser::getGlobalFunc(pkgname ,varname,is_extern){
+    fn = null
+    if package.packages[pkgname] != null {
+        fn = package.packages[pkgname].getFunc(varname,is_extern)
+    }
+    if(fn == null){
+        if package.packages[this.getpkgname()] != null {
+            pkg = package.packages[this.getpkgname()]
+            fn = pkg.getFunc(varname,is_extern)
+        }
+    }
+    return fn
 }

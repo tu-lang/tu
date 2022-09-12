@@ -35,8 +35,10 @@ Parser::parseClassDef()
                 if type(lhs) != type(gen.VarExpr)
                     this.panic("assign left should be var")
                 var = lhs
-                var.package = "this"
-                var.is_local = false
+                me = new gen.MemberExpr(var.line,var.column)
+                me.varname = "this"
+                me.membername = var.varname
+                member.lhs = me
                 s.initmembers[] = member
             }
         }else if this.scanner.curToken == ast.FUNC {

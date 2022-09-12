@@ -35,9 +35,14 @@ StructMemberExpr::getMember()
 StructMemberExpr::getStruct()
 {
 	package = this.var.structpkg
+	if (package == "" ){
+		package = var.package
+	}
 	s = null
 	
-	package = compile.parser.import[package]
+	if GP().import.count(package) {
+		package = GP().import[package]
+	}
 	if std.len(package.packages,package < 1){
 		this.panic("mem package not exist:%s" ,package)
 	}

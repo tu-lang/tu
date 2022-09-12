@@ -18,7 +18,7 @@ parser.Parser::compile()
     compile.writeln(".data")
     compile.funcs_offsets()
     compile.registerVars()
-    compile.registerStrings()
+    compile.registerStrings(true)
     compile.writeln(".text")
     
     compile.registerFuncs()

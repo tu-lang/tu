@@ -74,6 +74,9 @@ Package::getFunc(name , is_extern){
 Package::addClass(name, f)
 {
     if this.classes[name] {
+        if this.classes[name].type_id != 0 {
+            f.parser.panic("class define duplicate " + name)
+        }
         for(i : this.classes[name].funcs)
             f.funcs[] = i
     }

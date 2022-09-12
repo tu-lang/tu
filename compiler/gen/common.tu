@@ -1,4 +1,5 @@
 use ast
+use compile
 
 Null  = null
 True  = true
@@ -13,7 +14,10 @@ typesize = {
     I8 : 1 , I16 : 2 , I32 : 4 , I64 : 8,
     U8 : 1 , U16 : 2 , U32 : 4 , U64 : 8
 }
-
+typeids = {
+    "null":ast.Null , "int" : ast.Int , "double" : ast.Double, "string" : ast.String,
+    "bool":ast.Bool , "char": ast.Char, "array"  : ast.Array , "map"    :ast.Map
+}
 func exprIsMtype(cond,ctx){
     ismtype = false
     match type(cond) {
@@ -27,4 +31,10 @@ func exprIsMtype(cond,ctx){
         type(BuiltinFuncExpr) : ismtype = cond.isMem(ctx)
     }
     return ismtype
+}
+func GP(){
+    return compile.parser
+}
+func GF(){
+    return compile.currentFunc
 }

@@ -116,7 +116,8 @@ class StringExpr  : ast.Ast {
     }
     func compile(ctx) {
         this.record()
-        if this.name != "" this.check(false,this.toString())
+        if this.name == "" 
+            this.panic("string not computed :%s" , this.toString(""))
         
         compile.writeln("    lea %s(%%rip), %%rsi", this.name)
         internal.newobject(ast.String,0)

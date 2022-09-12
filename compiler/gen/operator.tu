@@ -51,75 +51,7 @@ AssignExpr::compile(ctx){
     f = compile.currentFunc
     match type(this.lhs) {
         type(VarExpr) : {
-            varExpr = this.lhs
-            package = compile.currentFunc.parser.getpkgname() 
-            varname = varExpr.varname
-
-            if !varExpr.is_local {
-
-                package = varExpr.package
-                if (varExpr = ast.getVar(ctx,package) != null) {
-ASSIGN_OBJECT_MEMBER:                    
-                    compile.GenAddr(varExpr)
-                    compile.Load()
-                    compile.Push()
-
-                    this.rhs.compile(ctx)
-                    compile.Push()
-                    
-                    internal.call_object_operator(this.opt,this.varname,"runtime_object_unary_operator")
-                    return null
-                }
-            
-                cpkg = compile.currentFunc.parser.getpkgname()
-                full_package = ""
-                if std.exist(package,compile.currentFunc.parser.import)
-                    full_package = compile.currentFunc.parser.import
-
-                if std.exist(full_package.packages,package){
-                    varExpr = package.packages[full_package].getGlobalVar(varname)
-                }else if std.len(package.packages,cpkg) {
-                    varExpr = package.packages[cpkg].getGlobalVar(package)
-                    if varExpr != null && !varExpr.structtype {
-                        goto ASSIGN_OBJECT_MEMBER
-                    }
-                    sm = new StructMemberExpr(package,this.line,this.column)
-                    sm.member = varname
-                    sm.var    = varExpr
-                    this.lhs = sm
-                    
-                }
-            
-                if !varExpr 
-                    this.panic("AsmError: assignexpr use of undefined global variable %s at line %d co %d\n",
-                        varname,this.line,this.column
-                    )
-        
-            }else if package.packages[package].getGlobalVar(varname){
-                varExpr = package.packages[package].getGlobalVar(varname)
-            }else if std.exist(varExpr.varname,f.params_var){
-                
-                varExpr = f.params_var[varExpr.varname]
-                std.tail(ctx).createVar(varExpr.varname,varExpr)
-            }else{
-                varExpr = f.locals[varExpr.varname]
-                std.tail(ctx).createVar(varExpr.varname,varExpr)
-            }
-        
-            if varExpr.isMemtype(ctx){
-                oh = new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)
-                oh.var = varExpr
-                return oh.gen()
-            }
-
-            compile.GenAddr(varExpr)
-            compile.Push()
-
-            this.rhs.compile(ctx)
-            compile.Push()
-            
-            internal.call_operator(this.opt,"runtime_unary_operator")
-            return null
+            return this.lhs.assign(ctx,this.opt,this.rhs)
         }
         type(IndexExpr) : return this.lhs.assign(this.opt,this.rhs)
         type(StructMemberExpr) | type(DelRefExpr) : {
@@ -130,6 +62,9 @@ ASSIGN_OBJECT_MEMBER:
             if ce.ismem(ctx) 
                 return ( new OperatorHelper(ctx,this.lhs,this.rhs,this.opt) ).gen()
             return ce.assign(ctx,this.opt,this.rhs)
+        }
+        type(MemberExpr) : {
+            return this.lhs.assign(ctx,this.opt,this.rhs)
         }
     }
     this.panic("SyntaxError: can not assign to %s" ,this.lhs.toString())

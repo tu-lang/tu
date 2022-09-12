@@ -29,12 +29,30 @@ Context::getVar(varname)
 
 func getVar(ctx , varname)
 {
+    hasctx = false
+    ret    = null
     for(c : ctx){
         if var = c.getVar(varname) {
-            return var
+            hasctx = true
+            if GF().locals[varname] != null
+                ret = GF().locals[varname]
+            else if GF().params_var[varname] != null
+                ret = GF().params_var[varname]
+            if ret != null return ret
+            return null
         }
     }
-    return null
+    if !hasctx {
+        if GF().locals[varname] != null
+            ret = GF().locals[varname]
+        else if GF().params_var[varname] != null
+            ret = GF().params_var[varname]
+        if ret == null return null
+
+        std.tail(ctx).createVar(ret.varname,ret)
+    }
+
+    return ret
 }
 
 

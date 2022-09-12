@@ -119,23 +119,7 @@ ChainExpr::assign(ctx , opt, rhs) {
         compile.Push()
         internal.call_object_operator(opt,me.membername,"runtime_object_unary_operator")
 	}else if type(this.last) == type(IndexExpr) {
-		index = this.last
-        if index.index == null {
-            rhs.compile(ctx)
-            compile.Push()
-
-            internal.arr_pushone()
-			compile.writeln("    add $8,%%rsp")
-           return null
-        }
-		index.index.compile(ctx)
-        compile.Push()
-
-        rhs.compile(ctx)
-        compile.Push()
-
-    	internal.kv_update()
-		compile.writeln("    add $8,%%rsp") 
+		this.last.assign(ctx,opt,rhs)
 	}else{
 		this.panic(this.toString(""))
 	}

@@ -126,7 +126,10 @@ NewExpr::getType(ctx){
 	return ast.U64
 }
 MemberExpr::getType(ctx){
-	this.panic("getType: unsupport Member\n")
+	var = GP().getGlobalVar("",this.varname)
+	if var == null
+		var = ast.getVar(ctx,this.varname)
+	return var.getType(ctx)
 }
 MemberCallExpr::getType(ctx){
 	this.panic("getType: unsupport MemberCall\n")

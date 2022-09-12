@@ -9,17 +9,49 @@ class BuiltinFuncExpr : ast.Ast {
 	}
 }
 BuiltinFuncExpr::compile(ctx){
-	if this.funcname == "sizeof" {
-		this.check(
-			type(this.expr) == type(VarExpr),
-			"must be varexpr in sizeof()"
-		)
-		ve = this.expr
-		m = package.getStruct(ve.package,ve.varname)
-		this.check(m != null,"mem not exist")
+	funcname = this.funcname
+	match funcname {
+		"sizeof" : {
+			this.check(
+				type(this.expr) == type(VarExpr),
+				"must be varexpr in sizeof()"
+			)
+			ve = this.expr
+			m = package.getStruct(ve.package,ve.varname)
+			this.check(m != null,"mem not exist")
 
-		compile.writeln("   mov $%d , %%rax",m.size)
-		return null
+			compile.writeln("   mov $%d , %%rax",m.size)
+			return null
+		}
+		"type": {
+			isobj = false
+			type_id = 0
+			if type(this.expr) == type(VarExpr) {
+				ve = this.expr
+				if typeids[ve.varname] != null {
+					type_id = typeids[ve.varname]
+				}else {
+					packagename = GP().import[ve.package]
+					if package.packages[packagename] != null {
+						s = null
+						if ( (s = package.packages[packagename].getClass(ve.varname)) && s != null ) {
+							type_id = s.type_id
+						}else{
+							this.expr.compile(ctx)
+							isobj = true
+						}
+					}else{
+						this.expr.compile(ctx)
+						isobj = true
+					}
+				}
+			}else{
+				this.expr.compile(ctx)
+				isobj = true
+			}
+			internal.type_id(type_id,isobj)
+			return null
+		}
 	}
 	this.check(type(this.expr) != type(IntExpr))
 	this.check(type(this.expr) != type(StringExpr))
@@ -33,30 +65,34 @@ BuiltinFuncExpr::compile(ctx){
 	ret = this.expr.compile(ctx)
 
 	tk<i32> = ast.I64
-	if (ret == null){
-	}else if  type(ret) == type(VarExpr) {
-		if ret.type >= ast.I8 && ret.type <= ast.U64 
-			tk = ret.type
-	}
-	else if type(ret) == type(StructMemberExpr) {
-		sm = ret
-		m = sm.ret
-		if m == null {
-			this.panic("del ref can't find the struct member:%s",
-				this.expr.toString()
-			)
+	if ret != null {
+		match type(ret){
+			type(VarExpr): {
+				if ret.type >= ast.I8 && ret.type <= ast.U64 
+				tk = ret.type
+			}
+			type(StructMemberExpr) : {
+				sm = ret
+				m = sm.ret
+				if m == null {
+					this.panic("del ref can't find the struct member:%s",
+						this.expr.toString()
+					)
+				}
+				if type(this.expr) != type(DelRefExpr) {
+					compile.LoadMember(m)
+				}
+				tk = m.type
+			}
+			type(ChainExpr) : {
+				ce = ret
+				if ce.ret == null {
+					this.panic("struct chain exp: something wrong here :%s\n",ret.toString())
+				}
+				compile.LoadMember(ce.ret)
+				tk = ce.ret.type
+			}
 		}
-		if type(this.expr) != type(DelRefExpr) {
-			compile.LoadMember(m)
-		}
-		tk = m.type
-	}else if type(ret) == type(ChainExpr) {
-		ce = ret
-		if ce.ret == null {
-			this.panic("struct chain exp: something wrong here :%s\n",ret.toString())
-		}
-		compile.LoadMember(ce.ret)
-		tk = ce.ret.type
 	}
 
 	if this.funcname == "string" {

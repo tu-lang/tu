@@ -9,6 +9,8 @@ Parser::parseChainExpr(first){
     chainExpr = new gen.ChainExpr(this.line,this.column)
     ret  = chainExpr
     chainExpr.first = first
+    var = null
+    is_gmvar = false
     if type(first) == type(gen.DelRefExpr) {
         dr = first
         this.check(type(dr.expr) == type(gen.StructMemberExpr))
@@ -29,6 +31,15 @@ Parser::parseChainExpr(first){
         chainExpr.first = sm
         ae.expr = chainExpr
         ret = ae
+    }else if type(first) == type(gen.VarExpr) {
+        var = first
+        if var.package != "" {
+            gv = this.getGlobalVar(var.package,var.varname)
+            if (gv != null && gv.structtype){
+                var = gv
+                is_gmvar = true
+            }
+        }
     }
     
     while this.ischain() { 
@@ -44,15 +55,26 @@ Parser::parseChainExpr(first){
                     mc.call = this.parseFuncallExpr("")
                     chainExpr.fields[] = mc
                 }else{
-                    me = new gen.MemberExpr(this.line,this.column)
-                    me.membername = membername
-                    chainExpr.fields[] = me
+                    if(is_gmvar){
+                        is_gmvar = false
+                        sm = new gen.StructMemberExpr(var.varname,var.line,var.column)
+                        sm.member = membername
+                        sm.var    = var
+                        chainExpr.first = sm
+                    }else{
+                        me = new gen.MemberExpr(this.line,this.column)
+                        me.membername = membername
+                        chainExpr.fields[] = me
+                    }
                 }
             }
             ast.LPAREN :   chainExpr.fields[] = this.parseFuncallExpr("")
             ast.LBRACKET : chainExpr.fields[] = this.parseIndexExpr("")
             _ : break
         }
+    }
+    if std.len(chainExpr.fields) == 0 {
+        return chainExpr.first
     }
     this.check(std.len(chainExpr.fields),"parse chain expression,need at least 2 field")
     chainExpr.last = std.pop(chainExpr.fields)
@@ -398,15 +420,23 @@ Parser::parseVarExpr(var)
                 return index
             }else{
                 mvar = null
-                //FIXME: this.currentFunc is empty pointer
-                if (this.currentFunc != null && ((mvar = this.currentFunc.getVar(package)) != null) && mvar.structname != ""){
-                    
-                    mexpr = new gen.StructMemberExpr(package,this.scanner.line,this.scanner.column)
-                    
-                    mexpr.var = mvar
-                    mexpr.member = pfuncname
-                    return mexpr
-                
+                if this.currentFunc == null && this.import[var] == null {
+                    me = new gen.MemberExpr(this.line,this.column)
+                    me.varname = var
+                    me.membername = pfuncname
+                    return me
+                }else if(this.currentFunc && (mvar = this.currentFunc.getVar(package)) && mvar != null ){
+                    if ( mvar.structname != "") {
+                        mexpr = new gen.StructMemberExpr(package,this.scanner.line,this.scanner.column)
+                        mexpr.var = mvar
+                        mexpr.member = pfuncname
+                        return mexpr
+                    }else{
+                        me = new gen.MemberExpr(this.line,this.column)
+                        me.varname = package
+                        me.membername = pfuncname
+                        return me
+                    }            
                 }else if (mvar = this.getGvar(package) && mvar.structname != "") {
                     mexpr = new gen.StructMemberExpr(package,this.scanner.line,this.scanner.column)
                     

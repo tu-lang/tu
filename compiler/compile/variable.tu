@@ -1,12 +1,15 @@
 use ast
 use parser
 use parser.package
+use fmt
 
-func registerStrings(){
+func registerStrings(c){
     for(var : parser.strs){
-        r = "L" + ast.incr_labelid() 
-        var.name = r
-        CreateGlobalString(var)
+        if !c {
+            var.name = fmt.sprintf(
+                "L%d",ast.incr_labelid()
+            )
+        } else CreateGlobalString(var)
     }
 }
 func registerVars(){

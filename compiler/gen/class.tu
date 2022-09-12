@@ -144,12 +144,38 @@ MemberExpr::compile(ctx)
 		internal.object_member_get(this.membername)
 		return null
 	}
-	var = ast.getVar(ctx,this.varname)
+	var = GP().getGlobalVar("",this.varname)
+	if var == null
+		var = ast.getVar(ctx,this.varname)
+	this.check(var != null,this.toString(""))
+	if var.structtype {
+		mexpr = new StructMemberExpr(this.varname,this.line,this.column)
+		mexpr.var = var
+		mexpr.member = this.membername
+		return mexpr.compile(ctx)
+	}
 	compile.GenAddr(var)
 	compile.Load()
 	compile.Push()
 	internal.object_member_get(this.membername)
-	return null
+	return var
+}
+MemberExpr::assign(ctx, opt ,rhs)
+{
+    this.record()
+	var = GP().getGlobalVar("",this.varname)
+    if var == null 
+        var = ast.getVar(ctx,this.varname)
+    this.check(var != null,this.toString(""))
+
+    compile.GenAddr(var)
+    compile.Load()
+    compile.Push()
+
+    rhs.compile(ctx)
+    compile.Push()
+    internal.call_object_operator(opt,this.membername,"runtime_object_unary_operator")
+    return null
 }
 
 class MemberCallExpr : ast.Ast {

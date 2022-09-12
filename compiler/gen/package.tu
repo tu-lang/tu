@@ -73,7 +73,12 @@ package.Package::classinit(){
   }
 }
 package.Package::compile(){
-    for(p : this.parsers){
-        p.compile()
-    }
+  for(it : this.parsers){
+    compile.parser = it
+    compile.registerStrings(false)
+    compile.parser = null
+  }
+  for(p : this.parsers){
+      p.compile()
+  }
 }

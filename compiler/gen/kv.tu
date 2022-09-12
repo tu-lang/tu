@@ -54,112 +54,67 @@ IndexExpr::toString() {
 
 IndexExpr::compile(ctx) {
     this.record()
-    f = compile.currentFunc
+    var = new VarExpr(this.varname,this.line,this.column)
+    var.package = this.package
 
     if this.varname == "" {
-        this.index.compile(ctx)
-        compile.Push()
-
-        //call arr_get(arr,index)
-        internal.kv_get()
-        return null
+        goto COMPILE_INDEX
     }
-    var = null
-    packagename = this.package
-
-    if this.is_pkgcall {
-        this.check(!std.exist(packagename,package.packages),"package not exist: " + this.package)
-
-        var  = package.packages[packagename].getGlobalVar(this.varname)
-
-        if var == null this.panic("AsmError:use of undefined global variable " + this.varname)
-    }else if (var = ast.getVar(ctx,this.package))  && var != null {
-MEMBER_INDEX:
-        compile.GenAddr(var)
-        compile.Load()
-        compile.Push()
-        internal.object_member_get(this.varname)
-        compile.Push()
-        goto INDEX
-    }else {
-        pkg = package.packages[this.package]
-        if  this.package != "" && 
-            (var = pkg.getGlobalVar(this.package)) && 
-            var != null
-        {
-            goto MEMBER_INDEX
+    match var.getVarType(ctx) {
+        ast.Var_Obj_Member : { 
+            compile.GenAddr(var.ret)
+            compile.Load()
+            compile.Push()
+            internal.object_member_get(this.varname)
+            compile.Push() 
         }
-        var  = pkg.getGlobalVar(this.varname)
+        ast.Var_Extern_Global | ast.Var_Local_Global | ast.Var_Local :{ 
+            compile.GenAddr(var.ret)
+            compile.Load()
+            compile.Push()
+        }
+        ast.Var_Func | ast.Var_Local_Mem_Global : {
+            this.panic("meme type can't used in indexpr :%s",this.toString(""))
+        }
     }
-    if var != null {
-        compile.GenAddr(var)
-        compile.Load()
-        compile.Push()
-INDEX:
-        this.index.compile(ctx)
-        compile.Push()
-
-        //call arr_get(arr,index)
-        internal.kv_get()
-        return null
-    }
-    var = ast.getVar(ctx,this.varname)
-    if var != null {
-        compile.GenAddr(var)
-        compile.Load()
-        compile.Push()
-
-        this.index.compile(ctx)
-        compile.Push()
-
-        internal.kv_get()
-        return null
-    }
-    this.panic("AsmError: index-expr use of undefined variable " + this.varname)
+COMPILE_INDEX:
+    this.check(this.index != null,"index is null")
+    this.index.compile(ctx)
+    compile.Push()
+    //call arr_get(arr,index)
+    internal.kv_get()
+    return null
 }
 
 IndexExpr::assign( ctx , opt ,rhs) {
-    f = compile.currentFunc   
-    varname = this.varname
-    varExpr = null
-    package    = compile.currentFunc.parser.getpkgname()
-    is_member = false
-    if this.is_pkgcall {
-        this.check(std.exist(package,package.packages),"package not found:" + package)
-        varExpr = package.packages[package].getGlobalVar(varname)
-        if varExpr == null  this.panic("AsmError:use of undefined global variable" + varname)
-    } else if std.exist(this.package,f.params_var)  || std.exist(this.package,f.locals) {
-        is_member = true
-        if f.params_var[this.package] != null 
-            varExpr = f.params_var[this.package]
-        else    
-            varExpr = f.locals[this.package]
-    }else if(package.packages[package].getGlobalVar(this.package)){
-        is_member = true
-        varExpr = package.packages[package].getGlobalVar(this.package)
-    }else if(package.packages[package].getGlobalVar(varname)){
-        varExpr = package.packages[package].getGlobalVar(varname)
-    }else if(f.params_var[varname] != null ) {
-        varExpr = f.params_var[varname]
-    }else{
-        varExpr = f.locals[varname]
+    var = new VarExpr(this.varname,this.line,this.column)
+    var.package = this.package
+    if this.package == "" && this.varname == "" {
+        goto ASSIGN_INDEX
     }
-    if varExpr == null
-        this.panic(
-            "SyntaxError: not find variable %s at line:%d, column:%d file:%s\n", 
-            varname,this.line,this.column,this.compile.currentFunc.parser.filepath
-        )
-    std.tail(ctx).createVar(varExpr.varname,varExpr)
-    compile.GenAddr(varExpr)
-    compile.Load()
-    compile.Push()
-    if is_member {
-        internal.object_member_get(varname)
-        compile.Push()
+
+    match var.getVarType(ctx) {
+        ast.Var_Obj_Member : { 
+            compile.GenAddr(var.ret)
+            compile.Load()
+            compile.Push()
+            internal.object_member_get(this.varname)
+            compile.Push() 
+        }
+        ast.Var_Extern_Global | ast.Var_Local_Global | ast.Var_Local :{ 
+            compile.GenAddr(var.ret)
+            compile.Load()
+            compile.Push()
+        }
+        ast.Var_Func | ast.Var_Local_Mem_Global : {
+            this.panic("meme type can't used in indexpr :%s",this.toString(""))
+        }
     }
-    if this.index == null {
+ASSIGN_INDEX:
+    if !this.index {
         rhs.compile(ctx)
         compile.Push()
+
         internal.arr_pushone()
         compile.Pop("%rdi")
         return null

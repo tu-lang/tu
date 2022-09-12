@@ -117,6 +117,7 @@ FunCallExpr::compile(ctx)
 	cfunc = compile.currentFunc
 	packagename = this.package
 	fc = null
+	var = null
 	if !this.is_pkgcall || this.is_extern {
 		packagename      = cfunc.parser.getpkgname()
 	}
@@ -131,7 +132,11 @@ FunCallExpr::compile(ctx)
 			compile.writeln("   add $8,%%rsp")
 		}
 		return null
-	}else if (var = ast.getVar(ctx,packagename) ) {
+	}else if this.package != "" && GP().getGlobalVar("",this.package) != null {
+        var = GP().getGlobalVar("",this.package)
+        goto OBJECT_MEMBER_CALL
+    }else if (var = ast.getVar(ctx,packagename) ) {
+		OBJECT_MEMBER_CALL:
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()

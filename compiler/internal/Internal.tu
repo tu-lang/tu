@@ -170,3 +170,14 @@ func gen_false(){
     compile.writeln("    lea runtime_Dfalse(%%rip), %%rax")
     compile.writeln("    mov (%%rax), %%rax")
 }
+
+func type_id(id,isobj){
+    if(isobj){
+        compile.writeln("    mov %%rax, %%rdi")
+        compile.writeln("    mov $1, %%rsi")
+    }else{
+        compile.writeln("    mov $%d, %%rdi",id)
+        compile.writeln("    mov $0, %%rsi")
+    }
+    call("runtime_type")
+}
