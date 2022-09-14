@@ -12,6 +12,7 @@ currentFunc = null # the func that is generating
 
 func genast(filename)
 {
+    utils.debugf("compile.genast filename:%s",filename)
     mpkg = new package.Package("main","main",false)
     mparser = new parser.Parser(filename,mpkg,"main","main")
     mparser.fileno = 1

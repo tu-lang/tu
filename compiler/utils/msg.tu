@@ -4,8 +4,16 @@ debug_mode<i32> = 0
 
 func debug(size,args...){
     if debug_mode == 1 {
-        fmt.printf(args)
+        println_green(args)
     }
+}
+func debugf(size,args...){
+    if debug_mode != 1 {
+        return debug_mode
+    }
+    msg1 = fmt.sprintf(args)
+    green = fmt.sprintf("\033[32m%s\033[0m\n",msg1)
+    fmt.println(green)
 }
 func print_green(red){
    return " \033[32m" + red + "\033[0m"
