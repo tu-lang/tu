@@ -1,5 +1,8 @@
 use internal
 use runtime
+use fmt
+use os
+use utils
 
 # the table for type casts
 i32i8  = "movsbl %al, %eax"
@@ -24,9 +27,12 @@ casts = [
 ]
 
 
-func Cast(from ,to) {
-  f = int(parser.typesize[int(from)])
-  t = int(parser.typesize[int(to)])
+func Cast(from<i32> ,to<i32>) {
+  f = parser.typesize[int(from)]
+  t = parser.typesize[int(to)]
+  if f == null || t == null {
+    utils.errorf("compile.Cast() f:%d or t:%d is null",int(from),int(to))
+  }
   if casts[f][t] != null {
     writeln("  %s", casts[f][t])
   }

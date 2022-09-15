@@ -21,7 +21,7 @@ func genast(filename)
     mparser.parser()    # token parsering
     package.packages["main"] = mpkg
     //check runtime has been parsered
-    if std.exist("runtime",package.packages) {
+    if package.packages["runtime"] != null {
         pkg = new package.Package("runtime","runtime",false) 
         package.packages["runtime"] = pkg 
         //recursively scan code files
@@ -29,6 +29,7 @@ func genast(filename)
     }
 }
 func editast(){
+    utils.debug("ast.editast()")
     mpkg = package.packages["main"]
     mpkg.genvarsinit()
     mpkg.parseinit()

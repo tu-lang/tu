@@ -6,7 +6,6 @@ use os
 use gen
 
 func GenAddr(var){
-    
     if var.is_local {
         writeln("    lea %d(%%rbp), %%rax", var.offset)
         return var

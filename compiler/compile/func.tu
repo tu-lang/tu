@@ -5,9 +5,9 @@ use parser
 use utils
 
 func registerFunc(fn){
+    utils.debugf("compile.registerFunc() funcname:%s",fn.name)
 
-    if std.len(fn.closures)
-    {
+    if std.len(fn.closures) {
         for(closure : fn.closures){
             funcname = "func_" + ast.incr_closureidx()
             closure.receiver.varname = fn.parser.getpkgname() + "_" + funcname
@@ -21,18 +21,17 @@ func registerFunc(fn){
     currentFunc = null
 }
 func registerFuncs(){
-    utils.debug("register functions")
-    sign = 0
+    utils.debug("compile.registerFunc()")
     for f : parser.funcs {
         registerFunc(f)
     }
 }
-func CreateFunction(fn , c) {
+func CreateFunction(fn) {
     if fn.isExtern return True
     if fn.block == null return True
 
     funcname = fn.fullname()
-    utils.debug("create function :%s",funcname)
+    utils.debug("compile.CreateFunction()  fullname:%s",funcname)
     
     writeln(".global %s", funcname)
     writeln("%s:", funcname)

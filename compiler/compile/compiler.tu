@@ -6,10 +6,11 @@ use internal
 use ast
 
 func compile(){
+    utils.debug("ast.compile()")
     //compute structs
-    for(pkg : package.packages){
+    for pkg : package.packages {
         //need compute the memeber offset early
-        for(s : pkg.structs){
+        for s : pkg.structs {
             if !s.iscomputed pkg.genStruct(s)
         }
     }
@@ -19,7 +20,9 @@ func compile(){
     }
 }
 func link(){
-    args = "asmer -p . -p /usr/local/lib/coasm/"
+    // TODO: genearte assembly by self
+    // args = "tc -p . -p /usr/local/lib/coasm/"
+    args = "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
     for(pkg : package.packages){
         for(p : pkg.parsers){
             //add external library
