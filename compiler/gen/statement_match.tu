@@ -1,4 +1,5 @@
 use ast
+use utils
 
 class MatchStmt : ast.Ast {
     cond
@@ -77,6 +78,7 @@ MatchCaseExpr::toString(){
 }
 
 MatchCaseExpr::bitOrToLogOr(expr){
+    utils.debugf("gen.MatchCaseExpr.bitOrToLogOr(): expr.len:%d",std.len(expr))
 	if type(expr) != type(BinaryExpr) return expr
 	node = expr
 	//only edit ast.BITOR case ast

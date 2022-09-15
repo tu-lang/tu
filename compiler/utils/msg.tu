@@ -36,6 +36,11 @@ func error(str) {
     fmt.println(print_red(str))
     os.exit(-1)
 }
+func errorf(args...) {
+    m = fmt.sprintf(args)
+    fmt.println(print_red(m))
+    os.exit(-1)
+}
 func panic(args...){
     os.die(fmt.sprintf(args))
 }

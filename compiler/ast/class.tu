@@ -1,3 +1,6 @@
+use utils
+use std
+
 class Class 
 {
   pkg = pkg
@@ -14,6 +17,7 @@ class Class
 
 Class::getMember(name)
 {
+  utils.debugf("ast.Class::getMember() name:%s",name)
   for(i : this.members){
     assign = i
     var = assign.lhs
@@ -22,7 +26,9 @@ Class::getMember(name)
     }
   }
   for(i : this.initmembers){
-    var = assign.lhs
+    //FIXME: assign should not define
+    // var = assign.lhs
+    var = i.lhs
     if var.varname == name {
       return name
     }
@@ -32,6 +38,7 @@ Class::getMember(name)
 
 Class::initClassInitFunc()
 {
+  utils.debug("ast.Class::initClassInitFunc()")
     f = null
     for(var : this.funcs){
         if var.name == "init" {
@@ -59,6 +66,7 @@ Class::initClassInitFunc()
 } 
 
 Class::checkRmSupers(){
+  utils.debug("ast.Class::checkRmSupers()")
   if this.father != null return True
   for f : this.funcs {
     if f.block == null  continue

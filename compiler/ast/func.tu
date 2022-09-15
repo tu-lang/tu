@@ -1,4 +1,8 @@
 use gen
+use utils
+use std
+use os
+
 class Function {
     clsname  = "" # class name
     name    # func name
@@ -40,6 +44,9 @@ func incr_labelid(){
     return idx
 }
 Function::InsertFuncall(fullpackage,funcname){
+    utils.debugf("ast.Function::InsertFuncall() fullpackage:%s funcname:%s",
+        fullpackage,funcname
+    )
     call = new gen.FunCallExpr(this.parser.line,this.parser.column)
 
 	call.package = fullpackage
@@ -51,6 +58,7 @@ Function::InsertFuncall(fullpackage,funcname){
 	this.block.stmts[] = call
 } 
 Function::InsertExpression(expr){
+    utils.debug("ast.Function::InsertExpression()")
 	if this.block == null {
 		this.block = new Block()
 	}
@@ -58,8 +66,12 @@ Function::InsertExpression(expr){
 } 
 
 //function signature
-Funtion::fullname(){
+Function::fullname(){
     funcsig = fmt.sprintf("%s_%s",this.parser.getpkgname(),this.name)
+    utils.debugf(
+        "ast.Function.fullname(): funcname signature:%s clsname:%s",
+        funcsig,this.clsname
+    )
     //class memeber function
     if !std.empty(this.clsname) {
         cls = this.package.getClass(this.clsname)
@@ -69,4 +81,19 @@ Funtion::fullname(){
         funcsig = fmt.sprintf("%s_%s_%s",this.parser.getpkgname(),cls.name,this.name)
     }
     return funcsig
+}
+Function::getVar(name){
+    utils.debugf("ast.Function::getVar() this:%s varname:%s",this.name,name)
+
+    if name == "" return null
+    for varname , var : this.params_var {
+        if varname == name  
+            return var
+    }
+
+    for varname , var : this.locals {
+        if varname == name
+            return var
+    }
+    return null
 }

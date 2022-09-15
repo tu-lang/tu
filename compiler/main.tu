@@ -29,7 +29,7 @@ func llvmgen(){
     //c.genBinary()
 }
 func compile(){
-    utils.debug("assembly generate")
+    utils.debug("main.compile")
     compile.genast(code_file)
     compile.editast()
     compile.compile()

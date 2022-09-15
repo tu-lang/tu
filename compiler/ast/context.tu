@@ -1,3 +1,4 @@
+use utils
 
 class Context {
     vars         = {} # map{string:VarExpr}
@@ -29,9 +30,10 @@ Context::getVar(varname)
 
 func getVar(ctx , varname)
 {
+    utils.debugf("ast.getVar: ctx.len:%d varname:%s",std.len(ctx),varname)
     hasctx = false
     ret    = null
-    for(c : ctx){
+    for c : ctx {
         if var = c.getVar(varname) {
             hasctx = true
             if GF().locals[varname] != null
