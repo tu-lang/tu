@@ -1,5 +1,6 @@
 use ast
 use compile
+use utils
 
 class OperatorHelper {
 	ctx # [Context]
@@ -43,6 +44,7 @@ OperatorHelper::memoryOp(lhs,rhs)
 }
 OperatorHelper::gen()
 {
+	utils.debug("gen.OperatorHelpler::gen()")
 	if this.needassign {
 		this.genLeft()
 		compile.Push()
@@ -69,6 +71,7 @@ OperatorHelper::gen()
 }
 OperatorHelper::assign()
 {
+	utils.debug("gen.OperatorHelper::assign()")
 	ret = this.binary()
 	if !this.needassign return ret
 	if this.lmember && this.lmember.bitfield
@@ -95,6 +98,7 @@ OperatorHelper::assign()
 }
 OperatorHelper::binary()
 {
+	utils.debug("gen.OperatorHelper::binary()")
 	if !this.rhs {
 		compile.Pop("%rax")
 		match this.opt {

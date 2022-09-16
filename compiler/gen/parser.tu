@@ -1,9 +1,11 @@
 use compile
 use std
 use parser
+use utils
 
 parser.Parser::compile()
 {    
+    utils.debug("gen.parser.Parser::compile()")
     asm = new std.File(this.asmfile)
 	if !asm.IsOpen() {
         this.panic(

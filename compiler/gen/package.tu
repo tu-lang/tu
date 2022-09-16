@@ -5,7 +5,7 @@ use utils
 
 package.Package::genStruct(s)
 {
-  
+  utils.debug("gen.package.Package::genStruct()")  
   bits = 0
   align = 1
   

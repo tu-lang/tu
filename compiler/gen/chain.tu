@@ -2,6 +2,7 @@ use ast
 use parser
 use compile
 use std
+use utils
 
 class ChainExpr   : ast.Ast {
     first
@@ -39,6 +40,7 @@ ChainExpr::ismem(ctx) {
 }
 ChainExpr::compile(ctx)
 {
+	utils.debug("gen.ChainExpr::compile() ")
 	this.record()
     if type(this.first) == type(StructMemberExpr) return this.memgen(ctx)
 
@@ -58,6 +60,7 @@ ChainExpr::compile(ctx)
 
 ChainExpr::memgen(ctx)
 {
+	utils.debug("gen.ChainExpr::memgen()")
 	this.first.compile(ctx)
 	s = this.first
 	member = s.getMember()
@@ -93,6 +96,7 @@ ChainExpr::memgen(ctx)
 
 ChainExpr::objgen(ctx)
 {
+	utils.debug("gen.ChainExpr::objgen()")
 	this.record()
     this.first.compile(ctx)
 	compile.Push()
@@ -106,6 +110,7 @@ ChainExpr::objgen(ctx)
 }
 
 ChainExpr::assign(ctx , opt, rhs) {
+	utils.debug("gen.ChainExpr::assign()")
 	this.record()
     this.first.compile(ctx)
     compile.Push()

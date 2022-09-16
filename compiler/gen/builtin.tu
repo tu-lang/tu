@@ -1,6 +1,8 @@
 use fmt
 use parser.package
 use ast
+use std
+use utils
 
 class BuiltinFuncExpr : ast.Ast {
     funcname expr from
@@ -10,6 +12,7 @@ class BuiltinFuncExpr : ast.Ast {
 }
 BuiltinFuncExpr::compile(ctx){
 	funcname = this.funcname
+	utils.debugf("gen.BuiltinFuncExpr::compile() funcname:%s",funcname)
 	match funcname {
 		"sizeof" : {
 			this.check(

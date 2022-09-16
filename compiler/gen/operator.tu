@@ -41,7 +41,7 @@ AssignExpr::toString() {
 AssignExpr::compile(ctx){
     this.record()
 
-    utils.debug("AssignExpr: parsing... lhs:%s opt:%s rhs:%s",
+    utils.debugf("AssignExpr: parsing... lhs:%s opt:%s rhs:%s",
           this.lhs.toString(),
           ast.getTokenString(this.opt),
           this.rhs.toString()

@@ -15,8 +15,8 @@ typesize = {
     U8 : 1 , U16 : 2 , U32 : 4 , U64 : 8
 }
 typeids = {
-    "null":ast.Null , "int" : ast.Int , "double" : ast.Double, "string" : ast.String,
-    "bool":ast.Bool , "char": ast.Char, "array"  : ast.Array , "map"    :ast.Map
+    "null":int(ast.Null) , "int" : int(ast.Int) , "double" : int(ast.Double), "string" : int(ast.String),
+    "bool":int(ast.Bool) , "char": int(ast.Char), "array"  : int(ast.Array) , "map"    : int(ast.Map)
 }
 func exprIsMtype(cond,ctx){
     ismtype = false

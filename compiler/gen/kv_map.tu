@@ -21,7 +21,7 @@ MapExpr::toString() {
 }
 MapExpr::compile(ctx){
     this.record()
-    utils.debug("MapExpr: gen... ")
+    utils.debug("gen.MapExpr::compile() ")
     
     internal.newobject(ast.Map, 0)
     compile.Push()

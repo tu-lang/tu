@@ -24,6 +24,7 @@ NewExpr::toString(){
 
 NewExpr::compile(ctx)
 {
+	utils.debug("gen.NewExpr::compile()")
 	this.record()
 	//1. new 100
 	if this.package == "" && this.name == "" {
@@ -75,6 +76,7 @@ NewClassExpr::toString(){
 
 NewClassExpr::compile(ctx)
 {
+	utils.debug("gen.NewClassExpr::compile()")
 	this.record()
 	utils.debug("new expr got: type:%s",this.name)
 
@@ -139,6 +141,7 @@ MemberExpr::toString(){
 
 MemberExpr::compile(ctx)
 {
+	utils.debug("gen.MemberExpr::compile()")
 	this.record()
 	if this.varname == "" {
 		internal.object_member_get(this.membername)
@@ -162,6 +165,7 @@ MemberExpr::compile(ctx)
 }
 MemberExpr::assign(ctx, opt ,rhs)
 {
+	utils.debug("gen.MemberExpr::assign()")
     this.record()
 	var = GP().getGlobalVar("",this.varname)
     if var == null 
@@ -196,7 +200,7 @@ MemberCallExpr::toString() {
 MemberCallExpr::compile(ctx)
 {
 	this.record()
-	utils.debug("membercall : ")
+	utils.debug("gen.MemberCallExpr::compile")
     if this.varname != "" {
         this.panic("varname should be null")
     }

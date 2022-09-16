@@ -203,6 +203,7 @@ IfCaseExpr::toString(){
     return str
 }
 IfCaseExpr::compile(ctx){
+    utils.debug("gen.IfCaseExpr::compile()")
     this.record()
     compile.writeln("%s:",this.label)
     if this.block {
@@ -229,6 +230,7 @@ IfStmt::toString() {
     return str
 }
 IfStmt::compile(ctx){
+    utils.debug("gen.IfStmt::compile()")
     this.record()
     mainPoint = ast.incr_labelid()
     endLabel = "L.if.end." + mainPoint

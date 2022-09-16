@@ -22,7 +22,7 @@ KVExpr::toString() {
 
 KVExpr::compile(ctx){
     this.record()
-    utils.debug("KVExpr: gen... k:%s v:%s",this.key,this.value)
+    utils.debugf("gen.KVExpr::compile() gen... k:%s v:%s",this.key,this.value)
 
     //push key
     this.key.compile(ctx)
@@ -50,9 +50,8 @@ IndexExpr::toString() {
     return str
 }
 
-
-
 IndexExpr::compile(ctx) {
+    utils.debug("gen.Index::compile() ")
     this.record()
     var = new VarExpr(this.varname,this.line,this.column)
     var.package = this.package
@@ -87,6 +86,7 @@ COMPILE_INDEX:
 }
 
 IndexExpr::assign( ctx , opt ,rhs) {
+    utils.debug("gen.IndexExpr::assign() ")
     var = new VarExpr(this.varname,this.line,this.column)
     var.package = this.package
     if this.package == "" && this.varname == "" {

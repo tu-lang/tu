@@ -13,6 +13,7 @@ MatchStmt::toString(){
     return "match stmt"
 }
 MatchStmt::compile(ctx){
+    utils.debug("gen.MatchStmt::compile()")
     this.record()
     mainPoint = ast.incr_labelid()
     this.endLabel = "L.match.end." + mainPoint
