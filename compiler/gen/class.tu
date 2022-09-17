@@ -110,7 +110,8 @@ NewClassExpr::compile(ctx)
 	if !this.childcall {
 		call = new FunCallExpr(this.line,this.column)
 		call.package = s.parser.getpkgname()
-		call.funcname = s.name + "init"
+		call.funcname = "init"
+		call.cls     = s
 		call.is_pkgcall = true
 		params = this.args
 		pos = new ArgsPosExpr(1,this.line,this.column)

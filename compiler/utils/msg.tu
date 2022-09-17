@@ -12,7 +12,7 @@ func debugf(size,args...){
         return debug_mode
     }
     msg1 = fmt.sprintf(args)
-    green = fmt.sprintf("\033[32m%s\033[0m\n",msg1)
+    green = fmt.sprintf("\033[32m%s\033[0m",msg1)
     fmt.println(green)
 }
 func print_green(red){

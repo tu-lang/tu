@@ -103,6 +103,7 @@ class FunCallExpr : ast.Ast {
     funcname
     package
     args = [] # [Ast]
+	cls       # Class
     is_pkgcall
     is_extern
     is_delref
@@ -132,7 +133,14 @@ FunCallExpr::compile(ctx)
 			compile.writeln("   add $8,%%rsp")
 		}
 		return null
-	}else if this.package != "" && GP().getGlobalVar("",this.package) != null {
+	}else if this.cls != null {
+        fc = this.cls.getFunc(this.funcname)
+        if fc == null
+            this.panic(
+                "AsmError: can not find class func definition of " + this.funcname
+			)
+        fc.isObj       = false
+    }else if this.package != "" && GP().getGlobalVar("",this.package) != null {
         var = GP().getGlobalVar("",this.package)
         goto OBJECT_MEMBER_CALL
     }else if (var = ast.getVar(ctx,packagename) ) {

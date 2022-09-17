@@ -14,7 +14,14 @@ class Class
   type_id     = 0
   func init(pkg){}
 }
-
+Class::getFunc(name){
+  for it : this.funcs {
+    if it.name == name {
+      return it
+    }
+  }
+  return null
+}
 Class::getMember(name)
 {
   utils.debugf("ast.Class::getMember() name:%s",name)
