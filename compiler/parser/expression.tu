@@ -3,9 +3,10 @@ use os
 use std
 use fmt
 use gen
+use utils
 
 Parser::parseChainExpr(first){
-    
+    utils.debug("parser.Parser::parseChainExpr()")
     chainExpr = new gen.ChainExpr(this.line,this.column)
     ret  = chainExpr
     chainExpr.first = first
@@ -84,7 +85,7 @@ Parser::parseChainExpr(first){
 
 Parser::parseExpression(oldPriority)
 {
-    
+    utils.debug("parse.Parser::parseExpression() pri:%d",oldPriority)
     p = this.parseUnaryExpr()
     
     if this.ischain() {
@@ -142,6 +143,7 @@ Parser::parseExpression(oldPriority)
 
 Parser::parseUnaryExpr()
 {
+    utils.debug("parser.Parser::parseUnaryExpr()")
     //unary expression: like -num | !var | ~var
     if this.isunary() {
         val = new gen.BinaryExpr(this.line,this.column)
@@ -153,13 +155,16 @@ Parser::parseUnaryExpr()
     }else if this.isprimary() {
         return this.parsePrimaryExpr()
     }
-    utils.debug("parseUnaryExpr: not found token:%d-%s file:%s line:%d",this.scanner.curToken,this.scanner.curLex,this.filepath,this.line
+    utils.debug(
+        "parseUnaryExpr: not found token:%d-%s file:%s line:%d",
+        this.scanner.curToken,this.scanner.curLex,this.filepath,this.line
     )
     return null
 }
 
 Parser::parsePrimaryExpr()
 {
+    utils.debug("parser.Parser::parsePrimaryExpr()")
     tk   = this.scanner.curToken
     prev = this.scanner.prevToken
     
@@ -328,6 +333,7 @@ Parser::parsePrimaryExpr()
 
 Parser::parseNewExpr()
 {
+    utils.debug("parser.Parser::parseNewExpr()")
     if this.scanner.curToken == ast.INT {
         ret = new gen.NewExpr(this.line,this.column)
         ret.len = string.tonumber(this.scanner.curLex)
@@ -369,7 +375,10 @@ Parser::parseNewExpr()
 }
 Parser::parseVarExpr(var)
 {
-    package(var)
+    utils.debug("parser.Parser::parseVarExpr()")
+    //FIXME: the var define order
+    // package(var)
+    package = var
     if std.len(var != "_" && var != "__" && this.import,var){
         package = this.import[var]
     }
@@ -527,6 +536,7 @@ Parser::parseVarExpr(var)
 }
 Parser::parseFuncallExpr(callname)
 {
+    utils.debug("parser.Parser::parseFuncallExpr()")
     this.scanner.scan()
     val = new gen.FunCallExpr(this.line,this.column)
     val.funcname = callname
@@ -543,7 +553,7 @@ Parser::parseFuncallExpr(callname)
     return val  
 }
 Parser::parseIndexExpr(varname){
-    
+    utils.debugf("parser.Parser::parseIndexExpr() varname:%s",varname) 
     this.scanner.scan()
     val = new gen.IndexExpr(this.line,this.column)
     val.varname = varname

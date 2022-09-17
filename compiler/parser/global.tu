@@ -7,7 +7,7 @@ use gen
 use parser.package
 
 Parser::parseEnumDef(){
-    
+    utils.debug("parser.Parser::parseEnumDef()")
     this.scanner.scan()
     
     this.expect( ast.LBRACE)
@@ -35,6 +35,7 @@ Parser::parseEnumDef(){
 }
 Parser::parseStructVar(varname)
 {
+    utils.debug("parser.Parsr::parseStructVar()")
     this.expect( ast.LT )
     var = this.parseVarExpr(varname)
     varexpr = var
@@ -53,6 +54,7 @@ Parser::parseStructVar(varname)
     varexpr.package  = this.package
 }
 Parser::parseFlatVar(var){
+    utils.debugf("parser.Parser::parseFlatVar() varname:%s",var)
     varexpr = new gen.VarExpr(var,this.line,this.column)
     
     this.gvars[var] = varexpr
@@ -61,6 +63,7 @@ Parser::parseFlatVar(var){
 }
 
 Parser::parseClassFunc(var){
+    utils.debugf("parser.Parser::parseClassFunc() varname:%s",var)
     this.expect(  ast.COLON)
     
     this.scanner.scan()
@@ -78,6 +81,7 @@ Parser::parseClassFunc(var){
     return
 }
 Parser::parseExternClassFunc(pkgname){
+    utils.debugf("parser.Parser::parseExternClassFunc() name:%s",pkgname)
     this.expect( ast.DOT)
     this.scanner.scan()
     this.expect( ast.VAR)
@@ -106,6 +110,7 @@ Parser::parseExternClassFunc(pkgname){
 }
 Parser::parseGlobalDef()
 {
+    utils.debug("parser.Parser::parseGlobalDef()")
     if this.scanner.curToken != ast.VAR
         this.panic("SyntaxError: global var define invalid token:" + ast.getTokenString(this.scanner.curToken))
     var = this.scanner.curLex
@@ -124,6 +129,7 @@ Parser::parseGlobalDef()
 
 Parser::parseGlobalAssign()
 {
+    utils.debug("parser.Parser::parseGlobalAssign()")
     needinit = true
     expr = this.parseExpression()
     if expr == null this.panic("parseGlobalAssign wrong")

@@ -6,7 +6,7 @@ use gen
 
 Parser::parseClassDef()
 {
-    utils.debug("found class. start parser..")
+    utils.debug("parser.Parser::parseClassDef() found class. start parser..")
     this.expect(ast.CLASS)
     
     this.scanner.scan()
@@ -62,7 +62,7 @@ Parser::parseClassDef()
 }
 Parser::parseStructDef()
 {
-    utils.debug("found class start parser..")
+    utils.debug("parser.Parser::parseStructDef() found class start parser..")
     this.expect(ast.MEM)
     this.scanner.scan()
     this.expect(ast.VAR)
@@ -142,6 +142,7 @@ Parser::parseStructDef()
     this.scanner.scan()
 }
 Parser::parseMember(tk,idx,pointer){
+    utils.debug("parser.Parser::parseMember() ")
     this.check(tk >= ast.I8 && tk <= ast.U64)
     member = new ast.Member()
     member.line = this.line
@@ -187,7 +188,7 @@ Parser::parseMember(tk,idx,pointer){
 
 Parser::parseFuncDef(member,closure)
 {
-    utils.debug("found function. start parser..")
+    utils.debug("parser.Parser::parseFuncDef() found function. start parser..")
     this.expect(ast.FUNC)
     this.scanner.scan()
     node = new ast.Function()
@@ -224,7 +225,7 @@ Parser::parseFuncDef(member,closure)
 
 Parser::parseExternDef()
 {
-    utils.debug("found extern .start parser..")
+    utils.debug("parser.Parser::parseExternDef() found extern .start parser..")
     
     this.expect(ast.EXTERN)
     node     = new ast.Function()
@@ -257,7 +258,7 @@ Parser::parseExternDef()
 }
 
 Parser::parseExtra() {
-    utils.debug("found #: parser..")
+    utils.debug("parser.Parser::parseExtra() found #: parser..")
     this.expect(ast.EXTRA)
     
     this.scanner.scan()
@@ -276,7 +277,7 @@ Parser::parseExtra() {
 
 Parser::parseImportDef()
 {
-    utils.debug("found import.start parser..")
+    utils.debug("parser.Parser::parseImportDef() found import.start parser..")
     this.expect(ast.USE)
     
      this.scanner.scan()
@@ -315,6 +316,7 @@ Parser::parseImportDef()
 }
 Parser::genClassInitFunc(clsname)
 {
+    utils.debugf("parser.Parser::genClassInitFunc() clsname:%s",clsname)
     f = new ast.Function()
     //set parser
     f.parser = this

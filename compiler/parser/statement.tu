@@ -1,8 +1,10 @@
 use ast
 use gen
+use utils
 
 Parser::parseStatement()
 {
+    utils.debug("parser.Parser::parseStatement()")
     node = null
     match this.scanner.curToken {
         ast.IF: {
@@ -44,6 +46,7 @@ Parser::parseStatement()
 }
 Parser::parseIfStmt()
 {
+    utils.debug("parser.Parser::parseIfStmt()")
     node = new gen.IfStmt(this.line,this.column)
     
     ifCase = new gen.IfCaseExpr(this.line,this.column)
@@ -85,6 +88,7 @@ Parser::parseIfStmt()
 }
 Parser::parseForStmt()
 {
+    utils.debug("parser.Parser::parseForStmt()")
     node = new gen.ForStmt(this.line,this.column)
     
     hashlparen = false
@@ -170,6 +174,7 @@ Parser::parseForStmt()
     return node
 }
 Parser::parseMatchSmt(){
+    utils.debug("parser.Parser::parseMatchSmt()")
     ms = new gen.MatchStmt(this.line,this.column)
     ms.cond = this.parseExpression()
     this.expect( ast.LBRACE)
@@ -187,6 +192,7 @@ Parser::parseMatchSmt(){
 }
 Parser::parseMatchCase(cond)
 {
+    utils.debug("parser.Parser::parseMatchCase()")
     cs = new gen.MatchCaseExpr(this.line,this.column)
     cs.matchCond = cond 
 
@@ -211,6 +217,7 @@ Parser::parseMatchCase(cond)
     return cs
 }
 Parser::parseWhileStmt() {
+    utils.debug("parser.Parser::parseWhileStmt()")
     node = new gen.WhileStmt(this.line, this.column)
     
     if this.scanner.curToken == ast.LPAREN {
@@ -227,6 +234,7 @@ Parser::parseWhileStmt() {
     return node
 }
 Parser::parseReturnStmt() {
+    utils.debug("parser.Parser::parseReturnStmt()")
     node = new gen.ReturnStmt(this.line, this.column)
     
     node.ret = this.parseExpression()

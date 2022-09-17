@@ -4,9 +4,11 @@ use fmt
 use ast
 use string
 use gen
+use utils
 
 Parser::parseBlock(member)
 {
+    utils.debug("parser.Parser::parseBlock()")
     node = new ast.Block()
     this.scanner.scan()
     if member {
@@ -28,6 +30,7 @@ Parser::parseBlock(member)
 
 Parser::parseParameterList()
 {
+    utils.debug("parser.Parser.parseParameterList()")
     node = []
     this.scanner.scan()
     
@@ -126,6 +129,7 @@ Parser::parseParameterList()
 }
 
 Parser::genSuperInitStmt(f){
+    utils.debug("parser.Parser.genSuperInitStmt()")
     if this.import["runtime"] != null {
         this.import["runtime"] = "runtime"
     }

@@ -2,6 +2,7 @@ use string
 use std
 use ast
 use parser.scanner
+use utils
 
 //optimize: avoid alloc so many object like this
 True  = true
@@ -46,6 +47,10 @@ class Parser {
 }
 
 Parser::init(filepath,pkg,package,full_package) {
+    utils.debugf(
+        "parser.Parser::init() filename:%s package:%s full_package:%s"
+        filepath,package,full_package
+    )
     fullname = std.pop(string.split(filepath,"/"))
     filename = string.sub(fullname,0,std.len(fullname) - 3)
     asmfile  = filename + ".s"
@@ -61,6 +66,7 @@ Parser::init(filepath,pkg,package,full_package) {
 Parser::parse()
 {
     this.scanner.scan()
+    utils.debug("parser.Parser::parse() tk:%s",this.scanner.curLex)
 
     while True {
         match this.scanner.curToken  {

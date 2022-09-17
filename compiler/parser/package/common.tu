@@ -10,6 +10,7 @@ Package::getInitVarsFuncName(){
 
 Package::initClassInitFunc(name)
 {
+    utils.debug("parser.package.Package::initClassInitFunc() name:%s",name)
 	if this.classes[name] == null
 		return false
 	cs = this.classes[name]
