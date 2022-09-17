@@ -15,7 +15,7 @@ parser.Parser::compile()
 	}
     //asm file generate start
     compile.out = asm
-    compile.parser = this
+    compile.currentParser = this
 
     compile.writeln(".data")
     compile.funcs_offsets()
@@ -24,7 +24,7 @@ parser.Parser::compile()
     compile.writeln(".text")
     
     compile.registerFuncs()
-    compile.parser = null
+    compile.currentParser = null
 
     asm.Close()
     compile.out = null

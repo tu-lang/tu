@@ -33,7 +33,7 @@ func exprIsMtype(cond,ctx){
     return ismtype
 }
 func GP(){
-    return compile.parser
+    return compile.currentParser
 }
 func GF(){
     return compile.currentFunc

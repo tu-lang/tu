@@ -33,7 +33,7 @@ VarExpr::toString() { return fmt.sprintf("VarExpr(%.%s)",this.package,this.varna
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx)
     if v != null && v.structtype {
-        acualPkg = compile.parser.import[v.structpkg]
+        acualPkg = compile.currentParser.import[v.structpkg]
         dst = package.getStruct(acualPkg,v.structname)
         
         if (dst == null && v.structname != ""){

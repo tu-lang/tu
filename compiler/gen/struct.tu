@@ -56,7 +56,7 @@ StructMemberExpr::getStruct()
 StructMemberExpr::compile(ctx)
 {
 	this.record()
-	filename = compile.parser.filename
+	filename = compile.currentParser.filename
 	
 	m = this.getMember()
 	if m == null {

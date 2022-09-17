@@ -31,7 +31,7 @@ NewExpr::compile(ctx)
 		internal.gc_malloc(this.len)
 		 return this
 	 }
-	 fullpackage = compile.parser.import[this.package]
+	 fullpackage = compile.currentParser.import[this.package]
 	 if std.exist(fullpackage,package.packages)  {
 		s = null
 		if s = package.packages[fullpackage].getStruct(this.name) && s != null {

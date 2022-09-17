@@ -6,7 +6,7 @@ use parser.package
 
 
 out    = null # current file fd
-parser = null # current parser
+currentParser = null # current parser
 ctx = [] # arr[Context*,Context*..]
 currentFunc = null # the func that is generating
 

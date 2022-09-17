@@ -75,14 +75,14 @@ func _funcs_offsets(fn)
 }
 func funcs_offsets() 
 {
-    for (f : parser.funcs) {
+    for (f : currentParser.funcs) {
         _funcs_offsets(f)
     }
 
 }
 func classs_offsets() 
 {
-    for(c : parser.pkg.classes){
+    for(c : currentParser.pkg.classes){
         for(fn : c.funcs){
             assign_offsets(fn)
         }

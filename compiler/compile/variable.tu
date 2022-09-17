@@ -4,7 +4,7 @@ use parser.package
 use fmt
 
 func registerStrings(c){
-    for(var : parser.strs){
+    for(var : currentParser.strs){
         if !c {
             var.name = fmt.sprintf(
                 "L%d",ast.incr_labelid()
@@ -13,8 +13,8 @@ func registerStrings(c){
     }
 }
 func registerVars(){
-    for(name,v : parser.gvars){
-        gname = parser.getpkgname() + "_" + name
+    for(name,v : currentParser.gvars){
+        gname = currentParser.getpkgname() + "_" + name
         writeln("    .global %s",gname)
         writeln("%s:",gname)
         if !v.structtype {

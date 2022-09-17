@@ -22,7 +22,7 @@ func registerFunc(fn){
 }
 func registerFuncs(){
     utils.debug("compile.registerFunc()")
-    for f : parser.funcs {
+    for f : currentParser.funcs {
         registerFunc(f)
     }
 }

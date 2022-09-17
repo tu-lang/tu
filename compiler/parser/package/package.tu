@@ -18,6 +18,9 @@ class Package {
 }
 
 Package::init(name , path , multi) {
+    utils.debugf("parser.package.Package::init() name:%s path:%s multi:%d",
+        name,path,multi
+    )
     if multi {
         this.path = regex.replace(path,"_","/")
     }

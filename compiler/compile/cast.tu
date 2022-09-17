@@ -3,6 +3,7 @@ use runtime
 use fmt
 use os
 use utils
+use parser
 
 # the table for type casts
 i32i8  = "movsbl %al, %eax"
