@@ -75,10 +75,18 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 	return int(cn)
 }
 func tostring(num<runtime.Value>){
-    buf<i8*> = new 10
-    ilen<i32> = 10
-    std.itoa(num.data,buf,ilen) 
-    return string.new(buf)
+	match num.type {
+		runtime.CHAR :{
+			str = stringputc(stringempty(),num.data)
+			return string.new(str)
+		}
+		_ :{
+    		buf<i8*> = new 10
+    		ilen<i32> = 10
+    		std.itoa(num.data,buf,ilen) 
+    		return string.new(buf)
+		}
+	}
 }
 func tonumber(str<runtime.Value>){
 	base<i8> = 10
