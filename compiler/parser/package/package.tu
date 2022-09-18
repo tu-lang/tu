@@ -5,7 +5,7 @@ use ast
 use parser
 
 class Package {
-    parsers # parsers map[filepath + name] = parser
+    parsers = {} # parsers map[filepath + name] = parser
     package = name
     path    = path
     full_package = path

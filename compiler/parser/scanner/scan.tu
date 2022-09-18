@@ -2,6 +2,7 @@ use parser
 use ast
 use utils
 use std
+use string
 
 class Scanner {
     fs      // std.File
@@ -83,7 +84,7 @@ Scanner::emptyline(){
 Scanner::consumeLine()
 {
     c = this.next()
-    ret
+    ret = ""
     while c != ast.EOF && c != '\n' ){
         ret += c
         c = this.next()
@@ -93,7 +94,7 @@ Scanner::consumeLine()
 
 Scanner::parseNumber(first)
 {
-    lexeme = first
+    lexeme = string.tostring(first)
     isDouble = false
     cn = this.peek()
     c  = first
@@ -120,12 +121,10 @@ Scanner::parseNumber(first)
 }
 Scanner::parseKeyword(c)
 {
-    lexeme = c
-    cn
+    lexeme = string.tostring(c)
 
     cn = this.peek()
     while((cn >= 'a' && cn <= 'z') || (cn >= 'A' && cn <= 'Z') || cn == '_' || (cn >= '0' && cn <= '9')){
-
         c = this.next()
         lexeme += c
         cn = this.peek()
@@ -229,24 +228,20 @@ Scanner::get_next() {
         return this.parseKeyword(c)
     }
     if c == '.'{
-        lexeme
-        lexeme += c
+        lexeme = string.tostring(c)
         return this.token(ast.DOT,lexeme)
     }
     if c == ':'{
-        lexeme
-        lexeme += c
+        lexeme = string.tostring(c)
         return this.token(ast.COLON,lexeme)
     }
     if c == ';' {
-        lexeme
-        lexeme += c
+        lexeme = string.tostring(c)
         return this.token(ast.SEMICOLON,lexeme)
     }
     
     if c == '\'' {
-        lexeme
-        lexeme += this.next()
+        lexeme = string.tostring(this.next())
         if (this.peek() != '\'') {
             utils.panic("SyntaxError: a character lit should surround with single-quote %s\n",this.parser.filepath)
         }
@@ -255,7 +250,7 @@ Scanner::get_next() {
     }
     
     if c == '\"'{
-        lexeme
+        lexeme = ""
         cn = this.peek()
         while(cn != '"'){
             c = this.next()

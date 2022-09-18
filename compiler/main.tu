@@ -47,7 +47,7 @@ func debug(){
 }
 
 func main() {
-    if os.argc < 3 return print_help() 
+    if os.argc < 2 return print_help() 
     code_file = ""
 
     i = 0

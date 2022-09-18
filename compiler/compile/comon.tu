@@ -18,7 +18,7 @@ func genast(filename)
 
     mparser.fileno = 1
     mpkg.parsers[filename] = mparser
-    mparser.parser()    # token parsering
+    mparser.parse()    # token parsering
     package.packages["main"] = mpkg
     //check runtime has been parsered
     if package.packages["runtime"] != null {

@@ -85,7 +85,7 @@ Parser::parseChainExpr(first){
 
 Parser::parseExpression(oldPriority)
 {
-    utils.debug("parse.Parser::parseExpression() pri:%d",oldPriority)
+    utils.debugf("parse.Parser::parseExpression() pri:%i",oldPriority)
     p = this.parseUnaryExpr()
     
     if this.ischain() {
