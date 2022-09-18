@@ -29,6 +29,7 @@ class Tx {
 }
 
 Scanner::init(filepath,parser){
+    utils.debugf("parser.scanner.Scanner::init() filepath:%s",filepath)
     this.fs = new std.File(filepath)
     this.pos = 0
 

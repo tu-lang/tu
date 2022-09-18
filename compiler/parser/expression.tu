@@ -151,6 +151,9 @@ Parser::parseUnaryExpr()
         
         this.scanner.scan()
         val.lhs = this.parseUnaryExpr()
+        if this.ischain() {
+            val.lhs = this.parseChainExpr(val.lhs)
+        }
         return val
     }else if this.isprimary() {
         return this.parsePrimaryExpr()
