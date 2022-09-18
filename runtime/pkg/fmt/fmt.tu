@@ -37,7 +37,7 @@ func println(count<runtime.Value>,args...){
                 else             vfprintf(std.STDOUT,*"true")
             }
             runtime.String: vfprintf(std.STDOUT,*"%s",var.data)
-            runtime.Char:   vfprintf(std.STDOUT,*"%d",var.data)
+            runtime.Char:   vfprintf(std.STDOUT,*"%c",var.data)
             runtime.Array:	vfprintf(std.STDOUT,*"%s",runtime.arr_tostring(var))
 			runtime.Map:	vfprintf(std.STDOUT,*"map:%p",var)
 			runtime.Object:	vfprintf(std.STDOUT,*"object:%p",var)

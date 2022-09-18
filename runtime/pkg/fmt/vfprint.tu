@@ -7,6 +7,7 @@ flag_d<i8> = 100 # 'd'
 flag_D<i8> = 68  #  'D'
 flag_s<i8> = 115 # 's'
 flag_S<i8> = 83  # 'S'
+flag_c<i8> = 'c' # 'c'
 flag_i<i8> = 105 # 'i'
 flag_I<i8> = 73  # 'I'
 flag_u<i8> = 117 # 'u'
@@ -42,7 +43,7 @@ func vfprintf(out<u64>, format<i8*>, args,args1,args2,args3)
 	{
 		//init stack
 		curr = *pp
-		if *p == flag_d || *p == flag_s {
+		if *p == flag_d || *p == flag_s || *p == flag_c{
 			if stack < 1  pp += 8	else pp -= 8
 			if stack == 1 {	pp = &args	pp += 40	}		
 			stack -= 1
@@ -91,6 +92,18 @@ func vfprintf(out<u64>, format<i8*>, args,args1,args2,args3)
 				}else{
 					ret += 1
 				}
+			}
+			flag_c : {
+				if translating > 0 {
+					c1<i8*>	= curr
+					translating	= 0
+					if fputc(c1,out) < runtime.Zero {
+						return std.EOF
+					}
+				}else if fputc(flag_c,out) < runtime.Zero {
+					return std.EOF
+				}
+				ret += 1
 			}
 			_ :{
 				if translating > 0 {
