@@ -36,6 +36,17 @@ func test_trans(){
     if string.tonumber("3763") != number {
         os.die("number should be number 3763")
     }
+
+    c = 'b'
+    str = string.tostring(c)
+    str += 'c'
+    str += '1'
+    str += '\t'
+    str += '2'
+    if str != "bc1\t2"{
+        os.die("char to string failed")
+    }
+
     fmt.println("test string trans success")
 
 }
