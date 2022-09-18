@@ -72,11 +72,11 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 
 	str += l
 	cn<i8> = *str
-	return int(cn)
+	return runtime.newobject(runtime.Char,cn)
 }
 func tostring(num<runtime.Value>){
 	match num.type {
-		runtime.CHAR :{
+		runtime.Char :{
 			str = stringputc(stringempty(),num.data)
 			return string.new(str)
 		}
