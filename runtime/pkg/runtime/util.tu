@@ -21,8 +21,7 @@ func get_hash_key(key<Value>){
 	if  key.type == String {
 		return hash_key(key.data,string.stringlen(key.data))
 	}
-    fmt.println("[hash_key] unsupport type:" + type_string(key))
-    os.exit(-1)
+    os.dief("[hash_key] unsupport type:%s" , type_string(key))
 }
 func assert(ret<i8>,str){
     if ret return True

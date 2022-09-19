@@ -27,7 +27,7 @@ func value_plus(lhs<Value>,rhs<Value>) {
         result.data = value_int_plus(lhs,rhs)
         return result
     }
-    os.die("[operator+] unknown type:" + type_string(lhs) + type_string(rhs))
+    os.dief("[operator+] unknown type lhs:%s rhs:%s" ,type_string(lhs) ,type_string(rhs))
 }
  // - operator
  // @param lhs
@@ -51,7 +51,7 @@ func value_minus(lhs<Value>,rhs<Value>) {
         result.data = value_int_minus(lhs,rhs)
         return result
     }
-    os.die("[operator-] unknown type:" + type_string(lhs) + type_string(rhs))
+    os.dief("[operator-] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
  //* operator
  // @param lhs
@@ -75,7 +75,7 @@ func value_mul(lhs<Value>,rhs<Value>) {
         result.data = value_int_mul(lhs,rhs)
         return result
     }
-    os.die("[operator*] unknown type:" + type_string(lhs) + type_string(rhs))
+    os.dief("[operator*] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
  // / operator
  // @param lhs
@@ -99,7 +99,7 @@ func value_div(lhs<Value>,rhs<Value>) {
         result.data = value_int_div(lhs,rhs)
         return result
     }
-    os.die("[operator/] unknown type:" + type_string(lhs) + type_string(rhs))
+    os.dief("[operator/] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
  // & operator
  // @param lhs
@@ -123,7 +123,7 @@ func value_bitand(lhs<Value>,rhs<Value>) {
         result.data = value_int_bitand(lhs,rhs)
         return result
     }
-    os.die("[operator&] unknown type:" + type_string(lhs) + type_string(rhs))
+    os.dief("[operator&] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
  // | operator
  // @param lhs
@@ -147,7 +147,7 @@ func value_bitor(lhs<Value>,rhs<Value>) {
         result.data = value_int_bitor(lhs,rhs)
         return result
     }
-    os.die("[operator|] unknown type:" + type_string(lhs) + type_string(rhs))
+    os.dief("[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // << operator
@@ -173,7 +173,7 @@ func value_shift_left(lhs<Value>,rhs<Value>) {
         result.data = value_int_shift_left(lhs,rhs)
         return result
     }
-    os.die("[operator<<] unknown type:" + type_string(lhs) + type_string(rhs))
+    os.dief("[operator<<] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // >> operator
@@ -199,7 +199,7 @@ func value_shift_right(lhs<Value>,rhs<Value>) {
         result.data = value_int_shift_right(lhs,rhs)
         return result
     }
-    os.die("[operator>>] unknown type:" + type_string(lhs) + type_string(rhs))
+    os.dief("[operator>>] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // == operator

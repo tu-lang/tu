@@ -32,7 +32,7 @@ func arr_get(varr<Value>,index<Value>){
     match index.type {
         Int : i = index.data
         String : i = string.stringlen(index.data)
-        _   : os.die("[arr_get] invalid type: " + type_string(index.type) )
+        _   : os.dief("[arr_get] invalid type: %s" , type_string(index) )
     }
     if  i >= arr.used {
         return newobject(Null,Null)
@@ -66,8 +66,8 @@ func arr_updateone(varr<Value>,index<Value>,var<Value>){
     match index.type {
         Int : i = index.data
         String : i = string.stringlen(index.data)
-        # FIXME: _ : os.die("[arr_update]" invalid type" + type_string(index.type))
-        _ : os.die("[arr_update] invalid type" + type_string(index.type))
+        # FIXME: _ : os.dief("[arr_update]" invalid type %s" , type_string(index))
+        _ : os.dief("[arr_update] invalid type %s" , type_string(index))
     }
     // TODO:如果索引超出了 当前array的范围则需要扩充
     if  i >= arr.used {

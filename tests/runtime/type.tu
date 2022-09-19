@@ -44,7 +44,7 @@ class A{
 }
 gvar = new A()
 func test_complex_expr(){
-	if type(gvar.arr) != type(array) os.die( fmt.sprintf("gvar.arr:%s should be array",runtime.type_string(type(gvar.arr))))
+	if type(gvar.arr) != type(array) os.dief("gvar.arr:%s should be array",runtime.type_string(gvar.arr))
 	if type(gvar.arr[0]) != type(int) os.die("gvar.arr should be int")
 	if type(gvar.arr[1]) != type(string) os.die("gvar.arr should be string")
 	if type(gvar.arr[2][0]) != type(int) os.die("gvar.arr[2][0] should be int")

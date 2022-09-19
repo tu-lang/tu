@@ -41,7 +41,9 @@ func type(v<Value>, obj<i8>){
 	}
 }
 
-func type_string(t<i8>){
+func type_string(obj<Value>){
+	if obj == null return "null object"
+	t<i8> = obj.type
 	match t {
 		Null : return "null"
 		Int  : return "int"

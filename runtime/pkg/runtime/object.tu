@@ -183,8 +183,7 @@ func _object_member_get(obj<Object>,key<Value>){
 func object_member_get(obj<Value>, k<u32>){
     key<Value> = int(k)
     if  obj.type != Object {
-        fmt.println("[object_membe_get] invalid obj type :",runtime.type_string(obj.type))
-        os.exit(-1)
+        os.dief("[object_membe_get] invalid obj type :%s",runtime.type_string(obj))
     }
     c<Object> = obj.data 
     return _object_member_get(obj.data,key)
@@ -222,8 +221,7 @@ func get_member_func_addr(obj<Object>,key<Value>){
 }
 func object_func_addr(obj<Value>,k<u32>){
     if  obj.type != Object {
-        fmt.println("[object_func_addr] invalid obj type :",runtime.type_string(obj.type))
-        os.exit(-1)
+        os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
     }
     key<Value> = int(k)
     return get_member_func_addr(obj.data,key)
