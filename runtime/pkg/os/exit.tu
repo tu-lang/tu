@@ -18,7 +18,7 @@ func die(str){
 func dief(size,args...){
     ret<i8*> = __.string_stringfmt(args)
     if ret != null {
-		fmt.vfprintf(std.STDOUT,ret)
+		fmt.vfprintf(std.STDOUT,ret + '\n')
     }
     code<i8> = -1
     std.die(code)

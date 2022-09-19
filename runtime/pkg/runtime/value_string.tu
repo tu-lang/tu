@@ -16,6 +16,19 @@ func value_string_plus(lhs<Value>,rhs<Value>)
             else if rhs.type == Char  tmstr = string.stringputc(tmstr,rhs.data)
             else                      tmstr = string.stringcat(tmstr,rhs.data)
         }
+        Char: {
+            match rhs.type {
+                Char: {
+                    tmstr = string.stringputc(tmstr,lhs.data)
+                    tmstr = string.stringputc(tmstr,rhs.data)
+                }
+                String: {
+                    tmstr = string.stringputc(tmstr,lhs.data)
+                    tmstr = string.stringcat(tmstr,rhs.data)
+                }
+                _ : return lhs.data + rhs.data
+            }
+        }
     }
     return tmstr
 }

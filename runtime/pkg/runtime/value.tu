@@ -27,6 +27,19 @@ func value_plus(lhs<Value>,rhs<Value>) {
         result.data = value_int_plus(lhs,rhs)
         return result
     }
+    if lhs.type == Char || rhs.type == Char {
+        result.type = String
+        if lhs.type == Int || rhs.type == Int 
+            result.type = Int
+        if lhs.type == Char{
+            result.data = value_string_plus(lhs,rhs)    
+            return result
+        } 
+        if rhs.type == Char {
+            result.data = value_string_plus(rhs,lhs)    
+            return result
+        }
+    }
     os.dief("[operator+] unknown type lhs:%s rhs:%s" ,type_string(lhs) ,type_string(rhs))
 }
  // - operator
