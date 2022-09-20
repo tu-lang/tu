@@ -59,7 +59,7 @@ func value_minus(lhs<Value>,rhs<Value>) {
         return result
     }
     //有int类型就进行int类型相加
-    if  lhs.type == Int || rhs.type == Int {
+    if  lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_minus(lhs,rhs)
         return result
@@ -83,9 +83,23 @@ func value_mul(lhs<Value>,rhs<Value>) {
         return result
     }
     //有int类型就进行int类型相加
-    if lhs.type == Int || rhs.type == Int {
+    if (lhs.type == Int && rhs.type == Int ) || lhs.type == Null{
         result.type = Int
         result.data = value_int_mul(lhs,rhs)
+        return result
+    }
+    if (lhs.type == Int && rhs.type == Char) ||
+       (lhs.type == Char && rhs.type == Int) {
+        result.type = String
+        if lhs.type == Int  
+            result.data = value_char2int_mul(rhs,lhs)
+        else 
+            result.data = value_char2int_mul(lhs,rhs)
+        return result
+    }
+    if lhs.type == Char && rhs.type == Char {
+        result.type = String
+        result.data = value_char2char_mul(lhs,rhs)
         return result
     }
     os.dief("[operator*] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
@@ -186,6 +200,11 @@ func value_shift_left(lhs<Value>,rhs<Value>) {
         result.data = value_int_shift_left(lhs,rhs)
         return result
     }
+    if lhs.type == Char && rhs.type == Char {
+        result.type = String
+        result.data = value_string_plus(lhs,rhs)
+        return result
+    }
     os.dief("[operator<<] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
@@ -210,6 +229,11 @@ func value_shift_right(lhs<Value>,rhs<Value>) {
     if lhs.type == Int || rhs.type == Int {
         result.type = Int
         result.data = value_int_shift_right(lhs,rhs)
+        return result
+    }
+    if lhs.type == Char && rhs.type == Char {
+        result.type = String
+        result.data = value_string_plus(lhs,rhs)
         return result
     }
     os.dief("[operator>>] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
@@ -254,10 +278,11 @@ func value_lowerthan(lhs<Value>,rhs<Value>,equal<i32>)
         return result
     }
     //有int类型就进行int类型相加
-    if lhs.type == Int || rhs.type == Int {
+    if lhs.type == Int || rhs.type == Int ||lhs.type == Char || rhs.type == Char {
         result.data = value_int_lowerthan(lhs,rhs,equal)
+        return result
     }
-    return result
+    os.dief("[operator>=] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // > operator

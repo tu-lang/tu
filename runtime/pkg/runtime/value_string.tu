@@ -1,5 +1,6 @@
 use std
 use string
+use os
 
 func value_string_plus(lhs<Value>,rhs<Value>)
 {
@@ -50,27 +51,58 @@ func value_string_mul(lhs<Value>,rhs<Value>)
         tmstr = string.stringcat(tmstr,rhs.data)
         return tmstr
     }
-
-    //说明其中有一个数字 那就多次相加
-    count<i64> = null
-    match lhs.type {
-        Int : count = lhs.data 
-        _   : count = rhs.data
+    //has number
+    if (lhs.type == Int && rhs.type == String) || 
+       (lhs.type == String && rhs.type == Int) {
+        count<i64> = lhs.data
+        if rhs.type == Int count = rhs.data
+        srcv<Value> = lhs
+        if rhs.type == String srcv = rhs
+        // 在字符串运算中都是从新生成一份内存来进行存储结果
+        tmstr<i8*> = string.stringdup(srcv.data)
+        count -= 1
+        for (i<i64> = 0 ; i < count ; i += 1) {
+            tmstr = string.stringcat(tmstr,srcv.data)
+        }
+        return tmstr
     }
-
-    srcv<Value> = null
-    if lhs.type == String srcv = lhs
-    else srcv = rhs
-
-    // 在字符串运算中都是从新生成一份内存来进行存储结果
-    tmstr<i8*> = string.stringdup(srcv.data)
-    //例如: a = "abc" * 1  需要去除乘以1
-    count -= 1
-    for (i<i64> = 0 ; i < count ; i += 1) {
-        tmstr = string.stringcat(tmstr,srcv.data)
+    //has char
+    match lhs.type {
+        Char : {
+            tmstr = string.stringempty()
+            tmstr = string.stringputc(tmstr,lhs.data)
+            tmstr = string.stringcat(tmstr,rhs.data)
+            return tmstr
+        }
+        String:{
+            match rhs.type {
+                Char :{
+                    tmstr<i8*> = string.stringdup(lhs.data)
+                    tmstr = string.stringputc(tmstr,rhs.data)
+                    return tmstr
+                }
+                _: os.dief("[string *] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+            }
+        }
+        _: os.dief("[string *] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    }
+}
+//char int
+func value_char2int_mul(lhs<Value>,rhs<Value>){
+    tmstr<i8*> = string.stringempty()
+    for (i<i64> = 0 ; i < rhs.data ; i += 1) {
+        tmstr = string.stringputc(tmstr,lhs.data)
     }
     return tmstr
 }
+//char char
+func value_char2char_mul(lhs<Value>,rhs<Value>){
+    tmstr<i8*> = string.stringempty()
+    tmstr = string.stringputc(tmstr,lhs.data)
+    tmstr = string.stringputc(tmstr,rhs.data)
+    return tmstr
+}
+
 func value_string_div(lhs<Value>,rhs<Value>){
     return Null
 }
