@@ -107,7 +107,7 @@ func value_div(lhs<Value>,rhs<Value>) {
         return result
     }
     //有int类型就进行int类型相加
-    if lhs.type == Int || rhs.type == Int {
+    if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_div(lhs,rhs)
         return result
@@ -131,7 +131,7 @@ func value_bitand(lhs<Value>,rhs<Value>) {
         return result
     }
     //有int类型就进行int类型相加
-    if  lhs.type == Int || rhs.type == Int {
+    if  lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_bitand(lhs,rhs)
         return result
@@ -155,7 +155,7 @@ func value_bitor(lhs<Value>,rhs<Value>) {
         return result
     }
     //有int类型就进行int类型相加
-    if lhs.type == Int || rhs.type == Int {
+    if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_bitor(lhs,rhs)
         return result
@@ -276,7 +276,7 @@ func value_greaterthan(lhs<Value>,rhs<Value>,equal<i32>)
         return result
     }
     //有int类型就进行int类型相加
-    if lhs.type == Int || rhs.type == Int {
+    if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.data = value_int_greaterthan(lhs,rhs,equal)
     }
     return result
