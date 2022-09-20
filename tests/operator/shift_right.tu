@@ -54,9 +54,22 @@ func test_intp(str){
     }
     fmt.printf("test string shift right %d != test success\n",str)
 }
-
+func test_char2_shift_right(){
+    fmt.println("test_char2_shift_right")
+    //test char << char  => string
+    if 'd' >> 'D' == "dD" {} else {
+        os.panic("c1:%s should be dD",'d' >> 'D')  
+    }
+    //char << string     => unsupport
+    //char << int        => int
+    if 'd' >> 68 == 100 >> 68 {} else {
+        os.panic("c1:%d should be %d",'d' >> 68 , 100 >> 68)
+    }
+    fmt.println("test_char2_shift right success")
+}
 func main(){
     test_int()
     test_string()
     test_intp("sdfsd" >> 100)
+    test_char2_shift_right()
 }

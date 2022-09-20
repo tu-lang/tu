@@ -38,9 +38,32 @@ func test_string(){
     }
     fmt.printf("test string div %d  success\n",a)
 }
-
+func test_char2_div(){
+    fmt.println("test_char2_div ")
+    //test char & char  => int
+    c1  = 'd' 
+    c1 /= 'D'
+    v  = 100 / 68
+    if c1 == v {} else {
+        os.panic("c1:%d should be %d",c1,v)  
+    }
+    //char & string     => unsupport
+    //char to int        => int
+    c1  = 'd' 
+    c1 /= 68
+    if c1 == v {} else {
+        os.panic("c1:%d should be %d",c1,v)
+    }
+    c1  = 68 
+    c1 /= 'd'
+    if c1 == 68 / 100 {} else {
+        os.panic("c1:%d should be %d",c1,v)
+    }
+    fmt.println("test_char2_div success")
+}
 // 除法测试
 func main(){
     test_int()
     test_string()
+    test_char2_div()
 }

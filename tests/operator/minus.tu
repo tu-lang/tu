@@ -32,7 +32,23 @@ func test_intp(str){
     }
     fmt.printf("test string minus %s != abc success\n",str)
 }
-
+func test_char2_minus(){
+    fmt.println("test_char2_minus")
+    //test char - char  => int
+    c1 = 'd' # 100
+    c2 = 'D' # 68
+    if c1 - c2 ==  32 {} else {
+        os.panic("c1-c2:%d should be 32",c1 - c2)  
+    }
+    //char - int        => int
+    if 100 - 'D' == 32 {} else {
+        os.panic("100-D:%d should be 32",100 - 'D')
+    }
+    if 'D' - 100 == -32 {} else {
+        os.panic("D - 100:%d should be -32",'D' - 100)
+    }
+    fmt.println("test_char2_minus success")
+}
 // 注意目前 减运算 需要留空格
 // a = b - 1  correct
 // a = b -1   incorrect
@@ -40,4 +56,5 @@ func main(){
     test_int()
     test_string()
     test_intp("test" + -1)
+    test_char2_minus()
 }

@@ -67,9 +67,32 @@ func test_string_greaterthan(){
     }
 
 }
+func test_char2_greater_equal(){
+    fmt.println("test_char2_greater than")
+    c1 = 'a' # 97
+    c2 = 'z' # 122
+    c3 = '0' # 48
+    c4 = '9' # 57
+    c5 = 'A' # 65
+    c6 = 'Z' # 90
+    //test char & char  => int
+    if 'a' > c1          os.die("a not > a")
+    if 'y' > c2          os.die("y should < z")
+    if '0' > c3          os.die("0 not > 0")
+    if '8' > c4          os.die("8 should < 9")
+    if 'c' > c1 {} else  os.die("c > a")
+    if '7' > c3 {} else  os.die("7 > 0")
+    //char & string     => unsupport
+    //char to int        => int
+    if c5 > 65           os.die("65 not > 65")
+    if 64 > c5           os.die("64 should < 65")
+    if 80 > c5 {} else   os.die("85 should >= A")
+    fmt.println("test_char2_greater equal  success")
+}
 // 测试大于
 func main(){
     test_int_greaterthan()
     test_string_greaterthan()
+    test_char2_greater_equal()
 }
 

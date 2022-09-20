@@ -65,9 +65,29 @@ func test_string_lowereqthan(){
     }
 
 }
-
+func test_char2_lower_equal_than(){
+    fmt.println("test_char2_lower equal than")
+    c1 = 'a' # 97
+    c2 = 'z' # 122
+    c3 = '0' # 48
+    c4 = '9' # 57
+    c5 = 'A' # 65
+    c6 = 'Z' # 90
+    //test char & char  => int
+    if 'a' <= c1 {} else os.die("a should <= a")
+    if 'y' <= 'x'        os.die("y should >= x")
+    if '0' <= '0' {} else os.die("0 <= 0")
+    if '8' <= '9' {} else os.die("8 should <= 9")
+    //char & string     => unsupport
+    //char to int        => int
+    if 'A' <= 65 {} else  os.die("65 >= 65")
+    if 66 <= 'A'          os.die("66 should > 65")
+    if 80 <= 'a' {} else  os.die("85 should <= 97")
+    fmt.println("test_char2_lower equal than success")
+}
 func main(){
     test_int_lowereqthan()
     test_string_lowereqthan()
+    test_char2_lower_equal_than()
 }
 

@@ -36,11 +36,29 @@ func test_string_notequal(str){
         os.exit(1)
     }
 }
-
+func test_char2_notequal(){
+    fmt.println("test_char2_notequal ")
+    //test char & char  => int
+    c1 = 'd' 
+    v  = 'd'
+    if c1 != v  {
+        os.panic("c1:%d should be %d",c1,v)  
+    }
+    //char & string     => unsupport
+    //char to int        => int
+    if c1 != 100 {
+        os.panic("c1:%d should be %d",c1,100)
+    }
+    if 100 != c1 {
+        os.panic("c1:%d should be %d",c1,100)
+    }
+    fmt.println("test_char2_notequal success")
+}
 func main(){
     //测试 数字
     test_int_notequal(100)
     //测试字符串
     test_string_notequal("notequal")
+    test_char2_notequal()
 }
 

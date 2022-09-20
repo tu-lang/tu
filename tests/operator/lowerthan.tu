@@ -63,9 +63,30 @@ func test_string_lowerthan(){
     }
 
 }
-
+func test_char2_lower_than(){
+    fmt.println("test_char2_lower  than")
+    c1 = 'a' # 97
+    c2 = 'z' # 122
+    c3 = '0' # 48
+    c4 = '9' # 57
+    c5 = 'A' # 65
+    c6 = 'Z' # 90
+    //test char & char  => int
+    if 'a' < c1          os.die("a not < a")
+    if 'y' < 'x'         os.die("y should > x")
+    if '0' < '0'         os.die("0 not < 0")
+    if '8' < '9' {} else os.die("8 should < 9")
+    //char & string     => unsupport
+    //char to int        => int
+    if 'A' < 65           os.die("65 not < 65")
+    if 66 < 'A'          os.die("66 should > 65")
+    if 80 < 'a' {} else  os.die("85 should < 97")
+    'c' - "sdfs"
+    fmt.println("test_char2_lower  than success")
+}
 func main(){
     test_int_lowerthan()
     test_string_lowerthan()
+    test_char2_lower_than()
 }
 

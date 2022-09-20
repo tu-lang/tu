@@ -58,7 +58,34 @@ func test_intp(str){
     }
     fmt.printf("test string mul %s != test success\n",str)
 }
-
+func test_char2_mul(){
+    fmt.println("test_char2_mul")
+    //test char * char  => char + char  => string
+    c1 = 'd' # 100
+    c2 = 'D' # 68
+    if c1 * c2 ==  "dD" {fmt.println("c1*c2")} else {
+        os.panic("c1*c2:%s should be dD",c1 * c2)  
+    }
+    if c2 * c1 ==  "Dd" {fmt.println("c2*c1")} else {
+        os.panic("c2*c1:%s should be dD",c2 * c1)  
+    }
+    //char * int        => 'b' * 3 => string("bbb")
+    if 'b' * 3 == "bbb" {fmt.println("b * 3")} else {
+        os.panic("b * 3:%s should be bbb",'b' * 3)
+    }
+    if 5 * 'x' == "xxxxx"{fmt.println("5 * x")} else {
+        os.panic("5 * x:%s should be xxxxx",5 * 'x')
+    }
+    //char * string => char + string
+    if 'b' * "cd" == "bcd" {fmt.println("b * cd")} else {
+        os.panic("b * cd:%s == bcd",'b' * "cd")
+    }
+    //string * char => string + char
+    if "ab" * 'c' == "abc" {fmt.println("ab * c")} else {
+        os.panic("ab * c:%s == abc","ab" * "c")
+    }
+    fmt.println("test_char2_mul success")
+}
 // 注意目前 乘法运算 需要留空格
 // a = b * 1  correct
 // a = b *1   wrong
@@ -66,4 +93,5 @@ func main(){
     test_int()
     test_string()
     test_intp("test" *1)
+    test_char2_mul()
 }

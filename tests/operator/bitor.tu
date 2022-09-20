@@ -54,9 +54,29 @@ func test_intp(str){
     }
     fmt.printf("test string bitor %d != test success\n",str)
 }
-
+func test_char2_bitor(){
+    fmt.println("test_char2_bitor ")
+    //test char & char  => int
+    c1 = 'd' | 'D'
+    v  = 100 | 68
+    if c1 == v {} else {
+        os.panic("c1:%d should be %d",c1,v)  
+    }
+    //char & string     => unsupport
+    //char to int        => int
+    c1 = 'd' | 68
+    if c1 == v {} else {
+        os.panic("c1:%d should be %d",c1,v)
+    }
+    c1 = 68 | 'd'
+    if c1 == v {} else {
+        os.panic("c1:%d should be %d",c1,v)
+    }
+    fmt.println("test_char2_bitor success")
+}
 func main(){
     test_int()
     test_string()
     test_intp("test" | 1)
+    test_char2_bitor()
 }

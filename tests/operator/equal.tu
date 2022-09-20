@@ -33,9 +33,28 @@ func test_variable_equal(){
         fmt.println("test a(10) == b(12) success...\n")
     }
 }
-
+func test_char2_equal(){
+    fmt.println("test_char2_equal ")
+    //test char & char  => int
+    c1 = 'd' 
+    v  = 'd'
+    if c1 == v {} else {
+        os.panic("c1:%d should be %d",c1,v)  
+    }
+    //char & string     => unsupport
+    //char to int        => int
+    if c1 == 100 {} else {
+        os.panic("c1:%d should be %d",c1,100)
+    }
+    if 100 == c1 {} else {
+        os.panic("c1:%d should be %d",c1,100)
+    }
+    fmt.println("test_char2_equal success")
+}
 func main(){
     test_value_equal()
     test_variable_equal()
+    test_char2_equal()
+    
 }
 

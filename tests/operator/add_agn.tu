@@ -44,9 +44,41 @@ func test_string2_add(){
     }
 
 }
-
+func test_char2_add(){
+    fmt.println("test_char2_add agn")
+    //test char to char  => string
+    c1 = 'd' # 100
+    c1 += 'D' # 68
+    if c1 != "dD" {
+        os.panic("c1:%s should be dD",c1)  
+    }
+    //char to string     => string
+    c1 = 'd'
+    c1 += "c12c"
+    if c1 != "dc12c" {
+        os.panic("c1:%s should be dc12c",c1)
+    }
+    c1 = "xx12x"
+    c1 += '9'
+    if c1 != "xx12x9" {
+        os.panic("c1:%s should be xx12x9",c1)
+    }
+    //char to int        => int
+    c1 = 100
+    c1 += 'D' #68
+    if c1 != 168 {
+        os.panic("cd:%d should be 168",c1)
+    }
+    c1 = 'D'
+    c1 += 100
+    if c1 != 168 {
+        os.panic("cd:%d should be 168",c1)
+    }
+    fmt.println("test_char2_add agn success")
+}
 func main(){
     test_int2_add()
     test_string2_add()
+    test_char2_add()
 }
 
