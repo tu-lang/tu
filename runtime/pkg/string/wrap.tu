@@ -1,6 +1,7 @@
 use runtime
 use fmt
 use std
+use os
 
 func new(init<i8*>){
 	r<i8*> = stringnew(init)
@@ -80,16 +81,25 @@ func tostring(num<runtime.Value>){
 			str = stringputc(stringempty(),num.data)
 			return string.new(str)
 		}
-		_ :{
+		runtime.String : return num
+		runtime.Int :{
     		buf<i8*> = new 10
     		ilen<i32> = 10
     		std.itoa(num.data,buf,ilen) 
     		return string.new(buf)
 		}
+		_: os.dief("[tostring] unsupport type:%s",runtime.type_string(str))
 	}
 }
 func tonumber(str<runtime.Value>){
-	base<i8> = 10
-	ret<i64> = std.strtol(str.data,runtime.Null,base)
-	return int(ret) 
+	match str.type {
+		runtime.String:{
+			base<i8> = 10
+			ret<i64> = std.strtol(str.data,runtime.Null,base)
+			return int(ret) 
+		}
+		runtime.Int: return str
+		_: os.dief("[tonumber] unsupport type:%s",runtime.type_string(str))
+
+	}
 }
