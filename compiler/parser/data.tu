@@ -72,6 +72,8 @@ Parser::getGlobalFunc(pkgname ,varname,is_extern){
     fn = null
     if package.packages[pkgname] != null {
         fn = package.packages[pkgname].getFunc(varname,is_extern)
+    }else if pkgname != "" {
+        return null
     }
     if(fn == null){
         if package.packages[this.getpkgname()] != null {
