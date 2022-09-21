@@ -1,0 +1,29 @@
+0x777777 100    # INT     INT 
+"string"        # STRING   
+100.20	        # FLOAT   
+'a' '\n'   	    # CHAR
+& | ~           # BITAND BITOR BITNOT
+<< >> && || !   # SHL SHR LOGAND LOGOR LOGNOT
+== != > >= < <= # EQ NE GT GE LT LE
++ - * / %       # ADD SUB MUL DIV MOD
+= += -= *= /=   # ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN 
+%= <<= >>=      # MOD_ASSIGN SHL_ASSIGN SHR_ASSIGN
+&= |= 		    # BITAND_ASSIGN BITOR_ASSIGN
+, ( ) { }       # COMMA LPAREN RPAREN LBRACE RBRACE
+[] . : ;        # LBRACKET RBRACKET DOT COLON SEMICOLON
+obj if else     # VAR IF ELSE
+true false      # bool
+while for       # WHILE FOR
+null func       # EMPTY FUNC
+return break    # RETURN BREAK
+continue new    # CONTINUE NEW
+extern use co   # EXTERN USE CO
+class  *obj     # CLSS DELREF VAR
+//:             # EXTRA 
+mem match enum  # MEM MATCH ENUM
+i8 i16 i32 i64 u8 u16 u32 u64 # i8 - u64
+goto            # GOTO
+int(            # BUILTIN LPAREN
+sizeof(         # BUILTIN LPAREN
+type(           # BUILTIN LPAREN
+

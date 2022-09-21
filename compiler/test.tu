@@ -1,21 +1,25 @@
 use parser
-use parser.scanner
-use std
-use runtime
+use test
+use os
+use ast
 
 func test(){
-	p = new parser.Parser("./main.tu",null,"main","main")
-	s = p.scanner
+	p = new parser.Parser("./test/case",null,"main","main")
+	reader = p.scanner
 
-	True = true
-	while True {
-		s.scan()
-		fmt.println(s.curLex)
+	for v  : test.token {
+		if *v != reader.scan(){
+			os.dief(
+				"token err: expect %s cur:%s lex:%s",
+				ast.getTokenString(*v) ,
+				ast.getTokenString(reader.curToken),
+				reader.curLex
+			)
+		}
+		fmt.printf("pass token:%s type:%s\n",reader.curLex,ast.getTokenString(reader.curToken))
 	}
+
 }
 func main(){
-	// test()
-	cn = 's'
-	b = cn <= '9'
-	fmt.println(cn,b)
+	test()
 }
