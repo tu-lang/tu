@@ -23,7 +23,7 @@ test_compiler:
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 #make test -j9
-test: test_linker test_compiler $(cases)
+test: test_compiler test_linker $(cases)
 	@echo "all test passed"
 
 %: ./tests/%
