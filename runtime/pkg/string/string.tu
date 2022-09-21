@@ -612,6 +612,18 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                         stringinclen(s,l)
                         i += l
                     }
+                    'c' : {
+                        //init stack
+                        curr = *pp
+                        if stack < 1  pp += 8	else pp -= 8
+                        if stack == 1 {	pp = &fmt	pp += 24 }		
+                        stack -= 1
+                        //stack end
+                        tp<i8*> = s + i
+                        i += 1
+                        *tp = curr
+                        stringinclen(s,single)
+                    }
                     _ : {
                         # s[i++] = next
                         tp<i8*> = s + i
