@@ -53,6 +53,9 @@ Scanner::rollback(x)
 }
 Scanner::next() {
     if this.pos >= std.len(this.buffer) {
+        if this.pos > std.len(this.buffer)
+            os.dief("[error] scanner read char over the buffer pos:%d len:%d",this.pos,std.len(this.buffer))
+        this.pos += 1
         return EOF
     }
     this.column += 1
@@ -64,7 +67,6 @@ Scanner::peek() {
     if this.pos >= std.len(this.buffer) {
         return EOF
     }
-    this.column += 1
 	return this.buffer[this.pos]
 }
 Scanner::emptyline(){
@@ -94,7 +96,7 @@ Scanner::consumeLine()
 
 Scanner::parseNumber(first)
 {
-    lexeme = string.tostring(first)
+    lexeme = first
     isDouble = false
     cn = this.peek()
     c  = first
@@ -116,8 +118,8 @@ Scanner::parseNumber(first)
         cn = this.peek()
         lexeme += c
     }
-    if isDouble return this.token(ast.INT,lexeme)
-    else        return this.token(ast.FLOAT,lexeme)
+    if !isDouble return this.token(ast.INT,lexeme)
+    else         return this.token(ast.FLOAT,lexeme)
 }
 Scanner::parseKeyword(c)
 {
@@ -175,6 +177,7 @@ Scanner::scan(){
     p = this.parser
     p.line = this.line
     p.column = this.column
+    return this.curToken
 }
 
 Scanner::get_next() {
@@ -195,17 +198,16 @@ Scanner::get_next() {
     }
     //TODO: support /*
     if c == '#' || ( c == '/' && this.peek() == '/') {
+        comment:
         cn = this.peek()
         if c == '/'{
             c = this.next()
             cn = this.peek()
         }
         if cn == ':' {
-            
             c = this.next()
             return this.token(ast.EXTRA,"")
         }
-        comment:
         while(c != '\n' && c != EOF){
             c = this.next()
         }
@@ -242,11 +244,22 @@ Scanner::get_next() {
     
     if c == '\'' {
         lexeme = string.tostring(this.next())
+        lit = lexeme[0]
+        if lit == '\\' {
+            lexeme += this.next()
+            if specs[lexeme] == null {
+                utils.panic(
+                    "SyntaxError: sepc [%s] character literal should surround with single-quote",
+                    lexeme
+                )
+            }
+            lit = specs[lexeme]
+        }
         if (this.peek() != '\'') {
-            utils.panic("SyntaxError: a character lit should surround with single-quote %s\n",this.parser.filepath)
+            utils.panic("SyntaxError: a character lit should surround with single-quote c:%c file:%s\n",this.peek(),this.parser.filepath)
         }
         c = this.next()
-        return this.token(ast.CHAR, lexeme)
+        return this.token(ast.CHAR, string.tostring(lexeme))
     }
     
     if c == '\"'{
