@@ -32,9 +32,18 @@ func len(v<Value>){
 	type<i8> = v.type
 	data<i8> = v.data
 	match type {
-		Null : return 0
-		Int  : return data
-		Bool : return data
+		Null : {
+			fmt.println("[warn] len(null)")
+			return 0
+		}
+		Int  : {
+			fmt.println("[warn] len(int)")
+			return 1
+		}
+		Bool : {
+			fmt.println("[warn] len(bool)")
+			return 1
+		}
 		Array : return len_array(v.data)
 		String : return len_string(v.data)
 		Map   : os.die("unsupport len(map)")
