@@ -12,7 +12,8 @@ ori_argc<u64>
 ori_argv<u64>
 ori_envs<u64>
 
-func args_init(argc<u64> argv<u64*>,envp<u64*>){
+func args_init(argc<u64>, argv<u64*>){
+	envp<u64*> = argv + argc * PointerSize
 	c = int(argc)
 	c -= 1
 	ori_envp = envp # save env
@@ -41,5 +42,4 @@ func args_init(argc<u64> argv<u64*>,envp<u64*>){
 		envp += PointerSize
 	}
 	ori_envs = envs
-
 }
