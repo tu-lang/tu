@@ -24,7 +24,11 @@ func kv_update(root<Value>,index<Value>,var<Value>)
 func kv_get(root<Value>,index<Value>){
     match root.type {
         Array : return arr_get(root,index)
-        Map   : return map_find(root,index)
+        Map   : {
+            ret<Value> = map_find(root,index)
+            if ret == Null return null
+            return ret
+        }
         String: return string.index_get(root,index)
         _     : fmt.println("[kv_get] arr or map is invalid ,probably something wrong\n")
     }

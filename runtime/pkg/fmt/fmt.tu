@@ -26,7 +26,7 @@ func println(count<runtime.Value>,args...){
 		stack -= 1
 
         if var == null {
-            vfprintf(std.STDOUT,*"null\n")
+            vfprintf(std.STDOUT,*"NULL\n")
             continue
         }
 		match var.type {

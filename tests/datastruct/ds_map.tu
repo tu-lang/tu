@@ -21,9 +21,30 @@ func test_map_index()
         fmt.println("a[3] == this is 4 failed")
         os.exit(1)
     }
+    //not exist
+    if a["not exist key"] == null {} else {
+        os.die("return null when not exist key in map")
+    }
+    //log
+    if a["nek"] os.die("null value should be false")
+    if a["3333"] {} else {
+        os.dief("a[3333] should be true :%s",a["3333"])
+    }
+    a["empty"] = ""
+    if a["empty"] os.die("a[empty] should be false")
+    if !a["3333"] os.die("should be false")
+    if !a["nek"] {} else {
+        os.die("!null should be false")
+    }
+    //object
+    a["map object"] = new Mo()
+    if a["map object"] {} else {
+        os.die("obect value should be true")
+    }
     fmt.println("map_get success",a[1],a["2"],a["3333"],a["this is 4"])
 
 }
+class Mo{}
 enum {
     Invalid,
     E1,E2,E3
