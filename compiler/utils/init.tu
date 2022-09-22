@@ -9,5 +9,6 @@ func init(){
 		arr = string.split(v,"=")
 		m[arr[0]] = arr[1]
 	}
+	envs = m
 }
 

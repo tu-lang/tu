@@ -115,9 +115,11 @@ Parser::expect(tok<i32>,str<i32>){
     if str != null {
         msg = str
     }
-    err = fmt.sprintf("parse: found token error token:%s \n msg:%s\n line:%d column:%d file:%s\n",
-            ast.getTokenString(this.scanner.curToken),
-            msg,this.scanner.line,this.scanner.column,this.filepath
+    err = fmt.sprintf(
+        "parse: found token error token:%s expect:%s\n msg:%s\n line:%d column:%d file:%s\n",
+        ast.getTokenString(this.scanner.curToken),
+        ast.getTokenString(tok),
+        msg,this.scanner.line,this.scanner.column,this.filepath
     )
     os.panic(err)
 }

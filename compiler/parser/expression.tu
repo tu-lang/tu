@@ -378,11 +378,11 @@ Parser::parseNewExpr()
 }
 Parser::parseVarExpr(var)
 {
-    utils.debug("parser.Parser::parseVarExpr()")
+    utils.debugf("parser.Parser::parseVarExpr() var:%s",var)
     //FIXME: the var define order
     // package(var)
     package = var
-    if std.len(var != "_" && var != "__" && this.import,var){
+    if var != "_" && var != "__" && this.import[var] {
         package = this.import[var]
     }
     match this.scanner.curToken {

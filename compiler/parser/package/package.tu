@@ -33,10 +33,10 @@ Package::parse()
     abpath += "/" + this.path
 
     if !std.is_dir(abpath) {
+        utils.debugf("Parser: current package import not exist :%s",abpath)
         abpath = "/usr/local/lib/copkg/" + this.path
-        utils.debug("Parser: package import:%s",abpath)
         if !std.is_dir(abpath) {
-            utils.debug("Parser: global pkg path not exist!")
+            utils.debugf("Parser: global pkg path not exist! :%s %s",abpath,this.path)
             return false  
         }
     }

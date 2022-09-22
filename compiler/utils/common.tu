@@ -17,7 +17,7 @@ func max(l,r){
 	return r
 }
 func pwd(){
-	if std.exist(envs,"PWD") {
+	if std.exist("PWD",envs) {
 		return envs["PWD"]
 	}	
 	return ""
