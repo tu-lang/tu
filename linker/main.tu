@@ -63,7 +63,9 @@ func scan(){
         i += 1
     }
     # 开始链接
-    linker.link(out)
+    if !linker.link(out) {
+        utils.error("Generate " + out + " Failed")
+    }
     utils.msg(100,"Generate " + out + " Passed")
 }
 

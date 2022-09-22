@@ -51,8 +51,7 @@ Linker::collectInfo()
 		utils.debug("Collect object info " + e.elfdir)
 		# 记录段表信息
 		for(seg : this.segNames){
-			tmp<u64> = e.shdrTab[seg]
-			if  tmp != runtime.Null  {
+			if std.exist(seg,e.shdrTab) {
 				this.segLists[seg].ownerList[] = e
 			}
 		}
@@ -74,8 +73,7 @@ Linker::collectInfo()
 				//utils.debug(name, " 已定义")
 				symLink.prov = e
 				symLink.recv = null
-				exist<u64> = this.symDef[symLink.name]
-				if exist != null {
+				if std.exist(symLink.name,this.symDef) {
 					def = this.symDef[symLink.name]
 					utils.debug("符号名定义冲突: ",symLink.name,e.elfdir,def.prov.elfdir)
 					os.exit(-1)
@@ -93,14 +91,14 @@ Linker::symValid()
 	utils.msg(40,"Checking symbol valid")
 	flag = true
 
-	exist<u64> = this.symDef["main"]
-	if exist == null os.die("链接器找不到入口程序:main")
+	if !std.exist("main",this.symDef) {
+		os.die("链接器找不到入口程序: main")
+	}
 
 	startOwner = this.symDef["main"]
 	# 遍历未定义的符号
 	for(undefine : this.symLinks){
-		exist = this.symDef[undefine.name]
-		if exist != null {
+		if std.exist(undefine.name , this.symDef) {
 			def = this.symDef[undefine.name]
 			undefine.prov = def.prov //绑定未定义符号源定义处
 			def.recv = def.prov

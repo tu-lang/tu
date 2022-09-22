@@ -64,7 +64,7 @@ func ELF32_ST_BIND(val<u8>){
 func ELF64_ST_BIND(val){
 	return ELF32_ST_BIND(val)
 }
-func ELF64_ST_TYPE(val){
+func ELF64_ST_TYPE(val<u8>){
 	return val & 0xf
 }
 func ELF64_R_TYPE(val<i64>){
