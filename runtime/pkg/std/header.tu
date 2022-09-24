@@ -36,8 +36,8 @@ mem Stat {
     u64 st_size
     u64 st_blksize
     u64 st_blocks
-    u64 st_atime
-    u64 st_mtime
-    u64 st_ctime
+    u64 st_atime[2]
+    u64 st_mtime[2]
+    u64 st_ctime[2]
     u64 reserved[3]
 }
