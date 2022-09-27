@@ -49,7 +49,7 @@ func CreateFunction(fn) {
         Store_gp(i, -8 * ( i + 1 ), 8)
    
     vardic = fn.getVariadic()
-    i = 0
+    i = 1
     if fn.block != null {
         funcCtxChain = []
         blockcreate(funcCtxChain)
@@ -67,8 +67,7 @@ func CreateFunction(fn) {
                 count  = ast.incr_labelid()
                 writeln("   cmp $0,%%rax")
                 writeln("   jne L.args.%d",count)
-                writeln("   lea %s(%%rip) , %%rsi",lid)
-                internal.miss_args(i)
+                internal.miss_args(i,lid,fn.clsname != "")
                 writeln("L.args.%d:",count)
             }
             i += 1

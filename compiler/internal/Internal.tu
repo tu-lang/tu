@@ -181,7 +181,11 @@ func type_id(id,isobj){
     }
     call("runtime_type")
 }
-func miss_args(pos){
+func miss_args(pos,funcname,isclass){
     compile.writeln("   mov $%d , %rdi",pos)
+    compile.writeln("   lea %s(%%rip), %%rsi", funcname)
+    iscls = 0
+    if isclass iscls = 1
+    compile.writeln("   mov $%d , %rdx",iscls)
     call("runtime_miss_args")
 }
