@@ -449,7 +449,14 @@ func binary_operator(opt<i32>, lhs<Value>, rhs<Value>)
     return ret
 }
 
-func miss_args(pos<i32>,fname<i8*>){
+func miss_args(pos<i32>,fname<i8*>,isclass<i8>){
     str = string.new(fname)
-    fmt.printf("[warn] Missing argument %I for %s\n",int(pos),str)
+    if isclass {
+        pos -= 1
+    }
+    if isclass && pos == 0 {
+        fmt.printf("[warn] Missing first argument \'this\' for class memthod %s()\n",str)
+        return Null
+    }
+    fmt.printf("[warn] Missing argument %I for %s()\n",int(pos),str)
 }
