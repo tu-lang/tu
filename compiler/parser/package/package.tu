@@ -27,10 +27,10 @@ Package::init(name , path , multi) {
 }
 Package::parse()
 {
-    utils.debug("found import.start parser..")
 
     abpath = utils.pwd()
     abpath += "/" + this.path
+    utils.debugf("found import.start parser.. %s",abpath)
 
     if !std.is_dir(abpath) {
         utils.debugf("Parser: current package import not exist :%s",abpath)

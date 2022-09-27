@@ -71,7 +71,7 @@ Parser::parse()
     while True {
         match this.scanner.curToken  {
             ast.FUNC : {
-                f = this.parseFuncDef()
+                f = this.parseFuncDef(false,false)
                 this.addFunc(f.name,f)
             }
             ast.EXTERN : {
@@ -116,8 +116,9 @@ Parser::expect(tok<i32>,str<i32>){
         msg = str
     }
     err = fmt.sprintf(
-        "parse: found token error token:%s expect:%s\n msg:%s\n line:%d column:%d file:%s\n",
+        "parse: found token error token:%s(%s) expect:%s\n msg:%s\n line:%d column:%d file:%s\n",
         ast.getTokenString(this.scanner.curToken),
+        this.scanner.curLex,
         ast.getTokenString(tok),
         msg,this.scanner.line,this.scanner.column,this.filepath
     )

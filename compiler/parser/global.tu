@@ -71,7 +71,7 @@ Parser::parseClassFunc(var){
     
     this.scanner.curToken  = ast.FUNC
     
-    f = this.parseFuncDef(true)
+    f = this.parseFuncDef(true,false)
     this.check(f != null)
     
     f.clsName = var
@@ -97,7 +97,7 @@ Parser::parseExternClassFunc(pkgname){
     
     this.scanner.curToken  = ast.FUNC
     
-    f = this.parseFuncDef(true)
+    f = this.parseFuncDef(true,false)
     this.check(f != null)
     
     f.clsName = clsname

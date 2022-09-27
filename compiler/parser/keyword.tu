@@ -42,7 +42,7 @@ Parser::parseClassDef()
                 s.initmembers[] = member
             }
         }else if this.scanner.curToken == ast.FUNC {
-            f = this.parseFuncDef(true)
+            f = this.parseFuncDef(true,false)
             this.check(f != null)
 
             f.isObj = true
@@ -188,14 +188,15 @@ Parser::parseMember(tk,idx,pointer){
 
 Parser::parseFuncDef(member,closure)
 {
-    utils.debug("parser.Parser::parseFuncDef() found function. start parser..")
+    utils.debug(
+        "parser.Parser::parseFuncDef() found function: "
+    )
     this.expect(ast.FUNC)
     this.scanner.scan()
     node = new ast.Function()
     node.parser = this
     node.package = this.pkg
     this.currentFunc = node
-
     if !closure {
         if this.hasFunc(this.scanner.curLex)
             this.check(false,"SyntaxError: already define function ")
@@ -205,7 +206,6 @@ Parser::parseFuncDef(member,closure)
     }
 
     this.expect( ast.LPAREN)
-
     if member {
         var = new gen.VarExpr("this",this.line,this.column)
         node.params_var["this"] = var
