@@ -437,15 +437,19 @@ func unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
 func binary_operator(opt<i32>, lhs<Value>, rhs<Value>)
 {
     if lhs == null {
-        fmt.println("[binary-op] probably wrong at there!")
-        return null
+        os.dief(
+            "[binary-op] op:%s probably wrong at there!",
+            token_string(opt)
+        )
     }
     ret<Value> = operator_switch(opt,lhs,rhs)
     if ret.data == 1 && ret.type == String 
         fmt.println("[binaryop] something error") 
     
-    //TODO: ret == 0x7ffff7fad090
-    if ret == 140737353797776 
-        fmt.println("[binaryop] something error") 
     return ret
+}
+
+func miss_args(pos<i32>,fname<i8*>){
+    str = string.new(fname)
+    fmt.printf("[warn] Missing argument %I for %s\n",int(pos),str)
 }
