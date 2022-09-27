@@ -181,3 +181,7 @@ func type_id(id,isobj){
     }
     call("runtime_type")
 }
+func miss_args(pos){
+    compile.writeln("   mov $%d , %rdi",pos)
+    call("runtime_miss_args")
+}

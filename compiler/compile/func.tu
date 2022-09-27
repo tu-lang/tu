@@ -32,7 +32,13 @@ func CreateFunction(fn) {
 
     funcname = fn.fullname()
     utils.debug("compile.CreateFunction()  fullname:%s",funcname)
-    
+
+    //register function label
+    lid = ".L.funcname." + ast.incr_labelid()
+    writeln("   .globl %s",lid)
+    writeln("%s:",lid)
+    writeln("   .string \"%s\"",fn.beautyName())
+    //register function body 
     writeln(".global %s", funcname)
     writeln("%s:", funcname)
     writeln("    push %%rbp")
@@ -41,7 +47,9 @@ func CreateFunction(fn) {
     
     for i = 0; i < 6; i += 1
         Store_gp(i, -8 * ( i + 1 ), 8)
-    
+   
+    vardic = fn.getVariadic()
+    i = 0
     if fn.block != null {
         funcCtxChain = []
         blockcreate(funcCtxChain)
@@ -50,6 +58,21 @@ func CreateFunction(fn) {
 
         for(arg : fn.params_order_var){
             funcCtx.createVar(arg.varname,arg)
+            //fixme: ignore internal pkg for debug
+            match fn.package.full_package {
+                "std" | "os" | "string" | "runtime" | "fmt" : continue
+            }
+            if !arg.structtype && vardic == null {
+                arg.compile(funcCtx)
+                count  = ast.incr_labelid()
+                writeln("   cmp $0,%%rax")
+                writeln("   jne L.args.%d",count)
+                writeln("   lea %s(%%rip) , %%rsi",lid)
+                internal.miss_args(i)
+                writeln("L.args.%d:",count)
+            }
+            i += 1
+
         }
         
         for(stmt : fn.block.stmts){

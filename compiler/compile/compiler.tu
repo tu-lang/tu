@@ -27,10 +27,11 @@ func link(){
         for(p : pkg.parsers){
             //add external library
             for(l : p.links){
-                args += l
+                args += " " + l
             }
         }
     }
+    utils.debug(args)
     os.shell(args)
 }
 func registerMain()

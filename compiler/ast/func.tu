@@ -97,3 +97,21 @@ Function::getVar(name){
     }
     return null
 }
+Function::beautyName(){
+    funcname = this.parser.getpkgname() + "::" + this.name
+	if this.clsName != "" {
+        c = this.package.getClass(this.clsName)
+        if c == null {
+            os.die("fn exception")
+        }
+        funcname = this.parser.getpkgname() + "::" + c.name + "::" + this.name
+    }
+	return funcname
+}
+Function::getVariadic(){
+	for var : this.params_order_var {
+    	if var.is_variadic
+		    return var
+    }
+	return null
+}
