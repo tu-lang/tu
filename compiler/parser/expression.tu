@@ -83,8 +83,11 @@ Parser::parseChainExpr(first){
     return ret
 }
 
-Parser::parseExpression(oldPriority)
+Parser::parseExpression(_oldPriority<u64>)
 {
+    //TODO: support default args value
+    oldPriority = 1
+    if _oldPriority != 0 oldPriority = _oldPriority
     utils.debugf("parse.Parser::parseExpression() pri:%i",oldPriority)
     p = this.parseUnaryExpr()
     
@@ -404,7 +407,7 @@ Parser::parseVarExpr(var)
                 
                 obj = null
                 if this.currentFunc != null {
-                    if std.exist(var,this.this.currentFunc.locals)
+                    if std.exist(var,this.currentFunc.locals)
                         obj = this.currentFunc.locals[var]
                     else
                         obj = this.currentFunc.params_var[var]
@@ -539,7 +542,7 @@ Parser::parseVarExpr(var)
 }
 Parser::parseFuncallExpr(callname)
 {
-    utils.debug("parser.Parser::parseFuncallExpr()")
+    utils.debug("parser.Parser::parseFuncallExpr() callname:%s",callname)
     this.scanner.scan()
     val = new gen.FunCallExpr(this.line,this.column)
     val.funcname = callname

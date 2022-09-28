@@ -96,9 +96,10 @@ Parser::panic(args...){
     err = fmt.sprintf(args)
     this.check(false,err)
 }
-Parser::check(check , err)
+Parser::check(check , err<i8*>)
 {
     if check return  null
+    if err == null err = ""
     this.panic("parse: found token error token:%d:%s \n"
               "msg:%s\n"
               "line:%d column:%d file:%s\n",
