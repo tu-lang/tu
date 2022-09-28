@@ -460,3 +460,18 @@ func miss_args(pos<i32>,fname<i8*>,isclass<i8>){
     }
     fmt.printf("[warn] Missing argument %I for %s()\n",int(pos),str)
 }
+func check_object(obj<Value>){
+    if obj == Null return Null
+    if obj.type == Null return Null
+    return True
+}
+func miss_objects(filename<i8*>,funcname<i8*>,line<i32>,column<i32>){
+    l = int(line)
+    c = int(column)
+    os.dief(
+        "[error] call to undefined method %s in %s on line  %d column %d\n",
+        string.new(funcname),
+        string.new(filename),
+        l,c
+    )
+}
