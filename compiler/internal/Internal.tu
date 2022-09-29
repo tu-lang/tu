@@ -129,8 +129,23 @@ func call(funcname)
     compile.writeln("    mov $%d, %%rax", 0)
     compile.writeln("    call *%%r10")
 }
-func object_member_get(name)
+func check_object(expr){
+    compile.writeln("    mov (%%rsp) , %rdi")
+    compile.writeln("    call runtime_check_object")
+    count = ast.incr_labelid()
+    compile.writeln("    cmp $0, %%rax")
+    compile.writeln("    jne  L.args.%d", count)
+    //filename , funcname 
+    compile.writeln("    lea %s(%%rip), %%rdi", compile.currentParser.filenameid)
+    compile.writeln("    lea %s(%%rip), %%rsi", compile.currentFunc.funcnameid)
+    compile.writeln("    mov $%d , %%rdx",expr.line)
+    compile.writeln("    mov $%d , %%rcx",expr.column)
+    compile.writeln("    call runtime_miss_objects")
+    compile.writeln("L.args.%d:", count)
+}
+func object_member_get(expr,name)
 {
+    check_object(expr)
     compile.Pop("%rdi")
     hk = utils.hash(name)
     compile.writeln("# [debug] object_member_get name:%s  hk:%I",name,hk)
@@ -151,9 +166,9 @@ func object_func_add(name)
 
     call("runtime_object_func_add")
 }
-func object_func_addr(name)
+func object_func_addr(expr,name)
 {
-    
+    check_object(expr) 
     compile.Pop("%rdi")
 
     hk = utils.hash(name)

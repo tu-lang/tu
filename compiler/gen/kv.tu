@@ -64,7 +64,7 @@ IndexExpr::compile(ctx) {
             compile.GenAddr(var.ret)
             compile.Load()
             compile.Push()
-            internal.object_member_get(this.varname)
+            internal.object_member_get(this,this.varname)
             compile.Push() 
         }
         ast.Var_Extern_Global | ast.Var_Local_Global | ast.Var_Local :{ 
@@ -98,7 +98,7 @@ IndexExpr::assign( ctx , opt ,rhs) {
             compile.GenAddr(var.ret)
             compile.Load()
             compile.Push()
-            internal.object_member_get(this.varname)
+            internal.object_member_get(this,this.varname)
             compile.Push() 
         }
         ast.Var_Extern_Global | ast.Var_Local_Global | ast.Var_Local :{ 

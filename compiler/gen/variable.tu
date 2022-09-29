@@ -92,7 +92,7 @@ VarExpr::compile(ctx){
             compile.Load()
             compile.Push()
             
-            internal.object_member_get(this.varname)
+            internal.object_member_get(this,this.varname)
         }
         ast.Var_Local_Mem_Global : {
             sm = new StructMemberExpr(this.package,this.line,this.column)

@@ -218,7 +218,7 @@ class IfStmt : ast.Ast {
     cases = [] 
     elseCase
     func init(line,column){
-        super(line,column)
+        super.init(line,column)
     }
 }
 IfStmt::toString() {

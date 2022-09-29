@@ -114,7 +114,7 @@ Parser::parseExpression(_oldPriority<u64>)
         if type(p) == type(gen.VarExpr) && this.currentFunc {
             var = p
             
-            if !std.exist(var.varname,this.currentFunc.params_var) && !std.exist(this.currentFunc.locals,var.varname) {
+            if !std.exist(var.varname,this.currentFunc.params_var) && !std.exist(var.varname,this.currentFunc.locals) {
                 this.currentFunc.locals[var.varname] = var
             }
         }

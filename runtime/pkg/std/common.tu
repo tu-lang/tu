@@ -98,7 +98,7 @@ func exist(key,v<runtime.Value>){
 			has<i32> = runtime.map_find(v,key)
 			if has != null return True
 		}
-		_     : fmt.println("[warn] exist(unknow type)")
+		_     : fmt.printf("[warn] unsupport exist(,%s)\n",runtime.type_string(v))
 	}
 	return False
 }

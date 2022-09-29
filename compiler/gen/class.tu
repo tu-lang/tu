@@ -145,7 +145,7 @@ MemberExpr::compile(ctx)
 	utils.debug("gen.MemberExpr::compile()")
 	this.record()
 	if this.varname == "" {
-		internal.object_member_get(this.membername)
+		internal.object_member_get(this,this.membername)
 		return null
 	}
 	var = GP().getGlobalVar("",this.varname)
@@ -161,7 +161,7 @@ MemberExpr::compile(ctx)
 	compile.GenAddr(var)
 	compile.Load()
 	compile.Push()
-	internal.object_member_get(this.membername)
+	internal.object_member_get(this,this.membername)
 	return var
 }
 MemberExpr::assign(ctx, opt ,rhs)
@@ -206,7 +206,7 @@ MemberCallExpr::compile(ctx)
         this.panic("varname should be null")
     }
     compile.Push()
-    internal.object_member_get(this.membername)
+    internal.object_member_get(this,this.membername)
     compile.Push()
 	params = this.call.args
     
