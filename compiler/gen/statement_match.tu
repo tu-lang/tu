@@ -6,7 +6,7 @@ class MatchStmt : ast.Ast {
     cases = []
     defaultCase
     func init(line,column){
-        super(line,column)
+        super.init(line,column)
     }
 }
 MatchStmt::toString(){
