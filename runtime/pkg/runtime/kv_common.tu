@@ -47,7 +47,9 @@ func len(v<Value>){
 		Array : return len_array(v.data)
 		String : return len_string(v.data)
 		Map   : os.die("unsupport len(map)")
-		_     : fmt.println("[warn] len(unknow type)")
+		_     : {
+			os.dief("[warn] len(unknow type:%s)",type_string(v))
+		}
 	}
 	return 0
 }

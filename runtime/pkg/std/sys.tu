@@ -15,3 +15,10 @@ func brk(brk<u64>)
 
 //execv ; implement by asm
 func execve(filename<i8*>,argv<i8*>,envp<i8*>)
+
+func sigreturn()
+//sig %rdi
+//act %rsi
+//oact %rdx
+//size %r10
+func rt_sigaction(sig<i32>,act<u64>,oact<u64>,size<u64>)

@@ -130,3 +130,16 @@ std_time:
      mov $201 , %rax
      syscall
      retq
+
+.globl std_sigreturn
+std_sigreturn:
+     mov $15 , %rax
+     syscall
+     retq
+
+.globl std_rt_sigaction
+std_rt_sigaction:
+     mov %rcx, %r10
+     mov $13 , %rax
+     syscall
+     retq
