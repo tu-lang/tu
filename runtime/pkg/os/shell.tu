@@ -1,6 +1,8 @@
 use std
 use runtime
 
+EXIT_CODE<i32> = 127
+
 func system_argv(sh<u64*>,c<u64*>,cmd<u64*>){
     argv<i8*> = new 32 
     p<u64*> = argv
@@ -14,5 +16,8 @@ func system_argv(sh<u64*>,c<u64*>,cmd<u64*>){
 func shell(cmd)
 {
     argv<u64*> = system_argv(*"sh",*"-c",*cmd)
-    std.execve(*"/bin/sh",argv,runtime.ori_envp)
+    if fork() == 0 {
+        std.execve(*"/bin/sh",argv,runtime.ori_envp)
+        std.die(EXIT_CODE)
+    }
 }
