@@ -48,3 +48,8 @@ runtime_gc_get_ax:
 runtime_gc_get_bx:
     movq %rbx,%rax
     ret
+
+.globl runtime_callerpc
+runtime_callerpc:
+    mov 8(%rbp) , %rax
+    ret
