@@ -20,4 +20,5 @@ func shell(cmd)
         std.execve(*"/bin/sh",argv,runtime.ori_envp)
         std.die(EXIT_CODE)
     }
+    _wait4()
 }

@@ -1,6 +1,7 @@
 //implement by asm
 func _getpid()
 func _fork()
+func _wait4()
 
 //user space
 func getpid() {
