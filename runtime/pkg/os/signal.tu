@@ -24,7 +24,7 @@ func setsignal(i<u32> , fn<u64>) {
 	sa.sa_flags = _SA_SIGINFO | _SA_ONSTACK | _SA_RESTORER | _SA_RESTART
 	sa.sa_mask = EMPTY_MASK
 
-	sa.sa_restorer = std.sigreturn
+	// sa.sa_restorer = std.sigreturn
 	sa.sa_handler = fn
 	mask_size<i32> = 8
 	std.rt_sigaction(i, sa, Null,mask_size)
