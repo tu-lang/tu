@@ -24,8 +24,10 @@ func init(){
 	if std.len(arr1) != 0 os.die("native.arr1 should be 0")
 	if std.len(arr2) != 3 os.die("native.arr2 should be 3")
 	if arr3.used != 3 os.die("native.arr2.len should be 3")
-	if arr2[1] != "test" os.die("native.arr2[1] should be test")
-	if map2["len"] != 5 os.die("native.map2[test] should be 5")
+	_arr2 = arr2
+	_map2 = map2
+	if _arr2[1] != "test" os.die("native.arr2[1] should be test")
+	if _map2["len"] != 5 os.die("native.map2[test] should be 5")
 
 	//finish checkd
 	var.allcheck += 1
