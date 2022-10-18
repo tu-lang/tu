@@ -206,6 +206,14 @@ func test_chain_field(){
 
 	fmt.println("test chain field success")
 }
+func test_var_index(){
+	p<i8*> = new 4
+	p[0] = 'a'
+	if p[0] != 'a' os.die("p[0] != a")
+	a<i8> = 2
+	if p[a - 2] != 'a' os.die("p[0] != a")
+	fmt.println("test_var_index success")
+}
 func main(){
 	test_8()
 	test_16()
@@ -214,4 +222,6 @@ func main(){
 
 	test_mem_field()
 	test_chain_field()
+
+	test_var_index()
 }
