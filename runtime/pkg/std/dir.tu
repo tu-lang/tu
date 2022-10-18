@@ -89,8 +89,8 @@ init_dents:
     #incr pos
     dir.pos += d.d_reclen
     # return wrap obj
-    #file = new dirent(file_type,file_name)
-    file = new dirent()
+    #file = new Dirent(file_type,file_name)
+    file = new Dirent()
     file.type = file_type
     file.name = file_name
     //TODO: file.path = dir.path + "/" +file_name (mem.field + dynamic string)
@@ -101,11 +101,11 @@ init_dents:
     file.path = dir_path
     return file
 }
-dirent::isFile(){
+Dirent::isFile(){
     if this.type == "file" return True
     return False
 }
-dirent::isDir(){
+Dirent::isDir(){
     if this.type == "directory" return True
     return False
 }
