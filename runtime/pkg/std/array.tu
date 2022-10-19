@@ -2,8 +2,8 @@
 use fmt
 use os
 use runtime.gc
-use std
 use string
+use runtime
 
 mem Array {
     u64*     addr
@@ -16,13 +16,15 @@ mem Array_iter {
 	u64* cur
 }
 func array_create(n<u32>,size<u64>){
+    if n == 0 n = ARRAY_SIZE
+    if size == 0 size = runtime.PointerSize
 
     a<Array> = new Array
     if  a == null {
         fmt.println("[arr_create] failed to create\n")
         return Null
     }
-    if a.init(n,size)  != True {
+    if a.init(n,size)  != runtime.True {
         fmt.println("[arr_init] failed to init\n")
         return Null
     }
@@ -37,9 +39,9 @@ Array::init(n<u32>,size<u64>){
     this.addr = new memsize
 
     if  this.addr == null {
-        return False
+        return runtime.False
     }
-    return True
+    return runtime.True
 }
 Array::array_destroy(){
     gc.gc_free(this)
@@ -48,7 +50,7 @@ Array::tail(){
     if  this == null os.die("[arr_tail] not array_type")
     if this.used <= 0 {
         fmt.println("[warn] array_tail for empty array")
-        return newobject(Null,Null)
+        return runtime.newobject(Null,Null)
     }
     return this.addr[this.used - 1]
 }
@@ -66,7 +68,7 @@ Array::pop(){
 
     if this.used <= 0 {
         fmt.println("[warn] array_pop for empty array")
-        return newobject(Null,Null)
+        return runtime.newobject(Null,Null)
     }
 
     //pop one 
@@ -85,7 +87,7 @@ Array::push(){
             fmt.println("[arr_pushn] failed to expand memeory")
             return Null
         }
-        std.memcpy(newp,this.addr,size)
+        memcpy(newp,this.addr,size)
         gc.gc_free(this.addr)
         this.addr = newp
         this.total *= 2
@@ -98,15 +100,15 @@ Array::push(){
 Array::merge(v2<Array>){
     if this.size != v2.size {
         fmt.println("[warn] array_merge: incompact with size")
-        return False
+        return runtime.False
     }
     p<u64*>  = this.pushN(v2.used)
     if p == Null {
         fmt.println("[warn] array_merge: array_push_n failed")
-        return False
+        return runtime.False
     }
-    std.memcpy(p, v2.addr, v2.used * v2.size)
-    return True
+    memcpy(p, v2.addr, v2.used * v2.size)
+    return runtime.True
 }
 Array::pushN(n<u32>)
 {
@@ -126,7 +128,7 @@ Array::pushN(n<u32>)
             fmt.println("[arr_pushn] failed to expand memeory")
             return Null
         }
-        std.memcpy(newp, this.addr, this.used * this.size)
+        memcpy(newp, this.addr, this.used * this.size)
         gc.gc_free(this.addr)
         this.addr = newp
         this.total = total
@@ -135,4 +137,7 @@ Array::pushN(n<u32>)
     this.used += n
 
     return elt
+}
+Array::len(){
+    return this.used
 }

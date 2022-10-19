@@ -34,7 +34,7 @@ func pop_head(v<runtime.Value>){
 	}
 	match v.type {
 		runtime.Array:{
-			arr<runtime.Array> = v.data
+			arr<Array> = v.data
 			if  arr == null os.die("[arr_pop_head] not array_type")
 			if arr.used <= 0 {
 				fmt.println("[warn] array_pop for empty array")
@@ -62,7 +62,7 @@ func head(v){
 func tail(v<runtime.Value>){
 	match v.type {
 		runtime.Array : {
-			arr<runtime.Array> = v.data
+			arr<Array> = v.data
 			return arr.tail()
 		}
 		_: fmt.println("[warn] std.back unsupport type")
@@ -77,7 +77,7 @@ func merge(v1<runtime.Value>,v2<runtime.Value>){
 				fmt.println("[warn] merge unsupport not array value")
 				return False
 			}
-			arr<runtime.Array> = v1.data
+			arr<Array> = v1.data
 			if arr.merge(v2.data) != runtime.True {
 				fmt.println("[warn] array merge failed")
 				return False

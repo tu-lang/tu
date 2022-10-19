@@ -1,6 +1,7 @@
 
 use fmt
 use string
+use std
 
 // 解析字符串
 func len_string(v<u8*>){
@@ -16,11 +17,7 @@ func len_string(v<u8*>){
 	//return len
 }
 
-
-func len_array(arr<Array>){
-	return int(arr.used)
-}
-func cap_array(arr<Array>){
+func cap_array(arr<std.Array>){
 	return int(arr.total)
 }
 func len(v<Value>){
@@ -39,7 +36,10 @@ func len(v<Value>){
 			fmt.println("[warn] len(bool)")
 			return 1
 		}
-		Array : return len_array(v.data)
+		Array : {
+			arr<std.Array> = v.data
+			return int(arr.len())
+		}
 		String : return len_string(v.data)
 		Map   : os.die("unsupport len(map)")
 		_     : {
@@ -53,7 +53,7 @@ func pop(v<Value>){
 	type<i8> = v.type
 	match type {
 		Array  : {
-			arr<Array> = v.data
+			arr<std.Array> = v.data
 			return arr.pop()
 		}
 		_      : {
@@ -67,7 +67,7 @@ func head(v<Value>){
 	type<i8> = v.type
 	match type {
 		Array  : {
-			arr<Array> = v.data
+			arr<std.Array> = v.data
 			return arr.head()
 		}
 		Map  : return map_head(v.data)
@@ -89,7 +89,7 @@ func arr_get(varr<Value>,index<Value>){
         os.exit(-1)
     }
 
-    arr<Array> = varr.data
+    arr<std.Array> = varr.data
     // 计算索引
     i<i64> = 0
     match index.type {
@@ -107,7 +107,7 @@ func arr_pushone(varr<Value>,var<Value>){
         fmt.println("[arr_pushone] arr or var is null ,probably something wrong\n")
         return Null
     }
-    arr<Array> = varr.data
+    arr<std.Array> = varr.data
     insert<u64*> = arr.push()
     *insert    = var
 }
@@ -116,7 +116,7 @@ func arr_updateone(varr<Value>,index<Value>,var<Value>){
         fmt.println("[arr_updateone] arr or var or index is null ,probably something wrong\n")
         return Null
     }
-    arr<Array> = varr.data
+    arr<std.Array> = varr.data
     i<i64> = 0
 
     match index.type {
@@ -131,7 +131,7 @@ func arr_updateone(varr<Value>,index<Value>,var<Value>){
     }
     arr.addr[i] = var
 }
-func array_in(v1<Value>,v2<Array>){
+func array_in(v1<Value>,v2<std.Array>){
     size<u64> = v2.size
     p<u64*>   = v2.addr 
     used<u32> = v2.used
@@ -148,7 +148,7 @@ func array_in(v1<Value>,v2<Array>){
 func arr_tostring(varr<Value>)
 {
     ret<i8*>   = string.stringempty()
-    arr<Array> = varr.data
+    arr<std.Array> = varr.data
     orr<u64*>  = arr.addr
 
     ret = string.stringcat(ret,*"[")

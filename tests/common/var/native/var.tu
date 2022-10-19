@@ -8,7 +8,7 @@ str<i8*>      = "str2"
 int<i32>      = 12345
 arr1<runtime.Value>      = []
 arr2<runtime.Value>      = [1,"test",3]
-arr3<runtime.Array>      = arr2.data
+arr3<std.Array>      = arr2.data
 
 map1<runtime.Value> 	 = {}
 map2<runtime.Value>      = {"arr":"arr","map":"map","len":5}

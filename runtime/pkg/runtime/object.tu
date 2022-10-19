@@ -3,6 +3,7 @@ use fmt
 use os
 use std
 use string
+use std
 
 
 func newobject(type<i32> , data<u64*>)
@@ -16,7 +17,7 @@ func newobject(type<i32> , data<u64*>)
         Bool:   ret.data = data
         Char:   ret.data = data
         Null:   ret.data = 0
-        Array:  ret.data = array_create(ARRAY_SIZE, PointerSize)
+        Array:  ret.data = std.array_create(std.ARRAY_SIZE, PointerSize)
         Map:    ret.data = map_create()
         Object: ret.data = object_create(data)
         _ : {

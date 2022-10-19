@@ -1,6 +1,4 @@
 
-# array
-ARRAY_SIZE<i8>  = 8
 
 # base
 PointerSize<i32>    = 8

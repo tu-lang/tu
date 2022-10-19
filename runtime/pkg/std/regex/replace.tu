@@ -1,11 +1,12 @@
 use string
 use fmt
 use runtime
+use std
 
 
 func replace(str,src,dst){
 	ret<runtime.Value> = string.split(str,src)
-	arr<runtime.Array> = ret.data	
+	arr<std.Array> = ret.data	
 	
 	s = ""
 	p<u64*> = arr.addr
