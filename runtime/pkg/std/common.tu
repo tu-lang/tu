@@ -61,7 +61,10 @@ func head(v){
 }
 func tail(v<runtime.Value>){
 	match v.type {
-		runtime.Array : return runtime.array_tail(v.data)
+		runtime.Array : {
+			arr<runtime.Array> = v.data
+			return arr.tail()
+		}
 		_: fmt.println("[warn] std.back unsupport type")
 	}
 	return null
@@ -74,8 +77,8 @@ func merge(v1<runtime.Value>,v2<runtime.Value>){
 				fmt.println("[warn] merge unsupport not array value")
 				return False
 			}
-			ret<i8> = runtime.array_merge(v1.data,v2.data)
-			if ret != runtime.True {
+			arr<runtime.Array> = v1.data
+			if arr.merge(v2.data) != runtime.True {
 				fmt.println("[warn] array merge failed")
 				return False
 			}
