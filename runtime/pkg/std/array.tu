@@ -141,3 +141,6 @@ Array::pushN(n<u32>)
 Array::len(){
     return this.used
 }
+Array::cap(){
+	return this.total
+}

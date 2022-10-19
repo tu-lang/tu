@@ -2,6 +2,7 @@
 use fmt
 use string
 use std
+use std.map
 
 // 解析字符串
 func len_string(v<u8*>){
@@ -17,9 +18,6 @@ func len_string(v<u8*>){
 	//return len
 }
 
-func cap_array(arr<std.Array>){
-	return int(arr.total)
-}
 func len(v<Value>){
 	type<i8> = v.type
 	data<i8> = v.data
@@ -70,7 +68,10 @@ func head(v<Value>){
 			arr<std.Array> = v.data
 			return arr.head()
 		}
-		Map  : return map_head(v.data)
+		Map  : {
+            m<map.Rbtree> = v.data
+            return m.head()
+        }
 		_      : {
 			fmt.println("[warn] head(unknow type)")
 			return Null

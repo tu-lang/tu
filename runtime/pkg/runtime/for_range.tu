@@ -2,18 +2,19 @@
 use os
 use fmt
 use std
+use std.map
 
 func for_first(data<Value>){
 	match data.type 
 	{
 		Map : {
-			tree<Rbtree> = data.data
-			if tree.root == tree.sentinel { return }
-			return rbtree_min(tree.root,tree.sentinel)
+			tree<map.Rbtree> = data.data
+			if tree.root == tree.sentinel { return Null}
+			return tree.root.min(tree.sentinel)
 		}
 		Array : {
 			arr<std.Array> = data.data
-			if  arr.used <= 0 { return }
+			if  arr.used <= 0 { return Null}
 			iter<std.Array_iter> = new std.Array_iter
 			iter.addr = arr.addr
 			init_index = 0
@@ -26,7 +27,10 @@ func for_first(data<Value>){
 func for_get_key(data<Value>,node){
 	match data.type {
 		Map : {
-			map_node<Rbtree_node> = node
+			map_node<map.RbtreeNode> = node
+			if node == Null {
+				fmt.println("for get key null")
+			}
 			return map_node.k
 		}
 		Array : {
@@ -39,7 +43,7 @@ func for_get_key(data<Value>,node){
 func for_get_value(data<Value>,node){
 	match data.type  {
 		Map : {
-			map_node<Rbtree_node> = node
+			map_node<map.RbtreeNode> = node
 			return map_node.v
 		}
 		Array : {
@@ -52,7 +56,13 @@ func for_get_value(data<Value>,node){
 }
 func for_get_next(data<Value>,node){
 	match data.type {
-		Map : return rbtree_next(data.data,node)
+		Map : {
+			m<map.Rbtree> = data.data
+			if m == null {
+				fmt.println("empty")
+			}
+			return m.next(node)
+		}
 		Array : {
 			arr<std.Array> = data.data
 			arr_node<std.Array_iter> = node

@@ -1,4 +1,5 @@
 
+use std.map
 
 # base
 PointerSize<i32>    = 8
@@ -12,10 +13,10 @@ mem Value  {
 	u64 type,data 
 }
 mem Object { 
-	Rbtree* members
-	Rbtree* funcs
-	Object* father
-	i32		typeid
+	map.Rbtree* members
+	map.Rbtree* funcs
+	Object* 	father
+	i32			typeid
 }
 func type(v<Value>, obj<i8>){
 	if obj == 1 {

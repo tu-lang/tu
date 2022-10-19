@@ -1,5 +1,6 @@
 use runtime
 use fmt
+use std.map
 
 func rand(v<runtime.Value>){
 
@@ -98,15 +99,15 @@ func exist(key,v<runtime.Value>){
 			}
 		}
 		runtime.Map   : {
-			has<i32> = runtime.map_find(v,key)
+			has<i32> = map.map_find(v,key)
 			if has != null return True
 		}
 		_     : fmt.printf("[warn] unsupport exist(,%s)\n",runtime.type_string(v))
 	}
 	return False
 }
-func is_map(map<runtime.Value>){
-	if  map.type == runtime.Map {
+func is_map(m<runtime.Value>){
+	if  m.type == runtime.Map {
 		return True
 	}
 	return False

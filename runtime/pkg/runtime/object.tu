@@ -4,7 +4,7 @@ use os
 use std
 use string
 use std
-
+use std.map
 
 func newobject(type<i32> , data<u64*>)
 {
@@ -18,7 +18,7 @@ func newobject(type<i32> , data<u64*>)
         Char:   ret.data = data
         Null:   ret.data = 0
         Array:  ret.data = std.array_create(std.ARRAY_SIZE, PointerSize)
-        Map:    ret.data = map_create()
+        Map:    ret.data = map.map_create()
         Object: ret.data = object_create(data)
         _ : {
             fmt.println("[new obj] unknown type")
@@ -68,9 +68,9 @@ func get_object_value(obj<Value>){
     return obj.data
 }
 
-func member_insert_or_update(temp<Rbtree_node>, node<Rbtree_node>,sentinel<Rbtree_node>)
+func member_insert_or_update(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.RbtreeNode>)
 {
-	// Rbtree_node **
+	// RbtreeNode **
 	p<u64*> = null
 
 	while True {
@@ -94,12 +94,12 @@ func member_insert_or_update(temp<Rbtree_node>, node<Rbtree_node>,sentinel<Rbtre
     node.parent = temp
     node.left = sentinel
     node.right = sentinel
-    red(node)
+    node.red()
 }
-func member_find(tree<Rbtree>,key<Value>){
+func member_find(tree<map.Rbtree>,key<Value>){
 
-	node<Rbtree_node> = null
-	sentinel<Rbtree_node> = null
+	node<map.RbtreeNode> = null
+	sentinel<map.RbtreeNode> = null
 
     hk<u64> = get_hash_key(key)
 
@@ -122,15 +122,15 @@ func member_find(tree<Rbtree>,key<Value>){
     }
     return Null
 }
-func member_insert(tree<Rbtree>, k<Value>,v<Value>)
+func member_insert(tree<map.Rbtree>, k<Value>,v<Value>)
 {
 
-	node<Rbtree_node> = new Rbtree_node
+	node<map.RbtreeNode> = new map.RbtreeNode
 	hk<u64> = get_hash_key(k)
     node.key   = hk
     node.k     = k
     node.v     = v
-    rbtree_insert(tree,node)
+    tree.insert(node)
 }
 // return object
 func object_create(typeid<i32>){
@@ -140,13 +140,11 @@ func object_create(typeid<i32>){
         return Null
     }
     c.typeid = typeid
-    members<Rbtree> = new Rbtree
-    members_sentinel<Rbtree_node> = new Rbtree_node
-    rbtree_init(members,members_sentinel,member_insert_or_update)
+    members<map.Rbtree> = map.map_create()
+    members.insert = member_insert_or_update
 
-    funcs<Rbtree> = new Rbtree
-    funcs_sentinel<Rbtree_node> = new Rbtree_node
-    rbtree_init(funcs,funcs_sentinel,member_insert_or_update)
+    funcs<map.Rbtree> = map.map_create()
+    funcs.insert = member_insert_or_update
 
     c.members = members
     c.funcs   = funcs
