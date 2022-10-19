@@ -67,7 +67,7 @@ func malloc(size<u64>){
 			header = header.next
 			continue
 		}
-		if headp.size <= headersize {
+		if header.size <= headersize {
 			header.type = BLOCK_USED
 		}
 		
