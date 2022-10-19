@@ -42,6 +42,10 @@ assert(){
     return
 #    failed "[compile] $input failed"
 }
+clean "./*.s"
+clean "./*.o"
 assert test_scanner.tu
+clean "./*.s"
+clean "./*.o"
 assert main.tu
 log "all passing...."
