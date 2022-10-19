@@ -57,8 +57,7 @@ func LSTRING_TYPE_5_LEN(f<u8>){
 }
 
 func stringavail(s<u8*>) {
-    hdr<u8*> = s - 1
-    flags<u8> = *hdr # s[-1]
+    flags<u8> = s[-1] 
     match flags & LSTRING_TYPE_MASK {
 
         LSTRING_TYPE_5: return runtime.Null
@@ -83,13 +82,12 @@ func stringavail(s<u8*>) {
 }
 
 func stringsetlen(s<u8*>, newlen<u64>) {
-    hdr<u8*> = s - 1
-    flags<u8> = *hdr # s[-1]
+    flags<u8> = s[-1] 
     
     match flags & LSTRING_TYPE_MASK {
         LSTRING_TYPE_5:{
             nl<u64> = newlen << LSTRING_TYPE_BITS
-            *hdr = LSTRING_TYPE_5 | nl
+            s[-1] = LSTRING_TYPE_5 | nl
         }
         LSTRING_TYPE_8:{
             sh8<Stringhdr8> = LSTRING_HDR(LSTRING_TYPE_8,s)
@@ -112,14 +110,13 @@ func stringsetlen(s<u8*>, newlen<u64>) {
 }
 
 func stringinclen(s<u8*>, inc<u64>) {
-    hdr<u8*> = s - 1
-    flags<u8> = *hdr # s[-1]
+    flags<u8> = s[-1] 
     match flags & LSTRING_TYPE_MASK {
         LSTRING_TYPE_5:{
             newlen<u8> = LSTRING_TYPE_5_LEN(flags)
             newlen += inc
             newlen <<= LSTRING_TYPE_BITS
-            *hdr = LSTRING_TYPE_5 | newlen
+            s[-1] = LSTRING_TYPE_5 | newlen
         }
         LSTRING_TYPE_8:{
             sh8<Stringhdr8> = LSTRING_HDR(LSTRING_TYPE_8,s)
@@ -143,8 +140,7 @@ func stringinclen(s<u8*>, inc<u64>) {
 
 //stringalloc() == stringavail() + stringlen()
 func stringalloc(s<u8*>) {
-    hdr<u8*> = s - 1
-    flags<u8> = *hdr # s[-1]
+    flags<u8> = s[-1]
     
     match flags & LSTRING_TYPE_MASK {
         LSTRING_TYPE_5: return LSTRING_TYPE_5_LEN(flags)
@@ -169,8 +165,7 @@ func stringalloc(s<u8*>) {
 }
 
 func stringsetalloc(s<u8*>, newlen<u64>) {
-    hdr<u8*> = s - 1
-    flags<u8> = *hdr # s[-1]
+    flags<u8> = s[-1]
     
     match flags & LSTRING_TYPE_MASK {
         LSTRING_TYPE_5: return runtime.Null

@@ -217,9 +217,7 @@ func stringMakeRoomFor(s<u8*>, addlen<u64>) {
         std.memcpy(newsh + hdrlen, s, len + 1)
         gc.gc_free(sh)
         s = newsh + hdrlen
-        ht = s - 1
-        #s[-1] = type
-        *ht = type
+        s[-1] = type        
         stringsetlen(s, len)
     }
     stringsetalloc(s, newlen)
@@ -234,9 +232,7 @@ func stringcatlen(s<u8*>,t<u64*>, len<u64>) {
     std.memcpy(s+curlen, t, len)
     stringsetlen(s, curlen + len)
 
-    sp<u8*> = s + curlen + len
-    # s[curlen+len] = '\0'
-    *sp = 0
+    s[curlen + len] = '\0'
     return s
 }
 
@@ -254,9 +250,7 @@ func stringcpylen(s<u8*>, t<i8*>, len<u64>) {
         if s == null return runtime.Null
     }
     std.memcpy(s, t, len)
-    sp<u8*> = s + len
-    #s[len] = '\0'
-    *sp = 0
+    s[len] = '\0'
     stringsetlen(s, len)
     return s
 }
@@ -343,9 +337,7 @@ func stringtolower(s<u8*>) {
     j<u64>   = 0
 
     for (j<u64> = 0 ; j < len ; j += 1) {
-        sp<u8*> = s + j
-        #s[j] = tolower(s[j])
-        *sp = std.tolower(*s)
+        s[j] = std.tolower(*s)
     }
 }
 
@@ -354,9 +346,7 @@ func stringtoupper(s<u8*>) {
     j<u64> = 0
 
     for (j<u64> = 0; j < len ; j += 1) {
-        sp<u8*> = s + j
-        # s[j] = toupper(s[j])
-        *sp = std.toupper(*sp)
+        s[j] = std.toupper(s[j])
     }
 }
 
@@ -489,27 +479,21 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
                         i += l
                     }
                     _ : {
-                        # s[i++] = next
-                        tp<i8*> = s + i
+                        s[i] = next
                         i += 1
-                        *tp = next
                         stringinclen(s,single)
                     } 
                 }
             }
             _ : {
-                # s[i++] = *f
-                tp<i8*> = s + i
+                s[i] = *f
                 i += 1
-                *tp = *f
                 stringinclen(s,single)
             }
         }
         f += 1
     }
-    # s[i] = '\0'
-    tp<i8*> = s + i
-    *tp = 0
+    s[i] = 0
     return s
 }
 func stringputc(s<i8*>,c<i8>){
@@ -519,11 +503,8 @@ func stringputc(s<i8*>,c<i8>){
     }
     i<i32> = stringlen(s)
     stringinclen(s,single)
-    tp<i8*> = s + i
-    //s[len(s)] = c 
-    *tp = c    
-    tp += 1
-    *tp = 0
+    s[i] = c
+    s[i + 1] = 0
     return s
 }
 func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
@@ -619,32 +600,25 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                         if stack == 1 {	pp = &fmt	pp += 24 }		
                         stack -= 1
                         //stack end
-                        tp<i8*> = s + i
+                        s[i] = curr
                         i += 1
-                        *tp = curr
                         stringinclen(s,single)
                     }
                     _ : {
-                        # s[i++] = next
-                        tp<i8*> = s + i
+                        s[i] = next
                         i += 1
-                        *tp = next
                         stringinclen(s,single)
                     } 
                 }
             }
             _ : {
-                # s[i++] = *f
-                tp<i8*> = s + i
+                s[i] = *f
                 i += 1
-                *tp = *f
                 stringinclen(s,single)
             }
         }
         f += 1
     }
-    # s[i] = '\0'
-    tp<i8*> = s + i
-    *tp = 0
+    s[i] = 0
     return s
 }

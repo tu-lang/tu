@@ -46,13 +46,8 @@ func itoa(num<i32>, str<i8*>, base<i32>)
 	
     //Handle 0 explicitely, otherwise empty string is printed for 0 
     if num == 0 {
-        //str[0] = '0'
-        //str[1] = '\0'
-        strp     = str
-        *strp    = 48
-        i += 1
-        strp += 1
-        *strp = 0
+        str[0] = '0'
+        str[1] = '\0'
         return str
     }
   
@@ -77,14 +72,10 @@ func itoa(num<i32>, str<i8*>, base<i32>)
   
     // If number is negative, append '-'
     if isNegative != 0 {
-        //str[i++] = '-'
-        strp = str + i
+		str[i] = '-'
         i += 1
-        *strp = 45 # -
     }
-    // str[i] = '\0'  Append string terminator
-    strp = strp + i 
-    *strp = 0
+	str[i] = '\0' // Append string terminator
   
     // Reverse the string
     reverse(str, i)
@@ -124,11 +115,7 @@ func strtol(nptr<i8*>, endptr<u64*>, base<i32>)
 	}
 	if ((base == 0 || base == 16) &&
 	    c == '0' && (*s == 'x' || *s == 'X')) {
-		//TODO: support mem s[index]
-		// c = s[1]
-		_tmp<i8*> = s
-		_tmp += 1
-		c = *_tmp
+		c = s[1]
 		s += 2
 		base = 16
 	}

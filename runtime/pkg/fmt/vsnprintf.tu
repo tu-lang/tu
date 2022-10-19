@@ -21,10 +21,8 @@ func vsnprintf(dstr<i8*>, format<i8*>, args,args1,args2,args3)
 					translating	= 1
 				}else
 				{
-					//dstr[i++] = '%'
-					strp = dstr + i
+					dstr[i] = '%'
 					i += 1
-					*strp = flag_percent
 					ret += 1
 					translating = 0
 				}
@@ -42,10 +40,8 @@ func vsnprintf(dstr<i8*>, format<i8*>, args,args1,args2,args3)
 					ret += l
 				}else
 				{
-				    //dstr[i++] = 'd'
-					strp = dstr + i
+					dstr[i] = 'd'
 					i += 1
-					*strp = flag_d
 					ret += 1
 				}
 			}
@@ -60,10 +56,8 @@ func vsnprintf(dstr<i8*>, format<i8*>, args,args1,args2,args3)
 					ret += ll
 				}else
 				{
-					//dstr[i++] = 's'
-					strp = dstr + i
+					dstr[i] = 's'
 					i += 1
-					*strp = flag_s
 					ret += 1
 				}
 			}
@@ -71,10 +65,8 @@ func vsnprintf(dstr<i8*>, format<i8*>, args,args1,args2,args3)
 				if translating {
 					translating	= 0
 				}else {
-					//dstr[i++] = *p
-					strp = dstr + i
+					dstr[i] = *p
 					i += 1
-					*strp = *p
 					ret += 1
 				}
 			}
