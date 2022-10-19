@@ -36,7 +36,7 @@ StructMemberExpr::getStruct()
 {
 	package = this.var.structpkg
 	if (package == "" ){
-		package = var.package
+		package = this.var.package
 	}
 	s = null
 	

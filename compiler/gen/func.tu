@@ -42,7 +42,7 @@ func funcexec(ctx , fc , fce , package)
 	if std.len(fc.params) != std.len(fce.args) 
 		utils.debug("ArgumentError: expects %d arguments but got %d\n",
 			std.len(fc.params),
-			std.len(this.args)
+			std.len(fce.args)
 		)
 
 	stack_args = compile.Push_arg(ctx,fc,fce)
