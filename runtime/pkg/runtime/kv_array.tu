@@ -37,13 +37,7 @@ func arr_get(varr<Value>,index<Value>){
     if  i >= arr.used {
         return newobject(Null,Null)
     }
-
-    var<u64*> = arr.addr
-    offset<i64> = i * 8
-    var += offset
-
-    return *var
-
+    return arr.addr[i]
 }
 func arr_pushone(varr<Value>,var<Value>){
     if  varr == null || varr.data == null || var == null {
@@ -74,10 +68,7 @@ func arr_updateone(varr<Value>,index<Value>,var<Value>){
         fmt.println("[arr_updateone] index is over the max size\n")
         return Null
     }
-    // pp[i] = var
-    pp<u64*> = arr.addr
-    pp += i * 8
-    *pp = var
+    arr.addr[i] = var
 }
 func array_init(arr<Array>,n<u32>,size<u64>){
     arr.used = 0
@@ -114,9 +105,7 @@ func array_tail(arr<Array>){
         fmt.println("[warn] array_tail for empty array")
         return newobject(Null,Null)
     }
-    i<i32> = arr.used - 1
-    var<u64*> = arr.addr + i * arr.size
-    return *var
+    return arr.addr[arr.used - 1]
 }
 func array_head(arr<Array>){
     if  arr == null os.die("[arr_head] not array_type")
@@ -124,8 +113,7 @@ func array_head(arr<Array>){
         fmt.println("[warn] array_head for empty array")
         return Null
     }
-    var<u64*> = arr.addr
-    return *var
+    return arr.addr[0]
 }
 
 func array_pop(arr<Array>){
@@ -136,14 +124,10 @@ func array_pop(arr<Array>){
         return newobject(Null,Null)
     }
 
-    var<u64*> = arr.addr
     //pop one 
     arr.used -= 1
 
-    offset<i64> = arr.used * arr.size
-    var += offset
-
-    return *var
+    return arr.addr[arr.used]
 }
 func array_push(a<Array>){
     size<u64> =  0
