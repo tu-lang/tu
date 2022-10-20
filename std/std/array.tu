@@ -76,7 +76,8 @@ Array::pop(){
 
     return this.addr[this.used]
 }
-Array::push(){
+//NOTICE: ele only for 8 bytes pointer
+Array::push(ele<u64>){
     size<u64> =  0
     newp<u64*> = null
     elt<u64*> = null
@@ -94,6 +95,8 @@ Array::push(){
     }
     elt = this.addr + this.size * this.used
     this.used += 1
+    //insert one ,only for 8 bytes pointer
+    if ele != null *elt = ele
     return elt
 }
 
