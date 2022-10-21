@@ -84,10 +84,9 @@ func newlen(init<u64*>, initlen<u64>) {
     }
     if initlen != runtime.Null && init != runtime.Null
         std.memcpy(s, init, initlen)
-    //last pos set '\0' to     
-    //s[initlen] = '\0'
-    sp<u8*> = s + initlen
-    *sp = 0
+    s[initlen] = 0
+    
+    
     return s
 }
 func empty() {
@@ -119,7 +118,7 @@ func free(ptr<u64*>) {
 
 func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
     s<i8*> = empty()
-	this<String> = s
+	this<Str> = s
 
     initlen<u64> = this.len()
     f<i8*> = fmt
@@ -157,7 +156,7 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                         stack -= 1
                         //stack end
                         str = curr
-						sstr<String> = str
+						sstr<Str> = str
                         if next == 's' 
                             l = std.strlen(str)
                         else 

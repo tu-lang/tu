@@ -18,7 +18,7 @@ func get_hash_key(key<Value>){
     if  key.type == Bool || key.type == Int {
 		return key.data
 	}
-    str<string.String> = key.data
+    str<string.Str> = key.data
 	if  key.type == String {
 		return hash_key(str,str.len())
 	}

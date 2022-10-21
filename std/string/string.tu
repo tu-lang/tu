@@ -21,7 +21,7 @@ func stringReqType(string_size<u64>) {
     return LSTRING_TYPE_64
 }
 
-String::len() {
+Str::len() {
     s<u8*> = this
     flags<u8> = s[-1]
     match flags & LSTRING_TYPE_MASK {
@@ -47,7 +47,7 @@ String::len() {
 }
 
 
-String::mark(){
+Str::mark(){
     s<u8*> = this
     if !s return runtime.Null
     size<i32> = stringHdrSize(s[-1])
@@ -55,29 +55,29 @@ String::mark(){
     gc.gc_mark(s - size)
 }
 
-String::dup() {
+Str::dup() {
     return newlen(this, this.len())
 }
 
-String::free() {
+Str::free() {
     s<u8*> = this
     if s == null return runtime.Null
     
     gc.gc_free(s - stringHdrSize(s[-1]))
 }
 
-String::updatelen() {
+Str::updatelen() {
     reallen<u64> = std.strlen(this)
     stringsetlen(this, reallen)
 }
 
-String::clear() {
+Str::clear() {
     stringsetlen(this, runtime.Zero)
     s<u8*> = this
     *s = 0
 }
 
-String::MakeRoomFor(addlen<u64>) {
+Str::MakeRoomFor(addlen<u64>) {
     s<u8*> = this
     sh<u64*> = null
     newsh<u64*> = null
@@ -122,7 +122,7 @@ String::MakeRoomFor(addlen<u64>) {
     return s
 }
 
-String::catlen(t<u64*>, len<u64>) {
+Str::catlen(t<u64*>, len<u64>) {
     s<u8*> = this
     curlen<u64> = this.len()
 
@@ -135,15 +135,15 @@ String::catlen(t<u64*>, len<u64>) {
     return s
 }
 
-String::cat(t<i8*>) {
+Str::cat(t<i8*>) {
     return this.catlen(t,std.strlen(t))
 }
 
-String::catstring(t<String>) {
+Str::catstring(t<Str>) {
     return this.catlen(t,t.len())
 }
 
-String::cpylen( t<i8*>, len<u64>) {
+Str::cpylen( t<i8*>, len<u64>) {
     s<u8*> = this
     if stringalloc(s) < len {
         s = this.MakeRoomFor(len - this.len())
@@ -155,11 +155,11 @@ String::cpylen( t<i8*>, len<u64>) {
     return s
 }
 
-String::cpy(t<i8*>) {
+Str::cpy(t<i8*>) {
     return this.cpylen(t,std.strlen(t))
 }
 
-String::tolower() {
+Str::tolower() {
     s<u8*> = this
     len<u64> = this.len()
     j<u64>   = 0
@@ -169,7 +169,7 @@ String::tolower() {
     }
 }
 
-String::toupper() {
+Str::toupper() {
     s<u8*> = this
     len<u64> = this.len()
     j<u64> = 0
@@ -182,7 +182,7 @@ String::toupper() {
 //@return 0  => eq
 //@return 1  => greater than
 //@return -1 => lower than
-String::cmp(s2<String>) {
+Str::cmp(s2<Str>) {
     l1<u64> = 0
     l2<u64> = 0
     minlen<u64> = 0
@@ -215,7 +215,7 @@ String::cmp(s2<String>) {
 // %U  long unsigned int
 // %%  to '%'
 // TODO: return new
-String::catfmt(fmt<i8*>, args,args1,args2,args3) {
+Str::catfmt(fmt<i8*>, args,args1,args2,args3) {
     s<i8*> = this
     initlen<u64> = this.len()
     f<i8*> = fmt
@@ -253,7 +253,7 @@ String::catfmt(fmt<i8*>, args,args1,args2,args3) {
                         stack -= 1
                         //stack end
                         str = curr
-                        sstr<String> = curr
+                        sstr<Str> = curr
                         if next == 's' 
                             l = std.strlen(str)
                         else 
@@ -326,7 +326,7 @@ String::catfmt(fmt<i8*>, args,args1,args2,args3) {
 }
 //TODO: return new
 //stringputc
-String::putc(c<i8>){
+Str::putc(c<i8>){
     s<i8*> = this
     single<i64> = 1
     if stringavail(s) < single {

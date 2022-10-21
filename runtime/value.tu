@@ -355,7 +355,7 @@ func isTrue(cond<Value>){
         Int:    return cond.data > 0
         Float: return cond.data > 0
         String: {
-            str<string.String> = cond.data
+            str<string.Str> = cond.data
             return str.len() > Null
         }
         Bool:   return cond.data

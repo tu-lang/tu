@@ -4,7 +4,7 @@ Null<i64> = null
 
 func test_puchar_native(){
 	s<i8*> = string.empty()
-	ss<string.String> = s
+	ss<string.Str> = s
 	l<i32> = ss.len()
 	if l != 0 {
 		os.die("len should be 0")

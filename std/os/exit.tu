@@ -23,7 +23,7 @@ func die(str){
     std.die(code)
 }
 func dief(size,args...){
-    ret<string.String> = __.string_stringfmt(args)
+    ret<string.Str> = __.string_stringfmt(args)
     if ret != null {
 		  fmt.vfprintf(std.STDOUT,ret.putc(NewLine))
     }

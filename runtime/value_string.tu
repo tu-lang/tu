@@ -4,14 +4,14 @@ use os
 
 func value_string_plus(lhs<Value>,rhs<Value>)
 {
-    tmstr<string.String> = string.empty()
+    tmstr<string.Str> = string.empty()
     match lhs.type 
 	{
 		Int   : tmstr = tmstr.catfmt(*"%I%S",lhs.data,rhs.data)
 		Bool  : tmstr = tmstr.catfmt(*"%I%S",lhs.data,rhs.data)
         Float : tmstr = tmstr.catfmt(*"%I%S",lhs.data,rhs.data)
         String: {
-            _tdup<string.String> = lhs.data
+            _tdup<string.Str> = lhs.data
             tmstr = _tdup.dup()
             if rhs.type == Int        tmstr = tmstr.catfmt(*"%I",rhs.data)
             else if rhs.type == Array tmstr = tmstr.cat(arr_tostring(rhs))
@@ -46,11 +46,11 @@ func value_string_minus(lhs<Value>,rhs<Value>)
 
 func value_string_mul(lhs<Value>,rhs<Value>)
 {
-    rstr<string.String> = rhs.data
-    lstr<string.String> = lhs.data
+    rstr<string.Str> = rhs.data
+    lstr<string.Str> = lhs.data
     //如果两个都是字母则返回相加的那部分
     if lhs.type == String && rhs.type == String {
-        tmstr<string.String> = rstr.dup()
+        tmstr<string.Str> = rstr.dup()
         tmstr = tmstr.cat(rhs.data)
         return tmstr
     }
@@ -62,8 +62,8 @@ func value_string_mul(lhs<Value>,rhs<Value>)
         srcv<Value> = lhs
         if rhs.type == String srcv = rhs
         // 在字符串运算中都是从新生成一份内存来进行存储结果
-        _tmp<string.String> = srcv.data
-        tmstr<string.String> = _tmp.dup()
+        _tmp<string.Str> = srcv.data
+        tmstr<string.Str> = _tmp.dup()
         count -= 1
         for (i<i64> = 0 ; i < count ; i += 1) {
             tmstr = tmstr.cat(srcv.data)
@@ -81,7 +81,7 @@ func value_string_mul(lhs<Value>,rhs<Value>)
         String:{
             match rhs.type {
                 Char :{
-                    tmstr<string.String> = lstr.dup()
+                    tmstr<string.Str> = lstr.dup()
                     tmstr = tmstr.putc(rhs.data)
                     return tmstr
                 }
@@ -93,7 +93,7 @@ func value_string_mul(lhs<Value>,rhs<Value>)
 }
 //char int
 func value_char2int_mul(lhs<Value>,rhs<Value>){
-    tmstr<string.String> = string.empty()
+    tmstr<string.Str> = string.empty()
     for (i<i64> = 0 ; i < rhs.data ; i += 1) {
         tmstr = tmstr.putc(lhs.data)
     }
@@ -101,7 +101,7 @@ func value_char2int_mul(lhs<Value>,rhs<Value>){
 }
 //char char
 func value_char2char_mul(lhs<Value>,rhs<Value>){
-    tmstr<string.String> = string.empty()
+    tmstr<string.Str> = string.empty()
 
     tmstr = tmstr.putc(lhs.data)
     tmstr = tmstr.putc(rhs.data)
@@ -132,7 +132,7 @@ func value_string_equal(lhs<Value>,rhs<Value>,equal<i32>){
         else return True
     }
     //TODO: c函数调用自动判断为mem运算 if _stringcmp(..) == 0 {}
-    s<string.String> = lhs.data
+    s<string.Str> = lhs.data
     ret<i8> = s.cmp(rhs.data)
     if ret == 0 {
         // == 返回true
@@ -150,7 +150,7 @@ func value_string_lowerthan(lhs<Value>,rhs<Value>,equal<i32>){
     if lhs.type != String || rhs.type != String {
         return False
     }
-    s<string.String> = lhs.data
+    s<string.Str> = lhs.data
     eq<i32> = s.cmp(rhs.data) 
     if equal {
         return eq <= 0
@@ -163,7 +163,7 @@ func value_string_greaterthan(lhs<Value>,rhs<Value>,equal<i32>){
     if lhs.type != String || rhs.type != String {
         return False
     }
-    s<string.String> = lhs.data
+    s<string.Str> = lhs.data
     eq<i32> = s.cmp(rhs.data) 
     if equal return eq >= 0
     return eq > 0

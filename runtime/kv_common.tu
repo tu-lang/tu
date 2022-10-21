@@ -25,7 +25,7 @@ func len(v<Value>){
 			return int(arr.len())
 		}
 		String : {
-            s<string.String> = v.data
+            s<string.Str> = v.data
             return int(s.len())
         }
 		Map   : os.die("unsupport len(map)")
@@ -85,7 +85,7 @@ func arr_get(varr<Value>,index<Value>){
     match index.type {
         Int : i = index.data
         String : {
-            str<string.String> = index.data
+            str<string.Str> = index.data
             i = str.len()
         }
         _   : os.dief("[arr_get] invalid type: %s" , type_string(index) )
@@ -115,7 +115,7 @@ func arr_updateone(varr<Value>,index<Value>,var<Value>){
     match index.type {
         Int : i = index.data
         String : {
-            str<string.String> = index.data
+            str<string.Str> = index.data
             i = str.len()
         }
         _ : os.dief("[arr_update] invalid type %s" , type_string(index))
@@ -143,7 +143,7 @@ func array_in(v1<Value>,v2<std.Array>){
 }
 func arr_tostring(varr<Value>)
 {
-    ret<string.String>   = string.empty()
+    ret<string.Str>   = string.empty()
     arr<std.Array> = varr.data
     orr<u64*>  = arr.addr
 

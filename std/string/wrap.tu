@@ -14,7 +14,7 @@ func newstringfromlen(init<i8*>,l<i32>){
 	return runtime.newobject(runtime.STRING,r)
 }
 func sub(v<runtime.Value>,lo){
-	str<String> = v.data
+	str<Str> = v.data
 	l<i32> = *lo
 	if l > str.len() {
 		return ""
@@ -31,8 +31,8 @@ func split(s<runtime.Value> , se<runtime.Value>) {
 	elements<i32> = 0
 	start<i64> = 0
 	j<i64> = 0
-	sep1<String> = sep
-	sp1<String>  = sp
+	sep1<Str> = sep
+	sp1<Str>  = sp
 	seplen<i32> = sep1.len()
 	len<i32>    = sp1.len()
     if seplen < 1 || len <= 0 return tokens
@@ -68,7 +68,7 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 
 	str<i8*> = v.data
 	l<i32> = index.data
-	sstr<String> = str
+	sstr<Str> = str
 	if l >= sstr.len() {
 		fmt.println("warn: string index out of bound ")
 		return 0
@@ -81,7 +81,7 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 func tostring(num<runtime.Value>){
 	match num.type {
 		runtime.Char :{
-			str<String> = empty()
+			str<Str> = empty()
 			str = str.putc(num.data)
 			return string.new(str)
 		}

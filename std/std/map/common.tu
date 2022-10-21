@@ -67,7 +67,7 @@ func map_insert( m<runtime.Value> ,k<runtime.Value>,v<runtime.Value>)
         hk = k.data
     }
     if  k.type == runtime.String {
-        str<string.String> = k.data
+        str<string.Str> = k.data
         hk = hash_key(k.data,str.len())
     }
     node.key = hk
@@ -82,7 +82,7 @@ func map_find(m<runtime.Value>, key<runtime.Value>){
         runtime.Bool   : hk = key.data
         runtime.Int    : hk = key.data
         runtime.String : {
-            str<string.String> = key.data
+            str<string.Str> = key.data
             hk = hash_key(key.data,str.len())
         }
     }
