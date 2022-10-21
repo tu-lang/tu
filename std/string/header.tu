@@ -7,6 +7,7 @@ use fmt
 LSTRING_MAX_PREALLOC<i32> =  1048576 # 1024 * 1024
 LSTRING_LLSTR_SIZE<i32>   = 21
 
+mem String{}
 
 mem Stringhdr5:pack {
 	u8 flags    // 3 lsb of type, and 5 msb of string length 
@@ -138,7 +139,7 @@ func stringinclen(s<u8*>, inc<u64>) {
     }
 }
 
-//stringalloc() == stringavail() + stringlen()
+//stringalloc() == stringavail() + string.len()
 func stringalloc(s<u8*>) {
     flags<u8> = s[-1]
     

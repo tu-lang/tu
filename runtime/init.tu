@@ -28,7 +28,7 @@ func args_init(argc<u64>, argv<u64*>){
 		}
 		str<Value> = new Value
 		str.type = String
-		str.data = string.stringnew(*argv)
+		str.data = string.newstring(*argv)
 		arr_pushone(arr,str)
 		argv += PointerSize
 		argc -= 1
@@ -40,7 +40,7 @@ func args_init(argc<u64>, argv<u64*>){
 	while *envp != null {
 		str1<Value> = new Value
 		str1.type = String
-		str1.data = string.stringnew(*envp)
+		str1.data = string.newstring(*envp)
 		arr_pushone(envs,str1)
 		envp += PointerSize
 	}
@@ -49,6 +49,7 @@ func args_init(argc<u64>, argv<u64*>){
 func runtimeinit(){
 	os.setsignal(os.SIGSEGV,segsegv_handler)
 }
+
 
 func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	fmt.println("panicked! stack backtrace:\n")

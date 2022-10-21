@@ -18,8 +18,9 @@ func get_hash_key(key<Value>){
     if  key.type == Bool || key.type == Int {
 		return key.data
 	}
+    str<string.String> = key.data
 	if  key.type == String {
-		return hash_key(key.data,string.stringlen(key.data))
+		return hash_key(str,str.len())
 	}
     os.dief("[hash_key] unsupport type:%s" , type_string(key))
 }

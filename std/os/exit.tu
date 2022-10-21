@@ -2,6 +2,7 @@
 use fmt
 use std
 use runtime
+use string
 
 NewLine<i8> = '\n'
 
@@ -19,9 +20,9 @@ func die(str){
     std.die(code)
 }
 func dief(size,args...){
-    ret<i8*> = __.string_stringfmt(args)
+    ret<string.String> = __.string_stringfmt(args)
     if ret != null {
-		  fmt.vfprintf(std.STDOUT,string.stringputc(ret,NewLine))
+		  fmt.vfprintf(std.STDOUT,ret.putc(NewLine))
     }
     code<i8> = -1
     std.die(code)

@@ -4,19 +4,19 @@ use std
 use os
 
 func new(init<i8*>){
-	r<i8*> = stringnew(init)
-	if r == null fmt.println("stringnew failed")
+	r<i8*> = newstring(init)
+	if r == null fmt.println("newstring failed")
 	return runtime.newobject(runtime.STRING,r)
 }
-func newlen(init<i8*>,l<i32>){
-	r<i8*> = stringnewlen(init,l)
-	if r == null fmt.println("stringnewlen failed")
+func newstringfromlen(init<i8*>,l<i32>){
+	r<i8*> = newlen(init,l)
+	if r == null fmt.println("newlen failed")
 	return runtime.newobject(runtime.STRING,r)
 }
 func sub(v<runtime.Value>,lo){
-	str<i8*> = v.data
+	str<String> = v.data
 	l<i32> = *lo
-	if l > stringlen(str) {
+	if l > str.len() {
 		return ""
 	}
 
@@ -31,26 +31,28 @@ func split(s<runtime.Value> , se<runtime.Value>) {
 	elements<i32> = 0
 	start<i64> = 0
 	j<i64> = 0
-
-	seplen<i32> = stringlen(sep)
-	len<i32>    = stringlen(sp)
+	sep1<String> = sep
+	sp1<String>  = sp
+	seplen<i32> = sep1.len()
+	len<i32>    = sp1.len()
     if seplen < 1 || len <= 0 return tokens
 
     for (j = 0; j < len - seplen + 1 ; j += 1) {
         //search the separator 
 		ssp<i8*> = sp + j
 		if seplen == 1 && *ssp == *sep {
-			tokens[] = newlen(sp + start,j - start)
+			tokens[] = newstringfromlen(sp + start,j - start)
             start = j + seplen
             j = j + seplen - 1 // skip the separator
 		}else if std.memcmp(sp + j,sep , seplen) == runtime.Null {
-			tokens[] = newlen(sp + start,j - start)
+			tokens[] = newstringfromlen(sp + start,j - start)
             start = j + seplen
             j = j + seplen - 1 // skip the separator
 		}
     }
     // Add the final element. We are sure there is room in the tokens array.
-	tokens[] = newlen(sp + start, len - start)
+	tokens[] = newstringfromlen(sp + start, len - start)
+
 	return tokens
 }
 func index_get(v<runtime.Value>,index<runtime.Value>){
@@ -66,7 +68,8 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 
 	str<i8*> = v.data
 	l<i32> = index.data
-	if l >= stringlen(str) {
+	sstr<String> = str
+	if l >= sstr.len() {
 		fmt.println("warn: string index out of bound ")
 		return 0
 	}
@@ -78,7 +81,8 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 func tostring(num<runtime.Value>){
 	match num.type {
 		runtime.Char :{
-			str = stringputc(stringempty(),num.data)
+			str<String> = empty()
+			str = str.putc(num.data)
 			return string.new(str)
 		}
 		runtime.String : return num

@@ -3,20 +3,24 @@ use string
 Null<i64> = null
 
 func test_puchar_native(){
-	s<i8*> = string.stringempty()
-	l<i32> = string.stringlen(s)
+	s<i8*> = string.empty()
+	ss<string.String> = s
+	l<i32> = ss.len()
 	if l != 0 {
 		os.die("len should be 0")
 	}
 	//put 10 char
 	p<i8*> = "0123456789"
 	for i<i32> = 0 ; i < 10 ; i += 1 {
-		s = string.stringputc(s , *p)
+		ss = s
+		s = ss.putc(*p)
 		p += 1
 	}
 	cc<i8> = '\\'
-	s = string.stringputc(s,cc)
-	l = string.stringlen(s)
+	ss = s
+	s = ss.putc(cc)
+	ss = s
+	l = ss.len()
 	if l != 11 {
 		os.panic("l should be 10")
 	}

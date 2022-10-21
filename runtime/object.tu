@@ -13,7 +13,7 @@ func newobject(type<i32> , data<u64*>)
     match type {
         Int:    ret.data = data
         Float:  ret.data = data
-        String: ret.data = string.stringnew(data)
+        String: ret.data = string.newstring(data)
         Bool:   ret.data = data
         Char:   ret.data = data
         Null:   ret.data = 0

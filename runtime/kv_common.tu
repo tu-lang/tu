@@ -4,20 +4,6 @@ use string
 use std
 use std.map
 
-// 解析字符串
-func len_string(v<u8*>){
-	len<i32> = string.stringlen(v)
-	return int(len)
-	//len = 0
-	//while p != 0 {
-	//	fmt.println(p)
-	//	v += 1
-	//	p = int(*v)
-	//	len += 1
-	//}
-	//return len
-}
-
 func len(v<Value>){
 	type<i8> = v.type
 	data<i8> = v.data
@@ -38,7 +24,10 @@ func len(v<Value>){
 			arr<std.Array> = v.data
 			return int(arr.len())
 		}
-		String : return len_string(v.data)
+		String : {
+            s<string.String> = v.data
+            return int(s.len())
+        }
 		Map   : os.die("unsupport len(map)")
 		_     : {
 			os.dief("[warn] len(unknow type:%s)",type_string(v))
@@ -95,7 +84,10 @@ func arr_get(varr<Value>,index<Value>){
     i<i64> = 0
     match index.type {
         Int : i = index.data
-        String : i = string.stringlen(index.data)
+        String : {
+            str<string.String> = index.data
+            i = str.len()
+        }
         _   : os.dief("[arr_get] invalid type: %s" , type_string(index) )
     }
     if  i >= arr.used {
@@ -122,7 +114,10 @@ func arr_updateone(varr<Value>,index<Value>,var<Value>){
 
     match index.type {
         Int : i = index.data
-        String : i = string.stringlen(index.data)
+        String : {
+            str<string.String> = index.data
+            i = str.len()
+        }
         _ : os.dief("[arr_update] invalid type %s" , type_string(index))
     }
     // TODO:如果索引超出了 当前array的范围则需要扩充
@@ -148,24 +143,23 @@ func array_in(v1<Value>,v2<std.Array>){
 }
 func arr_tostring(varr<Value>)
 {
-    ret<i8*>   = string.stringempty()
+    ret<string.String>   = string.empty()
     arr<std.Array> = varr.data
     orr<u64*>  = arr.addr
 
-    ret = string.stringcat(ret,*"[")
+    ret = ret.cat(*"[")
 
     for (i<i32> = 0 ; i < arr.used ; i += 1) {
         p<u64*>  = orr + i * PointerSize
         v<Value> = *p
         //String
         if v.type == String {
-            ret = string.stringcat(ret,v.data)
-            ret = string.stringcat(ret,*",")
+            ret = ret.cat(v.data)
+            ret = ret.cat(*",")
         //Int,Float,Bool,Char
         }else {
-            ret = string.stringcatfmt(ret,*"%I,",v.data)
+            ret = ret.catfmt(*"%I,",v.data)
         }
     }
-    ret = string.stringcat(ret,*"]")
-    return ret
+    return ret.cat(*"]")
 }

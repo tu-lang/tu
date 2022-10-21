@@ -1,5 +1,6 @@
 use std
 use runtime
+use string
 
 func map_create(){
     sentinel<RbtreeNode> = new RbtreeNode
@@ -66,7 +67,8 @@ func map_insert( m<runtime.Value> ,k<runtime.Value>,v<runtime.Value>)
         hk = k.data
     }
     if  k.type == runtime.String {
-        hk = hash_key(k.data,string.stringlen(k.data))
+        str<string.String> = k.data
+        hk = hash_key(k.data,str.len())
     }
     node.key = hk
     node.k = k
@@ -79,7 +81,10 @@ func map_find(m<runtime.Value>, key<runtime.Value>){
     match key.type {
         runtime.Bool   : hk = key.data
         runtime.Int    : hk = key.data
-        runtime.String : hk = hash_key(key.data,string.stringlen(key.data))
+        runtime.String : {
+            str<string.String> = key.data
+            hk = hash_key(key.data,str.len())
+        }
     }
     tree<Rbtree>  = m.data
     return tree.find(hk)

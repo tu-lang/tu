@@ -1,40 +1,29 @@
 use runtime
 use runtime.gc
 
-func isspace(c<i32>){
-    match c {
-        ' ': return runtime.True
-        '\t': return runtime.True
-        '\v': return runtime.True
-        '\n': return runtime.True
-        '\f': return runtime.True
-        '\r': return runtime.True
-        _   : return runtime.False
+func stringHdrSize(type<i8>) {
+    match type & LSTRING_TYPE_MASK {
+        LSTRING_TYPE_5: return sizeof(Stringhdr5)
+        LSTRING_TYPE_8: return sizeof(Stringhdr8)
+        LSTRING_TYPE_16:return sizeof(Stringhdr16)
+        LSTRING_TYPE_32:return sizeof(Stringhdr32)
+        LSTRING_TYPE_64:return sizeof(Stringhdr64)
     }
+    return runtime.Null
 }
-func isdigit(c<i32>)
-{
-    b<u32> = c
-    if (b - '0') < 10 {
-        return runtime.True
-    }
-    return runtime.False
+func stringReqType(string_size<u64>) {
+    flag<u64> = 1
+    if string_size < flag << 5     return LSTRING_TYPE_5
+    if string_size < flag << 8     return LSTRING_TYPE_8
+    if string_size < flag << 16    return LSTRING_TYPE_16
+    if string_size < flag << 32    return LSTRING_TYPE_32
+
+    return LSTRING_TYPE_64
 }
-func isalpha(c<i32>){
-    if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
-        return runtime.True
-    }
-    return runtime.False
-}
-func isupper(c<i32>){
-    if c >= 'A' && c <= 'Z' {
-        return runtime.True
-    }
-    return runtime.False
-}
-func stringlen(s<u8*>) {
-    hdr<u8*> = s - 1
-    flags<u8>    = *hdr
+
+String::len() {
+    s<u8*> = this
+    flags<u8> = s[-1]
     match flags & LSTRING_TYPE_MASK {
         LSTRING_TYPE_5: return LSTRING_TYPE_5_LEN(flags)
         LSTRING_TYPE_8:{
@@ -57,130 +46,39 @@ func stringlen(s<u8*>) {
     return runtime.Null
 }
 
-func stringHdrSize(type<i8>) {
-    match type & LSTRING_TYPE_MASK {
-        LSTRING_TYPE_5: return sizeof(Stringhdr5)
-        LSTRING_TYPE_8: return sizeof(Stringhdr8)
-        LSTRING_TYPE_16:return sizeof(Stringhdr16)
-        LSTRING_TYPE_32:return sizeof(Stringhdr32)
-        LSTRING_TYPE_64:return sizeof(Stringhdr64)
-    }
-    return runtime.Null
-}
 
-func stringReqType(string_size<u64>) {
-    flag<u64> = 1
-    if string_size < flag << 5     return LSTRING_TYPE_5
-    if string_size < flag << 8     return LSTRING_TYPE_8
-    if string_size < flag << 16    return LSTRING_TYPE_16
-    if string_size < flag << 32    return LSTRING_TYPE_32
-
-    return LSTRING_TYPE_64
-}
-func stringmark(s<u8*>){
+String::mark(){
+    s<u8*> = this
     if !s return runtime.Null
-    # previous byte must be flag type
-    hdr<u8*> = s - 1
-    size<i32> = stringHdrSize(*hdr)
+    size<i32> = stringHdrSize(s[-1])
     if size == 0 return runtime.Null
-    # hdr + string 
     gc.gc_mark(s - size)
 }
 
-// mystring = stringnewlen("abc",3)
-// 默认会申请一个默认大小的内存
-// mystring = stringnewlen(NULL,0)
-func stringnewlen(init<u64*>, initlen<u64>) {
-    sh<u64*> = null
-    s<u8*> = null
-
-    type<i8> = stringReqType(initlen) 
-    //空字符串一般被作为 append 使用，类型现在设置为8
-    if type == LSTRING_TYPE_5 && initlen == null 
-        type = LSTRING_TYPE_8
-
-    hdrlen<i32> = stringHdrSize(type)
-
-    // flags pointer. 
-    fp<u8*> = null
-
-    #init
-    sh = gc.gc_malloc(hdrlen + initlen + 1)
-    if sh == runtime.Null return runtime.Null
-    else if !init         std.memset(sh, runtime.Null, hdrlen + initlen + 1)
-
-    s  = sh + hdrlen
-    fp = s - 1
-    match type {
-        LSTRING_TYPE_5: *fp = type | initlen << LSTRING_TYPE_BITS
-        LSTRING_TYPE_8: {
-            sh8<Stringhdr8> = LSTRING_HDR(LSTRING_TYPE_8,s)
-            sh8.len = initlen
-            sh8.alloc = initlen
-            *fp = type
-        }
-        LSTRING_TYPE_16: {
-            sh16<Stringhdr16> = LSTRING_HDR(LSTRING_TYPE_16,s)
-            sh16.len = initlen
-            sh16.alloc = initlen
-            *fp = type
-        }
-        LSTRING_TYPE_32: {
-            sh32<Stringhdr32> = LSTRING_HDR(LSTRING_TYPE_32,s)
-            sh32.len = initlen
-            sh32.alloc = initlen
-            *fp = type
-        }
-        LSTRING_TYPE_64: {
-            sh64<Stringhdr64> = LSTRING_HDR(LSTRING_TYPE_64,s)
-            sh64.len = initlen
-            sh64.alloc = initlen
-            *fp = type
-        }
-    }
-    if initlen != runtime.Null && init != runtime.Null
-        std.memcpy(s, init, initlen)
-    //last pos set '\0' to     
-    //s[initlen] = '\0'
-    sp<u8*> = s + initlen
-    *sp = 0
-    return s
+String::dup() {
+    return newlen(this, this.len())
 }
 
-func stringempty() {
-    return stringnewlen(*"",runtime.Zero)
-}
-
-func stringnew(init<i8*>) {
-    initlen<u64>  = null
-    if  init == null  initlen = 0  
-    else              initlen = std.strlen(init)
-
-    return stringnewlen(init, initlen)
-}
-
-func stringdup(s<u8*>) {
-    return stringnewlen(s, stringlen(s))
-}
-
-func stringfree(s<u8*>) {
+String::free() {
+    s<u8*> = this
     if s == null return runtime.Null
     
-    hdr<u8*> = s - 1
-    gc.gc_free(s - stringHdrSize(*hdr))
+    gc.gc_free(s - stringHdrSize(s[-1]))
 }
 
-func stringupdatelen(s<u8*>) {
-    reallen<u64> = std.strlen(s)
-    stringsetlen(s, reallen)
+String::updatelen() {
+    reallen<u64> = std.strlen(this)
+    stringsetlen(this, reallen)
 }
 
-func stringclear(s<u8*>) {
-    stringsetlen(s, runtime.Zero)
+String::clear() {
+    stringsetlen(this, runtime.Zero)
+    s<u8*> = this
     *s = 0
 }
 
-func stringMakeRoomFor(s<u8*>, addlen<u64>) {
+String::MakeRoomFor(addlen<u64>) {
+    s<u8*> = this
     sh<u64*> = null
     newsh<u64*> = null
     avail<u64> = stringavail(s)
@@ -194,7 +92,7 @@ func stringMakeRoomFor(s<u8*>, addlen<u64>) {
 
     if avail >= addlen return s
 
-    len = stringlen(s)
+    len = this.len()
     sh = s - stringHdrSize(oldtype)
     newlen =  len + addlen
     if newlen < LSTRING_MAX_PREALLOC
@@ -224,10 +122,11 @@ func stringMakeRoomFor(s<u8*>, addlen<u64>) {
     return s
 }
 
-func stringcatlen(s<u8*>,t<u64*>, len<u64>) {
-    curlen<u64> = stringlen(s)
+String::catlen(t<u64*>, len<u64>) {
+    s<u8*> = this
+    curlen<u64> = this.len()
 
-    s = stringMakeRoomFor(s,len)
+    s = this.MakeRoomFor(len)
     if s == null return runtime.Null
     std.memcpy(s+curlen, t, len)
     stringsetlen(s, curlen + len)
@@ -236,17 +135,18 @@ func stringcatlen(s<u8*>,t<u64*>, len<u64>) {
     return s
 }
 
-func stringcat(s<u8*>, t<i8*>) {
-    return stringcatlen(s, t, std.strlen(t))
+String::cat(t<i8*>) {
+    return this.catlen(t,std.strlen(t))
 }
 
-func stringcatstring(s<u8*>, t<u8*>) {
-    return stringcatlen(s, t, stringlen(t))
+String::catstring(t<String>) {
+    return this.catlen(t,t.len())
 }
 
-func stringcpylen(s<u8*>, t<i8*>, len<u64>) {
+String::cpylen( t<i8*>, len<u64>) {
+    s<u8*> = this
     if stringalloc(s) < len {
-        s = stringMakeRoomFor(s,len - stringlen(s))
+        s = this.MakeRoomFor(len - this.len())
         if s == null return runtime.Null
     }
     std.memcpy(s, t, len)
@@ -255,85 +155,13 @@ func stringcpylen(s<u8*>, t<i8*>, len<u64>) {
     return s
 }
 
-func stringcpy(s<u8*>, t<i8*>) {
-    return stringcpylen(s, t, std.strlen(t))
+String::cpy(t<i8*>) {
+    return this.cpylen(t,std.strlen(t))
 }
 
-func stringll2str(s<i8*>, value<i64>) {
-    p<i8*> = null
-    aux<i8> = null
-    v<i64> = null
-    l<u64> = null
-
-    if value < 0 
-        v = 0 - value 
-    else 
-        v = value
-    p = s
-    while v != null {
-        # '0' + (v % 10)
-        *p = 48 + v % 10
-        p += 1
-        v /= 10
-    }
-    if value < 0{
-        #*p = '-' 45
-        *p = 45
-        p += 1
-    } 
-
-    l = p - s
-    *p = 0
-
-    p -= 1
-    while s < p  {
-        aux = *s
-        *s = *p
-        *p = aux
-        s += 1
-        p -= 1
-    }
-    return l
-}
-
-func stringull2str(s<i8*>, v<u64>) {
-    p<i8*> = null
-    aux<i8> = null
-    l<u64> = null
-
-    p = s
-    while v != null {
-        # *p++ = '0'+(v%10)
-        *p = 48 + v % 10
-        p += 1
-        v /= 10
-    } 
-
-    l = p - s
-    *p = 0
-
-    p -= 1
-    while s < p {
-        aux = *s
-        *s = *p
-        *p = aux
-        s += 1
-        p -= 1
-    }
-    return l
-}
-
-func stringfromlonglong(value<i64>) {
-
-    buf<i8*> = new LSTRING_LLSTR_SIZE 
-    len<i32> = stringll2str(buf,value)
-
-    return stringnewlen(buf,len)
-}
-
-
-func stringtolower(s<u8*>) {
-    len<u64> = stringlen(s)
+String::tolower() {
+    s<u8*> = this
+    len<u64> = this.len()
     j<u64>   = 0
 
     for (j<u64> = 0 ; j < len ; j += 1) {
@@ -341,8 +169,9 @@ func stringtolower(s<u8*>) {
     }
 }
 
-func stringtoupper(s<u8*>) {
-    len<u64> = stringlen(s)
+String::toupper() {
+    s<u8*> = this
+    len<u64> = this.len()
     j<u64> = 0
 
     for (j<u64> = 0; j < len ; j += 1) {
@@ -350,20 +179,23 @@ func stringtoupper(s<u8*>) {
     }
 }
 
-func stringcmp(s1<u8*>, s2<u8*>) {
+//@return 0  => eq
+//@return 1  => greater than
+//@return -1 => lower than
+String::cmp(s2<String>) {
     l1<u64> = 0
     l2<u64> = 0
     minlen<u64> = 0
     cmp<i32> = 0
 
-    l1 = stringlen(s1)
-    l2 = stringlen(s2)
+    l1 = this.len()
+    l2 = s2.len()
 
     # minlen = (l1 < l2) ? l1 : l2
     if l1 < l2 minlen = l1
     else minlen = l2
 
-    cmp = std.memcmp(s1,s2,minlen)
+    cmp = std.memcmp(this,s2,minlen)
     if cmp == 0 {
         # return l1>l2? 1: (l1<l2? -1: 0)
         if l1 > l2 return runtime.Positive1
@@ -375,17 +207,6 @@ func stringcmp(s1<u8*>, s2<u8*>) {
     return cmp
 }
 
-
-
-func string_malloc(size<u64>) { 
-    return gc.gc_malloc(size) 
-}
-func string_realloc(ptr<u64*>, size<u64>) { 
-    return gc.gc_realloc(ptr,size) 
-}
-func string_free(ptr<u64*>) {
-    gc.gc_free(ptr) 
-}
 // %s  origin char*
 // %S  wrap  string*
 // %i  signed int  
@@ -393,13 +214,15 @@ func string_free(ptr<u64*>) {
 // %u  unsigned int
 // %U  long unsigned int
 // %%  to '%'
-func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
-    initlen<u64> = stringlen(s)
+// TODO: return new
+String::catfmt(fmt<i8*>, args,args1,args2,args3) {
+    s<i8*> = this
+    initlen<u64> = this.len()
     f<i8*> = fmt
     i<u64> = 0
     db<i32> = 2
     single<i32> = 1
-    s = stringMakeRoomFor(s, initlen + std.strlen(fmt) * db)
+    s = this.MakeRoomFor(initlen + std.strlen(fmt) * db)
     f = fmt    
     i = initlen 
     curr<u64> = 0
@@ -413,7 +236,8 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
         num<i64> = 0
         unum<u64> = 0
         if stringavail(s) == runtime.Zero {
-            s = stringMakeRoomFor(s,single)
+            this = s
+            s = this.MakeRoomFor(single)
         }
         match *f 
         {
@@ -429,12 +253,14 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
                         stack -= 1
                         //stack end
                         str = curr
+                        sstr<String> = curr
                         if next == 's' 
                             l = std.strlen(str)
                         else 
-                            l = stringlen(str)
+                            l = sstr.len()
                         if stringavail(s) < l {
-                            s = stringMakeRoomFor(s,l)
+                            this = s
+                            s = this.MakeRoomFor(l)
                         }
                         std.memcpy(s + i,str,l)
                         stringinclen(s,l)
@@ -453,7 +279,8 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
                         buf<i8*> = &buf_o
                         l = stringll2str(buf,num)
                         if stringavail(s) < l {
-                            s = stringMakeRoomFor(s,l)
+                            this = s
+                            s = this.MakeRoomFor(l)
                         }
                         std.memcpy(s + i,buf,l)
                         stringinclen(s,l)
@@ -472,7 +299,8 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
                         buf<i8*> = &buf_o
                         l = stringull2str(buf,unum)
                         if stringavail(s) < l {
-                            s = stringMakeRoomFor(s,l)
+                            this = s
+                            s = this.MakeRoomFor(l)
                         }
                         std.memcpy(s + i,buf,l)
                         stringinclen(s,l)
@@ -496,129 +324,18 @@ func stringcatfmt(s<i8*>, fmt<i8*>, args,args1,args2,args3) {
     s[i] = 0
     return s
 }
-func stringputc(s<i8*>,c<i8>){
+//TODO: return new
+//stringputc
+String::putc(c<i8>){
+    s<i8*> = this
     single<i64> = 1
     if stringavail(s) < single {
-        s = stringMakeRoomFor(s,single)
+        s = this.MakeRoomFor(single)
     }
-    i<i32> = stringlen(s)
+    this = s
+    i<i32> = this.len()
     stringinclen(s,single)
     s[i] = c
     s[i + 1] = 0
-    return s
-}
-func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
-    s<i8*> = stringempty()
-    initlen<u64> = stringlen(s)
-    f<i8*> = fmt
-    i<u64> = 0
-    db<i32> = 2
-    single<i32> = 1
-    s = stringMakeRoomFor(s, initlen + std.strlen(fmt) * db)
-    f = fmt    
-    i = initlen 
-    curr<u64> = 0
-
- 	pp<u64*> = &args
-	stack<i32> = 5   
-    while *f != null {
-        next<i8> = 0
-        str<i8*> = 0
-        l<u64>   = 0
-        num<i64> = 0
-        unum<u64> = 0
-        if stringavail(s) == runtime.Zero {
-            s = stringMakeRoomFor(s,single)
-        }
-        match *f 
-        {
-            '%': {
-                f   += 1
-                next = *f
-                match next {
-                    's' | 'S' :{
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &fmt	pp += 24 }		
-                        stack -= 1
-                        //stack end
-                        str = curr
-                        if next == 's' 
-                            l = std.strlen(str)
-                        else 
-                            l = stringlen(str)
-                        if stringavail(s) < l {
-                            s = stringMakeRoomFor(s,l)
-                        }
-                        std.memcpy(s + i,str,l)
-                        stringinclen(s,l)
-                        i += l
-                    }
-                    'd' | 'D' | 'i' | 'I' : {
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &fmt	pp += 24 }		
-                        stack -= 1
-                        //stack end
-                        num = curr
-
-                        buf_o<i8:21> = 0
-                        buf<i8*> = &buf_o
-                        l = stringll2str(buf,num)
-                        if stringavail(s) < l {
-                            s = stringMakeRoomFor(s,l)
-                        }
-                        std.memcpy(s + i,buf,l)
-                        stringinclen(s,l)
-                        i += l
-                    }
-                    'u' | 'U' : {
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &fmt	pp += 24 }		
-                        stack -= 1
-                        //stack end
-                        unum = curr
-
-                        buf_o<i8:21> = 0
-                        buf<i8*> = &buf_o
-                        l = stringull2str(buf,unum)
-                        if stringavail(s) < l {
-                            s = stringMakeRoomFor(s,l)
-                        }
-                        std.memcpy(s + i,buf,l)
-                        stringinclen(s,l)
-                        i += l
-                    }
-                    'c' : {
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &fmt	pp += 24 }		
-                        stack -= 1
-                        //stack end
-                        s[i] = curr
-                        i += 1
-                        stringinclen(s,single)
-                    }
-                    _ : {
-                        s[i] = next
-                        i += 1
-                        stringinclen(s,single)
-                    } 
-                }
-            }
-            _ : {
-                s[i] = *f
-                i += 1
-                stringinclen(s,single)
-            }
-        }
-        f += 1
-    }
-    s[i] = 0
     return s
 }

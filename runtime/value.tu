@@ -354,7 +354,10 @@ func isTrue(cond<Value>){
     match cond.type {
         Int:    return cond.data > 0
         Float: return cond.data > 0
-        String: return string.stringlen(cond.data) > Null
+        String: {
+            str<string.String> = cond.data
+            return str.len() > Null
+        }
         Bool:   return cond.data
         Char:   return cond.data != 0
         #FIXME: coluld: return 0 not return;
