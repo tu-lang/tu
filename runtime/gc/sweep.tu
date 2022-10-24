@@ -116,8 +116,7 @@ func scan_stack(){
             continue
         }
         if hdr.flags < 1 || hdr.flags > 3 {
-            sptr<string.Str> = ptr
-            sptr.mark()
+            ptr.(string.Str).mark()
             continue
         }
         if v.type == runtime.String {
@@ -125,8 +124,7 @@ func scan_stack(){
             temp_po<Pool> = pool_addr(v.data)
             if temp_po < areobj.address || areobj.address + ARENA_SIZE < temp_po {
             }else{
-                _s<string.Str> = v.data
-                _s.mark()
+                v.data.(string.Str).mark()
             }
         }
         if gc_mark(ptr) == NOT_STACK {

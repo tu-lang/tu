@@ -11,8 +11,7 @@ func value_string_plus(lhs<Value>,rhs<Value>)
 		Bool  : tmstr = tmstr.catfmt(*"%I%S",lhs.data,rhs.data)
         Float : tmstr = tmstr.catfmt(*"%I%S",lhs.data,rhs.data)
         String: {
-            _tdup<string.Str> = lhs.data
-            tmstr = _tdup.dup()
+            tmstr = lhs.data.(string.Str).dup()
             if rhs.type == Int        tmstr = tmstr.catfmt(*"%I",rhs.data)
             else if rhs.type == Array tmstr = tmstr.cat(arr_tostring(rhs))
             else if rhs.type == Char  tmstr = tmstr.putc(rhs.data)
@@ -46,11 +45,9 @@ func value_string_minus(lhs<Value>,rhs<Value>)
 
 func value_string_mul(lhs<Value>,rhs<Value>)
 {
-    rstr<string.Str> = rhs.data
-    lstr<string.Str> = lhs.data
     //如果两个都是字母则返回相加的那部分
     if lhs.type == String && rhs.type == String {
-        tmstr<string.Str> = rstr.dup()
+        tmstr<string.Str> = rhs.data.(string.Str).dup()
         tmstr = tmstr.cat(rhs.data)
         return tmstr
     }
@@ -62,8 +59,7 @@ func value_string_mul(lhs<Value>,rhs<Value>)
         srcv<Value> = lhs
         if rhs.type == String srcv = rhs
         // 在字符串运算中都是从新生成一份内存来进行存储结果
-        _tmp<string.Str> = srcv.data
-        tmstr<string.Str> = _tmp.dup()
+        tmstr<string.Str> = srcv.data.(string.Str).dup()
         count -= 1
         for (i<i64> = 0 ; i < count ; i += 1) {
             tmstr = tmstr.cat(srcv.data)
@@ -81,7 +77,7 @@ func value_string_mul(lhs<Value>,rhs<Value>)
         String:{
             match rhs.type {
                 Char :{
-                    tmstr<string.Str> = lstr.dup()
+                    tmstr<string.Str> = lhs.data.(string.Str).dup()
                     tmstr = tmstr.putc(rhs.data)
                     return tmstr
                 }
@@ -132,8 +128,7 @@ func value_string_equal(lhs<Value>,rhs<Value>,equal<i32>){
         else return True
     }
     //TODO: c函数调用自动判断为mem运算 if _stringcmp(..) == 0 {}
-    s<string.Str> = lhs.data
-    ret<i8> = s.cmp(rhs.data)
+    ret<i8> = lhs.data.(string.Str).cmp(rhs.data)
     if ret == 0 {
         // == 返回true
         // != 返回false
@@ -150,8 +145,7 @@ func value_string_lowerthan(lhs<Value>,rhs<Value>,equal<i32>){
     if lhs.type != String || rhs.type != String {
         return False
     }
-    s<string.Str> = lhs.data
-    eq<i32> = s.cmp(rhs.data) 
+    eq<i32> = lhs.data.(string.Str).cmp(rhs.data) 
     if equal {
         return eq <= 0
     }
@@ -163,8 +157,7 @@ func value_string_greaterthan(lhs<Value>,rhs<Value>,equal<i32>){
     if lhs.type != String || rhs.type != String {
         return False
     }
-    s<string.Str> = lhs.data
-    eq<i32> = s.cmp(rhs.data) 
+    eq<i32> = lhs.data.(string.Str).cmp(rhs.data) 
     if equal return eq >= 0
     return eq > 0
 }

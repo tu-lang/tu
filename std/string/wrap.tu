@@ -68,8 +68,7 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 
 	str<i8*> = v.data
 	l<i32> = index.data
-	sstr<Str> = str
-	if l >= sstr.len() {
+	if l >= str.(Str).len() {
 		fmt.println("warn: string index out of bound ")
 		return 0
 	}
