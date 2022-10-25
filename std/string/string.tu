@@ -26,6 +26,11 @@ String::cat(t<String>) {
 	)
 	this.inner = newp
 }
+String::catstr(t<i8*>){
+	this.inner = this.inner.(Str).cat(
+		t
+	)
+}
 
 String::tolower() {
 	this.inner.(Str).tolower()
@@ -42,6 +47,11 @@ String::cmpstr(s2<i8*>){
 		return 1.(i8)
 	}
 	return 0.(i8)
+}
+String::empty(){
+	if this.cmpstr("".(i8)) == Null 
+		return True
+	return False
 }
 String::putc(c<i8>){
 	this.inner = this.inner.(Str).putc(c)

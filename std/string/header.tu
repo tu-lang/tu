@@ -3,6 +3,9 @@ use runtime
 use std
 use fmt
 
+True<i64> = 1
+False<i64> = 0
+
 
 LSTRING_MAX_PREALLOC<i32> =  1048576 # 1024 * 1024
 LSTRING_LLSTR_SIZE<i32>   = 21
