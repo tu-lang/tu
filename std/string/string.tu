@@ -37,6 +37,12 @@ String::toupper() {
 String::cmp(s2<String>) {
 	return this.inner.(Str).cmp(s2.inner)
 }
+String::cmpstr(s2<i8*>){
+	if ( ret<i8> = std.strcmp(this.inner,s2)) != runtime.Zero {
+		return 1.(i8)
+	}
+	return 0.(i8)
+}
 String::putc(c<i8>){
 	this.inner = this.inner.(Str).putc(c)
 }
