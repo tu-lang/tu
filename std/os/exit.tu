@@ -13,13 +13,25 @@ func panic(size,args...){
     if ret != null {
 		fmt.vfprintf(std.STDOUT,ret)
     }
-    debug.stack(3)
-   os.exit(-1)
+    infos = debug.stack(3)
+    fmt.println("debug backtrace:")
+    i = 1
+    for v : infos {
+        fmt.printf("%d: %s\n",i,v)
+        i += 1
+    }
+    os.exit(-1)
 }
 func die(str){
     fmt.println(str)
     code<i8> = -1
-    debug.stack(3)
+    infos = debug.stack(3)
+    fmt.println("debug backtrace:")
+    i = 1
+    for v : infos {
+        fmt.printf("%d: %s\n",i,v)
+        i += 1
+    }
     std.die(code)
 }
 func dief(size,args...){
@@ -28,7 +40,13 @@ func dief(size,args...){
 		  fmt.vfprintf(std.STDOUT,ret.putc(NewLine))
     }
     code<i8> = -1
-    debug.stack(3)
+    infos = debug.stack(3)
+    fmt.println("debug backtrace:")
+    i = 1
+    for v : infos {
+        fmt.printf("%d: %s\n",i,v)
+        i += 1
+    }
     std.die(code)
 }
 func exit(code){

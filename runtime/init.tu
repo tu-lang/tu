@@ -4,6 +4,7 @@ use std
 use string
 use fmt
 use runtime.gc
+use runtime.debug
 
 Dtrue  = true
 Dfalse = false
@@ -57,10 +58,9 @@ func runtimeinit(){
 
 
 func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
-	fmt.println("panicked! stack backtrace:\n")
+	fmt.println("panicked! stack backtrace:")
 	rip<u64> = segsegv_rip(ctxt)
-	fmt.print("0: ")
-	os.shell("ta2l ./a.out " + int(rip))
+	fmt.println("0: " + debug.findpc(rip))
 	bp<u64*> = gc.get_bp()
 	//skip first stack
 	bp = *bp
@@ -70,8 +70,7 @@ func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 		pc<u64*> = bp + 8
 		rip<u64> = *pc
 		if rip == null break
-		fmt.print(i + ": ")
-		os.shell("ta2l ./a.out " + int(rip))
+		fmt.println(i + ": " + debug.findpc(rip))
 		bp = *bp
 		i += 1
 	}

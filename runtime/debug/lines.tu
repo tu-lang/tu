@@ -12,7 +12,7 @@ Lines::read_u64(out<u64*>) { return this.read(out, U64) }
 
 
 Lines::append(r<Row>) {
-	if r.address != 0 {
+	if r.address != null {
 		file<i32> = r.file
 		if file > 0
 			file += this.file_offset - 1
