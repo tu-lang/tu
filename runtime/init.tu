@@ -12,10 +12,15 @@ ori_envp<u64*>
 ori_argc<u64>
 ori_argv<u64>
 ori_envs<u64>
+ori_execout<u64*>
 
 ErrorCode<i32> = -1
 
 func args_init(argc<u64>, argv<u64*>){
+	//save exec out file
+	ori_execout = argv - 8
+	ori_execout = *ori_execout
+	//start parse env info
 	envp<u64*> = argv + argc * PointerSize
 	c = int(argc)
 	c -= 1
