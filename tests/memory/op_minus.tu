@@ -67,7 +67,51 @@ func u8_test(){
 	var(p)
 	member(p)
 }
+func test_i8_sub_i64(){
+	i<i32> = 0
+	b<i64> = 1
+	if i - b < 0 {} else os.die("0 - 1 < 0 ;1")
+	if i - 1 < 0 {} else os.die("0 - 2 < 0 ;2")
+
+	j<i16> = 0
+	if j - b < 0 {} else os.die("0 - 1 < 0 ;3")
+	if j - 1 < 0 {} else os.die("0 - 1 < 0 ;4")
+
+	k<i8> = 0
+	if k - b < 0 {} else os.die("0 - 1 < 0 ;5")
+	if k - 1 < 0 {} else os.die("0 - 1 < 0 ;6")
+
+	o<i64> = 0
+	if o - b < 0 {} else os.die("0 - 1 < 0 ;7")
+	if o - 1 < 0 {} else os.die("0 - 1 < 0 ;8")
+	fmt.println("test i8 sub i64 success")
+}
+func test_u8_sub_u64(){
+	i<u32> = 0
+	b<u64> = 1
+	if i - b < 0  os.die("0 - 1 < 0 ;1")
+	// OPTIMIZE: i:u32   1:i64  => result: i64
+	// if i - 1 < 0  os.die("0 - 2 < 0 ;2")
+
+	j<u16> = 0
+	if j - b < 0  os.die("0 - 1 < 0 ;3")
+	// OPTIMIZE: i:u16   1:i64  => result: i64
+	// if j - 1 < 0  os.die("0 - 1 < 0 ;4")
+
+	k<u8> = 0
+	if k - b < 0  os.die("0 - 1 < 0 ;5")
+	// OPTIMIZE: i:u8   1:i64  => result: i64
+	// if k - 1 < 0  os.die("0 - 1 < 0 ;6")
+
+	o<u64> = 0
+	if o - b < 0  os.die("0 - 1 < 0 ;7")
+	// OPTIMIZE: i:u64   1:i64  => result: i64
+	// if o - 1 < 0  os.die("0 - 1 < 0 ;8")
+	fmt.println("test i8 sub i64 success")
+}
 func main(){
 	i8_test()
 	u8_test()
+	test_i8_sub_i64()
+	test_u8_sub_u64()
 }
