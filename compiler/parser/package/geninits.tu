@@ -41,7 +41,7 @@
 	 return hashInit[pkg.getFullName()] 
  }
  HasGen = {}
-func  geninit(pkg){
+Package::geninit(pkg){
 	 if std.exist(pkg.getFullName(),HasGen)
 	 	return false
 	 HasGen[pkg.getFullName()] = true
@@ -52,7 +52,7 @@ func  geninit(pkg){
 		 for(fullpackage : parser.import){
 			 if !std.exist(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
 			 dpkg = packages[fullpackage]
-			 if(geninit(dpkg)){
+			 if(dpkg.geninit(dpkg)){
 				 for(init : dpkg.inits){
 					mf.InsertFuncall(fullpackage,init.name)
 				 }

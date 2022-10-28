@@ -32,8 +32,8 @@ func editast(){
     utils.debug("ast.editast()")
     mpkg = package.packages["main"]
     mpkg.genvarsinit()
-    mpkg.parseinit()
-    mpkg.geninit()
+    mpkg.parseinit(mpkg)
+    mpkg.geninit(mpkg)
     mpkg.classinit()
 }
 func writeln(count,args...) {

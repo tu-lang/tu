@@ -161,9 +161,12 @@ Parser::parseUnaryExpr()
     }else if this.isprimary() {
         return this.parsePrimaryExpr()
     }
-    utils.debug(
-        "parseUnaryExpr: not found token:%d-%s file:%s line:%d",
-        this.scanner.curToken,this.scanner.curLex,this.filepath,this.line
+    utils.debugf(
+        "parseUnaryExpr: not found token:%d-%s file:%s line:%d\n",
+        int(this.scanner.curToken),
+        this.scanner.curLex,
+        this.filepath,
+        this.line
     )
     return null
 }

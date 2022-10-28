@@ -79,7 +79,7 @@ MatchCaseExpr::toString(){
 }
 
 MatchCaseExpr::bitOrToLogOr(expr){
-    utils.debugf("gen.MatchCaseExpr.bitOrToLogOr(): expr.len:%d",std.len(expr))
+    utils.debug("gen.MatchCaseExpr.bitOrToLogOr()" )
 	if type(expr) != type(BinaryExpr) return expr
 	node = expr
 	//only edit ast.BITOR case ast

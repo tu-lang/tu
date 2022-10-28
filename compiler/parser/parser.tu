@@ -93,6 +93,7 @@ Parser::getpkgname()
     return this.full_package
 }
 Parser::panic(args...){
+    fmt.println("Parser::panic:")
     err = fmt.sprintf(args)
     this.check(false,err)
 }
