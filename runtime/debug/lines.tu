@@ -199,10 +199,10 @@ Lines::funcline(address<u64>){
 	for(i<i32> = 0 ; i < this.rows.len()  ; i += 1){
 		r<Row> = this.rows.addr[i]
 		if r.address > address  {
-			r  = this.rows.addr[i - 1]
 			if i - 1 < 0 {
 				return 0.(i8)
 			}
+			r  = this.rows.addr[i - 1]
 			filename<string.String> = this.files.addr[r.file]
 			return new PcData {
 				address: address,
