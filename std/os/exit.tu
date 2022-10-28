@@ -5,6 +5,11 @@ use runtime
 use string
 use runtime.debug
 
+debug_stack<i64> = 5
+
+func set_stack(size<i32>){
+    debug_stack = size
+}
 NewLine<i8> = '\n'
 
 extern _ string_stringfmt()
@@ -13,7 +18,7 @@ func panic(size,args...){
     if ret != null {
 		fmt.vfprintf(std.STDOUT,ret)
     }
-    infos = debug.stack(3)
+    infos = debug.stack(debug_stack)
     fmt.println("debug backtrace:")
     i = 1
     for v : infos {
@@ -25,7 +30,7 @@ func panic(size,args...){
 func die(str){
     fmt.println(str)
     code<i8> = -1
-    infos = debug.stack(3)
+    infos = debug.stack(debug_stack)
     fmt.println("debug backtrace:")
     i = 1
     for v : infos {
@@ -40,7 +45,7 @@ func dief(size,args...){
 		  fmt.vfprintf(std.STDOUT,ret.putc(NewLine))
     }
     code<i8> = -1
-    infos = debug.stack(3)
+    infos = debug.stack(debug_stack)
     fmt.println("debug backtrace:")
     i = 1
     for v : infos {

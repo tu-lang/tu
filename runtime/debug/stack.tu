@@ -1,9 +1,9 @@
 use fmt
 use runtime.gc
 use os
-func stack(level){
+func stack(level<i32>){
 	bp<u64*> = gc.get_bp()
-	i = 0
+	i<i32> = 0
 	arr = []
 	//stack backtrace 
 	while i < level {

@@ -58,7 +58,7 @@ func runtimeinit(){
 
 
 func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
-	fmt.println("panicked! stack backtrace:")
+	fmt.println("\npanicked! stack backtrace:")
 	rip<u64> = segsegv_rip(ctxt)
 	fmt.println("0: " + debug.findpc(rip))
 	bp<u64*> = gc.get_bp()

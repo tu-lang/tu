@@ -202,6 +202,7 @@ func object_func_add(obj<Value>,k<u32>,addr<u64*>){
     c<Object> = obj.data
     member_insert(c.funcs,key,addr)
 }
+//used by internal runtime
 func get_member_func_addr(obj<Object>,key<Value>){
     funcaddr<u64*> = member_find(obj.funcs,key)
     if  funcaddr == null {
@@ -214,7 +215,7 @@ func get_member_func_addr(obj<Object>,key<Value>){
     }
     //not find finally
     if funcaddr == null {
-        fmt.println("[object-func] func not exist in func table and members table ",key)
+        os.dief("[object-func] func not exist in func table and members table")
     }
     return funcaddr
 }
