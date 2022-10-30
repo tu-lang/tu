@@ -92,8 +92,12 @@ BuiltinFuncExpr::compile(ctx){
 				if ce.ret == null {
 					this.panic("struct chain exp: something wrong here :%s\n",ret.toString())
 				}
-				compile.LoadMember(ce.ret)
-				tk = ce.ret.type
+				if type(ce.last) == type(MemberCallExpr) {
+					tk = ast.U64
+				}else{
+					compile.LoadMember(ce.ret)
+					tk = ce.ret.type
+				}
 			}
 		}
 	}

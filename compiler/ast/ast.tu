@@ -20,6 +20,10 @@ class Ast {
 Ast::record(){
     cfunc = compile.currentFunc
     compile.writeln("# line:%d column:%d file:%s",this.line,this.column,cfunc.parser.filepath)
+    if compile.debug
+        compile.writeln("    .loc %d %d",compile.currentParser.fileno,this.line)
+    else
+        compile.writeln("# line:%d column:%d file:%s",this.line,this.column,cfunc.parser.filepath)
 }
 Ast::panic(args...){
     err = fmt.sprintf(args)
@@ -117,5 +121,12 @@ func getTokenString(tk) {
         U32: return "u32"
         U64: return "u64"
         _ :	return "undefine"
+    }
+}
+
+func type_isunsigned(ty<i64>){
+    match ty {
+        U8 | U16 | U32 | U64 : return true
+        _ : return false
     }
 }

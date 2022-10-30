@@ -26,3 +26,7 @@ func strRand() {
 	v = std.rand(1000000000)
 	return fmt.sprintf("%D",v)
 }
+func isUpper(str)
+{
+	return str[0] >= 'A' && str[0] <= 'Z'
+}

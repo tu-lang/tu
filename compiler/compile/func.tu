@@ -23,6 +23,10 @@ func registerFunc(fn){
 func registerFuncs(){
     utils.debug("compile.registerFunc()")
     for f : currentParser.funcs {
+        f.funcnameid = ".L.funcname." + ast.incr_labelid()
+        writeln("    .globl %s", f.funcnameid)
+        writeln("%s:", f.funcnameid)
+        writeln("    .string \"%s\"",f.beautyName())
         registerFunc(f)
     }
 }
@@ -56,6 +60,8 @@ func CreateFunction(fn) {
         funcCtx = std.tail(funcCtxChain)
         funcCtx.cur_funcname = funcname
 
+        vardic = fn.getVariadic()
+        i = 1
         for(arg : fn.params_order_var){
             funcCtx.createVar(arg.varname,arg)
             //fixme: ignore internal pkg for debug
@@ -86,4 +92,5 @@ func CreateFunction(fn) {
     writeln("    mov %%rbp, %%rsp")
     writeln("    pop %%rbp")
     writeln("    ret")
+    writeln("    .size %s , .-%s",funcname,funcname)
 }

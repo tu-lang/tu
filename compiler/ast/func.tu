@@ -8,6 +8,7 @@ class Function {
     name    # func name
     isExtern  = false # c ffi ; extern define
     isObj     = false # object call
+    isMem     = false # static class function
     structname
     rettype
 
@@ -32,6 +33,8 @@ class Function {
     params      = [] # [string...]
     block       # Block*
     retExpr     # Expression*
+
+    funcnameid
 }
 func incr_closureidx(){
     idx = closureidx
@@ -74,11 +77,16 @@ Function::fullname(){
     )
     //class memeber function
     if !std.empty(this.clsname) {
-        cls = this.package.getClass(this.clsname)
-        if cls == null {
-            os.die("class not define :" + this.clsname)
-        }
-        funcsig = fmt.sprintf("%s_%s_%s",this.parser.getpkgname(),cls.name,this.name)
+        if !this.isMem {
+        	c = this.package.getClass(this.clsname)
+        	if c == null || !c.found {
+                os.die("class not define :" + this.clsname)
+        	}
+        	funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
+		}else{
+            c = this.package.getStruct(this.clsname)
+        	funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
+		}
     }
     return funcsig
 }

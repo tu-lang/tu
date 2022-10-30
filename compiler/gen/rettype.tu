@@ -32,25 +32,45 @@ KVExpr::getType(ctx){
 }
 ChainExpr::getType(ctx){
 	this.check(this.ismem(ctx),"gettype: unsuport chain")
+	if !this.ismem(ctx) return ast.U8
 
-	s 	= this.first
-	member = s.getMember()
-	
-	this.check(member.isstruct,"must be memtype in chain expr")
+	member = null
+	if type(this.first) == type(StructMemberExpr) {
+		member = s.getMember()
+	}else if type(this.first) == type(MemberExpr) {
+		s = this.first
+		member = s.getMember(ctx)
+		if s.tyassert != null {
+			member.isstruct = true
+			member.structref = s.tyassert.getStruct()
+		}
+	}
+
 	for(i : this.fields){
 		this.check(type(i) == type(MemberExpr),"field must be member expression at mem chain expression")
 		me = i
+		if me.tyassert != null {
+			member.isstruct = true
+			member.structref = me.tyassert.getStruct()
+		}
+		this.check(member.isstruct,"must be memtype in chain expr")
 		this.check(member.structref != null,"must be memref in chain expr")
 		
 		s = member.structref # Struct
 		member = s.getMember(me.membername)
 		this.check(member != null,"mem not exist field:" + me.membername)
-		
-		this.check(member.isstruct,"middle field must be mem type in chain expression")
+		this.check(member.isstruct,"chainexpr::getType middle field must be mem type in chain expression field:" + me.membername)
 	}
 		
 	this.check(this.last != null,"miss last field in chain expression")
+	if type(this.last) == type(MemberCallExpr) {
+		return ast.U64
+	}
 	me = this.last
+	if me.tyassert != null {
+		member.isstruct = true
+		member.structref = me.tyassert.getStruct()
+	}
 	this.check(member.structref != null,"must be memref in chain expr")
 	ss = member.structref
 	member = ss.getMember(me.membername)
@@ -100,7 +120,16 @@ DelRefExpr::getType(ctx){
 	return this.expr.getType(ctx)
 }
 IndexExpr::getType(ctx){
-	this.panic("getType: unsupport IndexExpr\n")
+	var = new VarExpr(this.varname,this.line,this.column)
+    var.package = this.package
+	return var.getType(ctx)
+}
+NewStructExpr::getType(ctx){
+	return ast.U64
+}
+StructInitExpr::getType(ctx){
+	this.panic("getType: unsupport struct init \n")
+	return ast.U64
 }
 BinaryExpr::getType(ctx){
 	
@@ -142,4 +171,7 @@ IfCaseExpr::getType(ctx){
 }
 LabelExpr::getType(ctx){
 	this.panic("getType: unsupport LabelExpr\n")
+}
+TypeAssertExpr::getType(ctx){
+	this.panic("getType: unsupport TypeAssertExpr\n")
 }

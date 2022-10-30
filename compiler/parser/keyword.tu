@@ -13,6 +13,7 @@ Parser::parseClassDef()
     
     this.expect(ast.VAR)
     s = new ast.Class(this.pkg.package)
+    s.found = true
     s.parser = this
     s.name  = this.scanner.curLex
     this.scanner.scan()
@@ -59,131 +60,6 @@ Parser::parseClassDef()
     }
     this.pkg.addClass(s.name,s)
     this.scanner.scan()
-}
-Parser::parseStructDef()
-{
-    utils.debug("parser.Parser::parseStructDef() found class start parser..")
-    this.expect(ast.MEM)
-    this.scanner.scan()
-    this.expect(ast.VAR)
-    s = new ast.Struct()
-    s.parser = this
-    s.name  = this.scanner.curLex
-    s.pkg   = this.package
-    this.scanner.scan()
-    
-    if this.scanner.curToken != ast.LBRACE {
-        this.expect(  ast.COLON)
-        this.scanner.scan()
-        
-        this.expect( ast.VAR)
-        if (this.scanner.curLex == "pack" ){
-            s.ispacked = true
-        }
-        this.scanner.scan()
-    }
-    
-    this.expect( ast.LBRACE)
-    this.scanner.scan()
-    
-    idx = 0
-    while this.scanner.curToken != ast.RBRACE {
-        tk  = this.scanner.curToken
-        
-        if tk == ast.VAR {
-            lex = this.scanner.curLex 
-
-            member = new ast.Member()
-            member.isunsigned = true
-            member.isclass   = true
-            
-            member.structpkg  = this.pkg.package
-            member.structname = lex
-            member.structref  = null
-            member.arrsize    = 1
-            
-            member.line = this.line
-            member.column = this.column
-            member.file   = this.filepath
-            this.scanner.scan()
-            if this.scanner.curToken == ast.DOT {
-                this.scanner.scan()
-                this.expect( ast.VAR)
-                member.structpkg = member.structname
-                member.structname = this.scanner.curLex
-                this.scanner.scan()
-            }
-            if this.scanner.curToken == ast.MUL {
-                member.pointer = true
-                this.scanner.scan()
-            }
-            this.expect( ast.VAR)
-            member.name = this.scanner.curLex
-            s.member[] = member
-            this.scanner.scan()
-            continue
-        }
-        this.scanner.scan()
-        pointer = false
-        if this.scanner.curToken == ast.MUL {
-            pointer = true
-            this.scanner.scan()
-        }
-        member = this.parseMember(tk,idx,pointer)
-        s.member[] = member
-        
-        while this.scanner.curToken == ast.COMMA {
-            this.scanner.scan()
-            member = this.parseMember(tk,idx,pointer)
-            s.member[] = member
-        }
-    }
-    this.pkg.addStruct(s.name,s)
-    this.scanner.scan()
-}
-Parser::parseMember(tk,idx,pointer){
-    utils.debug("parser.Parser::parseMember() ")
-    this.check(tk >= ast.I8 && tk <= ast.U64)
-    member = new ast.Member()
-    member.line = this.line
-    member.column = this.column
-    member.file  = this.filepath
-    member.isunsigned = false
-    if tk >= ast.U8 && tk <= ast.U64
-        member.isunsigned = true
-    member.idx    = idx 
-    //FIXME: reference idx here
-    idx += 1
-    member.type = tk
-    member.size = typesize[int(tk)]
-    member.align = typesize[int(tk)]
-    member.arrsize = 1
-
-    if pointer {
-        member.align = 8
-        member.pointer = true
-    }
-
-    this.expect( ast.VAR)
-    member.name = this.scanner.curLex
-
-    this.scanner.scan()
-    if this.scanner.curToken ==  ast.COLON {
-        this.scanner.scan()
-        this.expect( ast.INT)
-        member.bitfield = true
-        member.bitwidth = string.tonumber(this.scanner.curLex)
-        this.scanner.scan()
-    }else if this.scanner.curToken == ast.LBRACKET{
-        this.scanner.scan()
-        this.expect( ast.INT)
-        member.isarr   = true
-        member.arrsize = string.tonumber(this.scanner.curLex)
-        this.scanner.scan()
-        this.expect( ast.RBRACKET)
-        this.scanner.scan()
-    }
-    return member
 }
 
 Parser::parseFuncDef(member,closure)

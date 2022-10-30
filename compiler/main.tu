@@ -55,6 +55,8 @@ func main() {
         match os.argv[i] {
             "run" : run = true
             "-d"  : utils.debug_mode = 1          # debug mode
+            "-g"  : compile.debug    = true
+            "-og" : compile.sdebug   = true
             "-s"  : {
                 code_file = os.argv[i + 1]
                 i += 1

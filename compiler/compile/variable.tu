@@ -13,6 +13,10 @@ func registerStrings(c){
     }
 }
 func registerVars(){
+    writeln("    .globl %s", currentParser.filenameid)
+    writeln("%s:", currentParser.filenameid)
+    writeln("    .string \"%s\"",currentParser.filepath)
+
     for(name,v : currentParser.gvars){
         gname = currentParser.getpkgname() + "_" + name
         writeln("    .global %s",gname)

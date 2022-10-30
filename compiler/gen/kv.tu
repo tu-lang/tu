@@ -38,6 +38,8 @@ class IndexExpr : ast.Ast {
     index
     is_pkgcall
     package
+
+    tyassert
     func init(line,column){
         super.init(line,column)
     }
@@ -61,20 +63,47 @@ IndexExpr::compile(ctx) {
     }
     match var.getVarType(ctx) {
         ast.Var_Obj_Member : { 
+            if this.tyassert != null {
+                sm = new StructMemberExpr(this.tyassert.pkgname,
+                    this.line,this.column
+                )
+                vv = var.ret.clone()
+                vv.structpkg = this.tyassert.pkgname
+                vv.structname = this.tyassert.name
+                sm.member = this.varname
+                sm.var    = vv
+                sm.compile(ctx)
+                me = sm.ret
+                if me.pointer
+                    compile.LoadMember(me)
+                compile.Push()
+                if !me.pointer && !me.isarr 
+                    this.check(false,"must be pointer member or arr")
+
+                this.compileStaticIndex(ctx,me.size)
+                compile.writeln("\tadd %%rdi , (%%rsp)")
+                compile.Pop("%rax")
+                compile.LoadSize(me.size,me.isunsigned)
+                return null
+            }            
             compile.GenAddr(var.ret)
             compile.Load()
             compile.Push()
             internal.object_member_get(this,this.varname)
             compile.Push() 
         }
-        ast.Var_Extern_Global | ast.Var_Local_Global | ast.Var_Local :{ 
+        ast.Var_Global_Extern | ast.Var_Global_Local | ast.Var_Local :{ 
             compile.GenAddr(var.ret)
             compile.Load()
             compile.Push()
         }
-        ast.Var_Func | ast.Var_Local_Mem_Global : {
+        ast.Var_Local_Static | ast.Var_Local_Static_Field | ast.Var_Global_Local_Static_Field :{
+            return this.compile_static(ctx) 
+        }
+        ast.Var_Func : {
             this.panic("meme type can't used in indexpr :%s",this.toString(""))
         }
+        _ : this.check(false,"unkown type indexexpr::compile")
     }
 COMPILE_INDEX:
     this.check(this.index != null,"index is null")
@@ -95,20 +124,46 @@ IndexExpr::assign( ctx , opt ,rhs) {
 
     match var.getVarType(ctx) {
         ast.Var_Obj_Member : { 
+            if this.tyassert != null {
+                sm = new StructMemberExpr(var.package,this.line,this.column)
+                sm.member = var.varname
+                vv = var.ret.clone()
+                vv.structpkg = this.tyassert.pkgname
+                vv.structname = this.tyassert.name
+                sm.var    = vv
+                sm.compile(ctx)
+                me = sm.ret
+                if me.pointer
+                    compile.LoadMember(me)
+                compile.Push()
+                if !me.pointer && !me.isarr this.check(false,"must be pointer member")
+
+                this.compileStaticIndex(ctx,me.size)
+                compile.writeln("\tadd %%rdi , (%%rsp)")
+                oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
+                oh.genRight(false,rhs)
+                compile.Cast(rhs.getType(ctx),me.type)
+                compile.Store(me.size)
+                return sm
+            }
             compile.GenAddr(var.ret)
             compile.Load()
             compile.Push()
             internal.object_member_get(this,this.varname)
             compile.Push() 
         }
-        ast.Var_Extern_Global | ast.Var_Local_Global | ast.Var_Local :{ 
+        ast.Var_Global_Extern | ast.Var_Global_Local | ast.Var_Local :{ 
             compile.GenAddr(var.ret)
             compile.Load()
             compile.Push()
         }
-        ast.Var_Func | ast.Var_Local_Mem_Global : {
+        ast.Var_Func | ast.Var_Global_Local_Static_Field : {
             this.panic("meme type can't used in indexpr :%s",this.toString(""))
         }
+        ast.Var_Local_Static |ast.Var_Local_Static_Field: {
+            return this.assign_static(ctx,opt,rhs)
+        }
+        _: this.check(false,"array index: unkown type index::assign")
     }
 ASSIGN_INDEX:
     if !this.index {

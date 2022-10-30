@@ -29,6 +29,17 @@ func exprIsMtype(cond,ctx){
         }
         type(ChainExpr): ismtype = cond.ismem(ctx)
         type(BuiltinFuncExpr) : ismtype = cond.isMem(ctx)
+        type(IndexExpr): {
+            i = cond
+            if i.tyassert != null {
+                ismtype = true
+            }else{
+                var = new VarExpr(i.varname,i.line,i.column)
+                var.package = i.package
+                ismtype = var.isMemtype(ctx)
+            }
+        }
+        type(MemberExpr) : ismtype = i.ismem(ctx)
     }
     return ismtype
 }

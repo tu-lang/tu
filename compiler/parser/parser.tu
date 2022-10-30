@@ -62,6 +62,8 @@ Parser::init(filepath,pkg,package,full_package) {
     this.scanner = new scanner.Scanner(filepath,this)
     this.import[package] = full_package
     this.import[""]  = full_package
+    this.filenameid = ".L.filename." +  ast.incr_labelid()
+
 }
 Parser::parse()
 {
@@ -126,6 +128,10 @@ Parser::expect(tok<i32>,str<i32>){
     )
     os.panic(err)
 }
+Parser::next_expect(tk,err){
+    this.scanner.scan()
+    return this.expect(tk,err)
+}
 
 Parser::isunary(){
     match this.scanner.curToken {
@@ -173,4 +179,12 @@ Parser::isbinary(){
         }
         _ : return False
     }
+}
+Parser::isbase(){
+    match this.scanner.curToken {
+        ast.I8 | ast.U8 | ast.I16 | ast.U16 |
+        ast.I32| ast.U32| ast.I64 | ast.U64 :
+            return true
+    }
+    return false
 }

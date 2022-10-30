@@ -12,6 +12,7 @@ class Class
   father
   parser      # Parser
   type_id     = 0
+  found       = false
   func init(pkg){}
 }
 Class::getFunc(name){

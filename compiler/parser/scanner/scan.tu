@@ -111,8 +111,8 @@ Scanner::parseNumber(first)
     }
     
 
-    while ( (cn >= '0' && cn <= '9') || (!isDouble && cn == '.') ) {
-        if c == '.'
+    while cn >= '0' && cn <= '9' {
+        if c == '.' && this.peek() != '(' 
             isDouble = true
         c = this.next()
         cn = this.peek()

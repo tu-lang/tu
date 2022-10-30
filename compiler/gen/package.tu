@@ -13,6 +13,7 @@ package.Package::genStruct(s)
     
     if m.isstruct {
         ps = s.parser # Parser
+        compile.currentParser  = ps
         acualPkg = ps.import[m.structpkg]
         dst = package.getStruct(acualPkg,m.structname)
         if dst == null {
@@ -32,6 +33,7 @@ package.Package::genStruct(s)
         else                   m.size = dst.size
         
         m.structref = dst
+        compile.currentParser = null
     }
 
     
@@ -65,20 +67,55 @@ package.Package::genStruct(s)
   s.iscomputed = true
 }
 package.Package::classinit(){
-  for(pkg : package.packages){
-    for(cls : pkg.classes){
-      cls.initClassInitFunc()
-      cls.checkRmSupers()
-    }
-  }
+	for  pkg : package.packages {
+		for c : pkg.classes {
+			if !c.found {
+				s = pkg.getStruct(c.name)
+				if s != null {
+					for i : c.funcs {
+						i.isMem = true
+						i.isObj = false
+						This = i.params_var["this"]
+						This.structtype = true
+						This.type = U64
+						This.size = 8
+						This.isunsigned = true
+						This.structpkg = s.pkg
+						This.structname = s.name
+						i.block.checkAndRmFirstSuperDefine()
+					}
+				}
+			}
+		}
+	}
+	for(pkg : package.packages){
+		for(cls : pkg.classes){
+			if !c.found continue
+			cls.initClassInitFunc()
+			cls.checkRmSupers()
+		}
+	}
 }
 package.Package::compile(){
-  for(it : this.parsers){
-    compile.currentParser = it
-    compile.registerStrings(false)
-    compile.currentParser = null
-  }
-  for(p : this.parsers){
-      p.compile()
-  }
+	for(it : this.parsers){
+		compile.currentParser = it
+		compile.registerStrings(false)
+		compile.currentParser = null
+	}
+	for(p : this.parsers){
+		p.compile()
+	}
+}
+
+package.Package::defaultvarsinit(){
+	if !compile.debug && !compile.sdebug return true
+	debug = package.packages["runtime_debug"]
+	for p : debug.parsers {
+		for var : p.gvars {
+			if var.varname == "enabled" {
+				var.ivalue = "1"
+				return true
+			}
+		}
+	}
 }

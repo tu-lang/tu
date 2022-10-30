@@ -107,6 +107,8 @@ class FunCallExpr : ast.Ast {
     is_pkgcall
     is_extern
     is_delref
+
+	tyassert
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -145,6 +147,29 @@ FunCallExpr::compile(ctx)
         goto OBJECT_MEMBER_CALL
     }else if (var = ast.getVar(ctx,packagename) ) {
 		OBJECT_MEMBER_CALL:
+		if var.structname != "" {
+			s = package.packages[
+				compile.currentParser.import[var.structpkg]
+				].getClass(
+				var.structname
+			)
+			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)
+			fn = s.getFunc(this.funcname)
+			if(fn == null) this.panic("func not exist")
+			funcexec(ctx,fn,this,packagename)
+			return null
+		}else if this.tyassert != null {
+			s = package.packages[
+					compile.currentParser.import[
+						this.tyassert.pkgname
+					]
+				].getClass(
+					this.tyassert.name
+			)
+			fn = s.getFunc(this.funcname)
+			funcexec(ctx,fn,this,packagename)
+			return null
+		}
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()

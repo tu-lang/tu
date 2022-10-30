@@ -11,6 +11,7 @@ func GenAddr(var){
         return var
     }else{
         full = currentFunc.parser.import[var.package]
+        if full == "" var.panic("var not define")
         name = full + "_" + var.varname
         writeln("    lea %s(%%rip), %%rax", name)
         return var
@@ -168,7 +169,8 @@ func Push_arg(ctx,fc,fce){
                 LoadMember(sm.getMember())
             }else if ret != null && type(ret) == type(gen.ChainExpr) {
                 ce = ret
-                if type(fce.args[i]) != type(gen.AddrExpr) {
+                if type(ce.last) == type(gen.MemberCallExpr) {
+                }else if type(fce.args[i]) != type(gen.AddrExpr) {
                     LoadMember(ce.ret)
                 }
             }

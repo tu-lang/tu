@@ -55,12 +55,15 @@ Lines::qsort(l<i32> , r<i32>){
 		this.qsort(i + 1 , r)
 	}
 }
+
+
 Lines::parse(){
 	while this.reader.finish() == False {
 		this.load()
   	}
 	this.qsort(0.(i8) , this.rows.len() - 1)
 }
+
 
 Lines::load(){
 	lh<LineHeader> = new LineHeader
@@ -98,7 +101,7 @@ Lines::load(){
 		check(this.reader.read_uleb128(&mtime))
 		check(this.reader.read_uleb128(&file_length))
 	}
-	r<Row> = new Row{
+	r<Row> = new Row {
 		address: 0,
 		file : 1,
 		line : 1

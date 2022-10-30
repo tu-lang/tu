@@ -3,6 +3,7 @@ use std.regex
 use utils
 use ast
 use parser
+use compile
 
 class Package {
     parsers = {} # parsers map[filepath + name] = parser
@@ -51,7 +52,7 @@ Package::parse()
         if string.sub(filepath,std.len(filepath) - 2) == ".tu" {
             parser = new parser.Parser(filepath,this,this.package,this.full_package)
             
-            parser.fileno = 1
+            parser.fileno = compile.fileno
             this.parsers[filepath] = parser
             parser.parse()
         }

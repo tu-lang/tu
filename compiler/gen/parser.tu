@@ -16,6 +16,8 @@ parser.Parser::compile()
     //asm file generate start
     compile.out = asm
     compile.currentParser = this
+    if compile.debug
+        compile.writeln("    .file %d \"%s\"",this.fileno,this.filepath)
 
     compile.writeln(".data")
     compile.funcs_offsets()

@@ -33,8 +33,12 @@ ReturnStmt::compile(ctx)
         
         }else if ret && type(ret) == type(gen.ChainExpr) {
             ce = ret
-            if ce.ret {
-                compile.LoadMember(ce.ret)
+            if ce.ismem(ctx) && type(ce.last) == type(MemberCallExpr) {
+		    }else{
+                if ce.ret {
+                    compile.LoadMember(ce.ret)
+                }
+
             }
         }
     }

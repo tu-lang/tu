@@ -9,6 +9,10 @@ out    = null # current file fd
 currentParser = null # current parser
 ctx = [] # arr[Context*,Context*..]
 currentFunc = null # the func that is generating
+fileno = 1
+
+debug  = false
+sdebug = false
 
 func genast(filename)
 {
@@ -16,7 +20,7 @@ func genast(filename)
     mpkg = new package.Package("main","main",false)
     mparser = new parser.Parser(filename,mpkg,"main","main")
 
-    mparser.fileno = 1
+    mparser.fileno = fileno
     mpkg.parsers[filename] = mparser
     mparser.parse()    # token parsering
     package.packages["main"] = mpkg
@@ -31,9 +35,10 @@ func genast(filename)
 func editast(){
     utils.debug("ast.editast()")
     mpkg = package.packages["main"]
+    mpkg.defaultvarsinit()
     mpkg.genvarsinit()
-    mpkg.parseinit(mpkg)
-    mpkg.geninit(mpkg)
+    mpkg.parseinit()
+    mpkg.geninit()
     mpkg.classinit()
 }
 func writeln(count,args...) {

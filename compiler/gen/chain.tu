@@ -36,6 +36,10 @@ ChainExpr::ismem(ctx) {
 			return true
 		 }
 	 }	
+	 if type(this.first) == type(MemberExpr) {
+		me = this.first
+		return me.ismem(ctx)
+	 }
 	 return false
 }
 ChainExpr::compile(ctx)
@@ -44,28 +48,57 @@ ChainExpr::compile(ctx)
 	this.record()
     if type(this.first) == type(StructMemberExpr) return this.memgen(ctx)
 
-	 if type(this.first) == type(VarExpr) {
+	if type(this.first) == type(VarExpr) {
 		varexpr = this.first
 		realVar = varexpr.getVar(ctx)
 		if realVar && !realVar.is_local && realVar.structtype {
 			mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
-            mexpr.var = realVar
-            mexpr.member = varexpr.varname
+			mexpr.var = realVar
+			mexpr.member = varexpr.varname
 			this.first = mexpr
 			return this.memgen(ctx)
-		 }
-	 }
+		}
+	}else if type(this.first) == type(MemberExpr) {
+		me = this.first
+		if me.ismem(ctx) {
+			mexpr = new StructMemberExpr(me.varname,this.line,this.column)
+			mexpr.var = me.ret
+			if me.tyassert != null {
+				v = me.ret.clone()
+				v.structpkg  = me.tyassert.pkgname
+				v.structname = me.tyassert.name
+				mexpr.var = v
+			}
+			mexpr.member = me.membername
+			this.first = mexpr
+			return this.memgen(ctx)
+		}
+	}	
+
 	return this.objgen(ctx)
 }
 
 ChainExpr::memgen(ctx)
 {
 	utils.debug("gen.ChainExpr::memgen()")
+	if(type(this.last) == type(IndexExpr)){
+		return this.indexgen(ctx)
+	}
 	this.first.compile(ctx)
 	s = this.first
 	member = s.getMember()
-	this.check(member.isstruct,"field must be mem at chain expression")
-	if member.pointer {
+	need_check = true
+	lastn = this.last
+	if type(this.last) == type(MemberCallExpr) {
+		if lastn.tyassert != null
+			need_check = false
+	}else if type(this.last) == type(MemberExpr) {
+		if lastn.tyassert != null
+			need_check = false
+	}
+	if need_check
+		this.check(member.isstruct,"field must be mem at chain expression")
+	if member.pointer || !need_check {
 		compile.Load()
 	}
 	for i : this.fields {
@@ -82,14 +115,29 @@ ChainExpr::memgen(ctx)
 			compile.Load()
 		}
 	}
-	//遍历最后一个节点，如果没有那肯定parser出错了
 	this.check(this.last != null,"miss last field in chain expression")
-	me = this.last
-	this.check(member.structref != null,"must be memref in chain expr")
-	ss = member.structref
-	member = ss.getMember(me.membername)
-	this.check(member != null,"mem not exist field:" + me.membername)
-	compile.writeln("	add $%d, %rax",member.offset)
+
+	if type(this.last) == type(MemberExpr) {
+		me = this.last
+		ss = null
+		if me.tyassert != null {
+			ss = me.tyassert.getStruct()
+		}else{
+			this.check(member.structref != null,"must be memref in chain expr")
+			ss = member.structref
+		}
+		member = ss.getMember(me.membername)
+		this.check(member != null,"mem not exist field:" + me.membername)
+		compile.writeln("	add $%d, %rax",member.offset)
+	}else if type(this.last) == type(MemberCallExpr) {
+		lastn = this.last
+		if lastn.tyassert != null
+			lastn.static_compile(ctx,lastn.tyassert.getStruct())
+		else 
+			lastn.static_compile(ctx,member.structref)
+	}else{
+		this.panic("chain invalid")
+	}		
 	this.ret = member
 	return this
 }
@@ -98,7 +146,10 @@ ChainExpr::objgen(ctx)
 {
 	utils.debug("gen.ChainExpr::objgen()")
 	this.record()
-    this.first.compile(ctx)
+	ret = this.first.compile(ctx)
+	if ret != null && type(ret) == type(StructMemberExpr) {
+		compile.LoadMember(ret.ret)
+	}
 	compile.Push()
 
 	for(i : this.fields){

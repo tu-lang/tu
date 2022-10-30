@@ -25,6 +25,8 @@ class VarExpr : ast.Ast {
     stacksize   = 0
     
     ret funcpkg funcname
+
+    tyassert
     func init(varname,line,column){
         super.init(line,column)
     }
@@ -51,27 +53,39 @@ VarExpr::getVar(ctx){
 VarExpr::getVarType(ctx)
 {
     package = this.package
-    if( (this.ret = GP().getGlobalVar(this.package,this.varname)) && this.ret != null){
-        return ast.Var_Extern_Global
+    if( this.package != "" &&  (this.ret = GP().getGlobalVar(this.package,this.varname)) && this.ret != null){
+        return ast.Var_Global_Extern
     }
     if( (this.ret = GP().getGlobalVar("",this.package)) && this.ret != null){
         if (this.ret.structtype)
-            return ast.Var_Local_Mem_Global
+            return ast.Var_Global_Local_Static_Field
         else return ast.Var_Obj_Member
     }
     if( (this.ret = GP().getGlobalVar("",this.varname)) && this.ret != null){
-        return ast.Var_Local_Global
+        if this.ret.structtype
+            return ast.Var_Local_Static
+        return ast.Var_Global_Local
     }
     this.ret = ast.getVar(ctx,this.package)
     if(this.ret != null){
+        if this.ret.structtype
+            return ast.Var_Local_Static_Field
         return ast.Var_Obj_Member
     } 
-    ret = ast.getVar(ctx,this.varname)
-    if(ret != null){
-        return ast.Var_Local
+
+    if this.package == "" {
+        ret = ast.getVar(ctx,this.varname)
+        if ret != null {
+            if this.ret.structtype
+                return ast.Var_Local_Static
+            return ast.Var_Local
+        }
     }
     fn = GP().getGlobalFunc(this.package,this.varname,false)
     if fn {
+        this.ret = this
+        this.type = ast.U64
+
         funcname = fn.name
         this.funcpkg = fn.package.getFullName()
         return ast.Var_Func
@@ -94,14 +108,14 @@ VarExpr::compile(ctx){
             
             internal.object_member_get(this,this.varname)
         }
-        ast.Var_Local_Mem_Global : {
+        ast.Var_Global_Local_Static_Field : {
             sm = new StructMemberExpr(this.package,this.line,this.column)
             sm.member = this.varname
             sm.var    = this.ret
             sm.compile(ctx)
             return sm
         }
-        ast.Var_Local | ast.Var_Local_Global | ast.Var_Extern_Global: 
+        ast.Var_Local | ast.Var_Global_Local | ast.Var_Global_Extern | ast.Var_Local_Static : 
         { 
             compile.GenAddr(this.ret)
             //UNSAFE: dyn & native in same expression is unsafe      
@@ -118,6 +132,7 @@ VarExpr::compile(ctx){
             utils.debug("found function pointer:%s",fn)
             compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn)
         }
+        _ : this.check(false,"unkonwn var type")
     }
     return this.ret
 }
@@ -134,7 +149,7 @@ VarExpr::assign(ctx , opt , rhs){
             internal.call_object_operator(opt,this.varname,"runtime_object_unary_operator")
             return null
         }
-        ast.Var_Local_Mem_Global:{
+        ast.Var_Global_Local_Static_Field:{
             sm = new StructMemberExpr(this.package,this.line,this.column)
             sm.member = this.varname
             sm.var    = this.ret
@@ -143,7 +158,7 @@ VarExpr::assign(ctx , opt , rhs){
             oh.var = this.ret
             return oh.gen()
         }
-        ast.Var_Extern_Global | ast.Var_Local_Global | ast.Var_Local:{ 
+        ast.Var_Global_Extern | ast.Var_Global_Local | ast.Var_Local | ast.Var_Local_Static :{ 
             if this.ret.isMemtype(ctx) {
                 oh = new OperatorHelper(ctx,this,rhs,opt)
                 oh.var = this.ret
@@ -159,6 +174,32 @@ VarExpr::assign(ctx , opt , rhs){
         ast.Var_Func : {  
             this.check(false,"func pointer is lhs in assign expr")
         }
+        _ : this.check(false,"unkown var type")
     }
     return null
+}
+VarExpr::clone(){
+    nvar = new VarExpr(this.varname,this.line,this.column)
+
+    nvar.varname = this.varname
+    nvar.offset = this.offset
+    nvar.name   = this.name
+    nvar.is_local = this.is_local
+    nvar.is_variadic = this.is_variadic
+    nvar.package  = this.package
+    nvar.ivalue = this.ivalue
+    nvar.structname = this.structname
+    nvar.structtype = this.structtype
+    nvar.structpkg = this.structpkg
+    nvar.pointer = this.pointer
+    nvar.type = this.type
+    nvar.size = this.size
+    nvar.isunsigned = this.isunsigned
+    nvar.stack = this.stack
+    nvar.stacksize = this.stacksize
+    nvar.tyassert = this.tyassert
+    nvar.ret = this.ret
+    nvar.funcpkg = this.funcpkg
+    nvar.funcname = this.funcname
+    return nvar
 }

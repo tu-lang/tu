@@ -64,7 +64,6 @@ Parser::parseParameterList()
                         if this.scanner.curToken == ast.DOT {
                             this.scanner.scan()
                             this.expect(ast.VAR)
-                            var.package = sname
                             var.structpkg = sname
                             var.structname = this.scanner.curLex
                             this.scanner.scan()
@@ -75,9 +74,7 @@ Parser::parseParameterList()
                         this.check(i >= ast.I8 && i <= ast.U64)
                         var.size = typesize[int(i)]
                         var.type = i
-                        var.isunsigned = false
-                        if i >= ast.U8 && i <= ast.U64
-                            var.isunsigned = true
+                        var.isunsigned = ast.type_isunsigned(i)
                         this.scanner.scan()
                         if this.scanner.curToken == ast.MUL {
                             var.pointer = true

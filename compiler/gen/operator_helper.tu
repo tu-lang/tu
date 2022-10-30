@@ -67,7 +67,13 @@ OperatorHelper::gen()
 		this.dx = "%edx"
 	}
 	if this.needassign return this.assign()
-	else	 	   return this.binary()
+	else {
+		ret = this.binary()
+		if this.di == "%edi" {
+			compile.Cast(ast.I32,ast.I64)
+		}
+		return ret
+	}
 }
 OperatorHelper::assign()
 {
@@ -93,6 +99,13 @@ OperatorHelper::assign()
 		compile.Cast(this.rtoken,this.ltoken)
 		compile.Store(this.lvarsize)
 		return null
+	}else if type(this.lhs) == type(ChainExpr) {
+		i = this.lhs
+		if type(i.last) == type(IndexExpr) {
+			compile.Cast(this.rtoken,this.ltoken)
+			compile.Store(this.lvarsize)
+			return null
+		}
 	}
 	compile.Store(this.ltypesize)
 }
@@ -236,6 +249,13 @@ OperatorHelper::genLeft()
 				if m.isclass tk = ast.U64
 				this.initcond(true,m.size,tk,m.pointer)
 				return ce
+			}else if type(ret) == type(StructMemberExpr) {
+				smember = ret
+				m = smember.getMember()
+				compile.LoadMember(m)
+				lmember = m
+				this.initcond(true,m.size,m.type,m.pointer)
+				return smember
 			}
 
 			if ret == null || type(ret) != type(VarExpr) 
@@ -326,7 +346,7 @@ OperatorHelper::genRight(isleft,expr)
 	
 	if ret == null{
 		this.initcond(isleft,8,U64,false)
-	}else if type(ret) == type(NewExpr) {
+	}else if type(ret) == type(NewExpr) || type(ret) == type(NewStructExpr) {
 		this.initcond(isleft,8,U64,false)
 	}else if type(ret) == type(VarExpr) 
 	{
@@ -341,7 +361,7 @@ OperatorHelper::genRight(isleft,expr)
 		v = m.getMember() 
 		this.initcond(isleft,v.size,v.type,v.pointer)
 		
-		if type(expr) != type(AddrExpr){
+		if type(expr) != type(AddrExpr) && type(expr) != type(DelRefExpr){
 			compile.LoadMember(v)
 		}
 	}
@@ -356,6 +376,9 @@ OperatorHelper::genRight(isleft,expr)
 			
 		}else if type(expr) == type(DelRefExpr) {
 			compile.LoadSize(v.size,v.isunsigned)
+		}else if type(m.last) == type(IndexExpr) {
+			compile.LoadSize(v.size,v.isunsigned)
+		}else if type(m.last) == type(MemberCallExpr) {
 		}else{
 			compile.LoadMember(v)
 		}
@@ -369,8 +392,8 @@ OperatorHelper::initcond(left,varsize,type,ispointer)
 {
 	typesize = varsize
 	if ispointer typesize = 8
-	isunsigned = false
-	if type >= ast.U8 && type <= ast.U64 isunsigned = true
+	
+	isunsigned = ast.type_isunsigned(type)
 
 	if left {
 		this.ltypesize = typesize

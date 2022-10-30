@@ -68,11 +68,16 @@ class BoolExpr   : ast.Ast {
 }
 class CharExpr    : ast.Ast { 
     lit 
+    tyassert
     func init(line,column){
         super.init(line,column)
     }
     func compile(ctx) {
         this.record()
+        if this.tyassert != null {
+            compile.writeln("	mov $%s,%%rax",this.literal)
+            return null
+        }
         internal.newobject(ast.Char,this.lit)
         return null
     }
@@ -82,11 +87,16 @@ class CharExpr    : ast.Ast {
 }
 class IntExpr     : ast.Ast { 
     lit 
+    tyassert
     func init(line,column){
         super.init(line,column)
     }
     func compile( ctx) {
         this.record()
+        if this.tyassert != null {
+            compile.writeln("	mov $%s,%%rax",this.literal)
+            return null
+        }
         internal.newint(ast.Int,this.lit)
         return null
     }
@@ -111,11 +121,16 @@ class DoubleExpr  : ast.Ast {
 }
 class StringExpr  : ast.Ast { 
     lit name offset 
+    tyassert
     func init(line,column){
         super.init(line,column)
     }
     func compile(ctx) {
         this.record()
+        if this.tyassert != null {
+            compile.writeln("	lea %s(%%rip),%%rax",this.name)
+            return null
+        }
         if this.name == "" 
             this.panic("string not computed :%s" , this.toString(""))
         

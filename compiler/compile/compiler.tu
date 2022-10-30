@@ -22,17 +22,21 @@ func compile(){
 func link(){
     // TODO: genearte assembly by self
     // args = "tc -p . -p /usr/local/lib/coasm/"
-    args = "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
+    links = ""
+    if debug 
+        links = "gcc  *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
+    else 
+        links = "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
     for(pkg : package.packages){
         for(p : pkg.parsers){
             //add external library
             for(l : p.links){
-                args += " " + l
+                links += " " + l
             }
         }
     }
-    utils.debug(args)
-    os.shell(args)
+    utils.debug(links)
+    os.shell(links)
 }
 func registerMain()
 {

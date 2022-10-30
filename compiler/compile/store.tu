@@ -32,3 +32,12 @@ func Store(size<u64>) {
         _ : writeln("   mov %%rax, (%%rdi)")
     }
 }
+func StoreNoPop(size)
+{
+    match size {
+        1 : writeln("   mov %%al, (%%rdi)")
+        2 : writeln("   mov %%ax, (%%rdi)")
+        4 : writeln("   mov %%eax, (%%rdi)")
+        _ : writeln("   mov %%rax, (%%rdi)")
+    }
+}
