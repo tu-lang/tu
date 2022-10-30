@@ -1,7 +1,8 @@
 use ast
 
 token = [ 
-	int(ast.INT),   int(ast.INT),  int(ast.STRING) ,int(ast.FLOAT), int(ast.CHAR),int(ast.CHAR),
+	//FIXME: int(ast.INT),   int(ast.INT),  int(ast.STRING) ,int(ast.FLOAT), int(ast.CHAR),int(ast.CHAR),
+	int(ast.INT),   int(ast.INT),  int(ast.STRING) ,int(ast.INT), int(ast.CHAR),int(ast.CHAR),
 	int(ast.BITAND),int(ast.BITOR),int(ast.BITNOT),
 	int(ast.SHL),   int(ast.SHR),  int(ast.LOGAND), int(ast.LOGOR), int(ast.LOGNOT),
 	int(ast.EQ),    int(ast.NE),   int(ast.GT), 	int(ast.GE),    int(ast.LT),    int(ast.LE),

@@ -1,6 +1,7 @@
 0x777777 100    # INT     INT 
 "string"        # STRING   
-100.20	        # FLOAT   
+#fix me 100.20	         FLOAT   
+101             # INT
 'a' '\n'   	    # CHAR
 & | ~           # BITAND BITOR BITNOT
 << >> && || !   # SHL SHR LOGAND LOGOR LOGNOT
