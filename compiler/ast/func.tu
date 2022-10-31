@@ -108,9 +108,9 @@ Function::getVar(name){
 Function::beautyName(){
     funcname = this.parser.getpkgname() + "::" + this.name
 	if this.clsName != "" {
-        c = this.package.getClass(this.clsName)
+        c = this.package.getClass(this.clsname)
         if c == null {
-            os.die("fn exception")
+            os.die("fn exception class not exist:" + this.clsname)
         }
         funcname = this.parser.getpkgname() + "::" + c.name + "::" + this.name
     }

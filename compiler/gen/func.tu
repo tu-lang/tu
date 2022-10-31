@@ -21,7 +21,7 @@ ClosureExpr::compile(ctx){
 	compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", this.varname)
 	return null
 }
-func funcexec(ctx , fc , fce , package)
+func funcexec(ctx , fc , fce)
 {
 	args = fce.args
 	funcname = fce.funcname
@@ -129,7 +129,7 @@ FunCallExpr::compile(ctx)
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this,packagename)
+		funcexec(ctx,fc,this)
 
 		if std.len(this.args)  > 6 {
 			compile.writeln("   add $8,%%rsp")
@@ -145,7 +145,7 @@ FunCallExpr::compile(ctx)
     }else if this.package != "" && GP().getGlobalVar("",this.package) != null {
         var = GP().getGlobalVar("",this.package)
         goto OBJECT_MEMBER_CALL
-    }else if (var = ast.getVar(ctx,packagename) ) {
+    }else if (var = ast.getVar(ctx,this.package) ) {
 		OBJECT_MEMBER_CALL:
 		if var.structname != "" {
 			s = package.packages[
@@ -156,7 +156,7 @@ FunCallExpr::compile(ctx)
 			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)
 			fn = s.getFunc(this.funcname)
 			if(fn == null) this.panic("func not exist")
-			funcexec(ctx,fn,this,packagename)
+			funcexec(ctx,fn,this)
 			return null
 		}else if this.tyassert != null {
 			s = package.packages[
@@ -167,9 +167,10 @@ FunCallExpr::compile(ctx)
 					this.tyassert.name
 			)
 			fn = s.getFunc(this.funcname)
-			funcexec(ctx,fn,this,packagename)
+			funcexec(ctx,fn,this)
 			return null
 		}
+		this.checkobjcall(var)
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
@@ -179,7 +180,7 @@ FunCallExpr::compile(ctx)
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this,packagename)
+		funcexec(ctx,fc,this)
 
 		if std.len(this.args) > 6 {
 			compile.writeln("   add $8,%%rsp")
@@ -193,7 +194,7 @@ FunCallExpr::compile(ctx)
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this,packagename)
+		funcexec(ctx,fc,this)
 		if std.len(this.args) > 6 {
 			compile.writeln("   add $8,%%rsp")
 		}
@@ -216,7 +217,7 @@ FunCallExpr::compile(ctx)
 		}
 		fc.isObj       = false
 	}
-	funcexec(ctx,fc,this,packagename)
+	funcexec(ctx,fc,this)
 	return null
 }
 
@@ -230,4 +231,36 @@ FunCallExpr::toString() {
     }
     str += ")]"
     return str
+}
+FunCallExpr::checkobjcall(var){
+    if !this.is_pkgcall {
+        if std.len(this.args) == 0 {
+            this.panic("funcall expr invalid: should be obj call,but first this arg is null")
+        }
+        if type(this.args[0]) != type(VarExpr) {
+            this.panic("funcall expr invalid: should be obj call,but first this arg should be var")
+        }
+		This = this.args[0]
+        if This.varname != var.varname {
+            this.panic("funcall expr invalid: should be obj call,but first this arg should be this")
+        }
+        return true
+    }
+    if std.len(this.args) == 0 {
+        this.args[] = var
+    }else if type(this.args[0]) != type(VarExpr) {
+		params = this.args
+		this.args = []
+        this.args[] = var
+		std.merge(this.args,params)
+    }else{
+		This = this.args[0]
+        if This.varname != var.varname {
+			params = this.args
+			this.args = []
+        	this.args[] = var
+			std.merge(this.args,params)
+        }
+    }
+
 }

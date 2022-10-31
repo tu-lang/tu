@@ -6,8 +6,9 @@ use utils
 parser.Parser::compile()
 {    
     utils.debug("gen.parser.Parser::compile()")
-    asm = new std.File(this.asmfile)
-	if !asm.IsOpen() {
+    fmt.println(this.asmfile)
+    asm = new std.File(this.asmfile,"w")
+	if asm == null || !asm.IsOpen() {
         this.panic(
             "genrate assembly file failed package:%s file:%s",
             this.pkg.package,this.filename

@@ -479,6 +479,7 @@ Parser::parseVarExpr(var)
                 }
                 
                 if obj {
+                    call.is_pkgcall = false
                     params = call.args
                     call.args = []
                     //insert obj to head

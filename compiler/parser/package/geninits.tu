@@ -15,44 +15,44 @@
 	return f
 }
  hashInit = {} # map{string:bool}
- Package::parseinit(pkg){
-	 if std.exist(pkg.getFullName(),hashInit)
-		 return hashInit[pkg.getFullName()]
+ Package::parseinit(){
+	 if std.exist(this.getFullName(),hashInit)
+		 return hashInit[this.getFullName()]
 	 
-	 hashInit[pkg.getFullName()] = std.len(pkg.inits)  > 0
+	 hashInit[this.getFullName()] = std.len(this.inits)  > 0
  
-	 for(p : pkg.parsers)
+	 for(p : this.parsers)
 	 {
 		 for(fullpackage : p.import )
 		 {
-			 if this.parseinit(packages[fullpackage]) && 
-			 	!std.exist(pkg.getFullName() , hashInit)
+			 if packages[fullpackage].parseinit() && 
+			 	!std.exist(this.getFullName() , hashInit)
 			 {
-				 hashInit[pkg.getFullName()] = true
+				 hashInit[this.getFullName()] = true
 				 this.InsertInitFunc(p)
 			 }
 		 }
 	 }
 	 
-	 if (pkg.package == "main" && std.len(pkg.inits) == 0){
+	 if (this.package == "main" && std.len(this.inits) == 0){
 		this.panic("main_init0 should be created before")
 	 }
 	 
-	 return hashInit[pkg.getFullName()] 
+	 return hashInit[this.getFullName()] 
  }
  HasGen = {}
-Package::geninit(pkg){
-	 if std.exist(pkg.getFullName(),HasGen)
+Package::geninit(){
+	 if std.exist(this.getFullName(),HasGen)
 	 	return false
-	 HasGen[pkg.getFullName()] = true
+	 HasGen[this.getFullName()] = true
 
-	 if std.len(pkg.inits) <= 0 return false
-	 mf = pkg.inits[0]
-	 for(filepath,parser : pkg.parsers){
+	 if std.len(this.inits) <= 0 return false
+	 mf = this.inits[0]
+	 for(filepath,parser : this.parsers){
 		 for(fullpackage : parser.import){
 			 if !std.exist(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
 			 dpkg = packages[fullpackage]
-			 if(dpkg.geninit(dpkg)){
+			 if(dpkg.geninit()){
 				 for(init : dpkg.inits){
 					mf.InsertFuncall(fullpackage,init.name)
 				 }
@@ -60,8 +60,8 @@ Package::geninit(pkg){
 		 }
 	 }
 	 
-	 if pkg.package == "main" {
-		 for(init : pkg.inits){
+	 if this.package == "main" {
+		 for(init : this.inits){
 			if init.funcname == mf.funcname continue
 			mf.InsertFuncall(fullpackage,init.name)
 		 }
