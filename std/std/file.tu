@@ -89,7 +89,8 @@ class File {
 			fmt.print("fopen failed\n")
 			return null
 		}
-		this.size = fseek(ret,runtime.Null,SEEK_END)
+		this.size = int(fseek(ret,runtime.Null,SEEK_END))
+
 		fseek(ret,runtime.Null,SEEK_SET)
 		this.open = true
 		this.fd = ret
@@ -98,10 +99,10 @@ class File {
 		return this.open
 	}
 	func Size(){
-		return int(this.size)
+		return this.size
 	}
 	func ReadAll(){
-		s<i32> = this.size
+		s<i32> = *this.size
 		//last pos \0
 		fs<i32> = s + 1
 		buf<u64*> = new fs
