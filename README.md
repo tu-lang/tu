@@ -7,7 +7,7 @@ tu-lang(凸）是一种编程语言，旨在创造一种非常简单的零依赖
 ```asciidoc
 tu      [options] file.tu        
     -s    file  ast -> asm       编译.tu代码 生成.s汇编文件
-    -run  file  ast -> asm       gcc编译后链接glic生成可执行程序
+    -run  file  ast -> asm       基于gcc编译链接后运行(no libc)
     -p    file                   打印token
     -g                           段错误时打印详细栈信息
 ta      [options] file.s        
