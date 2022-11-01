@@ -71,6 +71,7 @@ class File {
 	fd
 	open 
 	size
+	filepath = filepath
 	func init(filepath<runtime.Value>,perm<runtime.Value>){
 		this.open = false
 		if filepath == null {
@@ -81,9 +82,9 @@ class File {
 			fmt.println("File::init empty filepath")
 			return null
 		}	
-		ret<i8> = null
+		ret<i32> = null
 		if perm == null ret = fopen(filepath.data,*"r")
-		else		   ret = fopen(filepath.data,perm.data)
+		else 			ret = fopen(filepath.data,perm.data)
 
 		if ret == null {
 			fmt.print("fopen failed\n")
@@ -118,10 +119,11 @@ class File {
 			return False
 		}
 		s<i8> = 1
-		size<i32> = std.strlen(buffer.data)
+		// CAUTION: should be string.Str
+		size<i32> = buffer.data.(string.Str).len()
 		ret<u64> = write(this.fd,buffer.data,size)
 		if ret != size {
-			fmt.print("fwrite err\n")
+			fmt.println("fwrite err",int(ret),int(size))
 			return False
 		}
 		return True
