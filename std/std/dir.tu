@@ -45,19 +45,20 @@ mem Dirent{
 //@return Dir
 func opendir(dir_path<runtime.Value>){
      fd<i32> = open(dir_path.data,O_RDONLY | O_DIRECTORY)
-     if fd == -1 {
-	    fmt.vfprintf(STDOUT,*"opendir failed\n")
+     if fd < 0 {
+	    fmt.vfprintf(STDOUT,string.stringfmt(
+            "open %s failed ret:%d\n".(i8),
+            dir_path.data,fd
+        ))
         return False
      }
-     dir<Dir> = new Dir
-     dir.fd = fd
-     dir.pos = 0
-     //init buffer
-     buf<i8*> = new DIRENT_BUF_SIZE
-     dir.dir = buf
-     dir.init = 0
-     dir.path = dir_path
-     return dir
+     return new Dir {
+        fd   : fd,
+        pos  : 0,
+        dir  : new DIRENT_BUF_SIZE,
+        init : 0,
+        path : dir_path
+     }
 }
 func readdir(dir<Dir>){
     //need init
