@@ -27,7 +27,7 @@ mem Dir{
     runtime.Value* path
 }
 //for user space
-class Dirent {}
+class Dir {}
 //dirent::init(type,name){
 //    fmt.println(type,name)
 //    this.type = type
@@ -40,6 +40,7 @@ mem Dirent{
     u16 d_reclen
     i8 d_name
 }
+class FileFd {}
 //opendir
 //@param  dir_path
 //@return Dir
@@ -52,15 +53,19 @@ func opendir(dir_path<runtime.Value>){
         ))
         return False
      }
-     return new Dir {
+     dir = new Dir()
+     d<Dir> = new Dir {
         fd   : fd,
         pos  : 0,
         dir  : new DIRENT_BUF_SIZE,
         init : 0,
         path : dir_path
      }
+     dir.dirent = d
+     return dir
 }
-func readdir(dir<Dir>){
+Dir::readdir(){
+    dir<Dir> = this.dirent
     //need init
     if dir.init == 0 {
         dir.init = 1
@@ -90,8 +95,7 @@ init_dents:
     #incr pos
     dir.pos += d.d_reclen
     # return wrap obj
-    #file = new Dirent(file_type,file_name)
-    file = new Dirent()
+    file = new FileFd()
     file.type = file_type
     file.name = file_name
     //TODO: file.path = dir.path + "/" +file_name (mem.field + dynamic string)
@@ -102,11 +106,11 @@ init_dents:
     file.path = dir_path
     return file
 }
-Dirent::isFile(){
+FileFd::isFile(){
     if this.type == "file" return True
     return False
 }
-Dirent::isDir(){
+FileFd::isDir(){
     if this.type == "directory" return True
     return False
 }

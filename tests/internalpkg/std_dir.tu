@@ -8,7 +8,7 @@ func test_open_read(){
 
     fd = std.opendir("./dir")
     while true {
-        file = std.readdir(fd)
+        file = fd.readdir()
         if !file break
 
         match file.name {
