@@ -43,7 +43,7 @@ func scan(){
         # 迭代目录文件
         fd = std.opendir(dir)
         while true {
-            file = std.readdir(fd)
+            file = fd.readdir()
             if !file break
             if !file.isFile() continue
             # 解析目标文件
