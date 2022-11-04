@@ -99,9 +99,15 @@ Parser::panic(args...){
     err = fmt.sprintf(args)
     this.check(false,err)
 }
-Parser::check(check , err<i8*>)
+Parser::check(check<runtime.Value> , err<i8*>)
 {
-    if check return  null
+    //static
+    if check == 1 return  null
+    if check == 0 goto check_panic 
+    //dyn
+    c = check
+    if c return null
+check_panic:
     if err == null err = ""
     this.panic("parse: found token error token:%d:%s \n"
               "msg:%s\n"

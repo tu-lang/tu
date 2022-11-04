@@ -6,7 +6,6 @@ use utils
 parser.Parser::compile()
 {    
     utils.debug("gen.parser.Parser::compile()")
-    fmt.println(this.asmfile)
     asm = new std.File(this.asmfile,"w")
 	if asm == null || !asm.IsOpen() {
         this.panic(

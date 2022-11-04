@@ -41,19 +41,24 @@ Package::parse()
             return false  
         }
     }
-
+    utils.notice("start scan the package:%s",abpath)
     fd = std.opendir(abpath)
+    if !fd {
+        this.panic("file|dir not exist %s",abpath)
+    }
     while true {
-        file = std.readdir(fd)
-        if !file break
+        file = fd.readdir()
+        if !file {
+            break
+        }
         if !file.isFile() continue
-
         filepath = file.path
-        if string.sub(filepath,std.len(filepath) - 2) == ".tu" {
+        if string.sub(filepath,std.len(filepath) - 3) == ".tu" {
             parser = new parser.Parser(filepath,this,this.package,this.full_package)
             
             parser.fileno = compile.fileno
             this.parsers[filepath] = parser
+            utils.notice("start parse the package:%s file:%s",abpath,filepath)
             parser.parse()
         }
     }
@@ -129,7 +134,7 @@ Package::getGlobalVar(name){
 }
 Package::getClass(name)
 {    
-    if std.exist(name,this.clsses) 
+    if std.exist(name,this.classes) 
         return this.classes[name]
     return null
 }

@@ -118,7 +118,7 @@ Parser::parseMember(tk,idx,pointer){
 		member.pointer = true
 	}
 
-	this.check(this.scanner.curToken == this.VAR)
+	this.check(this.scanner.curToken == ast.VAR)
 	member.name = this.scanner.curLex
 
 	this.scanner.scan()

@@ -176,16 +176,18 @@ Parser::parseImportDef()
         
         this.scanner.scan()
     }
-
+    utils.notice("import package :%s",path)
     
     if !std.exist(path,package.packages) {
         pkg = new package.Package(package,path,multi)
         package.packages[path] = pkg
         
         if !pkg.parse() {
+            utils.notice("praser package :%s failed",path)
             this.check(false,"SyntaxError: package:" + path + " not exist in local or global ")
         }
     }
+    utils.notice("import package :%s done",path)
     
     this.import[package] = path
 

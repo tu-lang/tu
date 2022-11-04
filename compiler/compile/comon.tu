@@ -43,7 +43,14 @@ func editast(){
 }
 func writeln(count,args...) {
     str = fmt.sprintf(args) 
-    out.Write(str)
+    if !out.Write(str + "\n"){
+        os.dief(
+            "writeln failed file:%s body:%s",
+            out.filepath,
+            str,
+        )
+    }
+    
 }
 func panic(args...){
     err = fmt.sprintf(args)

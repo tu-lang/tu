@@ -21,7 +21,7 @@ func registerFunc(fn){
     currentFunc = null
 }
 func registerFuncs(){
-    utils.debug("compile.registerFunc()")
+    utils.debug("compile.registerFuncs()")
     for f : currentParser.funcs {
         f.funcnameid = ".L.funcname." + ast.incr_labelid()
         writeln("    .globl %s", f.funcnameid)

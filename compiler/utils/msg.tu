@@ -2,9 +2,15 @@ use fmt
 use os
 debug_mode<i32> = 0
 
+func notice(size,args...){
+    if debug_mode == 1 {
+        msg1 = fmt.sprintf(args)
+        fmt.println(print_green(msg1))
+    }
+}
 func debug(size,args...){
     if debug_mode == 1 {
-        println_green(args)
+        fmt.println(args)
     }
 }
 func debugf(size,args...){
@@ -12,8 +18,9 @@ func debugf(size,args...){
         return debug_mode
     }
     msg1 = fmt.sprintf(args)
-    green = fmt.sprintf("\033[32m%s\033[0m",msg1)
-    fmt.println(green)
+    // green = fmt.sprintf("\033[32m%s\033[0m",msg1)
+    // green = fmt.sprintf("\033[32m%s\033[0m",msg1)
+    fmt.println(msg1)
 }
 func print_green(red){
    return " \033[32m" + red + "\033[0m"

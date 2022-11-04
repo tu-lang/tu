@@ -3,7 +3,8 @@ use std
 
 class ForStmt : ast.Ast {
     func init(line,column){
-        super(line,column)
+        //TODO: closure call super(line,column)
+        super.init(line,column)
     }
     init
     cond
