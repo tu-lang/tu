@@ -49,7 +49,7 @@ Ast::check( check , err)
 func getTokenString(tk) {
     match tk {
         ILLEGAL:    return "invalid"
-        VAR:   return "ident"
+        VAR:   return "var"
         END:     return "eof"
         INT:    return "int"
         STRING:    return "string"

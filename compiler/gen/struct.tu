@@ -18,7 +18,7 @@ StructInitExpr::toString(s){
 }
 class NewStructExpr : ast.Ast {
 	func init(line,column){
-		super.init(line.column)
+		super.init(line,column)
 	}
 	init //struct init expr
 }

@@ -47,11 +47,11 @@ Parser::parseChainExpr(first){
     while this.ischain() { 
         match this.scanner.curToken {
             ast.DOT : {
+                this.scanner.scan() //eat.
                 ta = null
                 if this.scanner.curToken == ast.LPAREN {
-                    ta = this.parseTypeAssert()
+                    ta = this.parseTypeAssert(true)
                 }
-                this.scanner.scan()
                 this.expect(ast.VAR)
                 membername = this.scanner.curLex
                 this.scanner.scan()
@@ -187,7 +187,7 @@ Parser::parsePrimaryExpr()
     
     if tk == ast.BUILTIN {
         builtinfunc = new gen.BuiltinFuncExpr(this.scanner.curLex,this.scanner.line,this.scanner.column)
-        this.expect( ast.LPAREN )
+        this.next_expect( ast.LPAREN )
         this.scanner.scan()
         
         if this.scanner.curToken == ast.MUL {
@@ -357,7 +357,7 @@ Parser::parsePrimaryExpr()
     }else if tk == ast.NEW
     {
         this.scanner.scan()
-        utils.debug("got new keywords:%s",this.scanner.curLex)
+        utils.debugf("got new keywords:%s",this.scanner.curLex)
         return this.parseNewExpr()
     }
     return null
@@ -451,7 +451,7 @@ Parser::parseVarExpr(var)
             this.scanner.scan()
             ta = null
             if this.scanner.curToken == ast.LPAREN {
-                ta = this.parseTypeAssert()
+                ta = this.parseTypeAssert(true)
             }
             this.expect( ast.VAR)
             pfuncname = this.scanner.curLex
