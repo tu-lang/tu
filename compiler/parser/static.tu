@@ -6,6 +6,7 @@ use utils
 use gen
 
 Parser::parseTypeAssert(lastdot){
+	utils.debugf("Parser::parseTypeAssert() lastdot:%d",lastdot)
 	ta = null
 	if this.scanner.curToken == ast.LPAREN {
 		ta = new gen.TypeAssertExpr(this.line,this.column)

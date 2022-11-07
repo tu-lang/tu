@@ -70,7 +70,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 compile.Pop("%rax")
 			 compile.LoadSize(var.ret.size,var.ret.isunsigned)
 		 }
-		 ast.Var_Local_Static_Field:{ 
+		 ast.Var_Global_Local_Static_Field | ast.Var_Local_Static_Field:{ 
 			 sm = new StructMemberExpr(var.package,this.line,this.column)
 			 sm.member = var.varname
 			 sm.var    = var.ret
@@ -107,7 +107,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 compile.Cast(rhs.getType(ctx),var.ret.type)
 			 compile.Store(var.ret.size)
 		 }
-		 ast.Var_Local_Static_Field:{ 
+		 ast.Var_Global_Local_Static_Field | ast.Var_Local_Static_Field:{ 
 			 sm = new StructMemberExpr(var.package,this.line,this.column)
 			 sm.member = var.varname
 			 sm.var    = var.ret

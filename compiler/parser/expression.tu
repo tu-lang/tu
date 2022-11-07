@@ -264,13 +264,12 @@ Parser::parsePrimaryExpr()
     {
         ret = new gen.IntExpr(this.line,this.column)
         ret.lit = this.scanner.curLex
+        this.scanner.scan() //eat i
         if this.scanner.curToken == ast.DOT {
             this.scanner.scan()//eat .
             ty = this.parseTypeAssert(false)
             ret.tyassert = ty
         }
-        
-        this.scanner.scan()
         return ret
     }else if tk == ast.FLOAT
     {

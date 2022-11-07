@@ -108,14 +108,16 @@ Parser::check(check<runtime.Value> , err<i8*>)
     c = check
     if c return null
 check_panic:
-    if err == null err = ""
-    this.panic("parse: found token error token:%d:%s \n"
-              "msg:%s\n"
-              "line:%d column:%d file:%s\n",
-              this.scanner.curToken,ast.getTokenString(this.scanner.curToken),
-              err,
-              this.scanner.line,this.scanner.column,this.filepath)
-    os.exit(-1)
+    msg = err
+    if err == null msg = ""
+    //FIXME: 这里继续调用this.panic() 导致循环调用栈处理异常
+    os.dief (
+        "parse: found token error token: %s \n" +
+        "msg:%s \n" + 
+        "line:%d column:%d file:%s\n",
+        this.scanner.curLex,msg,
+        this.scanner.line,this.scanner.column,this.filepath
+    )
 }
 Parser::expect(tok<i32>,str<i32>){
     if this.scanner.curToken == tok {

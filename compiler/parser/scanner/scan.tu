@@ -249,8 +249,10 @@ Scanner::get_next() {
             lexeme += this.next()
             if specs[lexeme] == null {
                 utils.panic(
-                    "SyntaxError: sepc [%s] character literal should surround with single-quote",
-                    lexeme
+                    "SyntaxError: sepc [%s] character literal should surround with single-quote file:%s line:%d",
+                    lexeme,
+                    this.parser.filepath,
+                    this.line
                 )
             }
             lit = specs[lexeme]
