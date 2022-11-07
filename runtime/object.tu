@@ -8,24 +8,59 @@ use std.map
 
 func newobject(type<i32> , data<u64*>)
 {
-    ret<Value> = new Value
-    ret.type   = type
     match type {
-        Int:    ret.data = data
-        Float:  ret.data = data
-        String: ret.data = string.newstring(data)
-        Bool:   ret.data = data
-        Char:   ret.data = data
-        Null:   ret.data = 0
-        Array:  ret.data = std.array_create(std.ARRAY_SIZE, PointerSize)
-        Map:    ret.data = map.map_create()
-        Object: ret.data = object_create(data)
-        _ : {
-            fmt.println("[new obj] unknown type")
-            ret.type = Null
+        Int:   {
+            return new Value {
+                type : Int,
+                data : data
+            }
         }
+        Float:  {
+            return new Value {
+                type : Float,
+                data : data
+            }
+        }
+        String: {
+            return new Value {
+                type : String,
+                data : string.newstring(data)
+            }
+        }
+        Bool:   {
+            return new Value {
+                type : Bool,
+                data : data,
+            }
+        }
+        Char:   return chars_get(data)
+        Null:   {
+            return new Value {
+                type : Null,
+                data : 0
+            }
+        }
+        Array:  {
+            return new Value {
+                type : Array,
+                data : std.array_create(std.ARRAY_SIZE, PointerSize)
+            }
+        }
+        Map:    {
+            return new Value {
+                type : Map,
+                data : map.map_create()
+            }
+        }
+        Object: {
+            return new Value {
+                type : Object,
+                data : object_create(data)
+            }
+        }
+        _ : os.dief("[new obj] unknown type")
     } 
-    return ret
+    return Null
 }
 func newinherit_object(father<Value>,typeid<i32>){
     ret<Value> = new Value
