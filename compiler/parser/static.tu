@@ -30,3 +30,17 @@ Parser::parseTypeAssert(lastdot){
 	}
 	return ta
 }
+
+Parser::parseVarStack(expr){
+    this.expect(ast.COLON,"sould be : in stack var declare")
+    this.scanner.scan()
+    expr.stack = true
+    expr.stacksize = 1
+    if this.scanner.curToken != ast.GT {
+        this.expect(ast.INT,"must be int (var<i8:-int-)")
+		expr.stacksize = string.tonumber(this.scanner.curLex)
+        if expr.stacksize == 0 
+            this.panic("stack size can't be 0")
+        this.scanner.scan()
+    }
+}

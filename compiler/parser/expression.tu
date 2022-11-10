@@ -556,7 +556,9 @@ Parser::parseVarExpr(var)
                     expr.structname = this.scanner.curLex
                     this.scanner.scan()
                 }
-                
+                if ( this.scanner.curToken ==  ast.COLON){
+                    this.parseVarStack(expr)
+                }                
                 if this.scanner.curToken != ast.GT{
                     this.scanner.rollback(tx)
                     return varexpr
@@ -576,11 +578,7 @@ Parser::parseVarExpr(var)
                 }
                 
                 if ( this.scanner.curToken ==  ast.COLON){
-                    this.scanner.scan()
-                    this.expect( ast.INT,"mut be (var<i8:-int-)")
-                    expr.stack = true
-                    expr.stacksize = string.tonumber(this.scanner.curLex)
-                    this.scanner.scan()
+                    this.parseVarStack(expr)
                 }
                 this.expect( ast.GT,"mut be > at var expression")
                 this.scanner.scan()

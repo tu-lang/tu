@@ -37,7 +37,11 @@ func registerVars(){
             // _ : mt = "quad"
         }
         if v.pointer mt = "quad"
-        writeln("    .%s   %s",mt,value)
+        
+        if v.structname != "" && v.stack 
+            writeln("    .zero   %d",v.getStackSize())
+        else
+            writeln("    .%s   %s",mt,value)
     }
 }
 func CreateGlobalString(var){

@@ -49,6 +49,8 @@ func getVar(ctx , varname)
             ret = GF().locals[varname]
         else if GF().params_var[varname] != null
             ret = GF().params_var[varname]
+        else if GP().getGlobalVar("",varname) != null 
+            return GP().getGlobalVar("",varname)
         if ret == null return null
 
         std.tail(ctx).createVar(ret.varname,ret)

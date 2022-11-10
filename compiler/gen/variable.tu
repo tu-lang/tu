@@ -203,3 +203,24 @@ VarExpr::clone(){
     nvar.funcname = this.funcname
     return nvar
 }
+
+VarExpr::getStackSize(){
+    if this.stack {
+        if this.structname != ""  {
+            this.check(this.stacksize != 0)
+            s = package.getStruct(this.structpkg,this.structname) 
+            if s == null  this.panic("static var not exist ")
+            if s.size == 0 this.panic("static var size is 0")
+            return s.size * this.stacksize
+        }
+        if this.stacksize == 0 || this.size == 0 
+            this.panic("stack size can't be 0")
+        return this.size * this.stacksize
+    //BUG: fixme  dyn & static
+    }else if this.structtype && !this.pointer && this.type <= U64 && this.type >= I8 {
+        if this.size == 0  this.panic("var size is 0,something wrong")
+        return this.size
+    }else{
+        return 8
+    }
+}

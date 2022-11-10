@@ -121,14 +121,7 @@ func assign_offsets(fn)
         bottom = 48
     }
     for(var : fn.locals){
-        if var.stack {
-            bottom += var.size * var.stacksize
-        }
-        else if var.structtype && !var.pointer && var.type <= ast.U64 && var.type >= ast.I8 {
-            bottom += var.size
-        }else{
-            bottom += 8
-        }
+        bottom += var.getStackSize()
         bottom = utils.ALIGN_UP(bottom, 8)
         var.offset = 0 - bottom
     }
