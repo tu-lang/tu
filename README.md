@@ -18,7 +18,7 @@ tl      [options|file.o...]
     -p    path ... -> a.out      指定多个目录,自动扫描所有.0文件进行链接生成可执行程序
     file.o  ...-> a.out          指定多个file.o进行链接    
 ```
-## @进度
+## @自举进度
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
 
 - [ ] compiler
