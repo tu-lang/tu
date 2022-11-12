@@ -59,8 +59,15 @@ func runtimeinit(){
 
 func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	fmt.println("\npanicked! stack backtrace:")
+	buf_o<i8:10> = null
 	rip<u64> = segsegv_rip(ctxt)
-	fmt.println("0: " + debug.findpc(rip))
+	if debug.enabled == 1
+		fmt.println("0: " + debug.findpc(rip))
+	else {
+		buf<i8*>	 = &buf_o
+		std.itoa(rip,buf,16.(i8))
+		os.shell("addr2line a.out 0x" + string.new(buf))
+	}
 	bp<u64*> = gc.get_bp()
 	//skip first stack
 	bp = *bp
@@ -70,7 +77,13 @@ func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 		pc<u64*> = bp + 8
 		rip<u64> = *pc
 		if rip == null break
-		fmt.println(i + ": " + debug.findpc(rip))
+		if debug.enabled == 1 {
+			fmt.println(i + ": " + debug.findpc(rip))
+		}else {
+			buf<i8*>	 = &buf_o
+			std.itoa(rip,buf,16.(i8))
+			os.shell("addr2line a.out 0x" + string.new(buf))
+		}
 		bp = *bp
 		i += 1
 	}
