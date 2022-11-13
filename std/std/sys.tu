@@ -36,3 +36,7 @@ func mmap(addr<u64> , len<u64> , prot<u64> ,flags<u64>, fd<u64>,off<u64>)
 //@param len_in	u64 
 //@param behavior i32
 func madvise(start<u64> , len_in<u64> , behavior<i32>)
+//sys_munmap 11
+//@param addr u64
+//@param len u64
+func munmap(addr<u64> , len<u64>)

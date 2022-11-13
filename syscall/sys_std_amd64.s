@@ -157,3 +157,10 @@ std_madvise:
      syscall
      retq
 
+.globl std_munmap
+std_munmap:
+     mov $11 , %rax
+     syscall
+     retq
+
+
