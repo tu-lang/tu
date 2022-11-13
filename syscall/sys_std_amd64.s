@@ -143,3 +143,17 @@ std_rt_sigaction:
      mov $13 , %rax
      syscall
      retq
+
+.globl std_mmap
+std_mmap:
+     mov %rcx, %r10
+     mov $9 , %rax
+     syscall
+     retq
+     
+.globl std_madvise
+std_madvise:
+     mov $28 , %rax
+     syscall
+     retq
+
