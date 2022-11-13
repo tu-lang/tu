@@ -62,7 +62,29 @@ func test_compare_and_swap_i64(){
 	}
 	fmt.println("test comparse and swap i64 success")
 }
+mem Store32 {
+	i32 before, i ,after
+}
+func test_store_i32(){
+	x<Store32> = new Store32{
+		before : magic32,
+		after  : magic32
+	}
+	v<i32> = 0
+	for delta<i32> = 1 ; delta + delta > delta; delta += delta {
+		atomic.store32(&x.i, v)
+		if x.i != v {
+			os.dief("delta=%d i=%d v=%d", int(delta), int(x.i), int(v))
+		}
+		v += delta
+	}
+	if x.before != magic32 || x.after != magic32 {
+		os.dief("wrong magic: %d _ %d != %d _ %d", int(x.before), int(x.after), int(magic32), int(magic32))
+	}
+	fmt.println("store i32 success")
+}
 func main(){
 	test_swap_i32()
 	test_compare_and_swap_i64()
+	test_store_i32()
 }
