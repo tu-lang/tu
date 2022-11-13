@@ -139,6 +139,7 @@ ForStmt::triFor(ctx)
 class WhileStmt : ast.Ast {
     cond
     block
+    dead = false
     func init(line,column){
         super.init(line,column)
     }
@@ -156,6 +157,7 @@ WhileStmt::toString() {
 }
 WhileStmt::compile(ctx)
 {
+    if this.dead return this.dead_compile(ctx)
     this.record()
     c = ast.incr_labelid()
     
@@ -168,6 +170,27 @@ WhileStmt::compile(ctx)
     compile.CreateCmp()
     compile.writeln("    je  L.while.end.%d", c)
 
+    compile.blockcreate(ctx)
+    
+    std.tail(ctx).po= c
+    std.tail(ctx).end_str   = "L.while.end"
+    std.tail(ctx).start_str = "L.while.begin"
+    
+    for(stmt : this.block.stmts){
+        stmt.compile(ctx)
+    }
+    compile.blockdestroy(ctx)
+
+    compile.writeln("    jmp L.while.begin.%d",c)
+    compile.writeln("L.while.end.%d:", c)
+}
+WhileStmt::dead_compile(ctx)
+{
+    this.record()
+    c = ast.incr_labelid()
+    
+    compile.writeln("L.while.begin.%d:", c)
+    
     compile.blockcreate(ctx)
     
     std.tail(ctx).po= c

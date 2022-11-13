@@ -15,9 +15,13 @@ Parser::parseStatement()
             this.scanner.scan()
             node = this.parseForStmt()
         }
+        ast.LOOP: {
+            this.scanner.scan()
+            node = this.parseWhileStmt(true)
+        }
         ast.WHILE: {
             this.scanner.scan()
-            node = this.parseWhileStmt()
+            node = this.parseWhileStmt(false)
         }
         ast.RETURN: {
             this.scanner.scan()
@@ -216,19 +220,21 @@ Parser::parseMatchCase(cond)
     }
     return cs
 }
-Parser::parseWhileStmt() {
+Parser::parseWhileStmt(dead) {
     utils.debug("parser.Parser::parseWhileStmt()")
     node = new gen.WhileStmt(this.line, this.column)
-    
-    if this.scanner.curToken == ast.LPAREN {
-        this.scanner.scan()
-    }
-    
-    node.cond = this.parseExpression()
-    
-    if this.scanner.curToken == ast.RPAREN {
-        this.scanner.scan()
-    }
+    node.dead = dead
+    if !dead {
+        if this.scanner.curToken == ast.LPAREN {
+            this.scanner.scan()
+        }
+        
+        node.cond = this.parseExpression()
+        
+        if this.scanner.curToken == ast.RPAREN {
+            this.scanner.scan()
+        }
+    } 
     
     node.block = this.parseBlock(false)
     return node
