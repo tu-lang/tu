@@ -106,6 +106,13 @@ func fromlonglong(value<i64>) {
 
     return newlen(buf,len)
 }
+func fromulonglong(value<u64>) {
+
+    buf<i8*> = new LSTRING_LLSTR_SIZE 
+    len<i32> = stringull2str(buf,value)
+
+    return newlen(buf,len)
+}
 func malloc(size<u64>) { 
     return gc.gc_malloc(size) 
 }

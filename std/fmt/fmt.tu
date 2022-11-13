@@ -31,7 +31,7 @@ func println(count<runtime.Value>,args...){
         }
 		match var.type {
             runtime.Null:   vfprintf(std.STDOUT,*"null")
-            runtime.Int:    vfprintf(std.STDOUT,*"%d",var.data)
+            runtime.Int:    vfprintf(std.STDOUT,string.fromlonglong(var.data))
             runtime.Bool:   {
                 if var.data == 0 vfprintf(std.STDOUT,*"false")
                 else             vfprintf(std.STDOUT,*"true")
