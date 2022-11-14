@@ -83,8 +83,97 @@ func test_store_i32(){
 	}
 	fmt.println("store i32 success")
 }
+mem AddI32 {
+	i32 before,i,after
+}
+func test_add_i32(){
+	x<AddI32> = new AddI32 {
+		before : magic32,
+		after  : magic32
+	}
+	j<i32> = 0
+	for delta<i32> = 1 ; delta+delta > delta; delta += delta {
+		k<i32> = atomic.xadd(&x.i, delta)
+		j += delta
+		if x.i != j || k != j {
+			os.dief("delta=%d i=%d j=%d k=%d", delta, x.i, j, k)
+		}
+	}
+	if x.before != magic32 || x.after != magic32 {
+		os.dief("wrong magic: %#x _ %#x != %#x _ %#x", x.before, x.after, magic32, magic32)
+	}
+	fmt.println("test xadd i32")
+}
+
+mem AddU32 {
+	u32 before,i,after
+}
+func test_add_u32(){
+	x<AddU32> = new AddU32 {
+		before : magic32,
+		after  : magic32
+	}
+	j<u32> = 0
+	for delta<u32> = 0 ; delta+delta > delta; delta += delta {
+		k<u32> = atomic.xadd(&x.i,delta)
+		j += delta
+		if x.i != j || k != j {
+			os.dief("delta=%d i=%d j=%d k=%d", delta, x.i, j, k)
+		}
+	}
+	if x.before != magic32 || x.after != magic32 {
+		os.dief("wrong magic: %#x _ %#x != %#x _ %#x", x.before, x.after, magic32, magic32)
+	}
+	fmt.println("test xadd u32 success")
+}
+mem AddI64 {
+	i64 before,i,after
+}
+func test_add_i64(){
+	x<AddI64> = new AddI64 {
+		before : magic64,
+		after  : magic64
+	}
+	j<i64> = 0
+	for delta<i64> = 1 ; delta+delta > delta; delta += delta {
+		k<i64> = atomic.xadd64(&x.i,delta)
+		j += delta
+		if x.i != j || k != j {
+			os.dief("delta=%d i=%d j=%d k=%d", delta, x.i, j, k)
+		}
+	}
+	if x.before != magic64 || x.after != magic64 {
+		os.dief("wrong magic: %#x _ %#x != %#x _ %#x", x.before, x.after, int(magic64), int(magic64))
+	}
+	fmt.println("test xadd 64 success")
+}
+mem AddU64 {
+	u64 before,i,after
+}
+func test_add_u64(){
+	x<AddU64> = new AddU64 {
+		before : magic64,
+		after  : magic64
+	}
+	j<u64> = 0
+	for delta<u64> = 1; delta+delta > delta; delta += delta {
+		k<u64> = atomic.xadd64(&x.i,delta)
+		j += delta
+		if x.i != j || k != j {
+			os.dief("delta=%d i=%d j=%d k=%d", delta, x.i, j, k)
+		}
+	}
+	if x.before != magic64 || x.after != magic64 {
+		os.dief("wrong magic: %#x _ %#x != %#x _ %#x", x.before, x.after, int(magic64), int(magic64))
+	}
+	fmt.println("test xadd u64 success")
+}
 func main(){
 	test_swap_i32()
 	test_compare_and_swap_i64()
 	test_store_i32()
+	test_add_i32()
+	test_add_u32()
+	test_add_i64()
+	test_add_u64()
 }

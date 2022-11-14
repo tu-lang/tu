@@ -24,3 +24,23 @@ std_atomic_store32:
     xchg    %ecx , (%rax)
     retq
 
+.global std_atomic_xadd
+std_atomic_xadd:
+    mov     %rdi , %rax
+    mov     %esi , %ecx
+    lock 
+    xadd    %ecx , (%rax)
+    mov    (%rax) ,%eax
+    retq
+
+.global std_atomic_xadd64
+std_atomic_xadd64:
+    mov     %rdi , %rax
+    mov     %rsi , %rcx
+    lock 
+    xadd    %rcx , (%rax)
+    mov    (%rax) ,%rax
+    retq
+
+
+
