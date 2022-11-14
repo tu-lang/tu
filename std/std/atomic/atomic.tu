@@ -5,3 +5,9 @@ func xchg (addr<i32*> , newv<i32>)
 func swap_i32(addr<i32*> , newv<i32>) {
 	return xchg(addr,newv)
 }
+func load(ptr<u32*>) {
+	return *ptr
+}
+func load64(ptr<u64*>){
+	return *ptr
+}

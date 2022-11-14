@@ -38,7 +38,7 @@ func registerVars(){
         }
         if v.pointer mt = "quad"
         
-        if v.structname != "" && v.stack 
+        if v.stack 
             writeln("    .zero   %d",v.getStackSize())
         else
             writeln("    .%s   %s",mt,value)
