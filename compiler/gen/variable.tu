@@ -21,8 +21,10 @@ class VarExpr : ast.Ast {
     type
     size    
     isunsigned  = false
+
     stack       = false
     stacksize   = 0
+    elements    = []
     
     ret funcpkg funcname
 
@@ -54,6 +56,8 @@ VarExpr::getVarType(ctx)
 {
     package = this.package
     if( this.package != "" &&  (this.ret = GP().getGlobalVar(this.package,this.varname)) && this.ret != null){
+        if this.ret.structtype
+            return ast.Var_Global_Extern_Static
         return ast.Var_Global_Extern
     }
     if( (this.ret = GP().getGlobalVar("",this.package)) && this.ret != null){
@@ -115,7 +119,7 @@ VarExpr::compile(ctx){
             sm.compile(ctx)
             return sm
         }
-        ast.Var_Local | ast.Var_Global_Local | ast.Var_Global_Extern | ast.Var_Local_Static : 
+        ast.Var_Global_Extern_Static | ast.Var_Local | ast.Var_Global_Local | ast.Var_Global_Extern | ast.Var_Local_Static : 
         { 
             compile.GenAddr(this.ret)
             //UNSAFE: dyn & native in same expression is unsafe      
@@ -158,7 +162,10 @@ VarExpr::assign(ctx , opt , rhs){
             oh.var = this.ret
             return oh.gen()
         }
-        ast.Var_Global_Extern | ast.Var_Global_Local | ast.Var_Local | ast.Var_Local_Static :{ 
+        ast.Var_Global_Extern_Static | ast.Var_Global_Extern | ast.Var_Global_Local | ast.Var_Local | ast.Var_Local_Static :{ 
+            if this.ret.stack && type(rhs) == type(ArrayExpr) {
+                return this.stack_assign(ctx,opt,rhs)
+            }
             if this.ret.isMemtype(ctx) {
                 oh = new OperatorHelper(ctx,this,rhs,opt)
                 oh.var = this.ret
@@ -223,4 +230,42 @@ VarExpr::getStackSize(){
     }else{
         return 8
     }
+}
+
+VarExpr::stack_assign(ctx , opt , rhs){
+    var = this.ret
+    if !var.stack this.check(false,"should be stack var in stack_assign expression")
+
+    if type(rhs) != type(ArrayExpr) rhs.check(false,"only support array expr in stack assign expression")
+    arr = rhs.literal
+    if var.stacksize != std.len(arr) var.check(false,"stack size != element size in stack_assign")
+    mt = "mov"
+    ts = 1
+    match var.type {
+        ast.I8 | ast.U8: {
+            mt = "movb" ts = 1
+        }
+        ast.I16 | ast.U16 : {
+            mt = "movw" ts = 2
+        }
+        ast.I32 | ast.U32 : {
+            mt = "movl" ts = 4
+        }
+        ast.I64 | ast.U64 : {
+            mt = "movq" ts = 8
+        }
+        _ : this.check(false,"should be i8 .. u64 type in stack assign") 
+    }
+    compile.GenAddr(var)
+    index = 0
+    for i : arr {
+        if type(i) != type(IntExpr) {
+            i.check(false,"should be intexpr in stack assign")
+        }
+        ie = i
+        compile.writeln("\t%s	$%s , %d(%%rax)",mt, ie.literal,index * ts )
+		index += 1
+    }
+	return null
+
 }

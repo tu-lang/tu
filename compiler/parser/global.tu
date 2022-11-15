@@ -143,9 +143,30 @@ Parser::parseGlobalAssign()
                 this.panic("unsupport global synatix: " + expr.toString(""))
             var = ae.lhs
             assign = ae
-            if (type(ae.rhs) == type(gen.IntExpr)){
-                var.ivalue = ae.rhs.lit
-                if var.structtype needinit = false 
+            match type(ae.rhs) {
+                type(gen.IntExpr) : {
+                    var.ivalue = ae.rhs.lit
+                    if var.structtype needinit = false 
+                }
+                type(gen.NullExpr) : {
+                    if(var.structtype) needinit = false
+                }
+                type(gen.ArrayExpr) : {
+                    if var.structtype && var.stack {
+                        arr = ae.rhs.literal
+                        if std.len(arr) != var.stacksize {
+                            this.check(false,"arr.size != stacksize")
+                        }
+                        for i : arr {
+                            if type(i) != type(gen.IntExpr) {
+                                i.check(false,"all arr elments should be intexpr")
+                            }
+                            ie = i
+                            var.elements[] = ie.literal
+                        }
+                        needinit = false
+                    }
+                }
             }
         }
         type(gen.VarExpr) : {

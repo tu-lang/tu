@@ -97,7 +97,7 @@ IndexExpr::compile(ctx) {
             compile.Load()
             compile.Push()
         }
-        ast.Var_Local_Static | ast.Var_Local_Static_Field | ast.Var_Global_Local_Static_Field :{
+        ast.Var_Global_Extern_Static | ast.Var_Local_Static | ast.Var_Local_Static_Field | ast.Var_Global_Local_Static_Field :{
             return this.compile_static(ctx) 
         }
         ast.Var_Func : {
@@ -160,7 +160,7 @@ IndexExpr::assign( ctx , opt ,rhs) {
         ast.Var_Func : {
             this.panic("meme type can't used in indexpr :%s",this.toString(""))
         }
-        ast.Var_Local_Static |ast.Var_Local_Static_Field: {
+        ast.Var_Global_Extern_Static | ast.Var_Local_Static |ast.Var_Local_Static_Field: {
             return this.assign_static(ctx,opt,rhs)
         }
         _: this.check(false,"array index: unkown type index::assign")

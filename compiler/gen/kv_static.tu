@@ -60,10 +60,12 @@ IndexExpr::compileStaticIndex(ctx,size){
 	 var = new VarExpr(this.varname,this.line,this.column)
 	 var.package = this.package
 	 match var.getVarType(ctx) {
-		 ast.Var_Local_Static:{ 
-			 if !var.ret.pointer this.check(false,"must be pointer type in array index")
+		ast.Var_Global_Extern_Static | ast.Var_Local_Static: { 
+			
+			 if !var.ret.pointer && !var.ret.stack this.check(false,"must be pointer type in array index")
 			 compile.GenAddr(var.ret)
-			 compile.Load()
+			 if !var.ret.stack
+			 	compile.Load()
 			 compile.Push()
 			 this.compileStaticIndex(ctx,var.ret.size)
 			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
@@ -95,10 +97,12 @@ IndexExpr::compileStaticIndex(ctx,size){
 	 var = new VarExpr(this.varname,this.line,this.column)
 	 var.package = this.package
 	 match var.getVarType(ctx) {
-		 ast.Var_Local_Static: { 
-			 if !var.ret.pointer  this.check(false,"must be pointer type in array index")
+		 ast.Var_Global_Extern_Static |  ast.Var_Local_Static: { 
+
+			 if !var.ret.pointer && !var.ret.stack this.check(false,"must be pointer type in array index")
 			 compile.GenAddr(var.ret)
-			 compile.Load()
+			 if !var.ret.stack
+			 	compile.Load()
 			 compile.Push()
 			 this.compileStaticIndex(ctx,var.ret.size)
 			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset

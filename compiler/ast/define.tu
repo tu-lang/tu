@@ -14,6 +14,7 @@ enum {
    Var_Global_Local_Static_Field, //内部全局 静态成员访问
    Var_Local_Static, //本地静态变量
    Var_Local_Static_Field,//本地静态 成员访问
+   Var_Global_Extern_Static,
 }
 
 True  = true

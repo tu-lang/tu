@@ -38,9 +38,17 @@ func registerVars(){
         }
         if v.pointer mt = "quad"
         
-        if v.stack 
+        if v.stack && v.structname != ""
             writeln("    .zero   %d",v.getStackSize())
-        else
+        else if v.stack {
+            if std.len(v.elements) != 0 {
+                for  i : v.elements {
+                    writeln("   .%s %s",mt,i)
+                }
+            }else{
+                writeln("    .zero   %d",v.getStackSize())
+            }
+        }else
             writeln("    .%s   %s",mt,value)
     }
 }
