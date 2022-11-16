@@ -51,6 +51,41 @@ func test_struct_member_index(){
 
 	fmt.println("test struct memeber index success")
 }
+use t
+two<i32> = 2
+mem StackArrSizeTest {
+	i32 arr1[two]
+	i32 arr2[t.ten]
+	i64 arr3[t.seven]
+}
+func test_member_arrisze(){
+
+	if sizeof(StackArrSizeTest) != two*4 + t.ten*4 + t.seven*8 {
+		os.dief("stack arr size is %d",int(sizeof(StackArrSizeTest)))
+	}
+	var<StackArrSizeTest> = new StackArrSizeTest {
+		arr1 : [11,22],
+		arr2 : [111,222,333,444,555,666,777,888,999,1000],
+		arr3 : [1111,2222,3333,4444,5555,6666,7777]
+	}
+	if var.arr1[1] == 22 {} else os.die("var.arr[1] != 22")
+	if var.arr2[1] == 222 {} else os.die("var.arr2[1] != 222")
+	if var.arr2[9] == 1000 {} else os.die("var.arr2[9] != 1000")
+	if var.arr3[1] == 2222 {} else os.die("var.arr3[1] != 2222")
+	if var.arr3[6] == 7777 {} else os.die("var.arr3[6] != 7777")
+
+	var.arr1[1] = 90  
+	if var.arr1[1] == 90 {} else os.die("var.arr1[1] == 90")
+	if var.arr2[0] == 111 {} else os.die("var.arr2[0] == 111")
+
+	var.arr2[9] = 91
+	if var.arr2[9] == 91 {} else os.die("var.arr2[9] == 91")
+
+	var.arr1[2] = 93
+	if var.arr2[0] == 93 {} else os.die("var.arr2[0] == 93")
+
+	fmt.println("test member arrsize success")
+}
 
 func main(){
 	test_struct_member_index()
@@ -60,4 +95,5 @@ func main(){
 		pos : 0,
 	}
 	var.test_struct_member_index()
+	test_member_arrisze()
 }
