@@ -28,6 +28,7 @@ class Member
 	
 	arrsize
 	isarr
+	arrvar
 
 	
 	isstruct

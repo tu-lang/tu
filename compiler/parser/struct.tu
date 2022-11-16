@@ -130,11 +130,9 @@ Parser::parseMember(tk,idx,pointer){
 		this.scanner.scan()
 	}else if(this.scanner.curToken == ast.LBRACKET){
 		this.scanner.scan()
-		this.check(this.scanner.curToken == ast.INT)
 		member.isarr   = true
-		member.arrsize = string.tonumber(this.scanner.curLex)
-		this.scanner.scan()
-		this.check(this.scanner.curToken == ast.RBRACKET)
+		member.arrvar = this.parseExpression(1)
+        this.check(this.scanner.curToken == ast.RBRACKET,"should be ] at last struct member arr parse")
 		this.scanner.scan()
 	}
 	return member

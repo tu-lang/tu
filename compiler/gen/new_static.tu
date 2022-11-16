@@ -5,9 +5,13 @@ use parser
 use parser.package
 use std
 use utils
+use fmt
 
 StructInitExpr::arrinit(ctx , field , arr){
-	if field.arrsize != std.len(arr.literal)  this.panic("arr size is not same")
+	if field.arrsize != std.len(arr.literal)  {
+		fmt.println(field.arrsize,std.len(arr.literal))
+		this.check(false,"arr size is not same")
+	}
 	elmentsize = field.size
 	ltok = field.type
 	if field.pointer {
