@@ -84,7 +84,51 @@ func test_member_arrisze(){
 	var.arr1[2] = 93
 	if var.arr2[0] == 93 {} else os.die("var.arr2[0] == 93")
 
+
 	fmt.println("test member arrsize success")
+}
+mem DynArrcountAdd {
+	i64 arr1[two + 1] // 3
+	i64 arr2[t.ten + 1] // 11
+}
+mem DynArrcountSub {
+	i64 arr1[two - 1] // 1
+	i64 arr2[t.ten - 5] // 5
+}
+mem DynArrcountMul {
+	i64 arr1[two * 2] // 4
+	i64 arr2[t.ten * 5] // 50
+}
+mem DynArrcountDiv {
+	i64 arr1[two / 1] // 2
+	i64 arr2[two / 2] // 1
+	i64 arr3[t.ten / 5] // 2
+	i64 arr4[t.seven / 2] // 3
+}
+mem DynArrcountChaos {
+	i64 arr1[ (two + t.seven + t.ten - two ) * 3 ] // 17 * 3 = 51
+	i64 arr2[ ( (1 + 6 - 3 ) * 4 )/ 8] 			   //  2
+}
+func test_dynamic_arrcount(){
+	if sizeof(DynArrcountAdd) == (two + 1 + t.ten + 1) * 8 {} else {
+		os.dief("sizeof(DynArrcountAdd) :%d",int(sizeof(DynArrcountAdd)))
+	}
+	if sizeof(DynArrcountSub) == (two - 1 + t.ten - 5) * 8 {} else {
+		os.dief("sizeof(DynArrcountSub) :%d",int(sizeof(DynArrcountSub)))
+	}
+	if sizeof(DynArrcountMul) == ((two * 2) + (t.ten * 5)) * 8 {} else {
+		os.dief("sizeof(DynArrcountAdd) :%d",int(sizeof(DynArrcountMul)))
+	}
+	if sizeof(DynArrcountDiv) == ((two / 1) + (two / 2) + (t.ten /5) + (t.seven / 2)) * 8 {} else {
+		os.dief("sizeof(DynArrcountDiv) :%d",int(sizeof(DynArrcountDiv)))
+	}
+	b<i8> = ((two + t.seven + t.ten - two) * 3)  +  2
+	if sizeof(DynArrcountChaos) == b * 8 {} else {
+		os.dief("sizeof(DynArrcountChaos) :%d %d",int(sizeof(DynArrcountChaos)),int(b))
+	}
+
+	fmt.println("test_dynamic_arrcount success")
+
 }
 
 func main(){
@@ -95,5 +139,5 @@ func main(){
 		pos : 0,
 	}
 	var.test_struct_member_index()
-	test_member_arrisze()
+	test_dynamic_arrcount()
 }
