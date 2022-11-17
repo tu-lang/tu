@@ -168,9 +168,71 @@ func test_add_u64(){
 	}
 	fmt.println("test xadd u64 success")
 }
+
+mem CasI32 {
+	i32 before,i,after
+}
+func test_cas_i32(){
+	x<CasI32> = new CasI32 {
+		before : magic32,
+		after  : magic32
+	}
+	for val<i32> = 1 ; val + val > val ; val += val {
+		x.i = val
+		if atomic.cas(&x.i,val,val + 1) != True {
+			os.dief("should have swapped %#x %#x", val, val+1)
+		}
+		if x.i != val + 1 {
+			os.dief("wrong x.i after swap: x.i=%#x val+1=%#x", x.i, val+1)
+		}
+		x.i = val + 1
+		if atomic.cas(&x.i,val,val + 2) == True {
+			os.dief("should not have swapped %#x %#x", val, val+2)
+		}
+		if x.i != val+1 {
+			os.dief("wrong x.i after swap: x.i=%#x val+1=%#x", x.i, val+1)
+		}
+	}
+	if x.before != magic32 || x.after != magic32 {
+		os.dief("wrong magic: %#x _ %#x != %#x _ %#x", x.before, x.after, magic32, magic32)
+	}
+	fmt.println("test cas i32 succes")
+}
+mem CasU32 {
+	u32 before,i,after
+}
+func test_cas_u32(){
+	x<CasU32> = new CasU32{
+		before : magic32,
+		after : magic32
+	}
+	for val<u32> = 1 ; val + val > val ; val += val {
+		x.i = val
+		if atomic.cas(&x.i,val, val + 1) != True {
+			os.dief("should have swapped %#x %#x", val, val+1)
+		}
+		if x.i != val+1 {
+			os.dief("wrong x.i after swap: x.i=%#x val+1=%#x", x.i, val+1)
+		}
+		x.i = val + 1
+		if atomic.cas(&x.i,val,val + 2) == True {
+			os.dief("should not have swapped %#x %#x", val, val+2)
+		}
+		if x.i != val+1 {
+			os.dief("wrong x.i after swap: x.i=%#x val+1=%#x", x.i, val+1)
+		}
+	}
+	if x.before != magic32 || x.after != magic32 {
+		os.dief("wrong magic: %#x _ %#x != %#x _ %#x", x.before, x.after, magic32, magic32)
+	}
+	fmt.println("test case u32 success")
+}
+
 func main(){
 	test_swap_i32()
 	test_compare_and_swap_i64()
+	test_cas_i32()
+	test_cas_u32()
 	test_store_i32()
 	test_add_i32()
 	test_add_u32()

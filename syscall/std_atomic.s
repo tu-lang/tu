@@ -4,7 +4,17 @@ std_atomic_cas64:
     mov     %rdi , %rcx
     mov     %rsi , %rax
     lock 
-    cmpxchg %rdx,(%rcx)
+    cmpxchgq %rdx,(%rcx)
+    sete    %al
+    movzb   %al, %rax
+	retq
+
+.global std_atomic_cas  
+std_atomic_cas:
+    mov     %rdi , %rcx
+    mov     %esi , %eax
+    lock 
+    cmpxchgl %edx,(%rcx)
     sete    %al
     movzb   %al, %rax
 	retq
