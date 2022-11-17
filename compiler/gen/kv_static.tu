@@ -39,7 +39,9 @@ IndexExpr::compileStaticIndex(ctx,size){
 		if !me.ismem(ctx) this.panic("memexpr should be mem type in index expr")
 		se = me.compile(ctx)
 		compile.LoadMember(se.ret)
-	}else{
+	}else if type(this.index) == type(FunCallExpr) {
+        this.index.compile(ctx)
+    }else{
 		this.check(false,"index must be var in arry index")
 	}
 	if size != 1{

@@ -23,6 +23,9 @@ Member::test_struct_member_index(){
 	if arr[this.pos + 1] != 44 os.die("arr[this.pos + 1] != 44")
 	this.pos += 1
 	if arr[this.pos] != 44 os.die("arr[this.pos] != 44")
+	//test func() index
+	f1 = func(){return 1.(i8)}
+	if arr[f1()] == 44 {} else os.die("arr[1] != 44")
 
 	fmt.println("Member::test struct memeber index success")
 }
@@ -73,6 +76,10 @@ func test_member_arrisze(){
 	if var.arr2[9] == 1000 {} else os.die("var.arr2[9] != 1000")
 	if var.arr3[1] == 2222 {} else os.die("var.arr3[1] != 2222")
 	if var.arr3[6] == 7777 {} else os.die("var.arr3[6] != 7777")
+
+	//test func() index
+	f6 = func(){return 6.(i8)}
+	if var.arr3[f6()] == 7777 {} else os.die("var.varr3[6] != 777")
 
 	var.arr1[1] = 90  
 	if var.arr1[1] == 90 {} else os.die("var.arr1[1] == 90")
