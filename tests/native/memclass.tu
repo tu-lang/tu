@@ -13,7 +13,7 @@ mem Test {
 Test::value(){
 	return this.b
 }
-Test::test(){
+Test::test(com){
 	if this.a != 10 os.die("this.a != 10")
 	if this.b != 20 os.die("this.a != 20")
 	ret<i32> = this.value()
@@ -24,7 +24,7 @@ Test::test(){
 	if this.arr8[1] != 14 os.die("this.arr8[1] != 14")
 
 	if this.stack[1] != 2 os.die("this.stack[1] != 2")
-	fmt.println("test mem class success")
+	fmt.printf("test mem class by '%s' success \n",com)
 }
 func main(){
 	var<Test> = new Test {
@@ -33,5 +33,15 @@ func main(){
 		arr8: new i8[2], 
 		stack: [1,2,3], 
 	}
-	var.test()
+	var.test("test heap")
+	//stack test
+	var2<Test:> = null
+	var2.a = 10
+	var2.b = 20
+	var2.arr8 = new i8[2]
+	var2.stack[0] = 1
+	var2.stack[1] = 2
+	var2.stack[2] = 3
+	var2.test("test stack")
+
 }
