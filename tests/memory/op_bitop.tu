@@ -100,6 +100,30 @@ func test_or(){
     }
     fmt.println("test int bitor %d  success\n",int(e))
 }
+func test_xor(){
+    //   1 1 0 1
+    a<i8> = 13
+    //   0 0 1 1
+    b<i8> = 3
+    //   1 1 1 1
+    a = a ^ b
+    if  a != 14 {
+        fmt.println("test int bitor %d != 14 failed\n",int(a))
+        os.exit(1)
+    }
+    c = 0
+    a ^= *c
+    if  a != 14 {
+        fmt.println("test int bitor %d != 14 failed\n",int(a))
+        os.exit(1)
+    }
+    e<i8> = a ^ 16
+    if  e != 30 {
+        fmt.println("test int bitor %d != 31 failed\n",int(e))
+        os.exit(1)
+    }
+    fmt.println("test int bitor %d  success\n",int(e))
+}
 func test_lognot(){
 	a<i8> = 100
 	if !a {
@@ -135,6 +159,7 @@ func main(){
 	test_shift_right()
 	test_and()
 	test_or()
+	test_xor()
 	test_lognot()
 	test_bitnot()
 }

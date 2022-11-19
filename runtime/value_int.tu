@@ -23,6 +23,9 @@ func value_int_bitand(lhs<Value>,rhs<Value>){
 func value_int_bitor(lhs<Value>,rhs<Value>){
     return lhs.data | rhs.data
 }
+func value_int_bitxor(lhs<Value>,rhs<Value>){
+    return lhs.data ^ rhs.data
+}
 // <<
 func value_int_shift_left(lhs<Value>,rhs<Value>){
     return lhs.data << rhs.data

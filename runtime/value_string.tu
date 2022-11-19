@@ -113,6 +113,9 @@ func value_string_bitand(lhs<Value>,rhs<Value>){
 func value_string_bitor(lhs<Value>,rhs<Value>){
     return Null
 }
+func value_string_bitxor(lhs<Value>,rhs<Value>){
+    return Null
+}
 func value_string_shift_left(lhs<Value>,rhs<Value>){
     return Null
 }

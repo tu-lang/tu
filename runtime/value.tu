@@ -176,6 +176,27 @@ func value_bitor(lhs<Value>,rhs<Value>) {
     }
     os.dief("[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
+ // @return
+ func value_bitxor(lhs<Value>,rhs<Value>) {
+    result<Value> = new Value
+    if lhs == null {
+        std.memcpy(result,rhs, sizeof(Value))
+        return result
+    }
+    //字符串的触发运算全部返回0
+    if lhs.type == String || rhs.type == String {
+        result.type = Int
+        result.data = value_string_bitxor(lhs,rhs)
+        return result
+    }
+    //有int类型就进行int类型相加
+    if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
+        result.type = Int
+        result.data = value_int_bitxor(lhs,rhs)
+        return result
+    }
+    os.dief("[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+}
 
  // << operator
  // @param lhs
@@ -393,6 +414,8 @@ func operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
         BITAND:         ret =  value_bitand(lhs,rhs)
         BITOR_ASSIGN:   ret =  value_bitor(lhs,rhs)
         BITOR:       ret =  value_bitor(lhs,rhs)
+        BITXOR_ASSIGN:   ret =  value_bitxor(lhs,rhs)
+        BITXOR:       ret =  value_bitxor(lhs,rhs)
         SHL_ASSIGN:  ret =  value_shift_left(lhs,rhs)
         SHL:         ret =  value_shift_left(lhs,rhs)
         SHR_ASSIGN:  ret =  value_shift_right(lhs,rhs)
