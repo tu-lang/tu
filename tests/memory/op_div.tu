@@ -2,6 +2,7 @@ use fmt
 
 mem Pointer{
 	i8 up
+	i8 arr[2]
 }
 // i8测试
 func i8_test(){
@@ -32,11 +33,16 @@ func i8_test(){
 	p.up = 8
 	p.up = p.up / 2
 	fmt.assert(int(p.up),4)
+
+	p.arr[1] = 10
+	p.arr[1] /= 5
+	if p.arr[1] == 2 {} else os.die("p.arr[1] == 2")
 	fmt.println("i8 test success")
 }
 
 mem Pu8{
 	u8 p
+	u8 arr[2]
 }
 func u8_test(){
 	fmt.println("u8 test ")
@@ -64,6 +70,10 @@ func u8_test(){
 	t2.p = 200
 	t2.p = t2.p / 4
 	fmt.assert(int(t2.p),50)
+	//test arr
+	t2.arr[1] = 200
+	t2.arr[1] /= 200
+	if t2.arr[1] == 1 {} else os.die("t2.arr[1]==1")
 
 	fmt.println("u8 test success")
 }

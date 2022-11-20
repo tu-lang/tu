@@ -67,11 +67,20 @@ func u8_test(){
 	var(p)
 	member(p)
 }
+mem I8Mi64 {
+	i8  a[2]
+	i64 b[2]
+}
 func test_i8_sub_i64(){
+	p<I8Mi64> = new I8Mi64 {
+		b : [ 1,1]
+	}
 	i<i32> = 0
 	b<i64> = 1
 	if i - b < 0 {} else os.die("0 - 1 < 0 ;1")
 	if i - 1 < 0 {} else os.die("0 - 2 < 0 ;2")
+	if p.a[0] - p.b[0] < 0 {} else os.die("0-1 <0 3")
+	if p.a[0] - 1 < 0 {} else os.die("0-1 <0 4")
 
 	j<i16> = 0
 	if j - b < 0 {} else os.die("0 - 1 < 0 ;3")
@@ -84,6 +93,8 @@ func test_i8_sub_i64(){
 	o<i64> = 0
 	if o - b < 0 {} else os.die("0 - 1 < 0 ;7")
 	if o - 1 < 0 {} else os.die("0 - 1 < 0 ;8")
+
+
 	fmt.println("test i8 sub i64 success")
 }
 func test_u8_sub_u64(){

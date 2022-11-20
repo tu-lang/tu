@@ -3,6 +3,14 @@
 use fmt
 use os
 
+mem T {
+	i8  arr[2]
+}
+//from binary
+p1<T:> = null
+//from heap
+p2<T> = new T
+
 // << <<=
 func test_shift_left() {
 	fmt.println("test shift left and assign")
@@ -16,6 +24,7 @@ func test_shift_left() {
 		fmt.println("v should eq 8 ",v)
 		os.exit(-1)
 	}
+	
 
 	v <<= 1
 	fmt.assert(int(v),16)
@@ -25,6 +34,14 @@ func test_shift_left() {
 		fmt.println("v should eq 32",v)
 		os.exit(-1)
 	}
+	//test arr
+	p1.arr[0] = 8
+	p2.arr[0] = 8
+	p1.arr[0] <<= 1
+	p2.arr[0] <<= 1
+	if p1.arr[0] == 16 {} else os.die("p1.arr[0] == 16")
+	if p2.arr[0] == 16 {} else os.die("p2.arr[0] == 16")
+
 	fmt.println("test left shift and assign success")
 }
 // >> >>=
@@ -50,6 +67,14 @@ func test_shift_right() {
 		fmt.println("v should be 1",v)
 		os.exit(-1)
 	}
+	//test arr
+	p1.arr[0] = 32
+	p2.arr[0] = 32
+	p1.arr[0] >>= 1
+	p2.arr[0] >>= 1
+	if p1.arr[0] == 16 {} else os.die("p1.arr[0] == 16")
+	if p2.arr[0] == 16 {} else os.die("p2.arr[0] == 16")
+
 	fmt.println("test right shift and assign success")
 
 }
@@ -74,6 +99,13 @@ func test_and(){
         fmt.println("test int bitand %d != 2 failed\n",int(e))
         os.exit(1)
     }
+	p1.arr[0] = 10
+	p2.arr[0] = 10
+	p1.arr[0] &= 2
+	p2.arr[0] &= 2
+	if p1.arr[0] == 2 {} else os.die("p1.arr[0] == 2")
+	if p2.arr[0] == 2 {} else os.die("p2.arr[0] == 2")
+
     fmt.println("test int bitand %d  success\n",int(e))
 }
 func test_or(){
@@ -98,6 +130,14 @@ func test_or(){
         fmt.println("test int bitor %d != 31 failed\n",int(e))
         os.exit(1)
     }
+	//test
+	p1.arr[0] = 13
+	p2.arr[0] = 13
+	p1.arr[0] |= 2
+	p2.arr[0] |= 2
+	if p1.arr[0] == 15 {} else os.die("p1.arr[0] == 15")
+	if p2.arr[0] == 15 {} else os.die("p2.arr[0] == 15")
+
     fmt.println("test int bitor %d  success\n",int(e))
 }
 func test_xor(){
@@ -122,6 +162,12 @@ func test_xor(){
         fmt.println("test int bitor %d != 31 failed\n",int(e))
         os.exit(1)
     }
+	p1.arr[1] = 13
+	p2.arr[1] = 13
+	p1.arr[1] ^= 3
+	p2.arr[1] ^= 3
+	if p1.arr[1] == 14 {} else os.die("p1.arr[0] == 14")
+	if p2.arr[1] == 14 {} else os.die("p2.arr[0] == 14")
     fmt.println("test int bitor %d  success\n",int(e))
 }
 func test_lognot(){
