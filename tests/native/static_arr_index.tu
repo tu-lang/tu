@@ -112,6 +112,12 @@ mem DynArrcountDiv {
 	i64 arr3[t.ten / 5] // 2
 	i64 arr4[t.seven / 2] // 3
 }
+mem DynArrcountShl {
+	i64 arr1[two << 1] // 4
+	i64 arr2[two << 2] // 8
+	i64 arr3[t.ten << 5] // 320
+	i64 arr4[t.seven << 2] // 28
+}
 mem DynArrcountChaos {
 	i64 arr1[ (two + t.seven + t.ten - two ) * 3 ] // 17 * 3 = 51
 	i64 arr2[ ( (1 + 6 - 3 ) * 4 )/ 8] 			   //  2
@@ -129,6 +135,10 @@ func test_dynamic_arrcount(){
 	if sizeof(DynArrcountDiv) == ((two / 1) + (two / 2) + (t.ten /5) + (t.seven / 2)) * 8 {} else {
 		os.dief("sizeof(DynArrcountDiv) :%d",int(sizeof(DynArrcountDiv)))
 	}
+	if sizeof(DynArrcountShl) == ((two << 1) + (two << 2) + (t.ten << 5) + (t.seven << 2)) * 8 {} else {
+		os.dief("sizeof(DynArrcountShl) :%d",int(sizeof(DynArrcountShl)))
+	}
+
 	b<i8> = ((two + t.seven + t.ten - two) * 3)  +  2
 	if sizeof(DynArrcountChaos) == b * 8 {} else {
 		os.dief("sizeof(DynArrcountChaos) :%d %d",int(sizeof(DynArrcountChaos)),int(b))
