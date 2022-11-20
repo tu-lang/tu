@@ -72,7 +72,7 @@ func test_store_i32(){
 	}
 	v<i32> = 0
 	for delta<i32> = 1 ; delta + delta > delta; delta += delta {
-		atomic.store32(&x.i, v)
+		atomic.store(&x.i, v)
 		if x.i != v {
 			os.dief("delta=%d i=%d v=%d", int(delta), int(x.i), int(v))
 		}
@@ -83,6 +83,49 @@ func test_store_i32(){
 	}
 	fmt.println("store i32 success")
 }
+mem StoreI64 {
+	i64 before,i,after
+}
+func test_store_i64(){
+	x<StoreI64> = new StoreI64 {
+		before : magic64,
+		after : magic64
+	}
+	v<i64> = 0
+	for delta<i64> = 1 ; delta+delta > delta; delta += delta {
+		atomic.store64(&x.i,v)
+		if x.i != v {
+			os.dief("delta=%d i=%d v=%d", delta, x.i, v)
+		}
+		v += delta
+	}
+	if x.before != magic64 || x.after != magic64 {
+		os.dief("wrong magic: %#x _ %#x != %#x _ %#x", x.before, x.after, int(magic64), int(magic64))
+	}
+	fmt.println("test store i64 success")
+}
+mem StoreU64 {
+	u64 before,i,after
+}
+func test_store_u64(){
+	x<StoreU64> = new StoreU64 {
+		before: magic64,
+		after : magic64
+	}
+	v<u64> = 0
+	for delta<u64> = 1;  delta+delta > delta; delta += delta {
+		atomic.store64(&x.i,v)
+		if x.i != v {
+			os.dief("delta=%d i=%d v=%d", delta, x.i, v)
+		}
+		v += delta
+	}
+	if x.before != magic64 || x.after != magic64 {
+		os.dief("wrong magic: %#x _ %#x != %#x _ %#x", x.before, x.after, int(magic64), int(magic64))
+	}
+	fmt.println("test store_u64 success")
+}
+
 mem AddI32 {
 	i32 before,i,after
 }
@@ -234,6 +277,8 @@ func main(){
 	test_cas_i32()
 	test_cas_u32()
 	test_store_i32()
+	test_store_i64()
+	test_store_u64()
 	test_add_i32()
 	test_add_u32()
 	test_add_i64()

@@ -27,11 +27,18 @@ std_atomic_xchg:
     movsxd  %ecx,  %rax
     retq
 
-.global std_atomic_store32
-std_atomic_store32:
+.global std_atomic_store
+std_atomic_store:
     mov     %rdi , %rax
     mov     %esi , %ecx
     xchg    %ecx , (%rax)
+    retq
+
+.global std_atomic_store64
+std_atomic_store64:
+    mov     %rdi , %rax
+    mov     %rsi , %rcx
+    xchg    %rcx , (%rax)
     retq
 
 .global std_atomic_xadd
