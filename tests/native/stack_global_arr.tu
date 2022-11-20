@@ -46,9 +46,43 @@ func test_extern_global(){
 	if t.ge[55] == 55 {} else os.die("t.ge[55] != 55")
 	fmt.println("test_var extern global success")
 }
+mem B {
+	i32 a,b
+}
+B::test(c<i32>){
+	if this.b == c {} else os.die("this.c != c")	
+	fmt.println("test B::test success")
+}
+mem A {
+	B*  arr[2]
+	i32 a,b
+}
+//写入二进制内
+t2<A:> = new A {
+	a : 11,
+	b : 12
+}
+func test2(){
+	//测试栈变量
+	//测试结构体成员 是结构体数组的情况
+	t2.arr[0] = new B{b:21}
+	if t2.arr[0].b == 21 {} else os.die("t2.arr[0].b == 21")
+	if t2.a == 11 {} else os.die("t2.a == 11")
+	t2.arr[0].test(21.(i8))
+
+	pt2<A:> = null //分配到栈上
+	pt2.arr[0] = new B{a:30,b:100}
+	pt2.a = 31
+	pt2.b = 32
+	if pt2.arr[0].a == 30 {} else os.die("pt2.arr[0].a == 30")
+	if pt2.b == 32 {} else os.die("pt2.b == 32")
+	pt2.arr[0].test(100.(i8))
+	fmt.println("test2 success")
+}
 
 func main(){
 	test_var()
 	test_var_ref(&ga)
 	test_extern_global()
+	test2()
 }
