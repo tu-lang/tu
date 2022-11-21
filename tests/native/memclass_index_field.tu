@@ -92,8 +92,32 @@ func test_stack_field_index(){
 	p.b[0].testa()
 	p.b[1].testb()
 }
+
+mem I1 {
+	i8 a 
+	i16 b
+	i64 c
+	i32 d
+}
+
+I1arr<I1:2> = [
+	{1,2,3,4},
+	{5,6,7,8}
+]
+func test_mem_arr_field(){
+	pi<I1> = &I1arr
+	if pi.a == 1 && pi.b == 2 && pi.c == 3 && pi.d == 4 {} else {
+		os.die("test mem arr field: somthing wrong")
+	}
+	pi += sizeof(I1)
+	if pi.a == 5 && pi.b == 6 && pi.c == 7 && pi.d == 8 {} else {
+		os.die("test mem arr field: somthing wrong 2")
+	}
+	fmt.println("test_mem_arrfield success")
+}
 func main(){
 	test_chain_index()
 
 	test_stack_field_index()
+	test_mem_arr_field()
 }
