@@ -48,8 +48,10 @@ func test_chain_index(){
 }
 
 mem B {
-	i8  a
-	i64 b,c,d
+	i8 a 
+	i16 b
+	i64 c
+	i32 d
 }
 mem A {
 	i8  a
