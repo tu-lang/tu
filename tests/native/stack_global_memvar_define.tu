@@ -1,5 +1,6 @@
 use fmt
 use os
+use pkg2
 
 mem T2 {
 	i8  a
@@ -43,4 +44,5 @@ func test_global_stack_structvar(){
 }
 func main(){
 	test_global_stack_structvar()
+	pkg2.test()
 }
