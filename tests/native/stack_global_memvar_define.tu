@@ -42,7 +42,65 @@ func test_global_stack_structvar(){
 	
 	fmt.println("test_global_stack_structvar success")
 }
+//测试静态变量的field地址引用
+use fmt
+use std
+
+mem B {
+    i8 a
+    i16 b
+    i64 c
+    i32 d
+}
+mem A {
+	i8 before
+    B free
+    B next
+    B current
+	i8 after
+}
+A::testa(p<B>){
+	if this.before == 33 && this.after != 444 {} else {
+		os.die("this.before == 333 && this.after == 444")
+	}
+	if p.a == 1 && p.b == 2 && p.c == 3 && p.d == 4 {} else {
+		os.die("test a failed")
+	}
+	fmt.println("test a success")
+}
+A::testb(p<B>){
+	if this.before == 33 && this.after != 444 {} else {
+		os.die("this.before == 333 && this.after == 444")
+	}
+	if p.a == 5 && p.b == 6 && p.c == 7 && p.d == 8 {} else {
+		os.die("test b failed")
+	}
+	fmt.println("test b success")
+}
+A::testc(p<B>){
+	if this.before == 33 && this.after != 444 {} else {
+		os.die("this.before == 333 && this.after == 444")
+	}
+	if p.a == 9 && p.b == 10 && p.c == 11 && p.d == 12 {} else {
+		os.die("test c failed")
+	}
+	fmt.println("test c success")
+}
+G<A:> = new A{
+	before : 33,
+	free : B{ a:1,b:2,c:3,d:4},
+	next : B{ a:5,b:6,c:7,d:8},
+	current : B{a:9,b:10,c:11,d:12},
+	after: 444
+}
+func test_stack_addr(){
+	G.testa(&G.free)
+	G.testb(&G.next)
+	G.testc(&G.current)
+	fmt.println("test stack addr success")
+}
 func main(){
 	test_global_stack_structvar()
 	pkg2.test()
+	test_stack_addr()
 }
