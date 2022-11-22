@@ -11,6 +11,16 @@ func rand(v<runtime.Value>){
 	}
 	return int(ret)
 }
+func srand(v<u64>){
+
+	seed = (seed * 1103515245) + 12345
+	ret<u64> = (seed / 65536) % 32768
+	if v != null {
+		ret %= v
+	}
+	return ret
+}
+
 
 func empty(v<runtime.Value>){
 	match v.type {

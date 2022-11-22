@@ -258,15 +258,18 @@ func stringll2str(s<i8*>,value<i64>) {
     else 
         v = value
     p = s
+    //value == 0
+    if(v==null) {
+        *p = '0'
+        return 1.(i8)
+    }
     while v != null {
-        # '0' + (v % 10)
-        *p = 48 + v % 10
+        *p = '0' + v % 10
         p += 1
         v /= 10
     }
     if value < 0{
-        #*p = '-' 45
-        *p = 45
+        *p = '-'
         p += 1
     } 
 
