@@ -207,7 +207,7 @@ Treap::insert(s<Span>)
 Treap::end()
 {
 	t<TreapNode> = this.root
-    if(t == null) return null
+    if(t == null) return 0.(i8)
     while t.right != null{
         t = t.right
 	}

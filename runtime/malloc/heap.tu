@@ -113,7 +113,7 @@ Heap::allocSpanLocked(npage<u64>)
     }
 
     if heap_.grow(npage) != True {
-        return null
+        return 0.(i8)
     }
     s = heap_.pickFreeSpan(npage)
     if ( s != null ) {

@@ -26,7 +26,7 @@ GcBitsArena::tryAlloc(u8s<u64>)
 {
 	bitslen<u64> = gcBitsChunkBytes - gcBitsHeaderBytes
 	if this == null || atomic.load64(&this.free) + u8s > bitslen {
-		return null
+		return 0.(i8)
 	}
 	end<u64> = atomic.xadd64(&this.free, u8s)
 	if end > bitslen {

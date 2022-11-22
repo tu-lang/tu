@@ -222,7 +222,7 @@ Span::nextFreeFast()
 			this.allocCache >>= theBit + 1
 			this.freeindex = freeidx
 			this.allocCount += 1
-			return result*this.elemsize + this.startaddr
+			return (result * this.elemsize) + this.startaddr
 		}
 	}
 	return 0.(i8)

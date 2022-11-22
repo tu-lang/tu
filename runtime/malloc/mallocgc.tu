@@ -110,6 +110,5 @@ func mallocgc(size<u64> , noscan<u8> , needzero<u8>)
 
 	if( shouldhelpgc ){
 	}
-	fmt.println(int(x))
 	return x
 }

@@ -123,7 +123,7 @@ HeapBits::heapBitsForAddr(addr<u64>){
 	arr<u64*> = heap_.arenas[arena_l1(arena)]
 	ha<HeapArena>   = arr[arena_l2(arena)]
 	if  ha == null {
-		return null
+		return 0.(i8)
 	}
 	this.bitp = &ha.bitmap[(addr/(ptrSize*4))%heapArenaBitmapBytes]
 	this.shift = (addr / ptrSize) & 3
@@ -137,7 +137,7 @@ HeapBits::heapBitsForAddr(addr<u64>){
  {
 	blocksNeeded<u64> = (nelems + 63) / 64
 	u8sNeeded<u64> = blocksNeeded * 8
-	head<GcBitsArena> = atomic.load(&gbArenas.next)
+	head<GcBitsArena> = atomic.load64(&gbArenas.next)
 	p<u8*> = head.tryAlloc(u8sNeeded)
  	if  p != null {
  		return p

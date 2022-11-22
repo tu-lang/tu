@@ -49,7 +49,7 @@ Heap::sysAlloc(n<u64> , ssize<u64*>)
 		v = sys.reserveAligned(null,&size,heapArenaBytes)
 		if( v == null ){
 			*ssize = 0
-			return null
+			return 0.(i8)
 		}
 		hint<ArenaHint> = this.arenaHintAlloc.alloc()
 		hint.addr = v

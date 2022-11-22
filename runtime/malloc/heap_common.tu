@@ -86,7 +86,7 @@ Heap::spanOf(p<u64>)
 	ri<u32> = arenaIndex(p)
 	if  arenaL1Bits == 0  {
 		if  arena_l2(ri) >= ( 1 << arenaL2Bits ) {
-			return null
+			return 0.(i8)
 		}
 	}
 	l2<u64*> = heap_.arenas[arena_l1(ri)]

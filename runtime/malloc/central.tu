@@ -74,7 +74,7 @@ retry:
 
 	s = this.grow()
 	if s == null {
-		return null
+		return 0.(i8)
 	}
 	this.locks.lock()
 	this.empty.insertback(s)
@@ -110,7 +110,7 @@ Central::grow()
 
 	s<Span> = heap_.alloc(npages, this.sc, 0.(i8), 1.(i8))
 	if s == null {
-		return null
+		return 0.(i8)
 	}
 
 	p<u64> = s.startaddr
