@@ -99,8 +99,25 @@ func test_stack_addr(){
 	G.testc(&G.current)
 	fmt.println("test stack addr success")
 }
+
+mem RetT{
+	u64 a,b
+	u8  c[2000]
+}
+RetT::f1(){
+	return &this.c[100]
+}
+RetT::test_return(){
+	p<u8*> = &this.c[100]
+	if p == this.f1() {} else {
+		os.die("p != this.f1()")
+	}
+	fmt.println("test return success")
+}
+gret<RetT:>
 func main(){
 	test_global_stack_structvar()
 	pkg2.test()
 	test_stack_addr()
+	gret.test_return()
 }
