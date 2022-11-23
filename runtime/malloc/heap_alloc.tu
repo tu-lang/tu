@@ -64,21 +64,25 @@ Heap::sysAlloc(n<u64> , ssize<u64*>)
 		this.arenaHints = hint
 	}
 
-		bad = ""
-		p<u64> = v
-		if( p+size < p ){
-			bad = "region exceeds u64 range"
-		} else if( arenaIndex(p) >= 1<<arenaBits ){
-			bad = "base outside usable address space"
-		} else if( arenaIndex(p+size - 1) >= 1<<arenaBits ){
-			bad = "end outside usable address space"
-		}
-		if( bad != "" ){
-			os.die("memory reservation exceeds address space limit")
-		}
+	bad<i32> = 0
+	p<u64> = v
+	if( p+size < p ){
+		bad = 1
+		//"region exceeds u64 range"
+	} else if( arenaIndex(p) >= 1<<arenaBits ){
+		bad = 1
+		//"base outside usable address space"
+	} else if( arenaIndex(p+size - 1) >= 1<<arenaBits ){
+		bad = 1
+		//"end outside usable address space"
+	}
+	// if( bad != "" ){
+	if bad {
+		dief("memory reservation exceeds address space limit".(i8))
+	}
 
 	if v&(heapArenaBytes - 1) != 0  {
-		os.die("misrounded allocation in sysAlloc")
+		dief("misrounded allocation in sysAlloc".(i8))
 	}
 
 	sys.map(v,size)
@@ -89,17 +93,17 @@ mapped:
 		if l2 == null {
 			l2 = sys.fixalloc( 1 << arenaL2Bits * ptrSize)
 			if l2 == null {
-				os.die("out of memory allocating heap arena map")
+				dief("out of memory allocating heap arena map".(i8))
 			}
 			atomic.store64(&this.arenas[arena_l1(ri)],l2)
 		}
 		if l2[arena_l2(ri)] != null {
-			os.die("arena already initialized")
+			dief("arena already initialized".(i8))
 		}
 		r<HeapArena> = 0
         r = sys.fixalloc(sizeof(HeapArena), ptrSize)
         if r == null {
-            os.die("out of memory allocating heap arena metadata")
+            dief("out of memory allocating heap arena metadata".(i8))
         }
 		//OPTIMIZE:
 		atomic.store64(l2 + arena_l2(ri) * ptrSize, r)

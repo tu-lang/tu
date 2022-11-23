@@ -62,10 +62,10 @@ HeapBits::initSpan(s<Span>)
 
 	nw<u64> = total / ptrSize
 	if nw % wordsPerBitmapByte != 0 {
-		os.die("initSpan: unaligned length")
+		dief("initSpan: unaligned length".(i8))
 	}
 	if this.shift != 0 {
-		os.die("initSpan: unaligned base")
+		dief("initSpan: unaligned base".(i8))
 	}
 	while nw > 0 {
 		anw<u64> = 0
@@ -162,7 +162,7 @@ HeapBits::heapBitsForAddr(addr<u64>){
 
 	p = fresh.tryAlloc(u8sNeeded)
  	if  p == null {
- 		os.die("markBits overflow")
+ 		dief("markBits overflow".(i8))
  	}
 
  	fresh.next = gbArenas.next

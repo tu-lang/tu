@@ -20,7 +20,7 @@ Cache::nextFree(spc<u8>,ss<u64*>,shouldhelpgc<u8*>)
 
 	if freeIndex == s.nelems {
 		if s.allocCount != s.nelems {
-			os.die("s.allocCount != s.nelems && freeIndex == s.nelems")
+			dief("s.allocCount != s.nelems && freeIndex == s.nelems".(i8))
 		}
 		this.refill(spc)
 		*shouldhelpgc = true
@@ -30,12 +30,12 @@ Cache::nextFree(spc<u8>,ss<u64*>,shouldhelpgc<u8*>)
 	}
 
 	if freeIndex >= s.nelems {
-		os.die("freeIndex is not valid")
+		dief("freeIndex is not valid".(i8))
 	}
 	v<u64> = freeIndex* s.elemsize + s.startaddr
 	s.allocCount += 1
 	if s.allocCount > s.nelems {
-		os.die("s.allocCount > s.nelems")
+		dief("s.allocCount > s.nelems".(i8))
 	}
 	return v
 }
@@ -44,22 +44,22 @@ Cache::refill(spc<u8>)
 	s<Span> = this.alloc[spc]
 
 	if s.allocCount != s.nelems {
-		os.die("refill of span with free space remaining\n" )
+		dief("refill of span with free space remaining\n".(i8))
 	}
 	if s != &emptyspan {
 		if s.sweepgen != heap_.sweepgen + 3 {
-			os.die("bad sweepgen in refill\n")
+			dief("bad sweepgen in refill\n".(i8))
 		}
 		atomic.store32(&s.sweepgen,heap_.sweepgen)
 	}
 
 	s = heap_.centrals[spc].cacheSpan()
 	if s == null {
-		os.die("out of memory")
+		dief("out of memory".(i8))
 	}
 
 	if s.allocCount == s.nelems {
-		os.die("span has no free space")
+		dief("span has no free space".(i8))
 	}
 
 	s.sweepgen = heap_.sweepgen +  3

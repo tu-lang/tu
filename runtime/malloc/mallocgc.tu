@@ -19,10 +19,10 @@ func mallocgc(size<u64> , noscan<u8> , needzero<u8>)
 
 	mp<sys.Core> = acquirem()
 	if( mp.mallocing != 0 ){ 
-		os.die("malloc deadlock")
+		dief("malloc deadlock".(i8))
 	}
 	if( mp.gsignal == getg() ){
-		os.die("malloc during signal")
+		dief("malloc during signal".(i8))
 	}
 	mp.mallocing = 1
 	shouldhelpgc<u8> = false

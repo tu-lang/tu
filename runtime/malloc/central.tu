@@ -84,7 +84,7 @@ havespan:
 
 	n<i32> = s.nelems - s.allocCount
 	if n == 0 || s.freeindex == s.nelems || s.allocCount == s.nelems {
-		os.die("span has no free objects")
+		dief("span has no free objects".(i8))
 	}
 	atomic.xadd64(&this.nmalloc, n)
 	usedBytes<u64> = s.allocCount * s.elemsize
@@ -128,13 +128,13 @@ Central::freeSpan(s<Span> , preserve<u8> , wasempty<u8>)
 	sg<u32> = heap_.sweepgen
 
 	if  s.sweepgen == sg + 1 || s.sweepgen == sg + 3 {
-		os.die("freeSpan given cached span")
+		dief("freeSpan given cached span".(i8))
 	}
 	s.needzero = 1
 
 	if preserve {
 		if s.list == null {
-			os.die("can't preserve unlinked span")
+			dief("can't preserve unlinked span".(i8))
 		}
 		atomic.store(&s.sweepgen,heap_.sweepgen)
 		return 0.(i8)
@@ -162,7 +162,7 @@ Central::freeSpan(s<Span> , preserve<u8> , wasempty<u8>)
 Central::uncacheSpan(s<Span>)
 {
 	if s.allocCount == 0 {
-		os.die("uncaching span but s.allocCount == 0")
+		dief("uncaching span but s.allocCount == 0".(i8))
 	}
 
 	sg<u32>  = heap_.sweepgen

@@ -1,3 +1,7 @@
+use fmt
+use os
+use std
+
 arenaBaseOffset<u64> =  140737488355328
 heapArenaBytes<i64>  =  67108864
 
@@ -43,8 +47,14 @@ _GCoff<i64>  =  1
 _GCmark<i64> =  2                  
 _GCmarktermination<i64> =  3
 ARRAY_SIZE<i64> =  8
+STDOUT<i64> = 1
 
 g_<sys.Coroutine>
 func acquirem(){return g_.m}
 func releasem(m<Core>){}
 func getg(){ return g_ }
+
+func dief(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+	std.die(-1.(i8))
+}

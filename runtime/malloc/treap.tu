@@ -49,8 +49,7 @@ func rotateLeft(root<Treap>,x<TreapNode>)
 		p.left = y
 	} else {
 		if ( p.right != x ){
-			fmt.printf("large span treap rotateLeft")
-			os.die(" die")
+			dief(" large span treap roateleft".(i8))
 		}
 		p.right = y
 	}
@@ -91,7 +90,7 @@ func rotateRight(root<Treap>,y<TreapNode>)
 		p.left = x
 	} else {
 		if ( p.right != y ){
-		    os.die("large span treap rotateRight")
+		    dief("large span treap rotateRight".(i8))
 		}
 		p.right = x
 	}
@@ -103,8 +102,7 @@ Treap::find(npages<u64>){
 	while(t != null)
 	{
 		if(t.spankey == null){
-			fmt.printf("treap node with null SpanKey found")
-			os.die(" die")
+			dief(" treap node with null spankey found".(i8))
 		}
 		if( t.npagesKey >= npages ){
 			best = t
@@ -119,7 +117,7 @@ Treap::find(npages<u64>){
 Treap::removeNode(t<TreapNode>){
 
 	if(t.spankey.npages != t.npagesKey ){
-		os.die("span and treap node npages do not match\n")
+		dief("span and treap node npages do not match\n".(i8))
 	}
 	while(t.right != null || t.left != null ) {
 		if ( t.right == null || t.left != null &&  t.left.priority < t.right.priority ) {
@@ -175,7 +173,7 @@ Treap::insert(s<Span>)
 		} else if ( t.spankey.startaddr > s.startaddr ){
 			pt = &t.left
 		} else {
-			os.die("inserting span already in treap\n")
+			dief("inserting span already in treap\n".(i8))
 		}
 	}
 
@@ -187,17 +185,16 @@ Treap::insert(s<Span>)
 	*pt           = t 
 	while( t.parent != null && t.parent.priority > t.priority ) {
 		if ( t != null && t.spankey.npages != t.npagesKey ) {
-			fmt.printf("runtime: insert t=%p t.npagesKey=%ld\n",t, t.npagesKey)
-			fmt.printf("runtime:      t.spankey=%ld t.spankey.npages=%ld\n",t.spankey, t.spankey.npages)
-			fmt.printf("span and treap sizes do not match?")
-			os.die(" die")
+			// fmt.printf("runtime: insert t=%p t.npagesKey=%ld\n",t, t.npagesKey)
+			// fmt.printf("runtime:      t.spankey=%ld t.spankey.npages=%ld\n",t.spankey, t.spankey.npages)
+			// fmt.printf("span and treap sizes do not match?")
+			dief(" span and treap sizes die".(i8))
 		}
 		if ( t.parent.left == t ) {
 			rotateRight(this,t.parent)
 		} else {
 			if (t.parent.right != t ) {
-				fmt.printf("treap insert finds a broken treap")
-				os.die(" die")
+				dief(" treap insert finds a broken treap".(i8))
 			}
 			rotateLeft(this,t.parent)
 		}
@@ -226,7 +223,7 @@ TreapNode::pred()
     }
     while( t.parent != null && t.parent.right != t ){
         if (t.parent.left != t ) {
-            os.die("node is not its parent's child")
+            dief("node is not its parent's child".(i8))
         }
         t = t.parent
     }

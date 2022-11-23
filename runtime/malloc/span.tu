@@ -124,7 +124,7 @@ Span::nextFreeIndex()
 		return sfreeindex
 	}
 	if( sfreeindex > snelems ){
-		os.die("this.freeindex > this.nelems")
+		dief("this.freeindex > this.nelems".(i8))
 	}
 
 	aCache<u64> = this.allocCache
@@ -160,7 +160,7 @@ Span::nextFreeIndex()
 Spanlist::remove(s<Span>)
 {
 	if ( s.list != this ) {
-		os.die("mSpanList.remove")
+		dief("mSpanList.remove".(i8))
 	}
 	if ( this.first == s ) {
 		this.first = s.next
@@ -180,7 +180,7 @@ Spanlist::remove(s<Span>)
 Spanlist::insertback(s<Span>)
 {
 	if ( s.next != null || s.prev != null || s.list != null ){
-		os.die("mSpanList.insertBack")
+		dief("mSpanList.insertBack".(i8))
 	}
 	s.prev = this.last
 	if ( this.last != null ){
@@ -195,9 +195,9 @@ Spanlist::insertback(s<Span>)
 Spanlist::insert(s<Span>)
 {
 	if(s.startaddr == 0)
-		os.die("s is unalloced!")
+		dief("s is unalloced!".(i8))
 	if (s.next != null || s.prev != null || s.list != null){
-		os.die("mSpanList.insert")
+		dief("mSpanList.insert".(i8))
 	}
 	s.next = this.first
 	if ( this.first != null ){

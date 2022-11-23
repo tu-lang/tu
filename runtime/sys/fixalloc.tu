@@ -52,7 +52,7 @@ Fixalloc::alloc()
 {
     v<u64> = null
     if this.size == 0 {
-        os.die("runtime: use of  fixalloc before fixalloc init")
+        dief("runtime: use of  fixalloc before fixalloc init".(i8))
     }
     
     if this.list != null {

@@ -36,7 +36,7 @@ func mallocinit()
 func largeAlloc(size<u64>, needzero<u8> , noscan<u8>)
 {
 	if size + sys.pageSize < size {
-		os.die("out of memory\n")
+		dief("out of memory\n".(i8))
 	}
 	npages<u64> = 0
 	s<Span> = null
@@ -47,12 +47,12 @@ func largeAlloc(size<u64>, needzero<u8> , noscan<u8>)
 	}
 	s = heap_.alloc(npages, makeSpanClass(0.(i8),noscan), 1.(i8), needzero)
 	if( s == null ){
-		os.die("out of memory\n")
+		dief("out of memory\n".(i8))
 	}
 	s.limit = s.startaddr + size
 	h<HeapBits:> = null
 	if h.heapBitsForAddr(s.startaddr) == null {
-		os.die("heapBitsForAddr is null")
+		dief("heapBitsForAddr is null".(i8))
 	}
 	h.initSpan(s)
 	return s

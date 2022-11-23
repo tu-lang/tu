@@ -119,14 +119,14 @@ Heap::allocSpanLocked(npage<u64>)
     if ( s != null ) {
         goto haveSpan
     }
-    os.die("grew heap, but no adequate free span found")
+    dief("grew heap, but no adequate free span found".(i8))
 
 haveSpan:
     if (s.state != mSpanFree ) {
-        os.die("candidate Mspan for allocation is not free")
+        dief("candidate Mspan for allocation is not free".(i8))
     }
     if (s.npages < npage ) {
-        os.die("candidate Mspan for allocation is too small")
+        dief("candidate Mspan for allocation is too small".(i8))
     }
     if (s.npages > npage ) {
         t = this.spanalloc.alloc()
@@ -159,7 +159,7 @@ haveSpan:
     heap_.setSpan(s.startaddr,s)
 
     if (s.list != null)
-        os.die("still in list")
+        dief("still in list".(i8))
     return s
 }
 
@@ -207,12 +207,12 @@ Heap::freeSpanLocked(s<Span>,acctinuse<u8>,acctidle<u8>,unusedsince<i64>)
 	match s.state {
 	    mSpanManual:{
 		    if ( s.allocCount != 0 ) {
-			    os.die("mheap.freeSpanLocked - invalid stack free")
+			    dief("mheap.freeSpanLocked - invalid stack free".(i8))
 		    }
         }
 	    mSpanInUse:{
 		    if ( s.allocCount != 0 || s.sweepgen != this.sweepgen ) {
-			    os.die("mheap.freeSpanLocked - invalid free")
+			    dief("mheap.freeSpanLocked - invalid free".(i8))
 		    }
 		    this.pagesInuse -= (s.npages)
 
@@ -222,7 +222,7 @@ Heap::freeSpanLocked(s<Span>,acctinuse<u8>,acctidle<u8>,unusedsince<i64>)
 		    arena.pageInuse[pageIdx] = arena.pageInuse[pageIdx] &~ pageMask
         }
 	    _:{
-		    os.die("mheap.freeSpanLocked - invalid span state")
+		    dief("mheap.freeSpanLocked - invalid span state".(i8))
         }
 	}
 

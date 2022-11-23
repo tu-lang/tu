@@ -43,7 +43,7 @@ func bitarena_newArenaMayUnlock()
 		gbArenas.locks.unlock()
 		result = sys.alloc(gcBitsChunkBytes)
 		if result == null  {
-			os.die("runtime: cannot allocate memory")
+			dief("runtime: cannot allocate memory".(i8))
 		}
 		gbArenas.locks.lock()
 	} else {
