@@ -2,7 +2,7 @@ use std
 use std.atomic
 use os
 use fmt
-use sys
+use runtime.sys
 
 mem Heap {
     sys.Mutex       locks

@@ -1,6 +1,6 @@
 use std
 use os
-use sys
+use runtime.sys
 
 mem ArenaHint {
     u64        addr

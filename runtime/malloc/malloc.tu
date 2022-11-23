@@ -1,5 +1,5 @@
 use std
-use sys
+use runtime.sys
 use os
 
 physPageSize<u64> = 0
@@ -10,6 +10,11 @@ g0<sys.Coroutine:>
 
 func mallocinit()
 {
+	sys.ncpu = 4
+	sys.physPageSize = 4096
+	sys.gcphase = _GCoff
+	sys.gcBlackenEnabled = false
+
 	heap_.init()
 
 	g_ = &g0
@@ -30,6 +35,9 @@ func mallocinit()
 		hint.next = heap_.arenaHints
 		heap_.arenaHints = hint
 	}
+
+	sys.allm[0] = g_.m
+	while(sys.gcphase != _GCoff){}
 
 }
 

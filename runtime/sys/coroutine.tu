@@ -1,4 +1,4 @@
-use malloc
+use runtime.malloc
 use std
 
 mem Stack {

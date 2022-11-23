@@ -1,6 +1,6 @@
 use std
 use os
-use malloc
+use runtime.malloc
 
 gcBlackenEnabled<u32> = 0
 gcphase<u32> = 0

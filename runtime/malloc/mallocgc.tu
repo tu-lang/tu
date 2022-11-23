@@ -1,8 +1,8 @@
 use std
 use os
-use sys
+use runtime.sys
 
-func mallocgc(size<u64> , noscan<u8> , needzero<u8>)
+func malloc(size<u64> , noscan<u8> , needzero<u8>)
 {
 	if( sys.gcphase != _GCoff){
 	}

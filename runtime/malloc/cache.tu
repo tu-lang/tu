@@ -1,7 +1,7 @@
 use std
 use std.atomic
 use os
-use sys
+use runtime.sys
 
 mem Cache {
     u64    local_scan , tiny , tinyoffset , local_tinyallocs

@@ -1,7 +1,7 @@
 use std
 use os
 use std.atomic
-use sys
+use runtime.sys
 
 gcBitsChunkBytes<u64>  = 65536
 gcBitsHeaderBytes<u64> = 16

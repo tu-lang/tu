@@ -1,6 +1,7 @@
 use fmt
 use os
 use std
+use runtime.sys
 
 arenaBaseOffset<u64> =  140737488355328
 heapArenaBytes<i64>  =  67108864

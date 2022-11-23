@@ -1,7 +1,7 @@
 use std
 use std.atomic
 use os
-use sys
+use runtime.sys
 
 Heap::sysAlloc(n<u64> , ssize<u64*>)
 {

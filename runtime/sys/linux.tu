@@ -1,7 +1,7 @@
 use std
 use std.atomic
 use os
-use malloc
+use runtime.malloc
 
 func fixalloc(size<u64> , align<u64>)
 {

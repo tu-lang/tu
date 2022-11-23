@@ -1,6 +1,6 @@
 use std
 use os
-use sys
+use runtime.sys
 
 func coalesce_merge(s<Span> , other<Span>,needsScavenge<u8*>,prescavenged<u64*>)
 {

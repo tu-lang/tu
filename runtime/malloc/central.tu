@@ -2,7 +2,7 @@ use std
 use std.atomic
 use string
 use os
-use sys
+use runtime.sys
 
 mem Central {
     sys.Mutex*  locks

@@ -1,6 +1,6 @@
 use std
 use std.atomic
-use sys
+use runtime.sys
 use os
 
 oneBitCount<u8:256> = [

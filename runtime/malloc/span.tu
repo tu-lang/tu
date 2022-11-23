@@ -1,5 +1,5 @@
 use std
-use sys
+use runtime.sys
 use os
 
 mem Span {

@@ -1,5 +1,5 @@
 use std
-use sys
+use runtime.sys
 
 mem Spanlist {
     Span* first
