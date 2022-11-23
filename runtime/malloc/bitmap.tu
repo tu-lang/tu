@@ -107,9 +107,8 @@ HeapBits::forward(n<u64>)
 	this.arena += 1 + (past / heapArenaBitmapBytes)
 	ai<u32> = this.arena
 	ae<u64*> = heap_.arenas[arena_l1(ai)]
-	a<u64*> = ae[arena_l2(ai)]
-	if	ae != null && *a != null {
-		p<HeapArena> = *a
+	if	ae != null && ae[arena_l2(ai)] != null {
+		p<HeapArena> = ae[arena_l2(ai)]
         this.bitp = &p.bitmap[past % heapArenaBitmapBytes]
 		this.last = &p.bitmap[heapArenaBitmapBytes - 1]
 	} else {
