@@ -34,11 +34,11 @@ func mallocgc(size<u64> , noscan<u8> , needzero<u8>)
 		if( noscan && size < maxTinySize ){
 			off<u64> = c.tinyoffset
 			if( size&7 == 0 ) {
-				off = sys.round(off, 8)
+				off = sys.round(off, 8.(i8))
 			} else if( size&3 == 0 ){
-				off = sys.round(off, 4)
+				off = sys.round(off, 4.(i8))
 			} else if( size&1 == 0 ){
-				off = sys.round(off, 2)
+				off = sys.round(off, 2.(i8))
 			}
 			if( off+size <= maxTinySize && c.tiny != 0 ){
 				x = (c.tiny + off)
@@ -79,7 +79,7 @@ func mallocgc(size<u64> , noscan<u8> , needzero<u8>)
 			}
 			x = v
 			if( needzero && s.needzero != 0 ){
-				std.memset(v,0,size)
+				std.memset(v,0.(i8),size)
 			}
 		}
 	} else {

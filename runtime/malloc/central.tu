@@ -92,7 +92,8 @@ havespan:
 		// heap_live changed.
 		//		gcController.revise()
 	}
-	freeByteBase<u64> = s.freeindex &~ 63
+	_t<i64> = 63
+	freeByteBase<u64> = s.freeindex &~ _t
 	whichByte<u64>    = freeByteBase / 8
 	s.refillAllocCache(whichByte)
 
@@ -116,9 +117,7 @@ Central::grow()
 	p<u64> = s.startaddr
 	s.limit = p + size * n
 	h<HeapBits:> = null
-	if h.heapBitsForAddr(s.startaddr) == null {
-		fmt.println("heapBitsForAddr is null")
-	}
+	h.heapBitsForAddr(s.startaddr)
 	h.initSpan(s)
 	return s
 }

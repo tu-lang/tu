@@ -54,6 +54,10 @@ func acquirem(){return g_.m}
 func releasem(m<Core>){}
 func getg(){ return g_ }
 
+func debug(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+}
+
 func dief(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
 	std.die(-1.(i8))

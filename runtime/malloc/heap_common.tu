@@ -91,7 +91,7 @@ Heap::spanOf(p<u64>)
 	}
 	l2<u64*> = heap_.arenas[arena_l1(ri)]
 	if arenaL1Bits != 0 && l2 == null  { 
-		fmt.println("span not exist!")
+		debug("span not exist!".(i8))
 		return 0.(i8)
 	}
 	pha<HeapArena> = l2[arena_l2(ri)]

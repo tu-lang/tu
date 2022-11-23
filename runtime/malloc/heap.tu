@@ -185,7 +185,7 @@ Heap::grow(npage<u64>)
     size<u64> = 0
     v = this.sysAlloc(ask,&size)
     if ( v == 0) {
-        fmt.printf("runtime: out of memory: cannot allocate %ld -u8 block (%ld in use)\n",ask,0)
+        debug("runtime: out of memory: cannot allocate %d -u8 block (%d in use)\n".(i8),ask,0.(i8))
         return 0.(i8)
     }
 
@@ -197,7 +197,7 @@ Heap::grow(npage<u64>)
     s.sweepgen = this.sweepgen
     s.state = mSpanInUse
     this.pagesInuse += s.npages
-    heap_.freeSpanLocked(s,0.(i8),1.(i8),0)
+    heap_.freeSpanLocked(s,0.(i8),1.(i8),0.(i8))
     return 1.(i8)
 }
 

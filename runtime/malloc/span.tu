@@ -129,8 +129,9 @@ Span::nextFreeIndex()
 
 	aCache<u64> = this.allocCache
 	bitIndex<i32>  = sys.ctz64(aCache)
+	_t<i32> = 63
 	while( bitIndex == 64 ){
-		sfreeindex = (sfreeindex + 64) &~ 63
+		sfreeindex = (sfreeindex + 64) &~ _t
 		if( sfreeindex >= snelems ){
 			this.freeindex = snelems
 			return snelems

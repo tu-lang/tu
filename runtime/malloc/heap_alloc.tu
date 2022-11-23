@@ -46,7 +46,7 @@ Heap::sysAlloc(n<u64> , ssize<u64*>)
 		v<u64*> = 0
 		size<u64> = n
 
-		v = sys.reserveAligned(null,&size,heapArenaBytes)
+		v = sys.reserveAligned(0.(i8),&size,heapArenaBytes)
 		if( v == null ){
 			*ssize = 0
 			return 0.(i8)

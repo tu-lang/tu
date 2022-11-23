@@ -51,9 +51,7 @@ func largeAlloc(size<u64>, needzero<u8> , noscan<u8>)
 	}
 	s.limit = s.startaddr + size
 	h<HeapBits:> = null
-	if h.heapBitsForAddr(s.startaddr) == null {
-		dief("heapBitsForAddr is null".(i8))
-	}
+	h.heapBitsForAddr(s.startaddr)
 	h.initSpan(s)
 	return s
 }
