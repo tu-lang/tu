@@ -4,8 +4,6 @@ use fmt
 use std
 func test_runtimemalloc()
 {
-	malloc.mallocinit()//初始化主线程
-	
 	fmt.println("test runtime multi thread malloc start")
 	maxsize<i32> = 100
 	//测试分配的个数

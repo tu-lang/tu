@@ -2,6 +2,7 @@
     .global main
 main:
 	call std_initmalloc
+	call runtime_malloc_mallocinit
 	call runtime_gc_gc_init
     mov (%rsp),%rdi
     lea 16(%rsp),%rsi
