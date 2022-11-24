@@ -1,8 +1,10 @@
-
-hugmem<u64*>
 use runtime
+use runtime.malloc
 use fmt
 use std
+
+hugmem<u64*>
+enable_runtimemalloc<i64> = 1
 
 func newarena(){
 	arenaobj<Arena> = null
@@ -312,6 +314,9 @@ func free(p<Block>)
 func gc_malloc(nbytes<u64>)
 {
 	// return malloc(nbytes)
+	if enable_runtimemalloc<i64> {
+		return malloc.malloc(nbytes,0.(i8),1.(i8))
+	}
 	return std.malloc(nbytes)
 	hdr<Block> = malloc(nbytes + 8)
 	std.memset(hdr,Null,nbytes+8)
