@@ -152,7 +152,7 @@ func reserveAligned(v<u64> , ssize<u64*> , align<u64>)
 
 	size = *ssize
 	retries<i32> = 0
-retry:
+	
 	p = reserve(v, size + align)
 	if p == 0 {
         return 0.(i8)

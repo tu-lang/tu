@@ -33,7 +33,7 @@ Central::cacheSpan()
 	traceDone<u8> = false
 	sg<u32> = heap_.sweepgen
 	
-retry:
+cachespanretry:
 	s<Span> = null
 	for ( s = this.nonempty.first; s != null; s = s.next ) {
 
@@ -63,7 +63,7 @@ retry:
 				goto havespan
 			}
 			this.locks.lock()
-			goto retry
+			goto cachespanretry
 		}
 		if s.sweepgen == sg - 1 { 
 			continue
