@@ -46,10 +46,12 @@ Seglist::allocAddr(name,base<i32*>,off<i32*>)
 		if  name != ".bss" {
 			//申请数据缓存
 			ss<i32> = seg.sh_size
-			buf<u64*> = new ss
-			obj = this.ownerList[i]
-			obj.getData(buf,seg.sh_offset,seg.sh_size)
-			this.blocks[] = newBlock(buf,size,seg.sh_size)
+			if seg.sh_size != 0 {
+				buf<u64*> = new ss
+				obj = this.ownerList[i]
+				obj.getData(buf,seg.sh_offset,seg.sh_size)
+				this.blocks[] = newBlock(buf,size,seg.sh_size)
+			}
 		}
 		//修改每个文件中对应段的addr
 		seg.sh_addr = *base + size
