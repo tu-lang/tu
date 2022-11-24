@@ -4,8 +4,11 @@ use runtime.sys
 
 func malloc(size<u64> , noscan<u8> , needzero<u8>)
 {
-	if( sys.gcphase != _GCoff){
+	if size == 0 {
+		//only this can use dynamic grammer,cos it's easy to backtrace
+		os.die("malloc size == 0")
 	}
+	if( sys.gcphase != _GCoff){}
 
 	assistG<sys.Coroutine> = null
 	if( sys.gcBlackenEnabled != 0 )
