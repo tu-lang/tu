@@ -36,7 +36,8 @@ mem Heap {
 heap_<Heap:> 
 
 func recordspan(vh<Heap>, p<Span>) {
-    vh.allspans.push(p)
+    //TODO:
+    // vh.allspans.push(p)
 }
 
 Heap::init(){
