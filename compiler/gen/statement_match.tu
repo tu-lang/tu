@@ -48,6 +48,10 @@ MatchStmt::compile(ctx){
     compile.writeln("   jmp %s", this.defaultCase.label)
     
     compile.blockcreate(ctx)
+
+    ctx.back().point = mainPoint
+    ctx.back().end_str = "L.match.end"
+
     for(cs : this.cases){
         cs.compile(ctx)
     }

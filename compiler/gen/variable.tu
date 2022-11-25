@@ -25,6 +25,7 @@ class VarExpr : ast.Ast {
     stack       = false
     stacksize   = 0
     elements    = []
+    sinit       
     
     ret funcpkg funcname
 
@@ -123,13 +124,15 @@ VarExpr::compile(ctx){
         { 
             compile.GenAddr(this.ret)
             //UNSAFE: dyn & native in same expression is unsafe      
-            if this.ret.structtype == True && 
-               this.ret.pointer == False   && 
-               this.ret.type <= ast.U64 && 
-               this.ret.type >= ast.I8    
-                compile.LoadSize(this.ret.size,this.ret.isunsigned)
-            else                                    
-                compile.Load()
+            if !this.ret.stack {
+                if this.ret.structtype == True && 
+                this.ret.pointer == False   && 
+                this.ret.type <= ast.U64 && 
+                this.ret.type >= ast.I8    
+                    compile.LoadSize(this.ret.size,this.ret.isunsigned)
+                else                                    
+                    compile.Load()
+            }
         }
         ast.Var_Func : {  
             fn = this.funcpkg + "_" + this.funcname
@@ -204,6 +207,7 @@ VarExpr::clone(){
     nvar.isunsigned = this.isunsigned
     nvar.stack = this.stack
     nvar.stacksize = this.stacksize
+    nvar.elements  = this.elements
     nvar.tyassert = this.tyassert
     nvar.ret = this.ret
     nvar.funcpkg = this.funcpkg
@@ -211,13 +215,18 @@ VarExpr::clone(){
     return nvar
 }
 
-VarExpr::getStackSize(){
+VarExpr::getStackSize(p){
     if this.stack {
         if this.structname != ""  {
             this.check(this.stacksize != 0)
-            s = package.getStruct(this.structpkg,this.structname) 
-            if s == null  this.panic("static var not exist ")
-            if s.size == 0 this.panic("static var size is 0")
+            acualPkg = p.import[this.structpkg]
+            s = package.getStruct(acualPkg,this.structname)
+            if(s == null) {
+                this.check(false,"static var not exist ")
+            }
+            if(s.size == 0) {
+                this.check(false,"static var size is 0")
+            }
             return s.size * this.stacksize
         }
         if this.stacksize == 0 || this.size == 0 

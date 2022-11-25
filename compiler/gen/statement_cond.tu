@@ -269,6 +269,15 @@ IfStmt::compile(ctx){
     }
 
     for(cs : this.cases){
+        if(exprIsMtype(cs.cond,ctx) && type(cs.cond) != type(gen.BinaryExpr)){
+            be = new gen.BinaryExpr(cs.cond.line,cs.cond.column)
+            be.lhs = cs.cond
+            be.opt = ast.GT
+            i = new gen.IntExpr(cs.cond.line,cs.cond.column)
+            i.literal = "0"
+            be.rhs = i
+            cs.cond = be
+        }
         cs.cond.compile(ctx)
         if !exprIsMtype(cs.cond,ctx)
             internal.isTrue()

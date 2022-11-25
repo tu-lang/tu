@@ -66,6 +66,7 @@ Member::clone(){
 	m.bitwidth = this.bitwidth
 	m.arrsize = this.arrsize
 	m.isarr = this.isarr
+	m.arrvar = this.arrvar
 	m.isstruct = this.isstruct
 	m.structpkg = this.structpkg
 	m.structname = this.structname

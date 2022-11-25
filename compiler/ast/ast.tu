@@ -16,6 +16,23 @@ class Ast {
     }
     func toString() { return "Ast()" }
 }
+func isbase(ty){
+    match ty {
+        I8 | U8 | I16 | U16 | I32 | U32 | I64 | U64 : {
+            return true
+        }
+    }
+    return false
+}
+func typesizestring(ty){
+    match ty {
+        I8  | U8  :  return "byte"
+        I16 | U16 :  return "value"
+        I32 | U32 :  return "long"
+        I64 | U64 :  return "quad"
+        _ :          return "byte"
+    }    
+}
 
 Ast::record(){
     cfunc = compile.currentFunc
@@ -38,11 +55,11 @@ Ast::check( check , err)
     if err != "" {
         fmt.println("AsmError:%s \n"
                 "line:%d column:%d file:%s\n\n"
-                "expression:\n%s\n",err,this.line,this.column,cfunc.parser.filepath,this.toString())
+                "expression:\n%s\n",err,this.line,this.column,GP().filepath,this.toString())
     }else{
         fmt.println("AsmError:\n"
                 "line:%d column:%d file:%s\n\n"
-                "expression:\n%s\n",this.line,this.column,cfunc.parser.filepath,this.toString())
+                "expression:\n%s\n",this.line,this.column,GP().parser.filepath,this.toString())
     }
     os.exit(-1)
 }

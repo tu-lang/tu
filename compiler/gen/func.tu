@@ -15,8 +15,6 @@ class ClosureExpr : ast.Ast {
 	func toString() { return "ClosureExpr(" + this.varname + ")" }
 }
 
-
-
 ClosureExpr::compile(ctx){
 	compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", this.varname)
 	return null
@@ -113,6 +111,27 @@ class FunCallExpr : ast.Ast {
 		super.init(line,column)
 	}
 }
+FunCallExpr::checkFirstThis(ctx,var){
+    if(std.len(this.args) == 0){
+		this.args[] = var
+        return null
+    }
+    first = this.args[0]
+	argsv = [var]
+
+    if(type(first) == type(VarExpr)){
+		fe = first
+        if(fe.varname != var.varname){
+			std.merge(argsv,this.args)
+            this.args  = argsv
+        }
+    }else{
+		std.merge(argsv,this.args)
+        this.args  = argsv
+    }
+
+    return null
+}
 FunCallExpr::compile(ctx)
 {
 	this.record()
@@ -156,6 +175,7 @@ FunCallExpr::compile(ctx)
 			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)
 			fn = s.getFunc(this.funcname)
 			if(fn == null) this.panic("func not exist")
+			this.checkFirstThis(ctx,var)
 			funcexec(ctx,fn,this)
 			return null
 		}else if this.tyassert != null {

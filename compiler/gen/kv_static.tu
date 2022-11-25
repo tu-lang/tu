@@ -7,10 +7,7 @@ use parser.package
 use string
  
 IndexExpr::compileStaticIndex(ctx,size){
-	match size {
-		1 | 2 | 4 | 8 : utils.debug("IndexExpr::compileStaticIndex() compile static index")
-		_ : this.check(false,"left var is not valid size")
-	}
+
 	if this.index == null this.check(false,"static var index is null")
 	if type(this.index) == type(IntExpr) {
 		i = this.index
@@ -80,7 +77,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 sm.var    = var.ret
 			 sm.compile(ctx)
 			 me = sm.ret
-			 if me.pointer
+			 if me.pointer && !me.arr
 				 compile.LoadMember(me)
 			 compile.Push() 
 			 if !me.pointer && !me.isarr this.check(false,"must be pointer member or arr")
@@ -88,7 +85,16 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 this.compileStaticIndex(ctx,me.size)
 			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
 			 compile.Pop("%rax")
-			 compile.LoadSize(me.size,me.isunsigned)
+			 ss = me.size
+			 if (me.size > 8){
+				 if(me.structname == "" || me.pointer) {
+					 this.check(false,"only struct arr can size > 8")
+				 }
+				 this.ret = me
+				 break
+			 }
+			 compile.LoadSize(ss,me.isunsigned)
+			 this.ret = me
 		 }
 		 _ : this.check(false,"array_static inex: unuspport dynamic var")
 	 }
@@ -108,10 +114,21 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 compile.Push()
 			 this.compileStaticIndex(ctx,var.ret.size)
 			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
-			 oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
+			 if(opt == ast.ASSIGN){
+				oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
+			    oh.genRight(false,rhs)
+			    compile.Cast(rhs.getType(ctx),var.ret.type)
+			    compile.Store(var.ret.size)
+                break
+            }
+            compile.writeln("\tmov (%%rsp) , %%rax")
+			compile.LoadSize(var.ret.size,var.ret.isunsigned)
+            compile.Push()
+
+			 oh = new OperatorHelper(ctx,this,rhs,ast.ASSIGN)
+			 oh.initcond(true,var.ret.size,var.ret.type,var.ret.pointer)
 			 oh.genRight(false,rhs)
-			 compile.Cast(rhs.getType(ctx),var.ret.type)
-			 compile.Store(var.ret.size)
+			 oh.assign()
 		 }
 		 ast.Var_Global_Local_Static_Field | ast.Var_Local_Static_Field:{ 
 			 sm = new StructMemberExpr(var.package,this.line,this.column)
@@ -119,17 +136,29 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 sm.var    = var.ret
 			 sm.compile(ctx) 
 			 me = sm.ret
-			 if me.pointer
+			 if me.pointer && !me.isarr
 				 compile.LoadMember(me)
 			 compile.Push() 
 			 if !me.pointer && !me.isarr this.check(false,"must be pointer member")
  
 			 this.compileStaticIndex(ctx,me.size)
 			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
-			 oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
+			 if(opt == ast.ASSIGN){
+				oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
+                oh.genRight(false,rhs)
+                compile.Cast(rhs.getType(ctx),me.type)
+                compile.Store(me.size)
+                return sm
+            }
+            compile.writeln("\tmov (%%rsp) , %%rax")
+			compile.LoadSize(me.size,me.isunsigned)
+            compile.Push()
+
+			 oh = new OperatorHelper(ctx,this,rhs,ast.ASSIGN)
+			 oh.initcond(true,me.size,me.type,me.pointer)
+
 			 oh.genRight(false,rhs)
-			 compile.Cast(rhs.getType(ctx),me.type) 
-			 compile.Store(me.size)
+			 oh.assign()
 			 return sm
 		 }
 		 _ : this.check(false,"array_static inex: unuspport dynamic var")

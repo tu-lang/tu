@@ -171,7 +171,7 @@ Parser::ischain(){
 Parser::isassign(){
     match this.scanner.curToken {
         ast.ASSIGN | ast.ADD_ASSIGN | ast.SUB_ASSIGN | ast.MUL_ASSIGN |
-        ast.DIV_ASSIGN | ast.MOD_ASSIGN | ast.BITAND_ASSIGN | ast.BITOR_ASSIGN | 
+        ast.DIV_ASSIGN | ast.BITXOR_ASSIGN | ast.MOD_ASSIGN | ast.BITAND_ASSIGN | ast.BITOR_ASSIGN | 
         ast.SHL_ASSIGN | ast.SHR_ASSIGN : {
             return True
         }
@@ -180,7 +180,7 @@ Parser::isassign(){
 }
 Parser::isbinary(){
     match this.scanner.curToken {
-        ast.SHL | ast.SHR | ast.BITOR | ast.BITAND | ast.BITNOT | ast.LOGOR |  
+        ast.SHL | ast.SHR | ast.BITOR | ast.BITXOR | ast.BITAND | ast.BITNOT | ast.LOGOR |  
         ast.LOGAND | ast.LOGNOT | ast.EQ | ast.NE | ast.GT | ast.GE | ast.LT |
         ast.LE | ast.ADD | ast.SUB | ast.MOD | ast.MUL | ast.DIV : {
             return True

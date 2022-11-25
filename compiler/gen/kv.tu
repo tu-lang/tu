@@ -38,8 +38,9 @@ class IndexExpr : ast.Ast {
     index
     is_pkgcall
     package
-
     tyassert
+    
+    ret
     func init(line,column){
         super.init(line,column)
     }
@@ -98,7 +99,8 @@ IndexExpr::compile(ctx) {
             compile.Push()
         }
         ast.Var_Global_Extern_Static | ast.Var_Local_Static | ast.Var_Local_Static_Field | ast.Var_Global_Local_Static_Field :{
-            return this.compile_static(ctx) 
+            this.compile_static(ctx) 
+            return this
         }
         ast.Var_Func : {
             this.panic("meme type can't used in indexpr :%s",this.toString(""))

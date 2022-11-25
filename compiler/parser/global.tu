@@ -158,15 +158,30 @@ Parser::parseGlobalAssign()
                             this.check(false,"arr.size != stacksize")
                         }
                         for i : arr {
-                            if type(i) != type(gen.IntExpr) {
+                            if(type(i) == type(gen.IntExpr)){
+                                ie = i
+                                var.elements[] = ie.literal
+                            }else if(type(i) == type(gen.MapExpr)){
+                                me = i
+                                for(ii : me.literal){
+                                    ii.check(type(ii) == type(gen.IntExpr),"must be int expr in k expr")
+                                    var.elements[] = ii.literal
+                                }
+                            }else{                            
                                 i.check(false,"all arr elments should be intexpr")
                             }
-                            ie = i
-                            var.elements[] = ie.literal
                         }
                         needinit = false
                     }
                 }
+                type(gen.NewStructExpr) : {
+                    nse = ae.rhs
+                    if(var.stack){
+                        var.sinit = nse
+                        needinit = false
+                    }
+                }
+        
             }
         }
         type(gen.VarExpr) : {

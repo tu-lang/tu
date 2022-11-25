@@ -121,7 +121,7 @@ func assign_offsets(fn)
         bottom = 48
     }
     for(var : fn.locals){
-        bottom += var.getStackSize()
+        bottom += var.getStackSize(currentParser)
         bottom = utils.ALIGN_UP(bottom, 8)
         var.offset = 0 - bottom
     }

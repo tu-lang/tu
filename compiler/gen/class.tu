@@ -22,6 +22,22 @@ NewClassExpr::toString(){
     str += ")"
     return str
 }
+NewClassExpr::getReal(){
+	s = null
+    if(this.package != ""){
+		realPkg = GP().import[this.package]
+		pkg = package.packages[realPkg]
+        if(pkg){
+            s = pkg.getClass(this.name)
+        }
+    }else{
+        s = GP().pkg.getClass(this.name)
+    }
+    if(!s){
+        this.check(false,"AsmError: class is not define of " + this.name)
+    }
+    return s
+}
 
 NewClassExpr::compile(ctx)
 {
@@ -180,7 +196,7 @@ MemberCallExpr::static_compile(ctx,s){
 	p = s.parser
 	cls = package.packages[p.getpkgname()].getClass(s.name)
     fn = cls.getFunc(this.membername)
-    if fn == null this.panic("func not exist:" + this.membername)
+    if fn == null this.check(false,"func not exist:" + this.membername)
     compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn.fullname())
     compile.Push()
 	call = this.call

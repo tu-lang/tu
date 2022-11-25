@@ -10,10 +10,11 @@ package.Package::genStruct(s)
 	bits = 0
 	align = 1
 
-	compile.currentParser = s.parser
+	// compile.currentParser = s.parser
+	p  = s.parser
 	
 	for(m : s.member){
-    
+		compile.currentParser = p
 		if m.isstruct {
 			ps = s.parser # Parser
 			compile.currentParser  = ps
@@ -36,7 +37,7 @@ package.Package::genStruct(s)
 			else                   m.size = dst.size
 			
 			m.structref = dst
-			compile.currentParser = null
+			compile.currentParser = p
 		}
 
     

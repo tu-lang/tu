@@ -122,6 +122,14 @@ DelRefExpr::getType(ctx){
 IndexExpr::getType(ctx){
 	var = new VarExpr(this.varname,this.line,this.column)
     var.package = this.package
+	match var.getVarType(ctx) {
+		ast.Var_Global_Local_Static_Field | ast.Var_Local_Static_Field: {
+			sm = new StructMemberExpr(var.package,this.line,this.column)
+			sm.member = var.varname
+			sm.var    = var.ret
+			return sm.getMember().type
+		}
+	}
 	return var.getType(ctx)
 }
 NewStructExpr::getType(ctx){

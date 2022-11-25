@@ -21,7 +21,8 @@ BinaryExpr::expr_compile(){
 		ast.SUB:   return left - right
 		ast.MUL:   return left * right
 		ast.DIV:   return left / right
-		_:    this.check(false,"only support +-*/ in expr_compile")
+		ast.SHL:   return left << right
+		_:    this.check(false,"only support +-*/<< in expr_compile")
 	}
 }
 VarExpr::expr_compile(){

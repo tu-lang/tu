@@ -296,6 +296,14 @@ Scanner::get_next() {
         }
         return this.token(ast.ADD        ,"+")
     }
+    if(c == '^'){
+        cn = this.peek()
+        if(cn == '='){
+            c = this.next()
+            return this.token(ast.BITXOR_ASSIGN,"^=")
+        }
+        return this.token(ast.BITXOR        ,"^")
+    }
     if c == '-'{
         cn = this.peek()
         if cn == '='{
@@ -411,7 +419,7 @@ Scanner::priority(op)
         ast.LOGAND:  return 2
         ast.EQ|ast.NE|ast.GT|ast.GE|ast.LT|ast.LE :        
                      return 3
-        ast.ADD|ast.SUB|ast.BITOR :
+        ast.ADD|ast.SUB|ast.BITOR | ast.BITXOR:
                      return 4
         ast.MUL|ast.MOD|ast.DIV|ast.BITAND|ast.SHL|ast.SHR : 
                      return 5

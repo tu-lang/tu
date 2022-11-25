@@ -7,11 +7,21 @@ use utils
 
 ChainExpr::indexgen(ctx)
 {
-	this.first.compile(ctx)
-	s = this.first
-	member = s.getMember()
-	this.check(member.isstruct,"field must be mem at chain expression")
-	if member.pointer {
+	member = null
+	if(type(this.first) == type(StructMemberExpr)){
+		this.first.compile(ctx)
+		s = this.first
+		member = s.getMember()
+	}else if(type(this.first) == type(IndexExpr)){
+		ie = this.first
+		ie.compile_static(ctx)
+		member = ie.ret
+	}else{
+		this.check("unsuport first type in chain")
+	}
+	if(!member.isarr)
+		this.check(member.pointer || member.isstruct,"field " + member.name + " must be mem at chain expression in indexgen")
+	if(member.pointer && !member.isarr){
 		compile.Load()
 	}
 	for(i = 0 ; i < std.len(this.fields) ; i += 1 ){

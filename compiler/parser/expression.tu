@@ -23,9 +23,6 @@ Parser::parseChainExpr(first){
     }else if type(first) == type(gen.AddrExpr) {
         ae = first
         
-        var = this.currentFunc.getVar(ae.package)
-        this.check(var != null && var.structtype)
-        
         sm = new gen.StructMemberExpr(ae.package,ae.line,ae.column)
         sm.member = ae.varname
         sm.var    = var
@@ -340,6 +337,17 @@ Parser::parsePrimaryExpr()
             while(this.scanner.curToken != ast.RBRACE) {
                 kv = new gen.KVExpr(this.line,this.column)
                 kv.key    = this.parseExpression()
+
+                if(this.scanner.curToken == ast.RBRACE) {
+                    ret.literal[] = kv.key
+                    break
+                }
+                if(this.scanner.curToken == ast.COMMA){
+                    this.scanner.scan()
+                    ret.literal[] = kv.key
+                    continue
+                }
+
                 this.expect( ast.COLON )
                 this.scanner.scan()
                 kv.value  = this.parseExpression()

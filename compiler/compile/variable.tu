@@ -25,28 +25,52 @@ func registerVars(){
             writeln("    .quad   8")
             continue
         }
-        mt = "byte"
+        mt = ast.typesizestring(v.type)
         value = "0"
         if !std.empty(v.ivalue) value = v.ivalue
-        //TODO: value = v.ivalue == "" ? "0" : v.ivalue
-        match v.type {
-            ast.I8  | ast.U8  :  mt = "byte"
-            ast.I16 | ast.U16 :  mt = "value"
-            ast.I32 | ast.U32 :  mt = "long"
-            ast.I64 | ast.U64 :  mt = "quad"
-            // _ : mt = "quad"
-        }
         if v.pointer mt = "quad"
         
-        if v.stack && v.structname != ""
-            writeln("    .zero   %d",v.getStackSize())
-        else if v.stack {
+        if v.stack && v.structname != "" && v.stacksize == 1{
+            if v.sinit != null {
+                s = package.getStruct(v.sinit.init.pkgname,v.sinit.init.name)
+                InitStructVar(v,s,v.sinit.init.fields)
+            }else
+                writeln("    .zero   %d",v.getStackSize(currentParser))
+        }else if v.stack {
             if std.len(v.elements) != 0 {
-                for  i : v.elements {
-                    writeln("   .%s %s",mt,i)
+                if(v.structname == ""){
+                    for(i : v.elements){
+                        writeln("   .%s %s",mt,i)
+                    }
+                }else{
+                    s = package.getStruct(v.structpkg,v.structname) 
+                    if std.len(s.member) * v.stacksize != std.len(v.elements) {
+                        v.check(false,"mem arr: init element count not right")
+                    }
+                    j = 0
+                    for i = 0 ; i < v.stacksize ; i += 1 {
+                        ws = 0
+                        for m : s.member {
+                            if(ws > m.offset) v.check(false,"ws > m.offset")
+                            if(ws < m.offset){
+                                writeln("   .zero %d",m.offset - ws)
+                                ws = m.offset
+                            }
+                            mtk = m.type
+                            if(m.pointer) mtk = ast.U64
+                            mt = ast.typesizestring(m.type)
+                            writeln("   .%s %s",mt,v.elements[j])
+                            ws += m.size
+                            j += 1
+                        }
+                        if(ws > s.size) v.check(false,"ws > m.size")
+                        if(ws < s.size){
+                            writeln("   .zero %d",s.size - ws)
+                        }
+                    }
                 }
             }else{
-                writeln("    .zero   %d",v.getStackSize())
+                writeln("    .zero   %d",v.getStackSize(currentParser))
             }
         }else
             writeln("    .%s   %s",mt,value)

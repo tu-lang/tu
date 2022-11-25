@@ -55,9 +55,7 @@ StructMemberExpr::getMember()
 
 	m = s.getMember(this.member)
 	if m == null {
-        this.panic("mem.member: mem:%s member:%s not exist"
-			s.name,this.member
-		)
+		this.check(false,"mem.member: mem:" + s.name + " member:" + this.member + " not exist")
 	}
 	return m.clone()
 }
@@ -91,6 +89,17 @@ StructMemberExpr::compile(ctx)
 {
 	this.record()
 	filename = compile.currentParser.filename
+
+	if(this.var == null){
+		this.var = ast.getVar(ctx,this.varname)
+	}
+	if(this.var == null){
+		this.var = GP().getGlobalVar(this.varname,this.member)
+	}
+	if(this.var == null){
+		this.check(false,"this.var is null")
+	}
+
 	
 	m = this.getMember()
 	if m == null {
@@ -99,7 +108,8 @@ StructMemberExpr::compile(ctx)
 		)
 	}
 	compile.GenAddr(this.var)
-	compile.Load()
+	if(!this.var.stack)
+		compile.Load()
 	compile.writeln("	add $%d, %%rax", m.offset)
 	
 	this.ret = m

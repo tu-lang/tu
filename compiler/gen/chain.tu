@@ -1,5 +1,6 @@
 use ast
 use parser
+use parser.package
 use compile
 use std
 use utils
@@ -24,7 +25,10 @@ ChainExpr::toString() {
     return str
 }
 ChainExpr::ismem(ctx) {
-	//TODO: support type keyword
+	if(type(this.first) == type(StructMemberExpr)) return true
+	if(type(this.first) == type(IndexExpr)) {
+		return exprIsMtype(this.first,ctx)
+	}
 	if type(this.first) == type(VarExpr) {
 		varexpr = this.first
 		realVar = varexpr.getVar(ctx)
@@ -47,10 +51,37 @@ ChainExpr::compile(ctx)
 	utils.debug("gen.ChainExpr::compile() ")
 	this.record()
     if type(this.first) == type(StructMemberExpr) return this.memgen(ctx)
+	if(type(this.first) == type(IndexExpr)){
+		if(exprIsMtype(this.first,ctx)) 
+			return this.memgen(ctx)
+	}
 
 	if type(this.first) == type(VarExpr) {
 		varexpr = this.first
 		realVar = varexpr.getVar(ctx)
+		if (varexpr.getVarType(ctx) == ast.Var_Global_Extern_Static){
+		   if std.len(this.fields) > 0 {
+			   mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
+			   mexpr.var = realVar
+			   mexpr.member = this.fields[0].membername
+			   std.pop_head(this.fields)
+			   this.first = mexpr
+			   return this.memgen(ctx)
+		   }else{
+			   if(type(this.last) == type(MemberCallExpr)){
+				   fc = new FunCallExpr(realVar.line,realVar.column)
+				   realVar.compile(ctx)
+				   s = package.getStruct(realVar.package,realVar.structname)
+				   return this.last.static_compile(ctx,s)
+			   }else{
+				   mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
+				   mexpr.var = realVar
+				   mexpr.member = this.last.membername
+				   return mexpr.compile(ctx)
+			   }
+		   }
+		}
+
 		if realVar && !realVar.is_local && realVar.structtype {
 			mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
 			mexpr.var = realVar
@@ -84,9 +115,18 @@ ChainExpr::memgen(ctx)
 	if(type(this.last) == type(IndexExpr)){
 		return this.indexgen(ctx)
 	}
-	this.first.compile(ctx)
-	s = this.first
-	member = s.getMember()
+	member = null
+	if(type(this.first) == type(StructMemberExpr)){
+		this.first.compile(ctx)
+		s = this.first
+		member = s.getMember()
+	}else if(type(this.first) == type(IndexExpr)){
+		ie = this.first
+		ie.compile_static(ctx)
+		member = ie.ret
+	}else{
+		this.check("unsuport first type in chain")
+	}
 	need_check = true
 	lastn = this.last
 	if type(this.last) == type(MemberCallExpr) {
@@ -97,8 +137,8 @@ ChainExpr::memgen(ctx)
 			need_check = false
 	}
 	if need_check
-		this.check(member.isstruct,"field must be mem at chain expression")
-	if member.pointer || !need_check {
+		this.check(member.isstruct,"field must be mem at chain expression in memgen")
+	if (member.pointer || !need_check ) && !member.isarr{
 		compile.Load()
 	}
 	for i : this.fields {

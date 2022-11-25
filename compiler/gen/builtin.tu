@@ -94,6 +94,7 @@ BuiltinFuncExpr::compile(ctx){
 				}
 				if type(ce.last) == type(MemberCallExpr) {
 					tk = ast.U64
+				}else if type(this.expr) == type(AddrExpr){
 				}else{
 					compile.LoadMember(ce.ret)
 					tk = ce.ret.type

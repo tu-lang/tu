@@ -45,97 +45,88 @@ Parser::parseStructDef()
 	idx = 0
 	while(this.scanner.curToken != ast.RBRACE)
 	{
-		tk  = this.scanner.curToken
-		if(tk == ast.VAR){
-			lex = this.scanner.curLex 
-			member = new ast.Member()
-			member.isunsigned = true
-			member.isstruct   = true
-			member.structpkg  = this.pkg.package
-			member.structname = lex
-			member.structref  = null
-			member.arrsize    = 1
-			//debug
-			member.line = this.line
-			member.column = this.column
-			member.file   = this.filepath
-
-			this.scanner.scan()
-			if(this.scanner.curToken == ast.DOT){
-				this.scanner.scan()
-				this.check(this.scanner.curToken == ast.VAR)
-				member.structpkg = member.structname
-				member.structname = this.scanner.curLex
-				this.scanner.scan()
-			}
-			if(this.scanner.curToken == ast.MUL){
-				member.pointer = true
-				this.scanner.scan()
-			}
-			this.check(this.scanner.curToken == ast.VAR)
-			member.name = this.scanner.curLex
-			s.member[] = member
-			this.scanner.scan()
-			continue
-		}
-		this.scanner.scan()
-		pointer = false
-		if(this.scanner.curToken == ast.MUL){
-			pointer = true
-			this.scanner.scan()
-		}
-		member = this.parseMember(tk,idx,pointer)
-		s.member[] = member
-		while(this.scanner.curToken == ast.COMMA){
-			//eat ,
-			this.scanner.scan()
-			member = this.parseMember(tk,idx,pointer)
-			s.member[] = member
-		}
+		if(this.scanner.curToken == ast.VAR){
+			//TODO: &idx
+            this.parseMembers(s,idx,true)
+        }else{
+            if(!this.isbase())
+                this.check(false,"should be i8-u64 type in struct member define")
+            this.parseMembers(s,idx,false)
+        }
 	}
 	// s.compute()
 	this.pkg.addStruct(s.name,s)
 	//eat }
 	this.scanner.scan()
 }
-Parser::parseMember(tk,idx,pointer){
-	this.check(tk >= ast.I8 && tk <= ast.U64)
+Parser::parseMembers(s ,idx ,isstruct){
 	member = new ast.Member()
-	//debug
-	member.line = this.line
-	member.column = this.column
-	member.file  = this.filepath
-	member.isunsigned = ast.type_isunsigned(tk)
-	member.idx    = idx
-	idx += 1
-	member.type = tk
-	member.size = typesize[int(tk)]
-	member.align = typesize[int(tk)]
-	member.arrsize = 1
+	tk = this.scanner.curToken
+    if(isstruct){
+        this.expect(ast.VAR,"expect var token in struct member define")
+        structname = this.scanner.curLex 
+        structpkg  = this.pkg.package
+        this.scanner.scan()
+        if(this.scanner.curToken == ast.DOT){
+            this.scanner.scan()
+            this.check(this.scanner.curToken == ast.VAR)
+            structpkg  = structname
+            structname = this.scanner.curLex
+            this.scanner.scan()
+        }
+        member.structpkg = structpkg
+        member.structname = structname
+        member.isstruct = true
+        member.structref = null
 
-	if pointer {
-		member.align = 8
-		member.pointer = true
-	}
+        tk = ast.U64
+    }else {
+        if(!this.isbase()) this.check(false,"should be base i8-u64 field define")
+        this.scanner.scan()
+    }
+    if(this.scanner.curToken == ast.MUL){
+        member.align = 8
+        member.pointer = true
+        this.scanner.scan()
+    }
+    this.check(tk >= ast.I8 && tk <= ast.U64,"member type only support i8 - u64")
+    member.line = this.line
+    member.column = this.column
+    member.file  = this.filepath
+    member.isunsigned = ast.type_isunsigned(tk)
+    member.type = tk
+    member.size = typesize[int(tk)] 
+    member.align = typesize[int(tk)]
+    member.arrsize = 1    
+    member.arrvar = null
+	loop {
+        field = member.clone()
+        field.idx    = idx 
+		idx += 1
+        this.check(this.scanner.curToken == ast.VAR,"should be var in struct field define")
+        field.name = this.scanner.curLex
 
-	this.check(this.scanner.curToken == ast.VAR)
-	member.name = this.scanner.curLex
-
-	this.scanner.scan()
-	if(this.scanner.curToken == ast.COLON){
-		this.scanner.scan()
-		this.check(this.scanner.curToken == ast.INT)
-		member.bitfield = true
-		member.bitwidth = string.tonumber(this.scanner.curLex)
-		this.scanner.scan()
-	}else if(this.scanner.curToken == ast.LBRACKET){
-		this.scanner.scan()
-		member.isarr   = true
-		member.arrvar = this.parseExpression(1)
-        this.check(this.scanner.curToken == ast.RBRACKET,"should be ] at last struct member arr parse")
-		this.scanner.scan()
-	}
-	return member
+        this.scanner.scan()
+        if(this.scanner.curToken == ast.COLON && !isstruct){
+            this.scanner.scan()
+            this.check(this.scanner.curToken == ast.INT,"should be number in struct field define")
+            field.bitfield = true
+            field.bitwidth = string.tonumber(this.scanner.curLex)
+            this.scanner.scan()
+        }else if(this.scanner.curToken == ast.LBRACKET){ 
+            field.isarr   = true
+            this.scanner.scan()
+            field.arrvar = this.parseExpression(1)
+            this.check(this.scanner.curToken == ast.RBRACKET,"should be ] at last struct member arr parse")
+            this.scanner.scan()
+        }
+        s.member[] = field
+        if(this.scanner.curToken == ast.COMMA){
+            this.scanner.scan()
+            continue
+        }
+        break
+    }
 }
 Parser::parseStructInit(pkgname,name){
 	init = new gen.StructInitExpr(this.line,this.column)

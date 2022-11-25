@@ -89,7 +89,7 @@ DelRefExpr::compile(ctx){
         }
         
         if !var.pointer {
-            this.panic("var must be pointer " + this.expr.toString())
+            this.expr.check(false,"var must be pointer ")
         }
         if var.size != 1 && var.size != 2 && var.size != 4 && var.size != 8{
             this.panic("type must be [i8 - u64]:%s",this.expr.toString())
@@ -147,8 +147,9 @@ AddrExpr::compile(ctx){
             if m != null{
                 
                 compile.GenAddr(var)
-                
-                compile.Load()
+               
+                if(var.structname != "" && var.stack){
+                }else compile.Load()
                 
                 compile.writeln("	add $%d, %%rax", m.offset)
                 
@@ -163,7 +164,9 @@ AddrExpr::compile(ctx){
             }
         }
         
-        this.panic("not support &p.globalvar\n")
+        var = GP().getGlobalVar(this.package,this.varname)
+        compile.GenAddr(var)
+        return this
     }
     var = ast.getVar(ctx,this.varname)
     if var == null

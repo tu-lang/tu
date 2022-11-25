@@ -146,6 +146,12 @@ OperatorHelper::binary()
 		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add %s, %s", this.di, this.ax)
 		ast.SUB_ASSIGN | ast.SUB:	compile.writeln("	sub %s,%s",this.di,this.ax)
 		ast.MUL_ASSIGN | ast.MUL:	compile.writeln("	imul %s,%s",this.di,this.ax)
+		ast.BITXOR_ASSIGN | ast.BITXOR : {
+			if (this.ax == "%eax") 
+				compile.writeln("	xorl %s,%s",this.di,this.ax)
+			else 
+				compile.writeln("	xor %s,%s",this.di,this.ax)
+		}
 		ast.BITAND | ast.BITAND_ASSIGN:	compile.writeln("	and %s,%s",this.di,this.ax)
 		ast.BITOR  | ast.BITOR_ASSIGN:	compile.writeln("	or %s,%s",this.di,this.ax)
 
@@ -312,6 +318,12 @@ OperatorHelper::genRight(isleft,expr)
 			this.initcond(isleft,8,U64,true)
 			return ie
 		}
+		type(BoolExpr):{
+			ie = expr
+			compile.writeln("	mov $%d,%%rax",ie.literal)
+			this.initcond(isleft,8,I64,false)
+			return ie
+		}
 		type(NullExpr) : {
 			compile.writeln("	mov $0,%%rax")
 			this.initcond(isleft,8,I64,false)
@@ -355,6 +367,13 @@ OperatorHelper::genRight(isleft,expr)
 			this.initcond(isleft,8,I64,false)
 		else
 			this.initcond(isleft,v.size,v.type,v.pointer)
+	}else if type(ret) == type(IndexExpr)
+	{
+		member = ret.ret
+		if(member == null)
+			this.initcond(isleft,8,U64,false)
+		else
+			this.initcond(isleft, member.size,member.type,member.pointer)
 	}else if type(ret) == type(StructMemberExpr) 
 	{
 		m = ret
@@ -388,7 +407,7 @@ OperatorHelper::genRight(isleft,expr)
 	return ret
 }
 
-OperatorHelper::initcond(left,varsize,type,ispointer)
+OperatorHelper::initcond(left,varsize,type,ispointer) 
 {
 	typesize = varsize
 	if ispointer typesize = 8
