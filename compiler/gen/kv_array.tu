@@ -6,7 +6,7 @@ use parser
 use parser.package
 
 class ArrayExpr   : ast.Ast { 
-    lit 
+    lit = []
     func init(line,column){
         super.init(line,column)
     }

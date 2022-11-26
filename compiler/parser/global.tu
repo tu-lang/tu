@@ -153,9 +153,13 @@ Parser::parseGlobalAssign()
                 }
                 type(gen.ArrayExpr) : {
                     if var.structtype && var.stack {
-                        arr = ae.rhs.literal
+                        arr = ae.rhs.lit
                         if std.len(arr) != var.stacksize {
-                            this.check(false,"arr.size != stacksize")
+                            this.check(false,
+                                fmt.sprintf("arr.size:%d != stacksize:%d",
+                                    std.len(arr),var.stacksize
+                                )
+                            )
                         }
                         for i : arr {
                             if(type(i) == type(gen.IntExpr)){

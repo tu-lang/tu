@@ -136,7 +136,7 @@ Parser::expect(tok<i32>,str<i32>){
     )
     os.panic(err)
 }
-Parser::next_expect(tk,err){
+Parser::next_expect(tk,err<i8*>){
     this.scanner.scan()
     return this.expect(tk,err)
 }

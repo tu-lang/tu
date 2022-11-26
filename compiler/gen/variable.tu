@@ -246,7 +246,7 @@ VarExpr::stack_assign(ctx , opt , rhs){
     if !var.stack this.check(false,"should be stack var in stack_assign expression")
 
     if type(rhs) != type(ArrayExpr) rhs.check(false,"only support array expr in stack assign expression")
-    arr = rhs.literal
+    arr = rhs.lit
     if var.stacksize != std.len(arr) var.check(false,"stack size != element size in stack_assign")
     mt = "mov"
     ts = 1

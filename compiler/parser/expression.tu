@@ -394,7 +394,7 @@ Parser::parseNewExpr()
             // scanner.scan() //eat [
             arr = this.parseExpression()
             if type(arr) != type(gen.ArrayExpr) this.check(false,"should be [] expression in new")
-            expr = arr.literal[0]
+                expr = arr.lit[0]
            if type(expr) == type(gen.IntExpr) {
                 i = expr
                 ret.len *= string.tonumber(i.literal)

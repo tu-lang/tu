@@ -25,7 +25,7 @@ func InitStructVar(gvar , s , fields){
 			}
 			if fields[m.name] != null{
 				fields[m.name].check(type(fields[m.name]) == type(gen.ArrayExpr),"must be array expr")
-				arr = fields[m.name].literal
+				arr = fields[m.name].lit
 				if(m.arrsize != std.len(arr) ) {
 					gvar.check(false,"global struct arr size is not same")
 				}

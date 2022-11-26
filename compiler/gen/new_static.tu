@@ -8,8 +8,8 @@ use utils
 use fmt
 
 StructInitExpr::arrinit(ctx , field , arr){
-	if field.arrsize != std.len(arr.literal)  {
-		fmt.println(field.arrsize,std.len(arr.literal))
+	if field.arrsize != std.len(arr.lit)  {
+		fmt.println(field.arrsize,std.len(arr.lit))
 		this.check(false,"arr size is not same")
 	}
 	elmentsize = field.size
@@ -19,7 +19,7 @@ StructInitExpr::arrinit(ctx , field , arr){
 		ltok = ast.U64
 	}
 	compile.Push()
-	for i : arr.literal {
+	for i : arr.lit {
 		if type(i) == type(IntExpr) {
 			compile.writeln("	mov $%s,%%rax",i.literal)
 		}else if type(i) == type(StringExpr) {
