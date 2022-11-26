@@ -247,7 +247,8 @@ Scanner::get_next() {
         lit = lexeme[0]
         if lit == '\\' {
             lexeme += this.next()
-            if specs[lexeme] == null {
+            //OPTIMIZE: char(0) == int(0) = null(0)
+            if lexeme != "\\0" && specs[lexeme] == null {
                 utils.panic(
                     "SyntaxError: sepc [%s] character literal should surround with single-quote file:%s line:%d",
                     lexeme,
