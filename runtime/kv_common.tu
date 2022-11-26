@@ -97,8 +97,9 @@ func arr_get(varr<Value>,index<Value>){
 }
 func arr_pushone(varr<Value>,var<Value>){
     if  varr == null || varr.data == null || var == null {
-        fmt.println("[arr_pushone] arr or var is null ,probably something wrong\n")
-        return Null
+        os.dief("[arr_push] arr or var is null\n")
+        // fmt.println("[arr_pushone] arr or var is null ,probably something wrong\n")
+        // return Null
     }
     arr<std.Array> = varr.data
     insert<u64*> = arr.push()
