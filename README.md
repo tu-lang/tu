@@ -125,3 +125,5 @@ func main(){
     }
 }
 ```
+## License
+Copyright @2016-2022 The tu-lang author. All rights reserved.
