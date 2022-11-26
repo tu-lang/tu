@@ -90,7 +90,7 @@ ContinueStmt::compile(ctx)
 class GotoStmt   : ast.Ast {
     label = label
     func init(label,line,column){
-        super(line,column)
+        super.init(line,column)
     }
 }
 GotoStmt::compile(ctx){
