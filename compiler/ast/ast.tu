@@ -8,13 +8,10 @@ class Ast {
     column = column
     func init(line,column) {}
 
-    func parse_err(args...){
-        os.die(fmt.sprintf(args))
-    }
-    func panic(args...){
-        os.die(fmt.sprintf(args))
-    }
     func toString() { return "Ast()" }
+}
+func parse_err(args...){
+    os.die(fmt.sprintf(args))
 }
 func isbase(ty){
     match ty {

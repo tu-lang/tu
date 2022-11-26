@@ -151,7 +151,10 @@ Parser::parseExpression(_oldPriority<u64>)
 
 Parser::parseUnaryExpr()
 {
-    utils.debug("parser.Parser::parseUnaryExpr()")
+    utils.debugf("parser.Parser::parseUnaryExpr() %s \n",
+        ast.getTokenString(this.scanner.curToken),
+        // this.scanner.curLex
+    )
     //unary expression: like -num | !var | ~var
     if this.isunary() {
         val = new gen.BinaryExpr(this.line,this.column)
@@ -339,12 +342,12 @@ Parser::parsePrimaryExpr()
                 kv.key    = this.parseExpression()
 
                 if(this.scanner.curToken == ast.RBRACE) {
-                    ret.literal[] = kv.key
+                    ret.lit[] = kv.key
                     break
                 }
                 if(this.scanner.curToken == ast.COMMA){
                     this.scanner.scan()
-                    ret.literal[] = kv.key
+                    ret.lit[] = kv.key
                     continue
                 }
 
@@ -526,7 +529,7 @@ Parser::parseVarExpr(var)
                         me.membername = pfuncname
                         return me
                     }            
-                }else if (mvar = this.getGvar(package) && mvar.structname != "") {
+                }else if (mvar = this.getGvar(package)) && mvar.structname != "" {
                     mexpr = new gen.StructMemberExpr(package,this.scanner.line,this.scanner.column)
                     mexpr.tyassert = ta
                     

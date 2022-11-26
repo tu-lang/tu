@@ -77,7 +77,7 @@ Parser::parseClassFunc(var){
     f.clsName = var
     this.pkg.addClassFunc(var,f,this)
     
-    this.addFunc(f.name,f)
+    this.addFunc(var + f.name,f)
     return
 }
 Parser::parseExternClassFunc(pkgname){
@@ -167,7 +167,7 @@ Parser::parseGlobalAssign()
                                 var.elements[] = ie.literal
                             }else if(type(i) == type(gen.MapExpr)){
                                 me = i
-                                for(ii : me.literal){
+                                for(ii : me.lit){
                                     ii.check(type(ii) == type(gen.IntExpr),"must be int expr in k expr")
                                     var.elements[] = ii.literal
                                 }

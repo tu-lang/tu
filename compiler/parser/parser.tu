@@ -119,7 +119,7 @@ check_panic:
         this.scanner.line,this.scanner.column,this.filepath
     )
 }
-Parser::expect(tok<i32>,str<i32>){
+Parser::expect(tok<i32>,str<i8*>){
     if this.scanner.curToken == tok {
         return  True
     }

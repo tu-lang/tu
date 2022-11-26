@@ -23,7 +23,7 @@ Parser::parseBlock(member)
     
     std.merge(node.stmts,stmts)
 
-    this.expect(ast.RBRACE)
+    this.expect(ast.RBRACE,"parse block ")
     this.scanner.scan()
     return node
 }

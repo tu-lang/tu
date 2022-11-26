@@ -4,7 +4,7 @@ use utils
 
 
 class MapExpr : ast.Ast { 
-    lit 
+    lit = []
     func init(line,column){
         super.init(line,column)
     }

@@ -75,7 +75,7 @@ Parser::parseFuncDef(member,closure)
     this.currentFunc = node
     if !closure {
         if this.hasFunc(this.scanner.curLex,false)
-            this.check(false,"SyntaxError: already define function ")
+            this.check(false,"SyntaxError: already define function :" + this.scanner.curLex)
         node.name = this.scanner.curLex
         
         this.scanner.scan()
