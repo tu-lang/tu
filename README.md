@@ -29,9 +29,9 @@ tl      [options|file.o...]
   - [ ] -c  翻译指定汇编码为linux(elf),windows(pe/coff)
   - [ ] -p  批量扫描路径下的汇编
 - [x] [linker](./linker) 
-  - [x] *.o 链接指定的linux(elf) 文件生成可执行程序
-  - [ ] *.o 链接指定的windows(pe) 文件生成可执行pe程序
-  - [ ] *.o 链接指定的mac(MachO) 文件生成可执行pe程序
+  - [x] *.o 链接指定的linux(elf) 文件生成可执行linux程序
+  - [ ] *.o 链接指定的windows(pe) 文件生成可执行windows程序
+  - [ ] *.o 链接指定的mac(MachO) 文件生成可执行mac程序
   - [x] -p  链接指定目录生成可执行程序
 - [x] runtime
   - [x] garbage collect
@@ -50,15 +50,8 @@ tl      [options|file.o...]
 
 ```
 ## @数据结构
-- [x] long int
-- [x] string
-- [x] bool
-- [x] map
-- [x] array
-- [x] object
-- [x] closure
-- [ ] float
-- [x] native struct
+- [x] 动态类型 int string bool null array map closure object
+- [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 struct
 ```
 use fmt
 class Http{
@@ -87,16 +80,13 @@ func main(){
     obj.handler()
     cfunc = obj.closure() #closure
     fmt.println(cfunc())
-    
 }
 ```
 ## @关键字
-- [x] func goto
-- [x] return type
-- [x] use
-- [x] if 
-- [x] while,for|range for
-- [x] continue,break,match
+- [x] func(函数定义),goto(代码跳转),class(动态class),mem(原生结构体)
+- [x] return,type,use,if,continue,break
+- [x] while,for|range for,loop
+- [x] match
 
 ```
 use fmt
