@@ -3,6 +3,7 @@ use string
 use std
 use parser.package
 use gen
+use utils
 
 Parser::parseClassDef()
 {
@@ -16,9 +17,29 @@ Parser::parseClassDef()
     s.found = true
     s.parser = this
     s.name  = this.scanner.curLex
+    this.check(utils.isUpper(s.name),"first char of class name need be Upper")
     this.scanner.scan()
+
+    if this.scanner.curToken == ast.COLON  {
+        utils.debug("found inherit")
+        this.scanner.scan()
+        this.check(this.scanner.curToken == ast.VAR)
+        ident = this.scanner.curLex
+        this.scanner.scan()
+        if this.scanner.curToken == ast.DOT {
+            this.scanner.scan()
+            this.check(this.scanner.curToken == ast.VAR)
+            s.father = new ast.Class(ident)
+            s.father.name = this.scanner.curLex
+            this.scanner.scan()
+        }else{
+            s.father = new ast.Class(this.pkg.package)
+            s.father.name = ident
+        }
+        s.father.parser = this
+    }    
     
-    this.expect(ast.LBRACE)
+    this.expect(ast.LBRACE,"expect { in class define")
 
     this.scanner.scan()
     
@@ -52,7 +73,7 @@ Parser::parseClassDef()
             f.structname = s.name
             s.funcs[] = f
             
-            this.addFunc(f.name,f)
+            this.addFunc(s.name + f.name,f)
         }else{
             this.panic("SynatxError: token:" + ast.getTokenString(this.scanner.curToken) + " string:" + this.scanner.curLex)
         }

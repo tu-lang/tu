@@ -87,7 +87,7 @@ Parser::parseExternClassFunc(pkgname){
     this.expect( ast.VAR)
     clsname = this.scanner.curLex
     this.scanner.scan()
-    if !std.exist(this.import,pkgname){
+    if this.import[pkgname] == null {
         this.check(false,fmt.sprintf("consider import package: use %s",this.package))
     }
     this.expect(  ast.COLON )
@@ -110,14 +110,15 @@ Parser::parseExternClassFunc(pkgname){
 }
 Parser::parseGlobalDef()
 {
-    utils.debug("parser.Parser::parseGlobalDef()")
+    utils.debugf("parser.Parser::parseGlobalDef() %s line:%d\n",this.scanner.curLex,this.line)
     if this.scanner.curToken != ast.VAR
-        this.panic("SyntaxError: global var define invalid token:" + ast.getTokenString(this.scanner.curToken))
+        this.check(false,"SyntaxError: global var define invalid token:" + ast.getTokenString(this.scanner.curToken))
     var = this.scanner.curLex
     tx = this.scanner.transaction() 
     this.scanner.scan()
     match this.scanner.curToken{
         ast.COLON: return this.parseClassFunc(var)
+        ast.DOT:   return this.parseExternClassFunc(var)
         // ast.LT   : return parseStructVar(var)
         // _        : return parseFlatVar(var)
         _ : {
