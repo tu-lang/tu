@@ -102,6 +102,10 @@ func tonumber(str<runtime.Value>){
 			return int(ret) 
 		}
 		runtime.Int: return str
+		runtime.Char: {
+			b<u8> = str.data - '0'
+			return int(b)
+		}
 		_: os.dief("[tonumber] unsupport type:%s",runtime.type_string(str))
 
 	}
