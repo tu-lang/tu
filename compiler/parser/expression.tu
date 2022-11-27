@@ -400,7 +400,7 @@ Parser::parseNewExpr()
                 expr = arr.lit[0]
            if type(expr) == type(gen.IntExpr) {
                 i = expr
-                ret.len *= string.tonumber(i.literal)
+                ret.len *= string.tonumber(i.lit)
                 return ret
             }
             if this.scanner.curToken != ast.RBRACKET this.check(false,"should be ] in new expr")

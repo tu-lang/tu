@@ -272,7 +272,7 @@ VarExpr::stack_assign(ctx , opt , rhs){
             i.check(false,"should be intexpr in stack assign")
         }
         ie = i
-        compile.writeln("\t%s	$%s , %d(%%rax)",mt, ie.literal,index * ts )
+        compile.writeln("\t%s	$%s , %d(%%rax)",mt, ie.lit,index * ts )
 		index += 1
     }
 	return null

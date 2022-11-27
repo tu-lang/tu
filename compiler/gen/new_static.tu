@@ -21,7 +21,7 @@ StructInitExpr::arrinit(ctx , field , arr){
 	compile.Push()
 	for i : arr.lit {
 		if type(i) == type(IntExpr) {
-			compile.writeln("	mov $%s,%%rax",i.literal)
+			compile.writeln("	mov $%s,%%rax",i.lit)
 		}else if type(i) == type(StringExpr) {
 			compile.writeln("	lea %s(%%rip),%%rax",i.name)
 		}else{
@@ -51,7 +51,7 @@ StructInitExpr::compile(ctx){
 		isunsigned = false
 		if type(value) == type(IntExpr) {
 			rtok = value.getType(ctx)
-			compile.writeln("	mov $%s,%%rax",ie.literal)
+			compile.writeln("	mov $%s,%%rax",ie.lit)
 		}else if type(value) == type(StringExpr) {
 			rtok = value.getType(ctx)
 			isunsigned = true

@@ -91,7 +91,7 @@ Member::getarrcount(){
 		match type(this.arrvar) {
 			type(gen.VarExpr) : arrcount = this.arrvar.expr_compile()
 			type(gen.BinaryExpr) : arrcount = this.arrvar.expr_compile()
-			type(gen.IntExpr) 	: arrcount = string.tonumber(this.arrvar.literal)
+			type(gen.IntExpr) 	: arrcount = string.tonumber(this.arrvar.lit)
 			_ :	this.arrvar.check(false,"unknwon type in getarrcount")
 		}
 	}

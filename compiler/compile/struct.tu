@@ -32,12 +32,12 @@ func InitStructVar(gvar , s , fields){
 				mt = ast.typesizestring(ltok)
 				if(m.structname == "" || m.pointer ){
 					for(i : arr){
-						writeln("   .%s %s",mt,i.literal)
+						writeln("   .%s %s",mt,i.lit)
 					}
 				}else{
 					s = package.getStruct(m.structpkg,m.structname) 
 					for(i : arr){
-						me = i.literal
+						me = i.lit
 						if std.len(s.member) != std.len(me) {
 							gvar.check(false,"s.member.size() != me.size()")
 						}
@@ -52,7 +52,7 @@ func InitStructVar(gvar , s , fields){
 							_mtk = _m.type
 							if(_m.pointer) _mtk = ast.U64
 							_mt = ast.typesizestring(_mtk)
-							writeln("   .%s %s",_mt,me[j].literal)
+							writeln("   .%s %s",_mt,me[j].lit)
 							sz += _m.size
 							j += 1
 						}
@@ -72,7 +72,7 @@ func InitStructVar(gvar , s , fields){
 			if fields[m.name] != null {
 				gvar.check(type(fields[m.name]) == type(gen.IntExpr),"must be int")
 				ie = fields[m.name]
-				writeln("   .quad %s",ie.literal)
+				writeln("   .quad %s",ie.lit)
 			}else{
 				writeln("   .quad 0")
 			}
@@ -92,7 +92,7 @@ func InitStructVar(gvar , s , fields){
 			v = "0"
 			if fields[m.name] != null {
 				fields[m.name].check(type(fields[m.name]) == type(gen.IntExpr),"only support base type")
-				v = fields[m.name].literal
+				v = fields[m.name].lit
 			}
 			writeln("   .%s %s",mt,v)
 			size += si

@@ -320,7 +320,7 @@ OperatorHelper::genRight(isleft,expr)
 		}
 		type(BoolExpr):{
 			ie = expr
-			compile.writeln("	mov $%d,%%rax",ie.literal)
+			compile.writeln("	mov $%d,%%rax",ie.lit)
 			this.initcond(isleft,8,I64,false)
 			return ie
 		}

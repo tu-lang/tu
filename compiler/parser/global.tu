@@ -165,12 +165,12 @@ Parser::parseGlobalAssign()
                         for i : arr {
                             if(type(i) == type(gen.IntExpr)){
                                 ie = i
-                                var.elements[] = ie.literal
+                                var.elements[] = ie.lit
                             }else if(type(i) == type(gen.MapExpr)){
                                 me = i
                                 for(ii : me.lit){
                                     ii.check(type(ii) == type(gen.IntExpr),"must be int expr in k expr")
-                                    var.elements[] = ii.literal
+                                    var.elements[] = ii.lit
                                 }
                             }else{                            
                                 i.check(false,"all arr elments should be intexpr")

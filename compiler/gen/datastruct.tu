@@ -75,7 +75,7 @@ class CharExpr    : ast.Ast {
     func compile(ctx) {
         this.record()
         if this.tyassert != null {
-            compile.writeln("	mov $%s,%%rax",this.literal)
+            compile.writeln("	mov $%s,%%rax",this.lit)
             return null
         }
         internal.newobject(ast.Char,this.lit)
@@ -94,7 +94,7 @@ class IntExpr     : ast.Ast {
     func compile( ctx) {
         this.record()
         if this.tyassert != null {
-            compile.writeln("	mov $%s,%%rax",this.literal)
+            compile.writeln("	mov $%s,%%rax",this.lit)
             return null
         }
         internal.newint(ast.Int,this.lit)

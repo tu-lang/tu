@@ -274,7 +274,7 @@ IfStmt::compile(ctx){
             be.lhs = cs.cond
             be.opt = ast.GT
             i = new gen.IntExpr(cs.cond.line,cs.cond.column)
-            i.literal = "0"
+            i.lit = "0"
             be.rhs = i
             cs.cond = be
         }

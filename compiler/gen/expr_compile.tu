@@ -7,13 +7,13 @@ BinaryExpr::expr_compile(){
 	match type(this.lhs) {
 		type(BinaryExpr) :	left = this.lhs.expr_compile()
 		type(VarExpr) : left = this.lhs.expr_compile()
-		type(IntExpr) : left = string.tonumber(this.lhs.literal)
+		type(IntExpr) : left = string.tonumber(this.lhs.lit)
 		_ :	this.check(false,"unsupport type in Binaryy::expr_compile ")
 	}
 	match type(this.rhs) {
 		type(BinaryExpr) : right = this.rhs.expr_compile()
 		type(VarExpr) : right = this.rhs.expr_compile()
-		type(IntExpr) : right = string.tonumber(this.rhs.literal)
+		type(IntExpr) : right = string.tonumber(this.rhs.lit)
 		_ : this.check(false,"unsupport type in Binaryy::expr_compile ")
 	}
 	match this.opt {

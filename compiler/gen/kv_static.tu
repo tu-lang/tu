@@ -11,7 +11,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 	if this.index == null this.check(false,"static var index is null")
 	if type(this.index) == type(IntExpr) {
 		i = this.index
-		num = string.tonumber(i.literal)
+		num = string.tonumber(i.lit)
 		num *= size
 		compile.writeln("\tmov $%d,%%rdi",num)
 		return null
