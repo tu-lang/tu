@@ -20,7 +20,10 @@ func kv_update(root<Value>,index<Value>,var<Value>)
     match root.type {
         Array : return arr_updateone(root,index,var)
         Map   : return map.map_insert(root,index,var)
-        _     : fmt.println("[kv_update] arr or map is invalid ,probably something wrong")
+        _     : {
+            os.dief("[kv_update] arr or map is invalid,ty:%s\n",type_string(root))
+            // fmt.println("[kv_update] arr or map is invalid ,probably something wrong")
+        }
     }
 }
 
