@@ -49,8 +49,9 @@ Array::array_destroy(){
 Array::tail(){
     if  this == null os.die("[arr_tail] not array_type")
     if this.used <= 0 {
-        fmt.println("[warn] array_tail for empty array")
-        return runtime.newobject(Null,Null)
+        os.die("[warn] tail empty array")
+        // fmt.println("[warn] array_tail for empty array")
+        // return runtime.newobject(Null,Null)
     }
     return this.addr[this.used - 1]
 }

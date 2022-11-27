@@ -1,6 +1,7 @@
 use runtime
 use fmt
 use std.map
+use os
 
 func rand(v<runtime.Value>){
 
@@ -28,7 +29,10 @@ func empty(v<runtime.Value>){
 			ret<i8> = strlen(v.data)
 			if ret == 0 return True
 		}
-		_: fmt.println("[warn] empty: unsuport type")
+		_: {
+			os.dief("[warn] empty: unsupport type :%s\n",runtime.type_string(v))
+			// fmt.println("[warn] empty: unsuport type")
+		}
 	}	
 	return False
 }
