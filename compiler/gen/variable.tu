@@ -233,7 +233,7 @@ VarExpr::getStackSize(p){
             this.panic("stack size can't be 0")
         return this.size * this.stacksize
     //BUG: fixme  dyn & static
-    }else if this.structtype && !this.pointer && this.type <= U64 && this.type >= I8 {
+    }else if this.structtype && !this.pointer && this.type <= ast.U64 && this.type >= ast.I8 {
         if this.size == 0  this.panic("var size is 0,something wrong")
         return this.size
     }else{

@@ -84,7 +84,7 @@ package.Package::classinit(){
 						i.isObj = false
 						This = i.params_var["this"]
 						This.structtype = true
-						This.type = U64
+						This.type = ast.U64
 						This.size = 8
 						This.isunsigned = true
 						This.structpkg = s.pkg
