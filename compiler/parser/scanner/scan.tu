@@ -96,7 +96,7 @@ Scanner::consumeLine()
 
 Scanner::parseNumber(first)
 {
-    lexeme = first
+    lexeme = string.tostring(first)
     isDouble = false
     cn = this.peek()
     c  = first
