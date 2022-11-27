@@ -1,6 +1,7 @@
 use std
 use runtime
 use string
+use fmt
 
 func map_create(){
     sentinel<RbtreeNode> = new RbtreeNode
@@ -21,6 +22,17 @@ func map_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode
 
     while True {
         if  node.key == temp.key {
+            equal<i32> = 0
+            if node.k.type == runtime.String || temp.k.type == runtime.String {
+                equal = runtime.value_string_equal(node.k,temp.k,1.(i8))
+            } else if node.k.type == runtime.Int || temp.k.type == runtime.Int || node.k.type == runtime.Char {
+                equal = runtime.value_int_equal(node.k,temp.k,1.(i8))
+            }else{
+                equal = runtime.value_int_equal(node.k,temp.k,1.(i8))
+            }
+            if !equal  {
+                fmt.printf("[kv_update] hash conflict %s %s\n",node.k,temp.k)
+            }
             //compatible with mem type var
             // if  temp.v.type == node.v.type {
                 temp.v = node.v
@@ -67,8 +79,9 @@ func map_insert( m<runtime.Value> ,k<runtime.Value>,v<runtime.Value>)
         hk = k.data
     }
     if  k.type == runtime.String {
-        str<string.Str> = k.data
-        hk = hash_key(k.data,str.len())
+        // str<string.Str> = k.data
+        // hk = hash_key(k.data,str.len())
+        hk = k.data.(string.Str).hash32()
     }
     node.key = hk
     node.k = k
@@ -82,8 +95,9 @@ func map_find(m<runtime.Value>, key<runtime.Value>){
         runtime.Bool   : hk = key.data
         runtime.Int    : hk = key.data
         runtime.String : {
-            str<string.Str> = key.data
-            hk = hash_key(key.data,str.len())
+            hk = key.data.(string.Str).hash32()
+            // str<string.Str> = key.data
+            // hk = hash_key(key.data,str.len())
         }
     }
     tree<Rbtree>  = m.data
