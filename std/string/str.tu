@@ -339,3 +339,15 @@ Str::putc(c<i8>){
     s[i + 1] = 0
     return s
 }
+
+Str::hash32(){
+	hash<u32> = 0
+    s<i8*> = this
+    l<i64> = this.len()
+    for i<i64> = 0 ; i < l ; i += 1 {
+		hash *= prime32
+        c<u32> = s[i]
+		hash ^= c
+	}
+    return hash
+}

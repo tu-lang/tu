@@ -3,8 +3,11 @@ use runtime
 use std
 use fmt
 
-True<i64> = 1
+True<i64>  = 1
 False<i64> = 0
+offset32<u32> = 2166136261
+prime32<u32>  = 16777619
+
 
 
 LSTRING_MAX_PREALLOC<i32> =  1048576 # 1024 * 1024
