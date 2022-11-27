@@ -12,7 +12,7 @@ func ALIGN_DOWN(x,a) {
 func ALIGN_UP(x , a) {
 	return ( x + (a - 1) ) & ( ~ (a - 1))
 }
-func max(l,r){
+func max(l<i32>,r<i32>){
 	if l > r return l
 	return r
 }

@@ -212,7 +212,8 @@ WhileStmt::dead_compile(ctx)
 class IfCaseExpr : ast.Ast {
     cond
     block
-    label endLabel
+    label = ""
+    endLabel = ""
     func init(line,column){
         super.init(line,column)
     }

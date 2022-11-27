@@ -1,6 +1,7 @@
 use ast
 use compile
 use utils
+use parser
 
 class OperatorHelper {
 	ctx # [Context]
@@ -84,13 +85,13 @@ OperatorHelper::assign()
 	{
 		compile.writeln("	mov %%rax, %%rdi")
 		//NOTICE: 1L << bitwidth - 1
-		compile.writeln("   and $%I, %%rdi", (1 << this.lmember.bitwidth) - 1)
+		compile.writeln("   and $%d, %%rdi", (1 << this.lmember.bitwidth) - 1)
 		compile.writeln("	shl $%d, %%rdi", this.lmember.bitoffset)
 		compile.writeln("   mov (%%rsp), %%rax")
 		compile.LoadSize(this.lmember.size,this.lmember.isunsigned)
 		//FIXME: mask = ((1L << lmember.bitwidth) - 1) << lmember.bitoffset
 		mask = ((1 << this.lmember.bitwidth) - 1) << this.lmember.bitoffset
-		compile.writeln("  mov $%I, %%r9", ~mask)
+		compile.writeln("  mov $%d, %%r9", ~mask)
 		compile.writeln("  and %%r9, %%rax")
 		compile.writeln("  or %%rdi, %%rax")
 	}
@@ -131,12 +132,12 @@ OperatorHelper::binary()
 	if this.opt == ast.ASSIGN return null
 	if this.opt != ast.LOGAND && this.opt != ast.LOGOR  {
 		base = utils.max(this.rtoken,this.ltoken)
-		tke = fmt.sprintf("token_max(lhs,rhs) should in(i8,u64) ltoken:%s rtoken:%s\n %s\n %s\n",
-				this.ltoken,this.rtoken,this.lhs.toString(),this.rhs.toString()
-		)
+		// tke = fmt.sprintf("token_max(lhs,rhs) should in(i8,u64) ltoken:%d rtoken:%d\n %s\n %s\n",
+				// int(this.ltoken),int(this.rtoken),this.lhs.toString(),this.rhs.toString()
+		// )
+		tke = "token_max should in i8-u64"
 		this.lhs.check(base >= ast.I8 && base <= ast.U64,tke)
-		
-		compile.Cast(this.rtoken,this.base)
+		compile.Cast(this.rtoken,base)
 		compile.writeln("	mov %%rax,%%rdi")
 		compile.Pop("%rax")
 		compile.Cast(this.ltoken,base)
@@ -311,24 +312,30 @@ OperatorHelper::genRight(isleft,expr)
 		type(IntExpr) : {
 			ie = expr	
 			compile.writeln("	mov $%s,%%rax",ie.lit)
-			this.initcond(isleft,8,I64,false)
+			this.initcond(isleft,8,ast.I64,false)
 			return ie
 		}
 		type(StringExpr): {
 			ie = expr
 			compile.writeln("	lea %s(%%rip), %%rax",ie.name)
-			this.initcond(isleft,8,U64,true)
+			this.initcond(isleft,8,ast.U64,true)
+			return ie
+		}
+		type(CharExpr):{
+			ie = expr
+			compile.writeln("	mov $%s,%%rax",ie.lit)
+			this.initcond(isleft,8,ast.I64,false)
 			return ie
 		}
 		type(BoolExpr):{
 			ie = expr
 			compile.writeln("	mov $%d,%%rax",ie.lit)
-			this.initcond(isleft,8,I64,false)
+			this.initcond(isleft,8,ast.I64,false)
 			return ie
 		}
 		type(NullExpr) : {
 			compile.writeln("	mov $0,%%rax")
-			this.initcond(isleft,8,I64,false)
+			this.initcond(isleft,8,ast.I64,false)
 			return null
 		}
 	}
@@ -337,43 +344,43 @@ OperatorHelper::genRight(isleft,expr)
 	if !exprIsMtype(expr,this.ctx) && ( this.op == ast.LOGAND || this.opt == ast.LOGOR) {
 		internal.isTrue()
 	}
-	match type(this.expr) {
+	match type(expr) {
 		type(BinaryExpr) | type(AssignExpr) : {
 			t = expr.getType(this.ctx)
-			size = typesize[int(t)]
+			size = parser.typesize[int(t)]
 			this.initcond(isleft,size,t,false)
 			return ret
 		}
 		type(AddrExpr) : {
-			this.initcond(isleft,8,U64,true)
+			this.initcond(isleft,8,ast.U64,true)
 			return ret
 		}
 		type(FunCallExpr) : {
-			this.initcond(isleft,8,U64,false)
+			this.initcond(isleft,8,ast.U64,false)
 			return ret
 		}
 		type(BuiltinFuncExpr) : {
-			this.initcond(isleft,8,U64,false)
+			this.initcond(isleft,8,ast.U64,false)
 			return ret
 		}
 	}
 	
 	if ret == null{
-		this.initcond(isleft,8,U64,false)
+		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(NewExpr) || type(ret) == type(NewStructExpr) {
-		this.initcond(isleft,8,U64,false)
+		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(VarExpr) 
 	{
 		v = ret
 		if !v.structtype
-			this.initcond(isleft,8,I64,false)
+			this.initcond(isleft,8,ast.I64,false)
 		else
 			this.initcond(isleft,v.size,v.type,v.pointer)
 	}else if type(ret) == type(IndexExpr)
 	{
 		member = ret.ret
 		if(member == null)
-			this.initcond(isleft,8,U64,false)
+			this.initcond(isleft,8,ast.U64,false)
 		else
 			this.initcond(isleft, member.size,member.type,member.pointer)
 	}else if type(ret) == type(StructMemberExpr) 
@@ -385,8 +392,7 @@ OperatorHelper::genRight(isleft,expr)
 		if type(expr) != type(AddrExpr) && type(expr) != type(DelRefExpr){
 			compile.LoadMember(v)
 		}
-	}
-	else if type(ret) == type(ChainExpr) {
+	}else if type(ret) == type(ChainExpr) {
 		m = ret
 		v = m.ret
 		tk = v.type
@@ -404,7 +410,7 @@ OperatorHelper::genRight(isleft,expr)
 			compile.LoadMember(v)
 		}
 	}else{
-		ret.panic("not allowed expression in memory operator:%s\n",ret.toString())
+		ret.check(false,fmt.sprintf("not allowed expression in memory operator:%s" + ret.toString()))
 	}
 	return ret
 }

@@ -34,10 +34,10 @@ KVExpr::compile(ctx){
 }
 
 class IndexExpr : ast.Ast {
-    varname
+    varname = ""
     index
     is_pkgcall
-    package
+    package = ""
     tyassert
     
     ret

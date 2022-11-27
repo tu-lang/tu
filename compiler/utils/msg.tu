@@ -45,8 +45,7 @@ func error(str) {
 }
 func errorf(args...) {
     m = fmt.sprintf(args)
-    fmt.println(print_red(m))
-    os.exit(-1)
+    os.die(print_red(m))
 }
 func panic(args...){
     os.die(fmt.sprintf(args))

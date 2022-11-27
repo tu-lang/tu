@@ -2,6 +2,7 @@ use std
 use os
 use fmt
 use compile
+use runtime
 
 class Ast {
     line = line
@@ -44,11 +45,16 @@ Ast::panic(args...){
     cfunc = compile.currentFunc
     parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,this.line,this.column,cfunc.parser.filepath)
 }
-Ast::check( check , err<i8*>)
+Ast::check( check<runtime.Value> , err<i8*>)
 {
-    if(check) return err 
+    //static
+    if check == 1 return  null
+    if check == 0 goto astcheck_panic 
+    //dyn
+    c = check
+    if c return null
+astcheck_panic:
 
-    cfunc = compile.currentFunc
     if err != null {
         fmt.printf("AsmError:%s \n" + 
                 "line:%d column:%d file:%s\n\n" +

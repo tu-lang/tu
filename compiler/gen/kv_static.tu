@@ -21,7 +21,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 		var = var.getVar(ctx)
 		if var.pointer this.check(false,"index can't be pointer")
 		if !var.structtype  this.check(false,"index must be statictype")
-		if var.type < I8 || var.type > U64 this.check("index must be 1 - 8 bytes type")
+		if var.type < ast.I8 || var.type > ast.U64 this.check("index must be 1 - 8 bytes type")
 		var.compile(ctx)
 	}else if type(this.index) == type(BinaryExpr) {
 		b = this.index

@@ -98,8 +98,8 @@ func funcexec(ctx , fc , fce)
 
 
 class FunCallExpr : ast.Ast {
-    funcname
-    package
+    funcname = ""
+    package  = ""
     args = [] # [Ast]
 	cls       # Class
     is_pkgcall
@@ -135,7 +135,7 @@ FunCallExpr::checkFirstThis(ctx,var){
 FunCallExpr::compile(ctx)
 {
 	this.record()
-	utils.debug("FunCallExpr: parsing... package:%s func:%s",this.package,this.funcname)
+	utils.debugf("FunCallExpr:  package:%s func:%s",this.package,this.funcname)
 	cfunc = compile.currentFunc
 	packagename = this.package
 	fc = null

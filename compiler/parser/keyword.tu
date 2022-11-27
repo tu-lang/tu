@@ -69,7 +69,7 @@ Parser::parseClassDef()
 
             f.isObj = true
             
-            f.clsName = s.name
+            f.clsname = s.name
             f.structname = s.name
             s.funcs[] = f
             
@@ -230,7 +230,7 @@ Parser::genClassInitFunc(clsname)
     f.params[] = "this"
 
     f.isObj = true
-    f.clsName = clsname
+    f.clsname = clsname
     f.structname = clsname
     return f
 }

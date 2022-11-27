@@ -7,7 +7,8 @@ use std
 use utils
 
 class NewClassExpr : ast.Ast {
-    package name
+    package = ""
+    name    = ""
     args      = [] # [Ast]
 	childcall = false
 	func init(line,column){
@@ -90,7 +91,8 @@ NewClassExpr::compile(ctx)
 }
 
 class MemberExpr : ast.Ast {
-    varname  membername
+    varname = ""
+    membername = ""
 
 	ret //var*
 	tyassert
@@ -174,7 +176,8 @@ MemberExpr::assign(ctx, opt ,rhs)
 }
 
 class MemberCallExpr : ast.Ast {
-    varname membername
+    varname = ""
+    membername = ""
 
 	tyassert
 	call      # funcallexpr

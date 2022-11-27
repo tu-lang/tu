@@ -4,7 +4,7 @@ use compile
 
 func call_operator(opt,name)
 {
-    compile.writeln("    mov $%I, %%rdi", opt)
+    compile.writeln("    mov $%d, %%rdi", int(opt))
     
     compile.Pop("%rdx")
     
@@ -14,11 +14,12 @@ func call_operator(opt,name)
 
 func call_object_operator(opt, name,method) {
     
-    compile.writeln("    mov $%I, %%rdi", opt)
+    compile.writeln("    mov $%d, %%rdi", int(opt))
     compile.Pop("%rcx")
+    //FIXME: 32
     hk = utils.hash(name)
-    compile.writeln("# [debug] call_object_operator name:%s  hk:%I",name,hk)
-    compile.writeln("    mov $%I,%%rdx",hk)
+    compile.writeln("# [debug] call_object_operator name:%s  hk:%d",name,hk)
+    compile.writeln("    mov $%d,%%rdx",hk)
 
     compile.Pop("%rsi")
     call(method)
@@ -26,7 +27,7 @@ func call_object_operator(opt, name,method) {
 func gc_malloc(size<i64>)
 {
     if size != null {
-        compile.writeln("    mov $%I, %%rdi", size)
+        compile.writeln("    mov $%d, %%rdi", size)
         call("runtime_gc_gc_malloc")
     }else {
         //pass args by prev expression.compile & %rax
@@ -36,7 +37,7 @@ func gc_malloc(size<i64>)
 }
 func malloc(size)
 {
-    compile.writeln("    mov $%I, %%rdi", size)
+    compile.writeln("    mov $%d, %%rdi", size)
     call("malloc")
 }
 //@typ  ast.Int ... ast.Object
@@ -45,9 +46,9 @@ func newobject(typ<i32>,data)
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
 
-    compile.writeln("    mov $%I, %%rdi", int(typ))
+    compile.writeln("    mov $%d, %%rdi", int(typ))
     if typ != ast.String
-        compile.writeln("    mov $%I, %%rsi", data)
+        compile.writeln("    mov $%d, %%rsi", data)
 
     call("runtime_newobject")
 
@@ -59,12 +60,13 @@ func newinherit_object(type_id){
     compile.writeln("   mov $%d , %%rsi",type_id)
     call("runtime_newinherit_object")
 }
+use runtime
 func newint(typ, data)
 {
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
 
-    compile.writeln("    mov $%I, %%rdi", typ)
+    compile.writeln("    mov $%d, %%rdi", int(typ))
     compile.writeln("    mov $%s, %%rsi", data)
     call("runtime_newobject")
     compile.writeln("    pop %%rsi")
@@ -76,7 +78,7 @@ func newobject2(typ)
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
 
-    compile.writeln("    mov $%I, %%rdi", typ)
+    compile.writeln("    mov $%d, %%rdi", int(typ))
     compile.writeln("    mov %%rax, %%rsi")
 
     call("runtime_newobject")
@@ -148,8 +150,8 @@ func object_member_get(expr,name)
     check_object(expr)
     compile.Pop("%rdi")
     hk = utils.hash(name)
-    compile.writeln("# [debug] object_member_get name:%s  hk:%I",name,hk)
-    compile.writeln("    mov $%I,%%rsi",hk)
+    compile.writeln("# [debug] object_member_get name:%s  hk:%d",name,hk)
+    compile.writeln("    mov $%d,%%rsi",hk)
 
     call("runtime_object_member_get")
 
@@ -158,7 +160,7 @@ func object_func_add(name)
 {
     compile.Pop("%rdx")
     hk  = utils.hash(name)
-    compile.writeln("# [debug] object_func_add  name:%s  hk:%I",name,hk)
+    compile.writeln("# [debug] object_func_add  name:%s  hk:%d",name,hk)
     compile.writeln("    mov $%U,%%rsi",hk)
 
     
@@ -172,8 +174,8 @@ func object_func_addr(expr,name)
     compile.Pop("%rdi")
 
     hk = utils.hash(name)
-    compile.writeln("# [debug] object_func_addr name:%s  hk:%I",name,hk)
-    compile.writeln("    mov $%I,%%rsi",hk)
+    compile.writeln("# [debug] object_func_addr name:%s  hk:%d",name,hk)
+    compile.writeln("    mov $%d,%%rsi",hk)
 
     call("runtime_object_func_addr")
 }

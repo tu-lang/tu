@@ -6,8 +6,8 @@ class StructInitExpr : ast.Ast {
 	func init(line,column){
 		super.init(line,column)
 	}
-	pkgname 
-	name
+	pkgname = ""
+	name    = ""
 
 	fields = {} // fieldname : expression
 }
@@ -31,7 +31,7 @@ NewStructExpr::toString(s){
 
 class StructMemberExpr : ast.Ast {
     varname = varname
-    member
+    member  = ""
     var
     assign
     ret

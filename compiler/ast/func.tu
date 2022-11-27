@@ -5,11 +5,11 @@ use os
 
 class Function {
     clsname  = "" # class name
-    name    # func name
+    name     = "" # func name
     isExtern  = false # c ffi ; extern define
     isObj     = false # object call
     isMem     = false # static class function
-    structname
+    structname = ""
     rettype
 
     parser   # Parser*
@@ -107,7 +107,7 @@ Function::getVar(name){
 }
 Function::beautyName(){
     funcname = this.parser.getpkgname() + "::" + this.name
-	if this.clsName != "" {
+	if this.clsname != "" {
         c = this.package.getClass(this.clsname)
         if c == null {
             os.die("fn exception class not exist:" + this.clsname)

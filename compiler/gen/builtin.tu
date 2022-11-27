@@ -5,7 +5,8 @@ use std
 use utils
 
 class BuiltinFuncExpr : ast.Ast {
-    funcname expr from
+    funcname  = ""
+	expr from
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -108,7 +109,7 @@ BuiltinFuncExpr::compile(ctx){
 		return null
 	}else if this.funcname == "int" {
 		//TODO: cast i8 i16 i 32  to  i64
-		compile.Cast(tk,parser.I64)
+		compile.Cast(tk,ast.I64)
 		internal.newobject2(ast.Int)
 		return null
 	}

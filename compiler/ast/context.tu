@@ -21,7 +21,6 @@ Context::createVar(varname,ident)
 }
 Context::getVar(varname)
 {
-    if std.len(this.vars) < 1 return null
     if this.vars[varname] != null {
         return this.vars[varname]
     } 
@@ -30,7 +29,7 @@ Context::getVar(varname)
 
 func getVar(ctx , varname)
 {
-    utils.debugf("ast.getVar: ctx.len:%d varname:%s",std.len(ctx),varname)
+    // utils.debugf("ast.getVar: ctx.len:%d varname:%s",std.len(ctx),varname)
     hasctx = false
     ret    = null
     for c : ctx {

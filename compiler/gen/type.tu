@@ -8,8 +8,8 @@ class TypeAssertExpr : ast.Ast {
 	func init(line,column){
 		super.init(line,column)
 	}
-	pkgname
-	name
+	pkgname = ""
+	name    = ""
 }
 TypeAssertExpr::toString(s) { 
 	return fmt.sprintf("TypeAssertExpr(%s.%s)"

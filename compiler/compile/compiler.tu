@@ -4,6 +4,7 @@ use parser.package
 use os 
 use internal
 use ast
+use fmt
 
 func compile(){
     utils.debug("ast.compile()")

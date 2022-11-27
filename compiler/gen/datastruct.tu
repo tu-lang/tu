@@ -68,7 +68,7 @@ class BoolExpr   : ast.Ast {
     }
 }
 class CharExpr    : ast.Ast { 
-    lit 
+    lit = ""
     tyassert
     func init(line,column){
         super.init(line,column)
@@ -88,7 +88,7 @@ class CharExpr    : ast.Ast {
     }
 }
 class IntExpr     : ast.Ast { 
-    lit 
+    lit = ""
     tyassert
     func init(line,column){
         super.init(line,column)
@@ -124,7 +124,9 @@ class DoubleExpr  : ast.Ast {
     }
 }
 class StringExpr  : ast.Ast { 
-    lit name offset 
+    lit = "" 
+    name = "" 
+    offset 
     tyassert
     func init(line,column){
         super.init(line,column)

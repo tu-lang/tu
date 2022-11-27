@@ -71,8 +71,8 @@ class MatchCaseExpr : ast.Ast {
     matchCond
     logor # this case is multi complex bitor expression
 
-    label 
-    endLabel
+    label  = ""
+    endLabel = ""
 	func init(line,column){
 		super.init(line,column)
 	}

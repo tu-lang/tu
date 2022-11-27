@@ -13,8 +13,8 @@ class DelRefExpr  : ast.Ast {
     }
 }
 class AddrExpr   : ast.Ast {
-    package
-    varname
+    package = ""
+    varname = ""
     expr
     func init(line,column){ super.init(line,column) }
     func toString() {

@@ -31,12 +31,11 @@ func registerFuncs(){
     }
 }
 func CreateFunction(fn) {
-    utils.debugf("compile.createFunction() func:%s\n",fn.fullname())
     if fn.isExtern return True
     if fn.block == null return True
 
     funcname = fn.fullname()
-    utils.debug("compile.CreateFunction()  fullname:%s",funcname)
+    utils.debugf("compile.CreateFunction()  fullname:%s",funcname)
 
     //register function label
     lid = ".L.funcname." + ast.incr_labelid()

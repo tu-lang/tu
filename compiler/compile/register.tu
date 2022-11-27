@@ -180,7 +180,7 @@ func Push_arg(ctx,fc,fce){
         
         if fc.is_variadic {
             
-            if std.len(fce.args.size) >= 6 {
+            if std.len(fce.args) >= 6 {
                 stack += 1
             }
             internal.newobject(ast.Int,std.len(fce.args))

@@ -3,6 +3,7 @@ use ast
 use std
 use compile
 use utils
+use fmt
 
 class VarExpr : ast.Ast {
     varname = varname
@@ -12,9 +13,9 @@ class VarExpr : ast.Ast {
     is_variadic = false
     //FIXME: conflict with import package
     package     = ""
-    ivalue
+    ivalue      = ""
     
-    structname
+    structname  = ""
     structtype  = false
     structpkg  
     pointer     = false
@@ -28,7 +29,9 @@ class VarExpr : ast.Ast {
     elements    = []
     sinit       
     
-    ret funcpkg funcname
+    ret 
+    funcpkg  = ""
+    funcname = ""
 
     tyassert
     func init(varname,line,column){
@@ -57,17 +60,22 @@ VarExpr::getVar(ctx){
 VarExpr::getVarType(ctx)
 {
     package = this.package
-    if( this.package != "" &&  (this.ret = GP().getGlobalVar(this.package,this.varname)) && this.ret != null){
+    if this.package != "" {
+        if GP().getGlobalVar(this.package,this.varname) != null {
+            this.ret = GP().getGlobalVar(this.package,this.varname)
+        }
         if this.ret.structtype
             return ast.Var_Global_Extern_Static
         return ast.Var_Global_Extern
     }
-    if( (this.ret = GP().getGlobalVar("",this.package)) && this.ret != null){
+    if GP().getGlobalVar("",this.package) != null {
+        this.ret = GP().getGlobalVar("",this.package)
         if (this.ret.structtype)
             return ast.Var_Global_Local_Static_Field
         else return ast.Var_Obj_Member
     }
-    if( (this.ret = GP().getGlobalVar("",this.varname)) && this.ret != null){
+    if GP().getGlobalVar("",this.varname) != null {
+        this.ret = GP().getGlobalVar("",this.varname)
         if this.ret.structtype
             return ast.Var_Local_Static
         return ast.Var_Global_Local
@@ -80,8 +88,8 @@ VarExpr::getVarType(ctx)
     } 
 
     if this.package == "" {
-        ret = ast.getVar(ctx,this.varname)
-        if ret != null {
+        this.ret = ast.getVar(ctx,this.varname)
+        if this.ret != null {
             if this.ret.structtype
                 return ast.Var_Local_Static
             return ast.Var_Local
@@ -96,11 +104,12 @@ VarExpr::getVarType(ctx)
         this.funcpkg = fn.package.getFullName()
         return ast.Var_Func
     }   
-    this.panic(
-        "AsmError:get var type use of undefined variable %s.%s at line %d co %d filename:%s\n",
-        this.package,this.varname,
-        this.line,this.column,
-        GP().filepath
+    this.check(false,
+        fmt.sprintf("AsmError:get var type use of undefined variable %s.%s at line %d co %d filename:%s\n",
+            this.package,this.varname,
+            this.line,this.column,
+            GP().filepath
+        )
     )
 }
 VarExpr::compile(ctx){
@@ -226,7 +235,10 @@ VarExpr::getStackSize(p){
             acualPkg = p.import[this.structpkg]
             s = package.getStruct(acualPkg,this.structname)
             if(s == null) {
-                this.check(false,"static var not exist ")
+                fmt.println(this.structname)
+                this.check(false,
+                    fmt.sprintf("static var not exist pkg:%s,name:%s",acualPkg,this.structname)
+                )
             }
             if(s.size == 0) {
                 this.check(false,"static var size is 0")

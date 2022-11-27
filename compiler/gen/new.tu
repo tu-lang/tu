@@ -7,7 +7,8 @@ use std
 use utils
 
 class NewExpr : ast.Ast {
-    package name
+    package = ""
+	name    = ""
     len
 	arrsize
 	func init(line,column){
