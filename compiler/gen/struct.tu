@@ -9,7 +9,7 @@ class StructInitExpr : ast.Ast {
 	pkgname 
 	name
 
-	fileds = {} // fieldname : expression
+	fields = {} // fieldname : expression
 }
 StructInitExpr::toString(s){
 	return fmt.sprintf("struct init(%s.%s)"
