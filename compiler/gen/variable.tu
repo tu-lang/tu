@@ -2,6 +2,7 @@ use parser.package
 use ast
 use std
 use compile
+use utils
 
 class VarExpr : ast.Ast {
     varname = varname
@@ -103,6 +104,7 @@ VarExpr::getVarType(ctx)
     )
 }
 VarExpr::compile(ctx){
+    utils.debugf("gen.VarExpr::compile() package :%s varname:%s \n",this.package,this.varname)
     this.record()
     match this.getVarType(ctx)
     {
@@ -144,6 +146,7 @@ VarExpr::compile(ctx){
     return this.ret
 }
 VarExpr::assign(ctx , opt , rhs){
+    utils.debugf("gen.VarExpr::assign() package :%s varname:%s \n",this.package,this.varname)
     this.record()
     match this.getVarType(ctx)
     {
@@ -216,6 +219,7 @@ VarExpr::clone(){
 }
 
 VarExpr::getStackSize(p){
+    utils.debug("gen.VarExpr.getStackSize()")
     if this.stack {
         if this.structname != ""  {
             this.check(this.stacksize != 0)
@@ -242,6 +246,7 @@ VarExpr::getStackSize(p){
 }
 
 VarExpr::stack_assign(ctx , opt , rhs){
+    utils.debugf("gen.VarExpr::stack_assign() package :%s varname:%s \n",this.package,this.varname)
     var = this.ret
     if !var.stack this.check(false,"should be stack var in stack_assign expression")
 

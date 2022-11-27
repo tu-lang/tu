@@ -240,6 +240,7 @@ OperatorHelper::binary()
 
 OperatorHelper::genLeft()
 {
+    utils.debugf("gen.OpHelper::genLeft()")
 	var = this.var
 	match type(this.lhs) {
 		type(DelRefExpr) : {
@@ -305,6 +306,7 @@ OperatorHelper::genLeft()
 }
 OperatorHelper::genRight(isleft,expr)
 {
+    utils.debugf("gen.OpHelper::genRight()")
 	match type(this.expr) {
 		type(IntExpr) : {
 			ie = expr	

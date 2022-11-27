@@ -24,6 +24,7 @@ TypeAssertExpr::compile(ctx){
 TypeAssertExpr::getStruct(){
 	pkg = this.pkgname
 	name = this.name
+    utils.debugf("gen.TypeAssertExpr::getStruct() pkgname:%s name:%s\n",pkg,name)
 	s = null
 	if GP().import[pkg] != null {
 		pkg = GP().import[pkg]

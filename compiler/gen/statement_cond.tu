@@ -38,6 +38,7 @@ ForStmt::compile(ctx)
 }
 ForStmt::rangeFor(ctx)
 {
+    utils.debugf("gen.ForExpr::rangeFor()")
     c = ast.incr_labelid()
     if this.obj == null 
         this.panic("statement: for(x,y : obj) obj should pass value. line:%d column:%d",this.line,this.column)
@@ -105,6 +106,7 @@ ForStmt::rangeFor(ctx)
 }
 ForStmt::triFor(ctx)
 {
+    utils.debugf("gen.ForExpr::triFor()")
     c = ast.incr_labelid()
     compile.blockcreate(ctx)
     this.init.compile(ctx)
@@ -157,6 +159,7 @@ WhileStmt::toString() {
 }
 WhileStmt::compile(ctx)
 {
+    utils.debugf("gen.WhileStmtExpr::compile()")
     if this.dead return this.dead_compile(ctx)
     this.record()
     c = ast.incr_labelid()
@@ -186,6 +189,7 @@ WhileStmt::compile(ctx)
 }
 WhileStmt::dead_compile(ctx)
 {
+    utils.debugf("gen.WhileStmtExpr::dead_compile()")
     this.record()
     c = ast.incr_labelid()
     

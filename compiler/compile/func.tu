@@ -31,6 +31,7 @@ func registerFuncs(){
     }
 }
 func CreateFunction(fn) {
+    utils.debugf("compile.createFunction() func:%s\n",fn.fullname())
     if fn.isExtern return True
     if fn.block == null return True
 

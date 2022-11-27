@@ -44,19 +44,21 @@ Ast::panic(args...){
     cfunc = compile.currentFunc
     parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,this.line,this.column,cfunc.parser.filepath)
 }
-Ast::check( check , err)
+Ast::check( check , err<i8*>)
 {
     if(check) return err 
 
     cfunc = compile.currentFunc
-    if err != "" {
-        fmt.println("AsmError:%s \n"
-                "line:%d column:%d file:%s\n\n"
-                "expression:\n%s\n",err,this.line,this.column,GP().filepath,this.toString())
+    if err != null {
+        fmt.printf("AsmError:%s \n" + 
+                "line:%d column:%d file:%s\n\n" +
+                "expression:\n%s\n",err,this.line,this.column,GP().filepath,this.toString()
+        )
     }else{
-        fmt.println("AsmError:\n"
-                "line:%d column:%d file:%s\n\n"
-                "expression:\n%s\n",this.line,this.column,GP().parser.filepath,this.toString())
+        fmt.printf("AsmError:\n" +
+                "line:%d column:%d file:%s\n\n" +
+                "expression:\n%s\n",this.line,this.column,GP().parser.filepath,this.toString()
+        )
     }
     os.exit(-1)
 }

@@ -8,6 +8,7 @@ use utils
 use fmt
 
 StructInitExpr::arrinit(ctx , field , arr){
+    utils.debugf("gen.StructInitExpr::arrinit()")
 	if field.arrsize != std.len(arr.lit)  {
 		fmt.println(field.arrsize,std.len(arr.lit))
 		this.check(false,"arr size is not same")
@@ -41,6 +42,7 @@ StructInitExpr::arrinit(ctx , field , arr){
 	return this
 }
 StructInitExpr::compile(ctx){
+    utils.debugf("gen.StructInitExpr::compile()")
 	compile.Push()
 	s = package.getStruct(this.pkgname,this.name)
 	if(s == null) this.panic("struct not exist when new struct")

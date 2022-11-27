@@ -74,6 +74,7 @@ func Pop(arg){
     writeln("    pop %s",arg)
 }
 func Push_arg(ctx,fc,fce){
+    utils.debug("compile.Push_arg()")
     stack = 0 gp = 0
     current_call_have_im = false
     for(arg : fce.args){

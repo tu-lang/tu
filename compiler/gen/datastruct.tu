@@ -58,6 +58,7 @@ class BoolExpr   : ast.Ast {
     }
     func compile(ctx)
     {
+	    utils.debugf("gen.BoolExpr::compile()")
         this.record()
         internal.newobject(ast.Bool,this.lit)
         return null
@@ -73,6 +74,7 @@ class CharExpr    : ast.Ast {
         super.init(line,column)
     }
     func compile(ctx) {
+	    utils.debugf("gen.CharExpr::compile()")
         this.record()
         if this.tyassert != null {
             compile.writeln("	mov $%s,%%rax",this.lit)
@@ -92,6 +94,7 @@ class IntExpr     : ast.Ast {
         super.init(line,column)
     }
     func compile( ctx) {
+	    utils.debugf("gen.IntExpr::compile()")
         this.record()
         if this.tyassert != null {
             compile.writeln("	mov $%s,%%rax",this.lit)
@@ -111,6 +114,7 @@ class DoubleExpr  : ast.Ast {
         super.init(line,column)
     }
     func compile(ctx) {
+	    utils.debugf("gen.DoubleExpr::compile()")
         this.record()
         internal.newobject(ast.Double,this.lit)
         return null
@@ -126,6 +130,7 @@ class StringExpr  : ast.Ast {
         super.init(line,column)
     }
     func compile(ctx) {
+	    utils.debugf("gen.StringExpr::compile()")
         this.record()
         if this.tyassert != null {
             compile.writeln("	lea %s(%%rip),%%rax",this.name)

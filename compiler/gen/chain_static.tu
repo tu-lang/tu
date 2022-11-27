@@ -7,6 +7,7 @@ use utils
 
 ChainExpr::indexgen(ctx)
 {
+	utils.debugf("gen.ChainExpr::indexgen()")
 	member = null
 	if(type(this.first) == type(StructMemberExpr)){
 		this.first.compile(ctx)

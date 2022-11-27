@@ -6,6 +6,7 @@ use parser
 use parser.package
 
 func InitStructVar(gvar , s , fields){
+    utils.debug("compile.InitStructVar()")
 	gvar.check(s != null,"struct is null in iniststructvar")
 	size = 0
 	for (m : s.member){

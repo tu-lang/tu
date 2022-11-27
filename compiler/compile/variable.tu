@@ -13,6 +13,7 @@ func registerStrings(c){
     }
 }
 func registerVars(){
+    utils.debug("compile.registerVars()")
     writeln("    .globl %s", currentParser.filenameid)
     writeln("%s:", currentParser.filenameid)
     writeln("    .string \"%s\"",currentParser.filepath)

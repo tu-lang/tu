@@ -63,6 +63,7 @@ StructMemberExpr::getStruct()
 {
 	package = this.var.structpkg
 	sname = this.var.structname
+    utils.debugf("gen.StructMemberExpr::getStruct() pkgname:%s name:%s\n",package,sname)
 	if this.tyassert != null {
 		package = this.tyassert.pkgname
 		sname  = this.tyassert.name
@@ -87,6 +88,7 @@ StructMemberExpr::getStruct()
 
 StructMemberExpr::compile(ctx)
 {
+    utils.debugf("gen.StructMemberExpr::compile()")
 	this.record()
 	filename = compile.currentParser.filename
 

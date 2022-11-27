@@ -117,6 +117,7 @@ MatchCaseExpr::bitOrToLogOr(expr){
 	return node
 }
 MatchCaseExpr::compile(ctx){
+    utils.debugf("gen.MatchCaseExpr::compile()")
     this.record()
     compile.writeln("%s:",this.label)
     

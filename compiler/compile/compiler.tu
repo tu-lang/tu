@@ -20,6 +20,7 @@ func compile(){
     }
 }
 func link(){
+    utils.debug("compile.link()")
     // TODO: genearte assembly by self
     // args = "tc -p . -p /usr/local/lib/coasm/"
     links = ""
@@ -40,6 +41,7 @@ func link(){
 }
 func registerMain()
 {
+    utils.debug("compile.registerMain()")
     writeln("    .global main")
     writeln("main:")
     writeln("    push %%rbp")
@@ -97,6 +99,7 @@ func classs_offsets()
 
 func assign_offsets(fn)
 {
+    utils.debug("compile.assign_offsets()")
     top = 16
     bottom = 0
 

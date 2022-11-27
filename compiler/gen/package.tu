@@ -74,6 +74,7 @@ package.Package::genStruct(s)
 	compile.currentParser = null
 }
 package.Package::classinit(){
+    utils.debugf("gen.Package::classinit()")
 	for  pkg : package.packages {
 		for c : pkg.classes {
 			if !c.found {
@@ -104,6 +105,7 @@ package.Package::classinit(){
 	}
 }
 package.Package::compile(){
+    utils.debugf("gen.Package::compile()")
 	for(it : this.parsers){
 		compile.currentParser = it
 		compile.registerStrings(false)
@@ -115,6 +117,7 @@ package.Package::compile(){
 }
 
 package.Package::defaultvarsinit(){
+    utils.debugf("gen.Package::defaultvarsinit()")
 	if !compile.debug && !compile.sdebug return true
 	debug = package.packages["runtime_debug"]
 	for p : debug.parsers {

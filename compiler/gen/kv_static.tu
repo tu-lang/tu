@@ -7,7 +7,7 @@ use parser.package
 use string
  
 IndexExpr::compileStaticIndex(ctx,size){
-
+    utils.debugf("gen.IndexExpr::compileStaticIndex()")
 	if this.index == null this.check(false,"static var index is null")
 	if type(this.index) == type(IntExpr) {
 		i = this.index
@@ -55,6 +55,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 	 return null
  }
  IndexExpr::compile_static( ctx){
+	utils.debugf("gen.IndexExpr::compile_static()")
 	 f = compile.currentFunc   
 	 var = new VarExpr(this.varname,this.line,this.column)
 	 var.package = this.package
@@ -101,6 +102,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 	 return null
  }
  IndexExpr::assign_static( ctx , opt , rhs){
+	utils.debugf("gen.IndexExpr::assign_static()")
 	 f = compile.currentFunc   
 	 var = new VarExpr(this.varname,this.line,this.column)
 	 var.package = this.package

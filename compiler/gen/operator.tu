@@ -70,6 +70,7 @@ AssignExpr::compile(ctx){
     this.panic("SyntaxError: can not assign to %s" ,this.lhs.toString())
 }
 DelRefExpr::compile(ctx){
+    utils.debugf("gen.DelExpr::compile()")
     this.record()
     
     if type(this.expr) == type(StringExpr) {
@@ -124,6 +125,7 @@ DelRefExpr::compile(ctx){
 }
 
 AddrExpr::compile(ctx){
+    utils.debugf("gen.AddrExpr::compile()")
     this.record()
     
     if this.expr != null && type(this.expr) == type(ChainExpr) {
@@ -223,6 +225,7 @@ BinaryExpr::compile(ctx)
 }
 
 BinaryExpr::FirstCompile(ctx){
+    utils.debugf("gen.BinaryExpr::Firstcompile()")
     this.record()
     c = ast.incr_labelid()
     this.lhs.compile(ctx)

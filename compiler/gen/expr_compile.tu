@@ -2,6 +2,7 @@ use ast
 use string
 
 BinaryExpr::expr_compile(){
+	utils.debugf("gen.BinaryExpr::expr_compile()")
 	left = 0
 	right = 0
 	match type(this.lhs) {

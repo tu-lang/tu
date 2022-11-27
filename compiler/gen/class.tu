@@ -191,6 +191,7 @@ MemberCallExpr::toString() {
     return str
 }
 MemberCallExpr::static_compile(ctx,s){
+	utils.debugf("gen.MemberCallExpr::static_compile()")
     this.record()
     compile.Push()
 	p = s.parser

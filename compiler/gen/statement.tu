@@ -19,6 +19,7 @@ class ReturnStmt     : ast.Ast {
 }
 ReturnStmt::compile(ctx)
 {
+    utils.debugf("gen.ReturnExpr::compile()")
     this.record()
     
     if this.ret == null {
@@ -58,6 +59,7 @@ class BreakStmt      : ast.Ast {
 }
 BreakStmt::compile(ctx)
 {
+    utils.debugf("gen.BreakExpr::compile()")
     this.record()
     
     for(c : ctx ) {
@@ -75,6 +77,7 @@ class ContinueStmt   : ast.Ast {
 }
 ContinueStmt::compile(ctx)
 {
+    utils.debugf("gen.ContinueExpr::compile()")
     this.record()
     
     for ( c : ctx) {
@@ -94,6 +97,7 @@ class GotoStmt   : ast.Ast {
     }
 }
 GotoStmt::compile(ctx){
+    utils.debugf("gen.GotoExpr::compile()")
     this.record()
     compile.writeln("   jmp %s",this.label)
     return null
