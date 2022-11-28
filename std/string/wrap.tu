@@ -86,9 +86,13 @@ func tostring(num<runtime.Value>){
 		}
 		runtime.String : return num
 		runtime.Int :{
-    		buf<i8*> = new 10
-    		ilen<i32> = 10
-    		std.itoa(num.data,buf,ilen) 
+			return new(
+				fromlonglong(num.data)
+			)
+			//fix itoa
+    		buf<i8:21> = null
+    		ilen<i32> = 21
+    		std.itoa(num.data,&buf,ilen) 
     		return string.new(buf)
 		}
 		_: os.dief("[tostring] unsupport type:%s",runtime.type_string(str))
