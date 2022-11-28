@@ -39,7 +39,7 @@ func exprIsMtype(cond,ctx){
                 ismtype = var.isMemtype(ctx)
             }
         }
-        type(MemberExpr) : ismtype = i.ismem(ctx)
+        type(MemberExpr) : ismtype = cond.ismem(ctx)
     }
     return ismtype
 }

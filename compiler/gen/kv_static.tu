@@ -19,13 +19,13 @@ IndexExpr::compileStaticIndex(ctx,size){
 	if(type(this.index) == type(VarExpr)){
 		var = this.index
 		var = var.getVar(ctx)
-		if var.pointer this.check(false,"index can't be pointer")
-		if !var.structtype  this.check(false,"index must be statictype")
-		if var.type < ast.I8 || var.type > ast.U64 this.check("index must be 1 - 8 bytes type")
+		if var.pointer this.index.check(false,"index can't be pointer")
+		if !var.structtype  this.index.check(false,"index must be statictype")
+		if var.type < ast.I8 || var.type > ast.U64 this.check(false,"index must be 1 - 8 bytes type")
 		var.compile(ctx)
 	}else if type(this.index) == type(BinaryExpr) {
 		b = this.index
-		if !b.isMemtype(ctx) this.panic("must be mem binary operator for array index")
+		if !b.isMemtype(ctx) this.index.check(false,"must be mem binary operator for array index")
 		b.compile(ctx)
 	}else if type(this.index) == type(StructMemberExpr) {
 		sm = this.index
@@ -33,13 +33,13 @@ IndexExpr::compileStaticIndex(ctx,size){
 		compile.LoadMember(sm.ret)
 	}else if type(this.index) == type(MemberExpr) {
 		me = this.index
-		if !me.ismem(ctx) this.panic("memexpr should be mem type in index expr")
+		if !me.ismem(ctx) this.index.check(false,"memexpr should be mem type in index expr")
 		se = me.compile(ctx)
 		compile.LoadMember(se.ret)
 	}else if type(this.index) == type(FunCallExpr) {
         this.index.compile(ctx)
     }else{
-		this.check(false,"index must be var in arry index")
+		this.index.check(false,"index must be var in arry index")
 	}
 	if size != 1{
 		compile.writeln("\timul $%d , %%rax",size)

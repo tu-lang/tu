@@ -36,11 +36,11 @@ NewExpr::compile(ctx)
 	 fullpackage = compile.currentParser.import[this.package]
 	 if std.exist(fullpackage,package.packages)  {
 		s = null
-		if s = package.packages[fullpackage].getStruct(this.name) && s != null {
+		if (s = package.packages[fullpackage].getStruct(this.name) ) && s != null {
 			internal.gc_malloc(s.size)
 			return this
 		}else{
-			var = new VarExpr(this.name,0,0)
+			var = new VarExpr(this.name,this.line,this.column)
 			var.package = this.package
 			if !var.isMemtype(ctx) {
 				this.panic("AsmError: var must be memtype in (new var)")

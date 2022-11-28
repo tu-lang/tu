@@ -49,8 +49,8 @@ MatchStmt::compile(ctx){
     
     compile.blockcreate(ctx)
 
-    ctx.back().point = mainPoint
-    ctx.back().end_str = "L.match.end"
+    std.tail(ctx).point = mainPoint
+    std.tail(ctx).end_str = "L.match.end"
 
     for(cs : this.cases){
         cs.compile(ctx)

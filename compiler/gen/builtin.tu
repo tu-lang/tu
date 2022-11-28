@@ -5,9 +5,9 @@ use std
 use utils
 
 class BuiltinFuncExpr : ast.Ast {
-    funcname  = ""
+    funcname  = funcname
 	expr from
-	func init(line,column){
+	func init(funcname,line,column){
 		super.init(line,column)
 	}
 }

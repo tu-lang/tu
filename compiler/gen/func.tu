@@ -222,17 +222,19 @@ FunCallExpr::compile(ctx)
 	}else{
 		pkg  = package.packages[packagename]
 		if !pkg {
-			this.panic(
-				"AsmError: can not find package definition of %s" ,
+			this.check(false,
+				"can not find package definition of" +
 				this.package
 			)
 		}
 		fc = pkg.getFunc(this.funcname,this.is_extern)
 		if !fc {
-			this.panic(
-				"AsmError: can not find func definition of %s %s",
-				this.funcname,
-				this.package
+			this.check(false,
+				fmt.sprintf(
+					"can not find func definition of %s : %s",
+					this.funcname,
+					this.package
+				)
 			)
 		}
 		fc.isObj       = false

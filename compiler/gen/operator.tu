@@ -53,7 +53,7 @@ AssignExpr::compile(ctx){
         type(VarExpr) : {
             return this.lhs.assign(ctx,this.opt,this.rhs)
         }
-        type(IndexExpr) : return this.lhs.assign(this.opt,this.rhs)
+        type(IndexExpr) : return this.lhs.assign(ctx,this.opt,this.rhs)
         type(StructMemberExpr) | type(DelRefExpr) : {
             return (new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)).gen()
         }
@@ -187,10 +187,9 @@ class BinaryExpr : ast.Ast {
 }
 BinaryExpr::isMemtype(ctx)
 {    
-    this.check(this.lhs != Null)
-
+    this.check(this.lhs != Null,"this.lhs is null")
     if this.lhs != null && exprIsMtype(this.lhs,ctx) return True
-    if this.rhs != null && exprIsMtype(this.lhs,ctx) return True
+    if this.rhs != null && exprIsMtype(this.rhs,ctx) return True
     return False
 }
 
@@ -198,13 +197,13 @@ BinaryExpr::compile(ctx)
 {
     this.record()
 
-    utils.debug( "BinaryExpr: parsing... lhs:%s opt:%s rhs:%s",
+    utils.debug( "BinaryExpr::compile() lhs:%s opt:%s rhs:%d",
           this.lhs.toString(),
           ast.getTokenString(this.opt),
-          this.rhs.toString()
+          this.rhs
     )
     if !this.rhs && (this.opt != ast.BITNOT && this.opt != ast.LOGNOT)
-        this.panic("AsmError: right expression is wrong expression:" + this.toString())
+        this.panic("right expression is wrong expression:" + this.toString())
     
     if this.isMemtype(ctx) {
         (new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)).gen()

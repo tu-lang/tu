@@ -5,6 +5,7 @@ use utils
 use ast
 use gen
 use parser.package
+use string
 
 Parser::parseEnumDef(){
     utils.debug("parser.Parser::parseEnumDef()")
@@ -18,7 +19,7 @@ Parser::parseEnumDef(){
         gv = new gen.VarExpr(this.scanner.curLex,this.line,this.column)
         gv.structtype = true
         //TODO: gv.ivalue = defaulte ++
-        gv.ivalue = defaulte        
+        gv.ivalue = string.tostring(defaulte)        
         this.gvars[gv.varname] = gv
         gv.is_local = false
         gv.package  = this.package

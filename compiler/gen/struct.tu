@@ -1,6 +1,8 @@
 use ast
 use compile
 use std
+use parser.package
+
 
 class StructInitExpr : ast.Ast {
 	func init(line,column){
@@ -61,27 +63,27 @@ StructMemberExpr::getMember()
 }
 StructMemberExpr::getStruct()
 {
-	package = this.var.structpkg
+	packagename = this.var.structpkg
 	sname = this.var.structname
-    utils.debugf("gen.StructMemberExpr::getStruct() pkgname:%s name:%s\n",package,sname)
+    utils.debugf("gen.StructMemberExpr::getStruct() pkgname:%s name:%s\n",packagename,sname)
 	if this.tyassert != null {
-		package = this.tyassert.pkgname
+		packagename = this.tyassert.pkgname
 		sname  = this.tyassert.name
 	}	
-	if package == "" {
-		package = this.var.package
+	if packagename == "" {
+		packagename = this.var.package
 	}
 	s = null
 	
-	if GP().import.count(package) {
-		package = GP().import[package]
+	if GP().import[packagename] != null {
+		packagename = GP().import[packagename]
 	}
-	if std.len(package.packages,package < 1){
-		this.panic("mem package not exist:%s" ,package)
+	if package.packages[packagename] == null {
+		this.check(false,"mem package not exist:%s" ,packagename)
 	}
-	s = package.packages[package].getStruct(sname)
+	s = package.packages[packagename].getStruct(sname)
 	if s == null {
-        this.panic("mem type not exist :%s" , sname)
+        this.check(false,"mem type not exist :%s" , sname)
 	}
 	return s
 }

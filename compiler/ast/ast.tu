@@ -66,7 +66,7 @@ astcheck_panic:
                 "expression:\n%s\n",this.line,this.column,GP().parser.filepath,this.toString()
         )
     }
-    os.exit(-1)
+    os.die("check failed")
 }
 func getTokenString(tk) {
     match tk {

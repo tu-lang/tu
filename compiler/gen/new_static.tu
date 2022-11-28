@@ -53,6 +53,7 @@ StructInitExpr::compile(ctx){
 		isunsigned = false
 		if type(value) == type(IntExpr) {
 			rtok = value.getType(ctx)
+			ie   = value
 			compile.writeln("	mov $%s,%%rax",ie.lit)
 		}else if type(value) == type(StringExpr) {
 			rtok = value.getType(ctx)

@@ -63,10 +63,10 @@ VarExpr::getVarType(ctx)
     if this.package != "" {
         if GP().getGlobalVar(this.package,this.varname) != null {
             this.ret = GP().getGlobalVar(this.package,this.varname)
+            if this.ret.structtype
+                return ast.Var_Global_Extern_Static
+            return ast.Var_Global_Extern
         }
-        if this.ret.structtype
-            return ast.Var_Global_Extern_Static
-        return ast.Var_Global_Extern
     }
     if GP().getGlobalVar("",this.package) != null {
         this.ret = GP().getGlobalVar("",this.package)
@@ -105,7 +105,7 @@ VarExpr::getVarType(ctx)
         return ast.Var_Func
     }   
     this.check(false,
-        fmt.sprintf("AsmError:get var type use of undefined variable %s.%s at line %d co %d filename:%s\n",
+        fmt.sprintf("get var type use of undefined variable %s.%s at line %d co %d filename:%s\n",
             this.package,this.varname,
             this.line,this.column,
             GP().filepath
