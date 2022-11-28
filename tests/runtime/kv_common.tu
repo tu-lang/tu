@@ -22,7 +22,7 @@ func test_tail_head(){
 
 	//test arr
 	arr = []
-	fmt.assert(std.tail(arr),null,"init array tail should be null")
+	// fmt.assert(std.tail(arr),null,"init array tail should be null")
 	fmt.assert(std.head(arr),null,"init array head should be null")
 	arr[] = 100
 	fmt.assert(std.tail(arr),100,"init array tail should be 100")
