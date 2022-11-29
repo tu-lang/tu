@@ -45,6 +45,12 @@ func registerVars(){
                     }
                 }else{
                     s = package.getStruct(v.structpkg,v.structname) 
+                    if s == null {
+                        v.check(false,fmt.sprintf(
+                            "struckt not exist pkg:%s name:%s",
+                            v.structpkg,v.structname
+                        ))
+                    }
                     if std.len(s.member) * v.stacksize != std.len(v.elements) {
                         v.check(false,"mem arr: init element count not right")
                     }

@@ -205,7 +205,7 @@ MemberCallExpr::static_compile(ctx,s){
     compile.Push()
 	call = this.call
 	params = call.args
-	pos = new ArgsPosExpr(this.line,this.column)
+	pos = new ArgsPosExpr(0,this.line,this.column)
     pos.pos = 0
     call.args = []
     call.args[] = pos
@@ -231,7 +231,7 @@ MemberCallExpr::compile(ctx)
     compile.Push()
 	params = this.call.args
     
-	pos = new ArgsPosExpr(this.line,this.column)
+	pos = new ArgsPosExpr(0,this.line,this.column)
     //push obj
     //push obj.func
     //push $arg6
@@ -239,7 +239,6 @@ MemberCallExpr::compile(ctx)
     //push $arg4
     //push $arg3
     //push $arg2
-    pos.pos = 0
 	call = this.call
 	call.args = [pos]
 	std.merge(call.args , params)

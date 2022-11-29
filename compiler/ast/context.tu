@@ -33,7 +33,8 @@ func getVar(ctx , varname)
     hasctx = false
     ret    = null
     for c : ctx {
-        if var = c.getVar(varname) {
+        var = c.getVar(varname)
+        if var != null {
             hasctx = true
             if GF().locals[varname] != null
                 ret = GF().locals[varname]

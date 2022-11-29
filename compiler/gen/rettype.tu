@@ -36,7 +36,7 @@ ChainExpr::getType(ctx){
 
 	member = null
 	if type(this.first) == type(StructMemberExpr) {
-		member = s.getMember()
+		member = this.first.getMember()
 	}else if type(this.first) == type(MemberExpr) {
 		s = this.first
 		member = s.getMember(ctx)

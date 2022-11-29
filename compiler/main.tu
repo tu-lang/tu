@@ -49,6 +49,7 @@ func debug(){
 func main() {
     if os.argc < 2 return print_help() 
     code_file = ""
+    os.set_stack(10.(i8))
 
     i = 0
     while i < std.len(os.argv)  {

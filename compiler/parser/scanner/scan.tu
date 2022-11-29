@@ -409,7 +409,10 @@ Scanner::get_next() {
         return this.token(ast.LT, "<")
     }
     
-    utils.panic("SyntaxError: unknown token '%s' line:%d column:%d  file:%s\n",c,this.line,this.column,this.parser.filepath)
+    utils.panic(
+        "SyntaxError: unknown token '%d' line:%d column:%d  file:%s\n",
+        c,this.line,this.column,this.parser.filepath
+    )
     return this.token(ast.ILLEGAL,"invalid")
 }
 

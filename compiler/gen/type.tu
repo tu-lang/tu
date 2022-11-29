@@ -11,7 +11,7 @@ class TypeAssertExpr : ast.Ast {
 	pkgname = ""
 	name    = ""
 }
-TypeAssertExpr::toString(s) { 
+TypeAssertExpr::toString() { 
 	return fmt.sprintf("TypeAssertExpr(%s.%s)"
 		this.pkgname,this.name
 	)

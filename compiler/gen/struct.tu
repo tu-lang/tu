@@ -13,7 +13,7 @@ class StructInitExpr : ast.Ast {
 
 	fields = {} // fieldname : expression
 }
-StructInitExpr::toString(s){
+StructInitExpr::toString(){
 	return fmt.sprintf("struct init(%s.%s)"
 		this.pkgname,this.name
 	)
@@ -24,10 +24,10 @@ class NewStructExpr : ast.Ast {
 	}
 	init //struct init expr
 }
-NewStructExpr::toString(s){
+NewStructExpr::toString(){
 	return fmt.sprintf(
 		"new (%s)",
-		this.init.toString(s)
+		this.init.toString()
 	)
 }
 

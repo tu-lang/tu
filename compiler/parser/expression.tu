@@ -301,7 +301,7 @@ Parser::parsePrimaryExpr()
             this.scanner.scan()
             ret.tyassert = this.parseTypeAssert(false)
         }        
-        ret.lit = val[0]
+        ret.lit = val
         return ret
     }else if tk == ast.BOOL
     {

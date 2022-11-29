@@ -4,11 +4,11 @@ use std
 packages = {} # map{name: Package}
 
 
-func getStruct(package,name) {    
-    pkgname = package
-    if pkgname == "" pkgname = compile.currentFunc.parser.getpkgname() 
+func getStruct(packagename,name) {    
+    pkgname = packagename
+    if pkgname == "" || pkgname == null pkgname = compile.currentParser.getpkgname() 
 
-    if std.exist(pkgname,packages) < 1 {
+    if packages[pkgname] == null {
         return null
     }
     pkg = packages[pkgname]

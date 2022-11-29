@@ -157,8 +157,8 @@ FunCallExpr::compile(ctx)
 	}else if this.cls != null {
         fc = this.cls.getFunc(this.funcname)
         if fc == null
-            this.panic(
-                "AsmError: can not find class func definition of " + this.funcname
+            this.check(false,
+                "can not find class func definition of " + this.funcname
 			)
         fc.isObj       = false
     }else if this.package != "" && GP().getGlobalVar("",this.package) != null {
@@ -206,7 +206,8 @@ FunCallExpr::compile(ctx)
 			compile.writeln("   add $8,%%rsp")
 		}
 		return null
-	}else if this.package == null && (var = ast.getVar(ctx,this.funcname)) != null {
+	}else if this.package == "" && ast.getVar(ctx,this.funcname) != null {
+		var = ast.getVar(ctx,this.funcname)
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
@@ -231,8 +232,9 @@ FunCallExpr::compile(ctx)
 		if !fc {
 			this.check(false,
 				fmt.sprintf(
-					"can not find func definition of %s : %s",
+					"can not find func definition of %s : pkgname:%s  this.pkgname:%s ",
 					this.funcname,
+					packagename,
 					this.package
 				)
 			)

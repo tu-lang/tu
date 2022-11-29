@@ -19,7 +19,7 @@ class Class
 Class::getFunc(name){
 	for it : this.funcs {
 		if it.name == name {
-		return it
+			return it
 		}
 	}
 	return null
@@ -47,7 +47,7 @@ Class::getMember(name)
 
 Class::initClassInitFunc()
 {
-  utils.debug("ast.Class::initClassInitFunc()")
+  	utils.debugf("ast.Class::initClassInitFunc() cls:%s",this.name)
     f = null
     for(var : this.funcs){
         if var.name == "init" {

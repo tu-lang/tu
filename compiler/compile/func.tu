@@ -69,7 +69,7 @@ func CreateFunction(fn) {
                 "std" | "os" | "string" | "runtime" | "fmt" : continue
             }
             if !arg.structtype && vardic == null {
-                arg.compile(funcCtx)
+                arg.compile(funcCtxChain)
                 count  = ast.incr_labelid()
                 writeln("   cmp $0,%%rax")
                 writeln("   jne L.args.%d",count)
