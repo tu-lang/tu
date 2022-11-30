@@ -49,6 +49,7 @@ ReturnStmt::compile(ctx)
         if funcName != "" 
             compile.writeln("    jmp L.return.%s",funcName)
     }
+    return null
 }
 //TODO: not parser
 class BreakStmt      : ast.Ast {
@@ -67,6 +68,7 @@ BreakStmt::compile(ctx)
             compile.writeln("    jmp %s.%d",c.end_str,c.point)
         }
     }
+    return null
 }
 class ContinueStmt   : ast.Ast {
     func init(line,column){
@@ -88,6 +90,7 @@ ContinueStmt::compile(ctx)
             compile.writeln("    jmp %s.%d", c.start_str, c.point)
         }
     }
+    return null
 }
 
 class GotoStmt   : ast.Ast {

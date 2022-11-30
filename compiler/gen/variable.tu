@@ -59,7 +59,7 @@ VarExpr::getVar(ctx){
 
 VarExpr::getVarType(ctx)
 {
-    package = this.package
+    // package = this.package
     if this.package != "" {
         if GP().getGlobalVar(this.package,this.varname) != null {
             this.ret = GP().getGlobalVar(this.package,this.varname)

@@ -186,6 +186,7 @@ WhileStmt::compile(ctx)
 
     compile.writeln("    jmp L.while.begin.%d",c)
     compile.writeln("L.while.end.%d:", c)
+    return null
 }
 WhileStmt::dead_compile(ctx)
 {

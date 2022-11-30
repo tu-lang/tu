@@ -113,6 +113,7 @@ BuiltinFuncExpr::compile(ctx){
 		internal.newobject2(ast.Int)
 		return null
 	}
+	return null
 }
 BuiltinFuncExpr::toString(){
 	return fmt.sprintf("BuiltinFuncExpr:%s(%s)"

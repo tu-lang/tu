@@ -98,7 +98,7 @@ package.Package::classinit(){
 	}
 	for(pkg : package.packages){
 		for(cls : pkg.classes){
-			if !c.found continue
+			if !cls.found continue
 			cls.initClassInitFunc()
 			cls.checkRmSupers()
 		}

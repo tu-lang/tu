@@ -21,6 +21,7 @@ ArgsPosExpr::compile(ctx){
     stack += 6 - this.pos
 
     compile.writeln("   mov %d(%rsp) , %rax",stack * 8)
+    return null
 }
 
 class LabelExpr : ast.Ast {

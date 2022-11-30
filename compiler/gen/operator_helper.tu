@@ -75,6 +75,7 @@ OperatorHelper::gen()
 		}
 		return ret
 	}
+	return null
 }
 OperatorHelper::assign()
 {
@@ -109,6 +110,7 @@ OperatorHelper::assign()
 		}
 	}
 	compile.Store(this.ltypesize)
+	return null
 }
 OperatorHelper::binary()
 {
@@ -214,7 +216,6 @@ OperatorHelper::binary()
 			compile.writeln(".L.true.%d:", c)
 			compile.writeln("	mov $1, %%rax")
 			compile.writeln(".L.end.%d:", c)
-			break
 		}
 		ast.LOGAND : { 
 			c = ast.incr_labelid()
@@ -233,7 +234,6 @@ OperatorHelper::binary()
 			compile.writeln(".L.false.%d:", c)
 			compile.writeln("	mov $0, %%rax")
 			compile.writeln(".L.end.%d:", c)
-			break
 		}
 	}
 	return null
@@ -340,7 +340,12 @@ OperatorHelper::genRight(isleft,expr)
 		}
 	}
 	
-	ret = expr.compile(this.ctx)
+	exist<i64> = expr.compile(this.ctx)
+	if exist == 0 {
+		expr.check(false,"return value is Null")
+	}
+	ret = exist
+
 	if !exprIsMtype(expr,this.ctx) && ( this.op == ast.LOGAND || this.opt == ast.LOGOR) {
 		internal.isTrue()
 	}
