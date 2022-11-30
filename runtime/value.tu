@@ -446,9 +446,11 @@ func operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
 func unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
 {
     //lhs == Value**
-    if lhs == null || rhs == null {
-        fmt.println("[unary-op] probably wrong at there!")
-        return Null
+    if lhs == null  {
+        os.dief("[unary-op] %s lhs arg is null",token_string(opt))
+    }
+    if rhs == null {
+        os.dief("[unary-op] %s rhs arg is null",token_string(opt))
     }
     ret<Value> = operator_switch(opt,*lhs,rhs)
     //*(Value**)lhs = ret

@@ -1,4 +1,5 @@
 
+use runtime
 Null<i64> = 0
 
 mem String {
