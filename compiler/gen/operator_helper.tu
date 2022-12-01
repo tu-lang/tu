@@ -308,7 +308,7 @@ OperatorHelper::genLeft()
 OperatorHelper::genRight(isleft,expr)
 {
     utils.debugf("gen.OpHelper::genRight()")
-	match type(this.expr) {
+	match type(expr) {
 		type(IntExpr) : {
 			ie = expr	
 			compile.writeln("	mov $%s,%%rax",ie.lit)
@@ -340,12 +340,8 @@ OperatorHelper::genRight(isleft,expr)
 		}
 	}
 	
-	exist<i64> = expr.compile(this.ctx)
-	if exist == 0 {
-		expr.check(false,"return value is Null")
-	}
-	ret = exist
-
+	ret = expr.compile(this.ctx)
+	
 	if !exprIsMtype(expr,this.ctx) && ( this.op == ast.LOGAND || this.opt == ast.LOGOR) {
 		internal.isTrue()
 	}

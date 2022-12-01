@@ -275,7 +275,7 @@ IfStmt::compile(ctx){
     }
 
     for(cs : this.cases){
-        if(exprIsMtype(cs.cond,ctx) && type(cs.cond) != type(gen.BinaryExpr)){
+        if(exprIsMtype(cs.cond,ctx) && type(cs.cond) != type(BinaryExpr)){
             be = new gen.BinaryExpr(cs.cond.line,cs.cond.column)
             be.lhs = cs.cond
             be.opt = ast.GT

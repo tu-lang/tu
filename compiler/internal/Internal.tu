@@ -41,12 +41,12 @@ func malloc(size)
     call("malloc")
 }
 //@typ  ast.Int ... ast.Object
-func newobject(typ<i32>,data)
+func newobject(typ,data)
 {
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
 
-    compile.writeln("    mov $%d, %%rdi", int(typ))
+    compile.writeln("    mov $%d, %%rdi", typ)
     if typ != ast.String
         compile.writeln("    mov $%d, %%rsi", data)
 
@@ -66,7 +66,7 @@ func newint(typ, data)
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
 
-    compile.writeln("    mov $%d, %%rdi", int(typ))
+    compile.writeln("    mov $%d, %%rdi", typ)
     compile.writeln("    mov $%s, %%rsi", data)
     call("runtime_newobject")
     compile.writeln("    pop %%rsi")
@@ -78,7 +78,7 @@ func newobject2(typ)
     compile.writeln("    push %%rdi")
     compile.writeln("    push %%rsi")
 
-    compile.writeln("    mov $%d, %%rdi", int(typ))
+    compile.writeln("    mov $%d, %%rdi", typ)
     compile.writeln("    mov %%rax, %%rsi")
 
     call("runtime_newobject")

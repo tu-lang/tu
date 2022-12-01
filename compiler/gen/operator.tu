@@ -206,7 +206,7 @@ BinaryExpr::compile(ctx)
         this.panic("right expression is wrong expression:" + this.toString())
     
     if this.isMemtype(ctx) {
-        (new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)).gen()
+        return (new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)).gen()
     }
     if this.opt == ast.LOGOR || this.opt == ast.LOGAND 
         return this.FirstCompile(ctx)

@@ -32,13 +32,19 @@ MatchStmt::compile(ctx){
     this.defaultCase.endLabel = this.endLabel
     
     for(cs : this.cases){
-        be = new BinaryExpr(cs.line,cs.column)
-        be.lhs = cs.matchCond
-        be.opt = ast.EQ
-        be.rhs = cs.cond
-        be.compile(ctx)
-        
-        if !exprIsMtype(be,ctx)
+        cond = null
+        if cs.logor {
+            cond = cs.cond
+        }else{
+            be = new BinaryExpr(cs.line,cs.column)
+            be.lhs = cs.matchCond
+            be.opt = ast.EQ
+            be.rhs = cs.cond
+            cond = be
+        }
+        cond.compile(ctx)
+
+        if !exprIsMtype(cond,ctx)
             internal.isTrue()
         
         compile.writeln("    cmp $1, %%rax")
