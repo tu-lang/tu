@@ -175,7 +175,7 @@ WhileStmt::compile(ctx)
 
     compile.blockcreate(ctx)
     
-    std.tail(ctx).po= c
+    std.tail(ctx).point = c
     std.tail(ctx).end_str   = "L.while.end"
     std.tail(ctx).start_str = "L.while.begin"
     
@@ -198,7 +198,7 @@ WhileStmt::dead_compile(ctx)
     
     compile.blockcreate(ctx)
     
-    std.tail(ctx).po= c
+    std.tail(ctx).point = c
     std.tail(ctx).end_str   = "L.while.end"
     std.tail(ctx).start_str = "L.while.begin"
     

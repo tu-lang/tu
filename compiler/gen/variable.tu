@@ -100,7 +100,7 @@ VarExpr::getVarType(ctx)
         this.ret = this
         this.type = ast.U64
 
-        funcname = fn.name
+        this.funcname = fn.name //save funcname ;compile will use it
         this.funcpkg = fn.package.getFullName()
         return ast.Var_Func
     }   
