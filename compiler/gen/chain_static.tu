@@ -40,7 +40,7 @@ ChainExpr::indexgen(ctx)
 				this.check(false,"last second field should be pointer in array index")
 			}
 		}
-		compile.writeln("	add $%d, %rax",member.offset)
+		compile.writeln("	add $%d, %%rax",member.offset)
 		if member.pointer {
 			compile.Load()
 		}

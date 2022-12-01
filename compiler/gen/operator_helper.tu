@@ -27,7 +27,7 @@ class OperatorHelper {
 
 	ax = "%rax"
 	di = "%rdi"
-	dx = "$rdx"
+	dx = "%rdx"
 	needassign = false
 }
 OperatorHelper::init(ctx,lhs,rhs,opt) {

@@ -20,7 +20,7 @@ ArgsPosExpr::compile(ctx){
     }
     stack += 6 - this.pos
 
-    compile.writeln("   mov %d(%rsp) , %rax",stack * 8)
+    compile.writeln("   mov %d(%%rsp) , %%rax",stack * 8)
     return null
 }
 
@@ -53,7 +53,7 @@ class NullExpr    : ast.Ast {
     func toString() { return "NullExpr()" }
 }
 class BoolExpr   : ast.Ast { 
-    lit 
+    lit = 0
     func init(line,column){
         super.init(line,column)
     }

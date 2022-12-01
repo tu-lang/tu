@@ -77,7 +77,7 @@ func funcexec(ctx , fc , fce)
 		compile.writeln("    mov -8(%%rbp),%%rdi")
 		compile.Push()
 		internal.call("runtime_get_object_value")
-		compile.writeln("	 mov %%rax,%d(%%rbp",compile.currentFunc.stack)
+		compile.writeln("	 mov %%rax,%d(%%rbp)",compile.currentFunc.stack)
 		compile.Pop("%rax")
 		if fce.is_delref
 			compile.writeln("	add $-6,%d(%%rbp)",compile.currentFunc.stack)

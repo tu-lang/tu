@@ -35,8 +35,8 @@ func compile(){
     compile.compile()
 
     if run {
-        //codegen.link() # link automaticlly
-        os.shell("rm *.s")
+        compile.link() # link automaticlly
+        // os.shell("rm *.s")
         args = "./a.out"
         os.shell(args)
     }
@@ -54,7 +54,11 @@ func main() {
     i = 0
     while i < std.len(os.argv)  {
         match os.argv[i] {
-            "run" : run = true
+            "run" : {
+                code_file = os.argv[i + 1]
+                i += 1
+                run = true
+            }
             "-d"  : utils.debug_mode = 1          # debug mode
             "-g"  : compile.debug    = true
             "-og" : compile.sdebug   = true

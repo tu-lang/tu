@@ -103,7 +103,7 @@ func arr_pushone() {
     
     compile.Pop("%rsi")
     
-    compile.writeln("    mov (%rsp),%rdi")
+    compile.writeln("    mov (%%rsp),%%rdi")
     call("runtime_arr_pushone")
 }
 
@@ -113,7 +113,7 @@ func kv_update() {
     
     compile.Pop("%rsi")
     
-    compile.writeln("    mov (%rsp),%rdi")
+    compile.writeln("    mov (%%rsp),%%rdi")
     call("runtime_kv_update")
 }
 
@@ -132,7 +132,7 @@ func call(funcname)
     compile.writeln("    call *%%r10")
 }
 func check_object(expr){
-    compile.writeln("    mov (%%rsp) , %rdi")
+    compile.writeln("    mov (%%rsp) , %%rdi")
     compile.writeln("    call runtime_check_object")
     count = ast.incr_labelid()
     compile.writeln("    cmp $0, %%rax")
@@ -161,10 +161,10 @@ func object_func_add(name)
     compile.Pop("%rdx")
     hk  = utils.hash(name)
     compile.writeln("# [debug] object_func_add  name:%s  hk:%d",name,hk)
-    compile.writeln("    mov $%U,%%rsi",hk)
+    compile.writeln("    mov $%d,%%rsi",hk)
 
     
-    compile.writeln("    mov (%rsp),%rdi")
+    compile.writeln("    mov (%%rsp),%%rdi")
 
     call("runtime_object_func_add")
 }
@@ -199,10 +199,10 @@ func type_id(id,isobj){
     call("runtime_type")
 }
 func miss_args(pos,funcname,isclass){
-    compile.writeln("   mov $%d , %rdi",pos)
+    compile.writeln("   mov $%d , %%rdi",pos)
     compile.writeln("   lea %s(%%rip), %%rsi", funcname)
     iscls = 0
     if isclass iscls = 1
-    compile.writeln("   mov $%d , %rdx",iscls)
+    compile.writeln("   mov $%d , %%rdx",iscls)
     call("runtime_miss_args")
 }

@@ -262,7 +262,7 @@ Scanner::get_next() {
             utils.panic("SyntaxError: a character lit should surround with single-quote c:%c file:%s\n",this.peek(),this.parser.filepath)
         }
         c = this.next()
-        return this.token(ast.CHAR, string.tostring(lexeme))
+        return this.token(ast.CHAR, string.tostring(string.tonumber(lit)))
     }
     
     if c == '\"'{

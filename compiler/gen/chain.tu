@@ -150,7 +150,7 @@ ChainExpr::memgen(ctx)
 		this.check(member != null,"mem not exist field:" + me.membername)
 		this.check(member.isstruct,"middle field must be mem type in chain expression")
 
-		compile.writeln("	add $%d, %rax",member.offset)
+		compile.writeln("	add $%d, %%rax",member.offset)
 		if member.pointer {
 			compile.Load()
 		}
@@ -168,7 +168,7 @@ ChainExpr::memgen(ctx)
 		}
 		member = ss.getMember(me.membername)
 		this.check(member != null,"mem not exist field:" + me.membername)
-		compile.writeln("	add $%d, %rax",member.offset)
+		compile.writeln("	add $%d, %%rax",member.offset)
 	}else if type(this.last) == type(MemberCallExpr) {
 		lastn = this.last
 		if lastn.tyassert != null
