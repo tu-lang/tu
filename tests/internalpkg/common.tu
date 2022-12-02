@@ -29,8 +29,22 @@ func test_len(){
 	//unsupport map
     fmt.println("test std.len success")
 }
+gm = {}
+func test_hash64(){
+	for i = 0 ; i <  100000 ; i += 1 {
+		s = i + ""
+		l = std.len(s)
+		p = int(std.hash64(*s,*l))
+		if gm[p] != null {
+			os.dief("hashcode conflict %s %s %d",gm[p],s,p)
+		}
+		gm[p] = s
+	}
+    fmt.println("test hash64 success")
+}
 func main(){
     test_rand()
+    test_hash64()
     // fmt.println("before")
     //os.daemon()
     // fmt.println("after")

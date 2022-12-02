@@ -193,3 +193,13 @@ func strtol(nptr<i8*>, endptr<u64*>, base<i32>)
 	}
 	return acc
 }
+prime64<u64>    = 1099511628211
+
+func hash64(bytes<u8*>,len<u64>){
+	hash<u64> = 14695981039346656037
+	for i<i64> = 0 ; i < len ; i += 1 {
+		hash ^= bytes[i]
+		hash *= prime64
+	}
+	return hash
+}
