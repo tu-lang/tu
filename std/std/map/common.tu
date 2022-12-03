@@ -3,14 +3,18 @@ use runtime
 use string
 use fmt
 
-func map_create(){
+func map_create(insertfn<u64>){
+
+    if insertfn == null {
+        insertfn = map_insert_or_update
+    }
     sentinel<RbtreeNode> = new RbtreeNode
 	sentinel.black()
 
 	return new Rbtree {
 		root : sentinel,
 		sentinel : sentinel,
-		insert: map_insert_or_update,
+		insert: insertfn,
 	}
 }
 
@@ -81,7 +85,7 @@ func map_insert( m<runtime.Value> ,k<runtime.Value>,v<runtime.Value>)
     if  k.type == runtime.String {
         // str<string.Str> = k.data
         // hk = hash_key(k.data,str.len())
-        hk = k.data.(string.Str).hash32()
+        hk = k.data.(string.Str).hash64()
     }
     node.key = hk
     node.k = k
@@ -95,7 +99,7 @@ func map_find(m<runtime.Value>, key<runtime.Value>){
         runtime.Bool   : hk = key.data
         runtime.Int    : hk = key.data
         runtime.String : {
-            hk = key.data.(string.Str).hash32()
+            hk = key.data.(string.Str).hash64()
             // str<string.Str> = key.data
             // hk = hash_key(key.data,str.len())
         }
