@@ -4,14 +4,20 @@ use std
 use os
 
 func new(init<i8*>){
-	r<i8*> = newstring(init)
-	if r == null fmt.println("newstring failed")
-	return runtime.newobject(runtime.STRING,r)
+	return runtime.newobject(
+		runtime.STRING,
+		init,
+		std.hash64(init,std.strlen(init))
+	)
 }
 func newstringfromlen(init<i8*>,l<i32>){
 	r<i8*> = newlen(init,l)
 	if r == null fmt.println("newlen failed")
-	return runtime.newobject(runtime.STRING,r)
+	return runtime.newobject(
+		runtime.STRING,
+		r,
+		r.(Str).hash64()
+	)
 }
 func sub(v<runtime.Value>,lo){
 	str<Str> = v.data

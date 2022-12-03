@@ -1,5 +1,6 @@
 
 use std.map
+use string
 
 # base
 PointerSize<i32>    = 8
@@ -11,6 +12,10 @@ Negative1<i32> 		= -1
 
 mem Value  { 
 	u64 type,data 
+}
+mem StringValue {
+	Value base
+	u64   hk
 }
 mem Object { 
 	map.Rbtree* members

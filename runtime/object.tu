@@ -6,7 +6,7 @@ use string
 use std
 use std.map
 
-func newobject(type<i32> , data<u64*>)
+func newobject(type<i32> , data<u64*>,hk<u64>)
 {
     match type {
         Int:   {
@@ -22,10 +22,37 @@ func newobject(type<i32> , data<u64*>)
             }
         }
         String: {
-            return new Value {
-                type : String,
-                data : string.newstring(data)
+            // return new Value {
+            //     type : String,
+            //     data : string.newstring(data)
+            // }
+            if hk == 0 {
+                fmt.vfprintf(std.STDOUT,"new string hk is null %s\n".(i8),data)
+                std.die(-1.(i8))
             }
+            //check exist
+            if enable_object_pool {
+                ps<u64> = strings.find(hk)
+                if ps != 0 {
+                    return ps
+                }
+            }
+            //new and insert
+            objs<StringValue> = new StringValue {
+                base : Value {
+                    type : String,
+                    data : string.newstring(data)
+                },
+                hk : hk
+            }
+            //FIXME: compiler generate hash code != str.hash64() ; cos \?
+            node<map.RbtreeNode> = new map.RbtreeNode {
+                key : hk,
+                v   : objs
+            }
+            //save string pools
+            if enable_object_pool strings.insert(node)
+            return objs
         }
         Bool:   {
             return new Value {
