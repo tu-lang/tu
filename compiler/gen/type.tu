@@ -30,7 +30,7 @@ TypeAssertExpr::getStruct(){
 		pkg = GP().import[pkg]
 	}
 	if package.packages[pkg] == null {
-		this.check(false,"mem package not exist:" + pkg)
+		this.check(false,"type assert: mem package not exist:" + pkg)
 	}
 	s = package.packages[pkg].getStruct(name)
 	if s == null {

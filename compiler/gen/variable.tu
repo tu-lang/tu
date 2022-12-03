@@ -17,7 +17,7 @@ class VarExpr : ast.Ast {
     
     structname  = ""
     structtype  = false
-    structpkg  
+    structpkg   = ""  
     pointer     = false
     
     type

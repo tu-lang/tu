@@ -44,11 +44,12 @@ StructInitExpr::arrinit(ctx , field , arr){
 StructInitExpr::compile(ctx){
     utils.debugf("gen.StructInitExpr::compile()")
 	compile.Push()
-	s = package.getStruct(this.pkgname,this.name)
-	if(s == null) this.panic("struct not exist when new struct")
+	fullpkg = GP().import[this.pkgname]
+	s = package.getStruct(fullpkg,this.name)
+	if(s == null) this.check(false,"struct not exist when new struct")
 	for key,value : this.fields {
 		field = s.getMember(key)
-		if field == null  this.panic("struct member field not exist :"+ key)
+		if field == null  this.check(false,"struct member field not exist :"+ key)
 		rtok = ast.U64
 		isunsigned = false
 		if type(value) == type(IntExpr) {
@@ -96,9 +97,10 @@ StructInitExpr::compile(ctx){
 	return this
 }
 NewStructExpr::compile(ctx){
-	if this.init == null this.panic("new struct is null")
-	s = package.getStruct(this.init.pkgname,this.init.name)
-	if s == null this.panic("struct not exist when new struct")
+	if this.init == null this.check(false,"new struct is null")
+	fullpackage = GP().import[this.init.pkgname]
+	s = package.getStruct(fullpackage,this.init.name)
+	if s == null this.check(false,"struct not exist when new struct")
 	internal.gc_malloc(s.size)
 	this.init.compile(ctx)
 	return this

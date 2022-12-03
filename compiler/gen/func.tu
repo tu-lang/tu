@@ -164,9 +164,10 @@ FunCallExpr::compile(ctx)
     }else if this.package != "" && GP().getGlobalVar("",this.package) != null {
         var = GP().getGlobalVar("",this.package)
         goto OBJECT_MEMBER_CALL
-    }else if (var = ast.getVar(ctx,this.package) ) {
+    }else if ast.getVar(ctx,this.package) != null {
+		var = ast.getVar(ctx,this.package)
 		OBJECT_MEMBER_CALL:
-		if var.structname != "" {
+		if var.structname != "" && var.structname != null {
 			s = package.packages[
 				compile.currentParser.import[var.structpkg]
 				].getClass(

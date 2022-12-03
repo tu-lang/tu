@@ -70,7 +70,7 @@ StructMemberExpr::getStruct()
 		packagename = this.tyassert.pkgname
 		sname  = this.tyassert.name
 	}	
-	if packagename == "" {
+	if packagename == "" || packagename == null{
 		packagename = this.var.package
 	}
 	s = null
@@ -79,7 +79,11 @@ StructMemberExpr::getStruct()
 		packagename = GP().import[packagename]
 	}
 	if package.packages[packagename] == null {
-		this.check(false,"mem package not exist:%s" ,packagename)
+		fmt.println(packagename)
+		for  k,v : package.packages {
+			fmt.println(k)
+		}
+		this.check(false,"mem package not exist: " + packagename)
 	}
 	s = package.packages[packagename].getStruct(sname)
 	if s == null {
