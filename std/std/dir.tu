@@ -87,8 +87,7 @@ init_dents:
 
 
     d<Dirent> = dir.dir + dir.pos
-    name_str = string.newstring(&d.d_name)
-    file_name = runtime.newobject(runtime.String,name_str)
+    file_name = string.new(&d.d_name)
     file_type_p<i8*> = d + d.d_reclen - 1 
     file_type = dirtype(*file_type_p)
 
