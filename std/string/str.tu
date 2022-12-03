@@ -1,5 +1,6 @@
 use runtime
 use runtime.gc
+use std
 
 func stringHdrSize(type<i8>) {
     match type & LSTRING_TYPE_MASK {
@@ -340,14 +341,6 @@ Str::putc(c<i8>){
     return s
 }
 
-Str::hash32(){
-	hash<u32> = 0
-    s<i8*> = this
-    l<i64> = this.len()
-    for i<i64> = 0 ; i < l ; i += 1 {
-		hash *= prime32
-        c<u32> = s[i]
-		hash ^= c
-	}
-    return hash
+Str::hash64(){
+    return std.hash64(this,this.len())
 }
