@@ -78,8 +78,9 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 sm.var    = var.ret
 			 sm.compile(ctx)
 			 me = sm.ret
-			 if me.pointer && !me.arr
+			 if me.pointer && !me.isarr {
 				 compile.LoadMember(me)
+			 }
 			 compile.Push() 
 			 if !me.pointer && !me.isarr this.check(false,"must be pointer member or arr")
  
@@ -127,7 +128,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			compile.LoadSize(var.ret.size,var.ret.isunsigned)
             compile.Push()
 
-			 oh = new OperatorHelper(ctx,this,rhs,ast.ASSIGN)
+			 oh = new OperatorHelper(ctx,this,rhs,opt)
 			 oh.initcond(true,var.ret.size,var.ret.type,var.ret.pointer)
 			 oh.genRight(false,rhs)
 			 oh.assign()
@@ -138,8 +139,9 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 sm.var    = var.ret
 			 sm.compile(ctx) 
 			 me = sm.ret
-			 if me.pointer && !me.isarr
-				 compile.LoadMember(me)
+			 if me.pointer && !me.isarr{
+				compile.LoadMember(me)
+			 }
 			 compile.Push() 
 			 if !me.pointer && !me.isarr this.check(false,"must be pointer member")
  
@@ -156,7 +158,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			compile.LoadSize(me.size,me.isunsigned)
             compile.Push()
 
-			 oh = new OperatorHelper(ctx,this,rhs,ast.ASSIGN)
+			 oh = new OperatorHelper(ctx,this,rhs,opt)
 			 oh.initcond(true,me.size,me.type,me.pointer)
 
 			 oh.genRight(false,rhs)
