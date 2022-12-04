@@ -45,7 +45,7 @@ NewExpr::compile(ctx)
 			if !var.isMemtype(ctx) {
 				this.panic("AsmError: var must be memtype in (new var)")
 			}
-			real_var = var.getVar(ctx)
+			real_var = var.getVar(ctx,this)
 			real_var.compile(ctx)
 			internal.gc_malloc()
 			return this

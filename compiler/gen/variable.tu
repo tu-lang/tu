@@ -40,7 +40,7 @@ class VarExpr : ast.Ast {
 }
 VarExpr::toString() { return fmt.sprintf("VarExpr(%.%s)",this.package,this.varname) }
 VarExpr::isMemtype(ctx){
-    v = this.getVar(ctx)
+    v = this.getVar(ctx,this)
     if v != null && v.structtype {
         acualPkg = compile.currentParser.import[v.structpkg]
         dst = package.getStruct(acualPkg,v.structname)
@@ -52,12 +52,25 @@ VarExpr::isMemtype(ctx){
     }
     return false
 }
-VarExpr::getVar(ctx){
-    this.getVarType(ctx)
-    return this.ret
-}
+VarExpr::getVar(ctx,origin){
+    if this.ret != null return this.ret
 
-VarExpr::getVarType(ctx)
+    this._getVarType(ctx)
+    cvar = this.ret.clone()
+    cvar.line = origin.line
+    cvar.column = origin.column
+    this.ret = cvar
+    return cvar
+}
+VarExpr::getVarType(ctx, origin){
+    ty = this._getVarType(ctx)
+    cvar = this.ret.clone()
+    cvar.line = origin.line
+    cvar.column = origin.column
+    this.ret = cvar
+    return ty
+}
+VarExpr::_getVarType(ctx)
 {
     // package = this.package
     if this.package != "" {
@@ -115,7 +128,7 @@ VarExpr::getVarType(ctx)
 VarExpr::compile(ctx){
     utils.debugf("gen.VarExpr::compile() package :%s varname:%s \n",this.package,this.varname)
     this.record()
-    match this.getVarType(ctx)
+    match this.getVarType(ctx,this)
     {
         ast.Var_Obj_Member : { 
             compile.GenAddr(this.ret)
@@ -157,7 +170,7 @@ VarExpr::compile(ctx){
 VarExpr::assign(ctx , opt , rhs){
     utils.debugf("gen.VarExpr::assign() package :%s varname:%s \n",this.package,this.varname)
     this.record()
-    match this.getVarType(ctx)
+    match this.getVarType(ctx,this)
     {
         ast.Var_Obj_Member:{ 
             compile.GenAddr(this.ret)

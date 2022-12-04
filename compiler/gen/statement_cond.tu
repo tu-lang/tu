@@ -64,7 +64,7 @@ ForStmt::rangeFor(ctx)
         internal.call("runtime_for_get_key")
         compile.Push()
 
-        compile.GenAddr(this.key.getVar(ctx))
+        compile.GenAddr(this.key.getVar(ctx,this.key))
         compile.Pop("%rdi")
         compile.writeln("   mov %%rdi,(%%rax)")
     }
@@ -74,7 +74,7 @@ ForStmt::rangeFor(ctx)
         compile.writeln("   mov (%%rsp),%%rsi")
         internal.call("runtime_for_get_value")
         compile.Push()
-        compile.GenAddr(this.value.getVar(ctx))
+        compile.GenAddr(this.value.getVar(ctx,this.value))
         compile.Pop("%rdi")
         compile.writeln("   mov %%rdi,(%%rax)")
     }

@@ -82,7 +82,7 @@ ChainExpr::getType(ctx){
 	return ast.U64
 }
 VarExpr::getType(ctx){
-	this.getVarType(ctx)
+	this.getVarType(ctx,this)
 	if this.ret.pointer return ast.U64
 
 	return this.ret.type
@@ -102,7 +102,7 @@ DelRefExpr::getType(ctx){
 	if type(this.expr) == type(VarExpr) 
 	{
 		var = this.expr
-		var = var.getVar(ctx)
+		var = var.getVar(ctx,this)
 		if var.pointer 
 			return ast.U64
 		
@@ -122,7 +122,7 @@ DelRefExpr::getType(ctx){
 IndexExpr::getType(ctx){
 	var = new VarExpr(this.varname,this.line,this.column)
     var.package = this.package
-	match var.getVarType(ctx) {
+	match var.getVarType(ctx,this) {
 		ast.Var_Global_Local_Static_Field | ast.Var_Local_Static_Field: {
 			sm = new StructMemberExpr(var.package,this.line,this.column)
 			sm.member = var.varname

@@ -31,7 +31,7 @@ ChainExpr::ismem(ctx) {
 	}
 	if type(this.first) == type(VarExpr) {
 		varexpr = this.first
-		realVar = varexpr.getVar(ctx)
+		realVar = varexpr.getVar(ctx,this)
 		if realVar && !realVar.is_local && realVar.structtype {
 			mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
             mexpr.var = realVar
@@ -58,8 +58,8 @@ ChainExpr::compile(ctx)
 
 	if type(this.first) == type(VarExpr) {
 		varexpr = this.first
-		realVar = varexpr.getVar(ctx)
-		if (varexpr.getVarType(ctx) == ast.Var_Global_Extern_Static){
+		realVar = varexpr.getVar(ctx,this)
+		if (varexpr.getVarType(ctx,this) == ast.Var_Global_Extern_Static){
 		   if std.len(this.fields) > 0 {
 			   mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
 			   mexpr.var = realVar

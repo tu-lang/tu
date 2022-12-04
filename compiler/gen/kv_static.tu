@@ -18,7 +18,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 	}
 	if(type(this.index) == type(VarExpr)){
 		var = this.index
-		var = var.getVar(ctx)
+		var = var.getVar(ctx,this)
 		if var.pointer this.index.check(false,"index can't be pointer")
 		if !var.structtype  this.index.check(false,"index must be statictype")
 		if var.type < ast.I8 || var.type > ast.U64 this.check(false,"index must be 1 - 8 bytes type")
@@ -59,7 +59,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 	 f = compile.currentFunc   
 	 var = new VarExpr(this.varname,this.line,this.column)
 	 var.package = this.package
-	 match var.getVarType(ctx) {
+	 match var.getVarType(ctx,this) {
 		ast.Var_Global_Extern_Static | ast.Var_Local_Static: { 
 			
 			 if !var.ret.pointer && !var.ret.stack this.check(false,"must be pointer type in array index")
@@ -107,7 +107,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 	 f = compile.currentFunc   
 	 var = new VarExpr(this.varname,this.line,this.column)
 	 var.package = this.package
-	 match var.getVarType(ctx) {
+	 match var.getVarType(ctx,this) {
 		 ast.Var_Global_Extern_Static |  ast.Var_Local_Static: { 
 
 			 if !var.ret.pointer && !var.ret.stack this.check(false,"must be pointer type in array index")

@@ -173,7 +173,7 @@ AddrExpr::compile(ctx){
     var = ast.getVar(ctx,this.varname)
     if var == null
         this.panic("AddExpr: var:%s not exist\n",this.varname)
-    realVar = var.getVar(ctx)
+    realVar = var.getVar(ctx,this)
     compile.GenAddr(realVar)
 
     return this

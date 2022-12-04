@@ -62,13 +62,13 @@ IndexExpr::compile(ctx) {
     if this.varname == "" {
         goto COMPILE_INDEX
     }
-    match var.getVarType(ctx) {
+    match var.getVarType(ctx,this) {
         ast.Var_Obj_Member : { 
             if this.tyassert != null {
                 sm = new StructMemberExpr(this.tyassert.pkgname,
                     this.line,this.column
                 )
-                vv = var.ret.clone()
+                vv = var.ret
                 vv.structpkg = this.tyassert.pkgname
                 vv.structname = this.tyassert.name
                 sm.member = this.varname
@@ -124,12 +124,12 @@ IndexExpr::assign( ctx , opt ,rhs) {
         goto ASSIGN_INDEX
     }
 
-    match var.getVarType(ctx) {
+    match var.getVarType(ctx,this) {
         ast.Var_Obj_Member : { 
             if this.tyassert != null {
                 sm = new StructMemberExpr(var.package,this.line,this.column)
                 sm.member = var.varname
-                vv = var.ret.clone()
+                vv = var.ret
                 vv.structpkg = this.tyassert.pkgname
                 vv.structname = this.tyassert.name
                 sm.var    = vv

@@ -489,6 +489,9 @@ Parser::parseVarExpr(var)
                 }
                 
                 if obj {
+                    obj = obj.clone()
+                    obj.line = call.line
+                    obj.column = call.line
                     call.is_pkgcall = false
                     params = call.args
                     call.args = []
