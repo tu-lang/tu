@@ -26,7 +26,7 @@ ReturnStmt::compile(ctx)
         compile.writeln("   mov $0,%%rax")
     }else{
         ret = this.ret.compile(ctx)
-        if ret && type(ret) == type(gen.AddrExpr) {}
+        if ret && type(this.ret) == type(gen.AddrExpr) {}
         else if ret && type(ret) == type(gen.StructMemberExpr) {
             sm = ret
             m = sm.ret
