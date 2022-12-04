@@ -2,6 +2,15 @@ use runtime
 use fmt
 use std
 use os
+func hash64(s<runtime.Value>){
+	if s == 0 return int(std.prime64)
+	
+	if s.type != runtime.String 
+		os.die("hash64: invalid string type")
+	return int(
+		s.data.(Str).hash64()
+	)
+}
 
 func new(init<i8*>){
 	return runtime.newobject(
