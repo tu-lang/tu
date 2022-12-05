@@ -3,6 +3,7 @@ use std
 use ast
 use parser.scanner
 use utils
+use runtime
 
 //optimize: avoid alloc so many object like this
 True  = true

@@ -38,7 +38,7 @@ func funcexec(ctx , fc , fce)
 		}
 	}
 	if std.len(fc.params) != std.len(fce.args) 
-		utils.debug("ArgumentError: expects %d arguments but got %d\n",
+		utils.debug("func call: expects %d arguments but got %d\n",
 			std.len(fc.params),
 			std.len(fce.args)
 		)
@@ -63,7 +63,7 @@ func funcexec(ctx , fc , fce)
 		compile.writeln("    call *%%r10")
 	}else{
 		if std.len(args) > 6 {
-			compile.writeln("   mov %d(%%rsp),%r10",(args.size() - 6) * 8)
+			compile.writeln("   mov %d(%%rsp),%%r10",(std.len(args) - 6) * 8)
 		}else{
 			compile.Pop("%r10")
 		}
@@ -195,7 +195,7 @@ FunCallExpr::compile(ctx)
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
-		internal.object_func_addr(this.funcname)
+		internal.object_func_addr(this,this.funcname)
 		compile.Push()
 		fc = new ast.Function()
 		fc.isExtern    = false

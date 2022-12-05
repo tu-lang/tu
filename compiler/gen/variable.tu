@@ -63,7 +63,7 @@ VarExpr::getVar(ctx,origin){
     return cvar
 }
 VarExpr::getVarType(ctx, origin){
-    ty = this._getVarType(ctx)
+    ty<i64> = this._getVarType(ctx)
     cvar = this.ret.clone()
     cvar.line = origin.line
     cvar.column = origin.column

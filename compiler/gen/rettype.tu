@@ -31,7 +31,6 @@ KVExpr::getType(ctx){
 	this.panic("getType: unsupport kv\n")
 }
 ChainExpr::getType(ctx){
-	this.check(this.ismem(ctx),"gettype: unsuport chain")
 	if !this.ismem(ctx) return ast.U8
 
 	member = null
