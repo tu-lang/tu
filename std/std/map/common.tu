@@ -24,7 +24,7 @@ func map_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode
     // FIXME: p<rebtree_node*> parser报错
     p<u64*> = null
 
-    while True {
+    loop {
         if  node.key == temp.key {
             equal<i32> = 0
             if node.k.type == runtime.String || temp.k.type == runtime.String {
