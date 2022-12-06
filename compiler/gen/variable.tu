@@ -38,6 +38,18 @@ class VarExpr : ast.Ast {
         super.init(line,column)
     }
 }
+VarExpr::record(){
+    cfunc = compile.currentFunc
+    compile.writeln("# line:%d column:%d file:%s",this.line,this.column,cfunc.parser.filepath)
+    if compile.debug
+        compile.writeln("    .loc %d %d",compile.currentParser.fileno,this.line)
+    else
+        compile.writeln(
+            "# %s.%s line:%d column:%d file:%s",
+            this.package,this.varname
+            this.line,this.column,cfunc.parser.filepath
+        )
+}
 VarExpr::toString() { return fmt.sprintf("VarExpr(%.%s)",this.package,this.varname) }
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx,this)

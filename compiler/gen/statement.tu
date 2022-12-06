@@ -64,7 +64,7 @@ BreakStmt::compile(ctx)
     this.record()
     
     for(c : ctx ) {
-        if c.po && c.end_str != ""  {
+        if c.point && c.end_str != ""  {
             compile.writeln("    jmp %s.%d",c.end_str,c.point)
         }
     }
@@ -83,10 +83,10 @@ ContinueStmt::compile(ctx)
     this.record()
     
     for ( c : ctx) {
-        if c.po && c.continue_str != "" {
+        if c.point && c.continue_str != "" {
             compile.writeln("    jmp %s.%d", c.continue_str, c.point)
         }
-        if c.po && c.start_str != "" {
+        if c.point && c.start_str != "" {
             compile.writeln("    jmp %s.%d", c.start_str, c.point)
         }
     }
