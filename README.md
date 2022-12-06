@@ -23,8 +23,8 @@ tl      [options|file.o...]
 
 - [ ] compiler
   - [x]     自举代码编译成功
-  - [ ] run 自动编译链接后执行
-  - [ ] -s  编译为低等级汇编码
+  - [x] run 自动编译链接后执行
+  - [x] -s  编译为低等级汇编码
 - [ ] asmer 
   - [ ] -c  翻译指定汇编码为linux(elf),windows(pe/coff)
   - [ ] -p  批量扫描路径下的汇编
