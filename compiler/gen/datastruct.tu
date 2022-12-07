@@ -87,7 +87,7 @@ class CharExpr    : ast.Ast {
             compile.writeln("	mov $%s,%%rax",this.lit)
             return null
         }
-        internal.newobject(ast.Char,this.lit)
+        internal.newobject(ast.Char,string.tonumber(this.lit))
         return null
     }
     func toString() {
