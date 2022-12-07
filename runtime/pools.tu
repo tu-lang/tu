@@ -57,10 +57,3 @@ func init(){
 	strings = map.map_create(string_insert)
 	enable_object_pool = 1
 }
-func chars_get(i<i8>){
-	if i < 0 {
-		return chars.addr[127-i]
-		// os.dief("new char: value should >= 0 || < 128 %d",int(i))
-	}
-	return chars.addr[i]
-}

@@ -60,7 +60,10 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
                 data : data,
             }
         }
-        Char:   return chars_get(data)
+        Char:   {
+            i<u8> = data
+            return chars.addr[i]
+        }
         Null:   {
             return new Value {
                 type : Null,

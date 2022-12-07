@@ -89,7 +89,7 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 	}
 
 	str += l
-	cn<i8> = *str
+	cn<u8> = *str
 	return runtime.newobject(runtime.Char,cn)
 }
 func tostring(num<runtime.Value>){
