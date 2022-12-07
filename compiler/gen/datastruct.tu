@@ -46,7 +46,8 @@ class NullExpr    : ast.Ast {
     func compile(ctx)
     {
         this.record()
-        internal.newobject(ast.Null,0)
+        compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+        // internal.newobject(ast.Null,0)
         return null
 
     }
