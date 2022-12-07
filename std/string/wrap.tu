@@ -11,6 +11,19 @@ func hash64(s<runtime.Value>){
 		s.data.(Str).hash64()
 	)
 }
+func hash64string(s<runtime.Value>){
+	if s == 0 {
+		return string.new(fromulonglong(std.prime64))
+	}
+	
+	if s.type != runtime.String 
+		os.die("hash64: invalid string type")
+	return string.new(
+		fromulonglong(
+			s.data.(Str).hash64()
+		)
+	)
+}
 
 func new(init<i8*>){
 	return runtime.newobject(

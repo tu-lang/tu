@@ -143,7 +143,7 @@ class StringExpr  : ast.Ast {
             this.panic("string not computed :%s" , this.toString(""))
         
         compile.writeln("    lea %s(%%rip), %%rsi", this.name)
-        compile.writeln("    mov $%d,%%rdx",string.hash64(this.lit))
+        compile.writeln("    mov $%s,%%rdx",string.hash64string(this.lit))
         internal.newobject(ast.String,0)
         return null
     }
