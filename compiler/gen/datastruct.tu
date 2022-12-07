@@ -61,7 +61,12 @@ class BoolExpr   : ast.Ast {
     {
 	    utils.debugf("gen.BoolExpr::compile()")
         this.record()
-        internal.newobject(ast.Bool,this.lit)
+        if this.lit == 1 {
+            compile.writeln("    lea runtime_internal_bool_true(%%rip), %%rax")
+        }else{
+            compile.writeln("    lea runtime_internal_bool_false(%%rip), %%rax")
+        }
+        // internal.newobject(ast.Bool,this.lit)
         return null
     }
     func toString() {

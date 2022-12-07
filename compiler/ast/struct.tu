@@ -32,8 +32,8 @@ class Member
 
 	
 	isstruct
-	structpkg
-	structname
+	structpkg = ""
+	structname = ""
 	structref
 	
 	line

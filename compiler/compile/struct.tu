@@ -80,7 +80,12 @@ func InitStructVar(gvar , s , fields){
 			size += 8
 		}else if(m.structname != ""){
 			sm = package.getStruct(m.structpkg,m.structname)
-			gvar.check(sm != null,"struct not exist in member")
+			gvar.check(sm != null,
+				fmt.sprintf(
+					"struct not exist in member %s.%s",
+					m.structpkg,m.structname
+				)
+			)
 			mfields = {}
 			if fields[m.name] != null {
 				mfields = fields[m.name].fields
@@ -88,7 +93,7 @@ func InitStructVar(gvar , s , fields){
 			size += InitStructVar(gvar,sm,mfields)
 		}else{
 			gvar.check(ast.isbase(m.type),"must be base type i8 - u64")
-			si = parser.typesize[m.type]
+			si = parser.typesize[int(m.type)]
 			mt = ast.typesizestring(m.type)
 			v = "0"
 			if fields[m.name] != null {
