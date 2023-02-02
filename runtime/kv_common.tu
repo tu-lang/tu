@@ -95,7 +95,7 @@ func arr_get(varr<Value>,index<Value>){
     }
     return arr.addr[i]
 }
-func arr_pushone(varr<Value>,var<Value>){
+func arr_pushone(var<Value>,varr<Value>){
     if  varr == null || varr.data == null || var == null {
         os.dief("[arr_push] arr or var is null\n")
         // fmt.println("[arr_pushone] arr or var is null ,probably something wrong\n")

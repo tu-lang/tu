@@ -13,7 +13,7 @@ func fixalloc(size<u64> , align<u64>)
 	}
 	if align != 0  {
 		if align & (align - 1) != 0 
-			dief("persistentalloc: align is not a power of 2".(i8))
+			dief("persistentalloc: align is not a power of 2 %d".(i8),align)
 		if align > pageSize 
 			dief("persistentalloc: align is too large".(i8))
 	} else {

@@ -91,7 +91,7 @@ mapped:
 	for ri<u32> = arenaIndex(v); ri <= arenaIndex(v+size - 1); ri += 1  {
 		l2<u64*> = this.arenas[arena_l1(ri)]
 		if l2 == null {
-			l2 = sys.fixalloc( 1 << arenaL2Bits * ptrSize)
+			l2 = sys.fixalloc( 1 << arenaL2Bits * ptrSize,ptrSize)
 			if l2 == null {
 				dief("out of memory allocating heap arena map".(i8))
 			}

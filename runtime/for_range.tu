@@ -24,7 +24,7 @@ func for_first(data<Value>){
 		_     : os.dief("[for range]: first unsupport type:%s" , type_string(data))
 	}
 }
-func for_get_key(data<Value>,node){
+func for_get_key(node,data<Value>){
 	match data.type {
 		Map : {
 			map_node<map.RbtreeNode> = node
@@ -40,7 +40,7 @@ func for_get_key(data<Value>,node){
 		_  : os.dief("[for range]: get key unsupport type:%s" ,type_string(data))
 	}
 }
-func for_get_value(data<Value>,node){
+func for_get_value(node,data<Value>){
 	match data.type  {
 		Map : {
 			map_node<map.RbtreeNode> = node
@@ -54,7 +54,7 @@ func for_get_value(data<Value>,node){
 		_ : os.dief("[for range]: get value unsupport type:%s" , type_string(data))
 	}
 }
-func for_get_next(data<Value>,node){
+func for_get_next(node,data<Value>){
 	match data.type {
 		Map : {
 			m<map.Rbtree> = data.data

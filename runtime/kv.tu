@@ -15,7 +15,7 @@ func cap(v<Value>){
 	return 0
 }
 
-func kv_update(root<Value>,index<Value>,var<Value>)
+func kv_update(index<Value>,var<Value>,root<Value>)
 {
     match root.type {
         Array : return arr_updateone(root,index,var)
@@ -27,7 +27,7 @@ func kv_update(root<Value>,index<Value>,var<Value>)
     }
 }
 
-func kv_get(root<Value>,index<Value>){
+func kv_get(index<Value>,root<Value>){
     match root.type {
         Array : return arr_get(root,index)
         Map   : {

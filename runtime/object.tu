@@ -92,7 +92,7 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
     } 
     return Null
 }
-func newinherit_object(father<Value>,typeid<i32>){
+func newinherit_object(typeid<i32>,father<Value>){
     ret<Value> = new Value
     ret.type   = Object
 
@@ -244,7 +244,7 @@ func _object_member_get(obj<Object>,key<Value>){
     return v
 }
 // return value
-func object_member_get(obj<Value>, k<u32>){
+func object_member_get(k<u32>,obj<Value>){
     key<Value> = int(k)
     if  obj.type != Object {
         os.dief("[object_membe_get] invalid obj type :%s",runtime.type_string(obj))
@@ -252,7 +252,7 @@ func object_member_get(obj<Value>, k<u32>){
     c<Object> = obj.data 
     return _object_member_get(obj.data,key)
 }
-func object_unary_operator(opt<i32>,obj<Value>,k<u32>,v<Value>){
+func object_unary_operator(opt<i32>,k<u32>,obj<Value>,v<Value>){
     if   obj == null || v == null  {
         fmt.println(" [object-uop] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
         return Null
@@ -261,7 +261,7 @@ func object_unary_operator(opt<i32>,obj<Value>,k<u32>,v<Value>){
     ret<Value> = operator_switch(opt,origin,v)
     object_member_update(obj,k,ret)
 }
-func object_func_add(obj<Value>,k<u32>,addr<u64*>){
+func object_func_add(k<u32>,addr<u64*>,obj<Value>){
 
     key<Value> = int(k)
     c<Object> = obj.data
@@ -284,7 +284,7 @@ func get_member_func_addr(obj<Object>,key<Value>){
     }
     return funcaddr
 }
-func object_func_addr(obj<Value>,k<u32>){
+func object_func_addr(k<u32>,obj<Value>){
     if  obj.type != Object {
         os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
     }
