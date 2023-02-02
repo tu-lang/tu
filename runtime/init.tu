@@ -35,7 +35,7 @@ func args_init(argc<u64>, argv<u64*>){
 		str<Value> = new Value
 		str.type = String
 		str.data = string.newstring(*argv)
-		arr_pushone(arr,str)
+		arr_pushone(str,arr)
 		argv += PointerSize
 		argc -= 1
 	}
@@ -47,7 +47,7 @@ func args_init(argc<u64>, argv<u64*>){
 		str1<Value> = new Value
 		str1.type = String
 		str1.data = string.newstring(*envp)
-		arr_pushone(envs,str1)
+		arr_pushone(str1,envs)
 		envp += PointerSize
 	}
 	ori_envs = envs
