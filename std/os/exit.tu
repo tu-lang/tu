@@ -12,9 +12,8 @@ func set_stack(size<i32>){
 }
 NewLine<i8> = '\n'
 
-extern _ string_stringfmt()
-func panic(size,args...){
-    ret<i8*> = __.string_stringfmt(args)
+func panic(args...){
+    ret<i8*> = string.dynstringfmt(args)
     if ret != null {
 		fmt.vfprintf(std.STDOUT,ret)
     }
@@ -48,8 +47,8 @@ func die(str){
     }
     std.die(code)
 }
-func dief(size,args...){
-    ret<string.Str> = __.string_stringfmt(args)
+func dief(args...){
+    ret<string.Str> = string.dynstringfmt(args)
     if ret != null {
 		  fmt.vfprintf(std.STDOUT,ret.putc(NewLine))
     }

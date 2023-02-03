@@ -4,27 +4,19 @@ use runtime
 use std
 use fmt
 
-func fatal(size,args...){
-   println(args)
-   os.exit(-1)
+func fatal(args...){
+    println(args)
+    os.exit(-1)
 }
 //format
-func println(count<runtime.Value>,args...){
-	total<i32> = count.data
+func println(_args<u64*>...){
+	total<i32> = *_args
+    args<u64*> = _args + 8
+
 	var<runtime.Value> = null
 
-	p<u64*> = &args
-	stack<i32> = 5
     for (i<i32> = 0 ; i < total ; i += 1){
-		var = *p
-		if stack < 1  p += 8
-		else 		  p -= 8
-		if stack == 1 {
-			p = &args
-			p += 32
-		}		
-		stack -= 1
-
+		var = args[i]
         if var == null {
             vfprintf(std.STDOUT,*"NULL\n")
             continue
@@ -47,22 +39,13 @@ func println(count<runtime.Value>,args...){
     }
     vfprintf(std.STDOUT,*"\n")
 }
-func print(count<runtime.Value> , args...){
-	total<i32> = count.data
+func print(_args<u64*>...){
+	total<i32> = *_args
 	var<runtime.Value> = null
 
-	p<u64*> = &args
-	stack<i32> = 5
+    args<u64*> = _args + 8
     for(i<i32> = 0;i < total ; i += 1){
-		var = *p
-		if stack < 1  p += 8
-		else 		  p -= 8
-		if stack == 1 {
-			p = &args
-			p += 32
-		}		
-		stack -= 1
-
+		var = args[i]
         if	!var {
             vfprintf(std.STDOUT,*"null")
             continue
@@ -87,13 +70,12 @@ func print(count<runtime.Value> , args...){
 // %u  unsigned int
 // %U  long unsigned int
 // %%  to '%'
-extern _ string_stringfmt()
-func sprintf(count<runtime.Value>,args...){
-    ret<i8*> = __.string_stringfmt(args)
+func sprintf(args...){
+    ret<i8*> = string.dynstringfmt(args)
     return string.new(ret)
 }
-func printf(count<runtime.Value>,args...){
-    ret<i8*> = __.string_stringfmt(args)
+func printf(args...){
+    ret<i8*> = string.dynstringfmt(args)
     if ret != null {
 		vfprintf(std.STDOUT,ret)
     }
