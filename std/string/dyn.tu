@@ -1,25 +1,28 @@
 use runtime
 use runtime.gc
+use fmt
 
 // func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
 func dynstringfmt(_args<u64*>...){
+    curr<u64> = 0
+	dyncurr<runtime.Value> = null
+
 	count<i32> = *_args
 	args<u64*> = _args + 8
-	fmt<i8*>   = args[0]
+	dyncurr    = args[0] // get first args 'fmt'
+    fmts<i8*>  = dyncurr.data
 
     s<i8*> = empty()
 	this<Str> = s
 
     initlen<u64> = this.len()
-    f<i8*> = fmt
+    f<i8*> = fmts
     i<u64> = 0
     db<i32> = 2
     single<i32> = 1
-    s = this.MakeRoomFor(initlen + std.strlen(fmt) * db)
-    f = fmt    
+    s = this.MakeRoomFor(initlen + std.strlen(fmts) * db)
+    f = fmts    
     i = initlen 
-    curr<u64> = 0
-	dyncurr<runtime.Value> = null
 	//start at args[1]
 	argsidx<i64> = 1
     while *f != null {
