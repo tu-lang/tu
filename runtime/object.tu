@@ -247,12 +247,12 @@ func _object_member_get(obj<Object>,key<Value>){
 func object_member_get(k<u32>,obj<Value>){
     key<Value> = int(k)
     if  obj.type != Object {
-        os.dief("[object_membe_get] invalid obj type :%s",runtime.type_string(obj))
+        os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
     }
     c<Object> = obj.data 
     return _object_member_get(obj.data,key)
 }
-func object_unary_operator(opt<i32>,k<u32>,obj<Value>,v<Value>){
+func object_unary_operator(opt<i32>,k<u32>,v<Value>,obj<Value>){
     if   obj == null || v == null  {
         fmt.println(" [object-uop] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
         return Null
