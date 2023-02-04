@@ -257,7 +257,7 @@ func object_unary_operator(opt<i32>,k<u32>,obj<Value>,v<Value>){
         fmt.println(" [object-uop] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
         return Null
     }
-    origin<Value> = object_member_get(obj,k)
+    origin<Value> = object_member_get(k,obj)
     ret<Value> = operator_switch(opt,origin,v)
     object_member_update(obj,k,ret)
 }
