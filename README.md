@@ -21,14 +21,14 @@ tl      [options|file.o...]
 ## @自举进度
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
 
-- [ ] compiler
+- [ ] tu(compiler)
   - [x]     自举代码编译成功
   - [x] run 自动编译链接后执行
   - [x] -s  编译为低等级汇编码
-- [ ] asmer 
+- [ ] ta(asmer)
   - [ ] -c  翻译指定汇编码为linux(elf),windows(pe/coff)
   - [ ] -p  批量扫描路径下的汇编
-- [x] [linker](./linker) 
+- [x] tl([linker/demo](./linker))
   - [x] *.o 链接指定的linux(elf) 文件生成可执行linux程序
   - [ ] *.o 链接指定的windows(pe) 文件生成可执行windows程序
   - [ ] *.o 链接指定的mac(MachO) 文件生成可执行mac程序
@@ -49,6 +49,7 @@ tl      [options|file.o...]
 > sh tests_linker.sh
 
 ```
+
 ## @数据结构
 - [x] 动态类型 int string bool null array map closure object
 - [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 struct
