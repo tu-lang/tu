@@ -15,10 +15,10 @@ func cap(v<Value>){
 	return 0
 }
 
-func kv_update(index<Value>,var<Value>,root<Value>)
+func kv_update(var<Value>,index<Value>,root<Value>)
 {
     match root.type {
-        Array : return arr_updateone(root,index,var)
+        Array : return arr_updateone(var,index,root)
         Map   : return map.map_insert(root,index,var)
         _     : {
             os.dief("[kv_update] arr or map is invalid,ty:%s\n",type_string(root))

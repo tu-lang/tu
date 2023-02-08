@@ -105,7 +105,7 @@ func arr_pushone(var<Value>,varr<Value>){
     insert<u64*> = arr.push()
     *insert    = var
 }
-func arr_updateone(varr<Value>,index<Value>,var<Value>){
+func arr_updateone(var<Value>,index<Value>,varr<Value>){
     if  varr == null || varr.data == null || index == null || var == null {
         fmt.println("[arr_updateone] arr or var or index is null ,probably something wrong\n")
         return Null
@@ -123,7 +123,7 @@ func arr_updateone(varr<Value>,index<Value>,var<Value>){
     }
     // TODO:如果索引超出了 当前array的范围则需要扩充
     if  i >= arr.used {
-        fmt.println("[arr_updateone] index is over the max size\n")
+        fmt.printf("[arr_updateone] index is over the max size\n")
         return Null
     }
     arr.addr[i] = var
