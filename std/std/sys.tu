@@ -13,6 +13,9 @@ func usleep(sec<u64>)
 //brk ; implement by asm
 func brk(brk<u64>)
 
+//segsegv recv; implement by asm
+func segsegvrecv()
+
 //execv ; implement by asm
 func execve(filename<i8*>,argv<i8*>,envp<i8*>)
 

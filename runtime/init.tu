@@ -53,7 +53,7 @@ func args_init(argc<u64>, argv<u64*>){
 	ori_envs = envs
 }
 func runtimeinit(){
-	os.setsignal(os.SIGSEGV,segsegv_handler)
+	os.setsignal(os.SIGSEGV,std.segsegvrecv)
 }
 
 

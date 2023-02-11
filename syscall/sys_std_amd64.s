@@ -162,5 +162,12 @@ std_munmap:
      mov $11 , %rax
      syscall
      retq
-
+.globl std_segsegvrecv
+std_segsegvrecv:
+     push %rdx
+     push %rsi
+     push %rdi
+     call runtime_segsegv_handler
+     add $24, %rsp
+     retq
 
