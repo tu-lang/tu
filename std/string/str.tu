@@ -216,7 +216,7 @@ Str::cmp(s2<Str>) {
 // %U  long unsigned int
 // %%  to '%'
 // TODO: return new
-Str::catfmt(fmt<i8*>, args,args1,args2,args3) {
+Str::catfmt(fmt<i8*>, _args<u64*>...){
     s<i8*> = this
     initlen<u64> = this.len()
     f<i8*> = fmt
@@ -226,10 +226,11 @@ Str::catfmt(fmt<i8*>, args,args1,args2,args3) {
     s = this.MakeRoomFor(initlen + std.strlen(fmt) * db)
     f = fmt    
     i = initlen 
-    curr<u64> = 0
+    //variadic args
+    argscount<u64> = *_args
+    args<u64*>     = _args + 8
 
- 	pp<u64*> = &args
-	stack<i32> = 4   
+ 	argi<u64> = 0
     while *f != null {
         next<i8> = 0
         str<i8*> = 0
@@ -247,14 +248,9 @@ Str::catfmt(fmt<i8*>, args,args1,args2,args3) {
                 next = *f
                 match next {
                     's' | 'S' :{
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &args	pp += 40	}		
-                        stack -= 1
-                        //stack end
-                        str = curr
-                        sstr<Str> = curr
+                        str       = args[argi]
+                        sstr<Str> = args[argi]
+                        argi     += 1
                         if next == 's' 
                             l = std.strlen(str)
                         else 
@@ -268,13 +264,8 @@ Str::catfmt(fmt<i8*>, args,args1,args2,args3) {
                         i += l
                     }
                     'i' | 'I' : {
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &args	pp += 40	}		
-                        stack -= 1
-                        //stack end
-                        num = curr
+                        num   = args[argi]
+                        argi += 1
 
                         buf_o<i8:21> = 0
                         buf<i8*> = &buf_o
@@ -288,13 +279,8 @@ Str::catfmt(fmt<i8*>, args,args1,args2,args3) {
                         i += l
                     }
                     'u' | 'U' : {
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &args	pp += 40	}		
-                        stack -= 1
-                        //stack end
-                        unum = curr
+                        unum  = args[argi]
+                        argi += 1
 
                         buf_o<i8:21> = 0
                         buf<i8*> = &buf_o
