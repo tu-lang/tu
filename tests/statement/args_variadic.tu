@@ -3,40 +3,45 @@ use os
 use std
 use runtime
 
-func manual(size,v1,v2,v3,v4,v5,v6,v7,v8){
+// func manual(size,v1,v2,v3,v4,v5,v6,v7,v8){
+func manual(args<u64*>...)
+{
+	size<u32> = *args
+	args += 8
 	if size != 8 os.die("test manual.size failed")
+	v1 = args[0]
 	if v1 != 1  os.die("test mainl.v1 failed")
+	v2 = args[1]
 	if v2 != 2  os.die("test mainl.v2 failed")
+	v3 = args[2]
 	if v3 != 3  os.die("test mainl.v3 failed")
+	v4 = args[3]
 	if v4 != 4  os.die("test mainl.v4 failed")
+	v5 = args[4]
 	if v5 != 5  os.die("test mainl.v5 failed")
+	v6 = args[5]
 	if v6 != 6  os.die("test mainl.v6 failed")
+	v7 = args[6]
 	if v7 != 7  os.die("test mainl.v7 failed")
+	v8 = args[7]
 	if v8 != 8  os.die("test mainl.v8 failed")
 	fmt.println("test manual success")
 	return 100
 }
-func auto(count,args...){
+func auto(args<u64*>...){
+	count = *args
+	args += 8 // skip count
 	var<runtime.Value> = null
-	p<u64*> = &args
-	stack<i32> = 5
-	//TODO: should compiler do this stuff
-    for (i = 1 ; i <= count ; i += 1){
-		var = *p
-		if stack < 1  p += 8
-		else 		  p -= 8
-		if stack == 1 {
-			p = &args p += 32
-		}		
-		stack -= 1
-
-		v = var
-		if i != v os.die("test manual failed")
+    for (i<i32> = 0 ; i < count ; i += 1){
+		v = args[i]
+		k = int(i)
+		if (k + 1 ) != v os.die("test manual failed")
 	}
 	fmt.println("test auto success")
 	return 200
 }
-func f2(size,args...){
+func f2(args<u64*>...){
+	size<u32> = args[0]
 	if size != 8 os.die("f2 test failed")
 	ret1 = manual(args) // 100
 	ret2 = auto(args) // 200
@@ -44,7 +49,8 @@ func f2(size,args...){
 	fmt.println("test f2 success")
 	return ret1 + ret2
 }
-func f1(size,args...){
+func f1(args<u64*>...){
+	size<u32> = args[0]
 	if size != 8 os.die("f1 test failed")
 	ret = f2(args)
 	var = ret + 1	
@@ -58,29 +64,22 @@ func test_wrap(){
 	fmt.println("test varidic params success")
 }
 
-func native(args,_1,_2,_3,_4,_5){
-// func native(args...){
-	var<u64> = null
-	p<u64*> = &args
-	stack<i32> = 6
-	//TODO: should compiler do this stuff
-    for (i<i32> = 1 ; i <= 8 ; i += 1){
-		var = *p
-		if stack < 1  p += 8
-		else 		  p -= 8
-		if stack == 1 {
-			p = &args p += 24
-		}		
-		stack -= 1
-		if i != var os.die("test native failed")
+func native(args<u64*>...){
+	var = null
+	args += 8
+    for (i<i32> = 0 ; i < 8 ; i += 1){
+		var = args[i]	
+		var = *var
+		if (i + 1) != var os.die("test native failed")
 	}
 	fmt.println("test native success")
 	return "test"
 }
-extern _ main_native()
-func f11(size,args...){
-	if size != 8 os.die("f1 test failed")
-	ret = __.main_native(args)
+// extern _ main_native()
+func f11(args<u64*>...){
+	size<u32> = args[0]
+	if size != 8 os.die("native f1 test failed")
+	ret = native(args)
 	var = ret + "ok"	
 	fmt.println("test f1 success")
 	return var
