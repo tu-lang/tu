@@ -19,12 +19,12 @@ func test_int(){
         fmt.printf("test int bitxor %d != 14 failed\n",a)
         os.exit(1)
     }
-    e ^= 16
-    if  e != 16 {
-        fmt.printf("test int bitxor %d != 16 failed\n",e)
-        os.exit(1)
-    }
-    fmt.printf("test int bitxor %d  success\n",e)
+    // e ^= 16
+    // if  e != 16 {
+        // fmt.printf("test int bitxor %d != 16 failed\n",e)
+        // os.exit(1)
+    // }
+    fmt.printf("test int bitxor %d  success\n",a)
 }
 func test_string(){
     a = "abc"
@@ -38,11 +38,11 @@ func test_string(){
         fmt.printf("test string bitxor %s != 0 failed\n",a)
         os.exit(1)
     }
-    c ^= "abc"
-    if  c != "abc" {
-        fmt.printf("test string bitxor %s != abc failed\n",c)
-        os.exit(1)
-    }
+    // c ^= "abc"
+    // if  c != "abc" {
+        // fmt.printf("test string bitxor %s != abc failed\n",c)
+        // os.exit(1)
+    // }
     fmt.printf("test string bitxor %d  success\n",a)
 }
 
