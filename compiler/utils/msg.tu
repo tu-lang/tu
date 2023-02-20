@@ -2,20 +2,20 @@ use fmt
 use os
 debug_mode<i32> = 0
 
-func notice(size,args...){
+func notice(args...){
     if debug_mode == 1 {
         fmt.print("[notice]\t")
         msg1 = fmt.sprintf(args)
         fmt.println(print_green(msg1))
     }
 }
-func debug(size,args...){
+func debug(args...){
     if debug_mode == 1 {
         fmt.print("[debug]\t")
         fmt.println(args)
     }
 }
-func debugf(size,args...){
+func debugf(args...){
     if debug_mode != 1 {
         return debug_mode
     }

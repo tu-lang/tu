@@ -128,7 +128,7 @@ Parser::expect(tok<i32>,str<i8*>){
     if str != null {
         msg = str
     }
-    err = fmt.sprintf(
+    err = fmt.println(
         "parse: found token error token:%s(%s) expect:%s\n msg:%s\n line:%d column:%d file:%s\n",
         ast.getTokenString(this.scanner.curToken),
         this.scanner.curLex,

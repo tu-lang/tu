@@ -88,11 +88,9 @@ Parser::parseChainExpr(first){
     return ret
 }
 
-Parser::parseExpression(_oldPriority<u64>)
+Parser::parseExpression(oldPriority)
 {
     //TODO: support default args value
-    oldPriority = 1
-    if _oldPriority != 0 oldPriority = _oldPriority
     utils.debugf("parse.Parser::parseExpression() pri:%i",oldPriority)
     p = this.parseUnaryExpr()
     
@@ -129,7 +127,7 @@ Parser::parseExpression(_oldPriority<u64>)
         assignExpr.opt = this.scanner.curToken
         assignExpr.lhs = p
         this.scanner.scan()
-        assignExpr.rhs = this.parseExpression()
+        assignExpr.rhs = this.parseExpression(1)
         return assignExpr
     }
 
@@ -193,7 +191,7 @@ Parser::parsePrimaryExpr()
         if this.scanner.curToken == ast.MUL {
             builtinfunc.expr = this.parsePrimaryExpr()
         }else{
-            builtinfunc.expr = this.parseExpression()
+            builtinfunc.expr = this.parseExpression(1)
         }
         this.expect(ast.RPAREN)
         this.scanner.scan()
@@ -236,7 +234,7 @@ Parser::parsePrimaryExpr()
         return me
     }else if tk == ast.LPAREN {
         this.scanner.scan()
-        val = this.parseExpression()
+        val = this.parseExpression(1)
         this.expect( ast.RPAREN )
         
         this.scanner.scan()
@@ -322,7 +320,7 @@ Parser::parsePrimaryExpr()
         ret = new gen.ArrayExpr(this.line,this.column)
         if this.scanner.curToken != ast.RBRACKET {
             while(this.scanner.curToken != ast.RBRACKET) {
-                ret.lit[] = this.parseExpression()
+                ret.lit[] = this.parseExpression(1)
                 if this.scanner.curToken == ast.COMMA
                     this.scanner.scan()
             }
@@ -339,7 +337,7 @@ Parser::parsePrimaryExpr()
         if this.scanner.curToken != ast.RBRACE{
             while(this.scanner.curToken != ast.RBRACE) {
                 kv = new gen.KVExpr(this.line,this.column)
-                kv.key    = this.parseExpression()
+                kv.key    = this.parseExpression(1)
 
                 if(this.scanner.curToken == ast.RBRACE) {
                     ret.lit[] = kv.key
@@ -353,7 +351,7 @@ Parser::parsePrimaryExpr()
 
                 this.expect( ast.COLON )
                 this.scanner.scan()
-                kv.value  = this.parseExpression()
+                kv.value  = this.parseExpression(1)
                 ret.lit[] = kv
                 if this.scanner.curToken == ast.COMMA
                     this.scanner.scan()
@@ -395,7 +393,7 @@ Parser::parseNewExpr()
             if this.scanner.curToken != ast.LBRACKET
                 return ret //new  i8
             // scanner.scan() //eat [
-            arr = this.parseExpression()
+            arr = this.parseExpression(1)
             if type(arr) != type(gen.ArrayExpr) this.check(false,"should be [] expression in new")
                 expr = arr.lit[0]
            if type(expr) == type(gen.IntExpr) {
@@ -437,7 +435,7 @@ Parser::parseNewExpr()
     this.scanner.scan()
     
     while this.scanner.curToken != ast.RPAREN {
-        ret.args[] = this.parseExpression()
+        ret.args[] = this.parseExpression(1)
         
         if this.scanner.curToken == ast.COMMA
             this.scanner.scan()
@@ -624,7 +622,7 @@ Parser::parseFuncallExpr(callname)
     val.funcname = callname
 
     while this.scanner.curToken != ast.RPAREN {
-        val.args[] = this.parseExpression()
+        val.args[] = this.parseExpression(1)
         
         if this.scanner.curToken == ast.COMMA
             this.scanner.scan()
@@ -639,7 +637,7 @@ Parser::parseIndexExpr(varname){
     this.scanner.scan()
     val = new gen.IndexExpr(this.line,this.column)
     val.varname = varname
-    val.index = this.parseExpression()
+    val.index = this.parseExpression(1)
     this.expect( ast.RBRACKET )
     
     this.scanner.scan()

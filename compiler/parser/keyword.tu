@@ -46,7 +46,7 @@ Parser::parseClassDef()
     while this.scanner.curToken != ast.RBRACE {
         
         if this.scanner.curToken == ast.VAR{
-            member = this.parseExpression()
+            member = this.parseExpression(1)
             if type(member) == type(gen.VarExpr) {
                 s.members[] = member
             }else {

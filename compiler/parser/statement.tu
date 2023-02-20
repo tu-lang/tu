@@ -44,7 +44,7 @@ Parser::parseStatement()
             this.scanner.scan()
             node = this.parseMatchSmt()
         }
-        _ : node = this.parseExpression()
+        _ : node = this.parseExpression(1)
     }
     return node
 }
@@ -54,7 +54,7 @@ Parser::parseIfStmt()
     node = new gen.IfStmt(this.line,this.column)
     
     ifCase = new gen.IfCaseExpr(this.line,this.column)
-    ifCase.cond = this.parseExpression()
+    ifCase.cond = this.parseExpression(1)
     
     if this.scanner.curToken == ast.LBRACE {
         ifCase.block = this.parseBlock(false)
@@ -69,7 +69,7 @@ Parser::parseIfStmt()
         this.scanner.scan()
         if this.scanner.curToken == ast.IF {
             this.scanner.scan()
-            ice.cond = this.parseExpression()
+            ice.cond = this.parseExpression(1)
             if this.scanner.curToken == ast.LBRACE {
                 ice.block =this. parseBlock(false)
             }else {
@@ -106,7 +106,7 @@ Parser::parseForStmt()
     tx = this.scanner.transaction()
     // {
         key = null
-        value = this.parseExpression()
+        value = this.parseExpression(1)
         obj = null
         
         if type(value) == type(gen.VarExpr) && (this.scanner.curToken == ast.COMMA || this.scanner.curToken == ast.COLON) {
@@ -115,12 +115,12 @@ Parser::parseForStmt()
             if this.scanner.curToken == ast.COMMA {
                 key = value
                 this.scanner.scan()
-                value = this.parseExpression()
+                value = this.parseExpression(1)
                 this.check(type(value) == type(gen.VarExpr))
             }
             this.expect( ast.COLON)
             this.scanner.scan()
-            obj = this.parseExpression()
+            obj = this.parseExpression(1)
             this.check(obj != null)
 
             node.key = null  
@@ -155,15 +155,15 @@ Parser::parseForStmt()
         
         this.scanner.rollback(tx)
     // }
-    node.init = this.parseExpression()
+    node.init = this.parseExpression(1)
     this.expect(ast.SEMICOLON)
     this.scanner.scan()
 
-    node.cond = this.parseExpression()
+    node.cond = this.parseExpression(1)
     this.expect(ast.SEMICOLON)
     this.scanner.scan()
     
-    node.after = this.parseExpression()
+    node.after = this.parseExpression(1)
     if (hashlparen ){
         this.expect(ast.RPAREN)
         this.scanner.scan()
@@ -180,7 +180,7 @@ Parser::parseForStmt()
 Parser::parseMatchSmt(){
     utils.debug("parser.Parser::parseMatchSmt()")
     ms = new gen.MatchStmt(this.line,this.column)
-    ms.cond = this.parseExpression()
+    ms.cond = this.parseExpression(1)
     this.expect( ast.LBRACE)
     this.scanner.scan()
     while this.scanner.curToken != ast.RBRACE {
@@ -200,7 +200,7 @@ Parser::parseMatchCase(cond)
     cs = new gen.MatchCaseExpr(this.line,this.column)
     cs.matchCond = cond 
 
-    cs.cond  = cs.bitOrToLogOr(this.parseExpression())
+    cs.cond  = cs.bitOrToLogOr(this.parseExpression(1))
     cs.block = null
     
     if type(cs.cond) == type(gen.VarExpr) {
@@ -243,6 +243,6 @@ Parser::parseReturnStmt() {
     utils.debug("parser.Parser::parseReturnStmt()")
     node = new gen.ReturnStmt(this.line, this.column)
     
-    node.ret = this.parseExpression()
+    node.ret = this.parseExpression(1)
     return node
 }

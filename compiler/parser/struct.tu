@@ -141,7 +141,7 @@ Parser::parseStructInit(pkgname,name){
 		this.next_expect(ast.COLON) //解析:
 		this.scanner.scan()//eat :
 
-		fieldvalue = this.parseExpression()
+		fieldvalue = this.parseExpression(1)
 		if(fieldvalue == null) this.panic(" field value is null in struct init")
 
 

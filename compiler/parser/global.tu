@@ -133,7 +133,7 @@ Parser::parseGlobalAssign()
 {
     utils.debug("parser.Parser::parseGlobalAssign()")
     needinit = true
-    expr = this.parseExpression()
+    expr = this.parseExpression(1)
     if expr == null this.panic("parseGlobalAssign wrong")
 
     var = null
