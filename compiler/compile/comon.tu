@@ -40,7 +40,7 @@ func editast(){
     mpkg.geninit()
     mpkg.classinit()
 }
-func writeln(count,args...) {
+func writeln(args...) {
     str = fmt.sprintf(args) 
     if !out.Write(str + "\n"){
         os.dief(

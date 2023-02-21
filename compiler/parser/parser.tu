@@ -120,7 +120,7 @@ check_panic:
         this.scanner.line,this.scanner.column,this.filepath
     )
 }
-Parser::expect(tok<i32>,str<i8*>){
+Parser::expect(tok<i32>,str){
     if this.scanner.curToken == tok {
         return  True
     }
@@ -128,7 +128,7 @@ Parser::expect(tok<i32>,str<i8*>){
     if str != null {
         msg = str
     }
-    err = fmt.println(
+    err = fmt.sprintf(
         "parse: found token error token:%s(%s) expect:%s\n msg:%s\n line:%d column:%d file:%s\n",
         ast.getTokenString(this.scanner.curToken),
         this.scanner.curLex,

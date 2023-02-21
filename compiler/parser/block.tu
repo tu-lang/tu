@@ -63,7 +63,7 @@ Parser::parseParameterList()
                         this.scanner.scan()
                         if this.scanner.curToken == ast.DOT {
                             this.scanner.scan()
-                            this.expect(ast.VAR)
+                            this.expect(ast.VAR,null)
                             var.structpkg = sname
                             var.structname = this.scanner.curLex
                             this.scanner.scan()
@@ -84,7 +84,7 @@ Parser::parseParameterList()
                         this.panic("unknown token " + ast.getTokenString(this.scanner.curToken))
                     }
    
-                    this.expect(ast.GT )
+                    this.expect(ast.GT ,null)
                     this.scanner.scan()
                     
                     // continue

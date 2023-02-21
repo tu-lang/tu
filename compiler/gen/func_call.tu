@@ -22,8 +22,8 @@ FunCallExpr::stackcall(ctx,fc)
 	callname = this.funcname
 	cfunc = compile.currentFunc
 
-	if std.len(fc.params_var) != std.len(this.args.size()) 
-		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_var),std.len(this.args))
+	if std.len(fc.params_order_var) != std.len(this.args) 
+		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_order_var),std.len(this.args))
 
 	stack_args = this.PushStackArgs(ctx,fc)
 	if !fc.isObj {
@@ -44,8 +44,8 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 {
 	stack = 0
 	hashvariadic = this.hasVariadic()
-	if std.len(fc.params_var) > std.len(this.args) {
-		miss = std.len(fc.params_var) - std.len(this.args)
+	if std.len(fc.params_order_var) > std.len(this.args) {
+		miss = std.len(fc.params_order_var) - std.len(this.args)
 		compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
 		for i  = 0 ; i < miss ; i += 1 {
 			stack += 1
@@ -56,7 +56,7 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 			}
 		}
 	}
-	staticcount = std.len(fc.params_var) - 1
+	staticcount = std.len(fc.params_order_var) - 1
 	for  i = std.len(this.args) - 1; i >= 0; i -= 1 {
 		arg = this.args[i]
 		ret = arg.compile(prevCtxChain)
@@ -75,7 +75,7 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 		stack += 1
 		//func(a,b,c,args...)
 		//call(1,2,3,4)
-		if !hashvariadic && fc.is_variadic && std.len(this.args) >= std.len(fc.params_var) && i == staticcount {
+		if !hashvariadic && fc.is_variadic && std.len(this.args) >= std.len(fc.params_order_var) && i == staticcount {
 			compile.writeln("    push $%d",std.len(this.args) - staticcount)
 			compile.writeln("    push %%rsp")
 			stack += 2
@@ -106,7 +106,7 @@ FunCallExpr::registercall(ctx,fc)
 		}
 	}
 	if std.len(fc.params) != std.len(this.args)
-		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params.size),std.len(this.args.size))
+		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params),std.len(this.args))
 
 	stack_args = this.PushRegisterArgs(ctx,fc)
 

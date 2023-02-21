@@ -229,7 +229,7 @@ Parser::parseWhileStmt(dead) {
             this.scanner.scan()
         }
         
-        node.cond = this.parseExpression()
+        node.cond = this.parseExpression(1)
         
         if this.scanner.curToken == ast.RPAREN {
             this.scanner.scan()
