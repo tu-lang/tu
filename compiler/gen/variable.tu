@@ -211,11 +211,12 @@ VarExpr::assign(ctx , opt , rhs){
                 oh.var = this.ret
                 return oh.gen()
             }
+            rhs.compile(ctx)
+            compile.Push()
+
             compile.GenAddr(this.ret)
             compile.Push()
 
-            rhs.compile(ctx)
-            compile.Push()
             internal.call_operator(opt,"runtime_unary_operator")
         }
         ast.Var_Func : {  

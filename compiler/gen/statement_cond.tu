@@ -46,8 +46,8 @@ ForStmt::rangeFor(ctx)
     this.obj.compile(ctx)
     compile.Push()
     
-    compile.writeln("   mov (%%rsp),%%rdi")
-    internal.call("runtime_for_first")
+    // compile.writeln("   mov (%%rsp),%%rdi")
+    internal.call("runtime_for_first",0)
     compile.Push()
     
     
@@ -59,9 +59,9 @@ ForStmt::rangeFor(ctx)
     
     if this.key {
         std.tail(ctx).createVar(this.key.varname,this.key)
-        compile.writeln("   mov 8(%%rsp),%%rdi")
-        compile.writeln("   mov (%%rsp),%%rsi")
-        internal.call("runtime_for_get_key")
+        // compile.writeln("   mov 8(%%rsp),%%rdi")
+        // compile.writeln("   mov (%%rsp),%%rsi")
+        internal.call("runtime_for_get_key",0)
         compile.Push()
 
         compile.GenAddr(this.key.getVar(ctx,this.key))
@@ -70,9 +70,9 @@ ForStmt::rangeFor(ctx)
     }
     if this.value {
         std.tail(ctx).createVar(this.value.varname,this.value)
-        compile.writeln("   mov 8(%%rsp),%%rdi")
-        compile.writeln("   mov (%%rsp),%%rsi")
-        internal.call("runtime_for_get_value")
+        // compile.writeln("   mov 8(%%rsp),%%rdi")
+        // compile.writeln("   mov (%%rsp),%%rsi")
+        internal.call("runtime_for_get_value",0)
         compile.Push()
         compile.GenAddr(this.value.getVar(ctx,this.value))
         compile.Pop("%rdi")
@@ -93,9 +93,9 @@ ForStmt::rangeFor(ctx)
     compile.blockdestroy(ctx)
 
     compile.writeln("L.for.continue.%d:",c)
-    compile.writeln("   mov 8(%%rsp),%%rdi")
-    compile.Pop("%rsi")
-    internal.call("runtime_for_get_next")
+    // compile.writeln("   mov 8(%%rsp),%%rdi")
+    // compile.Pop("%rsi")
+    internal.call("runtime_for_get_next",1)
     compile.Push()
 
     compile.writeln("    jmp L.forr.begin.%d",c)

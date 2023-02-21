@@ -4,135 +4,118 @@ use compile
 
 func call_operator(opt,name)
 {
-    compile.writeln("    mov $%d, %%rdi", int(opt))
-    
-    compile.Pop("%rdx")
-    
-    compile.Pop("%rsi")
-    call(name)
+    compile.writeln("   push $%d",opt)
+    call(name,3)
 }
 
 func call_object_operator(opt, name,method) {
     
-    compile.writeln("    mov $%d, %%rdi", int(opt))
-    compile.Pop("%rcx")
-    //FIXME: 32
     hk = utils.hash(name)
     compile.writeln("# [debug] call_object_operator name:%s  hk:%d",name,hk)
     compile.writeln("    mov $%d,%%rdx",hk)
-
-    compile.Pop("%rsi")
-    call(method)
+    compile.writeln("   push %%rdx")
+    compile.writeln("   push $%d",opt)
+    call(method,4)
 }
-func gc_malloc(size<i64>)
+func gc_malloc(size)
 {
     if size != null {
-        compile.writeln("    mov $%d, %%rdi", size)
-        call("runtime_gc_gc_malloc")
+        compile.writeln("    push $%d", size)
+        call("runtime_gc_gc_malloc",1)
     }else {
         //pass args by prev expression.compile & %rax
-        compile.writeln("    mov %%rax, %%rdi")
-        call("runtime_gc_gc_malloc")
+        compile.writeln("    push %%rax")
+        call("runtime_gc_gc_malloc",1)
     }
+}
+func type_id(id,isobj){
+    if(isobj){
+        compile.writeln("    push $1")
+        compile.writeln("    push %%rax")
+    }else{
+        compile.writeln("    push $0")
+        compile.writeln("    push $%d",id)
+    }
+    call("runtime_type",2)
 }
 func malloc(size)
 {
-    compile.writeln("    mov $%d, %%rdi", size)
-    call("malloc")
+    compile.writeln("    push $%d", size)
+    call("malloc",1)
 }
 //@typ  ast.Int ... ast.Object
 func newobject(typ,data)
 {
-    compile.writeln("    push %%rdi")
-    compile.writeln("    push %%rsi")
+    size = 3
+    if typ != ast.String {
+        size = 2
+        compile.writeln("   mov $%d , %%rax",data)
+        compile.Push()
+    }
+    compile.writeln("   push $%d",typ)
 
-    compile.writeln("    mov $%d, %%rdi", typ)
-    if typ != ast.String
-        compile.writeln("    mov $%d, %%rsi", data)
-
-    call("runtime_newobject")
-
-    compile.writeln("    pop %%rsi")
-    compile.writeln("    pop %%rdi")
+    call("runtime_newobject",size)
 }
 func newinherit_object(type_id){
-    compile.Pop("%rdi")
-    compile.writeln("   mov $%d , %%rsi",type_id)
-    call("runtime_newinherit_object")
+    // compile.Pop("%rdi")
+    // compile.writeln("   mov $%d , %%rsi",type_id)
+    compile.writeln("   push $%d",type_id)
+    call("runtime_newinherit_object",2)
 }
 use runtime
 func newint(typ, data)
 {
-    compile.writeln("    push %%rdi")
-    compile.writeln("    push %%rsi")
-
-    compile.writeln("    mov $%d, %%rdi", typ)
-    compile.writeln("    mov $%s, %%rsi", data)
-    call("runtime_newobject")
-    compile.writeln("    pop %%rsi")
-    compile.writeln("    pop %%rdi")
+    compile.writeln("    mov $%s , %%rax",data)
+    compile.Push()
+    compile.writeln("    push $%d", typ)
+    call("runtime_newobject",2)
 }
 
 func newobject2(typ)
 {
-    compile.writeln("    push %%rdi")
-    compile.writeln("    push %%rsi")
+    compile.writeln("    push %%rax")
+    compile.writeln("    push $%d", typ)
 
-    compile.writeln("    mov $%d, %%rdi", typ)
-    compile.writeln("    mov %%rax, %%rsi")
-
-    call("runtime_newobject")
-
-    compile.writeln("    pop %%rsi")
-    compile.writeln("    pop %%rdi")
+    call("runtime_newobject",2)
 }
 func isTrue()
 {
-    compile.writeln("    mov %%rax, %%rdi")
-    call("runtime_isTrue")
+    compile.writeln("   push %%rax")
+    call("runtime_isTrue",1)
 }
 func get_object_value()
 {
-    compile.writeln("    push %%rdi")
-    compile.writeln("    mov %%rax, %%rdi")
-    call("runtime_get_object_value")
-    compile.writeln("    pop %%rdi")
+    compile.writeln("    push %%rax")
+    call("runtime_get_object_value",1)
 }
 
 func arr_pushone() {
     
-    compile.Pop("%rsi")
-    
-    compile.writeln("    mov (%%rsp),%%rdi")
-    call("runtime_arr_pushone")
+    call("runtime_arr_pushone",1)
 }
 
 func kv_update() {
     
-    compile.Pop("%rdx")
-    
-    compile.Pop("%rsi")
-    
-    compile.writeln("    mov (%%rsp),%%rdi")
-    call("runtime_kv_update")
+    call("runtime_kv_update",2)
 }
 
 func kv_get() {
     
-    compile.Pop("%rsi")
-    
-    compile.Pop("%rdi")
-    call("runtime_kv_get")
+    call("runtime_kv_get",2)
 }
-func call(funcname)
+func call(funcname,add)
 {
-    compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
-    compile.writeln("    mov %%rax, %%r10")
-    compile.writeln("    mov $%d, %%rax", 0)
-    compile.writeln("    call *%%r10")
+    compile.writeln("   call %s",funcname)
+    if add > 0 {
+        compile.writeln("   add $%d , %%rsp" , add * 8)
+    }
+    // compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
+    // compile.writeln("    mov %%rax, %%r10")
+    // compile.writeln("    mov $%d, %%rax", 0)
+    // compile.writeln("    call *%%r10")
 }
 func check_object(expr){
-    compile.writeln("    mov (%%rsp) , %%rdi")
+    // compile.writeln("    mov (%%rsp) , %%rdi")
     compile.writeln("    call runtime_check_object")
     count = ast.incr_labelid()
     compile.writeln("    cmp $0, %%rax")
@@ -147,37 +130,38 @@ func check_object(expr){
 }
 func object_member_get(expr,name)
 {
-    check_object(expr)
-    compile.Pop("%rdi")
+    // check_object(expr)
+    // compile.Pop("%rdi")
     hk = utils.hash(name)
     compile.writeln("# [debug] object_member_get name:%s  hk:%d",name,hk)
-    compile.writeln("    mov $%d,%%rsi",hk)
+    compile.writeln("   mov $%d,%%rsi",hk)
+    compile.writeln("   push %%rsi")
 
-    call("runtime_object_member_get")
+    call("runtime_object_member_get",2)
 
 }
 func object_func_add(name)
 {
-    compile.Pop("%rdx")
+    // compile.Pop("%rdx")
     hk  = utils.hash(name)
     compile.writeln("# [debug] object_func_add  name:%s  hk:%d",name,hk)
-    compile.writeln("    mov $%d,%%rsi",hk)
+    compile.writeln("   mov $%d,%%rsi",hk)
+    compile.writeln("   push %%rsi")
 
-    
-    compile.writeln("    mov (%%rsp),%%rdi")
-
-    call("runtime_object_func_add")
+    // compile.writeln("    mov (%%rsp),%%rdi")
+    call("runtime_object_func_add",2)
 }
 func object_func_addr(expr,name)
 {
-    check_object(expr) 
-    compile.Pop("%rdi")
+    // check_object(expr) 
+    // compile.Pop("%rdi")
 
     hk = utils.hash(name)
     compile.writeln("# [debug] object_func_addr name:%s  hk:%d",name,hk)
-    compile.writeln("    mov $%d,%%rsi",hk)
+    compile.writeln("   mov $%d,%%rsi",hk)
+    compile.writeln("   push %%rsi")
 
-    call("runtime_object_func_addr")
+    call("runtime_object_func_addr",2)
 }
 func gen_true(){
     compile.writeln("    lea runtime_Dtrue(%%rip), %%rax")
@@ -188,21 +172,14 @@ func gen_false(){
     compile.writeln("    mov (%%rax), %%rax")
 }
 
-func type_id(id,isobj){
-    if(isobj){
-        compile.writeln("    mov %%rax, %%rdi")
-        compile.writeln("    mov $1, %%rsi")
-    }else{
-        compile.writeln("    mov $%d, %%rdi",id)
-        compile.writeln("    mov $0, %%rsi")
-    }
-    call("runtime_type")
-}
 func miss_args(pos,funcname,isclass){
-    compile.writeln("   mov $%d , %%rdi",pos)
-    compile.writeln("   lea %s(%%rip), %%rsi", funcname)
     iscls = 0
     if isclass iscls = 1
-    compile.writeln("   mov $%d , %%rdx",iscls)
-    call("runtime_miss_args")
+    compile.writeln("    push $%d",iscls)
+
+    compile.writeln("    lea %s(%%rip), %%rax", funcname)
+    compile.writeln("    push %%rax")
+
+    compile.writeln("    push $%d",pos)
+    call("runtime_miss_args",3)
 }

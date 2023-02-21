@@ -87,7 +87,7 @@ Parser::parseParameterList()
                     this.expect(ast.GT )
                     this.scanner.scan()
                     
-                    continue
+                    // continue
                 }
                 
                 if this.scanner.curToken == ast.COMMA continue

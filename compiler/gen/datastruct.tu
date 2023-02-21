@@ -14,13 +14,12 @@ class  ArgsPosExpr : ast.Ast {
 }
 ArgsPosExpr::compile(ctx){
     this.record()
-    stack = 0
-    if this.pos > 6 {
-        utils.error("argspos not support > 6")
-    }
-    stack += 6 - this.pos
+    //push this.obj
+    //push this.obj.func
+    //push arg1
+    //puish arg2
 
-    compile.writeln("   mov %d(%%rsp) , %%rax",stack * 8)
+    compile.writeln("   mov %d(%%rsp) , %%rax",this.pos * 8)
     return null
 }
 
@@ -148,8 +147,14 @@ class StringExpr  : ast.Ast {
         if this.name == "" 
             this.panic("string not computed :%s" , this.toString(""))
         
-        compile.writeln("    lea %s(%%rip), %%rsi", this.name)
-        compile.writeln("    mov $%s,%%rdx",string.hash64string(this.lit))
+        hk = string.hash64string(this.lit)
+        compile.writeln("   mov $%s , %%rdx",hk)
+        compile.writeln("   push %%rdx")
+
+        compile.writeln("   lea %s(%%rip), %%rsi", this.name)
+        compile.writeln("   push %%rsi")
+        // compile.writeln("    mov $%s,%%rdx",string.hash64string(this.lit))
+
         internal.newobject(ast.String,0)
         return null
     }

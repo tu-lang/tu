@@ -81,6 +81,10 @@ NewClassExpr::compile(ctx)
 		call.is_pkgcall = true
 		params = this.args
 		pos = new ArgsPosExpr(1,this.line,this.column)
+        //find params count
+        fc = s.getFunc("init")
+        pos.pos = std.len(fc.params_var)  - 1
+
 		call.args[] = pos
 		std.merge(call.args,params)
 		call.compile(ctx)
@@ -206,7 +210,7 @@ MemberCallExpr::static_compile(ctx,s){
 	call = this.call
 	params = call.args
 	pos = new ArgsPosExpr(0,this.line,this.column)
-    pos.pos = 0
+    pos.pos = std.len(params) + 1
     call.args = []
     call.args[] = pos
 	std.merge(call.args,params)
@@ -232,6 +236,7 @@ MemberCallExpr::compile(ctx)
 	params = this.call.args
     
 	pos = new ArgsPosExpr(0,this.line,this.column)
+    pos.pos = std.len(params) + 1
     //push obj
     //push obj.func
     //push $arg6

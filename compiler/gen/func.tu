@@ -19,83 +19,6 @@ ClosureExpr::compile(ctx){
 	compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", this.varname)
 	return null
 }
-func funcexec(ctx , fc , fce)
-{
-	args = fce.args
-	funcname = fce.funcname
-	gp = 0
-	fp = 0
-	have_variadic = false
-	cfunc = compile.currentFunc
-	for arg : args {
-		if  type(arg) == type(VarExpr) && cfunc {
-			var = arg
-			if cfunc.params_var[var.varname] {
-				var2  = cfunc.params_var[var.varname]
-				if var2 && var2.is_variadic
-					have_variadic = true
-			}
-		}
-	}
-	if std.len(fc.params) != std.len(fce.args) 
-		utils.debug("func call: expects %d arguments but got %d\n",
-			std.len(fc.params),
-			std.len(fce.args)
-		)
-
-	stack_args = compile.Push_arg(ctx,fc,fce)
-
-	if !cfunc || !cfunc.is_variadic || !have_variadic
-		for (i = 0 ; i < compile.GP_MAX ; i += 1) {
-			compile.Pop(compile.args64[gp])
-			gp += 1
-		}
-	if !fc.isObj {
-		if fc.isExtern {
-			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
-		}else{
-			realfuncname = fc.fullname()
-			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", realfuncname)
-		}
-
-		compile.writeln("    mov %%rax, %%r10")
-		compile.writeln("    mov $%d, %%rax", fp)
-		compile.writeln("    call *%%r10")
-	}else{
-		if std.len(args) > 6 {
-			compile.writeln("   mov %d(%%rsp),%%r10",(std.len(args) - 6) * 8)
-		}else{
-			compile.Pop("%r10")
-		}
-		compile.writeln("    mov $%d, %%rax", fp)
-		compile.writeln("    call *%%r10")
-	}
-
-
-	if compile.currentFunc && compile.currentFunc.is_variadic && have_variadic {
-		c = ast.incr_labelid()
-		compile.writeln("    mov -8(%%rbp),%%rdi")
-		compile.Push()
-		internal.call("runtime_get_object_value")
-		compile.writeln("	 mov %%rax,%d(%%rbp)",compile.currentFunc.stack)
-		compile.Pop("%rax")
-		if fce.is_delref
-			compile.writeln("	add $-6,%d(%%rbp)",compile.currentFunc.stack)
-		else
-			compile.writeln("	add $-5,%d(%%rbp)",compile.currentFunc.stack)
-
-		compile.writeln("    cmp $0,%d(%%rbp)",compile.currentFunc.stack)
-		compile.writeln("    jle L.if.end.%d",c)
-		compile.writeln("	 mov %d(%%rbp),%%rdi",compile.currentFunc.stack)
-		compile.writeln("	 imul $8,%%rdi")
-		compile.writeln("    add %%rdi, %%rsp")
-		compile.writeln("L.if.end.%d:",c)
-	}else{
-		compile.writeln("    add $%d, %%rsp", stack_args * 8)
-	}
-	return null
-}
-
 
 class FunCallExpr : ast.Ast {
     funcname = ""
@@ -148,11 +71,10 @@ FunCallExpr::compile(ctx)
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this)
+		// funcexec(ctx,fc,this)
+		this.call(ctx,fc)
+		compile.writeln("	add $8 , %%rsp")
 
-		if std.len(this.args)  > 6 {
-			compile.writeln("   add $8,%%rsp")
-		}
 		return null
 	}else if this.cls != null {
         fc = this.cls.getFunc(this.funcname)
@@ -177,7 +99,7 @@ FunCallExpr::compile(ctx)
 			fn = s.getFunc(this.funcname)
 			if(fn == null) this.panic("func not exist")
 			this.checkFirstThis(ctx,var)
-			funcexec(ctx,fn,this)
+			this.call(ctx,fn)
 			return null
 		}else if this.tyassert != null {
 			s = package.packages[
@@ -188,7 +110,7 @@ FunCallExpr::compile(ctx)
 					this.tyassert.name
 			)
 			fn = s.getFunc(this.funcname)
-			funcexec(ctx,fn,this)
+			this.call(ctx,fn)
 			return null
 		}
 		this.checkobjcall(var)
@@ -201,11 +123,9 @@ FunCallExpr::compile(ctx)
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this)
+		this.call(ctx,fc)
 
-		if std.len(this.args) > 6 {
-			compile.writeln("   add $8,%%rsp")
-		}
+		compile.writeln("	add $8, %%rsp")
 		return null
 	}else if this.package == "" && ast.getVar(ctx,this.funcname) != null {
 		var = ast.getVar(ctx,this.funcname)
@@ -216,10 +136,8 @@ FunCallExpr::compile(ctx)
 		fc.isExtern    = false
 		fc.isObj       = true
 		fc.is_variadic = false
-		funcexec(ctx,fc,this)
-		if std.len(this.args) > 6 {
-			compile.writeln("   add $8,%%rsp")
-		}
+		this.call(ctx,fc)
+		compile.writeln("   add $8,%%rsp")
 		return null
 	}else{
 		pkg  = package.packages[packagename]
@@ -242,7 +160,7 @@ FunCallExpr::compile(ctx)
 		}
 		fc.isObj       = false
 	}
-	funcexec(ctx,fc,this)
+	this.call(ctx,fc)
 	return null
 }
 

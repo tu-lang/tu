@@ -52,21 +52,12 @@ func registerMain()
     writeln("    push %%rsi")
     writeln("    push %%rdi")
     
-    internal.call("runtime_gc_gc_init")
     writeln(
-        fmt.sprintf(
-            "%s%s%s%s%s",
-            "    pop  %%rdi\n",
-            "    pop  %%rsi\n",
-            "    mov runtime_args_init@GOTPCREL(%%rip), %%rax\n",
-            "    mov %%rax,%%r10\n",
-            "    call *%%r10\n"
-        )
+        "   call runtime_gc_gc_init\n" +
+        "   call runtime_args_init\n" +
+        "   mov $0, %%rax\n" +
+        "   call main_main\n"
     )
-    writeln("    mov %s@GOTPCREL(%%rip), %%rax", "main_main")
-    writeln("    mov %%rax, %%r10")
-    writeln("    mov $%d, %%rax", 0)
-    writeln("    call *%%r10")
     writeln("    mov %%rbp, %%rsp")
     writeln("    pop %%rbp")
     writeln("    ret")
@@ -78,7 +69,8 @@ func _funcs_offsets(fn)
         funcs_offsets(closure)
     }
 
-    assign_offsets(fn)
+    // assign_offsets(fn)
+    genOffsets(fn)
 
 }
 func funcs_offsets() 
@@ -92,12 +84,43 @@ func classs_offsets()
 {
     for(c : currentParser.pkg.classes){
         for(fn : c.funcs){
-            assign_offsets(fn)
+            // assign_offsets(fn)
+            genOffsets(fn)
         }
     }
 
 }
+//NOTICE: stack version
+func genOffsets(fn)
+{
+    top = 16
+    bottom = 0
 
+    for var : fn.params_order_var {
+        top = utils.ALIGN_UP(top, 8)
+        var.offset = top
+        if var.structtype && !var.pointer && var.type <= ast.U64 && var.type >= ast.I8 {
+            top += var.size
+        }else{
+            top += 8
+        }
+    }
+    for var : fn.locals {
+        bottom += var.getStackSize(currentParser)
+        bottom = utils.ALIGN_UP(bottom, 8)
+        var.offset = 0 - bottom
+    }
+    if fn.is_variadic {
+        bottom += 8
+        fn.size = 0 - bottom
+        bottom += 8
+        fn.stack = 0 - bottom
+
+        fn.stack_size = utils.ALIGN_UP(bottom, 16)
+    }else{
+        fn.stack_size = utils.ALIGN_UP(bottom, 16)
+    }
+}
 func assign_offsets(fn)
 {
     utils.debug("compile.assign_offsets()")

@@ -211,13 +211,12 @@ BinaryExpr::compile(ctx)
     if this.opt == ast.LOGOR || this.opt == ast.LOGAND 
         return this.FirstCompile(ctx)
     
-    this.lhs.compile(ctx)
-    compile.Push()
-
     if this.rhs   this.rhs.compile(ctx)
     else            compile.writeln("   mov $0,%%rax")
     compile.Push()
 
+    this.lhs.compile(ctx)
+    compile.Push()
     
     internal.call_operator(this.opt,"runtime_binary_operator")
     return null
