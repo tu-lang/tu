@@ -33,7 +33,7 @@ func compile(){
     compile.genast(code_file)
     compile.editast()
     compile.compile()
-
+    utils.debug("compile passed!")
     if run {
         compile.link() # link automaticlly
         // os.shell("rm *.s")

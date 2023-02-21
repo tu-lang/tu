@@ -4,7 +4,7 @@ use compile
 
 func call_operator(opt,name)
 {
-    compile.writeln("   push $%d",opt)
+    compile.writeln("   push $%d",int(opt))
     call(name,3)
 }
 
@@ -14,7 +14,7 @@ func call_object_operator(opt, name,method) {
     compile.writeln("# [debug] call_object_operator name:%s  hk:%d",name,hk)
     compile.writeln("    mov $%d,%%rdx",hk)
     compile.writeln("   push %%rdx")
-    compile.writeln("   push $%d",opt)
+    compile.writeln("   push $%d",int(opt))
     call(method,4)
 }
 func gc_malloc(size)

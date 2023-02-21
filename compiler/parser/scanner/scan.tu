@@ -154,7 +154,7 @@ Scanner::parseMulOrDelref(c)
         return this.token(ast.MUL_ASSIGN, "*=")
     }
     
-    if (cn >= 'a' && cn <= 'z' || (cn >= 'A' && cn <= 'Z')){
+    if (cn >= 'a' && cn <= 'z' || (cn >= 'A' && cn <= 'Z') || cn == '_'){
         return this.token(ast.DELREF, "*")
     }
     
