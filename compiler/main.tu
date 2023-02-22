@@ -30,10 +30,15 @@ func llvmgen(){
 }
 func compile(){
     utils.debug("main.compile")
+    utils.msg2(10,"Compiling",fmt.sprintf(
+        "%s v0.0.0",code_file
+    ))
     compile.genast(code_file)
     compile.editast()
     compile.compile()
-    utils.debug("compile passed!")
+    utils.msg2(100,"Finished",fmt.sprintf(
+        "%s Building!",code_file
+    ))
     if run {
         compile.link() # link automaticlly
         // os.shell("rm *.s")

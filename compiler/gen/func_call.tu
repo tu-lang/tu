@@ -33,7 +33,7 @@ FunCallExpr::stackcall(ctx,fc)
 		compile.writeln("    call %s",callname)
 	}else{
 		//push funcaddr,argn,argn-1,arg....,arg1
-		compile.writeln("    mov %d(%%rsp),%r10",stack_args * 8)
+		compile.writeln("    mov %d(%%rsp),%%r10",stack_args * 8)
 		compile.writeln("    mov $0, %%rax")
 		compile.writeln("    call *%%r10")
 	}
@@ -112,8 +112,8 @@ FunCallExpr::registercall(ctx,fc)
 
 	if !cfunc || !cfunc.is_variadic || !have_variadic
 		for (i = 0; i < compile.GP_MAX; i+=1) {
-			gp += 1
 			compile.Pop(compile.args64[gp])
+			gp += 1
 		}
 	if !fc.isObj {
 		if fc.isExtern {
@@ -128,9 +128,9 @@ FunCallExpr::registercall(ctx,fc)
 		compile.writeln("    call *%%r10")
 	}else{
 		if std.len(args) > 6 {
-			compile.writeln("   mov %d(%%rsp),%r10",(std.len(args) - 6) * 8)
+			compile.writeln("   mov %d(%%rsp),%%r10",(std.len(args) - 6) * 8)
 		}else{
-			compile.Pop("%r10")
+			compile.Pop("%%r10")
 		}
 		compile.writeln("    mov $%d, %%rax", fp)
 		compile.writeln("    call *%%r10")

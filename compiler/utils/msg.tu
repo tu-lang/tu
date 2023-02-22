@@ -31,6 +31,14 @@ func print_green(red){
 func print_red(red){
    return " \033[31m" + red + "\033[0m"
 }
+func msg2(progress,str1,str2) {
+    if progress == 0 {
+        fmt.println(print_green(str1) + " " + str2)
+    }else {
+        prefix = "[ " + progress + "%]"
+        fmt.println(prefix + print_green(str1) + " " + str2)
+    }
+}
 func msg(progress,str) {
     if progress == 0 {
         fmt.println(print_green(str))
