@@ -83,7 +83,7 @@ NewClassExpr::compile(ctx)
 		pos = new ArgsPosExpr(1,this.line,this.column)
         //find params count
         fc = s.getFunc("init")
-        pos.pos = std.len(fc.params_var_order)  - 1
+        pos.pos = std.len(fc.params_order_var)  - 1
 
 		call.args[] = pos
 		std.merge(call.args,params)
