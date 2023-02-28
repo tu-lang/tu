@@ -37,7 +37,7 @@ func compile(){
     compile.editast()
     compile.compile()
     utils.msg2(100,"Finished",fmt.sprintf(
-        "%s Building!",code_file
+        "%s target(a.out)",code_file
     ))
     if run {
         compile.link() # link automaticlly
