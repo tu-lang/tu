@@ -89,6 +89,7 @@ Package::addClass(name, f)
         for(i : this.classes[name].funcs)
             f.funcs[] = i
     }
+    f.type_id = ast.getTypeId()
     this.classes[name] = f
 }
 

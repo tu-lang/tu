@@ -29,3 +29,11 @@ enum {
     VAR,IF,ELSE,BOOL,WHILE,LOOP,FOR,EMPTY,FUNC,RETURN,BREAK,CONTINUE,NEW,
     EXTERN,USE,CO,CLASS,DELREF,EXTRA,MEM,MATCH,ENUM,BUILTIN,GOTO
 }
+
+type_id = 9
+
+func getTypeId(){
+    ret = type_id
+    type_id += 1
+    return ret
+}

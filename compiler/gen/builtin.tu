@@ -37,8 +37,9 @@ BuiltinFuncExpr::compile(ctx){
 				}else {
 					packagename = GP().import[ve.package]
 					if package.packages[packagename] != null {
-						s = null
-						if ( (s = package.packages[packagename].getClass(ve.varname)) && s != null ) {
+						s = package.packages[packagename].getClass(ve.varname)
+						if s != null {
+						// if ( (s = package.packages[packagename].getClass(ve.varname)) && s != null ) {
 							type_id = s.type_id
 						}else{
 							this.expr.compile(ctx)
