@@ -20,7 +20,8 @@ func get_hash_key(key<Value>){
 	}
     str<string.Str> = key.data
 	if  key.type == String {
-		return hash_key(str,str.len())
+        return str.hash64()
+		// return hash_key(str,str.len())
 	}
     os.dief("[hash_key] unsupport type:%s" , type_string(key))
 }
