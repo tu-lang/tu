@@ -140,6 +140,7 @@ MemberExpr::compile(ctx)
         mexpr.member = this.membername
         return mexpr.compile(ctx)
 	}
+    compile.writeln("# %s line:%d column:%d ",var.varname,this.line,this.column)
 	compile.GenAddr(var)
 	compile.Load()
 	compile.Push()

@@ -6,15 +6,15 @@ class ForStmt : ast.Ast {
         //TODO: closure call super(line,column)
         super.init(line,column)
     }
-    init
-    cond
-    after
-    block
+    init = null
+    cond = null
+    after = null
+    block = null
 
     range = false
-    key
-    value
-    obj
+    key   = null
+    value = null
+    obj   = null
 }
 ForStmt::toString() {
     str = "ForStmt("
@@ -57,7 +57,7 @@ ForStmt::rangeFor(ctx)
     compile.writeln("    je  L.forr.end.%d", c)
 
     
-    if this.key {
+    if this.key != null{
         std.tail(ctx).createVar(this.key.varname,this.key)
         // compile.writeln("   mov 8(%%rsp),%%rdi")
         // compile.writeln("   mov (%%rsp),%%rsi")
@@ -68,7 +68,7 @@ ForStmt::rangeFor(ctx)
         compile.Pop("%rdi")
         compile.writeln("   mov %%rdi,(%%rax)")
     }
-    if this.value {
+    if this.value != null {
         std.tail(ctx).createVar(this.value.varname,this.value)
         // compile.writeln("   mov 8(%%rsp),%%rdi")
         // compile.writeln("   mov (%%rsp),%%rsi")
