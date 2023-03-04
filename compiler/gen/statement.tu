@@ -46,8 +46,10 @@ ReturnStmt::compile(ctx)
     }
     for(p : ctx ) {
         funcName = p.cur_funcname
-        if funcName != "" 
+        if funcName != "" {
             compile.writeln("    jmp L.return.%s",funcName)
+            return null
+        } 
     }
     return null
 }
@@ -66,6 +68,7 @@ BreakStmt::compile(ctx)
     for(c : ctx ) {
         if c.point && c.end_str != ""  {
             compile.writeln("    jmp %s.%d",c.end_str,c.point)
+            return null
         }
     }
     return null
@@ -85,9 +88,11 @@ ContinueStmt::compile(ctx)
     for ( c : ctx) {
         if c.point && c.continue_str != "" {
             compile.writeln("    jmp %s.%d", c.continue_str, c.point)
+            return null
         }
         if c.point && c.start_str != "" {
             compile.writeln("    jmp %s.%d", c.start_str, c.point)
+            return null
         }
     }
     return null
