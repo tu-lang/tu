@@ -44,7 +44,8 @@ ReturnStmt::compile(ctx)
             }
         }
     }
-    for(p : ctx ) {
+    for(i = std.len(ctx) - 1 ; i >= 0 ; i -= 1){
+        p = ctx[i]
         funcName = p.cur_funcname
         if funcName != "" {
             compile.writeln("    jmp L.return.%s",funcName)
@@ -65,7 +66,8 @@ BreakStmt::compile(ctx)
     utils.debugf("gen.BreakExpr::compile()")
     this.record()
     
-    for(c : ctx ) {
+    for(i = std.len(ctx) - 1 ; i >= 0 ; i -= 1){
+        c = ctx[i]
         if c.point && c.end_str != ""  {
             compile.writeln("    jmp %s.%d",c.end_str,c.point)
             return null
@@ -85,7 +87,8 @@ ContinueStmt::compile(ctx)
     utils.debugf("gen.ContinueExpr::compile()")
     this.record()
     
-    for ( c : ctx) {
+    for(i = std.len(ctx) - 1 ; i >= 0 ; i -= 1){
+        c = ctx[i]
         if c.point && c.continue_str != "" {
             compile.writeln("    jmp %s.%d", c.continue_str, c.point)
             return null
