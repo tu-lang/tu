@@ -1,5 +1,9 @@
 prefix = /usr/local
 
+install-bin: install
+	@cp compiler/bin/amd64_linux_tu1 /usr/local/bin/tu
+	@cp linker/bin/amd64_linux_tl2 /usr/local/bin/tl
+	@echo "tu bin installed"
 install:
 	@mkdir -p $(prefix)/lib/copkg
 	@rm -rf $(prefix)/lib/copkg/*
@@ -8,7 +12,7 @@ install:
 	@mkdir -p $(prefix)/lib/coasm
 	@rm -rf $(prefix)/lib/coasm/*
 	@cp -r syscall/* $(prefix)/lib/coasm
-	@echo "installed"
+	@echo "tu lib installed"
 
 test_memory:
 	sh tests_compiler.sh memory
