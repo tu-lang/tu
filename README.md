@@ -21,7 +21,7 @@ tl      [options|file.o...]
 ## @自举进度
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
 
-- [ ] tu(compiler)
+- [x] tu([compiler](./compiler))
   - [x]     自举代码编译成功
   - [x] run 自动编译链接后执行
   - [x] -s  编译为低等级汇编码
@@ -40,16 +40,26 @@ tl      [options|file.o...]
   - [x] stack unwind
  
   
-## env & install & tests 
+## env & install
 `NOTICE`:environment install first
 ```asciidoc
 ....
+> cd tu-lang
+> make install-bin
+```
+## compiler&&linker测试
+- compiler: 编译测试
+![image](./assets/compiler_helloworld.png#w50)
+- linker： 链接测试
+![image](./assets/linker_helloworld.png#w50)
+
+- 单元测试
+```
 > sh tests_compiler.sh
 > sh tests_asmer.sh
 > sh tests_linker.sh
-
+> make test -j10 //并发测试
 ```
-
 ## @数据结构
 - [x] 动态类型 int string bool null array map closure object
 - [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 struct
