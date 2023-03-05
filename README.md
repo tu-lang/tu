@@ -41,11 +41,11 @@ tl      [options|file.o...]
  
   
 ## env & install
-`NOTICE`:environment install first
+`linux`: 环境安装
 ```asciidoc
 ....
 > cd tu-lang
-> make install-bin
+> make install
 ```
 ## compiler&&linker测试
 - compiler: 编译测试
