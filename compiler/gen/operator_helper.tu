@@ -342,7 +342,7 @@ OperatorHelper::genRight(isleft,expr)
 	
 	ret = expr.compile(this.ctx)
 	
-	if !exprIsMtype(expr,this.ctx) && ( this.op == ast.LOGAND || this.opt == ast.LOGOR) {
+	if !exprIsMtype(expr,this.ctx) && ( this.opt == ast.LOGAND || this.opt == ast.LOGOR) {
 		internal.isTrue()
 	}
 	match type(expr) {
