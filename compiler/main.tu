@@ -41,7 +41,7 @@ func compile(){
     ))
     if run {
         compile.link() # link automaticlly
-        // os.shell("rm *.s")
+        os.shell("rm *.s")
         args = "./a.out"
         os.shell(args)
     }
