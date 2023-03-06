@@ -8,8 +8,8 @@ tu-lang(凸）是一种编程语言，旨在创造一种非常简单的零依赖
 tu      [options] file.tu        
     -s    file  ast -> asm       编译.tu代码 生成.s汇编文件
     -run  file  ast -> asm       基于gcc编译链接后运行(no libc)
-    -p    file                   打印token
     -g                           段错误时打印详细栈信息
+    -d                           打印编译过程信息
 ta      [options] file.s        
     -c    file.s  -> file.tu      编译.s自定义汇编语言,翻译机器码并生成.o elf|pe/coff文件
     -p    path path...           批量扫描目录编译.s文件生成.o elf文件
