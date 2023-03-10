@@ -21,7 +21,9 @@ func check(ret<i32>){
 // enable by compiler through  -g parameter
 // like: tu run hello.tu -g
 func init(){
-	if enabled != 1.(i8) return 1.(i8)
+	//FIXME: "return" cause lost of initcall missing
+	// if enabled != 1.(i8) return 1.(i8)
+	if enabled == 1 {
 	elf = new Elf {
 		filepath : runtime.ori_execout
 	}
@@ -42,6 +44,7 @@ func init(){
 		rows: std.array_create()
 	}
 	lines.parse()
+	}
 }
 func findpc(pc<u64>){
 	// must enable debug first
