@@ -44,7 +44,7 @@ StructInitExpr::arrinit(ctx , field , arr){
 StructInitExpr::compile(ctx){
     utils.debugf("gen.StructInitExpr::compile()")
 	compile.Push()
-	fullpkg = GP().import[this.pkgname]
+	fullpkg = GP().getImport(this.pkgname)
 	s = package.getStruct(fullpkg,this.name)
 	if(s == null) this.check(false,"struct not exist when new struct")
 	for key,value : this.fields {
@@ -98,7 +98,7 @@ StructInitExpr::compile(ctx){
 }
 NewStructExpr::compile(ctx){
 	if this.init == null this.check(false,"new struct is null")
-	fullpackage = GP().import[this.init.pkgname]
+	fullpackage = GP().getImport(this.init.pkgname)
 	s = package.getStruct(fullpackage,this.init.name)
 	if s == null this.check(false,"struct not exist when new struct")
 	internal.gc_malloc(s.size)

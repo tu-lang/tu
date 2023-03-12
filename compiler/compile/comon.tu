@@ -17,7 +17,7 @@ func genast(filename)
 {
     utils.debugf("compile.genast filename:%s",filename)
     mpkg = new package.Package("main","main",false)
-    mparser = new parser.Parser(filename,mpkg,"main","main")
+    mparser = new parser.Parser(filename,mpkg)
 
     mparser.fileno = fileno
     mpkg.parsers[filename] = mparser

@@ -90,11 +90,8 @@ FunCallExpr::compile(ctx)
 		var = ast.getVar(ctx,this.package)
 		OBJECT_MEMBER_CALL:
 		if var.structname != "" && var.structname != null {
-			s = package.packages[
-				compile.currentParser.import[var.structpkg]
-				].getClass(
-				var.structname
-			)
+			s = compile.currentParser.pkg.getPackage(var.structpkg)
+				.getClass(var.structname)
 			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)
 			fn = s.getFunc(this.funcname)
 			if(fn == null) this.panic("func not exist")
@@ -102,13 +99,9 @@ FunCallExpr::compile(ctx)
 			this.call(ctx,fn)
 			return null
 		}else if this.tyassert != null {
-			s = package.packages[
-					compile.currentParser.import[
-						this.tyassert.pkgname
-					]
-				].getClass(
-					this.tyassert.name
-			)
+			s = compile.currentParser.pkg
+					.getPackage(this.tyassert.pkgname)
+					.getClass(this.tyassert.name)
 			fn = s.getFunc(this.funcname)
 			this.call(ctx,fn)
 			return null

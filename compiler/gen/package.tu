@@ -18,7 +18,7 @@ package.Package::genStruct(s)
 		if m.isstruct {
 			ps = s.parser # Parser
 			compile.currentParser  = ps
-			acualPkg = ps.import[m.structpkg]
+			acualPkg = ps.getImport(m.structpkg)
 			dst = package.getStruct(acualPkg,m.structname)
 			if dst == null {
 				this.panic("struct.member: inner class not exist <%s.%s> line:%d column:%d file:%s\n",

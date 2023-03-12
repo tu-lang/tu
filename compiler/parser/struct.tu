@@ -24,7 +24,7 @@ Parser::parseStructDef()
 	s.parser = this
 	s.name  = this.scanner.curLex
 	this.check(utils.isUpper(s.name),"first char of class name need be Upper")
-	s.pkg   = this.package
+	s.pkg   = this.pkg.package
 	this.scanner.scan()
 	if ( this.scanner.curToken != ast.LBRACE ){
 		this.check(this.scanner.curToken == ast.COLON)

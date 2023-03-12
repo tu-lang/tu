@@ -22,17 +22,14 @@ TypeAssertExpr::compile(ctx){
 
 }
 TypeAssertExpr::getStruct(){
-	pkg = this.pkgname
 	name = this.name
-    utils.debugf("gen.TypeAssertExpr::getStruct() pkgname:%s name:%s\n",pkg,name)
+    utils.debugf("gen.TypeAssertExpr::getStruct() pkgname:%s name:%s\n",this.pkgname,name)
 	s = null
-	if GP().import[pkg] != null {
-		pkg = GP().import[pkg]
+	pkg = GP().pkg.getPackage(this.pkgname)
+	if pkg == null {
+		this.check(false,"type assert: mem package not exist:" + this.pkgname)
 	}
-	if package.packages[pkg] == null {
-		this.check(false,"type assert: mem package not exist:" + pkg)
-	}
-	s = package.packages[pkg].getStruct(name)
+	s = pkg.getStruct(name)
 	if s == null {
         this.check(false,"mem type not exist :" + name)
 	}

@@ -451,8 +451,8 @@ Parser::parseVarExpr(var)
     //FIXME: the var define order
     // package(var)
     package = var
-    if var != "_" && var != "__" && this.import[var] {
-        package = this.import[var]
+    if var != "_" && var != "__" && this.getImport(var) != "" {
+        package = this.getImport(var)
     }
     match this.scanner.curToken {
         ast.DOT : {
@@ -501,7 +501,7 @@ Parser::parseVarExpr(var)
             }else if this.scanner.curToken == ast.LBRACKET {
                 index = this.parseIndexExpr(pfuncname)
                 if this.currentFunc != null  {
-                    if this.currentFunc.parser.import[package] != null {
+                    if this.currentFunc.parser.getImport(package) != "" {
                         index.is_pkgcall  = true
                     }
                 }
@@ -510,7 +510,7 @@ Parser::parseVarExpr(var)
                 return index
             }else{
                 mvar = null
-                if this.currentFunc == null && this.import[var] == null {
+                if this.currentFunc == null && this.getImport(var) == "" {
                     me = new gen.MemberExpr(this.line,this.column)
                     me.tyassert = ta
                     me.varname = var

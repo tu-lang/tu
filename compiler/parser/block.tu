@@ -127,8 +127,8 @@ Parser::parseParameterList()
 
 Parser::genSuperInitStmt(f){
     utils.debug("parser.Parser.genSuperInitStmt()")
-    if this.import["runtime"] != null {
-        this.import["runtime"] = "runtime"
+    if this.getImport("runtime") == "" {
+        this.pkg.imports["runtime"] = "runtime"
     }
     ass = new gen.AssignExpr(this.line,this.column)
     ass.opt = ast.ASSIGN

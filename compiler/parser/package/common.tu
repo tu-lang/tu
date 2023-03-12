@@ -1,5 +1,6 @@
 use utils
 use ast
+use parser.package
 
 
 uniquesig = "initvars_" + utils.strRand()
@@ -33,4 +34,38 @@ Package::initClassInitFunc(name)
     }
     f.block.InsertExpressionsHead(cs.initmembers)
     return true
+}
+
+Package::getImport(name){
+    if name == "" || name == null return this.full_package
+    if this.imports[name] != null {
+        return this.imports[name]
+    }
+    return ""
+}
+Package::getPackage(packagename){
+    entire = false
+    for(i : this.imports){
+        if ( packagename != "" && packagename == i){
+            entire = true
+            break
+        }
+    }
+    pkg = null
+    if entire{
+        if(package.packages[packagename] != null)
+            pkg = package.packages[packagename]
+    }else{
+        pkgname = ""
+        if(packagename == ""){
+            pkgname =  this.full_package
+        }else{
+            if(this.imports[packagename] != null){
+                pkgname = this.imports[packagename]
+            }
+        }
+        if(package.packages[pkgname] != null)
+            pkg = package.packages[pkgname]
+    }
+    return pkg
 }

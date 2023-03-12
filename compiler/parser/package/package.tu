@@ -16,12 +16,14 @@ class Package {
     initvars 
     classes = {} # map{string : Class  }
     structs = {} # map{string : Struct }
+    imports = {} # map[string: string}
 }
 
 Package::init(name , path , multi) {
     utils.debugf("parser.package.Package::init() name:%s path:%s multi:%d",
         name,path,multi
     )
+    this.imports[name] = path
     if multi {
         this.path = regex.replace(path,"_","/")
     }
@@ -54,7 +56,7 @@ Package::parse()
         if !file.isFile() continue
         filepath = file.path
         if string.sub(filepath,std.len(filepath) - 3) == ".tu" {
-            parser = new parser.Parser(filepath,this,this.package,this.full_package)
+            parser = new parser.Parser(filepath,this)
             
             parser.fileno = compile.fileno
             this.parsers[filepath] = parser

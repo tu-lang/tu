@@ -22,7 +22,7 @@ Parser::parseEnumDef(){
         gv.ivalue = string.tostring(defaulte)        
         this.gvars[gv.varname] = gv
         gv.is_local = false
-        gv.package  = this.package
+        gv.package  = this.pkg.package
         gv.type = ast.I32
         gv.size = 4
 
@@ -52,7 +52,7 @@ Parser::parseStructVar(varname)
     }
     this.gvars[varname] = varexpr
     varexpr.is_local = false
-    varexpr.package  = this.package
+    varexpr.package  = this.pkg.package
 }
 Parser::parseFlatVar(var){
     utils.debugf("parser.Parser::parseFlatVar() varname:%s",var)
@@ -60,7 +60,7 @@ Parser::parseFlatVar(var){
     
     this.gvars[var] = varexpr
     varexpr.is_local = false
-    varexpr.package  = this.package
+    varexpr.package  = this.pkg.package
 }
 
 Parser::parseClassFunc(var){
@@ -88,7 +88,7 @@ Parser::parseExternClassFunc(pkgname){
     this.expect( ast.VAR)
     clsname = this.scanner.curLex
     this.scanner.scan()
-    if this.import[pkgname] == null {
+    if this.getImport(pkgname) == "" {
         this.check(false,fmt.sprintf("consider import package: use %s",this.package))
     }
     this.expect(  ast.COLON )
@@ -102,7 +102,7 @@ Parser::parseExternClassFunc(pkgname){
     this.check(f != null)
     
     f.clsname = clsname
-    pkg = package.packages[this.import[pkgname]]
+    pkg = this.pkg.getPackage(pkgname)
     pkg.addClassFunc(clsname,f,this)
     f.package = pkg
     
@@ -202,7 +202,7 @@ Parser::parseGlobalAssign()
     }
     this.gvars[var.varname] = var
     var.is_local = false 
-    var.package  = this.package
+    var.package  = this.pkg.package
     if !needinit return false
 
     this.pkg.InsertInitVarExpression(assign)

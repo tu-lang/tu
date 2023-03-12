@@ -35,9 +35,9 @@ BuiltinFuncExpr::compile(ctx){
 				if typeids[ve.varname] != null {
 					type_id = typeids[ve.varname]
 				}else {
-					packagename = GP().import[ve.package]
-					if package.packages[packagename] != null {
-						s = package.packages[packagename].getClass(ve.varname)
+					pkg = GP().pkg.getPackage(ve.package)
+					if pkg != null {
+						s = pkg.getClass(ve.varname)
 						if s != null {
 						// if ( (s = package.packages[packagename].getClass(ve.varname)) && s != null ) {
 							type_id = s.type_id

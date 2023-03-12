@@ -58,6 +58,7 @@ Function::InsertFuncall(fullpackage,funcname){
 	if this.block == null {
 		this.block = new Block()
 	}
+    //FIXME: if current function return|exit early will cause this init instruct not avaiable
 	this.block.stmts[] = call
 } 
 Function::InsertExpression(expr){

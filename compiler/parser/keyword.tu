@@ -210,7 +210,7 @@ Parser::parseImportDef()
     }
     utils.notice("import package :%s done",path)
     
-    this.import[package] = path
+    this.pkg.imports[package] = path
 
 }
 Parser::genClassInitFunc(clsname)

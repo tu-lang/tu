@@ -10,7 +10,7 @@ func GenAddr(var){
         writeln("    lea %d(%%rbp), %%rax", var.offset)
         return var
     }else{
-        full = currentFunc.parser.import[var.package]
+        full = currentFunc.parser.getImport(var.package)
         if full == "" var.panic("var not define")
         name = full + "_" + var.varname
         writeln("    lea %s(%%rip), %%rax", name)

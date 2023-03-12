@@ -74,18 +74,15 @@ StructMemberExpr::getStruct()
 		packagename = this.var.package
 	}
 	s = null
-	
-	if GP().import[packagename] != null {
-		packagename = GP().import[packagename]
-	}
-	if package.packages[packagename] == null {
+	pkg = GP().pkg.getPackage(packagename)	
+	if pkg == null {
 		fmt.println(packagename)
 		for  k,v : package.packages {
 			fmt.println(k)
 		}
 		this.check(false,"mem package not exist: " + packagename)
 	}
-	s = package.packages[packagename].getStruct(sname)
+	s = pkg.getStruct(sname)
 	if s == null {
         this.check(false,"mem type not exist :%s" , sname)
 	}

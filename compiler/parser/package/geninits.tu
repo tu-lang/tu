@@ -20,15 +20,12 @@ Package::parseinit(){
 		return hashInit[this.getFullName()]
 	}
 	hashInit[this.getFullName()] = std.len(this.inits)  > 0
-	for(p : this.parsers)
+	for(fullpackage : this.imports )
 	{
-		for(fullpackage : p.import )
-		{
-			if packages[fullpackage].parseinit() && 
-			!hashInit[this.getFullName()] {
-				hashInit[this.getFullName()] = true
-				this.InsertInitFunc(p)
-			}
+		if packages[fullpackage].parseinit() && 
+		!hashInit[this.getFullName()] {
+			hashInit[this.getFullName()] = true
+			this.InsertInitFunc(std.head(this.parsers))
 		}
 	}
 	
@@ -40,32 +37,30 @@ Package::parseinit(){
 }
 HasGen = {}
 Package::geninit(){
-	 if std.exist(this.getFullName(),HasGen){
-	 	return false
-	 }
-	 HasGen[this.getFullName()] = true
-	 if std.len(this.inits) <= 0 {
-		return false
-	 }
-	 mf = this.inits[0]
-	 for(filepath,parser : this.parsers){
-		 for(fullpackage : parser.import){
-			 if !std.exist(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
-			 dpkg = packages[fullpackage]
-			 if(dpkg.geninit()){
-				 for(init : dpkg.inits){
-					mf.InsertFuncall(fullpackage,init.name)
-				 }
-			 }
-		 }
-	 }
-	 
-	 if this.package == "main" {
-		 for(init : this.inits){
-			if init.funcname == mf.funcname continue
+	if std.exist(this.getFullName(),HasGen){
+	return false
+	}
+	HasGen[this.getFullName()] = true
+	if std.len(this.inits) <= 0 {
+	return false
+	}
+	mf = this.inits[0]
+	for(fullpackage : this.imports){
+		if !std.exist(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
+		dpkg = packages[fullpackage]
+		if(dpkg.geninit()){
+			for(init : dpkg.inits){
 			mf.InsertFuncall(fullpackage,init.name)
-		 }
- 
-	 }
-	 return true
+			}
+		}
+	}
+
+	if this.package == "main" {
+		for(init : this.inits){
+		if init.funcname == mf.funcname continue
+		mf.InsertFuncall(fullpackage,init.name)
+		}
+
+	}
+	return true
  } 

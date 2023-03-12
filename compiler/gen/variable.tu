@@ -54,7 +54,7 @@ VarExpr::toString() { return fmt.sprintf("VarExpr(%.%s)",this.package,this.varna
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx,this)
     if v != null && v.structtype {
-        acualPkg = compile.currentParser.import[v.structpkg]
+        acualPkg = compile.currentParser.getImport(v.structpkg)
         dst = package.getStruct(acualPkg,v.structname)
         
         if (dst == null && v.structname != ""){
@@ -258,7 +258,7 @@ VarExpr::getStackSize(p){
     if this.stack {
         if this.structname != ""  {
             this.check(this.stacksize != 0)
-            acualPkg = p.import[this.structpkg]
+            acualPkg = p.getImport(this.structpkg)
             s = package.getStruct(acualPkg,this.structname)
             if(s == null) {
                 fmt.println(this.structname)

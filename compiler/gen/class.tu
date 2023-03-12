@@ -26,9 +26,8 @@ NewClassExpr::toString(){
 NewClassExpr::getReal(){
 	s = null
     if(this.package != ""){
-		realPkg = GP().import[this.package]
-		pkg = package.packages[realPkg]
-        if(pkg){
+        pkg = GP().pkg.getPackage(this.package)
+        if pkg != null {
             s = pkg.getClass(this.name)
         }
     }else{
@@ -203,7 +202,7 @@ MemberCallExpr::static_compile(ctx,s){
     this.record()
     compile.Push()
 	p = s.parser
-	cls = package.packages[p.getpkgname()].getClass(s.name)
+    cls = p.pkg.getClass(s.name)
     fn = cls.getFunc(this.membername)
     if fn == null this.check(false,"func not exist:" + this.membername)
     compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn.fullname())

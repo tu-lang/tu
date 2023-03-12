@@ -36,35 +36,31 @@ class Parser {
 
     pkg         = pkg   # Package*
     currentFunc = null
-    full_package # package name
-    package     = package      
     filename   
     asmfile
     filepath    = filepath
 
     //currently scanner
     scanner #Scanner*
-    import  = {} # map{string : string }    full package path => user use path
 }
 
-Parser::init(filepath,pkg,package,full_package) {
+Parser::init(filepath,pkg) {
     utils.debugf(
         "parser.Parser::init() filename:%s package:%s full_package:%s"
-        filepath,package,full_package
+        filepath,pkg.package,pkg.full_package
     )
     fullname = std.pop(string.split(filepath,"/"))
     this.filename = string.sub(fullname,0,std.len(fullname) - 3)
     this.asmfile  = this.filename + ".s"
-    if package != "main"
-        this.asmfile  = "co_" + package + "_" + this.asmfile
-
-    this.full_package = full_package
+    if pkg.package != "main"
+        this.asmfile  = "co_" + pkg.package + "_" + this.asmfile
     
     this.scanner = new scanner.Scanner(filepath,this)
-    this.import[package] = full_package
-    this.import[""]  = full_package
     this.filenameid = ".L.filename." +  ast.incr_labelid()
 
+}
+Parser::getImport(pkgname){
+    return this.pkg.getImport(pkgname)
 }
 Parser::parse()
 {
@@ -93,7 +89,7 @@ Parser::parse()
 }
 Parser::getpkgname()
 {
-    return this.full_package
+    return this.pkg.full_package
 }
 Parser::panic(args...){
     fmt.println("Parser::panic:")
