@@ -22,9 +22,9 @@ tl      [options|file.o...]
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
 
 - [x] tu([compiler](./compiler))
-  - [x]     自举代码编译成功
   - [x] run 自动编译链接后执行
   - [x] -s  编译为低等级汇编码
+  - [x] -d  开启打印debug信息
 - [ ] ta(asmer)
   - [ ] -c  翻译指定汇编码为linux(elf),windows(pe/coff)
   - [ ] -p  批量扫描路径下的汇编
@@ -43,14 +43,14 @@ tl      [options|file.o...]
 ## env & install
 `linux`: 环境安装
 ```asciidoc
-....
-> cd tu-lang
-> make install
+$ git clone https://github.com/tu-lang/tu.git
+$ cd tu
+$ make install
 ```
 ## compiler&&linker测试
-- compiler: 编译测试
+`compiler`: 编译测试
 ![image](./assets/compiler_helloworld.png#w50)
-- linker： 链接测试
+`linker`： 链接测试
 ![image](./assets/linker_helloworld.png#w50)
 
 - 单元测试
