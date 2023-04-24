@@ -16,7 +16,7 @@ class ClosureExpr : ast.Ast {
 }
 
 ClosureExpr::compile(ctx){
-	compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", this.varname)
+	compile.writeln("    lea %s(%%rip), %%rax", this.varname)
 	return null
 }
 

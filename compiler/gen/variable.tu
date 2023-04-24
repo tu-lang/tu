@@ -173,7 +173,7 @@ VarExpr::compile(ctx){
         ast.Var_Func : {  
             fn = this.funcpkg + "_" + this.funcname
             utils.debug("found function pointer:%s",fn)
-            compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn)
+            compile.writeln("    lea %s(%%rip), %%rax", fn)
         }
         _ : this.check(false,"unkonwn var type")
     }

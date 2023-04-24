@@ -117,10 +117,10 @@ FunCallExpr::registercall(ctx,fc)
 		}
 	if !fc.isObj {
 		if fc.isExtern {
-			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
+			compile.writeln("    lea %s(%%rip), %%rax", funcname)
 		}else{
 			realfuncname = fc.fullname()
-			compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", realfuncname)
+			compile.writeln("    lea %s(%%rip), %%rax", realfuncname)
 		}
 
 		compile.writeln("    mov %%rax, %%r10")

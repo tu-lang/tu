@@ -67,7 +67,7 @@ NewClassExpr::compile(ctx)
 		funcname = fc.parser.getpkgname() +
 							"_" + s.name + "_" + fc.name
 
-		compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
+		compile.writeln("    lea %s(%%rip), %%rax", funcname)
 		compile.Push()
 		internal.object_func_add(fc.name)
 	}
@@ -205,7 +205,7 @@ MemberCallExpr::static_compile(ctx,s){
     cls = p.pkg.getClass(s.name)
     fn = cls.getFunc(this.membername)
     if fn == null this.check(false,"func not exist:" + this.membername)
-    compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", fn.fullname())
+    compile.writeln("    lea %s(%%rip), %%rax", fn.fullname())
     compile.Push()
 	call = this.call
 	params = call.args
