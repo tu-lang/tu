@@ -2,9 +2,12 @@ use parser
 use test
 use os
 use ast
+use parser.package
+
 
 func test(){
-	p = new parser.Parser("./test/case",null,"main","main")
+	mpkg = new package.Package("main","main",false)
+	p = new parser.Parser("./test/case",mpkg)
 	reader = p.scanner
 
 	for v  : test.token {
