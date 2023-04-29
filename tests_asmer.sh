@@ -29,13 +29,16 @@ assert(){
     expected="$1"
     input="$2"
     log "[compile] tu -s $input ..."
+    clean "*.s"
+    clean "*.o"
     tu -s $input
     check
-    log "[asmer] toa -p ."
-    toa -p .
+    log "[asmer] ta -p . /usr/local/lib/coasm"
+    ta -p . /usr/local/lib/coasm
     echo "start linking..."
-    echo "gcc -g *.o -L/usr/local/lib/colib -linternal -lgc -los"
-    gcc -g *.o -L/usr/local/lib/colib -linternal -lgc -los
+    echo "tl -p . "
+    tl -p .
+    chmod 777 a.out
     check
     echo "exec a.out..."
     ./a.out
@@ -49,10 +52,11 @@ assert(){
 #    failed "[compile] $input failed"
 }
 read_dir(){
-    $ir = "$1"
+    dir="$1"
     cd $dir
     for file in `ls *.tu`
     do
+     echo $file
      if [ -d $file ] ; then
         read_dir $file
      else
@@ -71,6 +75,10 @@ install_env(){
     fi
 }
 install_env
+if [ "$1" != "" ]; then
+    read_dir $1
+    exit 0
+fi
 for dir in `ls`
 do
     if [ -d $dir ] ; then

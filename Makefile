@@ -1,9 +1,12 @@
 prefix = /usr/local
 
+.PHONY: install-bin
 install-bin: 
 	@cp compiler/bin/amd64_linux_tu1 /usr/local/bin/tu
 	@cp linker/bin/amd64_linux_tl2 /usr/local/bin/tl
 	@echo "tu bin installed"
+	
+.PHONY: install
 install: install-bin
 	@mkdir -p $(prefix)/lib/copkg
 	@rm -rf $(prefix)/lib/copkg/*
@@ -28,11 +31,14 @@ test_compiler:
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 #make test -j9
-test: test_compiler test_linker $(cases)
+test-all: test_compiler test_linker $(cases)
 	@echo "all test passed"
+	
+test: $(cases)
+	@echo "test passed"
 
 %: ./tests/%
 	@sh tests_compiler.sh $@ ;
 	@sh tests_linker.sh $@  ;
-	#@sh tests_linker.sh $@  ;
+	@sh tests_asmer.sh $@  ;
 
