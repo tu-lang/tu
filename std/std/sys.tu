@@ -4,11 +4,8 @@ func die(code<i8>)
 //time ; implement by asm
 func time(t<u64>)
 
-//sleep ; implement by asm
-func sleep(sec<u64>)
-
-//sleep ; implement by asm
-func usleep(sec<u64>)
+//nanossleep ; implement by asm
+func nanosleep(sec<u64>)
 
 //brk ; implement by asm
 func brk(brk<u64>)

@@ -1,8 +1,10 @@
 
 use std
 func sleep(sec){
-	std.sleep(sec)
+	//TODO:
+	//std.nanosleep(sec)
 }
 func usleep(sec){
-	std.usleep(sec)
+	//TODO:
+	//std.nanosleep(sec)
 }
