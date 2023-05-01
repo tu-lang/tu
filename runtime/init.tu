@@ -6,8 +6,6 @@ use fmt
 use runtime.gc
 use runtime.debug
 
-Dtrue  = true
-Dfalse = false
 # start at core space init
 ori_envp<u64*>
 ori_argc<u64>

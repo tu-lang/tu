@@ -164,12 +164,12 @@ func object_func_addr(expr,name)
     call("runtime_object_func_addr",2)
 }
 func gen_true(){
-    compile.writeln("    lea runtime_Dtrue(%%rip), %%rax")
-    compile.writeln("    mov (%%rax), %%rax")
+    compile.writeln("    lea runtime_internal_bool_true(%%rip), %%rax")
+    // compile.writeln("    mov (%%rax), %%rax")
 }
 func gen_false(){
-    compile.writeln("    lea runtime_Dfalse(%%rip), %%rax")
-    compile.writeln("    mov (%%rax), %%rax")
+    compile.writeln("    lea runtime_internal_bool_false(%%rip), %%rax")
+    // compile.writeln("    mov (%%rax), %%rax")
 }
 
 func miss_args(pos,funcname,isclass){
