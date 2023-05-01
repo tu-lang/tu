@@ -6,7 +6,6 @@
 .vscode
 *.out
 *.o
-*.a
 *.swp
 tmp.s
 cmake-build-debug

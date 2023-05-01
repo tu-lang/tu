@@ -1,5 +1,35 @@
 prefix = /usr/local
 
+BUILD_LIBA = build_install_liba() {                              	\
+    if [ ! -d $(prefix)/lib/colib ]; then                        	\
+        mkdir -p $(prefix)/lib/colib;                            	\
+    fi;                                                     	 	\
+    if [ ! -d _tmp ]; then                         			\
+        mkdir -p _tmp;                             			\
+    fi;                                                          	\
+	rm -rf $(prefix)/lib/colib/*;					\
+	rm -rf _tmp/*;							\
+	cd _tmp;							\
+	echo "								\
+		use fmt	use os	use string	use std			\
+		use std.map	use std.atomic	use std.regex		\
+		use runtime	use runtime.sys	use runtime.malloc	\
+		use runtime.debug	use runtime.gc	use time	\
+	" > a.tu;							\
+	tu -s a.tu;							\
+	rm a.s;								\
+	ta -p . $(prefix)/lib/coasm;					\
+	ar -rc tulang.a *.o;						\
+	mv tulang.a ../asmer/;						\
+	mv *.o $(prefix)/lib/colib;					\
+	cd ..;								\
+	rm -rf _tmp;							\
+}
+.PHONY: build-liba
+build-liba:
+	@$(BUILD_LIBA); build_install_liba
+	@echo "install liba  to $(prefix)/lib/colib success"
+
 .PHONY: install-bin
 install-bin: 
 	@cp compiler/bin/amd64_linux_tu1 /usr/local/bin/tu
@@ -7,7 +37,7 @@ install-bin:
 	@echo "tu bin installed"
 	
 .PHONY: install
-install: install-bin
+install: 
 	@mkdir -p $(prefix)/lib/copkg
 	@rm -rf $(prefix)/lib/copkg/*
 	@cp -r runtime $(prefix)/lib/copkg/
