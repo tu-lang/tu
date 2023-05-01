@@ -150,6 +150,10 @@ Parser::parseGlobalAssign()
                     var.ivalue = ae.rhs.lit
                     if var.structtype needinit = false 
                 }
+                type(gen.CharExpr) : {
+                    var.ivalue = ae.rhs.lit
+                    if var.structtype needinit = false 
+                }
                 type(gen.NullExpr) : {
                     if(var.structtype) needinit = false
                 }
