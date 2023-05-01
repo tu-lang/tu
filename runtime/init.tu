@@ -52,6 +52,8 @@ func args_init(argc<u64>, argv<u64*>){
 }
 func runtimeinit(){
 	os.setsignal(os.SIGSEGV,std.segsegvrecv)
+	pools_init()
+	debug.debug_init()
 }
 
 

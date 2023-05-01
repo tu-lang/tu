@@ -41,7 +41,7 @@ func string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.Rbtre
     node.color = 1
 }
 
-func init(){
+func pools_init(){
 	//init array
 	chars = std.array_create(256.(i8),8.(i8))
 	for i<i32> = 0 ; i < 256 ; i += 1 {

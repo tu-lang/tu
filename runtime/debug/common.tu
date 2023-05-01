@@ -20,7 +20,7 @@ func check(ret<i32>){
 }
 // enable by compiler through  -g parameter
 // like: tu run hello.tu -g
-func init(){
+func debug_init(){
 	//FIXME: "return" cause lost of initcall missing
 	// if enabled != 1.(i8) return 1.(i8)
 	if enabled == 1 {
