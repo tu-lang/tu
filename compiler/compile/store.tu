@@ -20,7 +20,7 @@ func Store(size<u64>) {
     if size == null {
         Pop("%rdi")
         writeln("    mov %%rax, (%%rdi)")
-        return False
+        return false
     }
     s = size
     //static version need control the size

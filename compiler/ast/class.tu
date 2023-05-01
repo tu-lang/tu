@@ -76,7 +76,7 @@ Class::initClassInitFunc()
 
 Class::checkRmSupers(){
 	utils.debug("ast.Class::checkRmSupers()")
-	if this.father != null return True
+	if this.father != null return true
 	for f : this.funcs {
 		if f.block == null  continue
 		if f.name == "init" continue

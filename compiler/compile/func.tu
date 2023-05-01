@@ -31,8 +31,8 @@ func registerFuncs(){
     }
 }
 func CreateFunction(fn) {
-    if fn.isExtern return True
-    if fn.block == null return True
+    if fn.isExtern return true
+    if fn.block == null return true
 
     funcname = fn.fullname()
     utils.debugf("compile.CreateFunction()  fullname:%s",funcname)

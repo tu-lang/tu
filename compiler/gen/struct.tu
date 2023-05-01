@@ -53,7 +53,7 @@ StructMemberExpr::toString() {
 StructMemberExpr::getMember()
 {
 	s = this.getStruct()
-	if s == null return False
+	if s == null return false
 
 	m = s.getMember(this.member)
 	if m == null {

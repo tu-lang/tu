@@ -17,9 +17,6 @@ enum {
    Var_Global_Extern_Static,
 }
 
-True  = true
-False = false
-
 func GP(){
    return compile.currentParser
 }

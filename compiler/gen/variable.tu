@@ -161,8 +161,8 @@ VarExpr::compile(ctx){
             compile.GenAddr(this.ret)
             //UNSAFE: dyn & native in same expression is unsafe      
             if !this.ret.stack {
-                if this.ret.structtype == True && 
-                this.ret.pointer == False   && 
+                if this.ret.structtype == true && 
+                this.ret.pointer == false   && 
                 this.ret.type <= ast.U64 && 
                 this.ret.type >= ast.I8    
                     compile.LoadSize(this.ret.size,this.ret.isunsigned)

@@ -125,7 +125,7 @@ BuiltinFuncExpr::toString(){
 
 BuiltinFuncExpr::isMem(ctx){
     if this.funcname == "sizeof" {
-        return True
+        return true
     }
-    return False
+    return false
 }

@@ -22,9 +22,9 @@ func GenAddr(var){
     )
 }
 func LoadMember(m){
-    if m.isclass && !m.pointer return False
+    if m.isclass && !m.pointer return false
     if m.pointer
-        LoadSize(8,True)
+        LoadSize(8,true)
     else
         LoadSize(m.size,m.isunsigned)
     if m.bitfield {

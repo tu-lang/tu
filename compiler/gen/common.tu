@@ -2,8 +2,6 @@ use ast
 use compile
 
 Null  = null
-True  = true
-False = false
 EmptyStr = ""
 
 // I8  = int(ast.I8)  U8  = int(ast.U8) 

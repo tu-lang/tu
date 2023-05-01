@@ -1,7 +1,5 @@
 use utils
 
-True  = true
-False = false
 // dynamic: args registers
 args8  = ["%dil" , "%sil" , "%dl"  , "%cl"  , "%r8b" , "%r9b"] # 8bit
 args16 = ["%di"  , "%si"  , "%dx"  , "%cx"  , "%r8w" , "%r9w"] # 16bit

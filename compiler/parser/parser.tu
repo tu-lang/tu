@@ -5,9 +5,6 @@ use parser.scanner
 use utils
 use runtime
 
-//optimize: avoid alloc so many object like this
-True  = true
-False = false
 EMPTY_STR = ""
 
 I8  = int(ast.I8)  U8  = int(ast.U8) 
@@ -67,7 +64,7 @@ Parser::parse()
     this.scanner.scan()
     utils.debug("parser.Parser::parse() tk:%s",this.scanner.curLex)
 
-    while True {
+    loop {
         match this.scanner.curToken  {
             ast.FUNC : {
                 f = this.parseFuncDef(false,false)
@@ -118,7 +115,7 @@ check_panic:
 }
 Parser::expect(tok<i32>,str){
     if this.scanner.curToken == tok {
-        return  True
+        return  true
     }
     msg = EMPTY_STR
     if str != null {
@@ -141,9 +138,9 @@ Parser::next_expect(tk,err<i8*>){
 Parser::isunary(){
     match this.scanner.curToken {
         ast.SUB | ast.SUB | ast.LOGNOT | ast.BITNOT : {
-            return True
+            return true
         }
-        _ : return False
+        _ : return false
     }
 }
 Parser::isprimary(){
@@ -152,17 +149,17 @@ Parser::isprimary(){
         ast.FUNC   | ast.LPAREN   | ast.LBRACKET | ast.LBRACE | ast.RBRACE | 
         ast.BOOL   | ast.EMPTY    | ast.NEW      | ast.DOT    | ast.DELREF |
         ast.BITAND | ast.BUILTIN : {
-            return True
+            return true
         }
-        _ : return False
+        _ : return false
     }
 }
 Parser::ischain(){
     match this.scanner.curToken {
         ast.DOT | ast.LPAREN | ast.LBRACKET : {
-            return True
+            return true
         }
-        _ : return False
+        _ : return false
     }
 }
 Parser::isassign(){
@@ -170,9 +167,9 @@ Parser::isassign(){
         ast.ASSIGN | ast.ADD_ASSIGN | ast.SUB_ASSIGN | ast.MUL_ASSIGN |
         ast.DIV_ASSIGN | ast.BITXOR_ASSIGN | ast.MOD_ASSIGN | ast.BITAND_ASSIGN | ast.BITOR_ASSIGN | 
         ast.SHL_ASSIGN | ast.SHR_ASSIGN : {
-            return True
+            return true
         }
-        _ : return False
+        _ : return false
     }
 }
 Parser::isbinary(){
@@ -180,9 +177,9 @@ Parser::isbinary(){
         ast.SHL | ast.SHR | ast.BITOR | ast.BITXOR | ast.BITAND | ast.BITNOT | ast.LOGOR |  
         ast.LOGAND | ast.LOGNOT | ast.EQ | ast.NE | ast.GT | ast.GE | ast.LT |
         ast.LE | ast.ADD | ast.SUB | ast.MOD | ast.MUL | ast.DIV : {
-            return True
+            return true
         }
-        _ : return False
+        _ : return false
     }
 }
 Parser::isbase(){

@@ -188,9 +188,9 @@ class BinaryExpr : ast.Ast {
 BinaryExpr::isMemtype(ctx)
 {    
     this.check(this.lhs != null,"this.lhs is null")
-    if this.lhs != null && exprIsMtype(this.lhs,ctx) return True
-    if this.rhs != null && exprIsMtype(this.rhs,ctx) return True
-    return False
+    if this.lhs != null && exprIsMtype(this.lhs,ctx) return true
+    if this.rhs != null && exprIsMtype(this.rhs,ctx) return true
+    return false
 }
 
 BinaryExpr::compile(ctx)
