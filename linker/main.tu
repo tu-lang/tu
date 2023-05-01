@@ -74,10 +74,10 @@ func command() {
     scan_files = []
     out = "a.out"
     i = 0
-    while i < std.len(os.argv)  {
-        match os.argv[i] {
+    while i < std.len(os.argv())  {
+        match os.argv()[i] {
             "-p" : {
-                scan_dirs[] = os.argv[i+1]    # link dir
+                scan_dirs[] = os.argv()[i+1]    # link dir
                 i += 2
             }
             "-d" : {
@@ -85,11 +85,11 @@ func command() {
                 i += 1
             }
             "-o" : {
-                out = os.argv[i+1]
+                out = os.argv()[i+1]
                 i += 2
             }
             _ : {
-                scan_files[] = os.argv[i+1]   # link object
+                scan_files[] = os.argv()[i+1]   # link object
                 i += 1
             }
         }
@@ -97,7 +97,7 @@ func command() {
 }
 
 func main() {
-    if  os.argc < 1 {
+    if  os.argc() < 1 {
         return print_help()
     }
     command()  # parse command

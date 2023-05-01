@@ -51,7 +51,7 @@ func opendir(dir_path<runtime.Value>){
             "open %s failed ret:%d\n".(i8),
             dir_path.data,fd
         ))
-        return False
+        return false
      }
      dir = new Dir()
      d<Dir> = new Dir {
@@ -73,10 +73,10 @@ init_dents:
         counts<i32> = getdents(dir.fd,dir.dir,DIRENT_BUF_SIZE)
         if counts == -1 {
 	        fmt.vfprintf(STDOUT,*"getdents failed\n")
-            return False
+            return false
         }
         if counts == 0 {
-            return False
+            return false
         }
         dir.pos = 0
         dir.counts = counts
@@ -106,12 +106,12 @@ init_dents:
     return file
 }
 FileFd::isFile(){
-    if this.type == "file" return True
-    return False
+    if this.type == "file" return true
+    return false
 }
 FileFd::isDir(){
-    if this.type == "directory" return True
-    return False
+    if this.type == "directory" return true
+    return false
 }
 func dirtype(t<i8>){
     match t {
@@ -131,20 +131,20 @@ func dirtype(t<i8>){
 func is_dir(filepath<runtime.Value>){
     s<Stat> = new Stat
     ret<i8> = stat(filepath.data,s)
-    if ret != 0 return False
+    if ret != 0 return false
 
     if s.st_mode & S_IFDIR > 0 {
-        return True
+        return true
     }
-    return False
+    return false
 }
 func is_file(filepath<runtime.Value>){
     s<Stat> = new Stat
     ret<i8> = stat(filepath.data,s)
-    if ret != 0 return False
+    if ret != 0 return false
 
     if s.st_mode & S_IFREG > 0 {
-        return True
+        return true
     }
-    return False
+    return false
 }

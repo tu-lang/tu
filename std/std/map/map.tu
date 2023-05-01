@@ -25,7 +25,7 @@ Rbtree::next(node<RbtreeNode>){
     root<RbtreeNode> = this.root
     parent<RbtreeNode> = 0
 
-    while True {
+    loop {
         parent = node.parent
         if  node == root  
             return Null

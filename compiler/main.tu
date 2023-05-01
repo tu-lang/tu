@@ -52,15 +52,15 @@ func debug(){
 }
 
 func main() {
-    if os.argc < 2 return print_help() 
+    if os.argc() < 2 return print_help() 
     code_file = ""
     os.set_stack(10.(i8))
 
     i = 0
-    while i < std.len(os.argv)  {
-        match os.argv[i] {
+    while i < std.len(os.argv())  {
+        match os.argv()[i] {
             "run" : {
-                code_file = os.argv[i + 1]
+                code_file = os.argv()[i + 1]
                 i += 1
                 run = true
             }
@@ -68,10 +68,10 @@ func main() {
             "-g"  : compile.debug    = true
             "-og" : compile.sdebug   = true
             "-s"  : {
-                code_file = os.argv[i + 1]
+                code_file = os.argv()[i + 1]
                 i += 1
             }
-            _     : args[] = os.argv[i]
+            _     : args[] = os.argv()[i]
         }
         i += 1
     }

@@ -116,7 +116,7 @@ class File {
 	}
 	func Write(buffer<runtime.Value>){
 		if buffer.type != runtime.String {
-			return False
+			return false
 		}
 		s<i8> = 1
 		// CAUTION: should be string.Str
@@ -124,18 +124,18 @@ class File {
 		ret<u64> = write(this.fd,buffer.data,size)
 		if ret != size {
 			fmt.println("fwrite err",int(ret),int(size))
-			return False
+			return false
 		}
-		return True
+		return true
 	}
 	func NWrite(buffer<i8*>){
 		size<i32> = strlen(buffer)
 		ret<u64> = std.write(this.fd , buffer,size)
 		if ret != size {
 			fmt.print("fwrite err\n")
-			return False
+			return false
 		}
-		return True
+		return true
 	}
 	func Close(){
 		close(this.fd)

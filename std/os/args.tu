@@ -1,8 +1,12 @@
 use runtime
 
 # start at userspace init process
-argc = runtime.ori_argc
-
-argv = runtime.ori_argv
-
-envs = runtime.ori_envs
+func argc(){
+	return runtime.ori_argc
+} 
+func argv(){
+	return runtime.ori_argv
+}
+func envs(){
+	return runtime.ori_envs
+}

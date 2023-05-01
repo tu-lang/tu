@@ -27,14 +27,14 @@ func empty(v<runtime.Value>){
 	match v.type {
 		runtime.String: {
 			ret<i8> = strlen(v.data)
-			if ret == 0 return True
+			if ret == 0 return true
 		}
 		_: {
 			os.dief("[warn] empty: unsupport type :%s\n",runtime.type_string(v))
 			// fmt.println("[warn] empty: unsuport type")
 		}
 	}	
-	return False
+	return false
 }
 func len(v){
 	return runtime.len(v)
@@ -45,7 +45,7 @@ func pop(v){
 func pop_head(v<runtime.Value>){
 	if v == null {
 		fmt.println("[warn] pop_head args is null")
-		return False
+		return false
 	}
 	match v.type {
 		runtime.Array:{
@@ -53,7 +53,7 @@ func pop_head(v<runtime.Value>){
 			if  arr == null os.die("[arr_pop_head] not array_type")
 			if arr.used <= 0 {
 				fmt.println("[warn] array_pop for empty array")
-				return False
+				return false
 			}
 			arr.used -= 1
 			addr<u64*> = arr.addr
@@ -64,7 +64,7 @@ func pop_head(v<runtime.Value>){
 		}
 		_: {
 			fmt.println("[warn] pop_head args is not array")
-			return False
+			return false
 		}
 	}
 }
@@ -90,18 +90,18 @@ func merge(v1<runtime.Value>,v2<runtime.Value>){
 		runtime.Array   : {
 			if v2.type != runtime.Array {
 				fmt.println("[warn] merge unsupport not array value")
-				return False
+				return false
 			}
 			arr<Array> = v1.data
 			if arr.merge(v2.data) != runtime.True {
 				fmt.println("[warn] array merge failed")
-				return False
+				return false
 			}
-			return True
+			return true
 		}
 		_     : fmt.println("[warn] merge(unknow type)")
 	}
-	return False
+	return false
 }
 func exist(key,v<runtime.Value>){
 	type<i8> = v.type
@@ -109,27 +109,27 @@ func exist(key,v<runtime.Value>){
 	match type {
 		runtime.Array : {
 			if runtime.array_in(key,v.data) == runtime.True {
-				return True
+				return true
 			}
 		}
 		runtime.Map   : {
 			has<i32> = map.map_find(v,key)
-			if has != null return True
+			if has != null return true
 		}
 		_     : fmt.printf("[warn] unsupport exist(,%s)\n",runtime.type_string(v))
 	}
-	return False
+	return false
 }
 func is_map(m<runtime.Value>){
 	if  m.type == runtime.Map {
-		return True
+		return true
 	}
-	return False
+	return false
 }
 func is_array(arr<runtime.Value>){
 	if  arr.type == runtime.Array {
-		return True
+		return true
 	}
-	return False
+	return false
 }
 

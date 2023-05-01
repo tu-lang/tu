@@ -1,7 +1,7 @@
 .text
     .global main
 main:
-	call std_initmalloc
+	call std_stdinit
 	call runtime_malloc_mallocinit
 	call runtime_gc_gc_init
     mov (%rsp),%rdi
