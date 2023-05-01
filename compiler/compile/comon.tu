@@ -12,6 +12,7 @@ fileno = 1
 
 debug  = false
 sdebug = false
+nostd  = false
 
 func genast(filename)
 {

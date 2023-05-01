@@ -6,6 +6,12 @@ use internal
 use ast
 use fmt
 
+stdpackages = {
+    "fmt":true ,         "os":true,             "string":true,          "time":true,
+    "std":true ,         "std_map":true,        "std_atomic":true,      "std_regex":true,
+    "runtime":true,      "runtime_sys":true,    "runtime_malloc":true,
+    "runtime_debug":true,"runtime_gc":true,
+}
 func compile(){
     utils.debug("ast.compile()")
     //compute structs
@@ -17,6 +23,8 @@ func compile(){
     }
     //register package
     for(p : package.packages){
+        if nostd && stdpackages[p.full_package]
+            continue
         p.compile()
     }
 }

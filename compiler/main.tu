@@ -71,6 +71,7 @@ func main() {
                 code_file = os.argv()[i + 1]
                 i += 1
             }
+            "-nostd" : compile.nostd = true
             _     : args[] = os.argv()[i]
         }
         i += 1
