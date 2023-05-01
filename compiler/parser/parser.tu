@@ -53,8 +53,11 @@ Parser::init(filepath,pkg) {
         this.asmfile  = "co_" + pkg.package + "_" + this.asmfile
     
     this.scanner = new scanner.Scanner(filepath,this)
-    this.filenameid = ".L.filename." +  ast.incr_labelid()
+    this.filenameid = this.label() + ".L.filename." +  ast.incr_labelid()
 
+}
+Parser::label(){
+    return this.pkg.full_package
 }
 Parser::getImport(pkgname){
     return this.pkg.getImport(pkgname)

@@ -48,7 +48,7 @@ ReturnStmt::compile(ctx)
         p = ctx[i]
         funcName = p.cur_funcname
         if funcName != "" {
-            compile.writeln("    jmp L.return.%s",funcName)
+            compile.writeln("    jmp %s.L.return.%s",compile.currentParser.label(),funcName)
             return null
         } 
     }

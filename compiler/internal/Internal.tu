@@ -119,14 +119,14 @@ func check_object(expr){
     compile.writeln("    call runtime_check_object")
     count = ast.incr_labelid()
     compile.writeln("    cmp $0, %%rax")
-    compile.writeln("    jne  L.args.%d", count)
+    compile.writeln("    jne  %s.L.args.%d", compile.currentParser.label(),count)
     //filename , funcname 
     compile.writeln("    lea %s(%%rip), %%rdi", compile.currentParser.filenameid)
     compile.writeln("    lea %s(%%rip), %%rsi", compile.currentFunc.funcnameid)
     compile.writeln("    mov $%d , %%rdx",expr.line)
     compile.writeln("    mov $%d , %%rcx",expr.column)
     compile.writeln("    call runtime_miss_objects")
-    compile.writeln("L.args.%d:", count)
+    compile.writeln("%s.L.args.%d:", compile.currentParser.label(),count)
 }
 func object_member_get(expr,name)
 {

@@ -7,7 +7,7 @@ func registerStrings(c){
     for(var : currentParser.strs){
         if !c {
             var.name = fmt.sprintf(
-                "L%d",ast.incr_labelid()
+                "%s.L%d",currentParser.label(),ast.incr_labelid()
             )
         } else CreateGlobalString(var)
     }

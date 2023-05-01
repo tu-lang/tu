@@ -231,11 +231,11 @@ BinaryExpr::FirstCompile(ctx){
     match this.opt {
         ast.LOGAND:{
             compile.writeln("    cmp $0, %%rax")
-			compile.writeln("	je .L.false.%d", c) 
+			compile.writeln("	je %s.L.false.%d",compile.currentParser.label(), c) 
         }
         ast.LOGOR: {
             compile.writeln("    cmp $1, %%rax")
-			compile.writeln("	je .L.true.%d", c) 
+			compile.writeln("	je %s.L.true.%d",compile.currentParser.label(), c) 
         }
     }
     this.rhs.compile(ctx)
@@ -243,22 +243,22 @@ BinaryExpr::FirstCompile(ctx){
     match this.opt {
         ast.LOGAND: {
             compile.writeln("	cmp $0,%%rax")    
-            compile.writeln("	je .L.false.%d", c)
-            compile.writeln("	jmp .L.true.%d", c)
+            compile.writeln("	je %s.L.false.%d",compile.currentParser.label(), c)
+            compile.writeln("	jmp %s.L.true.%d",compile.currentParser.label(), c)
         }
         ast.LOGOR:{
             compile.writeln("	cmp $1,%%rax")    
-            compile.writeln("	je .L.true.%d", c)
-            compile.writeln("	jmp .L.false.%d", c)
+            compile.writeln("	je %s.L.true.%d",compile.currentParser.label(), c)
+            compile.writeln("	jmp %s.L.false.%d",compile.currentParser.label(), c)
         }
     }
 
-    compile.writeln(".L.false.%d:", c)
+    compile.writeln("%s.L.false.%d:",compile.currentParser.label(), c)
     internal.gen_false()
-    compile.writeln("	jmp .L.end.%d", c)
-    compile.writeln(".L.true.%d:", c) 
+    compile.writeln("	jmp %s.L.end.%d",compile.currentParser.label(), c)
+    compile.writeln("%s.L.true.%d:",compile.currentParser.label(), c) 
     internal.gen_true()
-    compile.writeln(".L.end.%d:", c)
+    compile.writeln("%s.L.end.%d:",compile.currentParser.label(), c)
     return null
 }
 

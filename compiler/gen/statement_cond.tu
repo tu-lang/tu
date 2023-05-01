@@ -51,10 +51,10 @@ ForStmt::rangeFor(ctx)
     compile.Push()
     
     
-    compile.writeln("L.forr.begin.%d:", c)
+    compile.writeln("%s.L.forr.begin.%d:",compile.currentParser.label(), c)
     
     compile.CreateCmp()
-    compile.writeln("    je  L.forr.end.%d", c)
+    compile.writeln("    je  %s.L.forr.end.%d",compile.currentParser.label(), c)
 
     
     if this.key != null{
@@ -82,9 +82,9 @@ ForStmt::rangeFor(ctx)
     compile.blockcreate(ctx)
     
     std.tail(ctx).point = c
-    std.tail(ctx).end_str   = "L.forr.end"
-    std.tail(ctx).start_str = "L.forr.begin"
-    std.tail(ctx).continue_str = "L.for.continue"
+    std.tail(ctx).end_str   = compile.currentParser.label() + ".L.forr.end"
+    std.tail(ctx).start_str = compile.currentParser.label() + ".L.forr.begin"
+    std.tail(ctx).continue_str = compile.currentParser.label() + ".L.for.continue"
     
     
     for(stmt : this.block.stmts){
@@ -92,14 +92,14 @@ ForStmt::rangeFor(ctx)
     }
     compile.blockdestroy(ctx)
 
-    compile.writeln("L.for.continue.%d:",c)
+    compile.writeln("%s.L.for.continue.%d:",compile.currentParser.label(),c)
     // compile.writeln("   mov 8(%%rsp),%%rdi")
     // compile.Pop("%rsi")
     internal.call("runtime_for_get_next",1)
     compile.Push()
 
-    compile.writeln("    jmp L.forr.begin.%d",c)
-    compile.writeln("L.forr.end.%d:", c)
+    compile.writeln("    jmp %s.L.forr.begin.%d",compile.currentParser.label(),c)
+    compile.writeln("%s.L.forr.end.%d:",compile.currentParser.label(), c)
     
     compile.writeln("   add $16,%%rsp")
     return null
@@ -111,31 +111,31 @@ ForStmt::triFor(ctx)
     compile.blockcreate(ctx)
     this.init.compile(ctx)
     
-    compile.writeln("L.for.begin.%d:", c)
+    compile.writeln("%s.L.for.begin.%d:",compile.currentParser.label(), c)
     this.cond.compile(ctx)
     if !exprIsMtype(this.cond,ctx) {
         internal.isTrue()
     }
     compile.CreateCmp()
-    compile.writeln("    je  L.for.end.%d", c)
+    compile.writeln("    je  %s.L.for.end.%d",compile.currentParser.label(), c)
 
     std.tail(ctx).point = c
-    std.tail(ctx).end_str   = "L.for.end"
-    std.tail(ctx).start_str = "L.for.begin"
-    std.tail(ctx).continue_str = "L.for.continue"
+    std.tail(ctx).end_str   = compile.currentParser.label() + ".L.for.end"
+    std.tail(ctx).start_str = compile.currentParser.label() + ".L.for.begin"
+    std.tail(ctx).continue_str = compile.currentParser.label() + ".L.for.continue"
     
     
     for(stmt : this.block.stmts){
         stmt.compile(ctx)
     }
     
-    compile.writeln("L.for.continue.%d:",c)
+    compile.writeln("%s.L.for.continue.%d:",compile.currentParser.label(),c)
     
     this.after.compile(ctx)
     compile.blockdestroy(ctx)
 
-    compile.writeln("    jmp L.for.begin.%d",c)
-    compile.writeln("L.for.end.%d:", c)
+    compile.writeln("    jmp %s.L.for.begin.%d",compile.currentParser.label(),c)
+    compile.writeln("%s.L.for.end.%d:",compile.currentParser.label(), c)
 
 }
 class WhileStmt : ast.Ast {
@@ -164,28 +164,28 @@ WhileStmt::compile(ctx)
     this.record()
     c = ast.incr_labelid()
     
-    compile.writeln("L.while.begin.%d:", c)
+    compile.writeln("%s.L.while.begin.%d:", compile.currentParser.label(),c)
     
     this.cond.compile(ctx)
     if !exprIsMtype(this.cond,ctx){
         internal.isTrue()
     }
     compile.CreateCmp()
-    compile.writeln("    je  L.while.end.%d", c)
+    compile.writeln("    je  %s.L.while.end.%d",compile.currentParser.label(), c)
 
     compile.blockcreate(ctx)
     
     std.tail(ctx).point = c
-    std.tail(ctx).end_str   = "L.while.end"
-    std.tail(ctx).start_str = "L.while.begin"
+    std.tail(ctx).end_str   = compile.currentParser.label() + ".L.while.end"
+    std.tail(ctx).start_str = compile.currentParser.label() + ".L.while.begin"
     
     for(stmt : this.block.stmts){
         stmt.compile(ctx)
     }
     compile.blockdestroy(ctx)
 
-    compile.writeln("    jmp L.while.begin.%d",c)
-    compile.writeln("L.while.end.%d:", c)
+    compile.writeln("    jmp %s.L.while.begin.%d",compile.currentParser.label(),c)
+    compile.writeln("%s.L.while.end.%d:",compile.currentParser.label(), c)
     return null
 }
 WhileStmt::dead_compile(ctx)
@@ -194,21 +194,21 @@ WhileStmt::dead_compile(ctx)
     this.record()
     c = ast.incr_labelid()
     
-    compile.writeln("L.while.begin.%d:", c)
+    compile.writeln("%s.L.while.begin.%d:",compile.currentParser.label(), c)
     
     compile.blockcreate(ctx)
     
     std.tail(ctx).point = c
-    std.tail(ctx).end_str   = "L.while.end"
-    std.tail(ctx).start_str = "L.while.begin"
+    std.tail(ctx).end_str   = compile.currentParser.label() + ".L.while.end"
+    std.tail(ctx).start_str = compile.currentParser.label() + ".L.while.begin"
     
     for(stmt : this.block.stmts){
         stmt.compile(ctx)
     }
     compile.blockdestroy(ctx)
 
-    compile.writeln("    jmp L.while.begin.%d",c)
-    compile.writeln("L.while.end.%d:", c)
+    compile.writeln("    jmp %s.L.while.begin.%d",compile.currentParser.label(),c)
+    compile.writeln("%s.L.while.end.%d:", compile.currentParser.label(),c)
 }
 class IfCaseExpr : ast.Ast {
     cond
@@ -263,14 +263,14 @@ IfStmt::compile(ctx){
     utils.debug("gen.IfStmt::compile()")
     this.record()
     mainPoint = ast.incr_labelid()
-    endLabel = "L.if.end." + mainPoint
+    endLabel = compile.currentParser.label() + ".L.if.end." + mainPoint
     
     for(cs : this.cases){
-        cs.label  = "L.if.case." + ast.incr_labelid()
+        cs.label  = compile.currentParser.label() + ".L.if.case." + ast.incr_labelid()
         cs.endLabel = endLabel
     }
     if this.elseCase {
-        this.elseCase.label = "L.if.case." + ast.incr_labelid()
+        this.elseCase.label = compile.currentParser.label() + ".L.if.case." + ast.incr_labelid()
         this.elseCase.endLabel = endLabel
     }
 
@@ -293,7 +293,7 @@ IfStmt::compile(ctx){
     
     if this.elseCase compile.writeln("   jmp %s", this.elseCase.label)
     
-    compile.writeln("   jmp L.if.end.%d", mainPoint)
+    compile.writeln("   jmp %s.L.if.end.%d", compile.currentParser.label(),mainPoint)
     
     compile.blockcreate(ctx)
     for(cs : this.cases){
@@ -302,6 +302,6 @@ IfStmt::compile(ctx){
     if this.elseCase this.elseCase.compile(ctx)
     compile.blockdestroy(ctx)
 
-    compile.writeln("L.if.end.%d:",mainPoint)
+    compile.writeln("%s.L.if.end.%d:",compile.currentParser.label(),mainPoint)
     return null
 }

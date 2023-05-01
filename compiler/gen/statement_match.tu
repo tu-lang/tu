@@ -16,11 +16,11 @@ MatchStmt::compile(ctx){
     utils.debug("gen.MatchStmt::compile()")
     this.record()
     mainPoint = ast.incr_labelid()
-    this.endLabel = "L.match.end." + mainPoint
+    this.endLabel = compile.currentParser.label() + ".L.match.end." + mainPoint
     
     for(cs : this.cases){
         c = ast.incr_labelid()
-        cs.label = "L.match.case." + c
+        cs.label = compile.currentParser.label() + ".L.match.case." + c
         cs.endLabel = this.endLabel
     }
     
@@ -28,7 +28,7 @@ MatchStmt::compile(ctx){
         this.defaultCase = new MatchCaseExpr(this.line,this.column)
         this.defaultCase.matchCond = this.cond
     }
-    this.defaultCase.label = "L.match.default." + ast.incr_labelid()
+    this.defaultCase.label = compile.currentParser.label() + ".L.match.default." + ast.incr_labelid()
     this.defaultCase.endLabel = this.endLabel
     
     for(cs : this.cases){
@@ -56,7 +56,7 @@ MatchStmt::compile(ctx){
     compile.blockcreate(ctx)
 
     std.tail(ctx).point = mainPoint
-    std.tail(ctx).end_str = "L.match.end"
+    std.tail(ctx).end_str = compile.currentParser.label() + ".L.match.end"
 
     for(cs : this.cases){
         cs.compile(ctx)
@@ -64,7 +64,7 @@ MatchStmt::compile(ctx){
     this.defaultCase.compile(ctx)
     compile.blockdestroy(ctx)
 
-    compile.writeln("L.match.end.%d:",mainPoint)
+    compile.writeln("%s.L.match.end.%d:",compile.currentParser.label(),mainPoint)
     return null
 }
 

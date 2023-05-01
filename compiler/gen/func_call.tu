@@ -150,13 +150,13 @@ FunCallExpr::registercall(ctx,fc)
 			compile.writeln("    add $-5,%d(%%rbp)",compile.currentFunc.stack)
 		}
 		compile.writeln("    cmp $0,%d(%%rbp)",compile.currentFunc.stack)
-		compile.writeln("    jle L.if.end.%d",c)
+		compile.writeln("    jle %s.L.if.end.%d",compile.currentParser.label(), c)
 		// compile.writeln("    cmp %d(%%rbp),%%rdi",compile.currentFunc.stack)
 		// compile.writeln("    add $%d, %%rsp", stack_args * 8)
 		compile.writeln("    mov %d(%%rbp),%%rdi",compile.currentFunc.stack)
 		compile.writeln("    imul $8,%%rdi")
 		compile.writeln("    add %%rdi, %%rsp")
-		compile.writeln("L.if.end.%d:",c)
+		compile.writeln("%s.L.if.end.%d:",compile.currentParser.label(),c)
 	}else{
 		compile.writeln("    add $%d, %%rsp", stack_args * 8)
 	}
@@ -224,8 +224,8 @@ FunCallExpr::PushRegisterArgs(ctx,fc){
         compile.writeln("    mov %%rax,%d(%%rbp)",currentFunc.stack)
 
 
-        compile.writeln("    jmp L.while.end.%d",c)
-        compile.writeln("L.while.%d:",c)
+        compile.writeln("    jmp %s.L.while.end.%d",compile.currentParser.label(),c)
+        compile.writeln("%s.L.while.%d:",compile.currentParser.label(),c)
 
         compile.writeln("    mov %d(%%rbp),%%rax",currentFunc.size)
         compile.writeln("    imul $8,%%rax")
@@ -239,10 +239,10 @@ FunCallExpr::PushRegisterArgs(ctx,fc){
 
         compile.writeln("    sub $1,%d(%%rbp)",currentFunc.size)
         
-        compile.writeln("L.while.end.%d:",c)
+        compile.writeln("%s.L.while.end.%d:",compile.currentParser.label(),c)
         compile.writeln("    mov %d(%%rbp),%%rax",currentFunc.size)
         compile.writeln("    cmp $0,%%rax")
-        compile.writeln("    jg  L.while.%d",c)
+        compile.writeln("    jg  %s.L.while.%d",compile.currentParser.label(),c)
 
     }else{
         argsize = 6

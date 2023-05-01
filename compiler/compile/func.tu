@@ -23,7 +23,7 @@ func registerFunc(fn){
 func registerFuncs(){
     utils.debug("compile.registerFuncs()")
     for f : currentParser.funcs {
-        f.funcnameid = ".L.funcname." + ast.incr_labelid()
+        f.funcnameid = f.parser.label() + ".L.funcname." + ast.incr_labelid()
         writeln("    .globl %s", f.funcnameid)
         writeln("%s:", f.funcnameid)
         writeln("    .string \"%s\"",f.beautyName())
@@ -38,7 +38,7 @@ func CreateFunction(fn) {
     utils.debugf("compile.CreateFunction()  fullname:%s",funcname)
 
     //register function label
-    lid = ".L.funcname." + ast.incr_labelid()
+    lid = fn.parser.label() +".L.funcname." + ast.incr_labelid()
     writeln("   .globl %s",lid)
     writeln("%s:",lid)
     writeln("   .string \"%s\"",fn.beautyName())
@@ -73,9 +73,9 @@ func CreateFunction(fn) {
                 arg.compile(funcCtxChain)
                 count  = ast.incr_labelid()
                 writeln("   cmp $0,%%rax")
-                writeln("   jne L.args.%d",count)
+                writeln("   jne %s.L.args.%d",fn.parser.label(),count)
                 // internal.miss_args(i,lid,fn.clsname != "")
-                writeln("L.args.%d:",count)
+                writeln("%s.L.args.%d:",fn.parser.label(),count)
             }
             i += 1
 
@@ -89,7 +89,7 @@ func CreateFunction(fn) {
     if fn.name == "main"
         writeln("    mov $0, %%rax")
 
-    writeln("L.return.%s:", funcname)
+    writeln("%s.L.return.%s:",fn.parser.label(), funcname)
     writeln("    mov %%rbp, %%rsp")
     writeln("    pop %%rbp")
     writeln("    ret")
