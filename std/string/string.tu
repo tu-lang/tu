@@ -5,7 +5,11 @@ Null<i64> = 0
 mem String {
 	u8* inner
 }
-
+func S(s<i8*>){
+	return new String {
+		inner : newstring(s)
+	}
+}
 func string(){
 	return new String {
 		inner : newlen(*"" , Null)
@@ -14,6 +18,9 @@ func string(){
 
 String::str(){
 	return this.inner
+}
+String::hash64(){
+	return this.inner.(Str).hash64()
 }
 
 String::dup() {
