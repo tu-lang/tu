@@ -139,7 +139,8 @@ ChainExpr::memgen(ctx)
 	if need_check
 		this.check(member.isstruct,"field must be mem at chain expression in memgen")
 	if (member.pointer || !need_check ) && !member.isarr{
-		compile.Load()
+		if type(this.first) != type(IndexExpr)
+			compile.Load()
 	}
 	for i : this.fields {
 		this.check(type(i) == type(MemberExpr),"field must be member expression at mem chain expression")

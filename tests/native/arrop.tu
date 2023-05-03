@@ -1,5 +1,7 @@
 use fmt
 use os
+use std
+use string
 
 
 func arr_overflow(){
@@ -103,11 +105,33 @@ func test_arr_multi(){
 	
 	fmt.println("test arr mulit success")
 }
+func test_chain(){
+	fmt.println("test arr chain")
+	arr<std.Array> = std.array_create() 
+	s1<string.String> = string.S(*"test1dsf")
+	s2<string.String> = string.S(*"3333333-ssdfsdf")
+	arr.push(s1)
+	if arr.addr[0].(string.String).len() == s1.len()  {} else {
+		os.die("arr.addr[0].(string.String).len() != s1.len")
+	}
+	arr.push(s2)
+	if arr.addr[1].(string.String).len() == s2.len()  {} else {
+		os.die("arr.addr[1].(string.String).len() != s1.len")
+	}
+	fmt.println(
+		int(
+			arr.addr[0].(string.String).len()
+		)
+	)
+	
+	fmt.println("test arr chain success")
+}
 func main(){
 	arr_overflow()
 	arr_overflow_var()
 	arr_op()
 	new_test()
+	test_chain()
 	//TODO: support multi layer index 
 	// test_arr_multi()
 	fmt.println("arrop test success")
