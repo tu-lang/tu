@@ -123,22 +123,25 @@ func free(ptr<u64*>) {
     gc.gc_free(ptr) 
 }
 
-func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
+// func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
+func stringfmt(_args<u64*>...){
+	count<i32> = *_args
+	args<u64*> = _args + 8
+	fmts<i8*>  = args[0] // get first args 'fmt'
+
     s<i8*> = empty()
 	this<Str> = s
 
     initlen<u64> = this.len()
-    f<i8*> = fmt
+    f<i8*> = fmts
     i<u64> = 0
     db<i32> = 2
     single<i32> = 1
-    s = this.MakeRoomFor(initlen + std.strlen(fmt) * db)
-    f = fmt    
+    s = this.MakeRoomFor(initlen + std.strlen(fmts) * db)
+    f = fmts    
     i = initlen 
-    curr<u64> = 0
 
- 	pp<u64*> = &args
-	stack<i32> = 5   
+    argsidx<i64> = 1
     while *f != null {
         next<i8> = 0
         str<i8*> = 0
@@ -156,12 +159,8 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                 next = *f
                 match next {
                     's' | 'S' :{
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &fmt	pp += 24 }		
-                        stack -= 1
-                        //stack end
+                        curr = args[argsidx]
+                        argsidx += 1
                         str = curr
 						sstr<Str> = str
                         if next == 's' 
@@ -177,12 +176,8 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                         i += l
                     }
                     'd' | 'D' | 'i' | 'I' : {
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &fmt	pp += 24 }		
-                        stack -= 1
-                        //stack end
+                        curr = args[argsidx]
+                        argsidx += 1
                         num = curr
 
                         buf_o<i8:21> = 0
@@ -198,12 +193,8 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                         i += l
                     }
                     'u' | 'U' : {
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &fmt	pp += 24 }		
-                        stack -= 1
-                        //stack end
+                        curr = args[argsidx]
+                        argsidx += 1
                         unum = curr
 
                         buf_o<i8:21> = 0
@@ -218,12 +209,8 @@ func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
                         i += l
                     }
                     'c' : {
-                        //init stack
-                        curr = *pp
-                        if stack < 1  pp += 8	else pp -= 8
-                        if stack == 1 {	pp = &fmt	pp += 24 }		
-                        stack -= 1
-                        //stack end
+                        curr = args[argsidx]
+                        argsidx += 1
                         s[i] = curr
                         i += 1
                         stringinclen(s,single)

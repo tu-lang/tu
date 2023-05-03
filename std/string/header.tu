@@ -7,6 +7,7 @@ True<i64>  = 1
 False<i64> = 0
 offset32<u32> = 2166136261
 prime32<u32>  = 16777619
+Equal<i64>  = 0
 
 
 

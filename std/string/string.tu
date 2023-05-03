@@ -10,6 +10,11 @@ func S(s<i8*>){
 		inner : newstring(s)
 	}
 }
+func emptyS(){
+	return new String {
+		inner : newlen(*"",Null)
+	}
+}
 func string(){
 	return new String {
 		inner : newlen(*"" , Null)
