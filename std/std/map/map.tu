@@ -3,6 +3,7 @@ use runtime
 
 True<i64> = 1
 Null<i64> = 0
+End<i64>  = 0
 
 enum {
     Insert,

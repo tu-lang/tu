@@ -47,7 +47,22 @@ func test_string(){
     fmt.println(m.find(string.S(*"test2")))
 	fmt.println("test string success")
 }
+func test_iter(){
+
+    m<map.Map> = map.map_new(map.Null,map.Null)
+    m.insert(1.(i8),11.(i8))
+    m.insert(2.(i8),22.(i8))
+    m.insert(3.(i8),33.(i8))
+
+    iter<map.MapIter> = m.iter()
+    while iter.next() != map.End {
+        fmt.println(int(iter.k()),int(iter.v()))
+    }
+	fmt.println("test iter success")
+
+}
 func main(){
     test_int()
     test_string()
+	test_iter()
 }
