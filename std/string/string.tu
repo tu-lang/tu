@@ -41,6 +41,18 @@ String::dyn() {
 		this.inner.(Str).hash64()
 	)
 }
+String::sub(start<i64> , len<i64>){
+	return new String {
+		inner : newlen(this.inner + start , len)
+	}
+}
+String::tonumber(){
+	dl<i64> = 0
+    if this.sub(0.(i8),2.(i8)).(String).cmpstr(*"0x") == string.Equal
+         dl = std.strtol(this.inner,0.(i8),16.(i8))
+    else dl = std.strtol(this.inner,0.(i8),10.(i8))
+	return dl
+}
 String::cat(t<String>) {
 	newp<i8*> = this.inner.(Str).catlen(
 		t.inner,t.inner.(Str).len()

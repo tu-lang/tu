@@ -101,10 +101,51 @@ func test_dyn(){
 	}
 	fmt.println("test_dyn success")
 }
+func test_string_sub(){
+	s<string.String> = string.S(*"prestring")
+	if s.sub(0.(i8),2.(i8)).(string.String).cmpstr(*"pr") == string.Equal {} else {
+		os.die("prefix is pr")
+	}
+	if s.sub(0.(i8),2.(i8)).(string.String).cmpstr(*"pr3") == string.Equal {
+		os.die("prefix is not pr3")
+	}
+	fmt.println("test string sub success")
+}
+
+func test_string_tonumber(){
+	s<string.String> = string.S("0x34fa".(i8)) # 13562
+	n<i64> = s.tonumber()
+
+	if n == 0x34fa {} else {
+		os.die("shoulde be 0x34fa")
+	}
+	if n == 13562 {} else {
+		os.die("should be 13562")
+	}
+
+	s = string.S("1764725".(i8))
+	n = s.tonumber()
+	if n == 0x1aed75 {} else {
+		os.die("should be 0x1aed75")
+	}
+	if n == 1764725 {} else {
+		os.die("should be 1764725")
+	}
+
+	s = string.S("-3625143".(i8))
+	n = s.tonumber()
+	if n == -3625143 {} else {
+		os.die("should be -3625143")
+	}
+
+	fmt.println("test string to number success")
+}
 func main(){
 	str = test_putc()
 	test_putstring(str)
 	test_cmpstr_empty()
 	test_fmt()
 	test_dyn()
+	test_string_sub()
+	test_string_tonumber()
 }
