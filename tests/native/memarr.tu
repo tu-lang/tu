@@ -77,9 +77,40 @@ func default_test(){
 	fmt.println("test default struct init success")
 	return var
 }
+mem T3 {
+	i32 a
+	i32 b,c
+	i16*  arr16
+	i8*   arr8
+}
+mem T2 {
+	T3* p
+}
+T2::test_chain(){
+	fmt.println("test chain")
+	this.p.arr16[0] = 33
+	this.p.arr16[1] = 44
+	this.p.arr16[2] = 55
+	if (this.p.arr16[0] == 33) && (this.p.arr16[1] == 44) {} else {
+		os.die("[0] != 33 [1] != 44")
+	}
+	if (this.p.arr16[0] == 33) && (this.p.arr16[1] == 44) && (this.p.arr16[2] == 55) {} else {
+		os.die("[0] != 33 [1] != 44 [2] != 55")
+	}
+	if (this.p.arr16[0] == 34) {
+		os.die("should not be 34")
+	}
+	fmt.println("test chain success")
+}
 func main(){
 	default_test()
 	test_arr()
+	t<T2> = new T2{
+		p : new T3 {
+			arr16 : new i16[3]
+		}
+	}
+	t.test_chain()
 	//TODO: 
 	// test_arr_multi()
 }
