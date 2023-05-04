@@ -86,7 +86,7 @@ class File {
 		if perm == null ret = fopen(filepath.data,*"r")
 		else 			ret = fopen(filepath.data,perm.data)
 
-		if ret == null {
+		if ret == null || ret < 0{
 			fmt.print("fopen failed\n")
 			return null
 		}
