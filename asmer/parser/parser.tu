@@ -7,6 +7,7 @@ use string
 use os
 True<i32>  = 1
 False<i32> = 0
+Pad1<i32>  = 1
 
 mem Parser {
     Scanner*        scanner

@@ -68,13 +68,12 @@ ElfFile::buildShstrtab() {
     symtab<string.String>   = string.S(*".symtab")
     strtab<string.String>   = string.S(*".strtab")
     pading<string.String>   = string.S(*"      ")
-    pad<i8> = 1
 
-    shstrtab_size<i32> = reltext.len() + pad +
-        reldata.len() + pad +
-        shstrtab.len()+ pad +
-        symtab.len()  + pad +
-        strtab.len()  + pad +
+    shstrtab_size<i32> = reltext.len() + Pad1 +
+        reldata.len() + Pad1 +
+        shstrtab.len()+ Pad1 +
+        symtab.len()  + Pad1 +
+        strtab.len()  + Pad1 +
         pading.len()
 
     str<i8*> = new shstrtab_size
@@ -86,26 +85,26 @@ ElfFile::buildShstrtab() {
     std.strcopy(str + index, *".rela.text")
 
     this.strIndex.insert(string.S(*".text")     ,index + 5)
-    index += reltext.len() + 1
+    index += reltext.len() + Pad1
 
     this.strIndex.insert(string.S(*"")          ,index - 1)
     this.strIndex.insert(string.S(*".rela.data"),index)
     std.strcopy(str + index, *".rela.data")
 
     this.strIndex.insert(string.S(*".data")      ,index + 5)
-    index += reldata.len() + 1
+    index += reldata.len() + Pad1
 
     this.strIndex.insert(string.S(*".shstrtab")  ,index)
     std.strcopy(str + index, *".shstrtab")
-    index += shstrtab.len() + 1
+    index += shstrtab.len() + Pad1
 
     this.strIndex.insert(string.S(*".symtab")    ,index)
     std.strcopy(str + index, *".symtab")
 
-    index += symtab.len() + 1
+    index += symtab.len() + Pad1
     this.strIndex.insert(string.S(".strtab")     , index)
     std.strcopy(str + index, *".strtab")
-    index += strtab.len() + 1
+    index += strtab.len() + Pad1
 
     this.addShdr(
         string.S(*".shstrtab"), SHT_STRTAB, 0.(i8), 0.(i8), 
@@ -137,7 +136,7 @@ ElfFile::buildSymtab() {
         // string.S(*".symtab")
     // )
     s<Elf64_Shdr> = this.shdrTab.find(string.S(*".symtab"))
-    s.sh_link = this.getSegIndex(string.S(*".symtab")) + 1
+    s.sh_link = this.getSegIndex(string.S(*".symtab")) + Pad1
     s.sh_info = this.sh_info
 }
 ElfFile::buildStrtab() {
@@ -145,7 +144,7 @@ ElfFile::buildStrtab() {
     this.strtab_size = 0
     symNames<std.Array>  = this.symNames
     for (i<i32> = 0; i < this.symNames.len(); i += 1) {
-        this.strtab_size += symNames.addr[i].(string.String).len() + 1
+        this.strtab_size += symNames.addr[i].(string.String).len() + Pad1
     }
     this.addShdr(
         string.S(*".strtab"), 
@@ -163,7 +162,7 @@ ElfFile::buildStrtab() {
         es<Elf64_Sym> = this.symTab.find(strname)
         es.st_name = index
         std.strcopy(str + index, strname.str())
-        index += strname.len() + 1
+        index += strname.len() + Pad1
     }
     utils.debug(
         *"strtab:[%d,%d]",

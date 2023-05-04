@@ -58,7 +58,7 @@ Asmer::writeElf() {
     for(i<i32> = 0 ; i < data_symbol.len() ; i += 1){
         sym<ast.Sym> =  data_symbol.addr[i]
         if sym.isstr {
-            this.writeBytes(sym.str.str(),sym.str.len() + 1)
+            this.writeBytes(sym.str.str(),sym.str.len() + Pad1)
         }else{//[block,block...]
             for(j<i32> = 0 ; j < sym.datas.len() ; j += 1){
                 b<ast.ByteBlock> = sym.datas.addr[j]

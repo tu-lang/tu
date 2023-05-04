@@ -9,3 +9,5 @@ mem Asmer
     i32              data ,text
     i32              bytes
 }
+
+Pad1<i64> = 1

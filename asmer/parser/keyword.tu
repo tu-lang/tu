@@ -83,7 +83,7 @@ Parser::parseString(labelname<string.String>) {
     sym<ast.Sym> = ast.newStringSym(
         labelname,this.scanner.curlex,this.data_size
     )
-    this.data_size += this.scanner.curlex.len() + 1
+    this.data_size += this.scanner.curlex.len() + Pad1
     this.symtable.addSym(sym)
 
     //next

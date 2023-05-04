@@ -60,6 +60,7 @@ SHT_NOBITS<i32>   = 8
 SHT_RELA<i32>     = 4
 
 True<i64> = 1
+Pad1<i64> = 1
 
 
 func ELF64_R_SYM(i<u64>)	{
