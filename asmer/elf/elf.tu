@@ -3,6 +3,7 @@ use ast
 use utils
 use std
 use string
+use fmt
 
 ElfFile::getSegIndex(segName<string.String>)
 {
@@ -116,7 +117,8 @@ ElfFile::addSym2(st_name<string.String>,s<Elf64_Sym>)
 	utils.debug("ElfFile::addSym2() %S ".(i8),st_name.str())
 	sym<Elf64_Sym> = new Elf64_Sym
 	this.symTab.insert(st_name , sym)
-	if st_name.empty() == string.Equal {
+	
+	if st_name.empty() == string.True {
 		sym.st_name  = 0
 		sym.st_value = 0
 		sym.st_size  = 0

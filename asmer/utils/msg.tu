@@ -7,7 +7,7 @@ debug_mode<i32> = 0
 func debug(args...){
     if debug_mode == 1 {
         s<string.Str> = string.stringfmt(args)
-        s = s.putc('c'.(i8))
+        s = s.putc('\n'.(i8))
         fmt.vfprintf(std.STDOUT,s)
     }
 }

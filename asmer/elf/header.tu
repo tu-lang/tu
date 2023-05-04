@@ -42,15 +42,11 @@ func mapstringhashkey(k<string.String>){
 }
 ElfFile::init(asmer<asmer.Asmer>){
 	utils.debug("ElfFile::init() ".(i8))
+	this.asmer = asmer
     this.offset = 0
 	this.shstrtab = null
 	this.strtab   = null
-	this.addShdr(
-		string.emptyS(),
-		0.(i8),0.(i8),0.(i8),0.(i8),
-		0.(i8),0.(i8),0.(i8),0.(i8),0.(i8)
-	)
-	this.addSym(string.emptyS(),0.(i8))
+	//init map & arr
 	this.shdrTab  =  map.map_new(mapstringhashkey,0.(i8))
 	this.strIndex =  map.map_new(mapstringhashkey,0.(i8))
 	this.symTab   =  map.map_new(mapstringhashkey,0.(i8))
@@ -59,6 +55,12 @@ ElfFile::init(asmer<asmer.Asmer>){
 	this.relTab	   = std.array_create()
 	this.relTextTab = std.array_create()
 	this.relDataTab = std.array_create()
-	this.asmer = asmer
+	//default section
+	this.addShdr(
+		string.emptyS(),
+		0.(i8),0.(i8),0.(i8),0.(i8),
+		0.(i8),0.(i8),0.(i8),0.(i8),0.(i8)
+	)
+	this.addSym2(string.emptyS(),0.(i8))
 }
 

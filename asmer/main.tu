@@ -15,7 +15,8 @@ func print_help () {
     fmt.println(
         "usage: ./ta [options] file.s  可用的选项:\n" + 
         "  *.s      翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" +
-        "  -p ...   批量翻译汇编为cpu指令，并生成可重定向elf二进制文件\n"
+        "  -p ...   批量翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" +
+        "  -x       打印编译过程信息信息\n"
     )
 }
 func asmergen(){
@@ -55,7 +56,7 @@ func command() {
                 scan_dirs[] = os.argv()[i+1]    # link dir
                 i += 2
             }
-            "-d" : {
+            "-x" : {
                 utils.debug_mode = 1          # debug mode
                 i += 1
             }

@@ -28,3 +28,5 @@ compiler/a.out
 dev
 docs
 core
+asmer/*.s
+asmer/dev

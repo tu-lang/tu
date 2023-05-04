@@ -149,7 +149,7 @@ Instruct::writeSIB() {
 Instruct::updateRel() {
     utils.debug("Instruct::updateRel()".(i8))
     flag<i8> = false
-    if(this.name.empty() == string.Equal) return flag
+    if(this.name.empty() == string.True) return flag
 
     sym<ast.Sym>  = this.parser.symtable.getSym(this.name)
     if(!this.is_func) {
