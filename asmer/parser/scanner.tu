@@ -92,7 +92,7 @@ Scanner::init(filepath)
         os.die("error reade file:" + filepath)
     }
     this.buffersize = fs.osize
-    
+    utils.debug("Scanner::init() end %s".(i8),*filepath)
 }
 Scanner::next() {
     if this.pos >= this.buffersize {
@@ -179,6 +179,7 @@ Scanner::parseKeyword(c<i8>)
 {
     lexeme<string.String> = string.emptyS()
     lexeme.putc(c)
+    fmt.println(lexeme.dyn())
 
     cn<i8> = this.peek()
     while((cn >= 'a' && cn <= 'z') || (cn >= 'A' && cn <= 'Z') || cn == '.' || cn == '_' || (cn >= '0' && cn <= '9')){
@@ -187,8 +188,8 @@ Scanner::parseKeyword(c<i8>)
         cn = this.peek()
     }
     //dyn str
-    lex = string.new(lexeme.inner)
-    if std.exist(labels[lex]) {
+    lex = lexeme.dyn()
+    if std.exist(lex,labels) {
        return this.token(labels[lex],lexeme) 
     }
     return this.token(ast.KW_LABEL, lexeme)
@@ -233,21 +234,21 @@ comment:
     if(c == '(')  return this.token(ast.TK_LPAREN  ,string.S(*"("))
     if(c == ')')  return this.token(ast.TK_RPAREN  ,string.S(*")"))
     if(c == ',')  return this.token(ast.TK_COMMA   ,string.S(*","))
-    if(c == '%')  return this.parseKeyword('%')
+    if(c == '%')  return this.parseKeyword('%'.(i8))
     if(c == '-')  {
         cn<i8> = this.peek()
         if(cn >= '0' && cn <= '9'){
             return this.parseNumber('-'.(i8))
         }
-        return this.token(ast.TK_SUB     ,string.S(*"-"))
+        return this.token(ast.TK_SUB     ,string.S("-".(i8)))
     }
-    if(c == '*')  return this.token(ast.TK_MUL     ,string.S(*"*"))
-    if(c == '@')  return this.token(ast.TK_AT      ,string.S(*"@"))
-    if(c == '$')  return this.token(ast.TK_IMME    ,string.S("$"))
+    if(c == '*')  return this.token(ast.TK_MUL     ,string.S("*".(i8)))
+    if(c == '@')  return this.token(ast.TK_AT      ,string.S("@".(i8)))
+    if(c == '$')  return this.token(ast.TK_IMME    ,string.S("$".(i8)))
 
     utils.errorf(
         "SynxaxError: unknown token %c line:%d column:%d file:%s\n",
         char(c),int(this.line),int(this.column),this.filepath
     )
-    return this.token(ast.INVALID,string.S(*"invalid"))
+    return this.token(ast.INVALID,string.S("invalid".(i8)))
 }

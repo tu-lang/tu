@@ -53,7 +53,7 @@ func command() {
     while i < std.len(os.argv())  {
         match os.argv()[i] {
             "-p" : {
-                scan_dirs[] = os.argv()[i+1]    # link dir
+                scan_dirs[] = os.argv()[i+1]    # asm dir
                 i += 2
             }
             "-x" : {
@@ -61,7 +61,7 @@ func command() {
                 i += 1
             }
             _ : {
-                scan_files[] = os.argv()[i+1]   # link object
+                scan_files[] = os.argv()[i]   # link object
                 i += 1
             }
         }

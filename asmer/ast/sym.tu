@@ -10,6 +10,7 @@ mem Function {
 }
 Function::init(name){
     this.labelname = name
+    this.instructs = std.array_create()
 }
 
 mem ByteBlock {

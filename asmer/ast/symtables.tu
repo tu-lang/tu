@@ -12,6 +12,7 @@ func mapstringhashkey(k<string.String>){
 }
 SymTable::init(){
     this.symbols = map.map_new(mapstringhashkey,0.(i8))
+    this.data_symbol = std.array_create()
 }
 
 SymTable::hasName(name) {
@@ -35,7 +36,7 @@ SymTable::getSym(name<string.String>) {
     if this.hasName(name) == True {
         return this.symbols.find(name)
     }else{
-        sym<Sym> = newSym(name,true)
+        sym<Sym> = newSym(name,True)
         this.symbols.insert(name,sym)
         return sym
     }

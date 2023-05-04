@@ -25,6 +25,7 @@ mem Parser {
 Parser::init(filepath,elf<elf.ElfFile>)
 {
     utils.debug("Parser::init() filepath:%s".(i8),*filepath)
+    this.funcs = std.array_create()
     this.elf = elf
     this.data_size = 0
     this.text_size = 0
@@ -37,6 +38,7 @@ Parser::init(filepath,elf<elf.ElfFile>)
 
     fullname = std.pop(string.split(filepath,"/"))
     fullname = string.split(fullname,".s")
+    this.filename = fullname[0]
     outname  = fullname[0] + ".o"
     this.outname = outname
 }
@@ -123,7 +125,7 @@ Parser::printToken()
 Parser::check(check<i8>,err)
 {
     if(check) return true
-    os.die(
+    os.dief(
         "parse: found token error token:%d:%s %s\n" + 
         "msg:%s\n" +
         "line:%d column:%d file:%s\n", 

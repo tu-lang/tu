@@ -5,7 +5,7 @@ use string
 
 Parser::parseGlobal() {
     utils.debug("Parser::parseGlobal() ".(i8))
-    this.check(this.scanner.token() == ast.KW_GLOBAL,"should be global keyword")
+    this.check(this.scanner.curtoken == ast.KW_GLOBAL,"should be global keyword")
 
     //next
     this.check(this.scanner.scan() == ast.KW_LABEL,"should be label")
@@ -17,27 +17,28 @@ Parser::parseGlobal() {
 
     this.scanner.scan()
 }
-void Parser::parseLabel() {
+Parser::parseLabel() {
     utils.debug("Parser::parseLabel() %S".(i8),this.scanner.curlex.str())
     labelname<string.String> = this.scanner.curlex
     //next
     this.scanner.scan()
     // :
-    this.check(this.scanner.token() == ast.TK_COLON,"missing :, should be " + labelname.dyn() + ":")
+    this.check(this.scanner.curtoken == ast.TK_COLON,"missing :, should be " + labelname.dyn() + ":")
 
     sym<ast.Sym> = null
     tk<i32> = this.scanner.scan()
     match tk {
         ast.KW_ZERO | ast.KW_QUAD | ast.KW_LONG | ast.KW_VALUE | ast.KW_BYTE:
-            this.parseData(labelname)
+            return this.parseData(labelname)
         ast.KW_STRING:
-            this.parseString(labelname)
+            return this.parseString(labelname)
         ast.KW_LABEL:{
             sym = ast.newSym(labelname, False)
             this.symtable.addSym(sym)
 
             fc<ast.Function> = new ast.Function(labelname)
             this.funcs.push(fc)
+            return true
         }
     }
 
@@ -76,7 +77,7 @@ Parser::parseData(labelname<string.String>) {
     this.symtable.addSym(sym)
 }
 Parser::parseString(labelname<string.String>) {
-    this.check(this.scanner.token() == ast.KW_STRING,"should be string")
+    this.check(this.scanner.curtoken == ast.KW_STRING,"should be string")
 
     this.check(this.scanner.scan() == ast.TK_STRING,"should be string in parse string")
     sym<ast.Sym> = ast.newStringSym(
