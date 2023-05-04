@@ -75,9 +75,36 @@ func test_fmt(){
 
 	fmt.println("test fmt success")
 }
+func test_dyn(){
+	s<string.String> = string.emptyS()
+	s.catstr(*"test")
+	if s.cmpstr(*"test") == string.Equal {} else {
+		os.die("s.cmpstr test failed")
+	}
+	if s.cmp(string.S(*"test")) == string.Equal {} else {
+		os.die("s.cmp testfailed")
+	}
+
+	s.putc('f'.(i8))
+	if s.cmpstr(*"testf") == string.Equal {} else {
+		os.die("s.cmpstr testf failed")
+	}
+	s.cat(string.S(*"tulang"))
+	if s.cmp(string.S(*"testftulang")) == string.Equal {} else {
+		os.die("s.cmp testftulang failed")
+	}
+
+	dynstr = "testftulang"
+	dststr = s.dyn()
+	if dynstr == dststr {} else {
+		os.die("dynstr not equal")
+	}
+	fmt.println("test_dyn success")
+}
 func main(){
 	str = test_putc()
 	test_putstring(str)
 	test_cmpstr_empty()
 	test_fmt()
+	test_dyn()
 }

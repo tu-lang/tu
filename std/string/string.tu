@@ -1,5 +1,6 @@
 
 use runtime
+use std
 Null<i64> = 0
 
 mem String {
@@ -32,6 +33,13 @@ String::dup() {
 	return new String {
 		inner : this.inner.(Str).dup()
 	}
+}
+String::dyn() {
+	return runtime.newobject(
+		runtime.STRING,
+		this.inner,
+		this.inner.(Str).hash64()
+	)
 }
 String::cat(t<String>) {
 	newp<i8*> = this.inner.(Str).catlen(
