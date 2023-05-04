@@ -125,6 +125,7 @@ func free(ptr<u64*>) {
 
 // func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
 func stringfmt(_args<u64*>...){
+    curr<u64> = 0
 	count<i32> = *_args
 	args<u64*> = _args + 8
 	fmts<i8*>  = args[0] // get first args 'fmt'
