@@ -22,8 +22,9 @@ mem Parser {
 }
 
 
-Parser::init(filepath<string.String>,elf<elf.ElfFile>)
+Parser::init(filepath,elf<elf.ElfFile>)
 {
+    utils.debug("Parser::init() filepath:%s".(i8),*filepath)
     this.elf = elf
     this.data_size = 0
     this.text_size = 0
@@ -47,7 +48,7 @@ Parser::parse() {
     this.genInst()
 }
 Parser::genInst() {
-    utils.debug(*"instructs collection")
+    utils.debug(*"Parser::genInst() instructs collection")
     for(i<i32> = 0 ; i < this.funcs.len() ; i += 1){
         fc<ast.Function> = this.funcs.addr[i]
         sym<ast.Sym> = ast.newSym(fc.labelname,0.(i8))
@@ -67,6 +68,7 @@ Parser::genInst() {
 }
 Parser::parseLex()
 {
+    utils.debug("Parser::parseLex()".(i8))
     this.scanner.scan()
     if(this.scanner.curtoken == ast.TK_EOF) {
         os.die("[asmer] unrecognized file format :%s\n",this.filepath)

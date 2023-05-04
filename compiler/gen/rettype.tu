@@ -1,5 +1,7 @@
 use ast
 use utils 
+use std
+
 ArgsPosExpr::getType(ctx){
 	this.panic("getType: unsupport argsposexpr")
 }
@@ -45,7 +47,8 @@ ChainExpr::getType(ctx){
 		}
 	}
 
-	for(i : this.fields){
+	for(j = 0 ; j < std.len(this.fields) ; j += 1){
+		i = this.fields[j]
 		this.check(type(i) == type(MemberExpr),"field must be member expression at mem chain expression")
 		me = i
 		if me.tyassert != null {
@@ -58,12 +61,23 @@ ChainExpr::getType(ctx){
 		s = member.structref # Struct
 		member = s.getMember(me.membername)
 		this.check(member != null,"mem not exist field:" + me.membername)
-		this.check(member.isstruct,"chainexpr::getType middle field must be mem type in chain expression field:" + me.membername)
+
+		if j != (std.len(this.fields) - 1) {
+			this.check(member.isstruct,"middle field must be mem type in chain expression:" + me.member)
+		}else{
+			if !member.pointer && !member.isarr {
+				this.check(false,"last second field should be pointer in array index")
+			}
+		}
+		// this.check(member.isstruct,"chainexpr::getType middle field must be mem type in chain expression field:" + me.membername)
 	}
 		
 	this.check(this.last != null,"miss last field in chain expression")
 	if type(this.last) == type(MemberCallExpr) {
 		return ast.U64
+	}
+	if type(this.last) == type(IndexExpr) {
+		return member.type
 	}
 	me = this.last
 	if me.tyassert != null {
