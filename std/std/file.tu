@@ -90,7 +90,8 @@ class File {
 			fmt.print("fopen failed\n")
 			return null
 		}
-		this.size = int(fseek(ret,runtime.Null,SEEK_END))
+		this.osize = fseek(ret,runtime.Null,SEEK_END)
+		this.size = int(this.osize)
 
 		fseek(ret,runtime.Null,SEEK_SET)
 		this.open = true
@@ -101,6 +102,18 @@ class File {
 	}
 	func Size(){
 		return this.size
+	}
+	func ReadAllNative(){
+		s<i32> = *this.size
+		//last pos \0
+		fs<i32> = s + 1
+		buf<u64*> = new fs
+		read_size<i64> = read(this.fd,buf,s)
+		if read_size != s {
+			fmt.println("fread err,",int(read_size))
+			return Null
+		}
+		return buf
 	}
 	func ReadAll(){
 		s<i32> = *this.size
