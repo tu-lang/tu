@@ -46,12 +46,12 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 	hashvariadic = this.hasVariadic()
 	if std.len(fc.params_order_var) > std.len(this.args) {
 		miss = std.len(fc.params_order_var) - std.len(this.args)
-		compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
 		for i  = 0 ; i < miss ; i += 1 {
 			stack += 1
 			if fc.params_order_var[std.len(fc.params_order_var) - 1 - i].structtype {
 				compile.writeln("    push $0")
 			}else{
+				compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
 				compile.Push()
 			}
 		}
