@@ -25,9 +25,9 @@ tl      [options|file.o...]
   - [x] run 自动编译链接后执行
   - [x] -s  编译为低等级汇编码
   - [x] -d  开启打印debug信息
-- [ ] ta(asmer)
-  - [ ] -c  翻译指定汇编码为linux(elf),windows(pe/coff)
-  - [ ] -p  批量扫描路径下的汇编
+- [ ] ta([asmer](./asmer))
+  - [x] -c  翻译指定汇编码为linux(elf),windows(pe/coff)
+  - [x] -p  批量扫描路径下的汇编
 - [x] tl([linker/demo](./linker))
   - [x] *.o 链接指定的linux(elf) 文件生成可执行linux程序
   - [ ] *.o 链接指定的windows(pe) 文件生成可执行windows程序
