@@ -211,7 +211,8 @@ VarExpr::assign(ctx , opt , rhs){
                 oh.var = this.ret
                 return oh.gen()
             }
-            rhs.compile(ctx)
+            // rhs.compile(ctx)
+            check_load(ctx,rhs,rhs.compile(ctx))
             compile.Push()
 
             compile.GenAddr(this.ret)
