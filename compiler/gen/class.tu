@@ -46,6 +46,7 @@ NewClassExpr::compile(ctx)
 	utils.debug("new expr got: type:%s",this.name)
 
 	s = this.getReal()
+    isstruct = false
 	if s.father != null {
 		father = new NewClassExpr(this.line,this.column)
 		father.childcall = true
@@ -58,11 +59,18 @@ NewClassExpr::compile(ctx)
 		internal.newinherit_object(s.type_id)
 		compile.Push()
 	}else{
-		internal.newobject(ast.Object,s.type_id)
+        fullpackage = GP().getImport(this.package)
+        m = package.getStruct(fullpackage,this.name)
+	    if m != null {
+	        internal.gc_malloc(m.size)
+            isstruct = true
+        }else{
+		    internal.newobject(ast.Object,s.type_id)
+        } 
 		compile.Push()
 	}
 
-	
+    if !isstruct {
 	for(fc : s.funcs){
 		funcname = fc.parser.getpkgname() +
 							"_" + s.name + "_" + fc.name
@@ -71,6 +79,7 @@ NewClassExpr::compile(ctx)
 		compile.Push()
 		internal.object_func_add(fc.name)
 	}
+    }
 	//init called auto
 	if !this.childcall {
 		call = new FunCallExpr(this.line,this.column)
