@@ -15,17 +15,17 @@ func fwrite(fd<i64>,buffer<u64>,size<u64>){
 
 #func fopen(filename,mode)
 func fopen(filename,mode){
-	utils.debug("linker.io:fopen",filename,mode)
+	utils.debug("linker.io:fopen %s %s".(i8),*filename,*mode)
 	if filename == "" {
 		fmt.print("fopen filename is empty\n")
 		return false
 	}
-	ret<i8> = std.fopen(*filename,*mode)
+	ret<i32> = std.fopen(*filename,*mode)
 	if ret == null {
 		fmt.print("fopen failed\n")
 		return false
 	}
-	utils.debug("fopen file:",int(ret))
+	utils.debug("fopen file: %d".(i8),ret)
 	return ret
 }
 //func fclose(fp<u64>)

@@ -13,7 +13,12 @@ Asmer::init(filename)
     this.bytes = 0
     this.elf   = new elf.ElfFile(this)
     this.parser = new parser.Parser(filename,this.elf)
-    this.out  = utils.fopen(this.parser.outname,"w+")
+    outname    = this.parser.outname
+    fp<i32>    = utils.fopen(outname,"w+")
+    if fp <= 0 {
+        utils.error("open failed " + outname)
+    }
+    this.out   = fp
 }
 //start
 Asmer::execute() {

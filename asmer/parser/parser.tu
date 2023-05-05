@@ -5,6 +5,7 @@ use instruct
 use std
 use string
 use os
+use fmt
 True<i32>  = 1
 False<i32> = 0
 Pad1<i32>  = 1
