@@ -11,6 +11,12 @@ func debug(args...){
         fmt.vfprintf(std.STDOUT,s)
     }
 }
+func printf(args...){
+    // if debug_mode == 1 {
+        s<string.Str> = string.stringfmt(args)
+        fmt.vfprintf(std.STDOUT,s)
+    // }
+}
 func print_green(red){
    return " \033[32m" + red + "\033[0m"
 }
