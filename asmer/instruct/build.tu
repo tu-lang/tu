@@ -15,7 +15,9 @@ Instruct::genZeroInst() {
         this.append1(opcode)
 }
 Instruct::gen(){
-    utils.debug("Instruct::gen".(i8))
+    utils.debug("Instruct::gen %d %d".(i8),this,&this.type)
+    if this == null 
+        utils.errorf("Instruct::gen this is null %d",int(this))
     token<i32> = this.type
     if( token >= ast.KW_MOV && token <= ast.KW_LEA )
         this.genTwoInst()
@@ -24,6 +26,6 @@ Instruct::gen(){
     else if(token >= ast.KW_RET && token <= ast.KW_CDQ)
         this.genZeroInst()
     else
-        utils.error(*"[instruct gen] unknow instuct\n")
+        utils.error("[instruct gen] unknow instuct\n")
     utils.debug("Instruct::gen done %S".(i8),this.str.str())
 }

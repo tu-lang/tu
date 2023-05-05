@@ -21,7 +21,9 @@ Parser::parseFunction(labelname<string.String>) {
         else if(token >= ast.KW_RET && token <= ast.KW_CDQ)
             inst  = this.parseZeroInstruct()
         else
-            utils.error("[Parser] unknow instruct:%s\n",this.scanner.curlex)
+            utils.errorf("[Parser] unknow instruct:%s\n",this.scanner.curlex.dyn())
+        if inst == null 
+            utils.errorf("[Parser] something wrong:%s\n",this.scanner.curlex.dyn())
 
         fc.instructs.push(inst)
 

@@ -179,7 +179,6 @@ Scanner::parseKeyword(c<i8>)
 {
     lexeme<string.String> = string.emptyS()
     lexeme.putc(c)
-    fmt.println(lexeme.dyn())
 
     cn<i8> = this.peek()
     while((cn >= 'a' && cn <= 'z') || (cn >= 'A' && cn <= 'Z') || cn == '.' || cn == '_' || (cn >= '0' && cn <= '9')){

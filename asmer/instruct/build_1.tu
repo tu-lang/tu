@@ -99,7 +99,7 @@ Instruct::genOneInst() {
     else if(this.type == ast.KW_INT)
     {
         this.append1(opcode)
-        this.append(this.inst.imm,1)
+        this.append(this.inst.imm,1.(i8))
     }
     else if(this.type == ast.KW_NOT){
         exchar = 0xd0
@@ -163,7 +163,7 @@ Instruct::genOneInst() {
                 this.append(this.inst.disp,this.inst.dispLen)
         }else{
             opcode += this.modrm.reg
-            this.append(opcode,1)
+            this.append(opcode,1.(i8))
         }
     }else{
         this.check(False,"unkown inst in genone")

@@ -18,7 +18,7 @@ Parser::regoffset(){
     }
     if(ty >= ast.KW_R8 && ty <= ast.KW_R10)
         return ty - ast.KW_R8
-    utils.error("regoffset invalid :%d",int(ty))
+    utils.errorf("regoffset invalid :%d",int(ty))
 }
 Parser::parseInstruct(inst<instruct.Instruct>) {
     utils.debug("Parser::parseInstruct() %S".(i8),this.scanner.curlex.str())

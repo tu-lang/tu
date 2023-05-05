@@ -114,7 +114,7 @@ Instruct::genTwoInst()
                     if(ast.isr4(this.tks.addr[1])){
                         opcode = 0xb8 + this.modrm.reg
                         this.append1(opcode)
-                        this.append(this.inst.imm,4)
+                        this.append(this.inst.imm,4.(i8))
                         return true
                     }
                     if(this.is_rel){
