@@ -10,7 +10,7 @@ Asmer::InstWrite() {
         for(j<i32> = 0 ; j < f.instructs.len() ; j += 1){
             
             inst<instruct.Instruct> = f.instructs.addr[j]
-            this.writeBytes(inst.bytes,inst.size)
+            this.writeBytes(&inst.bytes,inst.size)
         }
     }
 }

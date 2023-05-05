@@ -3,6 +3,7 @@ use elf
 use utils
 use parser
 use std
+use std.map
 use fmt
 use os
 
@@ -78,7 +79,7 @@ Asmer::writeElf() {
     }
     offset += this.data
     this.check(this.bytes == offset,"3 bytes != offset :" + int(this.bytes) + " : " + int(offset))
-    shdrTab = this.elf.shdrTab
+    shdrTab<map.Map> = this.elf.shdrTab
     for(i<i32> = 0 ; i < this.elf.shdrNames.len() ; i += 1){
         name = this.elf.shdrNames.addr[i]
         sh<elf.Elf64_Shdr> = shdrTab.find(name)
