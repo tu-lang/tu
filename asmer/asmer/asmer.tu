@@ -6,6 +6,7 @@ use std
 use std.map
 use fmt
 use os
+use string
 
 Asmer::init(filename)
 {
@@ -92,10 +93,10 @@ Asmer::writeElf() {
     offset += this.elf.shstrtab_size
     this.check(this.bytes == offset)
 
-    symTab = this.elf.symTab
+    symTab<map.Map> = this.elf.symTab
     for( i<i32> = 0 ; i < this.elf.symNames.len() ; i += 1){
-        symname = this.elf.symNames.addr[i]
-        sym<elf.Elf64_Sym> = symTab[symname]
+        symname<string.String> = this.elf.symNames.addr[i]
+        sym<elf.Elf64_Sym> = symTab.find(symname)
         this.writeBytes(sym,sizeof(elf.Elf64_Sym))
     }
     offset += this.elf.symNames.len() * sizeof(elf.Elf64_Sym)
@@ -117,6 +118,7 @@ Asmer::writeElf() {
     }
     offset += this.elf.relDataTab.len() * sizeof(elf.Elf64_Rela)
     this.check(this.bytes == offset)
+    utils.debug("Asmer::writeElf done".(i8))
 }
 // void b, int len
 Asmer::writeBytes(b<u64*>, len<i32>)

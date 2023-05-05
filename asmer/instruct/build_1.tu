@@ -33,6 +33,7 @@ Instruct::genOneInst() {
     }
     this.instheads()
 
+    utils.debug("Instruct::genOneInst() start gen 1 opcode".(i8))
     if(this.type == ast.KW_CALL || this.type >= ast.KW_JMP && this.type <= ast.KW_JNA)
     {
         match this.type {
@@ -167,5 +168,5 @@ Instruct::genOneInst() {
     }else{
         this.check(False,"unkown inst in genone")
     }
-
+    utils.debug("Instruct::genOneInst() start gen 1 opcode end".(i8))
 }

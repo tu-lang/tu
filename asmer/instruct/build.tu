@@ -25,4 +25,5 @@ Instruct::gen(){
         this.genZeroInst()
     else
         utils.error(*"[instruct gen] unknow instuct\n")
+    utils.debug("Instruct::gen done %S".(i8),this.str.str())
 }
