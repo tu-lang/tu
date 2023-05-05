@@ -59,7 +59,7 @@ mem Instruct {
     i32         has16bits
     parser.Parser*  parser
 
-    i8          bytes[20]
+    u8          bytes[20]
     i32         size
     i32         line
     i32         column
