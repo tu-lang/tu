@@ -1,6 +1,8 @@
 use fmt
 
-mem Test {}
+mem Test {
+	i32 a,b,c
+}
 Test::funcall(){
 	v = this
 	if v == 1 {} else os.die("funcall should be 1")
@@ -72,7 +74,7 @@ mem I{
 I::test(){
 	return this.a
 }
-class Test{
+class Test1{
 	a = []
 	inner
 	func init(){
@@ -80,7 +82,7 @@ class Test{
 	}
 }
 func test_member_call(){
-	obj =  new Test()
+	obj =  new Test1()
 	ret<i8> = obj.inner.(I).test()
 	if ret == 12 {} else os.die("obj.inner.test != 12")
 	fmt.println("test member call success")

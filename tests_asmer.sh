@@ -28,7 +28,7 @@ check(){
 assert(){
     expected="$1"
     input="$2"
-    log "[compile] tu -s $input ..."
+    log "[compile] tu -s $input -nostd"
     clean "*.s"
     clean "*.o"
     tu -s $input -nostd

@@ -27,7 +27,7 @@ mem Dir{
     runtime.Value* path
 }
 //for user space
-class Dir {}
+class Dir1 {}
 //dirent::init(type,name){
 //    fmt.println(type,name)
 //    this.type = type
@@ -53,7 +53,7 @@ func opendir(dir_path<runtime.Value>){
         ))
         return false
      }
-     dir = new Dir()
+     dir = new Dir1()
      d<Dir> = new Dir {
         fd   : fd,
         pos  : 0,
@@ -64,7 +64,7 @@ func opendir(dir_path<runtime.Value>){
      dir.dirent = d
      return dir
 }
-Dir::readdir(){
+Dir1::readdir(){
     dir<Dir> = this.dirent
     //need init
     if dir.init == 0 {
