@@ -12,6 +12,15 @@ func isspace(c<i32>){
         _   : return runtime.False
     }
 }
+func isxdigit(c<i32>){
+    if '0' <= c && c <= '9'
+        return 1.(i8)
+    if 'a' <= c && c <= 'f'
+        return 1.(i8)
+    if 'A' <= c && c <= 'F'
+        return 1.(i8)
+    return 0.(i8)
+}
 func isdigit(c<i32>)
 {
     b<u32> = c
@@ -31,6 +40,9 @@ func isupper(c<i32>){
         return runtime.True
     }
     return runtime.False
+}
+func tolower(c<i32>) {
+    return c | 0x20
 }
 // mystring = newstringlen("abc",3)
 // mystring = newstringlen(NULL,0)

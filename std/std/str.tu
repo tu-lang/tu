@@ -82,6 +82,45 @@ func itoa(num<i32>, str<i8*>, base<i32>)
   
     return str
 }
+
+ 
+func strtoul(cp<i8*>,endp<u64*>,base<u32>) {
+	result<u64> = 0
+	value<u64>  = 0
+	x<i32> = 'x'
+	a<i32> = 'a'
+    if !base {
+        base = 10
+        if *cp == '0' {
+            base = 8
+            cp += 1
+            if string.tolower(*cp) == x && string.isxdigit(cp[1]) {
+                cp += 1
+                base = 16
+            }
+        }
+    } else if (base == 16) {
+        if (cp[0] == '0' && string.tolower(cp[1]) == x)
+            cp += 2
+    }
+    loop {
+		if string.isxdigit(*cp) != runtime.True {
+			break
+		}
+		if string.isdigit(*cp) == runtime.True {
+			value = *cp - '0'
+		}else {
+			value = string.tolower(*cp) - a + 10
+		}
+		if value >= 10  
+			break
+        result = result * base + value
+        cp += 1
+    }
+    if endp
+        *endp = cp
+    return result
+}
 //@param nptr string
 //@param endptr NULL
 //@param base 10
