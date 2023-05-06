@@ -142,7 +142,7 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
             //next one
             inst.str.cat(this.scanner.curlex)
             this.check(this.scanner.scan() == ast.TK_RPAREN,"should be )")
-            inst.str += this.scanner.curlex
+            inst.str.cat(this.scanner.curlex)
             this.scanner.scan()
             return ast.TY_MEM
         }

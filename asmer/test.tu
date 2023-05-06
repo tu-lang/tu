@@ -62,7 +62,7 @@ func codegen(filename){
             psize += inst.size
         }
     }
-    fmt.printf("ebuild passed] %s\n",filename )
+    fmt.printf("[all test passed] %s\n",filename )
 }
 
 func main()
