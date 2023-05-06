@@ -195,6 +195,7 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
 
             if (inst.regnum)
             {
+                inst.modrm.mod = 3
                 inst.modrm.rm = inst.modrm.reg
                 if(ast.isr8(this.scanner.curtoken)){
                     if(ast.isr1(inst.tks.addr[0]) || ast.isr4(inst.tks.addr[0]) || inst.type == ast.KW_MUL){

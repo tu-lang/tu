@@ -21,7 +21,7 @@ Disassembly of section .text:
   1f:	48 c7 c7 01 00 00 00 	mov    $0x1,%rdi
   26:	48 8d 35 00 00 00 00 	lea    0x0(%rip),%rsi        # 2d <main_main+0x12>
   2d:	48 c7 c2 0f 00 00 00 	mov    $0xf,%rdx
-  34:	e8 00 00 00 00       	callq  39 <main_main+0x1e>
+  34:	e8 c7 ff ff ff       	callq  39 <main_main+0x1e>
   39:	48 89 ec             	mov    %rbp,%rsp
   3c:	5d                   	pop    %rbp
   3d:	c3                   	retq   

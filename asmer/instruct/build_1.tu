@@ -37,8 +37,8 @@ Instruct::genOneInst() {
     if(this.type == ast.KW_CALL || this.type >= ast.KW_JMP && this.type <= ast.KW_JNA)
     {
         match this.type {
-            ast.KW_CALL:{
-                if this.left == ast.TY_REG {
+            ast.KW_CALL | ast.KW_JMP | ast.KW_JE | ast.KW_JG | ast.KW_JL | ast.KW_JLE | ast.KW_JNE | ast.KW_JNA : {
+                if this.type == ast.KW_CALL && this.left == ast.TY_REG {
                     opcode = 0xff
                     this.append1(opcode)
 
@@ -46,8 +46,6 @@ Instruct::genOneInst() {
                     this.append1(exchar)
                     return true
                 }
-            }
-            ast.KW_JMP | ast.KW_JE | ast.KW_JG | ast.KW_JL | ast.KW_JLE | ast.KW_JNE | ast.KW_JNA : {
                 sym<ast.Sym> = this.parser.symtable.getSym(this.name)
                 rel<i32> = 0
                 if sym.externed { 
