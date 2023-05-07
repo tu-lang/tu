@@ -173,8 +173,14 @@ OperatorHelper::binary()
 		ast.EQ | ast.NE | ast.LE | ast.LT | ast.GE | ast.GT: {
 			cmp = "sete"
 			match this.opt {
-				ast.EQ : cmp = "sete"
-				ast.NE : cmp = "setne"
+				ast.EQ : {
+					if this.lisunsigned cmp = "setz"
+					else            cmp = "sete"
+				}
+				ast.NE : {
+					if this.lisunsigned cmp = "setnz"
+					else            cmp = "setne"
+				}
 				ast.LE : {
 					if this.lisunsigned cmp = "setbe"
 					else            cmp = "setle"
@@ -183,8 +189,14 @@ OperatorHelper::binary()
 					if this.lisunsigned cmp = "setb"
 					else			cmp = "setl"
 				}
-				ast.GE : cmp = "setge"
-				ast.GT : cmp = "setg"
+				ast.GE : {
+					if this.lisunsigned cmp = "setae"
+					else			cmp = "setge"
+				}
+				ast.GT : {
+					if this.lisunsigned cmp = "setg"
+					else			cmp = "seta"
+				}
 			}
 			
 			compile.writeln("	cmp %s,%s",this.di,this.ax)

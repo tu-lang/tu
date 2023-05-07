@@ -11,7 +11,7 @@ Positive1<i32>		= 1
 Negative1<i32> 		= -1
 
 mem Value  { 
-	u64 type,data 
+	i64 type,data 
 }
 mem StringValue {
 	Value base
