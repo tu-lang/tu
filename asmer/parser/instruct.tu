@@ -29,7 +29,7 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
     tk<i32> = this.scanner.scan()
     match tk {
         ast.TK_IMME:{
-            number<i64>   = 0
+            number<u64>   = 0
 
             inst.str.cat(this.scanner.curlex)
             //next
@@ -39,13 +39,14 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
                 ast.TK_NUMBER: {
                     prs<string.String> = this.scanner.curlex.sub(0.(i8),2.(i8))
                     if prs.cmpstr(*"0x") == string.Equal {
+                        //TODO: parse x16 
                         number = std.strtol(this.scanner.curlex.inner,0.(i8),16.(i8))
                     }else{
                         if(this.scanner.curlex.inner[0] == '-'){
                             inst.inst.negative = true
                             number = std.strtol(this.scanner.curlex.inner,0.(i8),10.(i8))
                         }else
-                            number = std.strtol(this.scanner.curlex.inner,0.(i8),10.(i8))
+                            number = std.strtoul(this.scanner.curlex.inner,0.(i8),10.(i8))
                     }
                 }
                 ast.TK_SUB: {
