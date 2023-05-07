@@ -129,7 +129,9 @@ Instruct::genOneInst() {
             this.append1(opcode)
         }
     }
-    else if(this.type == ast.KW_SETL || this.type ==ast.KW_SETLE || this.type == ast.KW_SETE || 
+    else if(
+        this.type == ast.KW_SETZ || this.type == ast.KW_SETNZ  || this.type == ast.KW_SETAE || this.type == ast.KW_SETA ||
+        this.type == ast.KW_SETL || this.type ==ast.KW_SETLE || this.type == ast.KW_SETE || 
             this.type == ast.KW_SETGE || this.type == ast.KW_SETBE||this.type == ast.KW_SETG ||this.type == ast.KW_SETNE ||this.type == ast.KW_SETB){
         this.append2(opcode)
         exchar = 0xc0
