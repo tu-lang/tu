@@ -1,0 +1,4 @@
+main:
+    cdq
+    cltd
+    cqo
