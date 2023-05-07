@@ -178,12 +178,13 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
             this.scanner.scan()
             return ast.TY_MEM
         }
-        ast.TK_MUL: {
-            //eat *
-            inst.str.cat(this.scanner.curlex)
-            this.scanner.scan()
-        }
         _: {
+            //maybe call *%rax
+            if this.scanner.curtoken == ast.TK_MUL {
+                //eat *
+                inst.str.cat(this.scanner.curlex)
+                this.scanner.scan()
+            }
             this.check(
                 (this.scanner.curtoken >= ast.KW_RAX && this.scanner.curtoken <= ast.KW_RIP) ||
                 (this.scanner.curtoken >= ast.KW_AL && this.scanner.curtoken <= ast.KW_BH) ||
