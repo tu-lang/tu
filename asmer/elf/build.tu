@@ -102,7 +102,7 @@ ElfFile::buildShstrtab() {
     std.strcopy(str + index, *".symtab")
 
     index += symtab.len() + Pad1
-    this.strIndex.insert(string.S(".strtab")     , index)
+    this.strIndex.insert(string.S(*".strtab")     , index)
     std.strcopy(str + index, *".strtab")
     index += strtab.len() + Pad1
 
