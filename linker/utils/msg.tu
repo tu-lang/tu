@@ -1,9 +1,9 @@
 use fmt
 use os
-debug_mode<i32> = 0
+use linker.link
 
 func debug(args...){
-    if debug_mode == 1 {
+    if link.trace {
         fmt.println(args)
     }
 }

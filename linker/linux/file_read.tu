@@ -1,10 +1,9 @@
 
 use os
 use fmt
-use utils
+use linker.utils
 use string
 use std
-# 开始解析elf文件
 File::readElf(file)
 {
 	utils.debug("Reading elf object info " ,file)
@@ -14,10 +13,8 @@ File::readElf(file)
 	if fp <= 0  {
 		utils.error("can't open file, file invalid:" + file)
 	}
-	# 设置游标 开始从头开始读取
 	utils.rewind(fp)
 
-	# elf文件头部
 	ehdr<Elf64_Ehdr> = utils.fread(fp,sizeof(Elf64_Ehdr))
 	if ehdr.e_type == ET_EXEC {
 		utils.fseek(fp,ehdr.e_phoff)
@@ -27,19 +24,14 @@ File::readElf(file)
 		}
 	}
 	utils.fseek(fp,ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shstrndx)
-	# 开始读取段表字符串项
 	shstrTab<Elf64_Shdr> = utils.fread(fp,sizeof(Elf64_Shdr))
-	# 转移到段表字符串内容
 	utils.fseek(fp,shstrTab.sh_offset)
-	//读取段表字符串表
 	shstrTabData<i8*> = utils.fread(fp,shstrTab.sh_size)
 	utils.debug("字符串表:",string.new(shstrTabData))
 
-	# 开始读取所有的段表
 	utils.fseek(fp,ehdr.e_shoff)
 	for(i<i32> = 0 ; i < ehdr.e_shnum ; i += 1){
 		shdr<Elf64_Shdr> = utils.fread(fp,sizeof(Elf64_Shdr))
-		# 截取自动遇到\0停止
 		name = string.new(shstrTabData + shdr.sh_name)
 		//utils.debug("read section.name:", name)
 		this.shdrNames[] = name
@@ -48,20 +40,16 @@ File::readElf(file)
 			this.shdrTab[name] = shdr
 		}
 	}
-	# 开始读取字符串段表
 	//utils.debug(this.shdrTab)
 	strTab<Elf64_Shdr> = this.shdrTab[".strtab"]
 	utils.fseek(fp,strTab.sh_offset)
-	# 读取字符串表
 	strTabData<i8*> = utils.fread(fp,strTab.sh_size)
 
 
-	# 读取符号表
 	sh_symTab<Elf64_Shdr> = this.shdrTab[".symtab"]
 	utils.fseek(fp,sh_symTab.sh_offset)
 	symNum<i32> = sh_symTab.sh_size / sh_symTab.sh_entsize
 
-	# 记录符号表段所有符号信息，方便进行重定位
 	symList = []
 	for(i = 0 ; i < symNum ; i += 1){
 		sym<Elf64_Sym> = utils.fread(fp,sizeof(Elf64_Sym))
@@ -78,7 +66,6 @@ File::readElf(file)
 			continue
 		}
 		if  sym.st_shndx != SHN_UNDEF && sym.st_name == 0 {
-			# 可能是段名
 			name = this.shdrNames[int(sym.st_shndx)]
 			//utils.debug("read symbols table.name: " ,name)
 			if  name != "" {
@@ -86,8 +73,7 @@ File::readElf(file)
 			}
 		}
 	}
-	utils.debug(file,"重定位数据",std.len(symList))
-	# 更新重定位段段数据
+	utils.debug(file,"relocation addr",std.len(symList))
 	for( k,v : this.shdrTab ){
 		if  k == ".rela.text" || k == ".rela.data" {
 			relTab<Elf64_Shdr> = v
@@ -111,7 +97,6 @@ File::readElf(file)
 	utils.fclose(fp)
 }
 
-# 找到符号名对应的索引位置
 File::getSymIndex(symname)
 {
 	index = 0
@@ -122,7 +107,6 @@ File::getSymIndex(symname)
 	return index
 }
 
-# 找到段名对应的索引位置
 File::getSegIndex(segname)
 {
 	//utils.debug("File::getSegIndex",segname,this.shdrNames)
@@ -140,10 +124,8 @@ File::getSegIndex(segname)
 File::getData(buf,offset,size)
 {
 	//utils.debug("File::getData ",elfdir)
-	# 打开 elf文件	
 	fp = utils.fopen(this.elfdir,"rb")
 	utils.fseek(fp,offset)
-	# 读取数据
 	utils.fread_with_buf(fp,buf,size)
 	utils.fclose(fp)
 }	

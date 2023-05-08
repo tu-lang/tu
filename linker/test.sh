@@ -27,19 +27,19 @@ check(){
 
 assert(){
     log "[compile] tu -s linker/main.tu "
-    tu -s main.tu
+    tu -s linker/main.tu
     check
-    echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib"
-    gcc -g -c *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib 
+    echo "tua -p /usr/local/lib/coasm ."
+    tua -p . -p /usr/local/lib/coasm
     echo "start linking..."
-    log "[linker] tl -p ."
-    tl -p .
+    log "[linker] tul -p ."
+    tul -p .
     check
     chmod 777 a.out
     mv a.out tl_test
-    cd demo;gcc -c *.s
-    cd ..
-    ./tl_test -p demo
+    cd linker/demo;tua -p .
+    cd ../../
+    ./tl_test -p linker/demo
     check
     chmod 777 a.out
     echo "exec a.out..."

@@ -1,7 +1,8 @@
 use std
 use fmt
 use os
-use linux
+use linker.linux
+use linker.utils
 
 Linker::buildExe()
 {
@@ -9,7 +10,6 @@ Linker::buildExe()
 	exe = this.exe
 
 	ehdr<linux.Elf64_Ehdr> = exe.ehdr
-	#  获取变量的地址
 	pid<i32*> = &ehdr.e_ident
 	*pid  = 0x464c457f
 	pid += 4
@@ -27,13 +27,11 @@ Linker::buildExe()
 
 	#curOff = sizeof(linux.Elf64_Ehdr) + sizeof(linux.Elf64_Phdr) * std.len(this.segNames)
 	curOff = int(sizeof(linux.Elf64_Ehdr)) + int(sizeof(linux.Elf64_Phdr)) * std.len(this.segNames)
-	# 空段表
 	zero = 0
 	exe.addShdr("",zero,zero,zero,zero,zero,zero,zero,zero,zero)
 
 	shstrtabSize = 26
 	for(seg : this.segNames){
-		# 每个字符串末尾自动加上结束符号 \0
 		shstrtabSize += std.len(seg) + 1
 
 		flags<i32> = linux.PF_W | linux.PF_R
@@ -44,7 +42,6 @@ Linker::buildExe()
 		if  seg == ".bss"  {
 			filesz = 0
 		}
-		# 添加程序头表
 		exe.addPhdr(int(linux.PT_LOAD),
 			this.segLists[seg].offset,
 			this.segLists[seg].baseAddr,
@@ -53,9 +50,7 @@ Linker::buildExe()
 			int(flags),
 			int(MEM_ALIGN)
 		)
-		# 计算有效数据段的大小和偏移
 		curOff = this.segLists[seg].offset
-		#生成段表项
 		sh_type = int(linux.SHT_PROGBITS)
 		sh_flags<i32> = linux.SHF_ALLOC | linux.SHF_WRITE
 		sh_align = 4

@@ -1,29 +1,28 @@
-use linux
+use linker.linux
 use fmt
+use linker.utils
 
 class Seglist
 {
-	baseAddr  = 0   # 分配基地址
-	offset    = 0   # 合并后的文件偏移
-	size	  = 0   # 合并后的大小
-	begin  	  = 0   # 对齐前开始位置偏移
+	baseAddr  = 0   # base addr
+	offset    = 0   # finally offset
+	size	  = 0   # finally size
+	begin  	  = 0   # start address
 	ownerList = []  # array[ElfFile] 
 	blocks	  = []  # array[Block]
 }
 
-# @param name string 段名	
-# @param off 文件偏移地址
-# @param base 加载基地址
+# @param name 
+# @param off 
+# @param base 
 Seglist::allocAddr(name,base<i32*>,off<i32*>)
 {
 	utils.debug("Seglist::allocAddr ",name,int(*off))
-	this.begin = int(*off) # 记录文件前偏移
-	# 虚拟地址对齐，让所有的段按照4k字节对其
+	this.begin = int(*off) 
 	if  name != ".bss" {
 		tmp<i32> = MEM_ALIGN - *base % MEM_ALIGN
 		*base += tmp % MEM_ALIGN
 	}
-	# 偏移第一对齐，让一般段按照4字节对齐，文本段16字节对齐
 	align<i32> = DISC_ALIGN
 	if  name == ".text" {
 		align = 16
@@ -31,20 +30,15 @@ Seglist::allocAddr(name,base<i32*>,off<i32*>)
 	temp_align<i32> = align - *off % align
 	*off += temp_align % align
 
-	# 使虚地址和偏移按照 4k摸去余
 	*base = *base - *base % MEM_ALIGN + *off % MEM_ALIGN
-	//累加地址和偏移
 	this.baseAddr = int(*base)
 	this.offset = int(*off)
 	size<i32> = 0
 	for( i = 0 ; i < std.len(this.ownerList) ; i += 1){
-		# 对齐每个小段，按照4字节
 		ts<i32> = DISC_ALIGN - size % DISC_ALIGN
 		size += ts % DISC_ALIGN
 		seg<linux.Elf64_Shdr> = this.ownerList[i].shdrTab[name]
-		# 读取需要合并段段数据
 		if  name != ".bss" {
-			//申请数据缓存
 			ss<i32> = seg.sh_size
 			if seg.sh_size != 0 {
 				buf<u64*> = new ss
@@ -53,13 +47,10 @@ Seglist::allocAddr(name,base<i32*>,off<i32*>)
 				this.blocks[] = newBlock(buf,size,seg.sh_size)
 			}
 		}
-		//修改每个文件中对应段的addr
 		seg.sh_addr = *base + size
 		size += seg.sh_size
 	}
-	#累加地址
 	*base = *base + size
-	# bss段不修改偏移
 	if name != ".bss" {
 		*off += size
 	}

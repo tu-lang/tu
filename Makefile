@@ -58,9 +58,9 @@ check: install test
 test_asmer:
 	cd asmer;sh test.sh
 test_linker:
-	cd linker;sh test.sh
+	sh linker/test.sh
 test_compiler:
-	cd compiler;sh test.sh
+	compiler/test.sh
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 #make test -j9

@@ -1,9 +1,9 @@
 
 use fmt
-use link
+use linker.link
 use os 
 use std
-use utils
+use linker.utils
 
 #[dir,dir,dir]
 scan_dirs
@@ -27,10 +27,8 @@ func link(){
     utils.debug("main.link")
     linker  = new link.Linker()
     for(obj : scan_files){
-        # 添加目标文件
         linker.addElf(obj)
     }
-    # 开始链接
     linker.link(out)
 }
 
@@ -40,13 +38,11 @@ func scan(){
 
     for(dir : scan_dirs){
         if !std.is_dir(dir) os.die(dir + " not exist")
-        # 迭代目录文件
         fd = std.opendir(dir)
         loop {
             file = fd.readdir()
             if !file break
             if !file.isFile() continue
-            # 解析目标文件
             filename = file.path
             if string.sub(filename,std.len(filename) - 2) == ".o" {
                 scan_files[] = file.path
@@ -62,7 +58,6 @@ func scan(){
         linker.addElf(f)
         i += 1
     }
-    # 开始链接
     if !linker.link(out) {
         utils.error("Generate " + out + " Failed")
     }
@@ -81,7 +76,7 @@ func command() {
                 i += 2
             }
             "-d" : {
-                utils.debug_mode = 1          # debug mode
+                link.trace = true          # debug mode
                 i += 1
             }
             "-o" : {

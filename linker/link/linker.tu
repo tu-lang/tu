@@ -1,8 +1,9 @@
-use linux
+use linker.linux
+use linker.utils
 use fmt
 
-#统计读写的字节数
 bytes
+trace
 
 class Linker
 {
@@ -31,8 +32,6 @@ Linker::init(){
 		sl[name] = new Seglist()
 	}
 }
-# 1. 解析elf文件
-# 2. 追加到待链接数组中等待链接
 Linker::addElf(obj)
 {
 	utils.debug("Linker::addElf add a elffile:",obj)
@@ -42,35 +41,29 @@ Linker::addElf(obj)
 	this.elfs[] = e
 }
 use runtime
-# 开始扫描文件搜集所有信息
 Linker::collectInfo()
 {
 	utils.msg(30,"Collecting object info")
 	Null<i8> = 0
 	for(e : this.elfs){
 		utils.debug("Collect object info " + e.elfdir)
-		# 记录段表信息
 		for(seg : this.segNames){
 			if std.exist(seg,e.shdrTab) {
 				this.segLists[seg].ownerList[] = e
 			}
 		}
-		# 记录符号引用信息
 		for(name,sym<linux.Elf64_Sym> : e.symTab){
 			symLink = new SymLink()
 			symLink.name = name
 			if sym.st_name == 0 {
-				//utils.debug(name, " 段符号定义 ")
 				symLink.prov = e
 				symLink.recv = null
 				this.secDef[] = symLink
 			}else if  sym.st_shndx == linux.SHN_UNDEF {
-				//utils.debug(name, " 未定义 ")
 				symLink.recv = e
 				symLink.prov = null
 				this.symLinks[] = symLink
 			}else if  sym.st_shndx != linux.SHN_ABS {
-				//utils.debug(name, " 已定义")
 				symLink.prov = e
 				symLink.recv = null
 				if std.exist(symLink.name,this.symDef) {
@@ -95,15 +88,14 @@ Linker::symValid()
 	flag = true
 
 	if !std.exist("main",this.symDef) {
-		os.die("链接器找不到入口程序: main")
+		os.die("not entry address: main")
 	}
 
 	startOwner = this.symDef["main"]
-	# 遍历未定义的符号
 	for(undefine : this.symLinks){
 		if std.exist(undefine.name , this.symDef) {
 			def = this.symDef[undefine.name]
-			undefine.prov = def.prov //绑定未定义符号源定义处
+			undefine.prov = def.prov 
 			def.recv = def.prov
 
 		} else {
@@ -128,7 +120,6 @@ Linker::symValid()
 	utils.debug("done symValid",flag)
 	return flag
 }
-# 分配地址空间
 Linker::allocAddr()
 {
 	utils.msg(50,"Allocing address ")
@@ -175,7 +166,6 @@ Linker::symParser()
 			sec_sym.st_value = sec_sym.st_value + sec_sh.sh_addr
 		}
 	}
-	utils.debug("未定义符号解析")
 	for(syml : this.symLinks){
 		provsym<linux.Elf64_Sym> = syml.prov.symTab[syml.name]
 		recvsym<linux.Elf64_Sym> = syml.recv.symTab[syml.name]
@@ -183,7 +173,6 @@ Linker::symParser()
 	}
 }
 
-# 重定位
 Linker::relocate()
 {
 	utils.msg(80,"Relocating address")
@@ -202,7 +191,6 @@ Linker::relocate()
 			file = e.elfdir
 			symAddr<u32> = sym.st_value + rel.r_addend
 			relAddr<u32> = sh.sh_addr + rel.r_offset
-			# 开始重定位操作
 			obj = this.segLists[t.segname]
 			obj.relocAddr(relAddr,linux.ELF64_R_TYPE(rel.r_info),symAddr,rel.r_addend)
 		}

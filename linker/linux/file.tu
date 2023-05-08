@@ -3,23 +3,22 @@ use fmt
 class File {
     ehdr   = new Elf64_Ehdr     # Elf64_Ehdr elf头
 	# char *buf,Elf64_Off offset,Elf64_Word size)
-	phdrTab = []    # 程序头表 Elf64_Phdr
-	shdrTab = {}    # 端表
+	phdrTab = []    # Elf64_Phdr
+	shdrTab = {}    # Elf64_Shdr
 	shdrNames = []  # array[]
-	symTab  = {}    # 符号段表
+	symTab  = {}    # Elf64_Sym
 	symNames = []   # array[]
-	symbols = []    # 符号表 name
-	relTab = []     # 重定位表
+	symbols = []    # string name
+	relTab = []     # Elf64_Rela
 
-    elfdir      # 文件的目录
-    shstrtab    # 段表字符串表数据
-    shstrtabsize# 段表字符串表长度
-    strtab      # 字符串表数据
-    strtabsize  # 字符串表数据长度
+    elfdir      # file path
+    shstrtab    # char* str
+    shstrtabsize# size
+    strtab      # char* str
+    strtabsize  # size
 }
 
 
-# 添加程序表头
 File::addPhdr(type,off,vaddr,filesz,memsz,flags,align)
 {
     utils.debug("File::addPhdr")
@@ -35,7 +34,6 @@ File::addPhdr(type,off,vaddr,filesz,memsz,flags,align)
 	
 	this.phdrTab[] = ph
 }
-# 添加一个段表项
 File::addShdr(sh_name,sh_type,sh_flags,sh_addr,sh_offset,sh_size,sh_link,sh_info,sh_addralign,sh_entsize)
 {
     utils.debug("File::addShdr",sh_name)
@@ -56,7 +54,6 @@ File::addShdr(sh_name,sh_type,sh_flags,sh_addr,sh_offset,sh_size,sh_link,sh_info
     this.shdrTab[sh_name] = sh
     this.shdrNames[] = sh_name
 }
-# 添加符号表
 File::addSym(st_name,s<Elf64_Sym>)
 {
     utils.debug("File::addSym",st_name)

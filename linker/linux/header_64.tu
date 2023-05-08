@@ -21,8 +21,6 @@
 # u16 Elf32_Versym;
 # u16 Elf64_Versym;
 
-# 支持嵌套设Elf64_Ehdr计
-# TODO: struct
 mem Elf64_Ehdr 
 {
 	u8  e_ident[16]
@@ -42,7 +40,6 @@ mem Elf64_Ehdr
 	u16 e_shstrndx
 }
 
-# 程序头表
 mem Elf64_Phdr
 {
 	u32 p_type
@@ -55,7 +52,6 @@ mem Elf64_Phdr
 	u64 p_align
 }
 
-# 段表
 mem Elf64_Shdr
 {
 	u32 sh_name

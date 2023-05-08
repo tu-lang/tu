@@ -1,5 +1,4 @@
 
-# 全局变量定义
 ET_NONE<i32> = 0
 ET_REL<i32>  = 1 
 ET_EXEC<i32> = 2 
