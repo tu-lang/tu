@@ -32,8 +32,9 @@ build-liba:
 
 .PHONY: install-bin
 install-bin: 
-	@cp compiler/bin/amd64_linux_tu1 /usr/local/bin/tu
-	@cp linker/bin/amd64_linux_tl2 /usr/local/bin/tl
+	@cp compiler/bin/amd64_linux_tuc $(prefix)/bin/tuc
+	@cp linker/bin/amd64_linux_tl2 $(prefix)/bin/tul
+	@cp asmer/bin/amd64_linux_tua $(prefix)/bin/tua
 	@echo "tu bin installed"
 	
 .PHONY: install

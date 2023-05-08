@@ -36,8 +36,8 @@ assert(){
     echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib"
     gcc -g -c *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib 
     echo "start linking..."
-    log "[linker] tl -p ."
-    tl -p .
+    log "[linker] tul -p ."
+    tul -p .
     check
     chmod 777 a.out
     echo "exec a.out..."

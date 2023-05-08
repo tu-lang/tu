@@ -28,16 +28,16 @@ check(){
 assert(){
     expected="$1"
     input="$2"
-    log "[compile] tu -s $input -nostd"
+    log "[compile] tuc -s $input -nostd"
     clean "*.s"
     clean "*.o"
     tu -s $input -nostd
     check
-    log "[asmer] ta -p . /usr/local/lib/coasm"
-    ta -p . 
+    log "[asmer] tua -p . /usr/local/lib/coasm"
+    tua -p . 
     echo "start linking..."
-    echo "tl -p . "
-    tl -p . /usr/local/lib/colib
+    echo "tul -p . /usr/local/lib/colib"
+    tul -p . /usr/local/lib/colib
     chmod 777 a.out
     check
     echo "exec a.out..."
