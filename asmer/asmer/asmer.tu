@@ -73,7 +73,7 @@ Asmer::writeElf() {
                 if b.type == ast.KW_ZERO {
                     this.writePads(b.data)
                 }else{
-                    this.writeBytes(b.data,tysize)
+                    this.writeBytes(&b.data,tysize)
                 }
             }
         }
