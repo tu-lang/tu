@@ -83,44 +83,112 @@ func itoa(num<i32>, str<i8*>, base<i32>)
     return str
 }
 
- 
-func strtoul(cp<i8*>,endp<u64*>,base<u32>) {
-	result<u64> = 0
-	value<u64>  = 0
-	x<i32> = 'x'
-	a<i32> = 'a'
-    if !base {
-        base = 10
-        if *cp == '0' {
-            base = 8
-            cp += 1
-            if string.tolower(*cp) == x && string.isxdigit(cp[1]) {
-                cp += 1
-                base = 16
-            }
-        }
-    } else if (base == 16) {
-        if (cp[0] == '0' && string.tolower(cp[1]) == x)
-            cp += 2
-    }
-    loop {
-		if string.isxdigit(*cp) != runtime.True {
+func strtoul(nptr<i8*>, endptr<u64*>, base<i32>)
+{
+    s<i8*> = nptr
+    acc<u64> = 0
+    cutoff<u64> = 0
+    c<i32> = 0
+    neg<i32> = 0
+    any<i32> = 0
+    cutlim<i32> = 0
+
+    while runtime.True {
+		c = *s
+		s += 1
+		if string.isspace(c) == runtime.False 
 			break
+	} 
+	if c == '-' {
+		neg = 1
+		c = *s
+		s += 1
+	} else {
+		neg = 0
+		if c == '+'{
+			c = *s
+			s += 1
 		}
-		if string.isdigit(*cp) == runtime.True {
-			value = *cp - '0'
-		}else {
-			value = string.tolower(*cp) - a + 10
+	}
+	if ((base == 0 || base == 16) &&
+	    c == '0' && (*s == 'x' || *s == 'X')) {
+		c = s[1]
+		s += 2
+		base = 16
+	}
+	if base == 0 {
+		// TODO: base = c == '0' ? 8 : 10;
+		if c == '0' base = 8
+		else 		base = 10
+	}
+	// cutoff = neg ? LONG_MIN : LONG_MAX;
+	if neg != null {
+		cutoff = runtime.U64_MIN
+	}else{
+		cutoff = runtime.U64_MAX
+	}
+	cutlim = cutoff % base
+	cutoff /= base
+	if neg != null {
+		if (cutlim > 0) {
+			cutlim -= base
+			cutoff += 1
 		}
-		if value >= 10  
+		cutlim = 0 - cutlim
+	}
+	acc = 0
+	any = 0
+	_base<i32> = 10
+	loop {
+		if string.isdigit(c) == runtime.True {
+			c -= '0'
+		}else if (string.isalpha(c) == runtime.True) {
+			if string.isupper(c) == runtime.True {
+				c -= 'A' - _base
+			}else{
+				c -= 'a' - _base
+			}
+			// c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		}else	break
+
+		if (c >= base)
 			break
-        result = result * base + value
-        cp += 1
-    }
-    if endp
-        *endp = cp
-    return result
-}
+		if (any < 0)
+			continue
+		if (neg) {
+			if (acc < cutoff || (acc == cutoff && c > cutlim)) {
+				any = -1
+				acc = runtime.U64_MIN
+				// errno = ERANGE
+			} else {
+				any = 1
+				acc *= base
+				acc -= c
+			}
+		} else {
+			if (acc > cutoff || (acc == cutoff && c > cutlim)) {
+				any = -1
+				acc = runtime.U64_MAX
+				// errno = ERANGE;
+			} else {
+				any = 1
+				acc *= base
+				acc += c
+			}
+		}
+		//TODO: c = *s++
+		c = *s
+		s += 1
+	}
+	if (endptr != 0){
+		*endptr = nptr
+		if any != 0 {
+			*endptr = s - 1
+		}
+		// *endptr = (char *) (any ? s - 1 : nptr);
+	}
+	return acc
+} 
 //@param nptr string
 //@param endptr NULL
 //@param base 10
@@ -181,7 +249,7 @@ func strtol(nptr<i8*>, endptr<u64*>, base<i32>)
 	acc = 0
 	any = 0
 	_base<i32> = 10
-	while runtime.True {
+	loop {
 	// for (acc = 0, any = 0;; c = (unsigned char) *s++) {
 		if string.isdigit(c) == runtime.True {
 			c -= '0'
