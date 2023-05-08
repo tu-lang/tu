@@ -39,8 +39,7 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
                 ast.TK_NUMBER: {
                     prs<string.String> = this.scanner.curlex.sub(0.(i8),2.(i8))
                     if prs.cmpstr(*"0x") == string.Equal {
-                        //TODO: parse x16 
-                        number = std.strtol(this.scanner.curlex.inner,0.(i8),16.(i8))
+                        number = std.strtoul(this.scanner.curlex.inner,0.(i8),16.(i8))
                     }else{
                         if(this.scanner.curlex.inner[0] == '-'){
                             inst.inst.negative = true
