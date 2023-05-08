@@ -159,7 +159,7 @@ Scanner::parseString(c<i8>)
             //dyn type
             ts += char(c)
 
-            if !specs[ts] {
+            if ts != "\\0" && !specs[ts] {
                 utils.errorf(
                     "SyntaxError: sepc [%s] character literal should surround with single-quote %s line:%d column:%d\n ",
                     ts, this.filepath,int(this.line),int(this.column)

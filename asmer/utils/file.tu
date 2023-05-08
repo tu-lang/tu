@@ -7,8 +7,8 @@ func fwrite(fd<i64>,buffer<u64>,size<u64>){
 	s<i8> = 1
 	ret<u64> = std.fwrite(buffer,size,s,fd)
 	if ret != size {
-		fmt.print("fwrite err\n")
-		return false
+		printf("fwrite err expect:%d acutal:%d\n".(i8),size,ret)
+		os.die("")
 	}
 	return true
 }
