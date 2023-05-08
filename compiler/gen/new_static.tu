@@ -52,7 +52,19 @@ StructInitExpr::compile(ctx){
 		if field == null  this.check(false,"struct member field not exist :"+ key)
 		rtok = ast.U64
 		isunsigned = false
-		if type(value) == type(IntExpr) {
+		if type(value) == type(BoolExpr) {
+			rtok = value.getType(ctx)
+			ie   = value
+			compile.writeln("	mov $%d,%%rax",ie.lit)
+		}else if type(value) == type(NullExpr) {
+			rtok = value.getType(ctx)
+			ie   = value
+			compile.writeln("	mov $%d,%%rax",0)
+		}else if type(value) == type(CharExpr) {
+			rtok = value.getType(ctx)
+			ie   = value
+			compile.writeln("	mov $%s,%%rax",ie.lit)
+		}else if type(value) == type(IntExpr) {
 			rtok = value.getType(ctx)
 			ie   = value
 			compile.writeln("	mov $%s,%%rax",ie.lit)

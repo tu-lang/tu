@@ -24,6 +24,28 @@ A::test(){
 
 	fmt.println("chain static member test success")
 }
+mem T
+{
+    i32 b
+    i32 b2
+    i32 n
+    i32 c 
+}
+T::test_memfield_assign(){
+    if this.b == true {} else {
+        os.die("shoule be true")
+    }
+    if this.b2 == false {} else {
+        os.die("should be false")
+    }
+    if this.n == null {} else {
+        os.die("should be null")
+    }
+    if this.c == 'c' {} else {
+        os.die("should be c")
+    }
+    fmt.println("test mem field base type assign success")
+}
 func main(){
 	obj<A> = new A{
 		inner: B{
@@ -38,4 +60,12 @@ func main(){
 		}
 	} 
 	obj.test()
+	//test2
+    v<T> = new T {
+        b : true,
+        b2 : false,
+        c : 'c',
+        n : null
+    }
+	v.test_memfield_assign()
 }
