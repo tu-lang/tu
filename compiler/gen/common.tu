@@ -1,5 +1,5 @@
-use ast
-use compile
+use compiler.ast
+use compiler.compile
 
 Null  = null
 EmptyStr = ""

@@ -1,8 +1,10 @@
 use fmt
-use parser.package
-use ast
+use compiler.parser.package
+use compiler.ast
 use std
-use utils
+use compiler.utils
+use compiler.compile
+use compiler.internal
 
 class BuiltinFuncExpr : ast.Ast {
     funcname  = funcname

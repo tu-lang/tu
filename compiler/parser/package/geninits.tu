@@ -1,8 +1,8 @@
- use parser
- use internal
- use ast
+ use compiler.parser
+ use compiler.internal
+ use compiler.ast
  use std
- use utils
+ use compiler.utils
  
  Package::InsertInitFunc(p){
 	f = new ast.Function()

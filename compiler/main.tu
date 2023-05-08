@@ -1,9 +1,9 @@
 use fmt
 use os 
 use std
-use utils
-use compile
-use parser
+use compiler.utils
+use compiler.compile
+use compiler.parser
 
 # origin file
 code_file = ""
@@ -47,8 +47,8 @@ func compile(){
     }
 }
 func debug(){
-    parser = new parser.Parser()
-    parser.print()
+    p = new parser.Parser()
+    p.print()
 }
 
 func main() {
@@ -64,7 +64,7 @@ func main() {
                 i += 1
                 run = true
             }
-            "-d"  : utils.debug_mode = 1          # debug mode
+            "-d"  : compile.trace = true          # debug mode
             "-g"  : compile.debug    = true
             "-og" : compile.sdebug   = true
             "-s"  : {

@@ -1,6 +1,6 @@
-use ast
-use gen
-use utils
+use compiler.ast
+use compiler.gen
+use compiler.utils
 
 Parser::parseStatement()
 {

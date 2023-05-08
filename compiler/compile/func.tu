@@ -1,8 +1,8 @@
 use std
-use ast
-use parser.package
-use parser
-use utils
+use compiler.ast
+use compiler.parser.package
+use compiler.parser
+use compiler.utils
 
 func registerFunc(fn){
     utils.debugf("compile.registerFunc() funcname:%s",fn.name)

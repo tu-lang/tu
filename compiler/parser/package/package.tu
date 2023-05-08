@@ -1,9 +1,9 @@
 use std
 use std.regex
-use utils
-use ast
-use parser
-use compile
+use compiler.utils
+use compiler.ast
+use compiler.parser
+use compiler.compile
 
 class Package {
     parsers = {} # parsers map[filepath + name] = parser
@@ -56,12 +56,12 @@ Package::parse()
         if !file.isFile() continue
         filepath = file.path
         if string.sub(filepath,std.len(filepath) - 3) == ".tu" {
-            parser = new parser.Parser(filepath,this)
+            p = new parser.Parser(filepath,this)
             
-            parser.fileno = compile.fileno
-            this.parsers[filepath] = parser
+            p.fileno = compile.fileno
+            this.parsers[filepath] = p
             utils.notice("start parse the package:%s file:%s",abpath,filepath)
-            parser.parse()
+            p.parse()
         }
     }
     return true
@@ -75,8 +75,8 @@ Package::geninitid(){
     return id
 }
 Package::getFunc(name , is_extern){
-    for(parser : this.parsers){
-        ret  = parser.getFunc(name,is_extern)
+    for(p : this.parsers){
+        ret  = p.getFunc(name,is_extern)
         if ret != null return ret
     }
     return null

@@ -1,5 +1,5 @@
-use ast
-use utils
+use compiler.ast
+use compiler.utils
 
 class MatchStmt : ast.Ast {
     cond

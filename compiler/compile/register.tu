@@ -1,9 +1,9 @@
 
-use ast
+use compiler.ast
 use std
 use fmt
 use os
-use gen
+use compiler.gen
 
 func GenAddr(var){
     if var.is_local {

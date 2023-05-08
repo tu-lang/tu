@@ -1,23 +1,23 @@
 use fmt
 use os
-debug_mode<i32> = 0
+use compiler.compile
 
 func notice(args...){
-    if debug_mode == 1 {
+    if compile.trace {
         fmt.print("[notice]\t")
         msg1 = fmt.sprintf(args)
         fmt.println(print_green(msg1))
     }
 }
 func debug(args...){
-    if debug_mode == 1 {
+    if compile.trace {
         fmt.print("[debug]\t")
         fmt.println(args)
     }
 }
 func debugf(args...){
-    if debug_mode != 1 {
-        return debug_mode
+    if compile.trace {
+        return true
     }
     fmt.print("[debugf]\t")
     msg1 = fmt.sprintf(args)

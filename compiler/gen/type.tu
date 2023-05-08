@@ -1,8 +1,8 @@
-use ast
-use compile
+use compiler.ast
+use compiler.compile
 use std
 use fmt
-use parser.package
+use compiler.parser.package
 
 class TypeAssertExpr : ast.Ast {
 	func init(line,column){

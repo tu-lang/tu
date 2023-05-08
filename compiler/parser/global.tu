@@ -1,10 +1,10 @@
 use std
 use fmt
 use os
-use utils
-use ast
-use gen
-use parser.package
+use compiler.utils
+use compiler.ast
+use compiler.gen
+use compiler.parser.package
 use string
 
 Parser::parseEnumDef(){

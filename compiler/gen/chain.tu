@@ -1,9 +1,9 @@
-use ast
-use parser
-use parser.package
-use compile
+use compiler.ast
+use compiler.parser
+use compiler.parser.package
+use compiler.compile
 use std
-use utils
+use compiler.utils
 
 class ChainExpr   : ast.Ast {
     first

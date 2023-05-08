@@ -1,7 +1,7 @@
-use ast
-use compile
+use compiler.ast
+use compiler.compile
 use fmt
-use utils
+use compiler.utils
 
 class DelRefExpr  : ast.Ast { 
     expr 

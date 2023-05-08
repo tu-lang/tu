@@ -1,6 +1,6 @@
 use std
 use fmt
-use parser.package
+use compiler.parser.package
 
 Parser::addFunc(name, f)
 {

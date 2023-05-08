@@ -1,9 +1,9 @@
 use string
 use std
-use ast
-use parser.scanner
-use utils
-use gen
+use compiler.ast
+use compiler.parser.scanner
+use compiler.utils
+use compiler.gen
 
 Parser::parseStructDef()
 {

@@ -1,6 +1,6 @@
-use utils
-use ast
-use compile
+use compiler.utils
+use compiler.ast
+use compiler.compile
 
 func call_operator(opt,name)
 {

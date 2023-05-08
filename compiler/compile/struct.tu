@@ -1,9 +1,9 @@
-use gen 
-use ast
+use compiler.gen 
+use compiler.ast
 use std
 use os
-use parser
-use parser.package
+use compiler.parser
+use compiler.parser.package
 
 func InitStructVar(gvar , s , fields){
     utils.debug("compile.InitStructVar()")

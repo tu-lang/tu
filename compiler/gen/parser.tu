@@ -1,7 +1,7 @@
-use compile
+use compiler.compile
 use std
-use parser
-use utils
+use compiler.parser
+use compiler.utils
 
 parser.Parser::compile()
 {    

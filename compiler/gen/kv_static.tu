@@ -1,9 +1,9 @@
-use utils
-use ast
-use internal
-use compile
-use parser
-use parser.package
+use compiler.utils
+use compiler.ast
+use compiler.internal
+use compiler.compile
+use compiler.parser
+use compiler.parser.package
 use string
  
 IndexExpr::compileStaticIndex(ctx,size){

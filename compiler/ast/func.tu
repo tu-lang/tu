@@ -1,5 +1,5 @@
-use gen
-use utils
+use compiler.gen
+use compiler.utils
 use std
 use os
 

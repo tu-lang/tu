@@ -1,10 +1,10 @@
-use ast
+use compiler.ast
 use os
 use std
 use fmt
-use gen
-use utils
-use parser.scanner
+use compiler.gen
+use compiler.utils
+use compiler.parser.scanner
 
 Parser::parseChainExpr(first){
     utils.debug("parser.Parser::parseChainExpr()")

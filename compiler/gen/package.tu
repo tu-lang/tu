@@ -1,7 +1,7 @@
-use parser.package
-use ast
-use compile
-use utils
+use compiler.parser.package
+use compiler.ast
+use compiler.compile
+use compiler.utils
 use string
 
 package.Package::genStruct(s)

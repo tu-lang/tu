@@ -1,6 +1,6 @@
-use parser
-use internal
-use ast
+use compiler.parser
+use compiler.internal
+use compiler.ast
 use std
 
 Package::InsertInitVarExpression(expr){

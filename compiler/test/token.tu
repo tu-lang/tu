@@ -1,4 +1,4 @@
-use ast
+use compiler.ast
 
 token = [ 
 	//FIXME: int(ast.INT),   int(ast.INT),  int(ast.STRING) ,int(ast.FLOAT), int(ast.CHAR),int(ast.CHAR),

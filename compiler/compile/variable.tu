@@ -1,6 +1,7 @@
-use ast
-use parser
-use parser.package
+use compiler.ast
+use compiler.parser
+use compiler.parser.package
+use compiler.utils
 use fmt
 
 func registerStrings(c){

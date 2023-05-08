@@ -1,6 +1,6 @@
-use ast
-use compile
-use utils
+use compiler.ast
+use compiler.compile
+use compiler.utils
 
 
 class MapExpr : ast.Ast { 

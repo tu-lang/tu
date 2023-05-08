@@ -1,8 +1,8 @@
-use ast
-use parser
-use compile
+use compiler.ast
+use compiler.parser
+use compiler.compile
 use std
-use utils
+use compiler.utils
 
 
 ChainExpr::indexgen(ctx)

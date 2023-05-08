@@ -1,6 +1,6 @@
 use std
-use gen
-use utils
+use compiler.gen
+use compiler.utils
 
 class Block
 {

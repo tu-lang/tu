@@ -1,7 +1,8 @@
-use ast
-use compile
-use utils
-use parser
+use compiler.ast
+use compiler.compile
+use compiler.utils
+use compiler.parser
+use compiler.internal
 
 class OperatorHelper {
 	ctx # [Context]

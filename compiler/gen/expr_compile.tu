@@ -1,4 +1,4 @@
-use ast 
+use compiler.ast 
 use string
 
 BinaryExpr::expr_compile(){

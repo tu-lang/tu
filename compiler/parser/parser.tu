@@ -1,8 +1,8 @@
 use string
 use std
-use ast
-use parser.scanner
-use utils
+use compiler.ast
+use compiler.parser.scanner
+use compiler.utils
 use runtime
 
 EMPTY_STR = ""

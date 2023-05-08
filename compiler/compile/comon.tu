@@ -1,8 +1,8 @@
 
-use ast
-use utils
-use parser
-use parser.package
+use compiler.ast
+use compiler.utils
+use compiler.parser
+use compiler.parser.package
 
 
 out    = null # current file fd
@@ -13,6 +13,7 @@ fileno = 1
 debug  = false
 sdebug = false
 nostd  = false
+trace    = false
 
 func genast(filename)
 {

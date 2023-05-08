@@ -1,4 +1,4 @@
-use utils
+use compiler.utils
 
 class Context {
     vars         = {} # map{string:VarExpr}

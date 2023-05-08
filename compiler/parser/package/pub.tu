@@ -1,4 +1,4 @@
-use compile
+use compiler.compile
 use std
 
 packages = {} # map{name: Package}

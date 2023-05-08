@@ -1,6 +1,6 @@
-use utils
-use ast
-use parser.package
+use compiler.utils
+use compiler.ast
+use compiler.parser.package
 
 
 uniquesig = "initvars_" + utils.strRand()

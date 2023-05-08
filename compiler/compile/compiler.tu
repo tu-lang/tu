@@ -1,9 +1,9 @@
-use utils
-use parser
-use parser.package
+use compiler.utils
+use compiler.parser
+use compiler.parser.package
 use os 
-use internal
-use ast
+use compiler.internal
+use compiler.ast
 use fmt
 
 stdpackages = {

@@ -1,10 +1,10 @@
-use internal
+use compiler.internal
 use runtime
 use fmt
 use os
-use utils
-use parser
-use ast
+use compiler.utils
+use compiler.parser
+use compiler.ast
 
 # the table for type casts
 i32i8  = "movsbl %al, %eax"

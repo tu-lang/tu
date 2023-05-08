@@ -1,10 +1,10 @@
-use ast 
-use compile
-use internal
-use parser
-use parser.package
+use compiler.ast 
+use compiler.compile
+use compiler.internal
+use compiler.parser
+use compiler.parser.package
 use std
-use utils
+use compiler.utils
 
 class NewExpr : ast.Ast {
     package = ""

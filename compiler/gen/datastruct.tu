@@ -1,10 +1,10 @@
-use parser
+use compiler.parser
 use std
 use fmt
-use ast
-use compile
+use compiler.ast
+use compiler.compile
 use os
-use utils
+use compiler.utils
 
 
 class  ArgsPosExpr : ast.Ast {

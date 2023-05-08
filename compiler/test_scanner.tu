@@ -1,13 +1,13 @@
-use parser
-use test
+use compiler.parser
+use compiler.test
 use os
-use ast
-use parser.package
+use compiler.ast
+use compiler.parser.package
 
 
 func test(){
 	mpkg = new package.Package("main","main",false)
-	p = new parser.Parser("./test/case",mpkg)
+	p = new parser.Parser("./compiler/test/case",mpkg)
 	reader = p.scanner
 
 	for v  : test.token {

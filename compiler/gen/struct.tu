@@ -1,7 +1,7 @@
-use ast
-use compile
+use compiler.ast
+use compiler.compile
 use std
-use parser.package
+use compiler.parser.package
 
 
 class StructInitExpr : ast.Ast {

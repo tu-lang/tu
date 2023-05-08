@@ -1,8 +1,8 @@
-use parser.package
-use ast
+use compiler.parser.package
+use compiler.ast
 use std
-use compile
-use utils
+use compiler.compile
+use compiler.utils
 use fmt
 
 class VarExpr : ast.Ast {

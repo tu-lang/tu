@@ -1,6 +1,6 @@
-use parser
-use ast
-use utils
+use compiler.parser
+use compiler.ast
+use compiler.utils
 use std
 use string
 

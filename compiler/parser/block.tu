@@ -1,10 +1,10 @@
 
 use std
 use fmt
-use ast
+use compiler.ast
 use string
-use gen
-use utils
+use compiler.gen
+use compiler.utils
 
 Parser::parseBlock(member)
 {

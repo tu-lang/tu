@@ -1,5 +1,5 @@
 
-use ast
+use compiler.ast
 
 EOF = -1
 keywords = {

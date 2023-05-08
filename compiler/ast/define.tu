@@ -1,4 +1,4 @@
-use compile
+use compiler.compile
 
 # auto increment closure id
 closureidx = 0

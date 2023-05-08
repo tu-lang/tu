@@ -1,7 +1,7 @@
 use std
 use os
 use fmt
-use compile
+use compiler.compile
 use runtime
 
 class Ast {

@@ -1,4 +1,4 @@
-use ast
+use compiler.ast
 use std
 
 class ForStmt : ast.Ast {

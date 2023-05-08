@@ -1,6 +1,6 @@
-use utils
+use compiler.utils
 use std
-use gen
+use compiler.gen
 
 class Class 
 {

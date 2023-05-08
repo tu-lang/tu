@@ -1,9 +1,9 @@
-use ast
+use compiler.ast
 use string
 use std
-use parser.package
-use gen
-use utils
+use compiler.parser.package
+use compiler.gen
+use compiler.utils
 
 Parser::parseClassDef()
 {
