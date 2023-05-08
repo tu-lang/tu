@@ -42,7 +42,7 @@ install:
 	@mkdir -p $(prefix)/lib/copkg
 	@rm -rf $(prefix)/lib/copkg/*
 	@cp -r runtime $(prefix)/lib/copkg/
-	@cp -r std/* $(prefix)/lib/copkg/
+	@cp -r library/* $(prefix)/lib/copkg/
 	@mkdir -p $(prefix)/lib/coasm
 	@rm -rf $(prefix)/lib/coasm/*
 	@cp -r syscall/* $(prefix)/lib/coasm
