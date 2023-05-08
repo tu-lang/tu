@@ -2,7 +2,7 @@ use fmt
 use os
 debug_mode<i32> = 0
 
-func debug(size,args...){
+func debug(args...){
     if debug_mode == 1 {
         fmt.println(args)
     }

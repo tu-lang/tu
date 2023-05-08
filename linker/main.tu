@@ -42,7 +42,7 @@ func scan(){
         if !std.is_dir(dir) os.die(dir + " not exist")
         # 迭代目录文件
         fd = std.opendir(dir)
-        while true {
+        loop {
             file = fd.readdir()
             if !file break
             if !file.isFile() continue
@@ -89,7 +89,7 @@ func command() {
                 i += 2
             }
             _ : {
-                scan_files[] = os.argv()[i+1]   # link object
+                scan_dirs[] = os.argv()[i]   # link object
                 i += 1
             }
         }

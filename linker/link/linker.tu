@@ -75,8 +75,11 @@ Linker::collectInfo()
 				symLink.recv = null
 				if std.exist(symLink.name,this.symDef) {
 					def = this.symDef[symLink.name]
-					utils.debug("符号名定义冲突: ",symLink.name,e.elfdir,def.prov.elfdir)
-					os.exit(-1)
+					defm<linux.Elf64_Sym> = def.prov.symTab[def.name]
+					if linux.ELF64_ST_BIND(defm.st_info) == linux.STB_GLOBAL {
+						utils.debug("符号名定义冲突: ",symLink.name,e.elfdir,def.prov.elfdir)
+						os.exit(-1)
+					}
 				}
 				this.symDef[symLink.name] = symLink
 			}
