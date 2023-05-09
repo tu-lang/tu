@@ -48,9 +48,12 @@ String::sub(start<i64> , len<i64>){
 }
 String::tonumber(){
 	dl<i64> = 0
-    if this.sub(0.(i8),2.(i8)).(String).cmpstr(*"0x") == string.Equal
-         dl = std.strtol(this.inner,0.(i8),16.(i8))
-    else dl = std.strtol(this.inner,0.(i8),10.(i8))
+	if this.inner[0] == '0' && this.inner[1] == 'x'
+        dl = std.strtoul(this.inner,0.(i8),16.(i8))
+	else if this.inner[0] == '-'
+    	dl = std.strtol(this.inner,0.(i8),10.(i8))
+    else
+		dl = std.strtoul(this.inner,0.(i8),10.(i8))
 	return dl
 }
 String::cat(t<String>) {
