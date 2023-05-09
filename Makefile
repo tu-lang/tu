@@ -55,16 +55,14 @@ test_memory:
 
 check: install test
 
-test_asmer:
-	cd asmer;sh test.sh
-test_linker:
-	sh linker/test.sh
 test_compiler:
-	compiler/test.sh
+	sh asmer/test.sh
+	sh linker/test.sh
+	sh compiler/test.sh
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 #make test -j9
-test-all: test_asmer test_compiler test_linker $(cases)
+test-all: test_compiler $(cases)
 	@echo "all test passed"
 	
 test: $(cases)
