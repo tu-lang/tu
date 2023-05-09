@@ -26,7 +26,7 @@ class Compiler {
 }
 Compiler::print_help(){
     fmt.println("usage: ./tu [options|file.tu...|dir]\n" +
-            "  run          编译成汇编后进行链接生成二进制可执行文件直接运行\n" +
+            "  build        编译成汇编后进行链接生成二进制可执行文件\n" +
             "  -s  *.tu|dir 编译为tulang代码为linux-amd64汇编文件\n" +
             "  -c  *.s |dir 编译汇编为elf&pecoff跨平台可重定向文件\n" +
             "  -o  *.o |dir 链接elf&pecofff可重定向文件生成最终执行程序\n" +
@@ -40,7 +40,7 @@ Compiler::commadparse(){
     i = 0
     while i < std.len(os.argv())  {
         match os.argv()[i] {
-            "run" : {
+            "build" : {
                 this.type = "compiler" 
                 this.flag_run = true
                 this.code_files[] = os.argv()[i + 1]
