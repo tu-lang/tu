@@ -33,8 +33,8 @@ assert(){
     check
     #log "[asmer] toa -p ."
     #toa -p .
-    echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib"
-    gcc -g -c *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib 
+    echo "tua -p . -p /usr/local/lib/coasm"
+    tua -p . -p /usr/local/lib/coasm
     echo "start linking..."
     log "[linker] tul -p ."
     tul -p .

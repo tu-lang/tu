@@ -18,7 +18,7 @@ BUILD_LIBA = build_install_liba() {                              	\
 	" > a.tu;							\
 	tu -s a.tu;							\
 	rm a.s;								\
-	ta -p . $(prefix)/lib/coasm;					\
+	tua -p . -p $(prefix)/lib/coasm;					\
 	ar -rc tulang.a *.o;						\
 	mv tulang.a ../asmer/;						\
 	mv *.o $(prefix)/lib/colib;					\
