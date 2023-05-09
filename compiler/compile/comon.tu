@@ -13,7 +13,7 @@ fileno = 1
 debug  = false
 sdebug = false
 nostd  = false
-trace    = false
+trace  = false
 
 func genast(filename)
 {

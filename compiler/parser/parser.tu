@@ -50,7 +50,7 @@ Parser::init(filepath,pkg) {
     this.filename = string.sub(fullname,0,std.len(fullname) - 3)
     this.asmfile  = this.filename + ".s"
     if pkg.package != "main"
-        this.asmfile  = "co_" + pkg.package + "_" + this.asmfile
+        this.asmfile  = "co_" + pkg.getFullName() + "_" + this.asmfile
     
     this.scanner = new scanner.Scanner(filepath,this)
     this.filenameid = this.label() + ".L.filename." +  ast.incr_labelid()
