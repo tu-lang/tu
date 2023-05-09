@@ -31,13 +31,13 @@ assert(){
     log "[compile] tuc -s $input -nostd"
     clean "*.s"
     clean "*.o"
-    tu -s $input -nostd
+    tuc -s $input -nostd
     check
-    log "[asmer] tua -p . /usr/local/lib/coasm"
-    tua -p . 
+    log "[asmer] tu -c . -c /usr/local/lib/coasm"
+    tu -c . 
     echo "start linking..."
-    echo "tul -p . /usr/local/lib/colib"
-    tul -p . /usr/local/lib/colib
+    echo "tl -o . -o /usr/local/lib/colib"
+    tu -o . -o /usr/local/lib/colib
     chmod 777 a.out
     check
     echo "exec a.out..."

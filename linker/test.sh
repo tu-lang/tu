@@ -27,13 +27,13 @@ check(){
 
 assert(){
     log "[compile] tu -s linker/main.tu "
-    tu -s linker/main.tu
+    tuc -s linker/main.tu
     check
-    echo "tua -p /usr/local/lib/coasm ."
-    tua -p . -p /usr/local/lib/coasm
+    echo "tu -c /usr/local/lib/coasm -c ."
+    tu -c . -c /usr/local/lib/coasm
     echo "start linking..."
-    log "[linker] tul -p ."
-    tul -p .
+    log "[linker] tu -o ."
+    tu -o .
     check
     chmod 777 a.out
     mv a.out tl_test

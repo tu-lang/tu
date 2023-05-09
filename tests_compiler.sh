@@ -28,7 +28,7 @@ assert(){
     expected="$1"
     input="$2"
     log "[compile] tu -s $input ..."
-    tu -s $input
+    tuc -s $input
     check
     echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
     gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main 

@@ -27,7 +27,7 @@ check(){
 
 test_asmer_compile(){
     log "[compile] tu -s asmer/main.tu "
-    tu -s asmer/main.tu
+    tuc -s asmer/main.tu
     check
     gcc -g  *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main 
     check
@@ -41,7 +41,7 @@ test_asmer_compile(){
 }
 test_all(){
     log "[compile] tu -s asmer/test.tu "
-    tu -s asmer/test.tu
+    tuc -s asmer/test.tu
     check
     gcc -g  *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main 
     check

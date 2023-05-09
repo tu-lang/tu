@@ -30,15 +30,10 @@ build-liba:
 	@$(BUILD_LIBA); build_install_liba
 	@echo "install liba  to $(prefix)/lib/colib success"
 
-.PHONY: install-bin
-install-bin: 
-	@cp compiler/bin/amd64_linux_tuc $(prefix)/bin/tuc
-	@cp linker/bin/amd64_linux_tl2 $(prefix)/bin/tul
-	@cp asmer/bin/amd64_linux_tua $(prefix)/bin/tua
-	@echo "tu bin installed"
-	
 .PHONY: install
 install: 
+	@cp release/tu $(prefix)/bin/tu
+	@echo "tu bin installed"
 	@mkdir -p $(prefix)/lib/copkg
 	@rm -rf $(prefix)/lib/copkg/*
 	@cp -r runtime $(prefix)/lib/copkg/

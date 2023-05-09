@@ -29,15 +29,15 @@ assert(){
     expected="$1"
     input="$2"
     log "[compile] tu -s $input ..."
-    tu -s $input
+    tuc -s $input
     check
     #log "[asmer] toa -p ."
     #toa -p .
-    echo "tua -p . -p /usr/local/lib/coasm"
-    tua -p . -p /usr/local/lib/coasm
+    echo "tu -c . -c /usr/local/lib/coasm"
+    tu -c . -c /usr/local/lib/coasm
     echo "start linking..."
-    log "[linker] tul -p ."
-    tul -p .
+    log "[linker] tu -c ."
+    tu -o .
     check
     chmod 777 a.out
     echo "exec a.out..."

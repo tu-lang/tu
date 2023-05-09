@@ -27,7 +27,7 @@ check(){
 
 assert(){
     log "[compile] tu -s compiler/$1 "
-    tu -s "$1"
+    tuc -s "$1"
     check
     echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
     gcc -g  *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main 

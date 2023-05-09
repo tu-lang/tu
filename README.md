@@ -3,20 +3,17 @@
 <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/tu-lang/tu">
 </p>
 
-tu-lang(凸）是一种编程语言，旨在创造一种非常简单的零依赖(no glibc)动态&&静态语言,全静态链接，已屏蔽了基于c/c++实现的compiler、asmer、linker，目前正在自举中...
-```asciidoc
-tu      [options] file.tu        
-    -s    file  ast -> asm       编译.tu代码 生成.s汇编文件
-    -run  file  ast -> asm       基于gcc编译链接后运行(no libc)
-    -g                           段错误时打印详细栈信息
-    -d                           打印编译过程信息
-ta      [options] file.s        
-    -c    file.s  -> file.tu      编译.s自定义汇编语言,翻译机器码并生成.o elf|pe/coff文件
-    -p    path path...           批量扫描目录编译.s文件生成.o elf文件
-    -print                       打印token
-tl      [options|file.o...] 
-    -p    path ... -> a.out      指定多个目录,自动扫描所有.0文件进行链接生成可执行程序
-    file.o  ...-> a.out          指定多个file.o进行链接    
+tu-lang(凸）是一种编程语言，旨在创造一种非常简单的零依赖(no glibc)动态&&静态语言,全静态链接，已屏蔽了基于c/c++实现的compiler、asmer、linker，`目前已自举完成: compiler纯动态语法，asmer纯静态语法，linker动静混合语法`.
+```
+tu  [options] file.tu        
+    run *.tu                编译成汇编后进行链接生成二进制可执行文件直接运行
+    -s  *.tu|dir            编译为tulang代码为linux-amd64汇编文件
+    -c  *.s |dir            编译汇编为elf&pecoff跨平台可重定向cpu指令集文件
+    -o  *.o |dir            链接elf&pecofff可重定向文件生成最终执行程序
+    -d                      开启trace日志打印编译详细过程
+    -gcc                    基于gcc链接生成可执行程序
+    -g                      编译tu文件时带上debug段信息,支持栈回溯
+    -nostd                  不编译runtime&std相关内置库代码
 ```
 ## @自举进度
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
@@ -25,7 +22,7 @@ tl      [options|file.o...]
   - [x] run 自动编译链接后执行
   - [x] -s  编译为低等级汇编码
   - [x] -d  开启打印debug信息
-- [ ] ta([asmer](./asmer))
+- [x] ta([asmer](./asmer))
   - [x] -c  翻译指定汇编码为linux(elf),windows(pe/coff)
   - [x] -p  批量扫描路径下的汇编
 - [x] tl([linker/demo](./linker))

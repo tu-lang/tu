@@ -16,7 +16,7 @@ func debug(args...){
     }
 }
 func debugf(args...){
-    if compile.trace {
+    if !compile.trace {
         return true
     }
     fmt.print("[debugf]\t")
