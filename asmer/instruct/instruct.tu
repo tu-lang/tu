@@ -1,4 +1,4 @@
-use parser
+use asmer.parser
 use std
 use string 
 
@@ -64,7 +64,7 @@ mem Instruct {
     i32         line
     i32         column
 }
-Instruct::init(type<i32>,parser<parser.Parser>)
+Instruct::init(type<i32>,p<parser.Parser>)
 {
     this.str        = string.emptyS()
     this.name       = string.emptyS()
@@ -82,10 +82,10 @@ Instruct::init(type<i32>,parser<parser.Parser>)
     this.modrm = new ModRM()
     this.sib   = new SIB()
     this.inst  = new Inst()
-    this.parser = parser
+    this.parser = p
     //inmems
     this.size  = 0
     //debug
-    this.line = parser.scanner.line
-    this.column = parser.scanner.column
+    this.line = p.scanner.line
+    this.column = p.scanner.column
 }

@@ -1,9 +1,9 @@
 
 use fmt
-use asmer
+use asmer.asm
 use os 
 use std
-use utils
+use asmer.utils
 
 #[dir,dir,dir]
 scan_dirs
@@ -16,7 +16,7 @@ func print_help () {
         "usage: ./ta [options] file.s  可用的选项:\n" + 
         "  *.s      翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" +
         "  -p ...   批量翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" +
-        "  -x       打印编译过程信息信息\n"
+        "  -d       打印编译过程信息信息\n"
     )
 }
 func asmergen(){
@@ -40,7 +40,7 @@ func asmergen(){
     i = 1
     for f : scan_files {
 	    utils.smsg("[ " + i + "/" + total +"]","Compiling asm file " + f)
-        eng<asmer.Asmer> = new asmer.Asmer(f)
+        eng<asm.Asmer> = new asm.Asmer(f)
         eng.execute()
 	    utils.smsg("[ " + i + "/" + total +"]",
             fmt.sprintf("Generate %s Passed" ,eng.parser.outname)
@@ -60,8 +60,8 @@ func command() {
                 scan_dirs[] = os.argv()[i+1]    # asm dir
                 i += 2
             }
-            "-x" : {
-                utils.debug_mode = 1          # debug mode
+            "-d" : {
+                asm.trace = true                # debug mode
                 i += 1
             }
             _ : {

@@ -1,6 +1,6 @@
-use asmer
-use ast
-use utils
+use asmer.asm
+use asmer.ast
+use asmer.utils
 use std
 use std.map
 use string
@@ -35,14 +35,14 @@ mem ElfFile
 	i8*		shstrtab
 	i8*		strtab
 	i32 	shstrtab_size,strtab_size,sh_info
-	asmer.Asmer*  asmer
+	asm.Asmer*  asmer
 }
 func mapstringhashkey(k<string.String>){
     return k.hash64()
 }
-ElfFile::init(asmer<asmer.Asmer>){
+ElfFile::init(ac<asm.Asmer>){
 	utils.debug("ElfFile::init() ".(i8))
-	this.asmer = asmer
+	this.asmer = ac
     this.offset = 0
 	this.shstrtab = null
 	this.strtab   = null

@@ -1,4 +1,4 @@
-use instruct
+use asmer.instruct
 use std
 use string
 use fmt

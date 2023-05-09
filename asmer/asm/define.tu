@@ -1,5 +1,5 @@
-use elf
-use parser
+use asmer.elf
+use asmer.parser
 
 mem Asmer
 {
@@ -9,5 +9,5 @@ mem Asmer
     i32              data ,text
     i32              bytes
 }
-
+trace<i64> = 0
 Pad1<i64> = 1

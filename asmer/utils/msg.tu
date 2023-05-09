@@ -2,10 +2,10 @@ use fmt
 use os
 use std
 use string
-debug_mode<i32> = 0
+use asmer.asm
 
 func debug(args...){
-    if debug_mode == 1 {
+    if asm.trace == 1 {
         s<string.Str> = string.stringfmt(args)
         s = s.putc('\n'.(i8))
         fmt.fputs(s,std.STDOUT)

@@ -1,13 +1,12 @@
 
 use fmt
-use asmer
 use os 
 use std
-use utils
-use elf
-use parser
-use ast
-use instruct
+use asmer.utils
+use asmer.elf
+use asmer.parser
+use asmer.ast
+use asmer.instruct
 
 func codegen(filename){
     fmt.printf("[buiding] %s\n",filename)
@@ -68,7 +67,7 @@ func codegen(filename){
 func main()
 {
     if(os.argc() > 1) return codegen(os.argv()[0])
-    dir = "./cases"
+    dir = "./asmer/cases"
     if !std.is_dir(dir) os.die(dir + " not exist")
     fd = std.opendir(dir)
     loop {

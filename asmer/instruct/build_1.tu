@@ -1,6 +1,6 @@
-use ast
-use utils
-use parser
+use asmer.ast
+use asmer.utils
+use asmer.parser
 use string
 
 Instruct::instheads(){

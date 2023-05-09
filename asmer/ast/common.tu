@@ -1,6 +1,5 @@
-use asmer
-use elf
-use utils
+use asmer.elf
+use asmer.utils
 use std
 use string
 use fmt

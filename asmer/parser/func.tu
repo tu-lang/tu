@@ -1,6 +1,6 @@
-use ast
-use utils
-use instruct
+use asmer.ast
+use asmer.utils
+use asmer.instruct
 use string
 
 Parser::parseFunction(labelname<string.String>) {

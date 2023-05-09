@@ -1,7 +1,7 @@
-use ast
-use elf
-use utils
-use parser
+use asmer.ast
+use asmer.elf
+use asmer.utils
+use asmer.parser
 use std
 use std.map
 use fmt

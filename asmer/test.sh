@@ -27,12 +27,11 @@ check(){
 
 test_asmer_compile(){
     log "[compile] tu -s asmer/main.tu "
-    tu -s main.tu
+    tu -s asmer/main.tu
     check
-    echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
     gcc -g  *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main 
     check
-    ./a.out -p cases
+    ./a.out -p asmer/cases
     check
     clean "a.out"
     clean "*.s"
@@ -42,9 +41,8 @@ test_asmer_compile(){
 }
 test_all(){
     log "[compile] tu -s asmer/test.tu "
-    tu -s test.tu
+    tu -s asmer/test.tu
     check
-    echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
     gcc -g  *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main 
     check
     ./a.out

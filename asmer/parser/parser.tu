@@ -1,7 +1,7 @@
-use ast
-use elf
-use utils
-use instruct
+use asmer.ast
+use asmer.elf
+use asmer.utils
+use asmer.instruct
 use std
 use string
 use os

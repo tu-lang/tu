@@ -1,7 +1,6 @@
-use asmer
-use ast
-use utils
-use instruct
+use asmer.ast
+use asmer.utils
+use asmer.instruct
 
 Instruct::genZeroInst() {
     utils.debug("Instruct::genZeroInst()".(i8))

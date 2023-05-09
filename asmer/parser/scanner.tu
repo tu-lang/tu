@@ -1,5 +1,5 @@
-use ast
-use utils
+use asmer.ast
+use asmer.utils
 use std
 use string
 use os
