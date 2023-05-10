@@ -15,27 +15,8 @@ tu  [options] file.tu
     -g                      编译tu文件时带上debug段信息,支持栈回溯
     -nostd                  不编译runtime&std相关内置库代码
 ```
-## @自举进度
-更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
-
-- [x] tu([compiler](./compiler))
-  - [x] run 自动编译链接后执行
-  - [x] -s  编译为低等级汇编码
-  - [x] -d  开启打印debug信息
-- [x] ta([asmer](./asmer))
-  - [x] -c  翻译指定汇编码为linux(elf),windows(pe/coff)
-  - [x] -p  批量扫描路径下的汇编
-- [x] tl([linker/demo](./linker))
-  - [x] *.o 链接指定的linux(elf) 文件生成可执行linux程序
-  - [ ] *.o 链接指定的windows(pe) 文件生成可执行windows程序
-  - [ ] *.o 链接指定的mac(MachO) 文件生成可执行mac程序
-  - [x] -p  链接指定目录生成可执行程序
-- [x] runtime
-  - [x] garbage collect
-  - [x] standard library
-  - [x] syscall
-  - [x] stack unwind
- 
+## demo
+![gif](./assets/tulang.gif)
   
 ## env & install
 `linux`: 环境安装
@@ -44,12 +25,8 @@ $ git clone https://github.com/tu-lang/tu.git
 $ cd tu
 $ make install
 ```
-## compiler&&linker测试
-`compiler`: 编译测试
-![image](./assets/compiler_helloworld.png#w50)
-`linker`： 链接测试
-![image](./assets/linker_helloworld.png#w50)
-
+## compiler&asmer&linker测试
+更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
 - 单元测试
 ```
 > sh tests_compiler.sh
@@ -57,6 +34,7 @@ $ make install
 > sh tests_linker.sh
 > make test -j10 //并发测试
 ```
+
 ## @数据结构
 - [x] 动态类型 int string bool null array map closure object
 - [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 struct
