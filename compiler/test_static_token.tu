@@ -8,7 +8,7 @@ use compiler.parser.scanner
 class Empty{}
 func test(){
 	filecase = "./compiler/test/case"
-	reader<scanner.ScannerStatic> = new scanner.ScannerStatic(filecase,null)
+	reader<scanner.ScannerStatic> = new scanner.ScannerStatic(filecase,new Empty())
 
 	for v  : test.token {
 		if *v != reader.scan(){

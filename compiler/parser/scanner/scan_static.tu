@@ -103,7 +103,7 @@ ScannerStatic::consumeLine()
         ret.putc(c)
         c = this.next()
     }
-    return ret
+    return ret.dyn()
 }
 
 ScannerStatic::parseNumber(first<i8>)
@@ -186,9 +186,9 @@ ScannerStatic::scan(){
     //token
     this.get_next()
 
-    // p = this.parser
-    // p.line = int(this.line)
-    // p.column = int(this.column)
+    p = this.parser
+    p.line = int(this.line)
+    p.column = int(this.column)
     return this.curToken
 }
 
@@ -349,7 +349,7 @@ comment:
         cn = this.peek()
         if (cn == '=') {
             c = this.next()
-            return this.token(ast.MOD_ASSIGN, string.S("%="))
+            return this.token(ast.MOD_ASSIGN, string.S(*"%="))
         }
         return this.token(ast.MOD, string.S(*"%"))
     }
