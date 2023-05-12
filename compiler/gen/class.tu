@@ -182,7 +182,8 @@ MemberExpr::assign(ctx, opt ,rhs)
     compile.Load()
     compile.Push()
 
-    rhs.compile(ctx)
+    ret1 = rhs.compile(ctx)
+    check_load(ctx,rhs,ret1)
     compile.Push()
     internal.call_object_operator(opt,this.membername,"runtime_object_unary_operator")
     return null

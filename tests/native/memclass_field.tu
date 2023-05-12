@@ -46,6 +46,32 @@ T::test_memfield_assign(){
     }
     fmt.println("test mem field base type assign success")
 }
+class Empty{}
+gd = new Empty()
+mem S1 {
+	u64 a,b
+}
+//test dyn = static.member
+func test_dyn_assign_static_member(){
+	v<S1> = new S1 {
+		a : 3425,
+		b : 4321
+	}
+	gd.v1 = v.a
+	if gd.v1 == v.a {} else {
+		os.die("gd.v1 != v.a")
+	}
+	gd2 = new Empty()
+	gd2.v2 = v.b
+	if gd2.v2 == v.b {} else {
+		os.die("gd2.v2 != v.b")
+	}
+	a<u64> = 3425
+	if gd2.v2 == a {} else {
+		os.die("gd2.v2 != 3425")
+	}
+	fmt.println("test_dyn_assign_static_member success")
+}
 func main(){
 	obj<A> = new A{
 		inner: B{
@@ -68,4 +94,6 @@ func main(){
         n : null
     }
 	v.test_memfield_assign()
+	//test3
+	test_dyn_assign_static_member
 }
