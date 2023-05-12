@@ -52,7 +52,7 @@ Parser::init(filepath,pkg) {
     if pkg.package != "main"
         this.asmfile  = "co_" + pkg.getFullName() + "_" + this.asmfile
     
-    this.scanner = new scanner.Scanner(filepath,this)
+    this.scanner = new scanner.ScannerStatic(filepath,this)
     this.filenameid = this.label() + ".L.filename." +  ast.incr_labelid()
 
 }
@@ -64,11 +64,12 @@ Parser::getImport(pkgname){
 }
 Parser::parse()
 {
-    this.scanner.scan()
-    utils.debug("parser.Parser::parse() tk:%s",this.scanner.curLex)
+    reader<scanner.ScannerStatic> = this.scanner
+    reader.scan()
+    utils.debug("parser.Parser::parse() tk:%s",reader.curLex.dyn())
 
     loop {
-        match this.scanner.curToken  {
+        match reader.curToken  {
             ast.FUNC : {
                 f = this.parseFuncDef(false,false)
                 this.addFunc(f.name,f)
@@ -98,6 +99,7 @@ Parser::panic(args...){
 }
 Parser::check(check<runtime.Value> , err<i8*>)
 {
+    reader<scanner.ScannerStatic> = this.scanner
     //static
     if check == 1 return  null
     if check == 0 goto check_panic 
@@ -112,12 +114,13 @@ check_panic:
         "parse: found token error token: %s \n" +
         "msg:%s \n" + 
         "line:%d column:%d file:%s\n",
-        this.scanner.curLex,msg,
-        this.scanner.line,this.scanner.column,this.filepath
+        reader.curLex.dyn(),msg,
+        (reader.line),(reader.column),this.filepath
     )
 }
 Parser::expect(tok<i32>,str){
-    if this.scanner.curToken == tok {
+    reader<scanner.ScannerStatic> = this.scanner
+    if reader.curToken == tok {
         return  true
     }
     msg = EMPTY_STR
@@ -126,20 +129,22 @@ Parser::expect(tok<i32>,str){
     }
     err = fmt.sprintf(
         "parse: found token error token:%s(%s) expect:%s\n msg:%s\n line:%d column:%d file:%s\n",
-        ast.getTokenString(this.scanner.curToken),
-        this.scanner.curLex,
+        ast.getTokenString(reader.curToken),
+        reader.curLex.dyn(),
         ast.getTokenString(tok),
-        msg,this.scanner.line,this.scanner.column,this.filepath
+        msg,int(reader.line),int(reader.column),this.filepath
     )
     os.panic(err)
 }
 Parser::next_expect(tk,err<i8*>){
-    this.scanner.scan()
+    reader<scanner.ScannerStatic> = this.scanner
+    reader.scan()
     return this.expect(tk,err)
 }
 
 Parser::isunary(){
-    match this.scanner.curToken {
+    reader<scanner.ScannerStatic> = this.scanner
+    match reader.curToken {
         ast.SUB | ast.SUB | ast.LOGNOT | ast.BITNOT : {
             return true
         }
@@ -147,7 +152,8 @@ Parser::isunary(){
     }
 }
 Parser::isprimary(){
-    match this.scanner.curToken {
+    reader<scanner.ScannerStatic> = this.scanner
+    match reader.curToken {
         ast.FLOAT  | ast.INT      | ast.CHAR     | ast.STRING | ast.VAR    | 
         ast.FUNC   | ast.LPAREN   | ast.LBRACKET | ast.LBRACE | ast.RBRACE | 
         ast.BOOL   | ast.EMPTY    | ast.NEW      | ast.DOT    | ast.DELREF |
@@ -158,7 +164,8 @@ Parser::isprimary(){
     }
 }
 Parser::ischain(){
-    match this.scanner.curToken {
+    reader<scanner.ScannerStatic> = this.scanner
+    match reader.curToken {
         ast.DOT | ast.LPAREN | ast.LBRACKET : {
             return true
         }
@@ -166,7 +173,8 @@ Parser::ischain(){
     }
 }
 Parser::isassign(){
-    match this.scanner.curToken {
+    reader<scanner.ScannerStatic> = this.scanner
+    match reader.curToken {
         ast.ASSIGN | ast.ADD_ASSIGN | ast.SUB_ASSIGN | ast.MUL_ASSIGN |
         ast.DIV_ASSIGN | ast.BITXOR_ASSIGN | ast.MOD_ASSIGN | ast.BITAND_ASSIGN | ast.BITOR_ASSIGN | 
         ast.SHL_ASSIGN | ast.SHR_ASSIGN : {
@@ -176,7 +184,8 @@ Parser::isassign(){
     }
 }
 Parser::isbinary(){
-    match this.scanner.curToken {
+    reader<scanner.ScannerStatic> = this.scanner
+    match reader.curToken {
         ast.SHL | ast.SHR | ast.BITOR | ast.BITXOR | ast.BITAND | ast.BITNOT | ast.LOGOR |  
         ast.LOGAND | ast.LOGNOT | ast.EQ | ast.NE | ast.GT | ast.GE | ast.LT |
         ast.LE | ast.ADD | ast.SUB | ast.MOD | ast.MUL | ast.DIV : {
@@ -186,7 +195,8 @@ Parser::isbinary(){
     }
 }
 Parser::isbase(){
-    match this.scanner.curToken {
+    reader<scanner.ScannerStatic> = this.scanner
+    match reader.curToken {
         ast.I8 | ast.U8 | ast.I16 | ast.U16 |
         ast.I32| ast.U32| ast.I64 | ast.U64 :
             return true

@@ -16,36 +16,38 @@ Parser::parseStructDef()
 	// 	u64  d
 	// }
 	utils.debug("found struct start parser..")
-	this.check(this.scanner.curToken == ast.MEM,"parse struct define, tok not mem")
-	this.scanner.scan()
+	reader<scanner.ScannerStatic> = this.scanner
+	this.check(reader.curToken == ast.MEM,"parse struct define, tok not mem")
+	reader.scan()
 	//must VAR
-	this.check(this.scanner.curToken == ast.VAR,"parse struct define,tok not var")
+	this.check(reader.curToken == ast.VAR,"parse struct define,tok not var")
 	s = new ast.Struct()
 	s.parser = this
-	s.name  = this.scanner.curLex
+	s.name  = reader.curLex.dyn()
 	this.check(utils.isUpper(s.name),"first char of class name need be Upper")
 	s.pkg   = this.pkg.package
-	this.scanner.scan()
-	if ( this.scanner.curToken != ast.LBRACE ){
-		this.check(this.scanner.curToken == ast.COLON)
+	reader.scan()
+	if ( reader.curToken != ast.LBRACE ){
+		this.check(reader.curToken == ast.COLON)
 		//eat :
-		this.scanner.scan()
+		reader.scan()
 		//must var
-		this.check(this.scanner.curToken == ast.VAR)
-		if (this.scanner.curLex == "pack" ){
+		this.check(reader.curToken == ast.VAR)
+		cl = reader.curLex.dyn()
+		if (cl == "pack" ){
 			s.ispacked = true
 		}
 		//eat var
-		this.scanner.scan()
+		reader.scan()
 	}
 	//must {
-	this.check(this.scanner.curToken == ast.LBRACE)
-	this.scanner.scan()
+	this.check(reader.curToken == ast.LBRACE)
+	reader.scan()
 	//end for }
 	idx = 0
-	while(this.scanner.curToken != ast.RBRACE)
+	while(reader.curToken != ast.RBRACE)
 	{
-		if(this.scanner.curToken == ast.VAR){
+		if(reader.curToken == ast.VAR){
 			//TODO: &idx
             this.parseMembers(s,idx,true)
         }else{
@@ -57,22 +59,24 @@ Parser::parseStructDef()
 	// s.compute()
 	this.pkg.addStruct(s.name,s)
 	//eat }
-	this.scanner.scan()
+	reader.scan()
 }
 Parser::parseMembers(s ,idx ,isstruct){
+	reader<scanner.ScannerStatic> = this.scanner
+	utils.debug("Parser::parseMembers ")
 	member = new ast.Member()
-	tk = this.scanner.curToken
+	tk = reader.curToken
     if(isstruct){
         this.expect(ast.VAR,"expect var token in struct member define")
-        structname = this.scanner.curLex 
+        structname = reader.curLex.dyn() 
         structpkg  = this.pkg.package
-        this.scanner.scan()
-        if(this.scanner.curToken == ast.DOT){
-            this.scanner.scan()
-            this.check(this.scanner.curToken == ast.VAR)
+        reader.scan()
+        if(reader.curToken == ast.DOT){
+            reader.scan()
+            this.check(reader.curToken == ast.VAR)
             structpkg  = structname
-            structname = this.scanner.curLex
-            this.scanner.scan()
+            structname = reader.curLex.dyn()
+            reader.scan()
         }
         member.structpkg = structpkg
         member.structname = structname
@@ -82,12 +86,12 @@ Parser::parseMembers(s ,idx ,isstruct){
         tk = ast.U64
     }else {
         if(!this.isbase()) this.check(false,"should be base i8-u64 field define")
-        this.scanner.scan()
+        reader.scan()
     }
-    if(this.scanner.curToken == ast.MUL){
+    if(reader.curToken == ast.MUL){
         member.align = 8
         member.pointer = true
-        this.scanner.scan()
+        reader.scan()
     }
     this.check(tk >= ast.I8 && tk <= ast.U64,"member type only support i8 - u64")
     member.line = this.line
@@ -103,49 +107,50 @@ Parser::parseMembers(s ,idx ,isstruct){
         field = member.clone()
         field.idx    = idx 
 		idx += 1
-        this.check(this.scanner.curToken == ast.VAR,"should be var in struct field define")
-        field.name = this.scanner.curLex
+        this.check(reader.curToken == ast.VAR,"should be var in struct field define")
+        field.name = reader.curLex.dyn()
 
-        this.scanner.scan()
-        if(this.scanner.curToken == ast.COLON && !isstruct){
-            this.scanner.scan()
-            this.check(this.scanner.curToken == ast.INT,"should be number in struct field define")
+        reader.scan()
+        if(reader.curToken == ast.COLON && !isstruct){
+            reader.scan()
+            this.check(reader.curToken == ast.INT,"should be number in struct field define")
             field.bitfield = true
-            field.bitwidth = string.tonumber(this.scanner.curLex)
-            this.scanner.scan()
-        }else if(this.scanner.curToken == ast.LBRACKET){ 
+            field.bitwidth = string.tonumber(reader.curLex.dyn())
+            reader.scan()
+        }else if(reader.curToken == ast.LBRACKET){ 
             field.isarr   = true
-            this.scanner.scan()
+            reader.scan()
             field.arrvar = this.parseExpression(1)
-            this.check(this.scanner.curToken == ast.RBRACKET,"should be ] at last struct member arr parse")
-            this.scanner.scan()
+            this.check(reader.curToken == ast.RBRACKET,"should be ] at last struct member arr parse")
+            reader.scan()
         }
         s.member[] = field
-        if(this.scanner.curToken == ast.COMMA){
-            this.scanner.scan()
+        if(reader.curToken == ast.COMMA){
+            reader.scan()
             continue
         }
         break
     }
 }
 Parser::parseStructInit(pkgname,name){
+	reader<scanner.ScannerStatic> = this.scanner
 	init = new gen.StructInitExpr(this.line,this.column)
 	init.pkgname = pkgname
 	init.name    = name
 	this.expect(ast.LBRACE)//{
-	this.scanner.scan()//eat {
-	while(this.scanner.curToken != ast.RBRACE){
+	reader.scan()//eat {
+	while(reader.curToken != ast.RBRACE){
 		this.expect(ast.VAR)
-		fieldname = this.scanner.curLex
+		fieldname = reader.curLex.dyn()
 
 		this.next_expect(ast.COLON) //解析:
-		this.scanner.scan()//eat :
+		reader.scan()//eat :
 
 		fieldvalue = this.parseExpression(1)
 		if(fieldvalue == null) this.panic(" field value is null in struct init")
 
 
-		match this.scanner.curToken {
+		match reader.curToken {
 			ast.RBRACE | ast.COMMA : {}
 			ast.LBRACE : {
 				if type(fieldvalue) != type(gen.VarExpr) this.panic(
@@ -158,13 +163,13 @@ Parser::parseStructInit(pkgname,name){
 				this.panic("file value is invalid in struct init")
 			}
 		}
-		if(this.scanner.curToken == ast.COMMA)
-			this.scanner.scan()
+		if(reader.curToken == ast.COMMA)
+			reader.scan()
 
 		init.fields[fieldname] = fieldvalue
 	}
 	//eat }
-	this.scanner.scan()
+	reader.scan()
 
 	return init
 }

@@ -9,14 +9,15 @@ use string
 
 Parser::parseEnumDef(){
     utils.debug("parser.Parser::parseEnumDef()")
-    this.scanner.scan()
+    reader<scanner.ScannerStatic> = this.scanner
+    reader.scan()
     
     this.expect( ast.LBRACE)
     
-    this.scanner.scan()
+    reader.scan()
     defaulte = 0
-    while this.scanner.curToken != ast.RBRACE {
-        gv = new gen.VarExpr(this.scanner.curLex,this.line,this.column)
+    while reader.curToken != ast.RBRACE {
+        gv = new gen.VarExpr(reader.curLex.dyn(),this.line,this.column)
         gv.structtype = true
         //TODO: gv.ivalue = defaulte ++
         gv.ivalue = string.tostring(defaulte)        
@@ -26,29 +27,30 @@ Parser::parseEnumDef(){
         gv.type = ast.I32
         gv.size = 4
 
-        this.scanner.scan()
-        if this.scanner.curToken == ast.COMMA
-            this.scanner.scan()
+        reader.scan()
+        if reader.curToken == ast.COMMA
+            reader.scan()
 
         defaulte += 1
     }
-    this.scanner.scan()
+    reader.scan()
 }
 Parser::parseStructVar(varname)
 {
     utils.debug("parser.Parsr::parseStructVar()")
+    reader<scanner.ScannerStatic> = this.scanner
     this.expect( ast.LT )
     var = this.parseVarExpr(varname)
     varexpr = var
     this.check(varexpr.structtype)
     
-    if this.scanner.curToken == ast.ASSIGN {
+    if reader.curToken == ast.ASSIGN {
         
-        this.scanner.scan()
+        reader.scan()
         this.expect( ast.INT)
-        varexpr.ivalue = this.scanner.curLex
+        varexpr.ivalue = reader.curLex.dyn()
         
-        this.scanner.scan()
+        reader.scan()
     }
     this.gvars[varname] = varexpr
     varexpr.is_local = false
@@ -65,12 +67,13 @@ Parser::parseFlatVar(var){
 
 Parser::parseClassFunc(var){
     utils.debugf("parser.Parser::parseClassFunc() varname:%s",var)
+    reader<scanner.ScannerStatic> = this.scanner
     this.expect(  ast.COLON)
     
-    this.scanner.scan()
+    reader.scan()
     this.expect( ast.COLON )
     
-    this.scanner.curToken  = ast.FUNC
+    reader.curToken  = ast.FUNC
     
     f = this.parseFuncDef(true,false)
     this.check(f != null)
@@ -83,20 +86,21 @@ Parser::parseClassFunc(var){
 }
 Parser::parseExternClassFunc(pkgname){
     utils.debugf("parser.Parser::parseExternClassFunc() name:%s",pkgname)
+    reader<scanner.ScannerStatic> = this.scanner
     this.expect( ast.DOT)
-    this.scanner.scan()
+    reader.scan()
     this.expect( ast.VAR)
-    clsname = this.scanner.curLex
-    this.scanner.scan()
+    clsname = reader.curLex.dyn()
+    reader.scan()
     if this.getImport(pkgname) == "" {
         this.check(false,fmt.sprintf("consider import package: use %s",this.package))
     }
     this.expect(  ast.COLON )
     
-    this.scanner.scan()
+    reader.scan()
     this.expect( ast.COLON )
     
-    this.scanner.curToken  = ast.FUNC
+    reader.curToken  = ast.FUNC
     
     f = this.parseFuncDef(true,false)
     this.check(f != null)
@@ -111,19 +115,20 @@ Parser::parseExternClassFunc(pkgname){
 }
 Parser::parseGlobalDef()
 {
-    utils.debugf("parser.Parser::parseGlobalDef() %s line:%d\n",this.scanner.curLex,this.line)
-    if this.scanner.curToken != ast.VAR
-        this.check(false,"SyntaxError: global var define invalid token:" + ast.getTokenString(this.scanner.curToken))
-    var = this.scanner.curLex
-    tx = this.scanner.transaction() 
-    this.scanner.scan()
-    match this.scanner.curToken{
+    reader<scanner.ScannerStatic> = this.scanner
+    utils.debugf("parser.Parser::parseGlobalDef() %s line:%d\n",reader.curLex.dyn(),this.line)
+    if reader.curToken != ast.VAR
+        this.check(false,"SyntaxError: global var define invalid token:" + ast.getTokenString(reader.curToken))
+    var = reader.curLex.dyn()
+    tx = reader.transaction() 
+    reader.scan()
+    match reader.curToken{
         ast.COLON: return this.parseClassFunc(var)
         ast.DOT:   return this.parseExternClassFunc(var)
         // ast.LT   : return parseStructVar(var)
         // _        : return parseFlatVar(var)
         _ : {
-            this.scanner.rollback(tx)
+            reader.rollback(tx)
             return this.parseGlobalAssign()
         }
     }

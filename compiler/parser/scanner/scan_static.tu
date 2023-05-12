@@ -25,7 +25,7 @@ mem TxStatic {
     i32 txtk
     string.String* txlex
 }
-TxStatic::init(pos<i32>,tk<i32>,lex<i32>){
+TxStatic::init(pos<i32>,tk<i32>,lex<string.String>){
     this.txpos = pos
     this.txtk  = tk
     this.txlex   = lex
@@ -185,7 +185,6 @@ ScannerStatic::scan(){
 
     //token
     this.get_next()
-
     p = this.parser
     p.line = int(this.line)
     p.column = int(this.column)

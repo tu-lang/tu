@@ -8,30 +8,31 @@ use compiler.utils
 Parser::parseClassDef()
 {
     utils.debug("parser.Parser::parseClassDef() found class. start parser..")
+    reader<scanner.ScannerStatic> = this.scanner
     this.expect(ast.CLASS)
     
-    this.scanner.scan()
+    reader.scan()
     
     this.expect(ast.VAR)
     s = new ast.Class(this.pkg.package)
     s.found = true
     s.parser = this
-    s.name  = this.scanner.curLex
+    s.name  = reader.curLex.dyn()
     this.check(utils.isUpper(s.name),"first char of class name need be Upper")
-    this.scanner.scan()
+    reader.scan()
 
-    if this.scanner.curToken == ast.COLON  {
+    if reader.curToken == ast.COLON  {
         utils.debug("found inherit")
-        this.scanner.scan()
-        this.check(this.scanner.curToken == ast.VAR)
-        ident = this.scanner.curLex
-        this.scanner.scan()
-        if this.scanner.curToken == ast.DOT {
-            this.scanner.scan()
-            this.check(this.scanner.curToken == ast.VAR)
+        reader.scan()
+        this.check(reader.curToken == ast.VAR)
+        ident = reader.curLex.dyn()
+        reader.scan()
+        if reader.curToken == ast.DOT {
+            reader.scan()
+            this.check(reader.curToken == ast.VAR)
             s.father = new ast.Class(ident)
-            s.father.name = this.scanner.curLex
-            this.scanner.scan()
+            s.father.name = reader.curLex.dyn()
+            reader.scan()
         }else{
             s.father = new ast.Class(this.pkg.package)
             s.father.name = ident
@@ -41,11 +42,11 @@ Parser::parseClassDef()
     
     this.expect(ast.LBRACE,"expect { in class define")
 
-    this.scanner.scan()
+    reader.scan()
     
-    while this.scanner.curToken != ast.RBRACE {
+    while reader.curToken != ast.RBRACE {
         
-        if this.scanner.curToken == ast.VAR{
+        if reader.curToken == ast.VAR{
             member = this.parseExpression(1)
             if type(member) == type(gen.VarExpr) {
                 s.members[] = member
@@ -63,7 +64,7 @@ Parser::parseClassDef()
                 member.lhs = me
                 s.initmembers[] = member
             }
-        }else if this.scanner.curToken == ast.FUNC {
+        }else if reader.curToken == ast.FUNC {
             f = this.parseFuncDef(true,false)
             this.check(f != null)
 
@@ -75,12 +76,13 @@ Parser::parseClassDef()
             
             this.addFunc(s.name + f.name,f)
         }else{
-            this.panic("SynatxError: token:" + ast.getTokenString(this.scanner.curToken) + " string:" + this.scanner.curLex)
+            cl = reader.curLex.dyn()
+            this.panic("SynatxError: token:" + ast.getTokenString(reader.curToken) + " string:" + cl)
         }
 
     }
     this.pkg.addClass(s.name,s)
-    this.scanner.scan()
+    reader.scan()
 }
 
 Parser::parseFuncDef(member,closure)
@@ -88,18 +90,20 @@ Parser::parseFuncDef(member,closure)
     utils.debug(
         "parser.Parser::parseFuncDef() found function: "
     )
+    reader<scanner.ScannerStatic> = this.scanner
     this.expect(ast.FUNC)
-    this.scanner.scan()
+    reader.scan()
     node = new ast.Function()
     node.parser = this
     node.package = this.pkg
     this.currentFunc = node
     if !closure {
-        if this.hasFunc(this.scanner.curLex,false)
-            this.check(false,"SyntaxError: already define function :" + this.scanner.curLex)
-        node.name = this.scanner.curLex
+        cl = reader.curLex.dyn()
+        if this.hasFunc(cl,false)
+            this.check(false,"SyntaxError: already define function :" + cl)
+        node.name = cl
         
-        this.scanner.scan()
+        reader.scan()
     }
 
     this.expect( ast.LPAREN)
@@ -113,7 +117,7 @@ Parser::parseFuncDef(member,closure)
     params  = this.parseParameterList()
     std.merge(node.params,params)
     node.block = null
-    if (this.scanner.curToken == ast.LBRACE)
+    if (reader.curToken == ast.LBRACE)
         node.block = this.parseBlock(member)
     
     this.currentFunc = null
@@ -123,79 +127,82 @@ Parser::parseFuncDef(member,closure)
 Parser::parseExternDef()
 {
     utils.debug("parser.Parser::parseExternDef() found extern .start parser..")
+    reader<scanner.ScannerStatic> = this.scanner
     
     this.expect(ast.EXTERN)
     node     = new ast.Function()
     node.isExtern = true
     node.parser   = this
 
-    this.scanner.scan()
-    node.rettype  = this.scanner.curLex
+    reader.scan()
+    node.rettype  = reader.curLex.dyn()
 
-    this.scanner.scan()
-    node.name     = this.scanner.curLex
+    reader.scan()
+    node.name     = reader.curLex.dyn()
     node.block    = null
 
-    this.scanner.scan()
+    reader.scan()
     this.expect(ast.LPAREN)
     
-    this.scanner.scan()
+    reader.scan()
     
-    if this.scanner.curToken == ast.RPAREN{
-        this.scanner.scan()
+    if reader.curToken == ast.RPAREN{
+        reader.scan()
         return node
     }
-    while this.scanner.curToken != ast.RPAREN {
-        this.scanner.scan()
+    while reader.curToken != ast.RPAREN {
+        reader.scan()
     }
     
     this.expect(ast.RPAREN)
-    this.scanner.scan()
+    reader.scan()
     return node
 }
 
 Parser::parseExtra() {
     utils.debug("parser.Parser::parseExtra() found #: parser..")
+    reader<scanner.ScannerStatic> = this.scanner
     this.expect(ast.EXTRA)
     
-    this.scanner.scan()
-    
-    if this.scanner.curLex == "link"{
-        lines = this.scanner.consumeLine()
+    reader.scan()
+    cl = reader.curLex.dyn() 
+    if cl == "link"{
+        lines = reader.consumeLine()
         lines = lines.substr(std.len(0,lines))
         
         this.links[] = lines
         return
     }
     
-    this.scanner.consumeLine()
+    reader.consumeLine()
 }
 
 
 Parser::parseImportDef()
 {
     utils.debug("parser.Parser::parseImportDef() found import.start parser..")
+    reader<scanner.ScannerStatic> = this.scanner
     this.expect(ast.USE)
     
-     this.scanner.scan()
+     reader.scan()
     
     this.expect(ast.VAR)
-    path = this.scanner.curLex
+    path = reader.curLex.dyn()
     package = path
     multi = false
     
-    this.scanner.scan()
-    while(this.scanner.curToken == ast.DOT){
+    reader.scan()
+    while(reader.curToken == ast.DOT){
         
-        this.scanner.scan()
+        reader.scan()
         
         this.expect(ast.VAR)
-        
-        path += "_" + this.scanner.curLex
-        package = this.scanner.curLex
+        cl = reader.curLex.dyn() 
+        path += "_" + cl
+        package = cl
         multi = true
         
-        this.scanner.scan()
+        reader.scan()
     }
     utils.notice("import package :%s",path)
     

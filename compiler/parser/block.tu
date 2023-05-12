@@ -9,8 +9,9 @@ use compiler.utils
 Parser::parseBlock(member)
 {
     utils.debug("parser.Parser::parseBlock()")
+    reader<scanner.ScannerStatic>  = this.scanner 
     node = new ast.Block()
-    this.scanner.scan()
+    reader.scan()
     if member {
         stmt = this.genSuperInitStmt(this.currentFunc)
         node.stmts[] = stmt
@@ -24,104 +25,105 @@ Parser::parseBlock(member)
     std.merge(node.stmts,stmts)
 
     this.expect(ast.RBRACE,"parse block ")
-    this.scanner.scan()
+    reader.scan()
     return node
 }
 
 Parser::parseParameterList()
 {
     utils.debug("parser.Parser.parseParameterList()")
+    reader<scanner.ScannerStatic> = this.scanner
     node = []
-    this.scanner.scan()
+    reader.scan()
     
-    if this.scanner.curToken == ast.RPAREN {
-        this.scanner.scan()
+    if reader.curToken == ast.RPAREN {
+        reader.scan()
         return node
     }
 
-    while this.scanner.curToken != ast.RPAREN 
+    while reader.curToken != ast.RPAREN 
     {
-        if this.scanner.curToken == ast.VAR
+        if reader.curToken == ast.VAR
         {
             if this.currentFunc {
-                var = new gen.VarExpr(this.scanner.curLex,this.line,this.column)
+                var = new gen.VarExpr(reader.curLex.dyn(),this.line,this.column)
                 
                 var.type = ast.U64
                 var.size = 8
                 var.isunsigned = true
-                this.currentFunc.params_var[this.scanner.curLex] = var
+                this.currentFunc.params_var[reader.curLex.dyn()] = var
                 this.currentFunc.params_order_var[] = var
 
-                this.scanner.scan()
+                reader.scan()
                 
-                if this.scanner.curToken == ast.LT {
+                if reader.curToken == ast.LT {
                     var.structtype = true
-                    this.scanner.scan()
-                    if this.scanner.curToken == ast.VAR {
-                        sname = this.scanner.curLex
+                    reader.scan()
+                    if reader.curToken == ast.VAR {
+                        sname = reader.curLex.dyn()
                         var.structname = sname
-                        this.scanner.scan()
-                        if this.scanner.curToken == ast.DOT {
-                            this.scanner.scan()
+                        reader.scan()
+                        if reader.curToken == ast.DOT {
+                            reader.scan()
                             this.expect(ast.VAR,null)
                             var.structpkg = sname
-                            var.structname = this.scanner.curLex
-                            this.scanner.scan()
+                            var.structname = reader.curLex.dyn()
+                            reader.scan()
                         }
-                    }else if this.scanner.curToken >= ast.I8 && this.scanner.curToken <= ast.U64{
+                    }else if reader.curToken >= ast.I8 && reader.curToken <= ast.U64{
                     
-                        i = this.scanner.curToken
+                        i = reader.curToken
                         this.check(i >= ast.I8 && i <= ast.U64)
                         var.size = typesize[int(i)]
                         var.type = i
                         var.isunsigned = ast.type_isunsigned(i)
-                        this.scanner.scan()
-                        if this.scanner.curToken == ast.MUL {
+                        reader.scan()
+                        if reader.curToken == ast.MUL {
                             var.pointer = true
-                            this.scanner.scan()
+                            reader.scan()
                         }
                     }else{
-                        this.panic("unknown token " + ast.getTokenString(this.scanner.curToken))
+                        this.panic("unknown token " + ast.getTokenString(reader.curToken))
                     }
    
                     this.expect(ast.GT ,null)
-                    this.scanner.scan()
+                    reader.scan()
                     
                     // continue
                 }
                 
-                if this.scanner.curToken == ast.COMMA continue
-                if this.scanner.curToken == ast.RPAREN continue
+                if reader.curToken == ast.COMMA continue
+                if reader.curToken == ast.RPAREN continue
 
                 
-                if this.scanner.curToken != ast.DOT {
-                    this.panic("SynatxError: should be , or . but got " + this.scanner.curLex)
+                if reader.curToken != ast.DOT {
+                    this.panic("SynatxError: should be , or . but got " + reader.curLex.dyn())
                 }
                 
-                this.scanner.scan()
-                if this.scanner.curToken != ast.DOT {
-                    this.panic("SynatxError: must be . but got :" + this.scanner.curLex)
+                reader.scan()
+                if reader.curToken != ast.DOT {
+                    this.panic("SynatxError: must be . but got :" + reader.curLex.dyn())
                 }
                 
-                this.scanner.scan()
-                if this.scanner.curToken != ast.DOT{
-                    this.panic("SynatxError: should be , or . but got :" + this.scanner.curLex)
+                reader.scan()
+                if reader.curToken != ast.DOT{
+                    this.panic("SynatxError: should be , or . but got :" + reader.curLex.dyn())
                 }
                 
                 this.currentFunc.is_variadic = true
                 var.is_variadic = true
             }
-            node[] = this.scanner.curLex
+            node[] = reader.curLex.dyn()
         }
         else{
             this.expect( ast.COMMA )
         }
         
-        this.scanner.scan()
+        reader.scan()
     }
     
     this.expect( ast.RPAREN )
-    this.scanner.scan()
+    reader.scan()
     return node
 }
 

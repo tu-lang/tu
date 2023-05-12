@@ -5,43 +5,44 @@ use compiler.utils
 Parser::parseStatement()
 {
     utils.debug("parser.Parser::parseStatement()")
+    reader<scanner.ScannerStatic> = this.scanner
     node = null
-    match this.scanner.curToken {
+    match reader.curToken {
         ast.IF: {
-            this.scanner.scan()
+            reader.scan()
             node = this.parseIfStmt()
         }
         ast.FOR: {
-            this.scanner.scan()
+            reader.scan()
             node = this.parseForStmt()
         }
         ast.LOOP: {
-            this.scanner.scan()
+            reader.scan()
             node = this.parseWhileStmt(true)
         }
         ast.WHILE: {
-            this.scanner.scan()
+            reader.scan()
             node = this.parseWhileStmt(false)
         }
         ast.RETURN: {
-            this.scanner.scan()
+            reader.scan()
             node = this.parseReturnStmt()
         }
         ast.BREAK: {
-            this.scanner.scan()
+            reader.scan()
             node = new gen.BreakStmt(this.line,this.column)
         }
         ast.GOTO: {
-            this.scanner.scan()
-            node = new gen.GotoStmt(this.scanner.curLex,this.line,this.column)
-            this.scanner.scan()
+            reader.scan()
+            node = new gen.GotoStmt(reader.curLex.dyn(),this.line,this.column)
+            reader.scan()
         }
         ast.CONTINUE: {
-            this.scanner.scan()
+            reader.scan()
             node = new gen.ContinueStmt(this.line,this.column)
         }
         ast.MATCH: {
-            this.scanner.scan()
+            reader.scan()
             node = this.parseMatchSmt()
         }
         _ : node = this.parseExpression(1)
@@ -51,12 +52,13 @@ Parser::parseStatement()
 Parser::parseIfStmt()
 {
     utils.debug("parser.Parser::parseIfStmt()")
+    reader<scanner.ScannerStatic> = this.scanner
     node = new gen.IfStmt(this.line,this.column)
     
     ifCase = new gen.IfCaseExpr(this.line,this.column)
     ifCase.cond = this.parseExpression(1)
     
-    if this.scanner.curToken == ast.LBRACE {
+    if reader.curToken == ast.LBRACE {
         ifCase.block = this.parseBlock(false)
     }else{
         ifCase.block = new ast.Block()
@@ -64,13 +66,13 @@ Parser::parseIfStmt()
     }
     node.cases[] = ifCase
     
-    while this.scanner.curToken == ast.ELSE {
+    while reader.curToken == ast.ELSE {
         ice = new gen.IfCaseExpr(this.line,this.column)
-        this.scanner.scan()
-        if this.scanner.curToken == ast.IF {
-            this.scanner.scan()
+        reader.scan()
+        if reader.curToken == ast.IF {
+            reader.scan()
             ice.cond = this.parseExpression(1)
-            if this.scanner.curToken == ast.LBRACE {
+            if reader.curToken == ast.LBRACE {
                 ice.block =this. parseBlock(false)
             }else {
                 ice.block = new ast.Block()
@@ -79,7 +81,7 @@ Parser::parseIfStmt()
             node.cases[] = ice
         
         }else{
-            if this.scanner.curToken == ast.LBRACE {
+            if reader.curToken == ast.LBRACE {
                 ice.block = this.parseBlock(false)
             }else {
                 ice.block = new ast.Block()
@@ -93,33 +95,33 @@ Parser::parseIfStmt()
 Parser::parseForStmt()
 {
     utils.debug("parser.Parser::parseForStmt()")
+    reader<scanner.ScannerStatic> = this.scanner
     node = new gen.ForStmt(this.line,this.column)
     
     hashlparen = false
-    if this.scanner.curToken == ast.LPAREN {
-        this.scanner.scan()
+    if reader.curToken == ast.LPAREN {
+        reader.scan()
         hashlparen = true
     }
     
     this.expect( ast.VAR)
 
-    tx = this.scanner.transaction()
+    tx = reader.transaction()
     // {
         key = null
         value = this.parseExpression(1)
         obj = null
         
-        if type(value) == type(gen.VarExpr) && (this.scanner.curToken == ast.COMMA || this.scanner.curToken == ast.COLON) {
+        if type(value) == type(gen.VarExpr) && (reader.curToken == ast.COMMA || reader.curToken == ast.COLON) {
             node.range = true
-            
-            if this.scanner.curToken == ast.COMMA {
+            if reader.curToken == ast.COMMA {
                 key = value
-                this.scanner.scan()
+                reader.scan()
                 value = this.parseExpression(1)
                 this.check(type(value) == type(gen.VarExpr))
             }
             this.expect( ast.COLON)
-            this.scanner.scan()
+            reader.scan()
             obj = this.parseExpression(1)
             this.check(obj != null)
 
@@ -142,9 +144,9 @@ Parser::parseForStmt()
             
             if (hashlparen ){
                 this.expect(ast.RPAREN)
-                this.scanner.scan()
+                reader.scan()
             }
-            if this.scanner.curToken == ast.LBRACE {
+            if reader.curToken == ast.LBRACE {
                 node.block = this.parseBlock(false)
             }else {
                 node.block = new ast.Block()
@@ -153,23 +155,23 @@ Parser::parseForStmt()
             return node
         }
         
-        this.scanner.rollback(tx)
+        reader.rollback(tx)
     // }
     node.init = this.parseExpression(1)
     this.expect(ast.SEMICOLON)
-    this.scanner.scan()
+    reader.scan()
 
     node.cond = this.parseExpression(1)
     this.expect(ast.SEMICOLON)
-    this.scanner.scan()
+    reader.scan()
     
     node.after = this.parseExpression(1)
     if (hashlparen ){
         this.expect(ast.RPAREN)
-        this.scanner.scan()
+        reader.scan()
     }
     
-    if this.scanner.curToken == ast.LBRACE {
+    if reader.curToken == ast.LBRACE {
         node.block = this.parseBlock(false)
     }else {
         node.block = new ast.Block()
@@ -179,11 +181,12 @@ Parser::parseForStmt()
 }
 Parser::parseMatchSmt(){
     utils.debug("parser.Parser::parseMatchSmt()")
+    reader<scanner.ScannerStatic> = this.scanner
     ms = new gen.MatchStmt(this.line,this.column)
     ms.cond = this.parseExpression(1)
     this.expect( ast.LBRACE)
-    this.scanner.scan()
-    while this.scanner.curToken != ast.RBRACE {
+    reader.scan()
+    while reader.curToken != ast.RBRACE {
         cs = this.parseMatchCase(ms.cond)
         if cs.defaultCase {
             ms.defaultCase = cs
@@ -191,12 +194,13 @@ Parser::parseMatchSmt(){
         }
         ms.cases[] = cs
     }
-    this.scanner.scan()
+    reader.scan()
     return ms
 }
 Parser::parseMatchCase(cond)
 {
     utils.debug("parser.Parser::parseMatchCase()")
+    reader<scanner.ScannerStatic> = this.scanner
     cs = new gen.MatchCaseExpr(this.line,this.column)
     cs.matchCond = cond 
 
@@ -211,8 +215,8 @@ Parser::parseMatchCase(cond)
         }
     }
     this.expect( ast.COLON)
-    this.scanner.scan()
-    if this.scanner.curToken == ast.LBRACE {
+    reader.scan()
+    if reader.curToken == ast.LBRACE {
         cs.block = this.parseBlock(false) 
     }else{
         cs.block = new ast.Block()
@@ -222,17 +226,18 @@ Parser::parseMatchCase(cond)
 }
 Parser::parseWhileStmt(dead) {
     utils.debug("parser.Parser::parseWhileStmt()")
+    reader<scanner.ScannerStatic> = this.scanner
     node = new gen.WhileStmt(this.line, this.column)
     node.dead = dead
     if !dead {
-        if this.scanner.curToken == ast.LPAREN {
-            this.scanner.scan()
+        if reader.curToken == ast.LPAREN {
+            reader.scan()
         }
         
         node.cond = this.parseExpression(1)
         
-        if this.scanner.curToken == ast.RPAREN {
-            this.scanner.scan()
+        if reader.curToken == ast.RPAREN {
+            reader.scan()
         }
     } 
     
