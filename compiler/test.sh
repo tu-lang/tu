@@ -50,4 +50,10 @@ clean "./*.o"
 assert compiler/main.tu
 clean "./*.s"
 clean "./*.o"
+assert compiler/test_scaner2.tu
+clean "./*.s"
+clean "./*.o"
+assert compiler/test_static_token.tu
+clean "./*.s"
+clean "./*.o"
 log "all passing...."
