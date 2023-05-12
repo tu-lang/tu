@@ -147,7 +147,12 @@ class StringExpr  : ast.Ast {
         if this.name == "" 
             this.panic("string not computed :%s" , this.toString(""))
         
-        hk = string.hash64string(this.lit)
+        hk = string.hash64string(
+            //cal escape hash value 
+            utils.getescapestr(
+                this.lit
+            )
+        )
         compile.writeln("   mov $%s , %%rdx",hk)
         compile.writeln("   push %%rdx")
 

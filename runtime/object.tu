@@ -45,7 +45,6 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
                 },
                 hk : hk
             }
-            //FIXME: compiler generate hash code != str.hash64() ; cos \?
             node<map.RbtreeNode> = new map.RbtreeNode {
                 key : hk,
                 v   : objs
