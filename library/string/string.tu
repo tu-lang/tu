@@ -34,7 +34,14 @@ String::dup() {
 		inner : this.inner.(Str).dup()
 	}
 }
-String::dyn() {
+String::dyn(cache<i8>) {
+	if !cache 
+	return new runtime.StringValue {
+		base : runtime.Value {
+			type : runtime.String,
+			data : this.inner
+		}
+	}
 	return runtime.newobject(
 		runtime.STRING,
 		this.inner,
