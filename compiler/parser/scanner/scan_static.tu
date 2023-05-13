@@ -48,7 +48,8 @@ ScannerStatic::init(filepath,parser){
     if this.buffer == 0 {
         os.die("error read file:" + filepath)
     }
-    this.buffersize = fs.osize
+    totalsize = fs.size
+    this.buffersize = *totalsize
 }
 ScannerStatic::transaction()
 {

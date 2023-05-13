@@ -93,8 +93,7 @@ class File {
 			fmt.print("fopen failed\n")
 			return null
 		}
-		this.osize = fseek(ret,runtime.Null,SEEK_END)
-		this.size = int(this.osize)
+		this.size =  int(fseek(ret,runtime.Null,SEEK_END))
 
 		fseek(ret,runtime.Null,SEEK_SET)
 		this.open = true

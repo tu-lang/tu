@@ -92,7 +92,8 @@ Scanner::init(filepath)
     if this.buffer == 0 {
         os.die("error reade file:" + filepath)
     }
-    this.buffersize = fs.osize
+    totalsize = fs.size
+    this.buffersize = *totalsize
     utils.debug("Scanner::init() end %s".(i8),*filepath)
 }
 Scanner::next() {
