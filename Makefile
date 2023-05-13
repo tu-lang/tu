@@ -16,8 +16,8 @@ BUILD_LIBA = build_install_liba() {                              	\
 		use runtime	use runtime.sys	use runtime.malloc				\
 		use runtime.debug	use runtime.gc	use time				\
 	" > a.tu;														\
-	tuc -s a.tu;													\
-	rm a.s;															\
+	tu -s a.tu -std;													\
+	rm a.tu.s;															\
 	tu -c . -c $(prefix)/lib/coasm;									\
 	ar -rc tulang.a *.o;											\
 	mv tulang.a ../release/;										\
