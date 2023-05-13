@@ -64,9 +64,11 @@ func getescapestr(dstr<runtime.Value>){
             i += 1
 			c = p[i]
             ts += char1(c)
-            if specs[ts] == Null {
-				os.die(
-                    "utils: sepc character literal should surround with single-quote"
+            if ts != "\\0" && specs[ts] == Null {
+				os.dief(
+                    "utils: sepc character -%s- literal should surround with single-quote ori:%s",
+					ts,
+					dstr
                 )
             }
 			lex.putc(specs[ts])
