@@ -20,7 +20,7 @@ func fopen(filename,mode){
 		fmt.print("fopen filename is empty\n")
 		return false
 	}
-	ret<i8> = std.fopen(*filename,*mode)
+	ret<i32> = std.fopen(*filename,*mode)
 	if ret == null {
 		fmt.print("fopen failed\n")
 		return false
@@ -37,12 +37,19 @@ func fclose(fp<i64>){
 //func seek(fd<i64> , offset<i64> , mode<i64>)
 func rewind(fd){
 	st<i8> = 0
-	std.seek(fd,st,std.SEEK_SET)	
+	ret<i32> = std.seek(fd,st,std.SEEK_SET)	
+	if ret < 0 {
+		fmt.println(ret)
+		os.die("rewind failed")
+	}
 }
 
+alloc_max<u64> = 1073741824 
 //func read(fd<i64> , size<u64>
-func fread(fd<i8>,size<i64>){
-	//utils.debug("fread fd:",int(fd),int(size))
+func fread(fd<i32>,size<u64>){
+	if size > alloc_max {
+		os.die("alloc too large! :" + int(size))
+	}
 	buffer<u64*> = new size
 	read_size<i64> = std.read(fd,buffer,size)
 	if read_size != size {
@@ -53,7 +60,7 @@ func fread(fd<i8>,size<i64>){
 	return buffer
 }
 //func read(fd<i64> , buffer<u64*> , size<u64>
-func fread_with_buf(fd<i8>,buf<u64*> , size<i64>){
+func fread_with_buf(fd<i32>,buf<u64*> , size<i64>){
 	//utils.debug("fread fd:",int(fd),int(size))
 	read_size<i64> = std.read(fd,buf,size)
 	if read_size != size {
@@ -67,6 +74,10 @@ func fread_with_buf(fd<i8>,buf<u64*> , size<i64>){
 //func fseek(fp<u64>,offset<i64> , set<i64>)
 func fseek(fp,offset<i64>){
 	utils.debug("utils.fseek:",int(fp),int(offset))
-	std.fseek(fp,offset,std.SEEK_SET)
+	ret<i32> = std.fseek(fp,offset,std.SEEK_SET)
+	if ret < 0 {
+		fmt.println(int(ret))
+		os.die("fseek failed")
+	}
 	return true
 }

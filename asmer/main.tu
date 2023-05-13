@@ -42,6 +42,7 @@ func asmergen(){
 	    utils.smsg("[ " + i + "/" + total +"]","Compiling asm file " + f)
         eng<asm.Asmer> = new asm.Asmer(f)
         eng.execute()
+        eng.close()
 	    utils.smsg("[ " + i + "/" + total +"]",
             fmt.sprintf("Generate %s Passed" ,eng.parser.outname)
         )

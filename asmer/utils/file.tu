@@ -41,7 +41,7 @@ func rewind(fd){
 }
 
 //func read(fd<i64> , size<u64>
-func fread(fd<i8>,size<i64>){
+func fread(fd<i32>,size<i64>){
 	//utils.debug("fread fd:",int(fd),int(size))
 	buffer<u64*> = new size
 	read_size<i64> = std.read(fd,buffer,size)
@@ -53,7 +53,7 @@ func fread(fd<i8>,size<i64>){
 	return buffer
 }
 //func read(fd<i64> , buffer<u64*> , size<u64>
-func fread_with_buf(fd<i8>,buf<u64*> , size<i64>){
+func fread_with_buf(fd<i32>,buf<u64*> , size<i64>){
 	//utils.debug("fread fd:",int(fd),int(size))
 	read_size<i64> = std.read(fd,buf,size)
 	if read_size != size {

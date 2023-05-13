@@ -22,6 +22,9 @@ Asmer::init(filename)
     }
     this.out   = fp
 }
+Asmer::close(){
+    utils.fclose(this.out)
+}
 //start
 Asmer::execute() {
     utils.debug("Asmer::execute".(i8))

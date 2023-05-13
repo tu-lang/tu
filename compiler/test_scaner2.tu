@@ -7,7 +7,7 @@ use string
 use fmt
 use std
 use os
-class Empty{}
+class Empty1{}
 func scan(abpath){
     fd = std.opendir(abpath)
     if !fd {
@@ -22,7 +22,7 @@ func scan(abpath){
         if !file.isFile() continue
         filepath = file.path
         if string.sub(filepath,std.len(filepath) - 3) == ".tu" {
-            s<scanner.ScannerStatic> = new scanner.ScannerStatic(filepath,new Empty())
+            s<scanner.ScannerStatic> = new scanner.ScannerStatic(filepath,new Empty1())
             fmt.println(filepath)
             loop {
                 if s.scan() == ast.END {

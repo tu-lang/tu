@@ -9,7 +9,7 @@ File::readElf(file)
 	utils.debug("Reading elf object info " ,file)
 	this.elfdir = file
 
-	fp<i8> = utils.fopen(file,"rb")
+	fp<i32> = utils.fopen(file,"rb")
 	if fp <= 0  {
 		utils.error("can't open file, file invalid:" + file)
 	}
