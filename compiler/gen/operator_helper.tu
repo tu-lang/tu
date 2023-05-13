@@ -195,8 +195,8 @@ OperatorHelper::binary()
 					else			cmp = "setge"
 				}
 				ast.GT : {
-					if this.lisunsigned cmp = "setg"
-					else			cmp = "seta"
+					if this.lisunsigned cmp = "seta"
+					else			cmp = "setg"
 				}
 			}
 			
