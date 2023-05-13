@@ -3,6 +3,7 @@ use compiler.ast
 use compiler.utils
 use std
 use string
+use runtime
 Eof<i32> = -1
 mem ScannerStatic {
     i8* buffer  // file body
@@ -257,13 +258,13 @@ comment:
     }
     
     if c == '\'' {
-        lexeme<string.String> = string.emptyS()
-        c = this.next()
-        if c == '\\' {
+        lit<i8> = this.next()
+        rnull<u64> = &runtime.internal_null
+        if lit == '\\' {
             ts = "\\"
             c = this.next()
             ts += char(c)
-            if ts != "\\0" && specs[ts] == null {
+            if ts != "\\0" && specs[ts] == rnull {
                 utils.panic(
                     "SyntaxError: sepc [%s] character literal should surround with single-quote file:%s line:%d",
                     ts,
@@ -271,15 +272,18 @@ comment:
                     int(this.line)
                 )
             }
-            specsv = specs[ts]
-            lexeme.putc(*specsv)
+            lit = specs[ts]
         }
         p<i8> = this.peek()
         if (p != '\'') {
             utils.panic("SyntaxError: a character lit should surround with single-quote c:%c file:%s\n",int(this.peek()),this.filepath)
         }
         c = this.next()
-        return this.token(ast.CHAR, lexeme)
+        return this.token(ast.CHAR, string.S(
+            string.fromlonglong(
+                lit
+            )
+        ))
     }
     
     if c == '\"'{

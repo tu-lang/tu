@@ -33,7 +33,7 @@ Compiler::print_help(){
             "  -d           开启trace日志打印编译详细过程\n" +
             "  -gcc         基于gcc链接生成可执行程序\n" +
             "  -g           编译tu文件时带上debug段信息,支持栈回溯\n" +
-            "  -nostd       不编译runtime&std相关内置库代码\n"
+            "  -std         编译runtime&std相关内置库代码\n"
     )
 }
 Compiler::commadparse(){
@@ -67,7 +67,7 @@ Compiler::commadparse(){
                 link.trace    = true
             }
             "-g"  : compile.debug    = true
-            "-nostd" : compile.nostd = true
+            "-std" : compile.nostd = false
             "-gcc"   : this.flag_gcc = true
             _     : utils.error("unkown option[%s]",os.argv()[i])
         }
@@ -100,7 +100,7 @@ Compiler::compiler(file){
     utils.msg2(10,"Compiling",fmt.sprintf(
         "%s v0.0.0",file
     ))
-    if !this.flag_gcc {
+    if compile.nostd && !this.flag_gcc {
         compile.nostd = true
     }
     compile.genast(file)
