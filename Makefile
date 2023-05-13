@@ -63,6 +63,11 @@ build-liba:
 	@$(BUILD_LIBA); build_install_liba
 	@echo "install liba  to $(prefix)/lib/colib success"
 
+.PHONEY: release
+release: install build-liba
+	@echo "release tu liba success"
+	@echo "release bin lib success"
+
 .PHONY: install
 install: 
 	@$(INSTALL_ALL); install_all

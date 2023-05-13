@@ -6,14 +6,14 @@
 tu-lang(凸）是一种编程语言，旨在创造一种非常简单的零依赖(no glibc)动态&&静态语言,全静态链接，已屏蔽了基于c/c++实现的compiler、asmer、linker，`目前已自举完成: compiler纯动态语法，asmer纯静态语法，linker动静混合语法`.
 ```
 tu  [options] file.tu        
-    run *.tu                编译成汇编后进行链接生成二进制可执行文件直接运行
+    build *.tu              编译成汇编后进行链接生成二进制可执行文件
     -s  *.tu|dir            编译为tulang代码为linux-amd64汇编文件
     -c  *.s |dir            编译汇编为elf&pecoff跨平台可重定向cpu指令集文件
     -o  *.o |dir            链接elf&pecofff可重定向文件生成最终执行程序
     -d                      开启trace日志打印编译详细过程
-    -gcc                    基于gcc链接生成可执行程序
+    -gcc                    支持通过gcc链接生成最终可执行程序
     -g                      编译tu文件时带上debug段信息,支持栈回溯
-    -nostd                  不编译runtime&std相关内置库代码
+    -std                    编译runtime&std相关内置库代码
 ```
 ## demo
 ![gif](./assets/tulang.gif)
