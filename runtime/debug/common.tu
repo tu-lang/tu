@@ -25,7 +25,7 @@ func debug_init(){
 	// if enabled != 1.(i8) return 1.(i8)
 	if enabled == 1 {
 	elf = new Elf {
-		filepath : runtime.ori_execout
+		filepath : runtime.self_path
 	}
 	elf.init()
 

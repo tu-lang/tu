@@ -13,6 +13,8 @@ ori_argv<u64>
 ori_envs<u64>
 ori_execout<u64*>
 
+self_path<i8*>
+
 ErrorCode<i32> = -1
 
 func args_init(argc<u64>, argv<u64*>){
@@ -49,6 +51,11 @@ func args_init(argc<u64>, argv<u64*>){
 		envp += PointerSize
 	}
 	ori_envs = envs
+	//init current executetable path
+	self_path =  std.realpath("/proc/self/exe".(i8))
+	if self_path < 0 {
+		self_path = ori_execout
+	}
 }
 func runtimeinit(){
 	os.setsignal(os.SIGSEGV,std.segsegvrecv)
@@ -61,12 +68,20 @@ func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	fmt.println("\npanicked! stack backtrace:")
 	buf_o<i8:10> = null
 	rip<u64> = segsegv_rip(ctxt)
+	//self path
+	selfpath = string.new(self_path)
 	if debug.enabled == 1
 		fmt.println("0: " + debug.findpc(rip))
 	else {
 		buf<i8*>	 = &buf_o
 		std.itoa(rip,buf,16.(i8))
-		os.shell("addr2line a.out 0x" + string.new(buf))
+		os.shell(
+			fmt.sprintf(
+				"addr2line -e %s 0x%s",
+				selfpath,
+				string.new(buf)
+			)
+		)
 	}
 	bp<u64*> = gc.get_bp()
 	//skip first stack
@@ -82,7 +97,12 @@ func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 		}else {
 			buf<i8*>	 = &buf_o
 			std.itoa(rip,buf,16.(i8))
-			os.shell("addr2line a.out 0x" + string.new(buf))
+			os.shell(fmt.sprintf(
+					"addr2line -e %s 0x%s",
+					selfpath,
+					string.new(buf)
+				)
+			)
 		}
 		bp = *bp
 		i += 1
