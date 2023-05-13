@@ -264,15 +264,19 @@ comment:
             ts = "\\"
             c = this.next()
             ts += char(c)
-            if ts != "\\0" && specs[ts] == rnull {
+            //OPTIMIZE: map value is static 0
+            if ts == "\\0" {
+                lit = 0
+            }else if specs[ts] == rnull {
                 utils.panic(
-                    "SyntaxError: sepc [%s] character literal should surround with single-quote file:%s line:%d",
+                    "SyntaxError: scanner sepc [%s] character literal should surround with single-quote file:%s line:%d",
                     ts,
                     this.filepath,
                     int(this.line)
                 )
+            }else{
+                lit = specs[ts]
             }
-            lit = specs[ts]
         }
         p<i8> = this.peek()
         if (p != '\'') {
