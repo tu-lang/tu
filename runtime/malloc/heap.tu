@@ -186,7 +186,8 @@ Heap::grow(npage<u64>)
     size<u64> = 0
     v = this.sysAlloc(ask,&size)
     if ( v == 0) {
-        debug("runtime: out of memory: cannot allocate %d -u8 block (%d in use)\n".(i8),ask,0.(i8))
+        debug("runtime: out of memory: %d\n".(i8),npage)
+        debug("runtime: out of memory: %d\n".(i8),pageShift)
         return 0.(i8)
     }
 

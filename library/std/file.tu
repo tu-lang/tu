@@ -54,6 +54,9 @@ func fopen(filename<i8*> , mode<i8*>){
 	if strcmp(mode,*"a+") == runtime.Zero {
 		flags |= O_RDWR | O_CREAT | O_APPEND
 	}
+	if strcmp(mode,*"rb") == runtime.Zero {
+		flags |= O_RDONLY | O_BINARY
+	}
 	fd = open(filename,flags,access)
 	return fd
 }

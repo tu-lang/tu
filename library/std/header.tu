@@ -8,6 +8,7 @@ STDIN<i64>  = 0
 EOF<i64>    = -1
 
 O_RDONLY<i64> = 0
+O_BINARY<i64> = 0
 O_WRONLY<i64> = 1
 O_RDWR<i64>   = 2
 O_CREAT<i64>  = 64
