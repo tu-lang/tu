@@ -70,8 +70,10 @@ Linker::collectInfo()
 					def = this.symDef[symLink.name]
 					defm<linux.Elf64_Sym> = def.prov.symTab[def.name]
 					if linux.ELF64_ST_BIND(defm.st_info) == linux.STB_GLOBAL {
-						utils.debug("符号名定义冲突: ",symLink.name,e.elfdir,def.prov.elfdir)
-						os.exit(-1)
+						utils.errorf(
+							"符号名定义冲突: %s file:%s  from:%s",
+							symLink.name,e.elfdir,def.prov.elfdir
+						)
 					}
 				}
 				this.symDef[symLink.name] = symLink

@@ -28,3 +28,13 @@ func error(str) {
     fmt.println(print_red(str))
     os.exit(-1)
 }
+func errorf(args...) {
+    fmt.println(
+        print_red(
+            fmt.sprintf(
+                args
+            )
+        )
+    )
+    os.exit(-1)
+}
