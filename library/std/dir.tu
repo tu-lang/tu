@@ -5,6 +5,25 @@ use string
 //getdents syscall; implement by syscall/sys_std_amd64.s
 func getdents(fd<u32> , dirent<Dirent> , count<u32>)
 
+//sys_readlink ; implement by asm
+func readlink(name<i8*> , buf<i8*> , bufsize<i32>)
+
+func realpath(name<i8*>) {
+	len<i32> = 0
+	buffer_o<i8:128> = null
+	buffer<i8*> = &buffer_o
+	len = readlink(name,buffer,128.(i8))
+	if len < 0 {
+		fmt.vfprintf(STDOUT,"readlink failed %d".(i8),len)
+		return 0.(i8)
+	}
+	if len >= 128 {
+		fmt.vfprintf(STDOUT,"readlink failed path over 128 %d".(i8),len)
+		return 0.(i8)
+	}
+	return string.newlen(buffer,len)
+}
+
 DT_UNKNOWN<i32> = 0
 DT_FIFO<i32>    = 1
 DT_CHR<i32>     = 2

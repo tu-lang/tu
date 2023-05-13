@@ -120,4 +120,10 @@ std_segsegvrecv:
      call runtime_segsegv_handler
      add $24, %rsp
      retq
+.globl std_readlink
+std_readlink:
+     mov $89 , %rax
+     syscall
+     retq
+
 
