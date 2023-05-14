@@ -2,6 +2,7 @@ enum {
     INVALID ,   TK_EOF,
     KW_STRING,  KW_QUAD,    KW_ZERO,    KW_LONG,    KW_VALUE,
     KW_BYTE,    KW_GLOBAL,  KW_DATA,    KW_TEXT,    KW_SIZE,    KW_LABEL,
+    KW_DEBUG_FILE, KW_DEBUG_LOC,
 
     TK_NUMBER, // int
     TK_DOUBLE, // double

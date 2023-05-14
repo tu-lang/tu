@@ -89,6 +89,16 @@ Parser::parseLex()
                 this.next_expect(ast.KW_LABEL,".size lable , .-?")
                 this.scanner.scan()
             }
+            ast.KW_DEBUG_FILE: {
+                this.next_expect(ast.TK_NUMBER,".file {?}")
+                this.next_expect(ast.TK_STRING,".file {?} {?}")
+                this.scanner.scan()
+            }
+            ast.KW_DEBUG_LOC: {
+                this.next_expect(ast.TK_NUMBER,".loc {?}")
+                this.next_expect(ast.TK_NUMBER,".loc {?} {?}")
+                this.scanner.scan()
+            }
             ast.KW_GLOBAL: this.parseGlobal()
             ast.KW_LABEL : this.parseLabel()
             ast.TK_EOF:    break

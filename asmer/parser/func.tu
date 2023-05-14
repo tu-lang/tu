@@ -26,6 +26,14 @@ Parser::parseFunction(labelname<string.String>) {
             utils.errorf("[Parser] something wrong:%s\n",this.scanner.curlex.dyn())
 
         fc.instructs.push(inst)
+        //.loc
+LPARSE_LOC:
+        if this.scanner.curtoken == ast.KW_DEBUG_LOC {
+            this.next_expect(ast.TK_NUMBER,".loc {?}")
+            this.next_expect(ast.TK_NUMBER,".loc {?} {?}")
+            this.scanner.scan()
+            goto LPARSE_LOC  
+        }
 
         if(this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_CDQ){} else{
             break
