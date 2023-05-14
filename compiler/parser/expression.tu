@@ -510,6 +510,8 @@ Parser::parseVarExpr(var)
                 return call
             }else if reader.curToken == ast.LBRACKET {
                 index = this.parseIndexExpr(pfuncname)
+                index.tyassert = ta
+
                 if this.currentFunc != null  {
                     if this.currentFunc.parser.getImport(package) != "" {
                         index.is_pkgcall  = true
@@ -549,6 +551,7 @@ Parser::parseVarExpr(var)
                     return mexpr
                 }
                 gvar    = new gen.VarExpr(pfuncname,this.line,this.column)
+                gvar.tyassert = ta
                 gvar.package    = package
                 gvar.is_local   = false
                 return gvar

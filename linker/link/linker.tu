@@ -113,8 +113,14 @@ Linker::symValid()
 			if  type == "" {
 				type = "符号"
 			}
-			utils.debug("文件%s的%s名%s为定义",undefine.recv.elf_dir,type,undefine.name)
+			utils.debug("文件%s的%s名%s未定义",undefine.recv.elf_dir,type,undefine.name)
 			if  flag {
+				utils.errorf(
+					"文件%s的%s名%s未定义",
+					undefine.recv.elf_dir,
+					type,
+					undefine.name
+				)
 				flag = false
 			}
 		}
