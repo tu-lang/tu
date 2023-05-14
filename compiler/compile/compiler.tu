@@ -74,7 +74,7 @@ func registerMain()
 func _funcs_offsets(fn)
 {
     for ( closure : fn.closures ) {
-        funcs_offsets(closure)
+        _funcs_offsets(closure)
     }
 
     // assign_offsets(fn)
