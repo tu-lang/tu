@@ -397,7 +397,9 @@ Parser::parseNewExpr()
         "i32"| "u32"| "i64" | "U64" : 
         {
             ret = new gen.NewExpr(this.line,this.column)
-            ret.len = typesize[scanner.keywords[name]]
+            ret.len = typesize[
+                int(scanner.keywords[name])
+            ]
             reader.scan()
             if reader.curToken != ast.LBRACKET
                 return ret //new  i8
