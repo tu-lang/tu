@@ -4,6 +4,7 @@ use compiler.compile
 Null  = null
 EmptyStr = ""
 
+typeids = []
 // I8  = int(ast.I8)  U8  = int(ast.U8) 
 // I16 = int(ast.I16) U16 = int(ast.U16) 
 // I32 = int(ast.I32) U32 = int(ast.U32)
@@ -12,9 +13,11 @@ EmptyStr = ""
 //     I8 : 1 , I16 : 2 , I32 : 4 , I64 : 8,
 //     U8 : 1 , U16 : 2 , U32 : 4 , U64 : 8
 // }
-typeids = {
-    "null":int(ast.Null) , "int" : int(ast.Int) , "double" : int(ast.Double), "string" : int(ast.String),
-    "bool":int(ast.Bool) , "char": int(ast.Char), "array"  : int(ast.Array) , "map"    : int(ast.Map)
+func init(){
+    typeids = {
+        "null":ast.Null , "int" : ast.Int , "double" : ast.Double, "string" : ast.String,
+        "bool":ast.Bool , "char": ast.Char, "array"  : ast.Array , "map"    : ast.Map
+    }
 }
 func exprIsMtype(cond,ctx){
     ismtype = false
