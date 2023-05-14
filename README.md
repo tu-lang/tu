@@ -29,10 +29,9 @@ $ make install
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
 - 单元测试
 ```
-> sh tests_compiler.sh
-> sh tests_asmer.sh
-> sh tests_linker.sh
-> make test -j10 //并发测试
+$ cd tu
+$ sudo make install
+$ make test-all
 ```
 
 ## @数据结构
