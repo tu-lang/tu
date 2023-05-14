@@ -430,6 +430,12 @@ func operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
         LOGOR:       ret =  value_logor(lhs,rhs)
         LOGNOT:      ret =  value_lognot(lhs)
         BITNOT:      ret =  value_bitnot(lhs)
+        MOD | MOD_ASSIGN: {
+            ret =  new Value {
+                type : Int,
+                data : lhs.data % rhs.data
+            }
+        }
         _ : {
             fmt.println("[unary-op] unknown opt:" + int(opt))
             ret = rhs
