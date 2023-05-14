@@ -41,7 +41,7 @@ ForStmt::rangeFor(ctx)
     utils.debugf("gen.ForExpr::rangeFor()")
     c = ast.incr_labelid()
     if this.obj == null 
-        this.panic("statement: for(x,y : obj) obj should pass value. line:%d column:%d",this.line,this.column)
+        this.panic("statement: for(x,y : obj) obj should pass value.")
     
     this.obj.compile(ctx)
     compile.Push()

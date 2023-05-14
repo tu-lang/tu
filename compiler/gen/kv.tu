@@ -103,7 +103,7 @@ IndexExpr::compile(ctx) {
             return this
         }
         ast.Var_Func : {
-            this.panic("meme type can't used in indexpr :%s",this.toString(""))
+            this.panic("meme type can't used in indexpr :" + this.toString(""))
         }
         _ : this.check(false,"unkown type indexexpr::compile")
     }
@@ -160,7 +160,7 @@ IndexExpr::assign( ctx , opt ,rhs) {
             compile.Push()
         }
         ast.Var_Func : {
-            this.panic("meme type can't used in indexpr :%s",this.toString(""))
+            this.panic("meme type can't used in indexpr :" + this.toString(""))
         }
         ast.Var_Global_Extern_Static | ast.Var_Local_Static |ast.Var_Local_Static_Field: {
             return this.assign_static(ctx,opt,rhs)

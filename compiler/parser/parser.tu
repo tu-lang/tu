@@ -92,9 +92,9 @@ Parser::getpkgname()
 {
     return this.pkg.full_package
 }
-Parser::panic(args...){
-    fmt.println("Parser::panic:")
-    err = fmt.sprintf(args)
+//TODO: class member vardic args...
+Parser::panic(err){
+    fmt.println("Parser::panic:",)
     this.check(false,err)
 }
 Parser::check(check<runtime.Value> , err<i8*>)
@@ -109,13 +109,13 @@ Parser::check(check<runtime.Value> , err<i8*>)
 check_panic:
     msg = err
     if err == null msg = ""
-    //FIXME: 这里继续调用this.panic() 导致循环调用栈处理异常
     os.dief (
         "parse: found token error token: %s \n" +
         "msg:%s \n" + 
         "line:%d column:%d file:%s\n",
-        reader.curLex.dyn(),msg,
-        (reader.line),(reader.column),this.filepath
+        reader.curLex.dyn(),
+        msg,
+        int(reader.line),int(reader.column),this.filepath
     )
 }
 Parser::expect(tok<i32>,str){

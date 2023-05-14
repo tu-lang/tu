@@ -145,7 +145,7 @@ class StringExpr  : ast.Ast {
             return null
         }
         if this.name == "" 
-            this.panic("string not computed :%s" , this.toString(""))
+            this.panic("string not computed :" + this.toString(""))
         
         hk = string.hash64string(
             //cal escape hash value 

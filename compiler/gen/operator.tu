@@ -67,7 +67,7 @@ AssignExpr::compile(ctx){
             return this.lhs.assign(ctx,this.opt,this.rhs)
         }
     }
-    this.panic("SyntaxError: can not assign to %s" ,this.lhs.toString())
+    this.panic("SyntaxError: can not assign to " + this.lhs.toString())
 }
 DelRefExpr::compile(ctx){
     utils.debugf("gen.DelExpr::compile()")
@@ -93,7 +93,7 @@ DelRefExpr::compile(ctx){
             this.expr.check(false,"var must be pointer ")
         }
         if var.size != 1 && var.size != 2 && var.size != 4 && var.size != 8{
-            this.panic("type must be [i8 - u64]:%s",this.expr.toString())
+            this.panic("type must be [i8 - u64]:" + this.expr.toString())
         }
         
         compile.LoadSize(var.size,var.isunsigned)
@@ -102,7 +102,7 @@ DelRefExpr::compile(ctx){
         sm = ret
         m = sm.ret
         if m == null{
-            this.panic("del ref can't find the class member:%s",this.expr.toString())
+            this.panic("del ref can't find the class member:" + this.expr.toString())
         }
         if type(this.expr) != type(DelRefExpr) {
             
@@ -121,7 +121,7 @@ DelRefExpr::compile(ctx){
             return ret
         }
     }
-    this.panic("only support del ref for expression :%s",this.expr.toString())
+    this.panic("only support del ref for expression :" + this.expr.toString())
 }
 
 AddrExpr::compile(ctx){
@@ -131,7 +131,7 @@ AddrExpr::compile(ctx){
     if this.expr != null && type(this.expr) == type(ChainExpr) {
         ce = this.expr
         if !ce.ismem(ctx){
-            this.panic("only support & struct.menber %s\n",this.expr.toString())
+            this.panic("only support & struct.menber " + this.expr.toString())
         }
         ce.compile(ctx)
         
@@ -157,10 +157,13 @@ AddrExpr::compile(ctx){
                 
                 if m.bitfield {
                     this.panic(
-                        "AsmError: adress to bitfield error! "
-                        "line:%d column:%d \n\n"
-                        "expression:\n%s\n",
-                        this.line,this.column,this.toString())
+                        fmt.sprintf(
+                            "AsmError: adress to bitfield error! "
+                            "line:%d column:%d \n\n"
+                            "expression:\n%s\n",
+                            this.line,this.column,this.toString()
+                        )
+                    )
                 }
                 return this
             }
@@ -172,7 +175,12 @@ AddrExpr::compile(ctx){
     }
     var = ast.getVar(ctx,this.varname)
     if var == null
-        this.panic("AddExpr: var:%s not exist\n",this.varname)
+        this.panic(
+            fmt.sprintf(
+                "AddExpr: var:%s not exist\n",
+                this.varname
+            )
+        )
     realVar = var.getVar(ctx,this)
     compile.GenAddr(realVar)
 

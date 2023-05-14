@@ -108,8 +108,11 @@ StructMemberExpr::compile(ctx)
 	
 	m = this.getMember()
 	if m == null {
-        this.panic("struct.member: class member:%s not exist  file:%s\n",
-			this.member,filename
+        this.panic(
+			fmt.sprintf(
+				"struct.member: class member:%s not exist\n",
+				this.member
+			)
 		)
 	}
 	compile.GenAddr(this.var)

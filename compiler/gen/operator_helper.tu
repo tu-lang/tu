@@ -129,7 +129,7 @@ OperatorHelper::binary()
 				compile.writeln("	not %%rax")
 				return null
 			}
-			_ :	this.lhs.panic("asmgen: must !,~ at unary expression,not %s\n",ast.getTokenString(this.opt))
+			_ :	this.lhs.panic("asmgen: must !,~ at unary expression,not " + ast.getTokenString(this.opt))
 		}
 	}
 	if this.opt == ast.ASSIGN return null
@@ -280,10 +280,20 @@ OperatorHelper::genLeft()
 			}
 
 			if ret == null || type(ret) != type(VarExpr) 
-				this.lhs.panic("not VarExpr,only support *(class var) = expression :%s %d\n",this.lhs.toString(),this.lhs.line)
+				this.lhs.panic(fmt.sprintf(
+						"not VarExpr,only support *(class var) = expression :%s %d\n",
+						this.lhs.toString(),
+						this.lhs.line
+					)
+				)
 			rv = ret
 			if !rv.structtype
-				this.lhs.panic("not structtype,only support *(class var) = expression :%s\n",this.lhs.toString())
+				this.lhs.panic(
+					fmt.sprintf(
+						"not structtype,only support *(class var) = expression :%s\n",
+						this.lhs.toString()
+					)
+				)
 			
 			this.initcond(true,rv.size,rv.type,rv.pointer)
 			return rv
@@ -309,7 +319,12 @@ OperatorHelper::genLeft()
 		}
 		type(VarExpr) : {
 			if !var.structtype
-				this.lhs.panic("genLeft: lhs not structExpr %s \n",this.lhs.toString())
+				this.lhs.panic(
+					fmt.sprintf(
+						"genLeft: lhs not structExpr %s \n",
+						this.lhs.toString()
+					)
+				)
 			
 			this.initcond(true,var.size,var.type,var.pointer)
 			compile.GenAddr(var)

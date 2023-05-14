@@ -40,10 +40,12 @@ Ast::record(){
     else
         compile.writeln("# line:%d column:%d file:%s",this.line,this.column,cfunc.parser.filepath)
 }
-Ast::panic(args...){
-    err = fmt.sprintf(args)
+Ast::panic(err){
     cfunc = compile.currentFunc
-    parse_err("asmgen error: %s line:%d column:%d file:%s\n",err,this.line,this.column,cfunc.parser.filepath)
+    parse_err(
+        "asmgen error: %s line:%d column:%d file:%s\n",
+        err,this.line,this.column,cfunc.parser.filepath
+    )
 }
 Ast::check( check<runtime.Value> , err<i8*>)
 {
@@ -133,6 +135,7 @@ func getTokenString(tk) {
         CLASS:	return "class"
         DELREF:	return "(*)var"
         MATCH:  return "match"
+        BUILTIN: return "builtin"
         
         I8: return "i8"
         I16: return "i16"

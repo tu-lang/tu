@@ -76,8 +76,12 @@ Parser::parseClassDef()
             
             this.addFunc(s.name + f.name,f)
         }else{
-            cl = reader.curLex.dyn()
-            this.panic("SynatxError: token:" + ast.getTokenString(reader.curToken) + " string:" + cl)
+            this.panic(fmt.sprintf(
+                    "SynatxError: token:%s %s\n" ,
+                    ast.getTokenString(reader.curToken),
+                    reader.curLex.dyn()
+                )
+            )
         }
 
     }
@@ -235,6 +239,8 @@ Parser::genClassInitFunc(clsname)
     f.params_var["this"] = var
     f.params_order_var[] = var
     f.params[] = "this"
+
+    f.block = new ast.Block()
 
     f.isObj = true
     f.clsname = clsname

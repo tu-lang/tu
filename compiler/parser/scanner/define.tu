@@ -12,7 +12,6 @@ keywords = {
 	"use"   : ast.USE, 	   "extern": ast.EXTERN, "class"   : ast.CLASS,
 	"new"   : ast.NEW,     "co"    : ast.CO,     "mem" 	   : ast.MEM, 
 	"match" : ast.MATCH ,  "enum"  : ast.ENUM,   "goto"    : ast.GOTO,
-	"int"   : ast.BUILTIN, "sizeof": ast.BUILTIN,
 }
 builtins = {
     "int" : true , "sizeof" : true , "type" : true,

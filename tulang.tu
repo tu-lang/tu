@@ -69,7 +69,13 @@ Compiler::commadparse(){
             "-g"  : compile.debug    = true
             "-std" : compile.nostd = false
             "-gcc"   : this.flag_gcc = true
-            _     : utils.error("unkown option[%s]",os.argv()[i])
+            _     : {
+                this.print_help()
+                fmt.println(utils.print_red(
+                    fmt.sprintf("unkown option [%s]",os.argv()[i])
+                ))
+                os.exit(-1)
+            }
         }
         i += 1
     }
