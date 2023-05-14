@@ -34,9 +34,9 @@ func link(){
     // args = "tc -p . -p /usr/local/lib/coasm/"
     links = ""
     if debug 
-        links = "gcc  *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
+        links = "gcc  *.s /usr/local/lib/colib/*.o -rdynamic -static -nostdlib -e main"
     else 
-        links = "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
+        links = "gcc -g *.s /usr/local/lib/colib/*.o -rdynamic -static -nostdlib -e main"
     for(pkg : package.packages){
         for(p : pkg.parsers){
             //add external library
