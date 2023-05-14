@@ -105,7 +105,7 @@ ClosureExpr::getType(ctx){
 }
 StructMemberExpr::getType(ctx){
 	m = this.getMember()
-	if m.pointer || m.isclass return ast.U64
+	if m.pointer || m.isstruct return ast.U64
 	return m.type
 }
 AddrExpr::getType(ctx){

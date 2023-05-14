@@ -22,7 +22,7 @@ func GenAddr(var){
     )
 }
 func LoadMember(m){
-    if m.isclass && !m.pointer return false
+    if m.isstruct && !m.pointer return false
     if m.pointer
         LoadSize(8,true)
     else

@@ -267,7 +267,7 @@ OperatorHelper::genLeft()
 				if m.pointer compile.Load()
 				this.lmember = m
 				tk = m.type
-				if m.isclass tk = ast.U64
+				if m.isstruct tk = ast.U64
 				this.initcond(true,m.size,tk,m.pointer)
 				return ce
 			}else if type(ret) == type(StructMemberExpr) {
@@ -305,7 +305,7 @@ OperatorHelper::genLeft()
 			this.lmember = m
 			
 			tk = m.type
-			if m.isclass tk = ast.U64
+			if m.isstruct tk = ast.U64
 			this.initcond(true,m.size,tk,m.pointer)
 			return ce
 		}
@@ -425,7 +425,7 @@ OperatorHelper::genRight(isleft,expr)
 		m = ret
 		v = m.ret
 		tk = v.type
-		if v.isclass tk = ast.U64
+		if v.isstruct tk = ast.U64
 		this.initcond(isleft,v.size,tk,v.pointer)
 		
 		if type(expr) == type(AddrExpr) {
