@@ -99,7 +99,5 @@ test: $(cases)
 	@echo "test passed"
 
 %: ./tests/%
-	@sh tests_compiler.sh $@ ;
-	@sh tests_linker.sh $@  ;
-	@sh tests_asmer.sh $@  ;
+	@sh tests_all.sh $@ ;
 

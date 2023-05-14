@@ -11,7 +11,7 @@ clean() {
 failed(){
     str="$1"
     echo -e "\033[31m$str \033[0m"
-    ps aux|grep tests_compiler.sh|awk '{print $2}' |xargs kill -9
+    ps aux|grep tests_asmer.sh|awk '{print $2}' |xargs kill -9
     exit 1
 }
 check(){
@@ -24,20 +24,30 @@ check(){
     fi
 
 }
+
 assert(){
     expected="$1"
     input="$2"
-    log "[compile] tu -s $input ..."
-    tuc -s $input
+    log "[compile] tu -s $input"
+    clean "*.s"
+    clean "*.o"
+    tu -s $input 
     check
-    echo "gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main"
-    gcc -g *.s /usr/local/lib/coasm/*.s -rdynamic -static -nostdlib -e main 
+    log "[asmer] tu -c ."
+    tu -c . 
+    echo "start linking..."
+    echo "tu -o . -o /usr/local/lib/colib"
+    tu -o . -o /usr/local/lib/colib
+    chmod 777 a.out
     check
+    echo "exec a.out..."
     ./a.out
     check
     rm ./a.out
-    clean "./*.s"
-    clean "./*.o"
+    clean "*.s"
+    clean "*.o"
+    echo "exec done..."
+
     return
 #    failed "[compile] $input failed"
 }
@@ -46,14 +56,14 @@ read_dir(){
     cd $dir
     for file in `ls *.tu`
     do
-    echo $file
+     echo $file
      if [ -d $file ] ; then
         read_dir $file
      else
-        clean "./*.s"
-        clean "./*.o"
+        "clean *.s"
+        "clean *.o"
         assert "OK" $file
-        log "[compile] $file passed!"
+        log "[compile] $file passed!\n"
      fi
     done
     cd ..
@@ -63,7 +73,6 @@ install_env(){
     if [  "$?" != 0 ]; then
         failed "make failed"
     fi
-    clean "./*.s"
 }
 install_env
 if [ "$1" != "" ]; then
@@ -74,7 +83,7 @@ for dir in `ls`
 do
     if [ -d $dir ] ; then
         read_dir $dir
-        clean "$dir/*.o"   
+        clean "$dir/*.o"
         clean "$dir/*.s"
     fi
 done 
