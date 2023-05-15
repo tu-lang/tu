@@ -40,7 +40,7 @@ func compile(){
         "%s target(a.out)",code_file
     ))
     if run {
-        compile.link() # link automaticlly
+        compile.gcclink() # link automaticlly
         os.shell("rm *.s")
         args = "./a.out"
         os.shell(args)

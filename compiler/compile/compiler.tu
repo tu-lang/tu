@@ -28,8 +28,8 @@ func compile(){
         p.compile()
     }
 }
-func link(){
-    utils.debug("compile.link()")
+func gcclink(){
+    utils.debug("compile.gcclink()")
     // TODO: genearte assembly by self
     // args = "tc -p . -p /usr/local/lib/coasm/"
     links = ""

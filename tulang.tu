@@ -116,7 +116,7 @@ Compiler::compiler(file){
     if this.flag_run {
         //By Gcc Link
         if this.flag_gcc {
-            compile.link()
+            compile.gcclink()
             os.shell("rm *.s")
             os.shell("chmod 777 a.out")
         }else {
