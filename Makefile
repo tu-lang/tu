@@ -91,12 +91,13 @@ test_compiler:
 	sh compiler/test.sh
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
-#make test -j9
+
 test-all: test_compiler $(cases)
 	@echo "all test passed"
-	
-test: $(cases)
-	@echo "test passed"
+
+#make test -j9
+tests: $(cases)
+	@echo "all test cases passed"
 
 %: ./tests/%
 	@sh tests_all.sh $@ ;

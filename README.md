@@ -31,7 +31,7 @@ $ make install
 ```
 $ cd tu
 $ sudo make install
-$ make test-all
+$ make tests
 ```
 
 ## @数据结构
