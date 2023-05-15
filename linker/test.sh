@@ -27,7 +27,7 @@ check(){
 
 assert(){
     log "[compile] tu -s linker/main.tu "
-    tuc -s linker/main.tu
+    tu -s linker/main.tu -std
     check
     echo "tu -c /usr/local/lib/coasm -c ."
     tu -c . -c /usr/local/lib/coasm

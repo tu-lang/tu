@@ -5,10 +5,9 @@
     - [ ] windows
 
 # 链接测试demo
-因为compiler和asmer还未自举完成，目前需要靠gcc生成elf对象文件
 ```
 $ cd linker/demo
-$ gcc -c *.s -static -nostdlib -e main
+$ tu -c .
 ```
 链接生成可执行文件生成可执行文件
 ```
