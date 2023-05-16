@@ -1,7 +1,7 @@
 <div align="center">
 <h1>The Tu Programming Language</h1>
 
-[docs](tu-lang.cn) 
+[文档手册:筹备中](tu-lang.cn) 
 
 
 </div>
