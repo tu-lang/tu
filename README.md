@@ -48,6 +48,13 @@ $ make tests
 ## @数据结构
 - [x] 动态类型 int string bool null array map closure object
 - [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 struct
+- [x] func,goto,class,mem
+- [x] return,type,use,if,continue,break
+- [x] while,for|range for,loop
+- [x] match
+
+### @动态写法
+更多用例请看`/tests`
 ```
 use fmt
 class Http{
@@ -78,12 +85,6 @@ func main(){
     fmt.println(cfunc())
 }
 ```
-## @关键字
-- [x] func(函数定义),goto(代码跳转),class(动态class),mem(原生结构体)
-- [x] return,type,use,if,continue,break
-- [x] while,for|range for,loop
-- [x] match
-
 ```
 use fmt
 use os
@@ -109,6 +110,49 @@ func main(){
             os.die("not default")
         }
     }
+}
+```
+### @静态写法
+更多用例请看`/tests`
+```
+enum {
+    Insert,
+    Update
+}
+
+mem Rbtree {
+    RbtreeNode* root
+    RbtreeNode* sentinel
+	u64         insert
+}
+mem RbtreeNode {
+    u64  key
+
+    RbtreeNode* left
+    RbtreeNode* right
+    RbtreeNode* parent
+
+    runtime.Value* k
+    runtime.Value* v
+    u8   color
+}
+Rbtree::find(hk<u64>){
+
+    node<RbtreeNode>     = this.root
+    sentinel<RbtreeNode> = this.sentinel
+
+    while node != sentinel 
+    {
+        if  hk != node.key  {
+            if  hk < node.key {
+                node = node.left
+            }else{
+                node = node.right
+            }
+            continue
+        }
+    }
+    return Null
 }
 ```
 ## License
