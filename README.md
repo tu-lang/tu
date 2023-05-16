@@ -1,9 +1,11 @@
+<div align="center">
 <p>
 <!--<img alt="GitHub" src="https://img.shields.io/github/license/tu-lang/tu">-->
 <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/tu-lang/tu">
 <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/tu-lang/tu?include_prereleases">
 <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/tu-lang/tu">    
 </p>
+</div>
 
 tu-lang(凸）是一种编程语言，旨在创造一种非常简单的零依赖(no glibc)动态&&静态语言,全静态链接，已屏蔽了基于c/c++实现的compiler、asmer、linker，`目前已自举完成: compiler纯动态语法，asmer纯静态语法，linker动静混合语法`.
 ```
