@@ -1,4 +1,11 @@
 <div align="center">
+<h1>The Tu Programming Language</h1>
+
+[docs](tu-lang.cn) 
+
+
+</div>
+<div align="center">
 <p>
 <!--<img alt="GitHub" src="https://img.shields.io/github/license/tu-lang/tu">-->
 <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/tu-lang/tu">
