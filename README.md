@@ -41,7 +41,7 @@ $ make install
 - 单元测试
 ```
 $ cd tu
-$ sudo make install
+$ make && sudo make install
 $ make tests
 ```
 
