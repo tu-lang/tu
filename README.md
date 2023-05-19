@@ -34,7 +34,7 @@ tu  [options] file.tu
 ```asciidoc
 $ git clone https://github.com/tu-lang/tu.git
 $ cd tu
-$ make install
+$ sudo make install
 ```
 ## compiler&asmer&linker测试
 更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
@@ -71,17 +71,17 @@ Http::closure(){
 }
 func main(){
     a = "this is a string" #string
-    fmt.println(a)
     a = 1000 # int
-    fmt.println(a)
-    a = ["1",2,"33",4,"some string word"] #array
-    fmt.print(a[0],a[1],a[2],a[3],a[4]) #or fmt.print(a)
-    b = {"sdfds":"sdfsd",1:2,"sdfds":3,"a":a} #map
+    fmt.println(a,b)
+    a = ["1",2,"33",4,"some string word"] # array
+    fmt.print(a[0],a[1],a[2],a[3],a[4])
+    b = {"sdfds":"sdfsd",1:2,"sdfds":3,"a":a} # map
     fmt.print(b["a"],b["sdfds"])
-    obj = new Http() #object
+
+    obj = new Http() # object
     obj.request = {"method":"POST"}
     obj.handler()
-    cfunc = obj.closure() #closure
+    cfunc = obj.closure()
     fmt.println(cfunc())
 }
 ```
@@ -118,6 +118,7 @@ func main(){
 enum {
     Insert,
     Update
+    Conflict,
 }
 
 mem Rbtree {
@@ -127,14 +128,13 @@ mem Rbtree {
 }
 mem RbtreeNode {
     u64  key
-
+    u8   color
     RbtreeNode* left
     RbtreeNode* right
     RbtreeNode* parent
 
     runtime.Value* k
-    runtime.Value* v
-    u8   color
+    runtime.Value* v[Conflict]
 }
 Rbtree::find(hk<u64>){
 
