@@ -8,6 +8,7 @@ use asmer.asm
 use linker.link 
 //TODO: set by compiler
 root = "/usr/local/lib"
+version = "1.0.0"
 
 class Compiler {
     // origin file
@@ -33,7 +34,8 @@ Compiler::print_help(){
             "  -d           开启trace日志打印编译详细过程\n" +
             "  -gcc         支持通过gcc链接生成可执行程序\n" +
             "  -g           编译tu文件时带上debug段信息,支持栈回溯\n" +
-            "  -std         编译runtime&std相关内置库代码\n"
+            "  -std         编译runtime&std相关内置库代码\n" +
+            "  -v           version\n"
     )
 }
 Compiler::commadparse(){
@@ -69,6 +71,14 @@ Compiler::commadparse(){
             "-g"  : compile.debug    = true
             "-std" : compile.nostd = false
             "-gcc"   : this.flag_gcc = true
+            "-v"  : {
+                fmt.printf(
+                    "tu-lang version: %s\n" +
+                    "Target         : x86_64 linux\n",
+                    version
+                )
+                os.exit(0)
+            }
             _     : {
                 this.print_help()
                 fmt.println(utils.print_red(
@@ -187,7 +197,7 @@ Compiler::compile(){
 }
 func main() {
     eng = new Compiler()
-    if os.argc() < 2 {
+    if os.argc() < 1 {
         return eng.print_help() 
     }
     os.set_stack(10.(i8))
