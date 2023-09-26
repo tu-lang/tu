@@ -64,9 +64,16 @@ build-liba:
 	@echo "install liba  to $(prefix)/lib/colib success"
 
 .PHONEY: release
-release: install build-liba
+release: install build-liba install
 	@echo "release tu liba success"
 	@echo "release bin lib success"
+
+# NOTICE: don't use this
+.PHONEY: release
+dev_release:
+	tuc run tulang.tu	
+	mv a.out release/tu
+	cp release/tu $(prefix)/bin/tu
 
 .PHONY: install
 install: 
@@ -85,17 +92,14 @@ clean:
 
 check: install test
 
-test_compiler:
+test_dev:
+	sh compiler/test.sh
 	sh asmer/test.sh
 	sh linker/test.sh
-	sh compiler/test.sh
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 
-test-all: test_compiler $(cases)
-	@echo "all test passed"
-
-#make test -j9
+# make test -j9
 tests: $(cases)
 	@echo "all test cases passed"
 
