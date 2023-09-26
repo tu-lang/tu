@@ -20,6 +20,17 @@ func test_func_same(){
 	fmt.println("test func same success")
 }
 
+//test block 
+func block(){
+	{
+		a = 1
+		if a == 1 {} else {
+			os.die("a should eq 1")
+		}
+	}
+}
+
 func main(){
 	test_func_same()
+	block()
 }
