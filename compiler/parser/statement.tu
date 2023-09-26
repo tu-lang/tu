@@ -45,6 +45,9 @@ Parser::parseStatement()
             reader.scan()
             node = this.parseMatchSmt()
         }
+        ast.LBRACE: {
+            node = this.parseBlock(false)
+        }
         _ : node = this.parseExpression(1)
     }
     return node
@@ -61,7 +64,7 @@ Parser::parseIfStmt()
     if reader.curToken == ast.LBRACE {
         ifCase.block = this.parseBlock(false)
     }else{
-        ifCase.block = new ast.Block()
+        ifCase.block = new gen.BlockStmt()
         ifCase.block.stmts[] = this.parseStatement()
     }
     node.cases[] = ifCase
@@ -75,7 +78,7 @@ Parser::parseIfStmt()
             if reader.curToken == ast.LBRACE {
                 ice.block =this. parseBlock(false)
             }else {
-                ice.block = new ast.Block()
+                ice.block = new gen.BlockStmt()
                 ice.block.stmts[] = this.parseStatement()
             }
             node.cases[] = ice
@@ -84,7 +87,7 @@ Parser::parseIfStmt()
             if reader.curToken == ast.LBRACE {
                 ice.block = this.parseBlock(false)
             }else {
-                ice.block = new ast.Block()
+                ice.block = new gen.BlockStmt()
                 ice.block.stmts[] = this.parseStatement()
             }
             node.elseCase = ice
@@ -149,7 +152,7 @@ Parser::parseForStmt()
             if reader.curToken == ast.LBRACE {
                 node.block = this.parseBlock(false)
             }else {
-                node.block = new ast.Block()
+                node.block = new gen.BlockStmt()
                 node.block.stmts[] = this.parseStatement()
             } 
             return node
@@ -174,7 +177,7 @@ Parser::parseForStmt()
     if reader.curToken == ast.LBRACE {
         node.block = this.parseBlock(false)
     }else {
-        node.block = new ast.Block()
+        node.block = new gen.BlockStmt()
         node.block.stmts[] = this.parseStatement()
     } 
     return node
@@ -219,7 +222,7 @@ Parser::parseMatchCase(cond)
     if reader.curToken == ast.LBRACE {
         cs.block = this.parseBlock(false) 
     }else{
-        cs.block = new ast.Block()
+        cs.block = new gen.BlockStmt()
         cs.block.stmts[] = this.parseStatement()
     }
     return cs

@@ -11,7 +11,7 @@ Package::InsertInitVarExpression(expr){
         f = new ast.Function()
         //set parser
         f.name = funcname
-        f.block = new ast.Block()
+        f.block = new gen.BlockStmt()
         f.parser = p
         f.package = this 
         p.addFunc(f.name,f) 

@@ -64,7 +64,7 @@ Class::initClassInitFunc()
         }
     }
     if f.block == null {
-        f.block = new Block()
+        f.block = new gen.BlockStmt()
     }
     if this.father == null {
       f.block.checkAndRmFirstSuperDefine()

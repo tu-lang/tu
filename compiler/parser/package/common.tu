@@ -1,6 +1,7 @@
 use compiler.utils
 use compiler.ast
 use compiler.parser.package
+use compiler.gen
 
 
 uniquesig = "initvars_" + utils.strRand()
@@ -30,7 +31,7 @@ Package::initClassInitFunc(name)
     }
 
     if f.block == null {
-        f.block = new ast.Block()
+        f.block = new gen.BlockStmt()
     }
     f.block.InsertExpressionsHead(cs.initmembers)
     return true

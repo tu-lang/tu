@@ -128,9 +128,7 @@ MatchCaseExpr::compile(ctx){
     compile.writeln("%s:",this.label)
     
     if this.block != null {
-        for(stmt : this.block.stmts){
-            stmt.compile(ctx)
-        } 
+        this.block.compile(ctx)
     }
     compile.writeln("   jmp %s", this.endLabel)
     return this

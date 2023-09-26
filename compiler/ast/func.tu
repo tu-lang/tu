@@ -31,7 +31,7 @@ class Function {
     receiver    # ClosureExpr* for reciever point
 
     params      = [] # [string...]
-    block       # Block*
+    block       # BlockStmt*
     retExpr     # Expression*
 
     funcnameid
@@ -56,7 +56,7 @@ Function::InsertFuncall(fullpackage,funcname){
 	call.funcname = funcname
 	call.is_pkgcall = true
 	if this.block == null {
-		this.block = new Block()
+		this.block = new gen.BlockStmt()
 	}
     //FIXME: if current function return|exit early will cause this init instruct not avaiable
 	this.block.stmts[] = call
@@ -64,7 +64,7 @@ Function::InsertFuncall(fullpackage,funcname){
 Function::InsertExpression(expr){
     utils.debug("ast.Function::InsertExpression()")
 	if this.block == null {
-		this.block = new Block()
+		this.block = new gen.BlockStmt()
 	}
 	this.block.stmts[] = expr
 } 

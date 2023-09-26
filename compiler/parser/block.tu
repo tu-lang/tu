@@ -10,7 +10,7 @@ Parser::parseBlock(member)
 {
     utils.debug("parser.Parser::parseBlock()")
     reader<scanner.ScannerStatic>  = this.scanner 
-    node = new ast.Block()
+    node = new gen.BlockStmt()
     reader.scan()
     if member {
         stmt = this.genSuperInitStmt(this.currentFunc)

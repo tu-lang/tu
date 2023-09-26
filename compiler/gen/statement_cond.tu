@@ -86,10 +86,7 @@ ForStmt::rangeFor(ctx)
     std.tail(ctx).start_str = compile.currentParser.label() + ".L.forr.begin"
     std.tail(ctx).continue_str = compile.currentParser.label() + ".L.for.continue"
     
-    
-    for(stmt : this.block.stmts){
-        stmt.compile(ctx)
-    }
+    this.block.compile(ctx) 
     compile.blockdestroy(ctx)
 
     compile.writeln("%s.L.for.continue.%d:",compile.currentParser.label(),c)
@@ -124,10 +121,7 @@ ForStmt::triFor(ctx)
     std.tail(ctx).start_str = compile.currentParser.label() + ".L.for.begin"
     std.tail(ctx).continue_str = compile.currentParser.label() + ".L.for.continue"
     
-    
-    for(stmt : this.block.stmts){
-        stmt.compile(ctx)
-    }
+    this.block.compile(ctx) 
     
     compile.writeln("%s.L.for.continue.%d:",compile.currentParser.label(),c)
     
@@ -179,9 +173,7 @@ WhileStmt::compile(ctx)
     std.tail(ctx).end_str   = compile.currentParser.label() + ".L.while.end"
     std.tail(ctx).start_str = compile.currentParser.label() + ".L.while.begin"
     
-    for(stmt : this.block.stmts){
-        stmt.compile(ctx)
-    }
+    this.block.compile(ctx)
     compile.blockdestroy(ctx)
 
     compile.writeln("    jmp %s.L.while.begin.%d",compile.currentParser.label(),c)
@@ -202,9 +194,7 @@ WhileStmt::dead_compile(ctx)
     std.tail(ctx).end_str   = compile.currentParser.label() + ".L.while.end"
     std.tail(ctx).start_str = compile.currentParser.label() + ".L.while.begin"
     
-    for(stmt : this.block.stmts){
-        stmt.compile(ctx)
-    }
+    this.block.compile(ctx)
     compile.blockdestroy(ctx)
 
     compile.writeln("    jmp %s.L.while.begin.%d",compile.currentParser.label(),c)
@@ -237,9 +227,7 @@ IfCaseExpr::compile(ctx){
     this.record()
     compile.writeln("%s:",this.label)
     if this.block {
-        for(stmt : this.block.stmts){
-            stmt.compile(ctx)
-        } 
+        this.block.compile(ctx)
     }
     compile.writeln("   jmp %s", this.endLabel)
     return this

@@ -240,7 +240,7 @@ Parser::genClassInitFunc(clsname)
     f.params_order_var[] = var
     f.params[] = "this"
 
-    f.block = new ast.Block()
+    f.block = new gen.BlockStmt()
 
     f.isObj = true
     f.clsname = clsname

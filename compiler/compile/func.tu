@@ -80,10 +80,7 @@ func CreateFunction(fn) {
             i += 1
 
         }
-        
-        for(stmt : fn.block.stmts){
-            stmt.compile(funcCtxChain)
-        }
+        fn.block.compile(funcCtxChain) 
         blockdestroy(funcCtxChain)
     }
     if fn.name == "main"
