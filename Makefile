@@ -77,11 +77,11 @@ install:
 clean:
 	@$(CLEAN_ALL); clean_all
 	@echo "clean all fininshed"
-
-test_memory:
-	sh tests_compiler.sh memory
-	sh tests_asmer.sh memory
-	sh tests_linker.sh memory
+# unused
+#test_memory:
+#	sh tests_compiler.sh memory
+#	sh tests_asmer.sh memory
+#	sh tests_linker.sh memory
 
 check: install test
 
