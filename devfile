@@ -1,0 +1,29 @@
+prefix = /usr/local
+
+.PHONY: clean
+clean:
+	@$(CLEAN_ALL); clean_all
+	@echo "clean all fininshed"
+
+test_memory:
+	sh tests_compiler.sh memory
+	sh tests_asmer.sh memory
+	sh tests_linker.sh memory
+
+check: install test
+
+cases = mixed class common datastruct internalpkg memory native operator runtime statement
+
+test_compiler:
+	tuc run tulang.tu
+
+test: test_compiler $(cases)
+	@echo "all test passed"
+
+#make test -j9
+tests: $(cases)
+	@echo "all test cases passed"
+
+%: ./tests/%
+	@sh dev.sh $@ ;
+
