@@ -4,6 +4,8 @@ func die(code<i8>)
 //time ; implement by asm
 func time(t<u64>)
 
+func clock_gettime(clockid<i64>,tp<u64*>)
+
 //nanossleep ; implement by asm
 func nanosleep(sec<u64>)
 

@@ -81,6 +81,12 @@ std_time:
      syscall
      retq
 
+.globl std_clock_gettime
+std_clock_gettime:
+     mov $228 , %rax
+     syscall
+     retq
+
 .globl std_sigreturn
 std_sigreturn:
      mov $15 , %rax

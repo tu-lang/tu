@@ -12,6 +12,13 @@ func rand(v<runtime.Value>){
 	}
 	return int(ret)
 }
+func srand_i64(max<i64>){
+	r<i64> = ntime()
+	if max != null {
+		r %= max
+	}
+	return r
+}
 func srand(v<u64>){
 
 	seed = (seed * 1103515245) + 12345
@@ -133,3 +140,8 @@ func is_array(arr<runtime.Value>){
 	return false
 }
 
+func ntime(){
+	ts<TimeSpec> = new TimeSpec	
+	clock_gettime(CLOCK_REALTIME,ts)
+	return ts.sec * 1000000000 + ts.nsec
+}
