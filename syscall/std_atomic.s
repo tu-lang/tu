@@ -43,12 +43,12 @@ std_atomic_store64:
 
 .global std_atomic_xadd
 std_atomic_xadd:
-    mov     %rdi , %rax
-    mov     %esi , %ecx
+    mov     %rdi , %rdx  
+    mov     %esi , %eax  
     lock 
-    xadd    %ecx , (%rax)
-    mov    (%rax) ,%eax
-    retq
+    xadd    %eax , (%rdx)
+    add     %ecx , %eax
+    ret
 
 .global std_atomic_xadd64
 std_atomic_xadd64:
