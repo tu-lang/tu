@@ -48,7 +48,7 @@ func newarena(){
 	}
 	arenaobj = unused_arena_objects
 	unused_arena_objects = arenaobj.nextarena
-	assert(areobj.address == 0,*"54")
+	assert(arenaobj.address == 0,*"54")
 
 	arenaobj.address = std.malloc(ARENA_SIZE)
 	if  arenaobj.address == 0 {

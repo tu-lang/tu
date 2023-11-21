@@ -106,9 +106,10 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 	return runtime.newobject(runtime.Char,cn)
 }
 func tostring(num<runtime.Value>){
+	str<Str> = null
 	match num.type {
 		runtime.Char :{
-			str<Str> = empty()
+			str = empty()
 			str = str.putc(num.data)
 			return string.new(str)
 		}
