@@ -51,11 +51,12 @@ File::readElf(file)
 	symNum<i32> = sh_symTab.sh_size / sh_symTab.sh_entsize
 
 	symList = []
-	for(i = 0 ; i < symNum ; i += 1){
+	utils.debug("total sym num:",int(symNum))
+	for(i<i32> = 0 ; i < symNum ; i += 1){
 		sym<Elf64_Sym> = utils.fread(fp,sizeof(Elf64_Sym))
 		symList[] = sym
 		name = string.new(strTabData + sym.st_name)		
-		//utils.debug("read symbols table.name:", name)
+		utils.debug("read symbols table.name:", name)
 		this.symbols[] = name
 
 		if  name == "_GLOBAL_OFFSET_TABLE_" {
@@ -67,7 +68,7 @@ File::readElf(file)
 		}
 		if  sym.st_shndx != SHN_UNDEF && sym.st_name == 0 {
 			name = this.shdrNames[int(sym.st_shndx)]
-			//utils.debug("read symbols table.name: " ,name)
+			utils.debug("read symbols table.name: " ,name)
 			if  name != "" {
 				this.symTab[name] = sym
 			}

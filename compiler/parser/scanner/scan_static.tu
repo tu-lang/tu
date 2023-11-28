@@ -195,6 +195,7 @@ ScannerStatic::scan(){
 
 ScannerStatic::get_next() {
     c<i8> = this.next()
+    cn<i8> = 0
     if c == Eof
         return this.token(ast.END,string.emptyS())
 blank:

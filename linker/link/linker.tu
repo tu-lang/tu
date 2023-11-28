@@ -56,14 +56,17 @@ Linker::collectInfo()
 			symLink = new SymLink()
 			symLink.name = name
 			if sym.st_name == 0 {
+				utils.debug("found sec sym:",name)
 				symLink.prov = e
 				symLink.recv = null
 				this.secDef[] = symLink
 			}else if  sym.st_shndx == linux.SHN_UNDEF {
+				utils.debug("found undef sym:",name)
 				symLink.recv = e
 				symLink.prov = null
 				this.symLinks[] = symLink
 			}else if  sym.st_shndx != linux.SHN_ABS {
+				utils.debug("found sym:",name)
 				symLink.prov = e
 				symLink.recv = null
 				if std.exist(symLink.name,this.symDef) {
@@ -166,7 +169,7 @@ Linker::symParser()
 		sec_sym<linux.Elf64_Sym> = sec.prov.symTab[sec.name]
 		segName = sec.prov.shdrNames[int(sec_sym.st_shndx)]
 
-		if  segName == ".bss" && def.name != ".bss" {
+		if  segName == ".bss" && sec.name != ".bss" {
 			this.bssaddr += int(sec_sym.st_size)
 			sec_sym.st_value = *this.bssaddr
 		}else{
