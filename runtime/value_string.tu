@@ -69,7 +69,7 @@ func value_string_mul(lhs<Value>,rhs<Value>)
     //has char
     match lhs.type {
         Char : {
-            tmstr = string.empty()
+            tmstr<string.Str> = string.empty()
             tmstr = tmstr.putc(lhs.data)
             tmstr = tmstr.cat(rhs.data)
             return tmstr
