@@ -87,7 +87,7 @@ ScannerStatic::emptyline(){
     tx<TxStatic> = this.transaction()
     c<i8> = this.next()
     while c != Eof && c != '\n' && c !='#' && c !='/'  {
-        if c != ' ' {
+        if c != ' ' && c != '\t' {
             this.rollback(tx)
             return false
         }

@@ -73,7 +73,7 @@ Scanner::emptyline(){
     tx = this.transaction()
     c = this.next()
     while c != EOF && c != '\n' && c !='#' && c !='/'  {
-        if c != ' ' {
+        if c != ' ' && c != '\t' {
             this.rollback(tx)
             return false
         }
