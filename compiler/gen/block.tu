@@ -50,7 +50,13 @@ BlockStmt::toString(){
     return "BlockStmt"
 }
 BlockStmt::compile(ctx){
+    if !this.hasctx && std.len(this.stmts) > 0 {
+        ctx.create()
+    }
     for( stmt : this.stmts ){
         stmt.compile(ctx)
+    }
+    if !this.hasctx && std.len(this.stmts) > 0 {
+        ctx.destroy()
     }
 }

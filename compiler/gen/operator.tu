@@ -139,7 +139,7 @@ AddrExpr::compile(ctx){
     }
     if this.package != ""{
         
-        var = ast.getVar(ctx,this.package)
+        var = ctx.getOrNewVar(this.package)
         if var != null && var.structtype {
             
             sm = new StructMemberExpr(this.package,this.line,this.column)
@@ -173,7 +173,7 @@ AddrExpr::compile(ctx){
         compile.GenAddr(var)
         return this
     }
-    var = ast.getVar(ctx,this.varname)
+    var = ctx.getOrNewVar(this.varname)
     if var == null
         this.panic(
             fmt.sprintf(

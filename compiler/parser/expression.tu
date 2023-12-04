@@ -119,8 +119,20 @@ Parser::parseExpression(oldPriority)
         if type(p) == type(gen.VarExpr) && this.currentFunc {
             var = p
             
-            if !std.exist(var.varname,this.currentFunc.params_var) && !std.exist(var.varname,this.currentFunc.locals) {
-                this.currentFunc.locals[var.varname] = var
+            // if !std.exist(var.varname,this.currentFunc.params_var) 
+            //         && 
+            //    !std.exist(var.varname,this.currentFunc.locals) {
+            //     this.currentFunc.locals[var.varname] = var
+            // }
+            if var.package == "" && this.currentFunc.params_var[var.varname] == null {
+                hascontext = this.ctx.hasVar(var.varname)
+                if(hascontext != null){
+                    if(!this.currentFunc.FindLocalVar(hascontext.level,var.varname))
+                        this.check(false,"ctx has var , local doesn't has")
+                }else{
+                    this.currentFunc.InsertLocalVar(this.ctx.toplevel(),var)
+                    this.ctx.createVar(var.varname,var)
+                }
             }
         }
 
@@ -249,13 +261,18 @@ Parser::parsePrimaryExpr()
     else if tk == ast.FUNC
     {
         prev    = this.currentFunc
+        prev_ctx    = this.ctx
+
+        this.ctx = new ast.Context()
         closure = this.parseFuncDef(false,true)
+        this.ctx = null
         prev.closures[] = closure
         
         var = new gen.ClosureExpr("placeholder",this.line,this.column)
         closure.receiver = var
         
         this.currentFunc = prev
+        this.ctx = prev_ctx
         return var
     }else if tk == ast.VAR
     {
@@ -490,8 +507,8 @@ Parser::parseVarExpr(var)
                 
                 obj = null
                 if this.currentFunc != null {
-                    if std.exist(var,this.currentFunc.locals)
-                        obj = this.currentFunc.locals[var]
+                    if this.currentFunc.FindLocalVar(this.ctx.toplevel(),var) != null 
+                        obj = this.currentFunc.FindLocalVar(this.ctx.toplevel(),var)
                     else
                         obj = this.currentFunc.params_var[var]
                 }else if std.exist(var,this.gvars) {
@@ -530,7 +547,7 @@ Parser::parseVarExpr(var)
                     me.varname = var
                     me.membername = pfuncname
                     return me
-                }else if(this.currentFunc && (mvar = this.currentFunc.getVar(package)) && mvar != null ){
+                }else if(this.currentFunc && (mvar = this.ctx.getVar(this.currentFunc, package)) && mvar != null ){
                     if ( mvar.structname != "") {
                         mexpr = new gen.StructMemberExpr(package,int(reader.line),int(reader.column))
                         mexpr.tyassert = ta

@@ -19,6 +19,7 @@ EOF = -1 //FXIME: EOF
 count = 1 
 
 class Parser {
+    ctx 
     gvars = {} # map{string:VarExpr} global vars
 
     //stor all global function
@@ -71,7 +72,9 @@ Parser::parse()
     loop {
         match reader.curToken  {
             ast.FUNC : {
+                this.ctx = new ast.Context()
                 f = this.parseFuncDef(false,false)
+                this.ctx = null
                 this.addFunc(f.name,f)
             }
             ast.EXTERN : {

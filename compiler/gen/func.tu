@@ -86,8 +86,8 @@ FunCallExpr::compile(ctx)
     }else if this.package != "" && GP().getGlobalVar("",this.package) != null {
         var = GP().getGlobalVar("",this.package)
         goto OBJECT_MEMBER_CALL
-    }else if ast.getVar(ctx,this.package) != null {
-		var = ast.getVar(ctx,this.package)
+    }else if ctx.getOrNewVar(this.package) != null {
+		var = ctx.getOrNewVar(this.package)
 		OBJECT_MEMBER_CALL:
 		if var.structname != "" && var.structname != null {
 			s = compile.currentParser.pkg.getPackage(var.structpkg)
@@ -120,8 +120,8 @@ FunCallExpr::compile(ctx)
 
 		compile.writeln("	add $8, %%rsp")
 		return null
-	}else if this.package == "" && ast.getVar(ctx,this.funcname) != null {
-		var = ast.getVar(ctx,this.funcname)
+	}else if this.package == "" && ctx.getOrNewVar(this.funcname) != null {
+		var = ctx.getOrNewVar(this.funcname)
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()

@@ -44,8 +44,8 @@ ReturnStmt::compile(ctx)
             }
         }
     }
-    for(i = std.len(ctx) - 1 ; i >= 0 ; i -= 1){
-        p = ctx[i]
+    for(i = std.len(ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
+        p = ctx.ctxs[i]
         funcName = p.cur_funcname
         if funcName != "" {
             compile.writeln("    jmp %s.L.return.%s",compile.currentParser.label(),funcName)
@@ -66,8 +66,8 @@ BreakStmt::compile(ctx)
     utils.debugf("gen.BreakExpr::compile()")
     this.record()
     
-    for(i = std.len(ctx) - 1 ; i >= 0 ; i -= 1){
-        c = ctx[i]
+    for(i = std.len(ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
+        c = ctx.ctxs[i]
         if c.point && c.end_str != ""  {
             compile.writeln("    jmp %s.%d",c.end_str,c.point)
             return null
@@ -87,8 +87,8 @@ ContinueStmt::compile(ctx)
     utils.debugf("gen.ContinueExpr::compile()")
     this.record()
     
-    for(i = std.len(ctx) - 1 ; i >= 0 ; i -= 1){
-        c = ctx[i]
+    for(i = std.len(ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
+        c = ctx.ctxs[i]
         if c.point && c.continue_str != "" {
             compile.writeln("    jmp %s.%d", c.continue_str, c.point)
             return null

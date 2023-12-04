@@ -46,7 +46,7 @@ Parser::parseStatement()
             node = this.parseMatchSmt()
         }
         ast.LBRACE: {
-            node = this.parseBlock(false)
+            node = this.parseBlock(false,false)
         }
         _ : node = this.parseExpression(1)
     }
@@ -61,12 +61,7 @@ Parser::parseIfStmt()
     ifCase = new gen.IfCaseExpr(this.line,this.column)
     ifCase.cond = this.parseExpression(1)
     
-    if reader.curToken == ast.LBRACE {
-        ifCase.block = this.parseBlock(false)
-    }else{
-        ifCase.block = new gen.BlockStmt()
-        ifCase.block.stmts[] = this.parseStatement()
-    }
+    ifCase.block = this.parseBlock()
     node.cases[] = ifCase
     
     while reader.curToken == ast.ELSE {
@@ -75,21 +70,11 @@ Parser::parseIfStmt()
         if reader.curToken == ast.IF {
             reader.scan()
             ice.cond = this.parseExpression(1)
-            if reader.curToken == ast.LBRACE {
-                ice.block =this. parseBlock(false)
-            }else {
-                ice.block = new gen.BlockStmt()
-                ice.block.stmts[] = this.parseStatement()
-            }
+            ice.block = this.parseBlock(false,false)
             node.cases[] = ice
         
         }else{
-            if reader.curToken == ast.LBRACE {
-                ice.block = this.parseBlock(false)
-            }else {
-                ice.block = new gen.BlockStmt()
-                ice.block.stmts[] = this.parseStatement()
-            }
+            ice.block = this.parseBlock(false,false)
             node.elseCase = ice
         }
     }
@@ -98,6 +83,7 @@ Parser::parseIfStmt()
 Parser::parseForStmt()
 {
     utils.debug("parser.Parser::parseForStmt()")
+    this.ctx.create()
     reader<scanner.ScannerStatic> = this.scanner
     node = new gen.ForStmt(this.line,this.column)
     
@@ -135,26 +121,37 @@ Parser::parseForStmt()
             if value != null node.value = value
             if obj != null   node.obj   = obj
 
-            if node.key != null 
-               && !std.exist(node.key.varname,this.currentFunc.params_var) 
-               && !std.exist(node.key.varname,this.currentFunc.locals)
-                this.currentFunc.locals[node.key.varname] = node.key
+            // if node.key != null 
+            //    && !std.exist(node.key.varname,this.currentFunc.params_var) 
+            //    && !std.exist(node.key.varname,this.currentFunc.locals)
+            //     this.currentFunc.locals[node.key.varname] = node.key
 
-            if node.value != null 
-               && !std.exist(node.value.varname,this.currentFunc.params_var)
-               && !std.exist(node.value.varname,this.currentFunc.locals)
-                this.currentFunc.locals[node.value.varname] = node.value
+            // if node.value != null 
+            //    && !std.exist(node.value.varname,this.currentFunc.params_var)
+            //    && !std.exist(node.value.varname,this.currentFunc.locals)
+            //     this.currentFunc.locals[node.value.varname] = node.value
+            if(node.key && !std.exist(node.key.varname,this.currentFunc.params_var) ){
+                hascontext = this.ctx.hasVar(node.key.varname)
+                if(hascontext == null)
+                {
+                    this.ctx.createVar(node.key.varname,node.key)
+                    this.currentFunc.InsertLocalVar(this.ctx.toplevel(),node.key)
+                }
+            }
+            if node.value && !std.exist(node.value.varname,this.currentFunc.params_var) {
+                hascontext = this.ctx.hasVar(node.value.varname)
+                if(hascontext == null)
+                {
+                    this.ctx.createVar(node.value.varname,node.value)
+                    this.currentFunc.InsertLocalVar(this.ctx.toplevel(),node.value)
+                }
+            }
             
             if (hashlparen ){
                 this.expect(ast.RPAREN)
                 reader.scan()
             }
-            if reader.curToken == ast.LBRACE {
-                node.block = this.parseBlock(false)
-            }else {
-                node.block = new gen.BlockStmt()
-                node.block.stmts[] = this.parseStatement()
-            } 
+            node.block = this.parseBlock(false,true)
             return node
         }
         
@@ -174,16 +171,13 @@ Parser::parseForStmt()
         reader.scan()
     }
     
-    if reader.curToken == ast.LBRACE {
-        node.block = this.parseBlock(false)
-    }else {
-        node.block = new gen.BlockStmt()
-        node.block.stmts[] = this.parseStatement()
-    } 
+    node.block = this.parseBlock(false,true)
+    this.ctx.destroy()
     return node
 }
 Parser::parseMatchSmt(){
     utils.debug("parser.Parser::parseMatchSmt()")
+    this.ctx.create()
     reader<scanner.ScannerStatic> = this.scanner
     ms = new gen.MatchStmt(this.line,this.column)
     ms.cond = this.parseExpression(1)
@@ -198,6 +192,7 @@ Parser::parseMatchSmt(){
         ms.cases[] = cs
     }
     reader.scan()
+    this.ctx.destroy()
     return ms
 }
 Parser::parseMatchCase(cond)
@@ -219,12 +214,7 @@ Parser::parseMatchCase(cond)
     }
     this.expect( ast.COLON)
     reader.scan()
-    if reader.curToken == ast.LBRACE {
-        cs.block = this.parseBlock(false) 
-    }else{
-        cs.block = new gen.BlockStmt()
-        cs.block.stmts[] = this.parseStatement()
-    }
+    cs.block = this.parseBlock(false,false)
     return cs
 }
 Parser::parseWhileStmt(dead) {
@@ -244,7 +234,7 @@ Parser::parseWhileStmt(dead) {
         }
     } 
     
-    node.block = this.parseBlock(false)
+    node.block = this.parseBlock(false,false)
     return node
 }
 Parser::parseReturnStmt() {

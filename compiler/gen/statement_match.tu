@@ -15,6 +15,8 @@ MatchStmt::toString(){
 MatchStmt::compile(ctx){
     utils.debug("gen.MatchStmt::compile()")
     this.record()
+    ctx.create()
+
     mainPoint = ast.incr_labelid()
     this.endLabel = compile.currentParser.label() + ".L.match.end." + mainPoint
     
@@ -53,16 +55,14 @@ MatchStmt::compile(ctx){
     
     compile.writeln("   jmp %s", this.defaultCase.label)
     
-    compile.blockcreate(ctx)
-
-    std.tail(ctx).point = mainPoint
-    std.tail(ctx).end_str = compile.currentParser.label() + ".L.match.end"
+    ctx.top().point = mainPoint
+    ctx.top().end_str = compile.currentParser.label() + ".L.match.end"
 
     for(cs : this.cases){
         cs.compile(ctx)
     }
     this.defaultCase.compile(ctx)
-    compile.blockdestroy(ctx)
+    ctx.destroy()
 
     compile.writeln("%s.L.match.end.%d:",compile.currentParser.label(),mainPoint)
     return null

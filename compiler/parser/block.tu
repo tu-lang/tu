@@ -6,10 +6,18 @@ use string
 use compiler.gen
 use compiler.utils
 
-Parser::parseBlock(member)
+Parser::parseBlock(member,hasctx)
 {
     utils.debug("parser.Parser::parseBlock()")
+    if (!hasctx)
+        this.ctx.create()
+    
     reader<scanner.ScannerStatic>  = this.scanner 
+    if(reader.curToken != ast.LBRACE){
+        if(!hasctx)
+            this.ctx.cancel() 
+        return this.parseStatement()
+    }
     node = new gen.BlockStmt()
     reader.scan()
     if member {
@@ -26,6 +34,13 @@ Parser::parseBlock(member)
 
     this.expect(ast.RBRACE,"parse block ")
     reader.scan()
+
+    if(hasctx){
+    }else if std.len(node.stmts) < 1
+        this.ctx.cancel()
+    else {
+        this.ctx.destroy()
+    }
     return node
 }
 
@@ -135,7 +150,10 @@ Parser::genSuperInitStmt(f){
     ass = new gen.AssignExpr(this.line,this.column)
     ass.opt = ast.ASSIGN
     lhs = new gen.VarExpr("super",this.line,this.column)
-    f.locals[lhs.varname] = lhs
+    lhs.type = ast.U64
+    lhs.size = 8
+    lhs.isunsigned = true
+    f.InsertLocalVar(0,lhs)
 
     rhs = new gen.FunCallExpr(this.line,this.column)
     rhs.package = "runtime"

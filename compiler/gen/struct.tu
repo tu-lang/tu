@@ -96,7 +96,7 @@ StructMemberExpr::compile(ctx)
 	filename = compile.currentParser.filename
 
 	if(this.var == null){
-		this.var = ast.getVar(ctx,this.varname)
+		this.var = ctx.getOrNewVar(this.varname)
 	}
 	if(this.var == null){
 		this.var = GP().getGlobalVar(this.varname,this.member)

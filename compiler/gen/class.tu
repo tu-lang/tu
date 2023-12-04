@@ -132,7 +132,7 @@ MemberExpr::compile(ctx)
 	}
 	var = GP().getGlobalVar("",this.varname)
 	if var == null
-		var = ast.getVar(ctx,this.varname)
+		var = ctx.getOrNewVar(this.varname)
 	this.check(var != null,this.toString(""))
 	if var.structtype {
 		mexpr = new StructMemberExpr(this.varname,this.line,this.column)
@@ -175,7 +175,7 @@ MemberExpr::assign(ctx, opt ,rhs)
 
 	var = GP().getGlobalVar("",this.varname)
     if var == null 
-        var = ast.getVar(ctx,this.varname)
+        var = ctx.getOrNewVar(this.varname)
     this.check(var != null,this.toString(""))
 
     compile.GenAddr(var)
@@ -265,7 +265,7 @@ MemberCallExpr::compile(ctx)
 MemberExpr::ismem(ctx){
 	var = GP().getGlobalVar("",this.varname)
     if var == null
-        var = ast.getVar(ctx,this.varname)
+        var = ctx.getOrNewVar(this.varname)
     this.check(var != null,this.toString(""))
     this.ret = var
     if this.tyassert != null return true

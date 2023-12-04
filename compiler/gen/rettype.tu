@@ -178,7 +178,7 @@ NewExpr::getType(ctx){
 MemberExpr::getType(ctx){
 	var = GP().getGlobalVar("",this.varname)
 	if var == null
-		var = ast.getVar(ctx,this.varname)
+		var = ctx.getVar(this.varname)
 	return var.getType(ctx)
 }
 MemberCallExpr::getType(ctx){

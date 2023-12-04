@@ -56,9 +56,9 @@ func CreateFunction(fn) {
     vardic = fn.getVariadic()
     i = 1
     if fn.block != null {
-        funcCtxChain = []
-        blockcreate(funcCtxChain)
-        funcCtx = std.tail(funcCtxChain)
+        ctx = new ast.Context()
+        ctx.create()
+        funcCtx = ctx.top()
         funcCtx.cur_funcname = funcname
 
         vardic = fn.getVariadic()
@@ -70,7 +70,7 @@ func CreateFunction(fn) {
                 "std" | "os" | "string" | "runtime" | "fmt" : continue
             }
             if !arg.structtype && vardic == null {
-                arg.compile(funcCtxChain)
+                arg.compile(ctx)
                 count  = ast.incr_labelid()
                 writeln("   cmp $0,%%rax")
                 writeln("   jne %s.L.args.%d",fn.parser.label(),count)
@@ -80,8 +80,9 @@ func CreateFunction(fn) {
             i += 1
 
         }
-        fn.block.compile(funcCtxChain) 
-        blockdestroy(funcCtxChain)
+        fn.block.hasctx = true
+        fn.block.compile(ctx) 
+        ctx.destroy()
     }
     if fn.name == "main"
         writeln("    mov $0, %%rax")

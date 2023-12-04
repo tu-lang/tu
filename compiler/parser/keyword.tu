@@ -65,7 +65,9 @@ Parser::parseClassDef()
                 s.initmembers[] = member
             }
         }else if reader.curToken == ast.FUNC {
+            this.ctx = new ast.Context()
             f = this.parseFuncDef(true,false)
+            this.ctx = null
             this.check(f != null)
 
             f.isObj = true
@@ -111,6 +113,7 @@ Parser::parseFuncDef(member,closure)
     }
 
     this.expect( ast.LPAREN)
+    this.ctx.create()
     if member {
         var = new gen.VarExpr("this",this.line,this.column)
         node.params_var["this"] = var
@@ -120,11 +123,16 @@ Parser::parseFuncDef(member,closure)
 
     params  = this.parseParameterList()
     std.merge(node.params,params)
+
+    for(it : node.params_order_var){
+        this.ctx.createVar(it.varname,it)
+    }
     node.block = null
     if (reader.curToken == ast.LBRACE)
-        node.block = this.parseBlock(member)
+        node.block = this.parseBlock(member,true)
     
     this.currentFunc = null
+    this.ctx.destroy()
     return node
 }
 

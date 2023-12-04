@@ -74,8 +74,10 @@ Parser::parseClassFunc(var){
     this.expect( ast.COLON )
     
     reader.curToken  = ast.FUNC
-    
+   
+    this.ctx = new ast.Context()
     f = this.parseFuncDef(true,false)
+    this.ctx = null
     this.check(f != null)
     
     f.clsname = var
@@ -101,8 +103,9 @@ Parser::parseExternClassFunc(pkgname){
     this.expect( ast.COLON )
     
     reader.curToken  = ast.FUNC
-    
+    this.ctx = new ast.Context()
     f = this.parseFuncDef(true,false)
+    this.ctx = null
     this.check(f != null)
     
     f.clsname = clsname

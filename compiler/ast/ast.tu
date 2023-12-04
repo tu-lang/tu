@@ -7,6 +7,7 @@ use runtime
 class Ast {
     line = line
     column = column
+    hasctx = false
     func init(line,column) {}
 
     func toString() { return "Ast()" }

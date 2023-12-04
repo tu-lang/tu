@@ -105,7 +105,7 @@ VarExpr::_getVarType(ctx)
             return ast.Var_Local_Static
         return ast.Var_Global_Local
     }
-    this.ret = ast.getVar(ctx,this.package)
+    this.ret = ctx.getOrNewVar(this.package)
     if(this.ret != null){
         if this.ret.structtype
             return ast.Var_Local_Static_Field
@@ -113,7 +113,7 @@ VarExpr::_getVarType(ctx)
     } 
 
     if this.package == "" {
-        this.ret = ast.getVar(ctx,this.varname)
+        this.ret = ctx.getOrNewVar(this.varname)
         if this.ret != null {
             if this.ret.structtype
                 return ast.Var_Local_Static

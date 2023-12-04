@@ -113,10 +113,12 @@ func genOffsets(fn)
             top += 8
         }
     }
-    for var : fn.locals {
-        bottom += var.getStackSize(currentParser)
-        bottom = utils.ALIGN_UP(bottom, 8)
-        var.offset = 0 - bottom
+    for (local : fn.locals){
+        for var : local {
+            bottom += var.getStackSize(currentParser)
+            bottom = utils.ALIGN_UP(bottom, 8)
+            var.offset = 0 - bottom
+        }
     }
     if fn.is_variadic {
         bottom += 8
@@ -155,10 +157,12 @@ func assign_offsets(fn)
     if fn.is_variadic {
         bottom = 48
     }
-    for(var : fn.locals){
-        bottom += var.getStackSize(currentParser)
-        bottom = utils.ALIGN_UP(bottom, 8)
-        var.offset = 0 - bottom
+    for(local : fn.locals){
+        for(var : local){
+            bottom += var.getStackSize(currentParser)
+            bottom = utils.ALIGN_UP(bottom, 8)
+            var.offset = 0 - bottom
+        }
     }
     if fn.is_variadic {
         bottom += 8
@@ -177,13 +181,4 @@ func assign_offsets(fn)
     }
 }
 
-func blockcreate(ctx){
-    temp = new ast.Context()
-    temp.end_str = ""
-    temp.start_str = ""
-    temp.continue_str = ""
-    ctx[] = temp
-}
-func blockdestroy(ctx){
-    return std.pop(ctx)
-}
+
