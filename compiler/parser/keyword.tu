@@ -49,7 +49,17 @@ Parser::parseClassDef()
         if reader.curToken == ast.VAR{
             member = this.parseExpression(1)
             if type(member) == type(gen.VarExpr) {
-                s.members[] = member
+                // s.members[] = member
+                se = new gen.AssignExpr(this.line,this.column)
+
+                me = new gen.MemberExpr(this.line,this.column)
+                me.varname = "this"
+                me.membername = member.varname
+
+                se.lhs = me
+                se.opt = ast.ASSIGN
+                se.rhs = new gen.NullExpr(this.line,this.column)
+                s.initmembers[] = se
             }else {
                 if type(member) != type(gen.AssignExpr) {
                     this.panic("class member only support assign expr:%s",member.toString(""))

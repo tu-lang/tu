@@ -57,7 +57,7 @@ Package::geninit(){
 
 	if this.package == "main" {
 		for(init : this.inits){
-			if init.funcname == mf.funcname continue
+			if init.name == mf.name continue
 			mf.InsertFuncall(init.package.getFullName(),init.name)
 		}
 

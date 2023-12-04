@@ -103,6 +103,7 @@ FunCallExpr::compile(ctx)
 					.getPackage(this.tyassert.pkgname)
 					.getClass(this.tyassert.name)
 			fn = s.getFunc(this.funcname)
+			this.checkFirstThis(ctx,var)
 			this.call(ctx,fn)
 			return null
 		}
