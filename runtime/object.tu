@@ -236,9 +236,6 @@ func _object_member_get(obj<Object>,key<Value>){
     if v == null && obj.father != null {
         v = _object_member_get(obj.father,key)
     }
-    if  v == null {
-        return null
-    }
     return v
 }
 // return value
@@ -248,8 +245,9 @@ func object_member_get(k<u32>,obj<Value>){
         os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
     }
     v<Value> = _object_member_get(obj.data,key)
-    if v == &internal_null {//myabe v is this.name = 0.(i8)
+    if v == null {//myabe v is this.name = 0.(i8)
         fmt.printf("[warn] class memeber not define in %s\n", debug.callerpc())
+        v = &internal_null
     }
     return v
 }
@@ -259,6 +257,8 @@ func object_unary_operator(opt<i32>,k<u32>,v<Value>,obj<Value>){
         return Null
     }
     origin<Value> = _object_member_get(obj.data,int(k))
+    if origin == null origin = &internal_null
+    
     ret<Value> = operator_switch(opt,origin,v)
     object_member_update(obj,k,ret)
 }
