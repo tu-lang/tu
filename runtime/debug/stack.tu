@@ -1,6 +1,15 @@
 use fmt
 use runtime.gc
 use os
+
+CUR_CALLER<i32> = 3
+func callerpc(){
+	sinfo = stack(CUR_CALLER)
+	if std.len(sinfo) >= 3 {
+		return sinfo[2]
+	}
+	return "??:??"
+}
 func stack(level<i32>){
 	bp<u64*> = gc.get_bp()
 	i<i32> = 0
