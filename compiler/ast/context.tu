@@ -60,7 +60,7 @@ Context::getOrNewVar(varname)
     }
     if !hasctx {
         if GF().FindLocalVar(this.toplevel(),varname) != null
-            ret = GF().FindLocalVar(varname)
+            ret = GF().FindLocalVar(this.toplevel(),varname)
         else if GF().params_var[varname] != null
             ret = GF().params_var[varname]
         else if GP().getGlobalVar("",varname) != null 
