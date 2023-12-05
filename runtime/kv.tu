@@ -36,6 +36,12 @@ func kv_get(index<Value>,root<Value>){
             return ret
         }
         String: return string.index_get(root,index)
-        _     : fmt.println("[kv_get] arr or map is invalid ,probably something wrong\n")
+        Null:  fmt.printf("[kv_get] arr or map for null ,probably something wrong %s\n",debug.callerpc())
+        Int:   fmt.printf("[kv_get] arr or map for int ,probably something wrong %s\n",debug.callerpc())
+        Int:   fmt.printf("[kv_get] arr or map for float ,probably something wrong %s\n",debug.callerpc())
+        Int:   fmt.printf("[kv_get] arr or map for bool ,probably something wrong %s\n",debug.callerpc())
+        Int:   fmt.printf("[kv_get] arr or map for char ,probably something wrong %s\n",debug.callerpc())
+        Int:   fmt.printf("[kv_get] arr or map for object ,probably something wrong %s\n",debug.callerpc())
+        _     : fmt.printf("[kv_get] arr or map is invalid ,probably something wrong %s\n",debug.callerpc())
     }
 }
