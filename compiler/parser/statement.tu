@@ -61,7 +61,7 @@ Parser::parseIfStmt()
     ifCase = new gen.IfCaseExpr(this.line,this.column)
     ifCase.cond = this.parseExpression(1)
     
-    ifCase.block = this.parseBlock()
+    ifCase.block = this.parseBlock(false,false)
     node.cases[] = ifCase
     
     while reader.curToken == ast.ELSE {
@@ -130,7 +130,7 @@ Parser::parseForStmt()
             //    && !std.exist(node.value.varname,this.currentFunc.params_var)
             //    && !std.exist(node.value.varname,this.currentFunc.locals)
             //     this.currentFunc.locals[node.value.varname] = node.value
-            if(node.key && !std.exist(node.key.varname,this.currentFunc.params_var) ){
+            if(node.key && this.currentFunc.params_var[node.key.varname] == null){
                 hascontext = this.ctx.hasVar(node.key.varname)
                 if(hascontext == null)
                 {
@@ -138,7 +138,7 @@ Parser::parseForStmt()
                     this.currentFunc.InsertLocalVar(this.ctx.toplevel(),node.key)
                 }
             }
-            if node.value && !std.exist(node.value.varname,this.currentFunc.params_var) {
+            if node.value && this.currentFunc.params_var[node.value.varname] == null {
                 hascontext = this.ctx.hasVar(node.value.varname)
                 if(hascontext == null)
                 {

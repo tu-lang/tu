@@ -2,6 +2,7 @@ use compiler.utils
 use std
 
 class Ctx {
+    level        = 0
     vars         = {} # map{string:VarExpr}
     isFuncArg    = {} # map{string,bool}
 

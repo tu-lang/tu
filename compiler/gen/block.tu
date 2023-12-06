@@ -9,6 +9,9 @@ use compiler.internal
 class BlockStmt : ast.Ast
 {
     stmts = []
+    func init(){
+        super.init()
+    }
 }
 
 BlockStmt::InsertStatementsHead(stmts){
