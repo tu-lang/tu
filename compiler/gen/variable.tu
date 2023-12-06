@@ -129,6 +129,14 @@ VarExpr::_getVarType(ctx)
         this.funcpkg = fn.package.getFullName()
         return ast.Var_Func
     }   
+    for(i = 0 ; i < std.len(GF().locals) ; i += 1){
+        fmt.printf("[%d]:",i)
+        for(name,var : GF().locals[i]){
+            fmt.printf("%s\t",name)
+        }
+        fmt.printf("\n")
+    }
+    fmt.printf("\ntoplevel:%d\n",ctx.toplevel())
     this.check(false,
         fmt.sprintf("get var type use of undefined variable %s.%s at line %d co %d filename:%s\n",
             this.package,this.varname,

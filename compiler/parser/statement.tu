@@ -152,6 +152,7 @@ Parser::parseForStmt()
                 reader.scan()
             }
             node.block = this.parseBlock(false,true)
+            this.ctx.destroy()
             return node
         }
         
