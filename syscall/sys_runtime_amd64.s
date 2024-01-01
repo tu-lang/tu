@@ -53,3 +53,40 @@ runtime_gc_get_bx:
 runtime_callerpc:
     mov 8(%rbp) , %rax
     ret
+
+runtime_sys_settls:
+    add    $0x8,%rdi   
+    mov    %rdi,%rsi
+    mov    $0x1002,%rdi
+    mov    $0x9e,%rax  
+    syscall 
+    cmp    $0xfffffffffffff001,%rax
+    jbe    runtime_sys_settls_ret
+    movl   $0xf1,0xf1
+runtime_sys_settls_ret:
+    retq   
+
+.globl runtime_sys_clone
+runtime_sys_clone: 
+    mov    %rdx , %r12
+    mov    %rcx , %r13
+    mov    %r8 , %r14
+    mov    $0 , %rdx
+    mov    $0 , %r10
+    mov    $0 , %r8
+    mov    $56, %rax
+    syscall
+    cmp    $0x0,%rax
+    je     tc1
+    retq
+tc1:
+    mov    %rsi,%rsp
+    mov    %r12 , %rdi
+    call   os_settls
+    mov    %r14 , %rdi
+    callq  *%r13
+tc2:
+    mov    $0 , %edi
+    mov    $60 , %rax
+    syscall
+    jmp tc2
