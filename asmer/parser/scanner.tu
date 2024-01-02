@@ -38,7 +38,7 @@ labels = {
     "setz": ast.KW_SETZ,       "setnz": ast.KW_SETNZ,        "seta": ast.KW_SETA,      "setae": ast.KW_SETAE,
     "jmp" : ast.KW_JMP,        "not": ast.KW_NOT,         "lea" : ast.KW_LEA,        
     "cmp" : ast.KW_CMP,        "cmpxchgq": ast.KW_CMPXCHG,"cmpxchgl": ast.KW_CMPXCHG,
-    "xchg": ast.KW_XCHG,
+    "xchg": ast.KW_XCHG,       "jbe": ast.KW_JBE,
     "je" : ast.KW_JE,          "jne": ast.KW_JNE,
     "idiv": ast.KW_IDIV,       "div": ast.KW_DIV,        "or": ast.KW_OR,          
     "xor": ast.KW_XOR,          "xorl": ast.KW_XOR,
