@@ -33,7 +33,7 @@ labels = {
     "and" : ast.KW_AND,        "imul" : ast.KW_MUL,      "jg" : ast.KW_JG,        "jl": ast.KW_JL,
     "jle" : ast.KW_JLE,        "jna": ast.KW_JNA,        "dec" : ast.KW_DEC,
 
-    "call": ast.KW_CALL,       "sete": ast.KW_SETE,       "setl": ast.KW_SETL,      "setle": ast.KW_SETLE,    
+    "callq": ast.KW_CALL,      "call": ast.KW_CALL,       "sete": ast.KW_SETE,       "setl": ast.KW_SETL,      "setle": ast.KW_SETLE,    
     "setge": ast.KW_SETGE,     "setbe": ast.KW_SETBE,     "setg": ast.KW_SETG,       "setne": ast.KW_SETNE,    "setb": ast.KW_SETB,
     "setz": ast.KW_SETZ,       "setnz": ast.KW_SETNZ,        "seta": ast.KW_SETA,      "setae": ast.KW_SETAE,
     "jmp" : ast.KW_JMP,        "not": ast.KW_NOT,         "lea" : ast.KW_LEA,        
@@ -56,6 +56,7 @@ labels = {
     "%rax": ast.KW_RAX,      "%rbx": ast.KW_RBX,      "%rcx": ast.KW_RCX,
     "%rdx": ast.KW_RDX,      "%rdi": ast.KW_RDI,     "%rsi": ast.KW_RSI,
     "%r8": ast.KW_R8,        "%r9": ast.KW_R9,       "%r10": ast.KW_R10,
+    "%r11": ast.KW_R11,      "%r12": ast.KW_R12,     "%r13": ast.KW_R13,    "%r14": ast.KW_R14, "%r15": ast.KW_R15,
     "%rsp": ast.KW_RSP,      "%rbp": ast.KW_RBP,     "%rip": ast.KW_RIP,
     "%ax": ast.KW_RAX,
     //debug 

@@ -46,7 +46,7 @@ func reglen(tk<i32>){
     else if(tk >= KW_EAX && tk <= KW_EDI){
         return 4.(i8)
     }
-    else if(tk >= KW_RAX && tk <= KW_R10){
+    else if(tk >= KW_RAX && tk <= KW_R15){
         return 8.(i8)
     }else{
         utils.error("reglen unkown tk:" + int(tk))

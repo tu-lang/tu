@@ -16,7 +16,7 @@ Parser::regoffset(){
         exp<i32> = ast.reglen(ty)
         return ty - ast.KW_AL - (1 - exp%4) * 8
     }
-    if(ty >= ast.KW_R8 && ty <= ast.KW_R10)
+    if(ty >= ast.KW_R8 && ty <= ast.KW_R15)
         return ty - ast.KW_R8
     utils.errorf("regoffset invalid :%d",int(ty))
 }
