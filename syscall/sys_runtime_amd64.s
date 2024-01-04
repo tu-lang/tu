@@ -60,20 +60,20 @@ runtime_sys_settls:
     mov    $0x1002,%rdi
     mov    $0x9e,%rax  
     syscall 
-    #FIXME: cmp    $0xfffffffffffff001,%rax
-    #jbe    runtime_sys_settls_ret
+    cmp    $0xfffffffffffff001,%rax
+    jbe    runtime_sys_settls_ret
+    mov    $101 , %edi
+    mov    $60 , %rax
+    syscall
     #movl   $0xf1,0xf1
-#runtime_sys_settls_ret:
+runtime_sys_settls_ret:
     retq   
 
 .globl runtime_sys_clone
 runtime_sys_clone: 
-    #mov    %rdx , %r12
-    #mov    %rcx , %r13
-    #mov    %r8 , %r14
-    mov    $0 , %rdx
-    mov    $0 , %r10
-    mov    $0 , %r8
+    mov    %rdx , %r12
+    mov    %rcx , %r13
+    mov    %r8 , %r14
     mov    $56, %rax
     syscall
     cmp    $0x0,%rax
@@ -81,10 +81,10 @@ runtime_sys_clone:
     retq
 tc1:
     mov    %rsi,%rsp
-    #mov    %r12 , %rdi
+    mov    %r12 , %rdi
     call   runtime_sys_settls
-    #mov    %r14 , %rdi
-    #call  *%r13
+    mov    %r14 , %rdi
+    call  *%r13
 tc2:
     mov    $0 , %edi
     mov    $60 , %rax

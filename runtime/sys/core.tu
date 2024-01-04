@@ -73,7 +73,7 @@ func newosthread(fc<u64> , arg<i64*> , stk<i64*>, tls<i64*>){
         CLONE_VM | CLONE_FS | 
 		CLONE_FILES | CLONE_SIGHAND | 
 		CLONE_SYSVSEM | CLONE_THREAD 
-	newpid<i32> = clone(cloneFlags, stk ,tls,fc,arg,0)
+	newpid<i32> = clone(cloneFlags, stk ,tls,fc,arg,0.(i8))
 
 	if newpid < 0 {
 		outf("failed to create new OS thread ( errno=%d)\n".(i8),newpid)
