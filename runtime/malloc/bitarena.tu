@@ -36,19 +36,19 @@ GcBitsArena::tryAlloc(u8s<u64>)
 	return &this.bits[start]
 }
 
-func bitarena_newArenaMayUnlock()
+GcBitsArenas::newArenaMayUnlock()
 {
 	result<GcBitsArena> = null
-	if gbArenas.free == null {
-		gbArenas.locks.unlock()
+	if this.free == null {
+		this.locks.unlock()
 		result = sys.alloc(gcBitsChunkBytes)
 		if result == null  {
 			dief("runtime: cannot allocate memory".(i8))
 		}
-		gbArenas.locks.lock()
+		this.locks.lock()
 	} else {
-		result = gbArenas.free
-		gbArenas.free = gbArenas.free.next
+		result = this.free
+		this.free = this.free.next
 		std.memset(result,0.(i8),gcBitsChunkBytes)
 	}
 	result.next = null

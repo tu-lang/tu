@@ -149,7 +149,7 @@ HeapBits::heapBitsForAddr(addr<u64>){
  		return p
  	}
 
-	fresh<GcBitsArena> = bitarena_newArenaMayUnlock()
+	fresh<GcBitsArena> = gbArenas.newArenaMayUnlock()
 
 	p = gbArenas.next.tryAlloc(u8sNeeded)
  	if  p != null {
