@@ -213,9 +213,9 @@ MemberCallExpr::static_compile(ctx,s){
     compile.Push()
 	p = s.parser
     cls = p.pkg.getClass(s.name)
-    fn = cls.getFunc(this.membername)
-    if fn == null this.check(false,"func not exist:" + this.membername)
-    compile.writeln("    lea %s(%%rip), %%rax", fn.fullname())
+    fc = cls.getFunc(this.membername)
+    if fc == null this.check(false,"func not exist:" + this.membername)
+    compile.writeln("    lea %s(%%rip), %%rax", fc.fullname())
     compile.Push()
 	call = this.call
 	params = call.args

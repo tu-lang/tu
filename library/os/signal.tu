@@ -19,13 +19,13 @@ mem Sigactiont  {
 	u64 sa_handler,sa_flags,sa_restorer,sa_mask
 }
 
-func setsignal(i<u32> , fn<u64>) {
+func setsignal(i<u32> , fc<u64>) {
 	sa<Sigactiont> = new Sigactiont
 	sa.sa_flags = _SA_SIGINFO | _SA_ONSTACK | _SA_RESTORER | _SA_RESTART
 	sa.sa_mask = EMPTY_MASK
 
 	// sa.sa_restorer = std.sigreturn
-	sa.sa_handler = fn
+	sa.sa_handler = fc
 	mask_size<i32> = 8
 	std.rt_sigaction(i, sa, Null,mask_size)
 }

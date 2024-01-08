@@ -23,8 +23,8 @@ func func_withargs(a,b,c) {
     fmt.println("has args test")
 }
 func main(){
-    fn = func_noargs
-    fn(1)
+    fc = func_noargs
+    fc(1)
     fwn = func_withargs
     arr = ["c[0]"]
     fwn(1,"iamb",arr)

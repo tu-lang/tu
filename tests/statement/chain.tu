@@ -58,7 +58,7 @@ func call_var(){
 
 }
 func all(){
-	fn = func(){
+	fc = func(){
 		fn1 = func(){
 			arr = ["all"]
 			return arr
@@ -68,7 +68,7 @@ func all(){
 		arr = [obj]
 		return arr
 	}
-	a = fn()[0].p()[0]
+	a = fc()[0].p()[0]
 	if a != "all" {
 		fmt.println("func().[0].p()[0]")
 		os.exit(-1)

@@ -120,13 +120,13 @@ VarExpr::_getVarType(ctx)
             return ast.Var_Local
         }
     }
-    fn = GP().getGlobalFunc(this.package,this.varname,false)
-    if fn {
+    fc = GP().getGlobalFunc(this.package,this.varname,false)
+    if fc {
         this.ret = this
         this.type = ast.U64
 
-        this.funcname = fn.name //save funcname ;compile will use it
-        this.funcpkg = fn.package.getFullName()
+        this.funcname = fc.name //save funcname ;compile will use it
+        this.funcpkg = fc.package.getFullName()
         return ast.Var_Func
     }   
     for(i = 0 ; i < std.len(GF().locals) ; i += 1){
@@ -179,9 +179,9 @@ VarExpr::compile(ctx){
             }
         }
         ast.Var_Func : {  
-            fn = this.funcpkg + "_" + this.funcname
-            utils.debug("found function pointer:%s",fn)
-            compile.writeln("    lea %s(%%rip), %%rax", fn)
+            fc = this.funcpkg + "_" + this.funcname
+            utils.debug("found function pointer:%s",fc)
+            compile.writeln("    lea %s(%%rip), %%rax", fc)
         }
         _ : this.check(false,"unkonwn var type")
     }

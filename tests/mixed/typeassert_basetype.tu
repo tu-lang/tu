@@ -8,10 +8,10 @@ func test_int(){
 
 	if int(num) == 376 {} else os.die("num should be 376")
 
-	fn = func(v<i32>){
+	fc = func(v<i32>){
 		if v == 444 {} else os.die("v should b 444")
 	}
-	fn(444.(i32))
+	fc(444.(i32))
 	fmt.println("test_int success")
 }
 func test_char(){
@@ -19,10 +19,10 @@ func test_char(){
 	_t<i32> = 'd'
 	if _t == c {} else os.die("c != d")
 
-	fn = func(v<i32>){
+	fc = func(v<i32>){
 		if v == 'x'  {} else os.die(" v != x")
 	}
-	fn('x'.(i8))
+	fc('x'.(i8))
 	fmt.println("test_char success")
 }
 func test_string(){

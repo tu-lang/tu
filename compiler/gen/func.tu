@@ -93,18 +93,18 @@ FunCallExpr::compile(ctx)
 			s = compile.currentParser.pkg.getPackage(var.structpkg)
 				.getClass(var.structname)
 			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)
-			fn = s.getFunc(this.funcname)
-			if(fn == null) this.panic("func not exist")
+			fc = s.getFunc(this.funcname)
+			if(fc == null) this.panic("func not exist")
 			this.checkFirstThis(ctx,var)
-			this.call(ctx,fn)
+			this.call(ctx,fc)
 			return null
 		}else if this.tyassert != null {
 			s = compile.currentParser.pkg
 					.getPackage(this.tyassert.pkgname)
 					.getClass(this.tyassert.name)
-			fn = s.getFunc(this.funcname)
+			fc = s.getFunc(this.funcname)
 			this.checkFirstThis(ctx,var)
-			this.call(ctx,fn)
+			this.call(ctx,fc)
 			return null
 		}
 		this.checkobjcall(var)

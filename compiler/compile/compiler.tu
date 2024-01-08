@@ -71,14 +71,14 @@ func registerMain()
     writeln("    ret")
 
 }
-func _funcs_offsets(fn)
+func _funcs_offsets(fc)
 {
-    for ( closure : fn.closures ) {
+    for ( closure : fc.closures ) {
         _funcs_offsets(closure)
     }
 
-    // assign_offsets(fn)
-    genOffsets(fn)
+    // assign_offsets(fc)
+    genOffsets(fc)
 
 }
 func funcs_offsets() 
@@ -91,20 +91,20 @@ func funcs_offsets()
 func classs_offsets() 
 {
     for(c : currentParser.pkg.classes){
-        for(fn : c.funcs){
-            // assign_offsets(fn)
-            genOffsets(fn)
+        for(fc : c.funcs){
+            // assign_offsets(fc)
+            genOffsets(fc)
         }
     }
 
 }
 //NOTICE: stack version
-func genOffsets(fn)
+func genOffsets(fc)
 {
     top = 16
     bottom = 0
 
-    for var : fn.params_order_var {
+    for var : fc.params_order_var {
         top = utils.ALIGN_UP(top, 8)
         var.offset = top
         if var.structtype && !var.pointer && var.type <= ast.U64 && var.type >= ast.I8 {
@@ -113,25 +113,25 @@ func genOffsets(fn)
             top += 8
         }
     }
-    for (local : fn.locals){
+    for (local : fc.locals){
         for var : local {
             bottom += var.getStackSize(currentParser)
             bottom = utils.ALIGN_UP(bottom, 8)
             var.offset = 0 - bottom
         }
     }
-    if fn.is_variadic {
+    if fc.is_variadic {
         bottom += 8
-        fn.size = 0 - bottom
+        fc.size = 0 - bottom
         bottom += 8
-        fn.stack = 0 - bottom
+        fc.stack = 0 - bottom
 
-        fn.stack_size = utils.ALIGN_UP(bottom, 16)
+        fc.stack_size = utils.ALIGN_UP(bottom, 16)
     }else{
-        fn.stack_size = utils.ALIGN_UP(bottom, 16)
+        fc.stack_size = utils.ALIGN_UP(bottom, 16)
     }
 }
-func assign_offsets(fn)
+func assign_offsets(fc)
 {
     utils.debug("compile.assign_offsets()")
     top = 16
@@ -139,7 +139,7 @@ func assign_offsets(fn)
 
     gp = 0
 
-    for(var : fn.params_order_var){
+    for(var : fc.params_order_var){
         if gp + 1 < GP_MAX {
             bottom += 8
             bottom = utils.ALIGN_UP(bottom, 8)
@@ -154,30 +154,30 @@ func assign_offsets(fn)
             }
         }
     }
-    if fn.is_variadic {
+    if fc.is_variadic {
         bottom = 48
     }
-    for(local : fn.locals){
+    for(local : fc.locals){
         for(var : local){
             bottom += var.getStackSize(currentParser)
             bottom = utils.ALIGN_UP(bottom, 8)
             var.offset = 0 - bottom
         }
     }
-    if fn.is_variadic {
+    if fc.is_variadic {
         bottom += 8
-        //TODO: fn.size = -bottom
-        fn.size = 0 - bottom
+        //TODO: fc.size = -bottom
+        fc.size = 0 - bottom
         bottom += 8
-        fn.stack = 0 - bottom
+        fc.stack = 0 - bottom
         bottom += 8
-        fn.l_stack = 0 - bottom
+        fc.l_stack = 0 - bottom
         bottom += 8
-        fn.g_stack = 0 - bottom
+        fc.g_stack = 0 - bottom
 
-        fn.stack_size = utils.ALIGN_UP(bottom, 16)
+        fc.stack_size = utils.ALIGN_UP(bottom, 16)
     }else{
-        fn.stack_size = utils.ALIGN_UP(bottom, 16)
+        fc.stack_size = utils.ALIGN_UP(bottom, 16)
     }
 }
 
