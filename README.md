@@ -60,16 +60,16 @@ use fmt
 class Http{
     # member
     request
-    func handler(){
+    fn handler(){
         fmt.println("hello world!",this.request)
     }
 }
 Http::closure(){
-    return func(){
+    return fn(){
         return ["arr1","arr2",3,4]
     }
 }
-func main(){
+fn main(){
     a = "this is a string" #string
     a = 1000 # int
     fmt.println(a,b)
@@ -88,7 +88,7 @@ func main(){
 ```
 use fmt
 use os
-func main(){
+fn main(){
     arr = [0,1,2,3,4]
     map = {"1":"a","hello":"world","2":"b",3:"c","map":arr}
     for( k,v : map)
