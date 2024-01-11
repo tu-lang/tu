@@ -5,7 +5,7 @@ use fmt
 use runtime.sys
 
 mem Heap {
-    sys.Mutex       locks
+    sys.MutexInter       locks
 
     Treap       free
     Treap       scav

@@ -1,14 +1,6 @@
 use runtime.malloc
 use std
 
-mem Mutex {
-	i64 lock
-	i64 state
-}
-Mutex::init(){}
-Mutex::lock(){}
-Mutex::unlock(){}
-
 enum {
 	CoreRun ,
 	CoreStop ,
@@ -20,7 +12,7 @@ mem Core {
 	Coroutine* 		g0
 	malloc.Cache*	mcache
 	Runner*	 		p
-	Mutex 			locks
+	MutexInter		locks
 	Coroutine*	curg
 	i32    		mallocing
 	Coroutine*	gsignal
@@ -35,8 +27,20 @@ Core::init(){
 	this.mallocing = 0
 	this.state = CoreStop
 }
-// impl by asm
-func clone(cloneflags<u64> , newsp<u64> , tls<u64> , funcp<u64> , args<u64> , args2<u64>)
+fn unlock_callback(lk<MutexInter>){
+	lk.unlock()
+}
+fn park(unlockf<u64> , lk<u64>){
+	if unlockf != null {
+		ok<i32> = unlockf(lk)
+	}
+	//GCTODO: 
+	//schedule();
+}
+
+fn parkunlock(lk<MutexInter>){
+	park(unlock_callback,lk)
+}
 
 func corestart(c<Core>){
     //setcore(c)
@@ -84,3 +88,7 @@ func newosthread(fc<u64> , arg<i64*> , stk<i64*>, tls<i64*>){
 	}
     return newpid
 }
+// impl by asm
+fn core()
+fn setcore()
+fn clone(cloneflags<u64> , newsp<u64> , tls<u64> , funcp<u64> , args<u64> , args2<u64>)

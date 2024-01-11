@@ -90,3 +90,34 @@ tc2:
     mov    $60 , %rax
     syscall
     jmp tc2
+
+.global runtime_sys_core
+runtime_sys_core:
+    movq  %fs:0xfffffffffffffff0,%rax
+    retq
+
+.global runtime_sys_setcore
+runtime_sys_setcore:
+    movq  %rdi,%fs:0xfffffffffffffff0
+    retq
+
+.globl runtime_sys_procyield
+runtime_sys_procyield:
+rsp1:
+    pause
+    sub $0x1, %eax
+    jne rsp1
+    ret
+
+.globl runtime_sys_osyield
+runtime_sys_osyield:
+    mov $24 , %rax
+    syscall
+    ret
+
+.globl runtime_sys_futex
+runtime_sys_futex:
+    mov %rcx , %r10
+    mov $202 , %rax
+    syscall
+    ret

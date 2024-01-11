@@ -13,7 +13,7 @@ mem GcBitsArena {
 }
 
 mem GcBitsArenas {
-    sys.Mutex    locks 
+    sys.MutexInter    locks 
     GcBitsArena* free
     GcBitsArena* next
     GcBitsArena* current

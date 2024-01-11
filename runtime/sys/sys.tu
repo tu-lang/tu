@@ -8,6 +8,22 @@ ncpu<u32> = 0
 
 allm<u64:10> = null
 
+fn futexsleep(addr<u32*> , val<u32> , ns<i64>){
+    if ns < 0 {
+        futex(addr,FUTEX_WAIT,val,Null,Null,Null)
+        return Null
+    }
+    ts<TimeSpec:> = null
+    futex(addr,FUTEX_WAIT,val,&ts,Null,Null)
+}
+fn futexwakeup(addr<u32*> , cnt<u32>) {
+    ret<i32> = futex(addr,FUTEX_WAKE,cnt,Null,Null,Null)
+    if ret >= 0 {
+        return Null
+    }
+    panic<i32*> = 0x1006
+    *panic = 0x1006
+}
 
 func round(n<u64>,a<u64>)
 {

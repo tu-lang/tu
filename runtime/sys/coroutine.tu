@@ -14,6 +14,6 @@ mem Coroutine {
 	u64     	stackguard0 
 	u64 		stackguard1 
 	i64 		gcAssistBytes
-	Mutex 		locks
+	MutexInter  locks
 }
 

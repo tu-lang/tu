@@ -5,7 +5,7 @@ use os
 use runtime.sys
 
 mem Central {
-    sys.Mutex*  locks
+    sys.MutexInter*  locks
     u8     sc
 
     Spanlist  nonempty

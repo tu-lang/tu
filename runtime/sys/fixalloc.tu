@@ -27,7 +27,7 @@ mem Palloc {
 }
 
 globalAlloc<Palloc:>   = null
-ga_lock<Mutex:>
+ga_lock<MutexInter:>
 persistentChunks<u64*> = 0
 
 Fixalloc::init(size<u64>,first<u64*>,arg<u64*>){
