@@ -57,6 +57,9 @@ Parser::parseStructDef()
         }
 	}
 	// s.compute()
+	if this.pkg.structs[s.name] != null {
+		this.check(false,"already define " + s.name)
+	}
 	this.pkg.addStruct(s.name,s)
 	//eat }
 	reader.scan()
