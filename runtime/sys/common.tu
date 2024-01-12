@@ -1,6 +1,8 @@
-//FIXME: __thread  Coroutine* _g_;
 use fmt
 use std
+
+SweepBlockEntries<i64> = 512 
+StackInitSpineCap<i64> = 256
 
 CacheLinePadSize<i64>  = 64
 Null<i64> = 0
