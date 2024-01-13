@@ -2,7 +2,7 @@ use compiler.utils
 use compiler.ast
 use compiler.parser.package
 use compiler.gen
-
+use compiler.compile
 
 uniquesig = "initvars_" + utils.strRand()
 
@@ -69,4 +69,7 @@ Package::getPackage(packagename){
             pkg = package.packages[pkgname]
     }
     return pkg
+}
+func GP(){
+    return compile.currentParser
 }

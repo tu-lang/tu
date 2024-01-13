@@ -213,6 +213,7 @@ MemberCallExpr::static_compile(ctx,s){
     compile.Push()
 	p = s.parser
     cls = p.pkg.getClass(s.name)
+    this.check(cls != null,"class not define "+s.name)
     fc = cls.getFunc(this.membername)
     if fc == null this.check(false,"func not exist:" + this.membername)
     compile.writeln("    lea %s(%%rip), %%rax", fc.fullname())
