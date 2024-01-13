@@ -40,7 +40,7 @@ mem Note{
 }
 Mutex::init(){}
 Mutex::lock(){
-    if(atomic.cas(&this.state,0,MutexLocked) != Null){
+    if atomic.cas(&this.state,Null,MutexLocked) != Null {
         return Null
     }
     awoke<i32> = 0
@@ -65,7 +65,7 @@ Mutex::lock(){
 Mutex::unlock(){
     newo<i32> = atomic.xadd(&this.state,0 - MutexLocked)
     if ((newo + MutexLocked) &MutexLocked ) == 0  {
-        dief("sync: unlock of unlockded mutex")
+        dief(*"sync: unlock of unlockded mutex")
     }
     old<i32> = newo
     loop {
@@ -233,7 +233,7 @@ MutexInter::unlock(){
         dief(*"unlock of unlocked lock key:%d v:%d",this.key,v)
     }
     if  v == mutex_sleeping {
-        futexwakeup(&this.key,1)
+        futexwakeup(&this.key,1.(i8))
     }
 
     c.locks -= 1

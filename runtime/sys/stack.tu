@@ -15,7 +15,8 @@ mem GcSweepBlock {
  
 Stack::push(p<u64>)
 {
-	cursor<u32> = atomic.xadd(&this.index, 1) - 1
+	cursor<u32> = atomic.xadd(&this.index, 1.(i8))
+	cursor  -= 1
 	top<u32>    = cursor / SweepBlockEntries
 	bottom<u32> = cursor % SweepBlockEntries
  
@@ -59,7 +60,7 @@ retry:
 Stack::pop(){
 	cursor<u32> = atomic.xadd(&this.index, -1.(i8))
 	if cursor < 0 {
-		atomic.xadd(&this.index, 1)
+		atomic.xadd(&this.index, 1.(i8))
 		return Null
 	}
 	top<u32> = cursor / SweepBlockEntries
