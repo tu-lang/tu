@@ -93,18 +93,21 @@ tc2:
 
 .global runtime_sys_core
 runtime_sys_core:
-    movq  %fs:0xfffffffffffffff0,%rax
+    #GCTODO:
+    #movq  %fs:0xfffffffffffffff0,%rax
     retq
 
 .global runtime_sys_setcore
 runtime_sys_setcore:
-    movq  %rdi,%fs:0xfffffffffffffff0
+    #GCTODO:
+    #movq  %rdi,%fs:0xfffffffffffffff0
     retq
 
 .globl runtime_sys_procyield
 runtime_sys_procyield:
 rsp1:
-    pause
+    #GCTODO:
+    #pause
     sub $0x1, %eax
     jne rsp1
     ret

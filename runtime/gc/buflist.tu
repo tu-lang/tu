@@ -235,7 +235,7 @@ List::push(node<Node>)
 	newp<u64> = nodePack(node, node.pushcnt)
 	node1<Node> = nodeUnPack(newp)
 	if ( node1 != node ){
-		dief("lfstack.push\n")
+		dief(*"lfstack.push\n")
 	}
 	loop {
 		old<u64> = atomic.load64(this)

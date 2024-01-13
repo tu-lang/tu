@@ -33,9 +33,7 @@ mem Heap {
     Central  centrals[numSpanClasses]
 }
 
-heap_<Heap:> 
-
-func recordspan(vh<Heap>, p<Span>) {
+fn recordspan(vh<Heap>, p<Span>) {
     //TODO:
     // vh.allspans.push(p)
 }
@@ -272,3 +270,240 @@ Heap::allocManual(npage<u64>)
 	this.locks.unlock()
 	return s
 }
+
+fn coalesce_merge(s<Span> , other<Span>,needsScavenge<u8*>,prescavenged<u64*>)
+{
+    s.npages += other.npages
+    s.needzero |= other.needzero
+    if other.startaddr < s.startaddr  {
+        s.startaddr = other.startaddr
+        heap_.setSpan(s.startaddr,s)
+    } else {
+        heap_.setSpan(s.startaddr + (s.npages * sys.pageSize - 1),s)
+    }
+
+    *needsScavenge = *needsScavenge || other.scavenged || s.scavenged
+    *prescavenged += other.released()
+    if ( other.scavenged ) {
+		heap_.scav.removeSpan(other)
+    } else {
+		heap_.free.removeSpan(other)
+    }
+    other.state = mSpanDead
+	heap_.spanalloc.free(other)
+}
+fn coalesce_realign(a<Span> , b<Span> , other<Span>)
+{
+    if sys.pageSize <= physPageSize  {
+        return 0.(i8)
+    }
+    if ( other.scavenged ) {
+		heap_.scav.removeSpan(other)
+    } else {
+		heap_.free.removeSpan(other)
+    }
+	boundary<u64> = b.startaddr
+    if  a.scavenged  {
+        boundary = boundary &~ (physPageSize - 1)
+    } else {
+        boundary = (boundary + physPageSize - 1) &~ (physPageSize - 1)
+    }
+    a.npages = (boundary - a.startaddr) / sys.pageSize
+    b.npages = (b.startaddr + b.npages * sys.pageSize - boundary) / sys.pageSize
+    b.startaddr = boundary
+
+    heap_.setSpan(boundary - 1, a)
+    heap_.setSpan(boundary, b)
+
+    if other.scavenged  {
+		heap_.scav.insert(other)
+    } else {
+		heap_.free.insert(other)
+    }
+}
+Heap::coalesce(s<Span>)
+{
+	needsScavenge<u8> = false
+
+	prescavenged<u64> = s.released()
+	before<Span> = heap_.spanOf(s.startaddr - 1)
+	if  before != null && before.state == mSpanFree
+	{
+		if  s.scavenged == before.scavenged  {
+			coalesce_merge(s,before,&needsScavenge,&prescavenged)
+		} else {
+		    coalesce_realign(before,s,before)
+		}
+	}
+
+	after<Span> = heap_.spanOf(s.startaddr + s.npages * sys.pageSize)
+    if  after != null && after.state == mSpanFree  {
+		if  s.scavenged == after.scavenged  {
+			coalesce_merge(s,after,&needsScavenge,&prescavenged)
+		} else {
+			coalesce_realign(s,after,after)
+		}
+	}
+
+	if  needsScavenge  {
+		s.scavenge()
+	}
+}
+
+Heap::spanOf(p<u64>)
+{
+	ri<u32> = arenaIndex(p)
+	if  arenaL1Bits == 0  {
+		if  arena_l2(ri) >= ( 1 << arenaL2Bits ) {
+			return 0.(i8)
+		}
+	}
+	l2<u64*> = heap_.arenas[arena_l1(ri)]
+	if arenaL1Bits != 0 && l2 == null  { 
+		debug("span not exist!".(i8))
+		return 0.(i8)
+	}
+	pha<HeapArena> = l2[arena_l2(ri)]
+	if pha == null {
+		return 0.(i8)
+	}
+	return pha.spans[(p/sys.pageSize)%pagesPerArena]
+}
+Heap::setSpan(base<u64> , s<Span>)
+{
+	ai<u32> = arenaIndex(base)
+	arr<u64*> = this.arenas[arena_l1(ai)]
+
+	p<HeapArena> = arr[arena_l2(ai)]
+	p.spans[(base / sys.pageSize) % pagesPerArena] = s
+}
+Heap::setSpans(base<u64>,npage<u64>,s<Span> )
+{
+	p<u64> = base / sys.pageSize
+	ai<u32> = arenaIndex(base)
+	arr<u64*> = this.arenas[arena_l1(ai)]
+	ha<HeapArena> = arr[arena_l2(ai)]
+
+    for n<u64> = 0; n < npage; n += 1  {
+		i<u64> = (p + n) % pagesPerArena
+        if  i == 0 {
+            ai = arenaIndex(base + n * sys.pageSize)
+            arr = this.arenas[arena_l1(ai)]
+            ha  = arr[arena_l2(ai)]
+        }
+		ha.spans[i] = s
+        // (*ha).spans[i] = s
+    }
+}
+Heap::scavengeLargest(nu8s<u64>){return 0.(i8)}
+
+Heap::sysAlloc(n<u64> , ssize<u64*>)
+{
+	size<u64> = 0
+	n = sys.round(n, heapArenaBytes)
+
+	v<u64*> = this.arena.alloc(n,heapArenaBytes)
+	if v != null {
+		size = n
+		goto mapped
+	}
+
+	while this.arenaHints != null {
+		hint<ArenaHint> = this.arenaHints
+		p<u64> = hint.addr
+		if hint.down {
+			p -= n
+		}
+		if( p+n < p ){
+			v = null
+		} else if arenaIndex(p + n - 1) >= 1 << arenaBits {
+			v = null
+		} else {
+			v = sys.reserve(p, n)
+		}
+		if( p == v ){
+			if !hint.down {
+				p += n
+			}
+			hint.addr = p
+			size = n
+			break
+		}
+		if v != null {
+			sys.free(v, n)
+		}
+		this.arenaHints = hint.next
+		this.arenaHintAlloc.free(hint)
+	}
+
+	if size == 0 {
+		v<u64*> = 0
+		size<u64> = n
+
+		v = sys.reserveAligned(0.(i8),&size,heapArenaBytes)
+		if( v == null ){
+			*ssize = 0
+			return 0.(i8)
+		}
+		hint<ArenaHint> = this.arenaHintAlloc.alloc()
+		hint.addr = v
+		hint.down = true
+		hint.next = this.arenaHints
+		this.arenaHints = hint
+
+		hint = this.arenaHintAlloc.alloc()
+		hint.addr = v + size
+		hint.down = true
+		hint.next = this.arenaHints
+		this.arenaHints = hint
+	}
+
+	bad<i32> = 0
+	p<u64> = v
+	if( p+size < p ){
+		bad = 1
+		//"region exceeds u64 range"
+	} else if( arenaIndex(p) >= 1<<arenaBits ){
+		bad = 1
+		//"base outside usable address space"
+	} else if( arenaIndex(p+size - 1) >= 1<<arenaBits ){
+		bad = 1
+		//"end outside usable address space"
+	}
+	// if( bad != "" ){
+	if bad {
+		dief("memory reservation exceeds address space limit".(i8))
+	}
+
+	if v&(heapArenaBytes - 1) != 0  {
+		dief("misrounded allocation in sysAlloc".(i8))
+	}
+
+	sys.map(v,size)
+
+mapped: 
+	for ri<u32> = arenaIndex(v); ri <= arenaIndex(v+size - 1); ri += 1  {
+		l2<u64*> = this.arenas[arena_l1(ri)]
+		if l2 == null {
+			l2 = sys.fixalloc( 1 << arenaL2Bits * ptrSize,ptrSize)
+			if l2 == null {
+				dief("out of memory allocating heap arena map".(i8))
+			}
+			atomic.store64(&this.arenas[arena_l1(ri)],l2)
+		}
+		if l2[arena_l2(ri)] != null {
+			dief("arena already initialized".(i8))
+		}
+		r<HeapArena> = 0
+        r = sys.fixalloc(sizeof(HeapArena), ptrSize)
+        if r == null {
+            dief("out of memory allocating heap arena metadata".(i8))
+        }
+		//OPTIMIZE:
+		atomic.store64(l2 + arena_l2(ri) * ptrSize, r)
+	}
+
+    *ssize = size
+	return v
+}
+

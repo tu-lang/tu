@@ -9,8 +9,6 @@ mem Cache {
     u64       local_nsmallfree[_NumSizeClasses]
     u32       flushGen
 }
-emptyspan<Span:>
-
 
 Cache::nextFree(spc<u8>,ss<u64*>,shouldhelpgc<u8*>)
 {
@@ -66,7 +64,7 @@ Cache::refill(spc<u8>)
 
 	this.alloc[spc] =  s
 }
-func allocmcache(){
+fn allocmcache(){
 	heap_.locks.lock()
 	c<Cache> = heap_.cachealloc.alloc()
 	c.flushGen = heap_.sweepgen
