@@ -1,6 +1,5 @@
 use std
 use os
-use runtime.sys
 
 mem ArenaHint {
     u64        addr
@@ -34,8 +33,8 @@ fn pageIndexOf(p<u64> , pageIdx<u64*> , pageMask<u8*>)
     arr<u64*> = heap_.arenas[arena_l1(ai)]
 
     arena<u64*> = arr[arena_l2(ai)]
-    *pageIdx = ((p / sys.pageSize) / 8) % (pagesPerArena / 8 )
-    *pageMask = 1 << ((p / sys.pageSize) % 8)
+    *pageIdx = ((p / pageSize) / 8) % (pagesPerArena / 8 )
+    *pageMask = 1 << ((p / pageSize) % 8)
     return arena
 }
 
@@ -46,7 +45,7 @@ mem GcBitsArena {
 }
 
 mem GcBitsArenas {
-    sys.MutexInter    locks 
+    MutexInter   locks 
     GcBitsArena* free
     GcBitsArena* next
     GcBitsArena* current
@@ -74,7 +73,7 @@ GcBitsArenas::newArenaMayUnlock()
 	result<GcBitsArena> = null
 	if this.free == null {
 		this.locks.unlock()
-		result = sys.alloc(gcBitsChunkBytes)
+		result = sys_alloc(gcBitsChunkBytes)
 		if result == null  {
 			dief("runtime: cannot allocate memory".(i8))
 		}
@@ -238,4 +237,273 @@ fn nextMarkBitArenaEpoch()
 	gbArenas.current = gbArenas.next
 	atomic.store64(&gbArenas.next,0.(i8))
 	gbArenas.locks.unlock()
+}
+
+mem Cache {
+    u64    local_scan , tiny , tinyoffset , local_tinyallocs
+    Span*     alloc[numSpanClasses]
+    u64       local_nsmallfree[_NumSizeClasses]
+    u32       flushGen
+}
+
+Cache::nextFree(spc<u8>,ss<u64*>,shouldhelpgc<u8*>)
+{
+	s<Span> = this.alloc[spc]
+	*shouldhelpgc = false
+	freeIndex<u64> = s.nextFreeIndex()
+
+	if freeIndex == s.nelems {
+		if s.allocCount != s.nelems {
+			dief("s.allocCount != s.nelems && freeIndex == s.nelems".(i8))
+		}
+		this.refill(spc)
+		*shouldhelpgc = true
+		s = this.alloc[spc]
+
+		freeIndex = s.nextFreeIndex()
+	}
+
+	if freeIndex >= s.nelems {
+		dief("freeIndex is not valid".(i8))
+	}
+	v<u64> = freeIndex* s.elemsize + s.startaddr
+	s.allocCount += 1
+	if s.allocCount > s.nelems {
+		dief("s.allocCount > s.nelems".(i8))
+	}
+	return v
+}
+Cache::refill(spc<u8>)
+{
+	s<Span> = this.alloc[spc]
+
+	if s.allocCount != s.nelems {
+		dief("refill of span with free space remaining\n".(i8))
+	}
+	if s != &emptyspan {
+		if s.sweepgen != heap_.sweepgen + 3 {
+			dief("bad sweepgen in refill\n".(i8))
+		}
+		atomic.store32(&s.sweepgen,heap_.sweepgen)
+	}
+
+	s = heap_.centrals[spc].cacheSpan()
+	if s == null {
+		dief("out of memory".(i8))
+	}
+
+	if s.allocCount == s.nelems {
+		dief("span has no free space".(i8))
+	}
+
+	s.sweepgen = heap_.sweepgen +  3
+
+	this.alloc[spc] =  s
+}
+fn allocmcache(){
+	heap_.locks.lock()
+	c<Cache> = heap_.cachealloc.alloc()
+	c.flushGen = heap_.sweepgen
+	heap_.locks.unlock()
+	for i<i32> = 0 ; i < numSpanClasses ; i += 1{
+		c.alloc[i] = &emptyspan
+	}
+	return c
+}
+
+Cache::releaseAll()
+{
+	for i<i32> = 0 ; i < numSpanClasses ; i += 1 {
+		s<Span> = this.alloc[i]
+		if s != &emptyspan {
+			heap_.centrals[i].uncacheSpan(s)
+			this.alloc[i] = &emptyspan
+		}
+	}
+	atomic.store32(&this.flushGen,heap_.sweepgen)
+
+	this.tiny = 0
+	this.tinyoffset = 0
+}
+
+mem Central {
+    MutexInter*  locks
+    u8     sc
+
+    Spanlist  nonempty
+    Spanlist  empty
+    u64    	  nmalloc
+}
+
+
+Central::init(i<u8>)
+{
+	this.sc = i
+	this.empty.first = null
+	this.empty.last  = null
+
+	this.nonempty.first = null
+	this.nonempty.last  = null
+
+}
+
+Central::cacheSpan()
+{
+	spanBytes<u64> = class_to_allocnpages[sizeclass(this.sc)] * pageSize
+
+	this.locks.lock()
+	traceDone<u8> = false
+	sg<u32> = heap_.sweepgen
+	
+cachespanretry:
+	s<Span> = null
+	for ( s = this.nonempty.first; s != null; s = s.next ) {
+
+		if s.sweepgen == sg - 2 && atomic.cas(&s.sweepgen,sg - 2,sg - 1) == True {
+			this.nonempty.remove(s)
+			this.empty.insertback(s)
+			this.locks.unlock()
+			goto havespan
+		}
+		if s.sweepgen == sg - 1 {
+			continue
+		}
+		this.nonempty.remove(s)
+		this.empty.insertback(s)
+		this.locks.unlock()
+		goto havespan
+	}
+
+	for s = this.empty.first; s != null; s = s.next {
+		if s.sweepgen == sg - 2 && atomic.cas(&s.sweepgen, sg - 2, sg - 1) == True {
+			this.empty.remove(s)
+			this.empty.insertback(s)
+			this.locks.unlock()
+			freeIndex<u64> = s.nextFreeIndex()
+			if freeIndex != s.nelems {
+				s.freeindex = freeIndex
+				goto havespan
+			}
+			this.locks.lock()
+			goto cachespanretry
+		}
+		if s.sweepgen == sg - 1 { 
+			continue
+		}
+		break
+	}
+	this.locks.unlock()
+
+	s = this.grow()
+	if s == null {
+		return 0.(i8)
+	}
+	this.locks.lock()
+	this.empty.insertback(s)
+	this.locks.unlock()
+
+havespan:
+
+	n<i32> = s.nelems - s.allocCount
+	if n == 0 || s.freeindex == s.nelems || s.allocCount == s.nelems {
+		dief("span has no free objects".(i8))
+	}
+	atomic.xadd64(&this.nmalloc, n)
+	usedBytes<u64> = s.allocCount * s.elemsize
+	if gcBlackenEnabled != 0 {
+		// heap_live changed.
+		//		gcController.revise()
+	}
+	_t<i64> = 63
+	freeByteBase<u64> = s.freeindex &~ _t
+	whichByte<u64>    = freeByteBase / 8
+	s.refillAllocCache(whichByte)
+
+	s.allocCache >>= s.freeindex % 64
+
+	return s
+}
+
+
+Central::grow()
+{
+	npages<u64> = class_to_allocnpages[sizeclass(this.sc)]
+	size<u64>   = class_to_size[sizeclass(this.sc)]
+	n<u64> 	   = (npages << pageShift) / size
+
+	s<Span> = heap_.alloc(npages, this.sc, 0.(i8), 1.(i8))
+	if s == null {
+		return 0.(i8)
+	}
+
+	p<u64> = s.startaddr
+	s.limit = p + size * n
+	h<HeapBits:> = null
+	h.heapBitsForAddr(s.startaddr)
+	h.initSpan(s)
+	return s
+}
+
+Central::freeSpan(s<Span> , preserve<u8> , wasempty<u8>)
+{
+	sg<u32> = heap_.sweepgen
+
+	if  s.sweepgen == sg + 1 || s.sweepgen == sg + 3 {
+		dief("freeSpan given cached span".(i8))
+	}
+	s.needzero = 1
+
+	if preserve {
+		if s.list == null {
+			dief("can't preserve unlinked span".(i8))
+		}
+		atomic.store(&s.sweepgen,heap_.sweepgen)
+		return 0.(i8)
+	}
+
+	this.locks.lock()
+
+	if wasempty {
+		this.empty.remove(s)
+		this.nonempty.insert(s)
+	}
+
+	atomic.store(&s.sweepgen,heap_.sweepgen)
+
+	if s.allocCount != 0 {
+		this.locks.unlock()
+		return 0.(i8)
+	}
+	this.nonempty.remove(s)
+	this.locks.unlock()
+	heap_.freeSpan(s,0.(i8))
+	return 1.(i8)
+}
+
+Central::uncacheSpan(s<Span>)
+{
+	if s.allocCount == 0 {
+		dief("uncaching span but s.allocCount == 0".(i8))
+	}
+
+	sg<u32>  = heap_.sweepgen
+	stale<u8> = s.sweepgen == sg+1
+	if stale {
+		atomic.store(&s.sweepgen, sg - 1)
+	} else {
+		atomic.store(&s.sweepgen, sg)
+	}
+
+	n<i32> = s.nelems - s.allocCount
+	if  n > 0 {
+		this.locks.lock()
+		this.empty.remove(s)
+		this.nonempty.insert(s)
+		if  !stale {
+		}
+		this.locks.unlock()
+	}
+
+	if stale {
+	}
 }

@@ -1,5 +1,4 @@
 use std
-use runtime.sys
 use os
 
 mem Spanlist {
@@ -166,7 +165,7 @@ Span::ppbounds(start<u64*>,end<u64*>)
 {
     *start = this.startaddr
     *end   = *start + this.npages << pageShift
-    if ( physPageSize > sys.pageSize ) {
+    if ( physPageSize > pageSize ) {
         *start = (*start + physPageSize - 1) &~ (physPageSize - 1)
         *end   = *end &~ (physPageSize - 1)
     }
@@ -191,7 +190,7 @@ Span::scavenge()
     }
     released = end - start
     this.scavenged = true
-    sys.unused(start,released)
+    sys_unused(start,released)
     return released
 }
 Span::refillAllocCache(whichByte<u64>)
@@ -221,7 +220,7 @@ Span::nextFreeIndex()
 	}
 
 	aCache<u64> = this.allocCache
-	bitIndex<i32>  = sys.ctz64(aCache)
+	bitIndex<i32>  = ctz64(aCache)
 	_t<i32> = 63
 	while( bitIndex == 64 ){
 		sfreeindex = (sfreeindex + 64) &~ _t
@@ -232,7 +231,7 @@ Span::nextFreeIndex()
 		whichByte<u64> = sfreeindex / 8
 		this.refillAllocCache(whichByte)
 		aCache = this.allocCache
-		bitIndex = sys.ctz64(aCache)
+		bitIndex = ctz64(aCache)
 	}
 	result<u64> = sfreeindex + (bitIndex)
 	if( result >= snelems ){
@@ -309,7 +308,7 @@ Spanlist::isEmpty(){
 
 Span::nextFreeFast()
 {
-	theBit<i32> = sys.ctz64(this.allocCache)
+	theBit<i32> = ctz64(this.allocCache)
 	if theBit < 64  {
 		result<u64> = this.freeindex + (theBit)
 		if( result < this.nelems ){

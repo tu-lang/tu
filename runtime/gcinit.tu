@@ -1,4 +1,3 @@
-use runtime.sys
 fn gcinit(){
 	heap_.sweepdone = 1
 	//GCTODO:
@@ -74,7 +73,7 @@ Gc::finishsweep(){
 	gbArenas.locks.unlock()
 }
 fn gcmarkhelper(){
-	c<sys.Core> = sys.core()
+	c<Core> = core()
 	//GCTODO:
 	//gc.markscan2(&c.queue)
 	

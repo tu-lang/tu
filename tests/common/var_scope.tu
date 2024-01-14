@@ -6,7 +6,6 @@ use std.map
 use std.atomic	
 use std.regex					
 use runtime	
-use runtime.sys	
 use runtime.debug	
 use time	
 func test_undefine(){

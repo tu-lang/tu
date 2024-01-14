@@ -33,8 +33,6 @@ maxSmallSize<i64>	 =  32768
 wordsPerBitmapByte<i64> = 4
 pageShift<i64>        = 13 
 PageMask<i64>   = 8191 
-pageSize<i64>   = 8192
-ptrSize<i64>	= 8
 u64Mask<u64>		 =  9223372036854775808
 
 heapBitsShift<i64>		= 1
@@ -47,15 +45,26 @@ _GCoff<i64>  =  1
 _GCmark<i64> =  2                  
 _GCmarktermination<i64> =  3
 ARRAY_SIZE<i64> =  8
-STDOUT<i64> = 1
 
-g_<sys.Coroutine>
+g_<Coroutine>
 heap_<Heap:> 
-physPageSize<u64> = 0
-m0<sys.Core:>
-g0<sys.Coroutine:>
+m0<Core:>
+g0<Coroutine:>
 emptyspan<Span:>
 
+mem TimeSpec {
+    i64 tv_sec
+    i64 tv_nsec
+}
+TimeSpec::init(ns<i64>){
+    this.tv_sec  = ns / 1000000000
+    this.tv_nsec = ns % 1000000000
+}
+
+// impl by asm
+fn osyield()
+fn procyield(cnt<i64>)
+fn futex(addr<u32*>,op<i32> ,val<u32>,ts<u64> ,addr2<u64>,val3<u32>)
 
 fn bool2int(x<u8>){return x}
 fn sizeclass(sc<u8>){

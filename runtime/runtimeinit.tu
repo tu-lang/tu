@@ -19,10 +19,10 @@ ErrorCode<i32> = -1
 
 fn mallocinit()
 {
-	sys.ncpu = 4
-	sys.physPageSize = 4096
-	sys.gcphase = _GCoff
-	sys.gcBlackenEnabled = false
+	ncpu = 4
+	physPageSize = 4096
+	gcphase = _GCoff
+	gcBlackenEnabled = false
 
 	heap_.init()
 
@@ -48,8 +48,8 @@ fn mallocinit()
 		heap_.arenaHints = hint
 	}
 
-	sys.allm[0] = g_.m
-	while(sys.gcphase != _GCoff){}
+	allm[0] = g_.m
+	while(gcphase != _GCoff){}
 
 }
 

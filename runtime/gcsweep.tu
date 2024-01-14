@@ -1,5 +1,4 @@
 use std.atomic
-use runtime.sys
 
 Gc::sweep(){
 	debug(*"spans wait sweep:%d gc.forced:%d",heap_.sweepSpans[heap_.sweepgen/2%2].spineLen,this.forced)
@@ -14,12 +13,12 @@ Gc::sweep(){
 		dief(*"non-empty swept list")
 	}
 	heap_.locks.unlock()
-	c_<sys.Core> = sys.core()
-	for c<sys.Core> = sched.allcores; c != Null ; c = c.link {
+	c_<Core> = core()
+	for c<Core> = sched.allcores; c != Null ; c = c.link {
 		if c.cid == c_.cid continue
 		c.helpsweep = 1
-		if c.status != sys.CoreStop
-			dief(*"thread:%d cur:%d not sleep",c.cid,sys.core().cid)
+		if c.status != CoreStop
+			dief(*"thread:%d cur:%d not sleep",c.cid,core().cid)
 		c.park.Wake()
 	}		
 	dgc(*"Wake all thread sweeping")
@@ -124,7 +123,7 @@ Span::sweep(preserve<i32>)
 	spc<u8> = this.sc
 	size<u64>  = this.elemsize
 	res<i32> 	  = false
-	c_<sys.Core> = sys.core()
+	c_<Core> = core()
 	c<Cache> = c_.local
 	freeToHeap<i32> = false
 

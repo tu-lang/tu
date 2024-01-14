@@ -1,3 +1,88 @@
+SweepBlockEntries<i64> = 512 
+StackInitSpineCap<i64> = 256
+
+CacheLinePadSize<i64>  = 64
+Null<i64> = 0
+STDOUT<i64> = 1
+THREAD_STACK_SIZE<i64> = 32768
+THREAD_TLS_SIZE<i64>   = 1024
+
+// clone
+SIGCHLD<i64>      		  = 0x11
+CLONE_CHILD_CLEARTID<i64> = 0x00200000
+CLONE_VM<i64>             = 0x100
+CLONE_FS<i64>             = 0x200
+CLONE_FILES<i64>          = 0x400
+CLONE_SIGHAND<i64>        = 0x800
+CLONE_SYSVSEM<i64>        = 0x40000
+CLONE_THREAD<i64>         = 0x10000
+
+// mutex
+MutexLocked<i32> = 1
+MutexWoken<i32>  = 2 
+MutexWaiterShift<i32> = 3
+
+semtable<SemTable:251> = null
+mutex_unlocked<u32> = 0
+mutex_locked<u32>   = 1
+mutex_sleeping<u32> = 2
+
+active_spin<i32> = 4
+active_spin_cnt<i32> = 30
+passive_spin<i32> = 1
+
+// futex
+FUTEX_PRIVATE_FLAG<i32> = 128
+FUTEX_WAIT_PRIVATE<i32> = 128
+FUTEX_WAKE_PRIVATE<i32> = 129
+FUTEX_WAIT<i32> = 0
+FUTEX_WAKE<i32> = 1
+
+// sys
+_EACCES<i64> = 13
+_EINVAL<i64> =  22
+
+ERROR<i64>   = -1
+OK<i64>   	 = 0
+_EAGAIN<i64> = 0xb
+_ENOMEM<i64> = 0xc
+
+_PROT_NONE<i64> =  0x0
+_PROT_READ<i64> = 0x1
+_PROT_WRITE<i64> = 0x2
+_PROT_EXEC<i64> = 0x4
+
+_MAP_ANON<i64> = 0x20
+_MAP_PRIVATE<i64> = 0x2
+_MAP_FIXED<i64> = 0x10
+
+_MADV_DONTNEED<i64> = 0x4
+_MADV_FREE<i64>     = 0x8
+_MADV_HUGEPAGE<i64> = 0xe
+_MADV_NOHUGEPAGE<i64> = 0xf
+
+pageSize<i64>   = 8192
+persistentChunkSize<i64> =  262144 
+ptrSize<i64>	= 8
+physPageSize<u64> = 0
+HugePageSize<u64> = 2097152
+True<i64> = 1
+
+fixAllocChunk<i64> 		= 16384
+
+deBruijn64<i64>			= 0x0218a392cd3d5dbf
+deBruijnIdx64<u8:64> = [
+	0,  1,  2,  7,  3,  13, 8,  19,
+	4,  25, 14, 28, 9,  34, 20, 40,
+	5,  17, 26, 38, 15, 46, 29, 48,
+	10, 31, 35, 54, 21, 50, 41, 57,
+	63, 6,  12, 18, 24, 27, 33, 39,
+	16, 37, 45, 47, 30, 53, 49, 56,
+	62, 11, 23, 32, 36, 44, 52, 55,
+	61, 22, 43, 51, 60, 42, 59, 58,
+]
+
+
 enum 
 {
     ILLEGAL END

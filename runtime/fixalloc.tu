@@ -65,7 +65,7 @@ Fixalloc::alloc()
         return v
     }
     if this.nchunk < this.size  {
-        this.chunk = alloc(fixAllocChunk)
+        this.chunk = sys_alloc(fixAllocChunk)
         this.nchunk = fixAllocChunk
     }
     
@@ -78,4 +78,21 @@ Fixalloc::alloc()
     this.nchunk -= this.size
     this.inuse  += this.size
     return v
+}
+
+mem LinearAlloc { u64   next , mapped , end}
+
+LinearAlloc::alloc(size<u64>,align<u64>)
+{
+	p<u64> = round(this.next, align)
+	if  p + size > this.end {
+		return 0.(i8)
+	}
+	this.next = p + size
+    pEnd<u64> = round(this.next - 1, physPageSize)
+    if pEnd > this.mapped {
+		sys_map(this.mapped,pEnd - this.mapped)
+		this.mapped = pEnd
+	}
+	return p
 }

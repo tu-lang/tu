@@ -1,6 +1,25 @@
 use std
 use runtime
 
+mem Runner {
+	Palloc 	pl
+	u32	status
+	u64 m
+
+	// GcWork	gcw
+
+	u64 gcBgMarkWorker
+}
+
+mem Coroutine {
+    Core* 		m
+	i8			preempt
+	u64     	stackguard0 
+	u64 		stackguard1 
+	i64 		gcAssistBytes
+	MutexInter  locks
+}
+
 enum {
 	CoreRun ,
 	CoreStop ,
@@ -104,9 +123,9 @@ func newosthread(fc<u64> , arg<i64*> , stk<i64*>, tls<i64*>){
 	newpid<i32> = clone(cloneFlags, stk ,tls,fc,arg,0.(i8))
 
 	if newpid < 0 {
-		outf("failed to create new OS thread ( errno=%d)\n".(i8),newpid)
+		debug("failed to create new OS thread ( errno=%d)\n".(i8),newpid)
 		if newpid == 0 - _EAGAIN {
-			outf("may need to increase max user processes (ulimit -u)\n".(i8))
+			debug("may need to increase max user processes (ulimit -u)\n".(i8))
 		}
 		dief("new os thread".(i8))
 	}

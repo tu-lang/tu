@@ -1,5 +1,4 @@
 use runtime 
-use runtime.sys
 use fmt
 use std
 func test_runtimemalloc()

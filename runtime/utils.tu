@@ -40,7 +40,7 @@ retry:
 			if newCap == 0 {
 				newCap = StackInitSpineCap
 			}
-			newSpine<u64*> = sys.fixalloc(newCap * ptrSize,64.(i8))
+			newSpine<u64*> = sys_fixalloc(newCap * ptrSize,64.(i8))
 			if this.spineCap != 0 {
 				std.memcpy(newSpine, this.spine, this.spineCap * ptrSize)
 			}
@@ -48,7 +48,7 @@ retry:
 			this.spineCap = newCap
 		 }
  
-		 block = sys.fixalloc(sizeof(GcSweepBlock),CacheLinePadSize)
+		 block = sys_fixalloc(sizeof(GcSweepBlock),CacheLinePadSize)
 		 blockp<u64*> = this.spine + ptrSize * top
 		 atomic.store64(blockp, block)
 		 atomic.store64(&this.spineLen, spineLen+1)

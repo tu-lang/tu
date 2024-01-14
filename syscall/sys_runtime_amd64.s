@@ -54,23 +54,23 @@ runtime_callerpc:
     mov 8(%rbp) , %rax
     ret
 
-runtime_sys_settls:
+runtime_settls:
     add    $0x8,%rdi   
     mov    %rdi,%rsi
     mov    $0x1002,%rdi
     mov    $0x9e,%rax  
     syscall 
     cmp    $0xfffffffffffff001,%rax
-    jbe    runtime_sys_settls_ret
+    jbe    runtime_settls_ret
     mov    $101 , %edi
     mov    $60 , %rax
     syscall
     #movl   $0xf1,0xf1
-runtime_sys_settls_ret:
+runtime_settls_ret:
     retq   
 
-.globl runtime_sys_clone
-runtime_sys_clone: 
+.globl runtime_clone
+runtime_clone: 
     mov    %rdx , %r12
     mov    %rcx , %r13
     mov    %r8 , %r14
@@ -82,7 +82,7 @@ runtime_sys_clone:
 tc1:
     mov    %rsi,%rsp
     mov    %r12 , %rdi
-    call   runtime_sys_settls
+    call   runtime_settls
     mov    %r14 , %rdi
     call  *%r13
 tc2:
@@ -91,20 +91,20 @@ tc2:
     syscall
     jmp tc2
 
-.global runtime_sys_core
-runtime_sys_core:
+.global runtime_core
+runtime_core:
     #GCTODO:
     #movq  %fs:0xfffffffffffffff0,%rax
     retq
 
-.global runtime_sys_setcore
-runtime_sys_setcore:
+.global runtime_setcore
+runtime_setcore:
     #GCTODO:
     #movq  %rdi,%fs:0xfffffffffffffff0
     retq
 
-.globl runtime_sys_procyield
-runtime_sys_procyield:
+.globl runtime_procyield
+runtime_procyield:
 rsp1:
     #GCTODO:
     #pause
@@ -112,14 +112,14 @@ rsp1:
     jne rsp1
     ret
 
-.globl runtime_sys_osyield
-runtime_sys_osyield:
+.globl runtime_osyield
+runtime_osyield:
     mov $24 , %rax
     syscall
     ret
 
-.globl runtime_sys_futex
-runtime_sys_futex:
+.globl runtime_futex
+runtime_futex:
     mov %rcx , %r10
     mov $202 , %rax
     syscall

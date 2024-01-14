@@ -1,6 +1,5 @@
 use fmt
 use std
-use runtime.sys
 
 // buf list 
 WorkbufSize<i64> = 2048
@@ -11,16 +10,16 @@ BufAlloc<i64>    = 32768
 enable_runtimemalloc<i64> = 1
 gc<Gc:> = null
 //GCTODO:
-sched<sys.Sched:> = null
+sched<Sched:> = null
 gcphase<u32> = 0
-worldsema<sys.Sema:> = null
+worldsema<Sema:> = null
 
 enum {
 	GcAlways,
 	GcHeap
 }
 mem SpanCache {
-	sys.MutexInter    lock
+	MutexInter    lock
 	Spanlist   free
 	Spanlist   busy
 }
@@ -48,9 +47,9 @@ mem Gc {
 	i32  forced
 	u64  marked
 	u32  cycles
-	SpanCache 		spans
-	sys.Sema        startSema
-	sys.MutexInter  worldSeam
+	SpanCache   spans
+	Sema        startSema
+	MutexInter  worldSeam
 
 	u64 gc_trigger 
 	u64 heaplives

@@ -1,13 +1,10 @@
 use fmt
 use os
 use std
-use runtime.sys
-
-
 
 fn largeAlloc(size<u64>, needzero<u8> , noscan<u8>)
 {
-	if size + sys.pageSize < size {
+	if size + pageSize < size {
 		dief("out of memory\n".(i8))
 	}
 	npages<u64> = 0
@@ -35,10 +32,10 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 		//only this can use dynamic grammer,cos it's easy to backtrace
 		os.die("malloc size == 0")
 	}
-	if( sys.gcphase != _GCoff){}
+	if( gcphase != _GCoff){}
 
-	assistG<sys.Coroutine> = null
-	if( sys.gcBlackenEnabled != 0 )
+	assistG<Coroutine> = null
+	if( gcBlackenEnabled != 0 )
 	{
 		assistG = getg()
 		if( assistG.m.curg != null ){
@@ -47,7 +44,7 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 		assistG.gcAssistBytes -= size
 	}
 
-	mp<sys.Core> = acquirem()
+	mp<Core> = acquirem()
 	if( mp.mallocing != 0 ){ 
 		dief("malloc deadlock".(i8))
 	}
@@ -57,18 +54,18 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 	mp.mallocing = 1
 	shouldhelpgc<u8> = false
 	dataSize<u64>  = size
-	g<sys.Coroutine> = getg()
+	g<Coroutine> = getg()
 	c<Cache> = g.m.mcache
 	x<u64*> = null
 	if( size <= maxSmallSize ){ 
 		if( noscan && size < maxTinySize ){
 			off<u64> = c.tinyoffset
 			if( size&7 == 0 ) {
-				off = sys.round(off, 8.(i8))
+				off = round(off, 8.(i8))
 			} else if( size&3 == 0 ){
-				off = sys.round(off, 4.(i8))
+				off = round(off, 4.(i8))
 			} else if( size&1 == 0 ){
-				off = sys.round(off, 2.(i8))
+				off = round(off, 2.(i8))
 			}
 			if( off+size <= maxTinySize && c.tiny != 0 ){
 				x = (c.tiny + off)
@@ -129,7 +126,7 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 		c.local_scan += scanSize
 	}
 
-	if( sys.gcphase != _GCoff ){
+	if( gcphase != _GCoff ){
 	}
 
 	mp.mallocing = 0 
@@ -320,7 +317,7 @@ Treap::insert(s<Span>)
 
 	t<TreapNode> = heap_.treapalloc.alloc()
 	t.npagesKey = s.npages
-	t.priority  = sys.fastrand()
+	t.priority  = fastrand()
 	t.spankey   = s
 	t.parent    = last
 	*pt           = t 

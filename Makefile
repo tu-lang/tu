@@ -13,11 +13,10 @@ BUILD_LIBA = build_install_liba() {                              	\
 	echo "															\
 		use fmt	use os	use string	use std							\
 		use std.map	use std.atomic	use std.regex					\
-		use runtime	use runtime.sys									\
-		use runtime.debug	use time								\
+		use runtime	use runtime.debug	use time					\
 	" > a.tu;														\
-	tu -s a.tu -std;													\
-	rm a.tu.s;															\
+	tu -s a.tu -std;												\
+	rm a.tu.s;														\
 	tu -c . -c $(prefix)/lib/coasm;									\
 	ar -rc tulang.a *.o;											\
 	mv tulang.a ../release/;										\

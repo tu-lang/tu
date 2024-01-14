@@ -2,27 +2,26 @@ use std
 use std.atomic
 use os
 use fmt
-use runtime.sys
 
 mem Heap {
-    sys.MutexInter       locks
+    MutexInter  locks
     Treap       free
     Treap       scav
     std.Array   allspans
 	std.Array 	allarenas
 	std.Array 	sweeparenas
-    sys.Stack   sweepSpans[2]
+    Stack   sweepSpans[2]
 
-    sys.Fixalloc    spanalloc
-    sys.Fixalloc    cachealloc
-    sys.Fixalloc    treapalloc
-    sys.Fixalloc    specialfinalizeralloc
-    sys.Fixalloc    specialprofilealloc
-    sys.Fixalloc    arenaHintAlloc
-    sys.LinearAlloc arena
-    ArenaHint*   arenaHints
+    Fixalloc    spanalloc
+    Fixalloc    cachealloc
+    Fixalloc    treapalloc
+    Fixalloc    specialfinalizeralloc
+    Fixalloc    specialprofilealloc
+    Fixalloc    arenaHintAlloc
+    LinearAlloc arena
+    ArenaHint*  arenaHints
 	//GCTODO:
-    HeapArena*   arenas[1 << arenaL1Bits]
+    HeapArena*  arenas[1 << arenaL1Bits]
 
     u64      scavengeCredit
     u32      sweepgen
@@ -36,7 +35,7 @@ mem Heap {
 }
 
 fn recordspan(vh<Heap>, p<Span>) {
-    //TODO:
+    //GCTODO:
     // vh.allspans.push(p)
 }
 
@@ -135,7 +134,7 @@ haveSpan:
         s.npages = npage
         this.setSpan(t.startaddr - 1,s)
         this.setSpan(t.startaddr,t)
-        this.setSpan(t.startaddr+t.npages * sys.pageSize - 1,t)
+        this.setSpan(t.startaddr+t.npages * pageSize - 1,t)
 
         t.needzero = s.needzero
 
@@ -152,7 +151,7 @@ haveSpan:
         s.state = mSpanFree
     }
     if (s.scavenged ) {
-        sys.used(s.startaddr, s.npages<<pageShift)
+        sys_used(s.startaddr, s.npages<<pageShift)
         s.scavenged = false
     }
     s.unusedsince = 0
@@ -193,7 +192,7 @@ Heap::grow(npage<u64>)
 
     heap_.scavengeLargest(size)
     s<Span> = this.spanalloc.alloc()
-    s.init(v,size/sys.pageSize)
+    s.init(v,size / pageSize)
 
     heap_.setSpans(s.startaddr,s.npages,s)
     s.sweepgen = this.sweepgen
@@ -244,13 +243,13 @@ Heap::freeSpanLocked(s<Span>,acctinuse<u8>,acctidle<u8>,unusedsince<i64>)
 }
 Heap::freeSpan(s<Span> , large<u8>)
 {
-    g<sys.Coroutine> = getg()
-    mp<sys.Core> = g.m
+    g<Coroutine> = getg()
+    mp<Core> = g.m
     this.locks.lock()
     mp.mcache.local_scan = 0
 
     mp.mcache.local_tinyallocs = 0
-    if sys.gcBlackenEnabled != 0 {
+    if gcBlackenEnabled != 0 {
     }
     heap_.freeSpanLocked(s,1.(i8),1.(i8),0.(i8))
     this.locks.unlock()
@@ -281,7 +280,7 @@ fn coalesce_merge(s<Span> , other<Span>,needsScavenge<u8*>,prescavenged<u64*>)
         s.startaddr = other.startaddr
         heap_.setSpan(s.startaddr,s)
     } else {
-        heap_.setSpan(s.startaddr + (s.npages * sys.pageSize - 1),s)
+        heap_.setSpan(s.startaddr + (s.npages * pageSize - 1),s)
     }
 
     *needsScavenge = *needsScavenge || other.scavenged || s.scavenged
@@ -296,7 +295,7 @@ fn coalesce_merge(s<Span> , other<Span>,needsScavenge<u8*>,prescavenged<u64*>)
 }
 fn coalesce_realign(a<Span> , b<Span> , other<Span>)
 {
-    if sys.pageSize <= physPageSize  {
+    if pageSize <= physPageSize  {
         return 0.(i8)
     }
     if ( other.scavenged ) {
@@ -310,8 +309,8 @@ fn coalesce_realign(a<Span> , b<Span> , other<Span>)
     } else {
         boundary = (boundary + physPageSize - 1) &~ (physPageSize - 1)
     }
-    a.npages = (boundary - a.startaddr) / sys.pageSize
-    b.npages = (b.startaddr + b.npages * sys.pageSize - boundary) / sys.pageSize
+    a.npages = (boundary - a.startaddr) / pageSize
+    b.npages = (b.startaddr + b.npages * pageSize - boundary) / pageSize
     b.startaddr = boundary
 
     heap_.setSpan(boundary - 1, a)
@@ -338,7 +337,7 @@ Heap::coalesce(s<Span>)
 		}
 	}
 
-	after<Span> = heap_.spanOf(s.startaddr + s.npages * sys.pageSize)
+	after<Span> = heap_.spanOf(s.startaddr + s.npages * pageSize)
     if  after != null && after.state == mSpanFree  {
 		if  s.scavenged == after.scavenged  {
 			coalesce_merge(s,after,&needsScavenge,&prescavenged)
@@ -369,7 +368,7 @@ Heap::spanOf(p<u64>)
 	if pha == null {
 		return 0.(i8)
 	}
-	return pha.spans[(p/sys.pageSize)%pagesPerArena]
+	return pha.spans[(p / pageSize)%pagesPerArena]
 }
 Heap::setSpan(base<u64> , s<Span>)
 {
@@ -377,11 +376,11 @@ Heap::setSpan(base<u64> , s<Span>)
 	arr<u64*> = this.arenas[arena_l1(ai)]
 
 	p<HeapArena> = arr[arena_l2(ai)]
-	p.spans[(base / sys.pageSize) % pagesPerArena] = s
+	p.spans[(base / pageSize) % pagesPerArena] = s
 }
 Heap::setSpans(base<u64>,npage<u64>,s<Span> )
 {
-	p<u64> = base / sys.pageSize
+	p<u64> = base / pageSize
 	ai<u32> = arenaIndex(base)
 	arr<u64*> = this.arenas[arena_l1(ai)]
 	ha<HeapArena> = arr[arena_l2(ai)]
@@ -389,7 +388,7 @@ Heap::setSpans(base<u64>,npage<u64>,s<Span> )
     for n<u64> = 0; n < npage; n += 1  {
 		i<u64> = (p + n) % pagesPerArena
         if  i == 0 {
-            ai = arenaIndex(base + n * sys.pageSize)
+            ai = arenaIndex(base + n * pageSize)
             arr = this.arenas[arena_l1(ai)]
             ha  = arr[arena_l2(ai)]
         }
@@ -402,7 +401,7 @@ Heap::scavengeLargest(nu8s<u64>){return 0.(i8)}
 Heap::sysAlloc(n<u64> , ssize<u64*>)
 {
 	size<u64> = 0
-	n = sys.round(n, heapArenaBytes)
+	n = round(n, heapArenaBytes)
 
 	v<u64*> = this.arena.alloc(n,heapArenaBytes)
 	if v != null {
@@ -421,7 +420,7 @@ Heap::sysAlloc(n<u64> , ssize<u64*>)
 		} else if arenaIndex(p + n - 1) >= 1 << arenaBits {
 			v = null
 		} else {
-			v = sys.reserve(p, n)
+			v = sys_reserve(p, n)
 		}
 		if( p == v ){
 			if !hint.down {
@@ -432,7 +431,7 @@ Heap::sysAlloc(n<u64> , ssize<u64*>)
 			break
 		}
 		if v != null {
-			sys.free(v, n)
+			sys_free(v, n)
 		}
 		this.arenaHints = hint.next
 		this.arenaHintAlloc.free(hint)
@@ -442,7 +441,7 @@ Heap::sysAlloc(n<u64> , ssize<u64*>)
 		v<u64*> = 0
 		size<u64> = n
 
-		v = sys.reserveAligned(0.(i8),&size,heapArenaBytes)
+		v = reserveAligned(0.(i8),&size,heapArenaBytes)
 		if( v == null ){
 			*ssize = 0
 			return 0.(i8)
@@ -481,13 +480,13 @@ Heap::sysAlloc(n<u64> , ssize<u64*>)
 		dief("misrounded allocation in sysAlloc".(i8))
 	}
 
-	sys.map(v,size)
+	sys_map(v,size)
 
 mapped: 
 	for ri<u32> = arenaIndex(v); ri <= arenaIndex(v+size - 1); ri += 1  {
 		l2<u64*> = this.arenas[arena_l1(ri)]
 		if l2 == null {
-			l2 = sys.fixalloc( 1 << arenaL2Bits * ptrSize,ptrSize)
+			l2 = sys_fixalloc( 1 << arenaL2Bits * ptrSize,ptrSize)
 			if l2 == null {
 				dief("out of memory allocating heap arena map".(i8))
 			}
@@ -497,7 +496,7 @@ mapped:
 			dief("arena already initialized".(i8))
 		}
 		r<HeapArena> = 0
-        r = sys.fixalloc(sizeof(HeapArena), ptrSize)
+        r = sys_fixalloc(sizeof(HeapArena), ptrSize)
         if r == null {
             dief("out of memory allocating heap arena metadata".(i8))
         }
