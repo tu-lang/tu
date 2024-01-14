@@ -107,7 +107,7 @@ Str::MakeRoomFor(addlen<u64>) {
 
     hdrlen = stringHdrSize(type)
     if oldtype == type {
-        newsh = gc.gc_realloc(sh, hdrlen + newlen + 1)
+        newsh = gc.gc_realloc(sh, hdrlen + len, hdrlen + newlen + 1)
         if newsh == null return runtime.Null
         s = newsh + hdrlen
     } else {

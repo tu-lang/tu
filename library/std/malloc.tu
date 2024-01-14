@@ -37,7 +37,7 @@ func free(ptr<u64*>)
 	}
 }
 
-func realloc(p<u64*>, nbytes<u64>){
+func realloc1(p<u64*>, nbytes<u64>){
 	if p == null {
 		if nbytes < 0 {
 			fmt.vfprintf(STDOUT,*"realloc failed\n")

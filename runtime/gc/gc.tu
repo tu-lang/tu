@@ -18,7 +18,7 @@ fn gc(){}
 fn gc_mark(){}
 fn gc_free(ptr<u64>){}
 fn gc_init(){}
-fn gc_realloc(p<u64*>, nbytes<u64>){
+fn gc_realloc(p<u64*>, pbytes<u64> , nbytes<u64>){
 	if !p {
         if nbytes < 0 {
 			dief(*"[gc] realloc failed")
@@ -30,7 +30,7 @@ fn gc_realloc(p<u64*>, nbytes<u64>){
         return Null
     }
     newp<u64*> = gc_malloc(nbytes)
-    std.memcpy(newp,p,nbytes)
+    std.memcpy(newp,p,pbytes)
     gc_free(p)
     return newp
 }

@@ -128,9 +128,6 @@ func fromulonglong(value<u64>) {
 func malloc(size<u64>) { 
     return gc.gc_malloc(size) 
 }
-func realloc(ptr<u64*>, size<u64>) { 
-    return gc.gc_realloc(ptr,size) 
-}
 func free(ptr<u64*>) {
     gc.gc_free(ptr) 
 }
