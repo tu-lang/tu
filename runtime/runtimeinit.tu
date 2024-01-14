@@ -17,7 +17,7 @@ self_path<i8*>
 
 ErrorCode<i32> = -1
 
-func args_init(argc<u64>, argv<u64*>){
+fn args_init(argc<u64>, argv<u64*>){
 	//save exec out file
 	ori_execout = argv - 8
 	ori_execout = *ori_execout
@@ -57,14 +57,14 @@ func args_init(argc<u64>, argv<u64*>){
 		self_path = ori_execout
 	}
 }
-func runtimeinit(){
+fn runtimeinit(){
 	os.setsignal(os.SIGSEGV,std.segsegvrecv)
 	pools_init()
 	debug.debug_init()
 }
 
 
-func segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
+fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	fmt.println("\npanicked! stack backtrace:")
 	buf_o<i8:10> = null
 	rip<u64> = segsegv_rip(ctxt)
@@ -128,7 +128,7 @@ mem Sigcontext {
 	//fpstate1*     *fpstate
 	// u64 __reserved1[8]
 }
-func segsegv_rip(ctxt<Ucontext>) {
+fn segsegv_rip(ctxt<Ucontext>) {
 	sigc<Sigcontext> = &ctxt.uc_mcontext
 	return sigc.rip
 }

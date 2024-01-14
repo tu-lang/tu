@@ -3,7 +3,7 @@ use fmt
 use os
 use string
 
-func hash_key(data<u8*>,len<u64>){
+fn hash_key(data<u8*>,len<u64>){
     i<i64>   = 0
     key<i64> = 0
     for(i<u64> = 0 ; i < len ; i += 1){
@@ -14,7 +14,7 @@ func hash_key(data<u8*>,len<u64>){
     return key
 }
 
-func get_hash_key(key<Value>){
+fn get_hash_key(key<Value>){
     if  key.type == Bool || key.type == Int {
 		return key.data
 	}
@@ -25,7 +25,13 @@ func get_hash_key(key<Value>){
 	}
     os.dief("[hash_key] unsupport type:%s" , type_string(key))
 }
-func assert(ret<i8>,str){
+fn assert(ret<i8>,str){
     if ret return True
     os.die(str)
+}
+
+//implement by asm
+fn callerpc()
+fn nextpc(){
+	return callerpc()
 }

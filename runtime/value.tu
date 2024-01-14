@@ -9,7 +9,7 @@ use string
  // @param lhs
  // @param rhs
  // @return value
-func value_plus(lhs<Value>,rhs<Value>) {
+fn value_plus(lhs<Value>,rhs<Value>) {
 	result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -46,7 +46,7 @@ func value_plus(lhs<Value>,rhs<Value>) {
  // @param lhs
  // @param rhs
  // @return
-func value_minus(lhs<Value>,rhs<Value>) {
+fn value_minus(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -70,7 +70,7 @@ func value_minus(lhs<Value>,rhs<Value>) {
  // @param lhs
  // @param rhs
  // @return
-func value_mul(lhs<Value>,rhs<Value>) {
+fn value_mul(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -108,7 +108,7 @@ func value_mul(lhs<Value>,rhs<Value>) {
  // @param lhs
  // @param rhs
  // @return
-func value_div(lhs<Value>,rhs<Value>) {
+fn value_div(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -132,7 +132,7 @@ func value_div(lhs<Value>,rhs<Value>) {
  // @param lhs
  // @param rhs
  // @return
-func value_bitand(lhs<Value>,rhs<Value>) {
+fn value_bitand(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -156,7 +156,7 @@ func value_bitand(lhs<Value>,rhs<Value>) {
  // @param lhs
  // @param rhs
  // @return
-func value_bitor(lhs<Value>,rhs<Value>) {
+fn value_bitor(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -176,8 +176,8 @@ func value_bitor(lhs<Value>,rhs<Value>) {
     }
     os.dief("[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
- // @return
- func value_bitxor(lhs<Value>,rhs<Value>) {
+// @return
+fn value_bitxor(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -203,7 +203,7 @@ func value_bitor(lhs<Value>,rhs<Value>) {
  // @param rhs
  // @return
  
-func value_shift_left(lhs<Value>,rhs<Value>) {
+fn value_shift_left(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -234,7 +234,7 @@ func value_shift_left(lhs<Value>,rhs<Value>) {
  // @param rhs
  // @return
  
-func value_shift_right(lhs<Value>,rhs<Value>) {
+fn value_shift_right(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     if lhs == null {
         std.memcpy(result,rhs, sizeof(Value))
@@ -265,7 +265,7 @@ func value_shift_right(lhs<Value>,rhs<Value>) {
  // @param rhs
  // @return Value*
  
-func value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
+fn value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
     result<Value> = new Value
     result.type = Bool
     result.data = 0
@@ -287,7 +287,7 @@ func value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
 // @param lhs
 // @param rhs
 // @return Value*
-func value_lowerthan(lhs<Value>,rhs<Value>,equal<i32>)
+fn value_lowerthan(lhs<Value>,rhs<Value>,equal<i32>)
 {
     result<Value> = new Value
     result.type = Bool
@@ -310,7 +310,7 @@ func value_lowerthan(lhs<Value>,rhs<Value>,equal<i32>)
  // @param lhs
  // @param rhs
  // @return Value*
-func value_greaterthan(lhs<Value>,rhs<Value>,equal<i32>)
+fn value_greaterthan(lhs<Value>,rhs<Value>,equal<i32>)
 {
     result<Value> = new Value
     result.type = Bool
@@ -333,7 +333,7 @@ func value_greaterthan(lhs<Value>,rhs<Value>,equal<i32>)
 // @param lhs
 // @param rhs
 // @return value
-func value_logand(lhs<Value>,rhs<Value>) {
+fn value_logand(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     result.type = Bool
     result.data = False
@@ -342,7 +342,7 @@ func value_logand(lhs<Value>,rhs<Value>) {
     }
     return result
 }
-func value_logor(lhs<Value>,rhs<Value>) {
+fn value_logor(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     result.type = Bool
     result.data = False
@@ -352,13 +352,13 @@ func value_logor(lhs<Value>,rhs<Value>) {
     }
     return result
 }
-func value_lognot(lhs<Value>) {
+fn value_lognot(lhs<Value>) {
     result<Value> = new Value
     result.type = Bool
     result.data = !lhs.data
     return result
 }
-func value_bitnot(lhs<Value>){
+fn value_bitnot(lhs<Value>){
     result<Value> = new Value
     result.type = Int
     result.data = ~lhs.data
@@ -368,7 +368,7 @@ func value_bitnot(lhs<Value>){
 // tell if itstrue
 // @param cond
 // @return bool
-func isTrue(cond<Value>){
+fn isTrue(cond<Value>){
     if cond == False {
         os.die("isTrue: cond is null ,something wrong  probably")
     }
@@ -392,7 +392,7 @@ func isTrue(cond<Value>){
 // @param opt
 // @param lhs
 // @param rhs
-func operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
+fn operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
     if rhs == null {
         if opt != LOGNOT && opt != BITNOT {
             fmt.vfprintf(std.STDOUT,*"[operator] only !,~ at unary expression,not:%d\n",opt)
@@ -449,7 +449,7 @@ func operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
 // @param lhs
 // @param rhs
 // @return
-func unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
+fn unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
 {
     //lhs == Value**
     if lhs == null  {
@@ -468,7 +468,7 @@ func unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
 // @param opt
 // @param lhs
 // @param rhs
-func binary_operator(opt<i32>, lhs<Value>, rhs<Value>)
+fn binary_operator(opt<i32>, lhs<Value>, rhs<Value>)
 {
     if lhs == null {
         os.dief(
@@ -483,7 +483,7 @@ func binary_operator(opt<i32>, lhs<Value>, rhs<Value>)
     return ret
 }
 
-func miss_args(pos<i32>,fname<i8*>,isclass<i8>){
+fn miss_args(pos<i32>,fname<i8*>,isclass<i8>){
     str = string.new(fname)
     if isclass {
         pos -= 1
@@ -494,12 +494,12 @@ func miss_args(pos<i32>,fname<i8*>,isclass<i8>){
     }
     fmt.printf("[warn] Missing argument %I for %s()\n",int(pos),str)
 }
-func check_object(obj<Value>){
+fn check_object(obj<Value>){
     if obj == Null return Null
     if obj.type == Null return Null
     return True
 }
-func miss_objects(filename<i8*>,funcname<i8*>,line<i32>,column<i32>){
+fn miss_objects(filename<i8*>,funcname<i8*>,line<i32>,column<i32>){
     l = int(line)
     c = int(column)
     os.dief(
@@ -508,4 +508,225 @@ func miss_objects(filename<i8*>,funcname<i8*>,line<i32>,column<i32>){
         string.new(filename),
         l,c
     )
+}
+
+//   value op int
+
+// +
+fn value_int_plus(lhs<Value>,rhs<Value>){
+    return lhs.data + rhs.data
+}
+// -
+fn value_int_minus(lhs<Value>,rhs<Value>){
+    return lhs.data - rhs.data
+}
+// *
+fn value_int_mul(lhs<Value>,rhs<Value>){
+    return lhs.data * rhs.data
+}
+// /
+fn value_int_div(lhs<Value>,rhs<Value>){
+    return lhs.data / rhs.data
+}
+// &
+fn value_int_bitand(lhs<Value>,rhs<Value>){
+    return lhs.data & rhs.data
+}
+// |
+fn value_int_bitor(lhs<Value>,rhs<Value>){
+    return lhs.data | rhs.data
+}
+fn value_int_bitxor(lhs<Value>,rhs<Value>){
+    return lhs.data ^ rhs.data
+}
+// <<
+fn value_int_shift_left(lhs<Value>,rhs<Value>){
+    return lhs.data << rhs.data
+}
+// >>
+fn value_int_shift_right(lhs<Value>,rhs<Value>){
+    return lhs.data >> rhs.data
+}
+// ==
+fn value_int_equal(lhs<Value>,rhs<Value>,equal<i32>){
+    if equal	return lhs.data == rhs.data
+    else		return lhs.data != rhs.data
+}
+// !=
+fn value_int_notequal(lhs<Value>,rhs<Value>){
+    return lhs.data != rhs.data
+}
+// <
+fn value_int_lowerthan(lhs<Value>,rhs<Value>,equal<i32>){
+    if equal	return lhs.data <= rhs.data
+    else		return lhs.data < rhs.data
+}
+// >
+fn value_int_greaterthan(lhs<Value>,rhs<Value>,equal<i32>){
+    if equal	return lhs.data >= rhs.data
+    else		return lhs.data > rhs.data
+}
+
+//   value op string
+fn value_string_plus(lhs<Value>,rhs<Value>)
+{
+    tmstr<string.Str> = string.empty()
+    match lhs.type 
+	{
+		Int   : tmstr = tmstr.catfmt(*"%I%S",lhs.data,rhs.data)
+		Bool  : tmstr = tmstr.catfmt(*"%I%S",lhs.data,rhs.data)
+        Float : tmstr = tmstr.catfmt(*"%I%S",lhs.data,rhs.data)
+        String: {
+            tmstr = lhs.data.(string.Str).dup()
+            if rhs.type == Int        tmstr = tmstr.catfmt(*"%I",rhs.data)
+            else if rhs.type == Array tmstr = tmstr.cat(arr_tostring(rhs))
+            else if rhs.type == Char  tmstr = tmstr.putc(rhs.data)
+            else                      tmstr = tmstr.cat(rhs.data)
+        }
+        Char: {
+            match rhs.type {
+                Char: {
+                    tmstr = tmstr.putc(lhs.data)
+                    tmstr = tmstr.putc(rhs.data)
+                }
+                String: {
+                    tmstr = tmstr.putc(lhs.data)
+                    tmstr = tmstr.cat(rhs.data)
+                }
+                _ : return lhs.data + rhs.data
+            }
+        }
+    }
+    return tmstr
+}
+
+fn value_string_minus(lhs<Value>,rhs<Value>)
+{
+    //字符串的所有相加减直接返回原字符串
+    match lhs.type {
+        String : return lhs.data
+        _      : return rhs.data
+    }
+}
+
+fn value_string_mul(lhs<Value>,rhs<Value>)
+{
+    //如果两个都是字母则返回相加的那部分
+    if lhs.type == String && rhs.type == String {
+        tmstr<string.Str> = rhs.data.(string.Str).dup()
+        tmstr = tmstr.cat(rhs.data)
+        return tmstr
+    }
+    //has number
+    if (lhs.type == Int && rhs.type == String) || 
+       (lhs.type == String && rhs.type == Int) {
+        count<i64> = lhs.data
+        if rhs.type == Int count = rhs.data
+        srcv<Value> = lhs
+        if rhs.type == String srcv = rhs
+        // 在字符串运算中都是从新生成一份内存来进行存储结果
+        tmstr<string.Str> = srcv.data.(string.Str).dup()
+        count -= 1
+        for (i<i64> = 0 ; i < count ; i += 1) {
+            tmstr = tmstr.cat(srcv.data)
+        }
+        return tmstr
+    }
+    //has char
+    match lhs.type {
+        Char : {
+            tmstr<string.Str> = string.empty()
+            tmstr = tmstr.putc(lhs.data)
+            tmstr = tmstr.cat(rhs.data)
+            return tmstr
+        }
+        String:{
+            match rhs.type {
+                Char :{
+                    tmstr<string.Str> = lhs.data.(string.Str).dup()
+                    tmstr = tmstr.putc(rhs.data)
+                    return tmstr
+                }
+                _: os.dief("[string *] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+            }
+        }
+        _: os.dief("[string *] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    }
+}
+//char int
+fn value_char2int_mul(lhs<Value>,rhs<Value>){
+    tmstr<string.Str> = string.empty()
+    for (i<i64> = 0 ; i < rhs.data ; i += 1) {
+        tmstr = tmstr.putc(lhs.data)
+    }
+    return tmstr
+}
+//char char
+fn value_char2char_mul(lhs<Value>,rhs<Value>){
+    tmstr<string.Str> = string.empty()
+
+    tmstr = tmstr.putc(lhs.data)
+    tmstr = tmstr.putc(rhs.data)
+    return tmstr
+}
+
+fn value_string_div(lhs<Value>,rhs<Value>){
+    return Null
+}
+fn value_string_bitand(lhs<Value>,rhs<Value>){
+    return Null
+}
+fn value_string_bitor(lhs<Value>,rhs<Value>){
+    return Null
+}
+fn value_string_bitxor(lhs<Value>,rhs<Value>){
+    return Null
+}
+fn value_string_shift_left(lhs<Value>,rhs<Value>){
+    return Null
+}
+fn value_string_shift_right(lhs<Value>,rhs<Value>){
+    return Null
+}
+fn value_string_equal(lhs<Value>,rhs<Value>,equal<i32>){
+    //必须为两个string 才能比较
+    if lhs.type != String || rhs.type != String {
+        // == 就返回false
+        // != 就返回true
+        if equal return False
+        else return True
+    }
+    //TODO: c函数调用自动判断为mem运算 if _stringcmp(..) == 0 {}
+    ret<i8> = lhs.data.(string.Str).cmp(rhs.data)
+    if ret == 0 {
+        // == 返回true
+        // != 返回false
+        if equal return True
+        else return False
+    }
+    if equal return False
+    else return True
+
+}
+//< <=
+fn value_string_lowerthan(lhs<Value>,rhs<Value>,equal<i32>){
+    //必须为两个string 才能比较
+    if lhs.type != String || rhs.type != String {
+        return False
+    }
+    eq<i32> = lhs.data.(string.Str).cmp(rhs.data) 
+    if equal {
+        return eq <= 0
+    }
+    return eq < 0
+}
+//> >=
+fn value_string_greaterthan(lhs<Value>,rhs<Value>,equal<i32>){
+    //必须为两个string 才能比较
+    if lhs.type != String || rhs.type != String {
+        return False
+    }
+    eq<i32> = lhs.data.(string.Str).cmp(rhs.data) 
+    if equal return eq >= 0
+    return eq > 0
 }
