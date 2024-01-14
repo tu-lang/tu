@@ -9,7 +9,6 @@ use runtime
 use runtime.sys	
 use runtime.malloc				
 use runtime.debug	
-use runtime.gc	
 use time	
 func test_undefine(){
 	{

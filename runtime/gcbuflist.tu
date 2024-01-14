@@ -29,40 +29,40 @@ Buf::checkempty(){
 }
 fn putempty(b<Buf>){
 	b.checkempty()
-	GC.empty.push(&b.node)
+	gc.empty.push(&b.node)
 }
 fn putfull(b<Buf>){
 	b.checkempty()
-	GC.full.push(&b.node)
+	gc.full.push(&b.node)
 }
 fn getempty() {
-	tracef(*"cycle:%d",GC.cycles)
+	tracef(*"cycle:%d",gc.cycles)
 	b<Buf> = Null
-	if GC.empty.self != 0 {
-	    b = GC.empty.pop()
+	if gc.empty.self != 0 {
+	    b = gc.empty.pop()
 		if b != Null && b.nobj != 0  {
 		    dief(*"work buf is not empty!\n")
 		}
 	}
 	if  b == Null {
 		s<malloc.Span> = Null
-		if  GC.spans.free.first != Null  {
-			GC.spans.lock.lock()
-			s = GC.spans.free.first
+		if  gc.spans.free.first != Null  {
+			gc.spans.lock.lock()
+			s = gc.spans.free.first
 			if s != Null {
-				GC.spans.free.remove(s)
-				GC.spans.busy.insert(s)
+				gc.spans.free.remove(s)
+				gc.spans.busy.insert(s)
 			}
-			GC.spans.lock.unlock()
+			gc.spans.lock.unlock()
 		}
 		if  s == Null {
 		    s = malloc.heap_.allocManual(BufAlloc/malloc.pageSize)
 			if s == Null {
 				dief(*"out of memory\n")
 			}
-			GC.spans.lock.lock()
-			GC.spans.busy.insert(s)
-			GC.spans.lock.unlock()
+			gc.spans.lock.lock()
+			gc.spans.busy.insert(s)
+			gc.spans.lock.unlock()
 		}
 		for i<u64> = 0; (i + WorkbufSize) <= BufAlloc; i += WorkbufSize {
 			newb<Buf> = s.startaddr + i
@@ -79,7 +79,7 @@ fn getempty() {
 	return b
 }
 fn trygetfull() {
-    b<Buf> = GC.full.pop()
+    b<Buf> = gc.full.pop()
 	if b != Null {
 	    if b.nobj == 0 {
 	        dief(*"work buf is empty!")
@@ -168,7 +168,7 @@ Queue::put(obj<u64>)
 
 		buf = this.buf1
 		if ( buf.nobj == BufObjsize){
-			GC.full.push(&buf.node)
+			gc.full.push(&buf.node)
 			this.flushed = true
 			buf = getempty()
 			this.buf1 = buf
@@ -206,7 +206,7 @@ Queue::dispose(){
 		this.buf2 = Null
 	}
 	if(this.used != 0 ){
-		atomic.xadd64(&GC.marked,this.used)
+		atomic.xadd64(&gc.marked,this.used)
 		this.used = 0
 	}
 }

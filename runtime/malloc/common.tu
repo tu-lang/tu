@@ -178,6 +178,13 @@ fn dief(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 	std.die(-1.(i8))
 }
 
+enable_trace<i64> = 1
+fn tracef(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+	if enable_trace {
+		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+	}
+}
+
 fn mallocinit()
 {
 	sys.ncpu = 4

@@ -3,7 +3,7 @@
 main:
 	call std_stdinit
 	call runtime_malloc_mallocinit
-	call runtime_gc_gc_init
+	call runtime_gc_init
     mov (%rsp),%rdi
     lea 16(%rsp),%rsi
 	push %rsi

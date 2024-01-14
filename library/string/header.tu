@@ -1,4 +1,3 @@
-use runtime.gc
 use runtime
 use std
 use fmt

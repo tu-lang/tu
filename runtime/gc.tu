@@ -1,15 +1,16 @@
+use fmt
+use std
 use runtime.sys
 use runtime.malloc
-use std
 
-Null<i64> = 0
-True<i64> = 1
 // buf list 
 WorkbufSize<i64> = 2048
 BufObjsize<i64>  = 253
 addrBits<i64> 	 = 48
 cntBits<i64>     = 19
 BufAlloc<i64>    = 32768
+enable_runtimemalloc<i64> = 1
+gc<Gc:> = null
 
 enum {
 	GcAlways,
@@ -55,19 +56,7 @@ mem Gc {
 
 	i64  markStartTime
 }
-enable_trace<i64> = 1
 
-fn tracef(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
-	if enable_trace {
-		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
-	}
-}
-fn dief(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
-	if enable_trace {
-		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
-	}
-	std.die(-1.(i8))
-}
 
 fn get_sp()
 fn get_di()
@@ -79,3 +68,33 @@ fn get_r9()
 fn get_bp()
 fn get_ax()
 fn get_bx()
+
+fn gc_malloc(nbytes<u64>)
+{
+	if enable_runtimemalloc<i64> {
+		return malloc.malloc(nbytes,0.(i8),1.(i8))
+	}
+	return std.malloc(nbytes)
+}
+
+//discard..
+fn GC(){}
+fn gc_mark(){}
+fn gc_free(ptr<u64>){}
+fn gc_init(){}
+fn gc_realloc(p<u64*>, pbytes<u64> , nbytes<u64>){
+	if !p {
+        if nbytes < 0 {
+			dief(*"[gc] realloc failed")
+        }
+        return gc_malloc(nbytes)
+    }
+    if nbytes < 0 {
+        gc_free(p)
+        return Null
+    }
+    newp<u64*> = gc_malloc(nbytes)
+    std.memcpy(newp,p,pbytes)
+    gc_free(p)
+    return newp
+}

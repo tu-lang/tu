@@ -1,7 +1,6 @@
 
 use fmt
 use os
-use runtime.gc
 use string
 use runtime
 
@@ -44,7 +43,7 @@ Array::init(n<u32>,size<u64>){
     return runtime.True
 }
 Array::array_destroy(){
-    gc.gc_free(this)
+    runtime.gc_free(this)
 }
 Array::tail(){
     if  this == null os.die("[arr_tail] not array_type")
@@ -84,13 +83,13 @@ Array::push(ele<u64>){
     elt<u64*> = null
     if  this.used == this.total {
         size = this.size * this.total
-        newp = gc.gc_malloc(size * 2)
+        newp = runtime.gc_malloc(size * 2)
         if  newp == null {
             fmt.println("[arr_pushn] failed to expand memeory")
             return Null
         }
         memcpy(newp,this.addr,size)
-        gc.gc_free(this.addr)
+        runtime.gc_free(this.addr)
         this.addr = newp
         this.total *= 2
     }
@@ -127,13 +126,13 @@ Array::pushN(n<u32>)
         if  n >= this.total  total = 2 * n
         else total = 2 * this.total
 
-        newp = gc.gc_malloc(total * this.size)
+        newp = runtime.gc_malloc(total * this.size)
         if  newp == null  {
             fmt.println("[arr_pushn] failed to expand memeory")
             return Null
         }
         memcpy(newp, this.addr, this.used * this.size)
-        gc.gc_free(this.addr)
+        runtime.gc_free(this.addr)
         this.addr = newp
         this.total = total
     }

@@ -3,7 +3,7 @@ use os
 use std
 use string
 use fmt
-use runtime.gc
+use runtime
 use runtime.debug
 
 # start at core space init
@@ -83,7 +83,7 @@ fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 			)
 		)
 	}
-	bp<u64*> = gc.get_bp()
+	bp<u64*> = runtime.get_bp()
 	//skip first stack
 	bp = *bp
 	i = 1

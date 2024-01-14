@@ -1,5 +1,5 @@
 use fmt
-use runtime.gc
+use runtime
 use os
 
 CUR_CALLER<i32> = 3
@@ -11,7 +11,7 @@ func callerpc(){
 	return "??:??"
 }
 func stack(level<i32>){
-	bp<u64*> = gc.get_bp()
+	bp<u64*> = runtime.get_bp()
 	i<i32> = 0
 	arr = []
 	//stack backtrace 

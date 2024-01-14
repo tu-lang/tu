@@ -14,7 +14,7 @@ BUILD_LIBA = build_install_liba() {                              	\
 		use fmt	use os	use string	use std							\
 		use std.map	use std.atomic	use std.regex					\
 		use runtime	use runtime.sys	use runtime.malloc				\
-		use runtime.debug	use runtime.gc	use time				\
+		use runtime.debug	use time								\
 	" > a.tu;														\
 	tu -s a.tu -std;													\
 	rm a.tu.s;															\

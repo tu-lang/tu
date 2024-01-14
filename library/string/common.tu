@@ -1,5 +1,4 @@
 use runtime
-use runtime.gc
 
 func isspace(c<i32>){
     match c {
@@ -61,7 +60,7 @@ func newlen(init<u64*>, initlen<u64>) {
     fp<u8*> = null
 
     #init
-    sh = gc.gc_malloc(hdrlen + initlen + 1)
+    sh = runtime.gc_malloc(hdrlen + initlen + 1)
     if sh == runtime.Null return runtime.Null
     else if !init         std.memset(sh, runtime.Null, hdrlen + initlen + 1)
 
@@ -126,10 +125,10 @@ func fromulonglong(value<u64>) {
     return newlen(buf,len)
 }
 func malloc(size<u64>) { 
-    return gc.gc_malloc(size) 
+    return runtime.gc_malloc(size) 
 }
 func free(ptr<u64*>) {
-    gc.gc_free(ptr) 
+    runtime.gc_free(ptr) 
 }
 
 // func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {

@@ -61,7 +61,7 @@ func registerMain()
     writeln("    push %%rdi")
     
     writeln(
-        "   call runtime_gc_gc_init\n" +
+        "   call runtime_gc_init\n" +
         "   call runtime_args_init\n" +
         "   mov $0, %%rax\n" +
         "   call main_main\n"

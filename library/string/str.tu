@@ -1,5 +1,4 @@
 use runtime
-use runtime.gc
 use std
 
 func stringHdrSize(type<i8>) {
@@ -53,7 +52,7 @@ Str::mark(){
     if !s return runtime.Null
     size<i32> = stringHdrSize(s[-1])
     if size == 0 return runtime.Null
-    gc.gc_mark(s - size)
+    runtime.gc_mark(s - size)
 }
 
 Str::dup() {
@@ -64,7 +63,7 @@ Str::free() {
     s<u8*> = this
     if s == null return runtime.Null
     
-    gc.gc_free(s - stringHdrSize(s[-1]))
+    runtime.gc_free(s - stringHdrSize(s[-1]))
 }
 
 Str::updatelen() {
@@ -107,14 +106,14 @@ Str::MakeRoomFor(addlen<u64>) {
 
     hdrlen = stringHdrSize(type)
     if oldtype == type {
-        newsh = gc.gc_realloc(sh, hdrlen + len, hdrlen + newlen + 1)
+        newsh = runtime.gc_realloc(sh, hdrlen + len, hdrlen + newlen + 1)
         if newsh == null return runtime.Null
         s = newsh + hdrlen
     } else {
-        newsh = gc.gc_malloc(hdrlen + newlen+1)
+        newsh = runtime.gc_malloc(hdrlen + newlen+1)
         if newsh == null return runtime.Null
         std.memcpy(newsh + hdrlen, s, len + 1)
-        gc.gc_free(sh)
+        runtime.gc_free(sh)
         s = newsh + hdrlen
         s[-1] = type        
         stringsetlen(s, len)

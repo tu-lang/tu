@@ -1,7 +1,7 @@
 
-use runtime.gc
+use runtime
 
 func gc()
 {
-    gc.gc()
+    runtime.GC()
 }

@@ -21,11 +21,11 @@ func gc_malloc(size)
 {
     if size != null {
         compile.writeln("    push $%d", size)
-        call("runtime_gc_gc_malloc",1)
+        call("runtime_gc_malloc",1)
     }else {
         //pass args by prev expression.compile & %rax
         compile.writeln("    push %%rax")
-        call("runtime_gc_gc_malloc",1)
+        call("runtime_gc_malloc",1)
     }
 }
 func type_id(id,isobj){

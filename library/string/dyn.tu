@@ -1,5 +1,4 @@
 use runtime
-use runtime.gc
 use fmt
 
 // func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
