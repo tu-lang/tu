@@ -65,7 +65,7 @@ ChainExpr::getType(ctx){
 		if j != (std.len(this.fields) - 1) {
 			this.check(member.isstruct,"middle field must be mem type in chain expression:" + me.member)
 		}else{
-			if !member.pointer && !member.isarr {
+			if !member.pointer && !member.isarr && member.structref == null {
 				this.check(false,"last second field should be pointer in array index")
 			}
 		}

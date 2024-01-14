@@ -167,7 +167,12 @@ WhileStmt::compile(ctx)
     
     this.block.hasctx = true
     this.block.compile(ctx)
-    ctx.destroy()
+    if type(this.block) == type(BlockStmt) {
+        if std.len(this.block.stmts) == 0 ctx.cancel()
+        else ctx.destroy()
+    }else {
+        ctx.destroy()
+    }
 
     compile.writeln("    jmp %s.L.while.begin.%d",compile.currentParser.label(),c)
     compile.writeln("%s.L.while.end.%d:",compile.currentParser.label(), c)
