@@ -124,3 +124,10 @@ fn tracef(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
 	}
 }
+
+enable_debug_gc<i64> = 1
+fn dgc(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+	if enable_debug_gc {
+		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+	}
+}

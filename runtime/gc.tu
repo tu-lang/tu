@@ -10,6 +10,10 @@ cntBits<i64>     = 19
 BufAlloc<i64>    = 32768
 enable_runtimemalloc<i64> = 1
 gc<Gc:> = null
+//GCTODO:
+sched<sys.Sched:> = null
+gcphase<u32> = 0
+worldsema<sys.Sema:> = null
 
 enum {
 	GcAlways,

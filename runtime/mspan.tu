@@ -303,6 +303,10 @@ Spanlist::insert(s<Span>)
 	s.list = this
 }
 
+Spanlist::isEmpty(){
+	return this.first == Null
+}
+
 Span::nextFreeFast()
 {
 	theBit<i32> = sys.ctz64(this.allocCache)

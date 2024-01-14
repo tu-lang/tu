@@ -5,10 +5,12 @@ enum {
 	CoreRun ,
 	CoreStop ,
 }
-
+//GCTODO:
 mem Core {
+	Core*			link
     u64  			pid
     u32     		mid
+	i64				cid
 	Coroutine* 		g0
 	runtime.Cache*	mcache
 	Runner*	 		p
@@ -21,12 +23,34 @@ mem Core {
 	u64			tls , tls_hi	
 	u64			cfn
 	u32			state
+	runtime.Cache*	 local
+	i32  helpmark
+	i32  helpsweep
+	Note park
+	u32	 status
 }
 Core::init(){
 	//TODO: queue buf init
 	this.mallocing = 0
 	this.state = CoreStop
 }
+
+mem Sched {
+	MutexInter lock
+	i32 	  cid
+	i32 	  cores
+	u32 	  gcwaiting
+	i32		  stopwait
+	Note	  stopnote
+	i32		  stopmark
+	Note	  allmarkdone
+	i32		  stopsweep
+	Note	  allsweepdone
+	Core* 	  allcores
+	u64 	  debug
+
+}
+
 fn unlock_callback(lk<MutexInter>){
 	lk.unlock()
 }

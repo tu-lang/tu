@@ -32,8 +32,11 @@ fn mallocinit()
     g_.m.mcache = allocmcache()
 	m0.mid = 0
 	m0.pid = 10
-	//TODO:
-	// heap_.allspans.init(ARRAY_SIZE,sizeof(Span))
+
+	heap_.allspans.init(ARRAY_SIZE,PointerSize)
+	heap_.allarenas.init(ARRAY_SIZE,PointerSize)
+	heap_.sweeparenas.init(ARRAY_SIZE,PointerSize)
+
 	heap_.locks.init()
 	c0<u64> = 0xc0
     for i<i32> = 0x7f; i >= 0; i -= 1 {

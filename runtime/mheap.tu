@@ -6,12 +6,13 @@ use runtime.sys
 
 mem Heap {
     sys.MutexInter       locks
-
     Treap       free
     Treap       scav
-
     std.Array   allspans
-    // GcSweepBuf   sweepSpans[2]
+	std.Array 	allarenas
+	std.Array 	sweeparenas
+    sys.Stack   sweepSpans[2]
+
     sys.Fixalloc    spanalloc
     sys.Fixalloc    cachealloc
     sys.Fixalloc    treapalloc
@@ -20,6 +21,7 @@ mem Heap {
     sys.Fixalloc    arenaHintAlloc
     sys.LinearAlloc arena
     ArenaHint*   arenaHints
+	//GCTODO:
     HeapArena*   arenas[1 << arenaL1Bits]
 
     u64      scavengeCredit
