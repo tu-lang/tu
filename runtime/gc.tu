@@ -1,7 +1,6 @@
 use fmt
 use std
 use runtime.sys
-use runtime.malloc
 
 // buf list 
 WorkbufSize<i64> = 2048
@@ -18,8 +17,8 @@ enum {
 }
 mem SpanCache {
 	sys.MutexInter    lock
-	malloc.Spanlist   free
-	malloc.Spanlist   busy
+	Spanlist   free
+	Spanlist   busy
 }
 
 mem MarkBits {
@@ -72,7 +71,7 @@ fn get_bx()
 fn gc_malloc(nbytes<u64>)
 {
 	if enable_runtimemalloc<i64> {
-		return malloc.malloc(nbytes,0.(i8),1.(i8))
+		return malloc(nbytes,0.(i8),1.(i8))
 	}
 	return std.malloc(nbytes)
 }

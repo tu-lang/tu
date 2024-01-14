@@ -1,4 +1,3 @@
-use runtime.malloc
 use std
 
 mem Coroutine {

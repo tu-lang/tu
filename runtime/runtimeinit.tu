@@ -17,6 +17,41 @@ self_path<i8*>
 
 ErrorCode<i32> = -1
 
+fn mallocinit()
+{
+	sys.ncpu = 4
+	sys.physPageSize = 4096
+	sys.gcphase = _GCoff
+	sys.gcBlackenEnabled = false
+
+	heap_.init()
+
+	g_ = &g0
+    g_.m = &m0
+    g_.m.mallocing  = 0
+    g_.m.mcache = allocmcache()
+	m0.mid = 0
+	m0.pid = 10
+	//TODO:
+	// heap_.allspans.init(ARRAY_SIZE,sizeof(Span))
+	heap_.locks.init()
+	c0<u64> = 0xc0
+    for i<i32> = 0x7f; i >= 0; i -= 1 {
+		p<u64> = 0
+		p = i<<40 | (u64Mask & (c0<<32) )
+		hint<ArenaHint> = heap_.arenaHintAlloc.alloc()
+		hint.addr = p
+		hint.next = heap_.arenaHints
+		heap_.arenaHints = hint
+	}
+
+	sys.allm[0] = g_.m
+	while(sys.gcphase != _GCoff){}
+
+}
+
+
+
 fn args_init(argc<u64>, argv<u64*>){
 	//save exec out file
 	ori_execout = argv - 8
@@ -88,7 +123,7 @@ fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	bp = *bp
 	i = 1
 	//stack backtrace 
-	while True {
+	loop {
 		pc<u64*> = bp + 8
 		rip<u64> = *pc
 		if rip == null break

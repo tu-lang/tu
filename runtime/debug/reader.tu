@@ -27,7 +27,7 @@ Reader::read(out<i8*>, count<i32>) {
 }
 Reader::read_str(str<string.String>) {
     c<u8> = 0
-    while True {
+    loop {
       	if this.read_u8(&c) == Null
         	return False
       	if c == 0
@@ -41,7 +41,7 @@ Reader::read_uleb128(out<u64*>) {
 	value<u64> = 0
 	shift<i32> = 0
 	b<u8> = 0
-	while True {
+	loop {
       	if this.read_u8(&b) == Null
         	return False
 		u64b<u64> = b
@@ -59,7 +59,7 @@ Reader::read_sleb128(out<i64*>) {
 	value<i64> = 0
 	shift<i32> = 0
     b<u8> = 0
-    while True {
+    loop {
       	if this.read_u8(&b) == Null
         	return False
 		u64b<u64> = b

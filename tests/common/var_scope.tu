@@ -7,7 +7,6 @@ use std.atomic
 use std.regex					
 use runtime	
 use runtime.sys	
-use runtime.malloc				
 use runtime.debug	
 use time	
 func test_undefine(){

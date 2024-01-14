@@ -75,7 +75,7 @@ Lines::load(){
 		this.read_u8(Null)
 	}
 	dir<string.String> = string.string()
-	while True {
+	loop {
 		path<string.String> = string.string()
 		path = this.reader.read_str(path)
 		if path.empty() == True
@@ -84,7 +84,7 @@ Lines::load(){
 	}
 
 	this.file_offset = this.files.len()
-	while True {
+	loop {
 		file<string.String> = string.string()
 		file = this.reader.read_str(file)
 		if file.empty() == True

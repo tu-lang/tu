@@ -31,7 +31,6 @@ enum
 	Object
 }
 
-# base
 PointerSize<i32>    = 8
 True<i32>   		= 1
 False<i32>  		= 0

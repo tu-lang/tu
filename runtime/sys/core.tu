@@ -1,5 +1,5 @@
-use runtime.malloc
 use std
+use runtime
 
 enum {
 	CoreRun ,
@@ -10,7 +10,7 @@ mem Core {
     u64  			pid
     u32     		mid
 	Coroutine* 		g0
-	malloc.Cache*	mcache
+	runtime.Cache*	mcache
 	Runner*	 		p
 	MutexInter		locks
 	Coroutine*	curg
@@ -59,9 +59,9 @@ func corestart(c<Core>){
 func newcore(fc<u64>){
 	c<Core> = new Core()
 	c.cfn = fc
-	c.stk = malloc.malloc(THREAD_STACK_SIZE,1.(i8) , 1.(i8))
+	c.stk = runtime.malloc(THREAD_STACK_SIZE,1.(i8) , 1.(i8))
     c.stk_hi = c.stk + THREAD_STACK_SIZE
-    c.tls = malloc.malloc(THREAD_TLS_SIZE,1.(i8),1.(i8))
+    c.tls = runtime.malloc(THREAD_TLS_SIZE,1.(i8),1.(i8))
     c.tls_hi = c.tls + THREAD_TLS_SIZE
 
 

@@ -1,4 +1,3 @@
-use runtime.malloc
 use std.atomic
 
 mem Node {
@@ -45,7 +44,7 @@ fn getempty() {
 		}
 	}
 	if  b == Null {
-		s<malloc.Span> = Null
+		s<Span> = Null
 		if  gc.spans.free.first != Null  {
 			gc.spans.lock.lock()
 			s = gc.spans.free.first
@@ -56,7 +55,7 @@ fn getempty() {
 			gc.spans.lock.unlock()
 		}
 		if  s == Null {
-		    s = malloc.heap_.allocManual(BufAlloc/malloc.pageSize)
+		    s = heap_.allocManual(BufAlloc/pageSize)
 			if s == Null {
 				dief(*"out of memory\n")
 			}

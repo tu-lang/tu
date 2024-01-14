@@ -137,7 +137,7 @@ func member_insert_or_update(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel
 	// RbtreeNode **
 	p<u64*> = null
 
-	while True {
+	loop {
         if  node.key == temp.key {
             temp.v = node.v
         }
@@ -160,7 +160,7 @@ func member_insert_or_update(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel
     node.right = sentinel
     node.red()
 }
-func member_find(tree<map.Rbtree>,key<Value>){
+fn member_find(tree<map.Rbtree>,key<Value>){
 
 	node<map.RbtreeNode> = null
 	sentinel<map.RbtreeNode> = null
@@ -186,7 +186,7 @@ func member_find(tree<map.Rbtree>,key<Value>){
     }
     return Null
 }
-func member_insert(tree<map.Rbtree>, k<Value>,v<Value>)
+fn member_insert(tree<map.Rbtree>, k<Value>,v<Value>)
 {
 
 	node<map.RbtreeNode> = new map.RbtreeNode
@@ -197,7 +197,7 @@ func member_insert(tree<map.Rbtree>, k<Value>,v<Value>)
     tree.insert(node)
 }
 // return object
-func object_create(typeid<i32>){
+fn object_create(typeid<i32>){
     c<Object> = new Object
     if  c == null  {
         fmt.println("[object_create] failed to create")
@@ -217,7 +217,7 @@ func object_create(typeid<i32>){
     return c
 }
 // return value
-func object_member_update(obj<Value>,k<u32>,v<Value>){
+fn object_member_update(obj<Value>,k<u32>,v<Value>){
     key<Value> = int(k)
     if  obj.type != Object {
         fmt.println("[object_membe_update] invalid obj type")
@@ -226,7 +226,7 @@ func object_member_update(obj<Value>,k<u32>,v<Value>){
     c<Object> = obj.data
     member_insert(c.members,key,v)
 }
-func _object_member_get(obj<Object>,key<Value>){
+fn _object_member_get(obj<Object>,key<Value>){
     v<Value> = member_find(obj.members,key)
     if  v == null {
         v = member_find(obj.funcs,key)
@@ -239,7 +239,7 @@ func _object_member_get(obj<Object>,key<Value>){
     return v
 }
 // return value
-func object_member_get(k<u32>,obj<Value>){
+fn object_member_get(k<u32>,obj<Value>){
     key<Value> = int(k)
     if  obj.type != Object {
         os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
@@ -251,7 +251,7 @@ func object_member_get(k<u32>,obj<Value>){
     }
     return v
 }
-func object_unary_operator(opt<i32>,k<u32>,v<Value>,obj<Value>){
+fn object_unary_operator(opt<i32>,k<u32>,v<Value>,obj<Value>){
     if   obj == null || v == null  || obj.type != Object {
         fmt.println(" [object-uop] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
         return Null
@@ -262,14 +262,14 @@ func object_unary_operator(opt<i32>,k<u32>,v<Value>,obj<Value>){
     ret<Value> = operator_switch(opt,origin,v)
     object_member_update(obj,k,ret)
 }
-func object_func_add(k<u32>,addr<u64*>,obj<Value>){
+fn object_func_add(k<u32>,addr<u64*>,obj<Value>){
 
     key<Value> = int(k)
     c<Object> = obj.data
     member_insert(c.funcs,key,addr)
 }
 //used by internal runtime
-func get_member_func_addr(obj<Object>,key<Value>){
+fn get_member_func_addr(obj<Object>,key<Value>){
     funcaddr<u64*> = member_find(obj.funcs,key)
     if  funcaddr == null {
         funcaddr = member_find(obj.members,key)
@@ -285,7 +285,7 @@ func get_member_func_addr(obj<Object>,key<Value>){
     }
     return funcaddr
 }
-func object_func_addr(k<u32>,obj<Value>){
+fn object_func_addr(k<u32>,obj<Value>){
     if  obj.type != Object {
         os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
     }

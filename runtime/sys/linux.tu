@@ -1,7 +1,7 @@
 use std
 use std.atomic
 use os
-use runtime.malloc
+use runtime
 
 func fixalloc(size<u64> , align<u64>)
 {
@@ -23,7 +23,7 @@ func fixalloc(size<u64> , align<u64>)
 	if size >= maxBlock {
 		return alloc(size)
 	}
-	mp<Core> = malloc.acquirem()
+	mp<Core> = runtime.acquirem()
 
 	persistent<Palloc> = null
 	if mp != null && mp.p != 0 {
@@ -52,7 +52,7 @@ func fixalloc(size<u64> , align<u64>)
 	}
 	p = persistent.base + persistent.off
 	persistent.off += size
-	malloc.releasem(mp)
+	runtime.releasem(mp)
 	if persistent == &globalAlloc {
 		ga_lock.unlock()
 	}

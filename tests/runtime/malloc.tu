@@ -1,4 +1,4 @@
-use runtime.malloc 
+use runtime 
 use runtime.sys
 use fmt
 use std
@@ -9,13 +9,13 @@ func test_runtimemalloc()
 	//测试分配的个数
 	count<i32> = 10000000 //分配1千万次
 	//用个数组存起来
-	arr<i64*> = malloc.malloc(count * 8,0.(i8),1.(i8)) //每个元素为指针
+	arr<i64*> = runtime.malloc(count * 8,0.(i8),1.(i8)) //每个元素为指针
 	for(i<i64> = 0 ; i < count ; i += 1){
 		size<i32> = std.srand(maxsize)//每次分配的内存随机大小
 		if size == 0 || size < 8 {
 			size = 8
 		}
-		newp<i64*> = malloc.malloc(size,0.(i8),1.(i8))
+		newp<i64*> = runtime.malloc(size,0.(i8),1.(i8))
 		*newp = i
 		//保存起来
 		arr[i] = newp

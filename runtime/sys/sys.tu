@@ -1,6 +1,6 @@
 use std
 use os
-use runtime.malloc
+use runtime
 
 gcBlackenEnabled<u32> = 0
 gcphase<u32> = 0
@@ -31,7 +31,7 @@ func round(n<u64>,a<u64>)
 }
 func fastrand()
 {
-    g<Coroutine> = malloc.getg()
+    g<Coroutine> = runtime.getg()
     mp<Core>  = g.m
     s1<u32> = 0
     s0<u32> = 0
