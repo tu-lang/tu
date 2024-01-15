@@ -391,8 +391,7 @@ Gc::flush(preempt<i32>) {
 			break
 		}
 		this.spans.free.remove(span)
-		//GCTODO:
-		//heap_.freeManual(span, Null)
+		heap_.freemanual(span, Null)
 	}
 	more<i32> = !this.spans.free.isEmpty()
 	this.spans.lock.unlock()

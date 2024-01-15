@@ -512,3 +512,9 @@ Heap::isSweepDone(){
     return this.sweepdone != 0
 }
 
+Heap::freemanual(s<Span> , stat<u64*>){
+	s.needzero = 1
+    this.locks.lock()
+	this.freeSpanLocked(s, False, True, Null)
+    this.locks.unlock()
+}
