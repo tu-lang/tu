@@ -508,3 +508,7 @@ mapped:
 	return v
 }
 
+Heap::isSweepDone(){
+    return this.sweepdone != 0
+}
+

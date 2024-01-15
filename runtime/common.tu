@@ -118,6 +118,14 @@ fn nextpc(){
 	return callerpc()
 }
 
+fn warn(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+}
+
+fn printf(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+}
+
 fn debug(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
 }
@@ -132,6 +140,44 @@ fn tracef(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 	if enable_trace {
 		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
 	}
+}
+
+fn checkalldead(){
+	for  c<Core> = sched.allcores; c != Null ; c = c.link {
+	    match c.status {
+			CoreRun : debug(*"%p[%d] %d runing\n",c,c.cid,c.status)
+			CoreStop: debug(*"%p[%d] %dstop\n",c,c.cid,c.status)
+			_:  debug(*"%p[%d] error status\n",c,c.cid)
+		}
+	}	
+}
+fn debugcachegen(){
+	for c<Core> = sched.allcores; c != Null ; c = c.link
+		debug(*"[%d] gen:%d %d\n",c.cid,c.local.flushGen,heap_.sweepgen)
+}
+
+fn debug_alllock(){
+	printf(
+		*"gc.startsam:%p worldsma:%p gbArenas.lock:%p heap.lock:%p heap.sweep[0].lock:%p heap.sweep[1].lock:%p gc.wbuf.lock:%p glock:%p \n",
+		&gc.startSema,
+		&worldsema,
+		&gbArenas.locks.key,
+		&heap_.locks.key,
+		heap_.sweepSpans[0].spineLock,
+		&gc.spans.lock.key,
+		&ga_lock
+	)
+	printf(*"central locks:\n")
+	for i<i32> = 0 ; i < numSpanClasses ; i += 1{
+		//FIXME: chain expression
+		//printf(*"[%d]:%p\t",i,&heap_.centrals[i].lock.key)
+	}
+	printf(*"\ncore locks:\n")
+	for c<Core> = sched.allcores; c != Null ; c = c.link {
+		printf(*"[%d]:%p\t",c.pid,&c.locks)
+	}
+	printf(*"\n")
+
 }
 
 enable_debug_gc<i64> = 1

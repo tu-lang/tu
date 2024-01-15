@@ -17,8 +17,19 @@ self_path<i8*>
 
 ErrorCode<i32> = -1
 
+fn gcinit(){
+	heap_.sweepdone = 1
+	//GCTODO:
+	//gc.heapmarked = heapmin / 2
+	//gc.setpercent(100.(i8))
+	gc.startSema.sema = 1
+	worldsema.sema = 1
+
+	gc.enablegc = true
+}
 fn mallocinit()
 {
+	//GCTODO: sysconf
 	ncpu = 4
 	physPageSize = 4096
 	gcphase = _GCoff

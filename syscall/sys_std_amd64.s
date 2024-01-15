@@ -126,10 +126,23 @@ std_segsegvrecv:
      call runtime_segsegv_handler
      add $24, %rsp
      retq
+
 .globl std_readlink
 std_readlink:
      mov $89 , %rax
      syscall
      retq
 
+.global std_cputicks
+std_cputicks:
+    rdtscp
+    shl $0x20 , %rdx
+    add %rdx , %rax
+    retq
+
+.globl std_gettid
+std_gettid:
+    mov $0xba , %rax
+    syscall
+    retq
 

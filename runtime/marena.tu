@@ -180,10 +180,44 @@ HeapBits::heapBitsForAddr(addr<u64>){
 	this.last = &ha.bitmap[heapArenaBitmapBytes - 1]
 	return this
 }
+HeapBits::empty(){
+	this.bitp = Null
+	this.shift = 0
+	this.arena = 0
+	this.last = Null
+	return this
+}
+HeapBits::nextArena(){
+	this.arena += 1
+    ai<u32> = arenaIndex(this.arena)
+	arr<u64*> = heap_.arenas[arena_l1(ai)]
+	ha<HeapArena> = arr[arena_l2(ai)]
+	if ha == Null {
+		return this.empty()
+	}
+	this.bitp = &ha.bitmap[0]
+	this.shift = 0
+	this.last = &ha.bitmap[heapArenaBitmapBytes - 1]
+	return this
+}
+HeapBits::bits(){
+	bitp<u32> = *this.bitp
+	return bitp >> (this.shift & 31)
+}
+HeapBits::next(){
+	if this.shift < 3 * heapBitsShift {
+		this.shift += heapBitsShift
+	}else if(this.bitp != this.last){
+		this.bitp +=  1
+	}else {
+		return this.nextArena()
+	}
+	return this
+}
 
 
- fn newMarkBits(nelems<u64>)
- {
+fn newMarkBits(nelems<u64>)
+{
 	blocksNeeded<u64> = (nelems + 63) / 64
 	u8sNeeded<u64> = blocksNeeded * 8
 	head<GcBitsArena> = atomic.load64(&gbArenas.next)

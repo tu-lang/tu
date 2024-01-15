@@ -42,3 +42,7 @@ func madvise(start<u64> , len_in<u64> , behavior<i32>)
 //@param addr u64
 //@param len u64
 func munmap(addr<u64> , len<u64>)
+//@return u64
+fn   cputicks()
+//@return u64
+fn 	 gettid()
