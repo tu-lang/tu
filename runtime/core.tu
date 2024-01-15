@@ -117,8 +117,7 @@ fn park(unlockf<u64> , lk<u64>){
 	if unlockf != null {
 		ok<i32> = unlockf(lk)
 	}
-	//GCTODO: 
-	//schedule();
+	schedule()
 }
 
 fn parkunlock(lk<MutexInter>){

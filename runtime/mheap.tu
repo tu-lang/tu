@@ -34,9 +34,9 @@ mem Heap {
     Central  centrals[numSpanClasses]
 }
 
-fn recordspan(vh<Heap>, p<Span>) {
-    //GCTODO:
-    // vh.allspans.push(p)
+fn recordspan(h<Heap> , s<Span>) {
+	//allaspans should not be used when mallocinit not finish
+	//h.allspans.push(s)
 }
 
 Heap::init(){

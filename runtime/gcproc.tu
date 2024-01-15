@@ -166,7 +166,7 @@ void Gc::markdone()
 
 Gc::markterm()
 {
-	debug(" start markterm")
+	debug(*" start markterm")
 	atomic.store(&gcBlackenEnabled, false)
 	atomic.store(&gcphase,_GCmarktermination)
 	for c<Core> = sched.allcores ; c != Null ; c = c.link {
@@ -258,7 +258,7 @@ Gc::stopSTW() {
             dief(*"m.status not stop plan:%d now:%d",allcores,sched.cores)
         }
 	}
-    dgc("all world stop")
+    dgc(*"all world stop")
 }
 Gc::startSTW()
 {
