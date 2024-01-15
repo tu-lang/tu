@@ -443,6 +443,27 @@ Spanlist::insert(s<Span>)
 Spanlist::isEmpty(){
 	return this.first == Null
 }
+Spanlist::takeAll(other<Spanlist>){
+	if other.isEmpty() == True {
+		return True
+	}
+
+	for s<Span> = other.first; s != Null; s = s.next {
+		s.list = this
+	}
+
+	if this.isEmpty() == True {
+		this.first = other.first
+		this.last = other.last
+	} else {
+		other.last.next = this.first
+		this.first.prev = other.last
+		this.first = other.first
+	}
+
+	other.first = Null
+	other.last = Null
+}
 
 Span::nextFreeFast()
 {

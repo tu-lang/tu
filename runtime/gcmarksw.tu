@@ -63,8 +63,7 @@ Gc::finishsweep(){
 }
 fn gcmarkhelper(){
 	c<Core> = core()
-	//GCTODO:
-	//gc.markscan2(&c.queue)
+	gc.markscan2(&c.queue)
 	
 	if atomic.xadd(&sched.stopmark, 1.(i8)) == sched.cores
 		sched.allmarkdone.Wake()
@@ -375,8 +374,7 @@ Gc::prepareflush() {
 		dief(*"cannot free Bufs when work.full != 0")
 	}
 	gc.empty.self = 0
-	//GCTODO:
-	//gc.spans.free.takeAll(&gc.spans.busy)
+	gc.spans.free.takeAll(&gc.spans.busy)
 	gc.spans.lock.unlock()
 }
 
