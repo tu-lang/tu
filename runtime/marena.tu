@@ -45,7 +45,7 @@ mem GcBitsArena {
 }
 
 mem GcBitsArenas {
-    MutexInter   locks 
+    MutexInter   lock
     GcBitsArena* free
     GcBitsArena* next
     GcBitsArena* current
@@ -72,12 +72,12 @@ GcBitsArenas::newArenaMayUnlock()
 {
 	result<GcBitsArena> = null
 	if this.free == null {
-		this.locks.unlock()
+		this.lock.unlock()
 		result = sys_alloc(gcBitsChunkBytes)
 		if result == null  {
 			dief("runtime: cannot allocate memory".(i8))
 		}
-		this.locks.lock()
+		this.lock.lock()
 	} else {
 		result = this.free
 		this.free = this.free.next
@@ -226,10 +226,10 @@ fn newMarkBits(nelems<u64>)
  		return p
  	}
 
- 	gbArenas.locks.lock()
+ 	gbArenas.lock.lock()
 	p = gbArenas.next.tryAlloc(u8sNeeded)
  	if p != null {
-		gbArenas.locks.unlock()
+		gbArenas.lock.unlock()
  		return p
  	}
 
@@ -239,7 +239,7 @@ fn newMarkBits(nelems<u64>)
  	if  p != null {
  		fresh.next = gbArenas.free
  		gbArenas.free = fresh
-		gbArenas.locks.unlock()
+		gbArenas.lock.unlock()
  		return p
  	}
 
@@ -251,12 +251,12 @@ fn newMarkBits(nelems<u64>)
  	fresh.next = gbArenas.next
 	atomic.store64(&gbArenas.next,fresh)
 
-	gbArenas.locks.unlock()
+	gbArenas.lock.unlock()
  	return p
 }
 fn nextMarkBitArenaEpoch()
 {
-	gbArenas.locks.lock()
+	gbArenas.lock.lock()
 	if gbArenas.previous != null  {
 		if  gbArenas.free == null  {
 			gbArenas.free = gbArenas.previous
@@ -270,7 +270,7 @@ fn nextMarkBitArenaEpoch()
 	gbArenas.previous = gbArenas.current
 	gbArenas.current = gbArenas.next
 	atomic.store64(&gbArenas.next,0.(i8))
-	gbArenas.locks.unlock()
+	gbArenas.lock.unlock()
 }
 
 mem Cache {
@@ -335,10 +335,10 @@ Cache::refill(spc<u8>)
 	this.alloc[spc] =  s
 }
 fn allocmcache(){
-	heap_.locks.lock()
+	heap_.lock.lock()
 	c<Cache> = heap_.cachealloc.alloc()
 	c.flushGen = heap_.sweepgen
-	heap_.locks.unlock()
+	heap_.lock.unlock()
 	for i<i32> = 0 ; i < numSpanClasses ; i += 1{
 		c.alloc[i] = &emptyspan
 	}
@@ -361,7 +361,7 @@ Cache::releaseAll()
 }
 
 mem Central {
-    MutexInter*  locks
+    MutexInter*  lock
     u8     sc
 
     Spanlist  nonempty
@@ -385,7 +385,7 @@ Central::cacheSpan()
 {
 	spanBytes<u64> = class_to_allocnpages[sizeclass(this.sc)] * pageSize
 
-	this.locks.lock()
+	this.lock.lock()
 	traceDone<u8> = false
 	sg<u32> = heap_.sweepgen
 	
@@ -396,7 +396,7 @@ cachespanretry:
 		if s.sweepgen == sg - 2 && atomic.cas(&s.sweepgen,sg - 2,sg - 1) == True {
 			this.nonempty.remove(s)
 			this.empty.insertback(s)
-			this.locks.unlock()
+			this.lock.unlock()
 			goto havespan
 		}
 		if s.sweepgen == sg - 1 {
@@ -404,7 +404,7 @@ cachespanretry:
 		}
 		this.nonempty.remove(s)
 		this.empty.insertback(s)
-		this.locks.unlock()
+		this.lock.unlock()
 		goto havespan
 	}
 
@@ -412,13 +412,13 @@ cachespanretry:
 		if s.sweepgen == sg - 2 && atomic.cas(&s.sweepgen, sg - 2, sg - 1) == True {
 			this.empty.remove(s)
 			this.empty.insertback(s)
-			this.locks.unlock()
+			this.lock.unlock()
 			freeIndex<u64> = s.nextFreeIndex()
 			if freeIndex != s.nelems {
 				s.freeindex = freeIndex
 				goto havespan
 			}
-			this.locks.lock()
+			this.lock.lock()
 			goto cachespanretry
 		}
 		if s.sweepgen == sg - 1 { 
@@ -426,15 +426,15 @@ cachespanretry:
 		}
 		break
 	}
-	this.locks.unlock()
+	this.lock.unlock()
 
 	s = this.grow()
 	if s == null {
 		return 0.(i8)
 	}
-	this.locks.lock()
+	this.lock.lock()
 	this.empty.insertback(s)
-	this.locks.unlock()
+	this.lock.unlock()
 
 havespan:
 
@@ -495,7 +495,7 @@ Central::freeSpan(s<Span> , preserve<u8> , wasempty<u8>)
 		return 0.(i8)
 	}
 
-	this.locks.lock()
+	this.lock.lock()
 
 	if wasempty {
 		this.empty.remove(s)
@@ -505,11 +505,11 @@ Central::freeSpan(s<Span> , preserve<u8> , wasempty<u8>)
 	atomic.store(&s.sweepgen,heap_.sweepgen)
 
 	if s.allocCount != 0 {
-		this.locks.unlock()
+		this.lock.unlock()
 		return 0.(i8)
 	}
 	this.nonempty.remove(s)
-	this.locks.unlock()
+	this.lock.unlock()
 	heap_.freeSpan(s,0.(i8))
 	return 1.(i8)
 }
@@ -530,12 +530,12 @@ Central::uncacheSpan(s<Span>)
 
 	n<i32> = s.nelems - s.allocCount
 	if  n > 0 {
-		this.locks.lock()
+		this.lock.lock()
 		this.empty.remove(s)
 		this.nonempty.insert(s)
 		if  !stale {
 		}
-		this.locks.unlock()
+		this.lock.unlock()
 	}
 
 	if stale {

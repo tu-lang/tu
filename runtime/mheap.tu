@@ -4,7 +4,7 @@ use os
 use fmt
 
 mem Heap {
-    MutexInter  locks
+    MutexInter  lock
     Treap       free
     Treap       scav
     std.Array   allspans
@@ -65,7 +65,7 @@ Heap::alloc(npage<u64>, spanclass<u8> , large<u8> , needzero<u8>)
 }
 Heap::alloc_m(npage<u64>,spanc<u8>,large<u8>)
 {
-    this.locks.lock()
+    this.lock.lock()
     s<Span> = heap_.allocSpanLocked(npage)
 	if  s != null {
         atomic.store(&s.sweepgen,this.sweepgen)
@@ -101,7 +101,7 @@ Heap::alloc_m(npage<u64>,spanc<u8>,large<u8>)
 		    this.nlargealloc += 1
 		}
 	}
-    this.locks.unlock()
+    this.lock.unlock()
 	return s
 }
 Heap::allocSpanLocked(npage<u64>)
@@ -245,19 +245,19 @@ Heap::freeSpan(s<Span> , large<u8>)
 {
     g<Coroutine> = getg()
     mp<Core> = g.m
-    this.locks.lock()
+    this.lock.lock()
     mp.mcache.local_scan = 0
 
     mp.mcache.local_tinyallocs = 0
     if gcBlackenEnabled != 0 {
     }
     heap_.freeSpanLocked(s,1.(i8),1.(i8),0.(i8))
-    this.locks.unlock()
+    this.lock.unlock()
 }
 
 Heap::allocManual(npage<u64>)
 {
-	this.locks.lock()
+	this.lock.lock()
     s<Span> = heap_.allocSpanLocked(npage)
 	if ( s != null) {
 		s.state = mSpanManual
@@ -268,7 +268,7 @@ Heap::allocManual(npage<u64>)
 		s.limit = s.startaddr + s.npages << pageShift
 	}
 
-	this.locks.unlock()
+	this.lock.unlock()
 	return s
 }
 
@@ -514,7 +514,7 @@ Heap::isSweepDone(){
 
 Heap::freemanual(s<Span> , stat<u64*>){
 	s.needzero = 1
-    this.locks.lock()
+    this.lock.lock()
 	this.freeSpanLocked(s, False, True, Null)
-    this.locks.unlock()
+    this.lock.unlock()
 }

@@ -161,8 +161,8 @@ fn debug_alllock(){
 		*"gc.startsam:%p worldsma:%p gbArenas.lock:%p heap.lock:%p heap.sweep[0].lock:%p heap.sweep[1].lock:%p gc.wbuf.lock:%p glock:%p \n",
 		&gc.startSema,
 		&worldsema,
-		&gbArenas.locks.key,
-		&heap_.locks.key,
+		&gbArenas.lock.key,
+		&heap_.lock.key,
 		heap_.sweepSpans[0].spineLock,
 		&gc.spans.lock.key,
 		&ga_lock
@@ -174,7 +174,7 @@ fn debug_alllock(){
 	}
 	printf(*"\ncore locks:\n")
 	for c<Core> = sched.allcores; c != Null ; c = c.link {
-		printf(*"[%d]:%p\t",c.pid,&c.locks)
+		printf(*"[%d]:%p\t",c.pid,&c.lock)
 	}
 	printf(*"\n")
 

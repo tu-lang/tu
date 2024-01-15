@@ -213,7 +213,7 @@ Gc::setratio(){
 }
 
 Gc::setpercent(in<i32>){
-	heap_.locks.lock()
+	heap_.lock.lock()
 	out<i32> = gcpercent
 	if(in < 0 ){
 		in = -1
@@ -222,7 +222,7 @@ Gc::setpercent(in<i32>){
 	heapmin = default_heap_min * gcpercent / 100
 
     this.setratio()
-	heap_.locks.unlock()
+	heap_.lock.unlock()
 
     return out
 }

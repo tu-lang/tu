@@ -23,9 +23,9 @@ Gc::trigger(kind<i32>){
 }
 
 Gc::markinit(){
-	heap_.locks.lock()
+	heap_.lock.lock()
 	arenas<std.Array> = heap_.allarenas
-	heap_.locks.unlock()
+	heap_.lock.unlock()
 
 	for i<i32> = 0 ; i < arenas.used ; i += 1 {
 		ai<u32*> = &arenas.addr[i]
@@ -43,7 +43,7 @@ Gc::finishsweep(){
 	while sweepone() >= Null {
 	}
 
-	gbArenas.locks.lock()
+	gbArenas.lock.lock()
 	if gbArenas.previous != Null {
 		if gbArenas.free == Null {
 			gbArenas.free = gbArenas.previous
@@ -59,7 +59,7 @@ Gc::finishsweep(){
 	gbArenas.previous = gbArenas.current
 	gbArenas.current = gbArenas.next
 	atomic.store64(&gbArenas.next,Null)
-	gbArenas.locks.unlock()
+	gbArenas.lock.unlock()
 }
 fn gcmarkhelper(){
 	c<Core> = core()
@@ -295,13 +295,13 @@ Gc::sweep(){
 		dief(*"sweep being done but phase is not GCoff")
 	}
 
-	heap_.locks.lock()
+	heap_.lock.lock()
 	heap_.sweepgen += 2
 	heap_.sweepdone = 0
 	if heap_.sweepSpans[heap_.sweepgen/2%2].index != 0 {
 		dief(*"non-empty swept list")
 	}
-	heap_.locks.unlock()
+	heap_.lock.unlock()
 	c_<Core> = core()
 	for c<Core> = sched.allcores; c != Null ; c = c.link {
 		if c.cid == c_.cid continue

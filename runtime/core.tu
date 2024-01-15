@@ -24,7 +24,7 @@ mem Coroutine {
 	u64     	stackguard0 
 	u64 		stackguard1 
 	i64 		gcAssistBytes
-	MutexInter  locks
+	MutexInter  lock
 }
 
 enum {
@@ -41,7 +41,7 @@ mem Core {
 	Coroutine* 		g0
 	runtime.Cache*	mcache
 	Runner*	 		p
-	MutexInter		locks
+	MutexInter		lock
 	Coroutine*	curg
 	i32    		mallocing
 	Coroutine*	gsignal
@@ -56,6 +56,7 @@ mem Core {
 	Note park
 	u32	 status
 	Queue	queue
+	i32 	 locks
 }
 
 mem Sched {

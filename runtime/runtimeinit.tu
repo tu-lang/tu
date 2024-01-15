@@ -19,9 +19,8 @@ ErrorCode<i32> = -1
 
 fn gcinit(){
 	heap_.sweepdone = 1
-	//GCTODO:
-	//gc.heapmarked = heapmin / 2
-	//gc.setpercent(100.(i8))
+	gc.heapmarked = heapmin / 2
+	gc.setpercent(100.(i8))
 	gc.startSema.sema = 1
 	worldsema.sema = 1
 
@@ -48,7 +47,7 @@ fn mallocinit()
 	heap_.allarenas.init(ARRAY_SIZE,PointerSize)
 	heap_.sweeparenas.init(ARRAY_SIZE,PointerSize)
 
-	heap_.locks.init()
+	heap_.lock.init()
 	c0<u64> = 0xc0
     for i<i32> = 0x7f; i >= 0; i -= 1 {
 		p<u64> = 0
