@@ -88,6 +88,7 @@ Instruct::need2byte_op2(){
         ast.KW_CMPXCHG: return true//cmpxchg
         ast.KW_XADD:    return true//xadd
         ast.KW_SYSCALL: return true
+        ast.KW_RDTSCP: return true
     }
     return false
 }

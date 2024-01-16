@@ -45,7 +45,7 @@ labels = {
 
     "ret": ast.KW_RET,          "retq": ast.KW_RET,   "cltd": ast.KW_CLTD,       "cdq": ast.KW_CDQ,       "cqo": ast.KW_CQO,    
     "lock": ast.KW_LOCK,        "leaveq": ast.KW_LEAVE,   "leave": ast.KW_LEAVE,
-    "syscall": ast.KW_SYSCALL,
+    "syscall": ast.KW_SYSCALL,  "rdtscp": ast.KW_RDTSCP,
 
     "%al": ast.KW_AL,          "%cl": ast.KW_CL,          "%dl": ast.KW_DL,         "%bl": ast.KW_BL,
     "%ah": ast.KW_AH,          "%ch": ast.KW_CH,          "%dh": ast.KW_DH,         "%bh": ast.KW_BH,

@@ -106,10 +106,10 @@ opcode1_8<u16:30> =
     //PUSH POP
     0x50,  0x58
 ]
-opcode0<u16:7> =
+opcode0<u16:8> =
 [
-//  RET   LOCK  LEAVE  SYSCALL CLTD   CDQ   CQO
-    0xc3, 0xf0, 0xc9,  0x0f05, 0x99,  0x99, 0x99
+//  RET   LOCK  rdtscp  LEAVE  SYSCALL CLTD   CDQ   CQO
+    0xc3, 0xf0, 0x01f9, 0xc9,  0x0f05, 0x99,  0x99, 0x99
 ]
 Instruct::append1(b<i8>) {
     if(this.parser.ready){

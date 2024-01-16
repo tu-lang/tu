@@ -5,3 +5,4 @@ main:
     leaveq
     leave
     syscall
+    rdtscp

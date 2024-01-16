@@ -8,6 +8,8 @@ Instruct::genZeroInst() {
     opcode<u16> = opcode0[i]
     if(this.type == ast.KW_CQO)
         this.append1(0x48.(i8))
+    if this.type == ast.KW_RDTSCP
+        this.append1(0x0f.(i8))
     if(this.need2byte_op2())
         this.append2(opcode)
     else 
