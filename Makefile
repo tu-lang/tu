@@ -69,7 +69,7 @@ release: install build-liba install
 
 # NOTICE: don't use this
 .PHONEY: release
-dev_release:
+dev_release: install
 	tuc run tulang.tu	
 	mv a.out release/tu
 	cp release/tu $(prefix)/bin/tu

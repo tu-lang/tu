@@ -35,8 +35,7 @@ MarkBits::isMarked(){
 	return (*this.u8p & this.mask) != 0
 }
 MarkBits::setMarked(){
-	//GCTODO: 
-	//atomic.Or8(this.u8p,this.mask)
+	atomic.or8(this.u8p,this.mask)
 }
 
 mem Gc {
@@ -151,7 +150,7 @@ Gc::gc0(){
     this.markdone()
 }
 
-void Gc::markdone()
+Gc::markdone()
 {
 	debug(*"gcphase:%d",_GCmark)
 	if( gcphase != _GCmark ){

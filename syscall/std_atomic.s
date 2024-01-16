@@ -59,5 +59,19 @@ std_atomic_xadd64:
     mov    (%rax) ,%rax
     retq
 
-
+.global std_atomic_or8
+std_atomic_or8:
+	movq	%rdi, %rdx
+	movl	%esi, %eax
+	movzbl	%al,  %edi
+	movzbl	(%rdx), %eax
+sao_l1:
+	movl	%eax, %esi
+	movl	%eax, %ecx
+	or	%edi, %ecx
+	lock cmpxchgb	%cl, (%rdx)
+	sete	%cl
+	je	sao_l1
+	movl	%esi, %eax
+	ret
 

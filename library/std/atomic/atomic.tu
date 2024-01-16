@@ -18,3 +18,4 @@ func load(ptr<u32*>) {
 func load64(ptr<u64*>){
 	return *ptr
 }
+fn or8(ptr<i8*> , v<i8>)

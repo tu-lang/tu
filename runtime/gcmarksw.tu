@@ -210,8 +210,7 @@ fn greyobject(obj<u64> , s<Span> , queue<Queue> , objIndex<u64>)
     pageMask<u8> = null
     arena<HeapArena> = pageIndexOf(s.startaddr,&pageIdx,&pageMask)
     if arena.pageMarks[pageIdx] & pageMask == 0 {
-        //GCTODO:
-        //atomic.Or8(&arena.pageMarks[pageIdx], pageMask)
+        atomic.or8(&arena.pageMarks[pageIdx], pageMask)
     }
     if (s.sc&1) != Null {
         queue.u8used += s.elemsize
