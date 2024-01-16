@@ -35,12 +35,12 @@ labels = {
 
     "callq": ast.KW_CALL,      "call": ast.KW_CALL,       "sete": ast.KW_SETE,       "setl": ast.KW_SETL,      "setle": ast.KW_SETLE,    
     "setge": ast.KW_SETGE,     "setbe": ast.KW_SETBE,     "setg": ast.KW_SETG,       "setne": ast.KW_SETNE,    "setb": ast.KW_SETB,
-    "setz": ast.KW_SETZ,       "setnz": ast.KW_SETNZ,        "seta": ast.KW_SETA,      "setae": ast.KW_SETAE,
+    "setz": ast.KW_SETZ,       "setnz": ast.KW_SETNZ,     "seta": ast.KW_SETA,      "setae": ast.KW_SETAE,
     "jmp" : ast.KW_JMP,        "not": ast.KW_NOT,         "lea" : ast.KW_LEA,        
-    "cmp" : ast.KW_CMP,        "cmpxchgq": ast.KW_CMPXCHG,"cmpxchgl": ast.KW_CMPXCHG,
+    "cmp" : ast.KW_CMP,        "cmpxchgq": ast.KW_CMPXCHG,"cmpxchgl": ast.KW_CMPXCHG, "cmpxchgb": ast.KW_CMPXCHG,
     "xchg": ast.KW_XCHG,       "jbe": ast.KW_JBE,
     "je" : ast.KW_JE,          "jne": ast.KW_JNE,
-    "idiv": ast.KW_IDIV,       "div": ast.KW_DIV,        "or": ast.KW_OR,          
+    "idiv": ast.KW_IDIV,       "div": ast.KW_DIV,        "or": ast.KW_OR,             "orl": ast.KW_OR,       
     "xor": ast.KW_XOR,          "xorl": ast.KW_XOR,
 
     "ret": ast.KW_RET,          "retq": ast.KW_RET,   "cltd": ast.KW_CLTD,       "cdq": ast.KW_CDQ,       "cqo": ast.KW_CQO,    
