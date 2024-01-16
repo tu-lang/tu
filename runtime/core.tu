@@ -2,6 +2,7 @@ use std
 use runtime
 
 core0<Core:>
+coretls<i64:6>
 sched<Sched:>
 
 // impl by asm

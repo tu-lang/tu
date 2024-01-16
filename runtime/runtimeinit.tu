@@ -28,11 +28,16 @@ fn gcinit(){
 }
 fn mallocinit()
 {
-	//GCTODO: sysconf
+	//TODOGC: sysconf
 	ncpu = 4
 	physPageSize = 4096
 	gcphase = _GCoff
 	gcBlackenEnabled = false
+
+	settls(&coretls)
+	setcore(&core0)
+    core0.stktop = get_bp()
+    core0.pid = std.gettid()
 
 	heap_.init()
 
@@ -62,8 +67,6 @@ fn mallocinit()
 	while(gcphase != _GCoff){}
 
 }
-
-
 
 fn args_init(argc<u64>, argv<u64*>){
 	//save exec out file
@@ -110,7 +113,6 @@ fn runtimeinit(){
 	pools_init()
 	debug.debug_init()
 }
-
 
 fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	fmt.println("\npanicked! stack backtrace:")

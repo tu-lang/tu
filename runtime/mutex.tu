@@ -180,8 +180,6 @@ fn canspin(i<i32>){
 }
 MutexInter::init(){}
 MutexInter::lock(){
-    //GCTODO: coredump here need fix tls
-    return Null
     c<Core> = core()
     c.locks += 1
     if c.locks < 0 {
@@ -225,8 +223,6 @@ MutexInter::lock(){
 }
 
 MutexInter::unlock(){
-    //GCTODO: coredump here,need fix tls
-    return Null
     c<Core> = core()
     v<u32> = atomic.xchg(&this.key,mutex_unlocked)
     if v == mutex_unlocked {

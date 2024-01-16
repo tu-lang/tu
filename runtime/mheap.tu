@@ -20,9 +20,8 @@ mem Heap {
     Fixalloc    arenaHintAlloc
     LinearAlloc arena
     ArenaHint*  arenaHints
-	//GCTODO:
+	//TODOGC:
     HeapArena*  arenas[1 << arenaL1Bits]
-
     u64      scavengeCredit
     u32      sweepgen
     u32      sweepdone
@@ -44,8 +43,6 @@ Heap::init(){
     this.spanalloc.init(sizeof(Span),recordspan,this)
     this.cachealloc.init(sizeof(Cache),0.(i8),0.(i8))
 
-    this.specialfinalizeralloc.init(0.(i8),0.(i8),0.(i8))
-    this.specialprofilealloc.init(0.(i8),0.(i8),0.(i8))
     this.arenaHintAlloc.init(sizeof(ArenaHint),0.(i8),0.(i8))
 
     for i<i32> = 0 ; i < numSpanClasses ;i += 1{

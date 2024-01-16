@@ -361,7 +361,7 @@ Cache::releaseAll()
 }
 
 mem Central {
-    MutexInter*  lock
+    MutexInter  lock
     u8     sc
 
     Spanlist  nonempty

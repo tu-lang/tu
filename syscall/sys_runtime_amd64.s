@@ -54,6 +54,7 @@ runtime_callerpc:
     mov 8(%rbp) , %rax
     ret
 
+.globl runtime_settls
 runtime_settls:
     add    $0x8,%rdi   
     mov    %rdi,%rsi
@@ -93,14 +94,12 @@ tc2:
 
 .global runtime_core
 runtime_core:
-    #GCTODO:
-    #movq  %fs:0xfffffffffffffff0,%rax
+    movq  %fs:0xfffffffffffffff0,%rax
     retq
 
 .global runtime_setcore
 runtime_setcore:
-    #GCTODO:
-    #movq  %rdi,%fs:0xfffffffffffffff0
+    movq  %rdi,%fs:0xfffffffffffffff0
     retq
 
 .globl runtime_procyield
