@@ -43,7 +43,7 @@ enum {
 
     KW_RAX, KW_RCX, KW_RDX, KW_RBX, KW_RSP,
     KW_RBP, KW_RSI, KW_RDI, KW_R8,  KW_R9,
-    KW_R10, KW_R11, KW_R12, KW_R13, KW_R14, KW_R15, KW_RIP,
+    KW_R10, KW_R11, KW_R12, KW_R13, KW_R14, KW_R15, KW_FS,KW_RIP,
 }
 
 enum {

@@ -177,6 +177,34 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
             this.scanner.scan()
             return ast.TY_MEM
         }
+        ast.KW_FS : {
+            inst.tks.push(this.scanner.curtoken)
+            //eat )
+            inst.str.cat(this.scanner.curlex)
+            inst.modrm.mod = 0
+            inst.modrm.rm  = 4
+            inst.sib.scale = 0
+            inst.sib.index = 4
+            inst.sib.base  = 5
+            this.scanner.scan()
+            this.check(this.scanner.curtoken == ast.TK_COLON,"must be : after %fs")
+            inst.str.cat(this.scanner.curlex)
+            this.scanner.scan()
+            this.check(this.scanner.curtoken == ast.TK_NUMBER,"must be offset after %fs:")
+            prs<string.String> = this.scanner.curlex.sub(0.(i8),2.(i8))
+            if prs.cmpstr(*"0x") == string.Equal {
+                inst.inst.imm = std.strtoul(this.scanner.curlex.inner,0.(i8),16.(i8))
+            }else{
+                if(this.scanner.curlex.inner[0] == '-'){
+                    inst.inst.negative = true
+                    inst.inst.imm = std.strtol(this.scanner.curlex.inner,0.(i8),10.(i8))
+                }else
+                    inst.inst.imm = std.strtoul(this.scanner.curlex.inner,0.(i8),10.(i8))
+            }
+            inst.str.cat(this.scanner.curlex)
+            this.scanner.scan()
+            return ast.TY_MEM
+        }
         _: {
             //maybe call *%rax
             if this.scanner.curtoken == ast.TK_MUL {

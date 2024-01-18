@@ -89,6 +89,7 @@ func tk_to_string(tk<i32>){
         KW_R8:     return "r8"
         KW_R9:     return "r9"
         KW_R10:    return "r10"
+        KW_FS:     return "%fs"
         KW_RIP:    return "rip"
         KW_LABEL:  return "label"
         KW_ZERO:   return ".zero"
@@ -98,7 +99,7 @@ func tk_to_string(tk<i32>){
         KW_BYTE:   return ".byte"
         TK_NUMBER: return "number"
         _ : {
-            return "unknown"
+            return "unknown" + int(tk)
         }
     }
 }

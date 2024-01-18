@@ -2,9 +2,14 @@ use asmer.ast
 use asmer.utils
 use asmer.parser
 use string
+use fmt
 
 Instruct::insthead(){
     utils.debug("Instruct::insthead()".(i8))
+    if this.tks.addr[0] == ast.KW_FS || this.tks.addr[1] == ast.KW_FS {
+        this.append2(0x6448.(i8))
+        return true
+    }
     match this.type {
         ast.KW_MOVW: {
             this.append1(0x66.(i8))
@@ -285,6 +290,9 @@ Instruct::genTwoInst()
                     this.append(this.inst.disp,this.inst.dispLen)
             }else if(this.modrm.rm == 4){
                 this.writeSIB()
+            }
+            if this.tks.addr[0] == ast.KW_FS || this.tks.addr[1] == ast.KW_FS {
+                this.append(this.inst.imm , 4.(i8))
             }
             if(this.left == ast.TY_IMMED){
                 this.append(this.inst.imm , len)

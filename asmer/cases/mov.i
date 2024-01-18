@@ -41,3 +41,23 @@ Disassembly of section .text:
 000000000000007d <r4>:
   7d:	b8 00 00 00 00       	mov    $0x0,%eax
   82:	bb 00 00 00 00       	mov    $0x0,%ebx
+  
+0000000000000000 <fsrrm>:
+   0:   64 48 8b 04 25 f0 ff    mov    %fs:0xfffffffffffffff0,%rax
+   7:   ff ff 
+   9:   64 48 8b 0c 25 f0 ff    mov    %fs:0xfffffffffffffff0,%rcx
+  10:   ff ff 
+  12:   64 48 8b 14 25 f0 ff    mov    %fs:0xfffffffffffffff0,%rdx
+  19:   ff ff 
+  1b:   48 8b 04 24             mov    (%rsp),%rax
+  1f:   48 8b 07                mov    (%rdi),%rax
+
+0000000000000022 <fsrmr>:
+  22:   64 48 89 04 25 f0 ff    mov    %rax,%fs:0xfffffffffffffff0
+  29:   ff ff 
+  2b:   64 48 89 0c 25 f0 ff    mov    %rcx,%fs:0xfffffffffffffff0
+  32:   ff ff 
+  34:   64 48 89 14 25 f0 ff    mov    %rdx,%fs:0xfffffffffffffff0
+  3b:   ff ff 
+  3d:   48 89 04 24             mov    %rax,(%rsp)
+  41:   48 89 07                mov    %rax,(%rdi)

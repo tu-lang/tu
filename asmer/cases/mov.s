@@ -30,3 +30,16 @@ bigim:
 r4:
     mov $0 , %eax
     mov $0 , %ebx
+
+fsrrm:
+        movq  %fs:0xfffffffffffffff0,%rax
+        movq  %fs:0xfffffffffffffff0,%rcx
+        movq  %fs:0xfffffffffffffff0,%rdx
+        movq (%rsp)                 , %rax
+        movq (%rdi)                 , %rax
+fsrmr:
+        movq  %rax,%fs:0xfffffffffffffff0
+        movq  %rcx,%fs:0xfffffffffffffff0
+        movq  %rdx,%fs:0xfffffffffffffff0
+        movq %rax,(%rsp)                    
+        movq %rax,(%rdi)
