@@ -111,7 +111,7 @@ Instruct::genTwoInst()
     opcode<u16> = opcode2[index]
     exchar<u8> = 0
     needprefix<i32> = true
-
+    immi64<i64> = 0
     match this.modrm.mod {
         -1 : {
             this.insthead()
@@ -139,6 +139,7 @@ Instruct::genTwoInst()
                         }else if this.inst.imm > I32_MAX {
                             len = 8
                             opcode = 0xb8 + this.modrm.reg
+                            exchar = 0
                         }else{
                             len = 4
                             exchar = 0xc0 + this.modrm.reg
@@ -153,11 +154,21 @@ Instruct::genTwoInst()
                         exchar = 0xc0 + this.modrm.reg
                 }
                 ast.KW_CMP:{
-                    if(this.inst.imm > I8_MAX){
-                        len = 4
-                    }
+                    len = 1
+                    imm<i32> = this.inst.imm
                     exchar = 0xf8
                     exchar += this.modrm.reg
+                    if imm > I8_MAX || imm <= I8_MIN {
+                        if this.modrm.reg == 0 {
+                            opcode = 0x3d
+                            exchar = 0
+                        }else{
+                            opcode = 0x81
+                        }
+                        len = 4
+                    }else{
+                        this.inst.negative = true
+                    }
                 }
                 ast.KW_ADD:{
                     if this.inst.imm > I8_MAX {
@@ -231,17 +242,18 @@ Instruct::genTwoInst()
             else
                 this.append1(opcode)
 
-            if this.inst.negative {
+            immi64 = this.inst.imm
+            if this.inst.negative && exchar != 0 {
                 _c<i64> = this.inst.imm
                 if _c >= I32_MIN
                     this.append1(exchar)
-            }else if this.inst.imm <= I32_MAX {
+            }else if this.inst.imm <= I32_MAX || immi64 <= I32_MAX {
                 if(
                 (this.type == ast.KW_ADD || this.type == ast.KW_AND || this.type == ast.KW_SUB) &&
                 this.inst.imm > I8_MAX && 
                 this.left == ast.TY_IMMED && 
                 (this.tks.addr[1] == ast.KW_RAX || this.tks.addr[1] == ast.KW_EAX)
-                ){}else
+                ){}else if exchar != 0
                     this.append1(exchar)
             }
             this.updateRel()
