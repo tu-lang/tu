@@ -80,12 +80,6 @@ fn makeSpanClass(sc<u8>,noscan<u8>)
 
 }
 
-fn acquirem(){return g_.m}
-fn releasem(m<Core>){}
-fn getg(){ return g_ }
-
-
-
 fn hash_key(data<u8*>,len<u64>){
     i<i64>   = 0
     key<i64> = 0

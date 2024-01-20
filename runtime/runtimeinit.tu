@@ -45,6 +45,7 @@ fn mallocinit()
     g_.m = &m0
     g_.m.mallocing  = 0
     g_.m.mcache = allocmcache()
+	core0.local = allocmcache()
 	m0.mid = 0
 	m0.pid = 10
 

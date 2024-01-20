@@ -240,8 +240,7 @@ Heap::freeSpanLocked(s<Span>,acctinuse<u8>,acctidle<u8>,unusedsince<i64>)
 }
 Heap::freeSpan(s<Span> , large<u8>)
 {
-    g<Coroutine> = getg()
-    mp<Core> = g.m
+    mp<Core> = core()
     this.lock.lock()
     mp.mcache.local_scan = 0
 

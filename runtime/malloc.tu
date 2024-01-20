@@ -121,28 +121,17 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 	}
 	if( gcphase != _GCoff){}
 
-	assistG<Coroutine> = null
-	if( gcBlackenEnabled != 0 )
-	{
-		assistG = getg()
-		if( assistG.m.curg != null ){
-			assistG = assistG.m.curg
-		}
-		assistG.gcAssistBytes -= size
-	}
+	if( gcBlackenEnabled != 0 ){}
 
-	mp<Core> = acquirem()
+	mp<Core> = core()
 	if( mp.mallocing != 0 ){ 
 		dief("malloc deadlock".(i8))
-	}
-	if( mp.gsignal == getg() ){
-		dief("malloc during signal".(i8))
 	}
 	mp.mallocing = 1
 	shouldhelpgc<u8> = false
 	dataSize<u64>  = size
-	g<Coroutine> = getg()
-	c<Cache> = g.m.mcache
+	c_<Core> = core()
+	c<Cache> = c_.local
 	x<u64*> = null
 	if( size <= maxSmallSize ){ 
 		if( noscan && size < maxTinySize ){
@@ -159,7 +148,6 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 				c.tinyoffset = off + size
 				c.local_tinyallocs += 1
 				mp.mallocing = 0
-				releasem(mp)
 				return x
 			}
 			s<Span> = c.alloc[tinySpanClass]
@@ -217,10 +205,6 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 	}
 
 	mp.mallocing = 0 
-	releasem(mp)
-
-	if( assistG != null ){
-	}
 
 	if( shouldhelpgc ){
 	}

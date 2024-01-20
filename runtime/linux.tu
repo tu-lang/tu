@@ -28,7 +28,7 @@ func sys_fixalloc(size<u64> , align<u64>)
 	if size >= maxBlock {
 		return sys_alloc(size)
 	}
-	mp<Core> = runtime.acquirem()
+	mp<Core> = core()
 
 	persistent<Palloc> = null
 	if mp != null && mp.p != 0 {
@@ -57,7 +57,7 @@ func sys_fixalloc(size<u64> , align<u64>)
 	}
 	p = persistent.base + persistent.off
 	persistent.off += size
-	runtime.releasem(mp)
+	
 	if persistent == &globalAlloc {
 		ga_lock.unlock()
 	}
@@ -210,8 +210,7 @@ func round(n<u64>,a<u64>)
 }
 func fastrand()
 {
-    g<Coroutine> = runtime.getg()
-    mp<Core>  = g.m
+	mp<Core> = core()
     s1<u32> = 0
     s0<u32> = 0
     s1 = mp.fastrand[0]
