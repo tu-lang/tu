@@ -2,6 +2,7 @@
 use fmt
 use os
 use string
+use runtime.debug
 
 gcBitsChunkBytes<u64>  = 65536
 gcBitsHeaderBytes<u64> = 16
@@ -48,6 +49,9 @@ ARRAY_SIZE<i64> =  8
 
 heap_<Heap:> 
 emptyspan<Span:>
+//print log
+enable_trace<i64> = 0
+enable_debug_gc<i64> = 0
 
 mem TimeSpec {
     i64 tv_sec
@@ -124,10 +128,17 @@ fn debug(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 
 fn dief(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 	fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+
+	infos = debug.stack(10.(i8))
+    fmt.println("debug backtrace:")
+    i = 1
+    for v : infos {
+        fmt.printf("%d: %s\n",i,v)
+        i += 1
+    }
 	std.die(-1.(i8))
 }
 
-enable_trace<i64> = 1
 fn tracef(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 	if enable_trace {
 		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
@@ -172,7 +183,6 @@ fn debug_alllock(){
 
 }
 
-enable_debug_gc<i64> = 1
 fn dgc(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 	if enable_debug_gc {
 		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)

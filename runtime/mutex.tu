@@ -84,8 +84,10 @@ Mutex::unlock(){
 
 Sema::Semroot(){
     semaaddr<u64> = &this.sema
-    //sema<SemTable> = &semtable[(semaaddr >> 3) % 251]
-    //return sema.root
+    io<u32> = (semaaddr >> 3) % 251
+    io = io * sizeof(SemTable)
+    root<SemTable> = semtable + io
+    return root.root
 }
 
 Sema::trylock(){

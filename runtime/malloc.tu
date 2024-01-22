@@ -206,7 +206,8 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 
 	c_.mallocing = 0 
 
-	if( shouldhelpgc ){
+	if shouldhelpgc {
+		// gc.start(GcHeap)
 	}
 	return x
 }
