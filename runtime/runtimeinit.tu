@@ -17,6 +17,30 @@ self_path<i8*>
 
 ErrorCode<i32> = -1
 
+fn osinit(){
+	//TODOGC: sysconf
+	ncpu = 4
+	physPageSize = 4096
+	gcphase = _GCoff
+	gcBlackenEnabled = false
+	settls(&coretls)
+	setcore(&core0)
+    core0.stktop = get_bp()
+    core0.pid = std.gettid()
+	//sched init
+	sched.gcwaiting = 0
+	sched.allcores  = null
+	sched.cores     = 0
+	sched.cid       = 0
+	//malloc init
+	mallocinit()
+	//sys core init
+	core0.init()
+    core0.status = CoreRun
+    sched.addcore(&core0)
+    gcinit()
+}
+
 fn gcinit(){
 	heap_.sweepdone = 1
 	gc.heapmarked = heapmin / 2
@@ -26,21 +50,9 @@ fn gcinit(){
 
 	gc.enablegc = true
 }
-fn mallocinit()
-{
-	//TODOGC: sysconf
-	ncpu = 4
-	physPageSize = 4096
-	gcphase = _GCoff
-	gcBlackenEnabled = false
-
-	settls(&coretls)
-	setcore(&core0)
-    core0.stktop = get_bp()
-    core0.pid = std.gettid()
-
+fn mallocinit() {
 	heap_.init()
-
+	//set local cache
 	core0.local = allocmcache()
 	heap_.allspans.init(ARRAY_SIZE,PointerSize)
 	heap_.allarenas.init(ARRAY_SIZE,PointerSize)
@@ -56,9 +68,7 @@ fn mallocinit()
 		hint.next = heap_.arenaHints
 		heap_.arenaHints = hint
 	}
-
 	while(gcphase != _GCoff){}
-
 }
 
 fn args_init(argc<u64>, argv<u64*>){

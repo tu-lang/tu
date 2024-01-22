@@ -344,7 +344,7 @@ fn sweepone(){
 			}
 			continue
 		}
-		if s.sweepgen == sg - 2 && atomic.cas(&s.sweepgen, sg - 2, sg - 1) {
+		if s.sweepgen == sg - 2 && atomic.cas(&s.sweepgen, sg - 2, sg - 1) != False {
 			break
 		}
 	}

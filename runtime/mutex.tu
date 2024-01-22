@@ -92,7 +92,7 @@ Sema::trylock(){
     loop {
         v<u32> = atomic.load(&this.sema)
         if v == 0  return Null
-        if atomic.cas(&this.sema,v,v - 1)
+        if atomic.cas(&this.sema,v,v - 1) != False
             return 1.(i8)
     }
 }

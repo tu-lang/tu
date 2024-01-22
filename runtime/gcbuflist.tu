@@ -239,7 +239,7 @@ List::push(node<Node>)
 	loop {
 		old<u64> = atomic.load64(this)
 	    node.next = old
-		if ( atomic.cas64(this, old, newp)) {
+		if atomic.cas64(this, old, newp) != False  {
 			break
 		}
 	}

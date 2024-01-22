@@ -2,8 +2,7 @@
     .global main
 main:
 	call std_stdinit
-	call runtime_mallocinit
-	call runtime_gc_init
+	call runtime_osinit
     mov (%rsp),%rdi
     lea 16(%rsp),%rsi
 	push %rsi
