@@ -10,23 +10,6 @@ fn core()
 fn setcore()
 fn clone(cloneflags<u64> , newsp<u64> , tls<u64> , funcp<u64> , args<u64> , args2<u64>)
 
-mem Runner {
-	Palloc 	pl
-	u32	status
-	u64 m
-	// GcWork	gcw
-
-	u64 gcBgMarkWorker
-}
-
-mem Coroutine {
-    Core* 		m
-	i8			preempt
-	u64     	stackguard0 
-	u64 		stackguard1 
-	MutexInter  lock
-}
-
 enum {
 	CoreRun ,
 	CoreStop ,
@@ -38,13 +21,10 @@ mem Core {
     u64  			pid
     u32     		mid
 	i64				cid
-	Coroutine* 		g0
 	runtime.Cache*	mcache
-	Runner*	 		p
+	Palloc 			pl
 	MutexInter		lock
-	Coroutine*	curg
 	i32    		mallocing
-	Coroutine*	gsignal
 	u32	 		fastrand[2]
 	u64			stk , stk_hi
 	u64			tls , tls_hi	

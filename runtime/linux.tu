@@ -6,8 +6,6 @@ use runtime
 gcBlackenEnabled<u32> = 0
 ncpu<u32> = 0
 
-allm<u64:10> = null
-
 func sys_fixalloc(size<u64> , align<u64>)
 {
 	p<u64> = null
@@ -31,8 +29,8 @@ func sys_fixalloc(size<u64> , align<u64>)
 	mp<Core> = core()
 
 	persistent<Palloc> = null
-	if mp != null && mp.p != 0 {
-		persistent = &mp.p.pl
+	if mp != null  {
+		persistent = &mp.pl
 	} else {
 		ga_lock.lock()
 		persistent = &globalAlloc

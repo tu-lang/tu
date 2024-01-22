@@ -46,10 +46,7 @@ _GCmark<i64> =  2
 _GCmarktermination<i64> =  3
 ARRAY_SIZE<i64> =  8
 
-g_<Coroutine>
 heap_<Heap:> 
-m0<Core:>
-g0<Coroutine:>
 emptyspan<Span:>
 
 mem TimeSpec {

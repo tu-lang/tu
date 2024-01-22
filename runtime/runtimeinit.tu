@@ -41,14 +41,7 @@ fn mallocinit()
 
 	heap_.init()
 
-	g_ = &g0
-    g_.m = &m0
-    g_.m.mallocing  = 0
-    g_.m.mcache = allocmcache()
 	core0.local = allocmcache()
-	m0.mid = 0
-	m0.pid = 10
-
 	heap_.allspans.init(ARRAY_SIZE,PointerSize)
 	heap_.allarenas.init(ARRAY_SIZE,PointerSize)
 	heap_.sweeparenas.init(ARRAY_SIZE,PointerSize)
@@ -64,7 +57,6 @@ fn mallocinit()
 		heap_.arenaHints = hint
 	}
 
-	allm[0] = g_.m
 	while(gcphase != _GCoff){}
 
 }
