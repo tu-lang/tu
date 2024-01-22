@@ -14,29 +14,22 @@ enum {
 	CoreRun ,
 	CoreStop ,
 }
-//GCTODO:
+
 mem Core {
-	Core*			link
-	u64     		stktop
-    u64  			pid
-    u32     		mid
-	i64				cid
-	runtime.Cache*	mcache
-	Palloc 			pl
-	MutexInter		lock
-	i32    		mallocing
-	u32	 		fastrand[2]
-	u64			stk , stk_hi
-	u64			tls , tls_hi	
-	u64			cfn
-	u32			state
-	runtime.Cache*	 local
-	i32  helpmark
-	i32  helpsweep
-	Note park
-	u32	 status
+	Core*	link
+	u64     stktop
+    u64  	pid,cid
+	Cache*	local
+	i32 	locks,mallocing
+	u32	 	fastrand[2]
 	Queue	queue
-	i32 	 locks
+	Palloc 	pl
+	u32		status
+	Note 	park
+	i32  	helpmark,helpsweep
+	u64*    cfn
+	u64* 	stk,stk_hi
+	u64* 	tls,tls_hi
 }
 
 mem Sched {

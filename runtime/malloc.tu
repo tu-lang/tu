@@ -123,14 +123,14 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 
 	if( gcBlackenEnabled != 0 ){}
 
-	mp<Core> = core()
-	if( mp.mallocing != 0 ){ 
+	c_<Core> = core()
+	if( c_.mallocing != 0 ){ 
 		dief("malloc deadlock".(i8))
 	}
-	mp.mallocing = 1
+	c_.mallocing = 1
 	shouldhelpgc<u8> = false
 	dataSize<u64>  = size
-	c_<Core> = core()
+
 	c<Cache> = c_.local
 	x<u64*> = null
 	if( size <= maxSmallSize ){ 
@@ -147,7 +147,7 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 				x = (c.tiny + off)
 				c.tinyoffset = off + size
 				c.local_tinyallocs += 1
-				mp.mallocing = 0
+				c_.mallocing = 0
 				return x
 			}
 			s<Span> = c.alloc[tinySpanClass]
@@ -204,7 +204,7 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 	if( gcphase != _GCoff ){
 	}
 
-	mp.mallocing = 0 
+	c_.mallocing = 0 
 
 	if( shouldhelpgc ){
 	}

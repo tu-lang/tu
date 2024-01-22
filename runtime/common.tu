@@ -166,7 +166,7 @@ fn debug_alllock(){
 	}
 	printf(*"\ncore locks:\n")
 	for c<Core> = sched.allcores; c != Null ; c = c.link {
-		printf(*"[%d]:%p\t",c.pid,&c.lock)
+		printf(*"[%d]:%p\t",c.pid,c.locks)
 	}
 	printf(*"\n")
 

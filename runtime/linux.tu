@@ -26,11 +26,11 @@ func sys_fixalloc(size<u64> , align<u64>)
 	if size >= maxBlock {
 		return sys_alloc(size)
 	}
-	mp<Core> = core()
+	c<Core> = core()
 
 	persistent<Palloc> = null
-	if mp != null  {
-		persistent = &mp.pl
+	if c != null  {
+		persistent = &c.pl
 	} else {
 		ga_lock.lock()
 		persistent = &globalAlloc
@@ -208,15 +208,15 @@ func round(n<u64>,a<u64>)
 }
 func fastrand()
 {
-	mp<Core> = core()
+	c<Core> = core()
     s1<u32> = 0
     s0<u32> = 0
-    s1 = mp.fastrand[0]
-    s0 = mp.fastrand[1]
+    s1 = c.fastrand[0]
+    s0 = c.fastrand[1]
     s1 ^= s1 << 17
     s1 = s1 ^ s0 ^ s1 >> 7 ^ s0 >> 16
-    mp.fastrand[0] = s0
-    mp.fastrand[1] = s1
+    c.fastrand[0] = s0
+    c.fastrand[1] = s1
     return s0 + s1
 }
 func ctz64(x<u64>)

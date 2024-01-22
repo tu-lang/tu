@@ -240,11 +240,11 @@ Heap::freeSpanLocked(s<Span>,acctinuse<u8>,acctidle<u8>,unusedsince<i64>)
 }
 Heap::freeSpan(s<Span> , large<u8>)
 {
-    mp<Core> = core()
+    c<Core> = core()
     this.lock.lock()
-    mp.mcache.local_scan = 0
+    c.local.local_scan = 0
 
-    mp.mcache.local_tinyallocs = 0
+    c.local.local_tinyallocs = 0
     if gcBlackenEnabled != 0 {
     }
     heap_.freeSpanLocked(s,1.(i8),1.(i8),0.(i8))
