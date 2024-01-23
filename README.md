@@ -58,8 +58,7 @@ $ make tests
 更多用例请看`/tests`
 ```
 use fmt
-class Http{
-    # member
+class Http {
     request
     fn handler(){
         fmt.println("hello world!",this.request)
@@ -74,11 +73,10 @@ fn main(){
     a = "this is a string" #string
     a = 1000 # int
     fmt.println(a,b)
-    a = ["1",2,"33",4,"some string word"] # array
+    a = ["1",2,"33",4,"some string word"]     // array
     fmt.print(a[0],a[1],a[2],a[3],a[4])
-    b = {"sdfds":"sdfsd",1:2,"sdfds":3,"a":a} # map
+    b = {"sdfds":"sdfsd",1:2,"sdfds":3,"a":a} // map
     fmt.print(b["a"],b["sdfds"])
-
     obj = new Http() # object
     obj.request = {"method":"POST"}
     obj.handler()
@@ -90,20 +88,17 @@ fn main(){
 use fmt
 use os
 fn main(){
-    arr = [0,1,2,3,4]
-    map = {"1":"a","hello":"world","2":"b",3:"c","map":arr}
-    for( k,v : map)
-    {
-        if k == "map" {
-            for(v2 : v){}
+    map = { "1":'a' , "hello":"world" , 3:5 , "arr": [ 0,1,2,3,4] }
+    for k,v : map {
+        if k == "arr" {
+            for v2 : v {}
         }
         fmt.println(k,v)
     }
 
     match map["hello"] {
-        arr[0] : os.die("not this one")
-        999    : os.die("not this one")
-
+        map    : os.die("not this one!")
+        999    : os.die("not this one!")
         "hello" | "world": {
             fmt.println("got it",map["hello"])
         }
