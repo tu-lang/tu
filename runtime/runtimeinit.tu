@@ -6,15 +6,19 @@ use fmt
 use runtime
 use runtime.debug
 
-# start at core space init
+// scheduler init
+coretlssize<i64> = 48
+core0<Core:>
+coretls<i64:6>
+sched<Sched:>
+
+// start at core space init
 ori_envp<u64*>
 ori_argc<u64>
 ori_argv<u64>
 ori_envs<u64>
 ori_execout<u64*>
-
 self_path<i8*>
-
 ErrorCode<i32> = -1
 
 fn osinit(){
@@ -23,7 +27,7 @@ fn osinit(){
 	physPageSize = 4096
 	gcphase = _GCoff
 	gcBlackenEnabled = false
-	settls(&coretls)
+	settls(&coretls + coretlssize)
 	setcore(&core0)
     core0.stktop = get_bp()
     core0.pid = std.gettid()
@@ -32,6 +36,7 @@ fn osinit(){
 	sched.allcores  = null
 	sched.cores     = 0
 	sched.cid       = 0
+	sched.debug   	= null
 	//malloc init
 	mallocinit()
 	//sys core init
