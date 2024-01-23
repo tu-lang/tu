@@ -37,25 +37,23 @@ fn osinit(){
 	sched.cores     = 0
 	sched.cid       = 0
 	sched.debug   	= null
+	//gc init
+	gc.startSema.sema = 1
+	worldsema.sema = 1
+	gc.enablegc = false
+	heap_.sweepdone = 1
+	gc.heapmarked = heapmin / 2
+	gc.setpercent(100.(i8))
 	//malloc init
 	mallocinit()
 	//sys core init
 	core0.init()
     core0.status = CoreRun
     sched.addcore(&core0)
-    gcinit()
 }
 
-fn gcinit(){
-	heap_.sweepdone = 1
-	gc.heapmarked = heapmin / 2
-	gc.setpercent(100.(i8))
-	gc.startSema.sema = 1
-	worldsema.sema = 1
-
-	gc.enablegc = true
-}
 fn mallocinit() {
+	heap_.lock.init()
 	heap_.init()
 	//set local cache
 	core0.local = allocmcache()
@@ -63,7 +61,6 @@ fn mallocinit() {
 	heap_.allarenas.init(ARRAY_SIZE,PointerSize)
 	heap_.sweeparenas.init(ARRAY_SIZE,PointerSize)
 
-	heap_.lock.init()
 	c0<u64> = 0xc0
     for i<i32> = 0x7f; i >= 0; i -= 1 {
 		p<u64> = 0

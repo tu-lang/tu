@@ -280,10 +280,10 @@ mem Cache {
     u32       flushGen
 }
 
-Cache::nextFree(spc<u8>,ss<u64*>,shouldhelpgc<u8*>)
+Cache::nextFree(spc<u8>,ss<u64*>,shouldgc<u8*>)
 {
 	s<Span> = this.alloc[spc]
-	*shouldhelpgc = false
+	*shouldgc = false
 	freeIndex<u64> = s.nextFreeIndex()
 
 	if freeIndex == s.nelems {
@@ -291,7 +291,7 @@ Cache::nextFree(spc<u8>,ss<u64*>,shouldhelpgc<u8*>)
 			dief("s.allocCount != s.nelems && freeIndex == s.nelems".(i8))
 		}
 		this.refill(spc)
-		*shouldhelpgc = true
+		*shouldgc = true
 		s = this.alloc[spc]
 
 		freeIndex = s.nextFreeIndex()

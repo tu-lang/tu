@@ -52,14 +52,11 @@ mem Gc {
 	Sema        startSema
 	MutexInter  worldSeam
 
-	u64 gc_trigger 
-	u64 heaplives
+	u64 gc_trigger,heaplives
 	u64 heapmarked
 	i32 enablegc
-
-	i64  markStartTime
+	i64 markStartTime
 }
-
 
 fn get_sp()
 fn get_di()
@@ -104,6 +101,7 @@ fn gc_realloc(p<u64*>, pbytes<u64> , nbytes<u64>){
 
 Gc::start(kind<i32>)
 {
+	if !gc.enablegc return Null
 	this.forced = true
 	debug(*"--------------------------start:(%d) %d --------------\n",this.cycles, this.trigger(kind))
 	while this.trigger(kind) == True && sweepone() >= Null {

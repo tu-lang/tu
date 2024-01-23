@@ -120,15 +120,13 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 		os.die("malloc size == 0")
 	}
 	if( gcphase != _GCoff){}
-
 	if( gcBlackenEnabled != 0 ){}
-
 	c_<Core> = core()
 	if( c_.mallocing != 0 ){ 
 		dief("malloc deadlock".(i8))
 	}
 	c_.mallocing = 1
-	shouldhelpgc<u8> = false
+	shouldgc<u8> = false
 	dataSize<u64>  = size
 
 	c<Cache> = c_.local
@@ -152,9 +150,8 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 			}
 			s<Span> = c.alloc[tinySpanClass]
 			v<u64> = s.nextFreeFast()
-
 			if( v == 0 ) {
-				v = c.nextFree(tinySpanClass,&s,&shouldhelpgc)
+				v = c.nextFree(tinySpanClass,&s,&shouldgc)
 			}
 			x = v
 			//clear 16 bits
@@ -177,7 +174,7 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 			s<Span> = c.alloc[spc]
 			v<u64> = s.nextFreeFast()
 			if( v == 0 ){
-				v = c.nextFree(spc,&s,&shouldhelpgc)
+				v = c.nextFree(spc,&s,&shouldgc)
 			}
 			x = v
 			if( needzero && s.needzero != 0 ){
@@ -186,28 +183,21 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 		}
 	} else {
 		s<Span> = null
-		shouldhelpgc = true
+		shouldgc = true
 		s = large_alloc(size,needzero,noscan)
 		s.freeindex = 1
 		s.allocCount = 1
 		x = s.startaddr
 		size = s.elemsize
 	}
-
 	scanSize<u64> = null
-
-	if( !noscan ){
+	if !noscan  {
 		scanSize = size
 		c.local_scan += scanSize
 	}
-
-	if( gcphase != _GCoff ){
-	}
-
 	c_.mallocing = 0 
-
-	if shouldhelpgc {
-		// gc.start(GcHeap)
+	if shouldgc {
+		gc.start(GcHeap)
 	}
 	return x
 }

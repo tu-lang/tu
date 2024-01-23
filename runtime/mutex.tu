@@ -1,4 +1,5 @@
 use std.atomic
+use std
 
 mem MutexInter {
    u32 key
@@ -99,7 +100,7 @@ Sema::trylock(){
     }
 }
 Sema::lock(){
-    s<SemaWaiter> = new SemaWaiter
+    s<SemaWaiter> = std.malloc(sizeof(SemaWaiter))
     if this.trylock() != Null return Null
     reduce<i32> = -1
 
@@ -180,7 +181,9 @@ fn canspin(i<i32>){
     }
     return 1.(i8)
 }
-MutexInter::init(){}
+MutexInter::init(){
+    this.key = 0
+}
 MutexInter::lock(){
     c<Core> = core()
     c.locks += 1

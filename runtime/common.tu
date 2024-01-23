@@ -52,6 +52,7 @@ emptyspan<Span:>
 //print log
 enable_trace<i64> = 0
 enable_debug_gc<i64> = 0
+enable_debug<i64> = 0
 
 mem TimeSpec {
     i64 tv_sec
@@ -123,6 +124,7 @@ fn printf(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 }
 
 fn debug(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+	if !enable_debug return Null
 	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
 }
 
