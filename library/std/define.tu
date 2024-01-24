@@ -16,8 +16,6 @@ CLOCK_BOOTTIME_ALARM<i32>     = 9
 CLOCK_SGI_CYCLE<i32> 		  = 10
 CLOCK_TAI<i32>		 		  =	11
 
-
-
 mem TimeSpec {
 	i64 sec,nsec
 }

@@ -7,7 +7,7 @@ func time(t<u64>)
 func clock_gettime(clockid<i64>,tp<u64*>)
 
 //nanossleep ; implement by asm
-func nanosleep(sec<u64>)
+func nanosleep(req<u64*>,rem<u64*>)
 
 //brk ; implement by asm
 func brk(brk<u64>)

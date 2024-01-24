@@ -1,10 +1,19 @@
 
 use std
-func sleep(sec){
-	//TODO:
-	//std.nanosleep(sec)
+
+mem TimeSpec {
+	i64 sec,nsec
 }
-func usleep(sec){
-	//TODO:
-	//std.nanosleep(sec)
+
+func sleep(sec){
+	req<TimeSpec:> = null
+	rem<TimeSpec:> = null
+	req.sec = *sec
+	std.nanosleep(&req,&rem)
+}
+func usleep(mill){
+	req<TimeSpec:> = null
+	rem<TimeSpec:> = null
+	req.nsec = *mill
+	std.nanosleep(&req,&rem)
 }
