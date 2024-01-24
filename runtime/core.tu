@@ -96,10 +96,11 @@ fn parkunlock(lk<MutexInter>){
 
 func newcore(fc<u64>){
 	c<Core> = new Core()
+    c.init()
 	c.cfn = fc
-	c.stk = runtime.malloc(THREAD_STACK_SIZE,1.(i8) , 1.(i8))
+	c.stk = malloc(THREAD_STACK_SIZE,1.(i8) , 1.(i8))
     c.stk_hi = c.stk + THREAD_STACK_SIZE
-    c.tls = runtime.malloc(THREAD_TLS_SIZE,1.(i8),1.(i8))
+    c.tls = malloc(THREAD_TLS_SIZE,1.(i8),1.(i8))
     c.tls_hi = c.tls + THREAD_TLS_SIZE
 
 
@@ -135,19 +136,6 @@ Core::init(){
     this.helpsweep = 0
 }
 
-fn newcore2(fc<u64*>){
-    c<Core> = new Core
-    c.init()
-    c.cfn = fc
-    c.stk = malloc(THREAD_STACK_SIZE,True,True)
-    c.stk_hi = c.stk + THREAD_STACK_SIZE
-    c.tls = malloc(THREAD_TLS_SIZE,True,True)
-    c.tls_hi = c.tls + THREAD_TLS_SIZE
-
-    cid<i32> = newosthread(corestart,c,c.stk_hi,c.tls_hi)
-	if cid <= 0
-        dief(*"pthread create faild %d",cid)
-}
 fn corestart(c<Core>){
     setcore(c)
     c.pid = std.gettid()

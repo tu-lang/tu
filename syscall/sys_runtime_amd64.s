@@ -84,8 +84,9 @@ tc1:
     mov    %rsi,%rsp
     mov    %r12 , %rdi
     call   runtime_settls
-    mov    %r14 , %rdi
+    push   %r14
     call  *%r13
+    pop    %rdi
 tc2:
     mov    $0 , %edi
     mov    $60 , %rax
