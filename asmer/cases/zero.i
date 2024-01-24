@@ -11,3 +11,4 @@ Disassembly of section .text:
    4:	c9                   	leaveq 
    5:	0f 05                	syscall 
    6: 0f 01 f9                rdtscp
+   7: f3 90                   pause

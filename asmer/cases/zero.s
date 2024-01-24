@@ -6,3 +6,4 @@ main:
     leave
     syscall
     rdtscp
+    pause

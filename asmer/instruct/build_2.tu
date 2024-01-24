@@ -94,6 +94,7 @@ Instruct::need2byte_op2(){
         ast.KW_XADD:    return true//xadd
         ast.KW_SYSCALL: return true
         ast.KW_RDTSCP: return true
+        ast.KW_PAUSE:   return true
     }
     return false
 }

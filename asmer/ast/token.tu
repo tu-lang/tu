@@ -32,7 +32,7 @@ enum {
     KW_JNE,     KW_JNA,     KW_NOT,     KW_PUSH,    KW_POP,
 
     //need 0 op
-    KW_RET,     KW_LOCK,    KW_RDTSCP,  KW_LEAVE,   KW_SYSCALL,
+    KW_RET,     KW_LOCK,    KW_RDTSCP,  KW_PAUSE,   KW_LEAVE,   KW_SYSCALL,
     KW_CLTD,    KW_CQO,     KW_CDQ,
 
     KW_AL, KW_CL , KW_DL, KW_BL, 

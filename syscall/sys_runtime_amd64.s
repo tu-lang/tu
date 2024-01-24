@@ -106,8 +106,7 @@ runtime_setcore:
 .globl runtime_procyield
 runtime_procyield:
 rsp1:
-    #GCTODO:
-    #pause
+    pause
     sub $0x1, %eax
     jne rsp1
     ret
