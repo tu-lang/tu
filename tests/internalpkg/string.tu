@@ -1,6 +1,7 @@
 use fmt
 use std
 use os
+use string
 
 func test_sub(){
     fmt.println("test string sub")
@@ -50,13 +51,21 @@ func test_trans(){
     fmt.println("test string trans success")
 
 }
+fn test_itoa(){
+    fmt.println("test string itoa")
+    sbuf<i8:21> = null
+    num<i64> = 1000000000000
+    std.itoa(num,&sbuf,16.(i8))
+    if ( ret<i8> = std.strcmp(&sbuf,"e8d4a51000".(i8))) == string.Equal {} else {
+		os.die("1000000000000 != 0x8d4a51000")
+	}
 
-
-
-
+    fmt.println("test string itoa success")
+}
 func main(){
     #test sub
     test_sub()
     test_split()
     test_trans()
+    test_itoa()
 }

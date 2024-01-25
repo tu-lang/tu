@@ -2,17 +2,6 @@ use runtime
 use std
 use fmt
 
-flag_percent<i8> = 37 # '%'
-flag_d<i8> = 100 # 'd'
-flag_D<i8> = 68  #  'D'
-flag_s<i8> = 115 # 's'
-flag_S<i8> = 83  # 'S'
-flag_c<i8> = 'c' # 'c'
-flag_i<i8> = 105 # 'i'
-flag_I<i8> = 73  # 'I'
-flag_u<i8> = 117 # 'u'
-flag_U<i8> = 85  # 'U'
-
 func fputs(s<i8*>,out<u64>)
 {
 	ll<u64>		= std.strlen(s)
@@ -32,78 +21,91 @@ func fputc(c<i8>,out<u64*>){
 	return c
 }
 //vfprintf
-func vfprintf(out<u64>, format<i8*>, args,args1,args2,args3)
+func vfprintf(out<u64>, format<i8*>, args_<u64*>)
 {
 	translating<u64> = 0
 	ret<u64>		 = 0
-	curr<u64>        = 0
-	pp<u64*> = &args
-	stack<i32> = 4
+	args<u64*> = &args_
+	i<i32>  = 0
 	for (p<i8*> = format ; *p != 0 ; p += 1)
 	{
-		//init stack
-		curr = *pp
-		if *p == flag_d || *p == flag_s || *p == flag_c{
-			if stack < 1  pp += 8	else pp -= 8
-			if stack == 1 {	pp = &args	pp += 40	}		
-			stack -= 1
-		}
-		//stack end
 		match *p {
-			flag_percent : {
+			'%' : {
 				if translating == 0 {
 					translating	= 1
-				} 
-				else{
-					if fputc(flag_percent,out) < runtime.Zero {
+				}else{
+					if fputc('%'.(i8),out) < runtime.Zero {
 						return std.EOF
 					}
 					ret += 1
 					translating = 0
 				}
 			}
-			flag_d :{
+			'd' :{
 				if translating == 1	{ //%d
 					buf_o<i8:10> = null
 					buf<i8*>	 = &buf_o
 					translating	= 0
-					ilen<i32> = 10
-					std.itoa(curr,buf,ilen)
+					std.itoa(args[i],buf,10.(i8))
 					if fputs(buf,out) < runtime.Zero   {
 						return std.EOF
 					}
 					ret += std.strlen(buf)
-				}else if fputc(flag_d,out) < runtime.Zero {
+					i += 1
+				}else if fputc('d'.(i8),out) < runtime.Zero {
 					return std.EOF
 				} else{
 					ret += 1
 				}
 			}
-			flag_s : {
+			's' : {
 				if translating > 0 {
-					str1<i8*>	= curr
+					str1<i8*>	= args[i]
+					i += 1
 					translating	= 0
 					if fputs(str1,out) < runtime.Zero {
 						return std.EOF
 					}
 					ret += std.strlen(str1)
-				}else if fputc(flag_s,out) < runtime.Zero {
+				}else if fputc('s'.(i8),out) < runtime.Zero {
 					return std.EOF
 				}else{
 					ret += 1
 				}
 			}
-			flag_c : {
+			'c' : {
 				if translating > 0 {
-					c1<i8*>	= curr
+					c1<i8*>	= args[i]
+					i += 1
 					translating	= 0
 					if fputc(c1,out) < runtime.Zero {
 						return std.EOF
 					}
-				}else if fputc(flag_c,out) < runtime.Zero {
+				}else if fputc('c'.(i8),out) < runtime.Zero {
 					return std.EOF
 				}
 				ret += 1
+			}
+			'p' :{
+				if translating == 1	{ //%p
+					if fputs("0x".(i8),out) < runtime.Zero   {
+						return std.EOF
+					}
+					buf_o<i8:21> = null
+					buf<i8*>	 = &buf_o
+					translating	= 0
+					std.itoa(args[i],buf,16.(i8))
+					ret += 2
+					if fputs(buf,out) < runtime.Zero   {
+						return std.EOF
+					}
+					ret += std.strlen(buf)
+					i += 1
+				}else if fputc('p'.(i8),out) < runtime.Zero {
+					return std.EOF
+				} else{
+					ret += 1
+				}
 			}
 			_ :{
 				if translating > 0 {
