@@ -38,7 +38,7 @@ func reverse(str<i8*>, length<i32>)
     }
 }
 
-func itoa(num<i32>, str<i8*>, base<i32>)
+func itoa(num<i64>, str<i8*>, base<i32>)
 {
     i<i32> = 0
 	isNegative<i32> = 0
