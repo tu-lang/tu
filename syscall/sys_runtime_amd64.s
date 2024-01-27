@@ -107,7 +107,7 @@ runtime_setcore:
 runtime_procyield:
 rsp1:
     pause
-    sub $0x1, %eax
+    sub $0x1, %rdi
     jne rsp1
     ret
 

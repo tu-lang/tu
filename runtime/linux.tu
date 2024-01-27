@@ -198,6 +198,7 @@ fn futexwakeup(addr<u32*> , cnt<u32>) {
     if ret >= 0 {
         return Null
     }
+	warn(*"[futexwakeup] addr:%p cnt:%d flag:%d ret:%d\n",addr,cnt,FUTEX_WAKE,ret)
     panic<i32*> = 0x1006
     *panic = 0x1006
 }

@@ -209,22 +209,22 @@ MutexInter::lock(){
             }
             procyield(active_spin_cnt)
         }
-    }
-    for j<i32> = 0 ; j < passive_spin ; j += 1 {
-        while this.key == mutex_unlocked {
-            if atomic.cas(&this.key,mutex_unlocked,wait) != Null
-                return Null
+        for j<i32> = 0 ; j < passive_spin ; j += 1 {
+            while this.key == mutex_unlocked {
+                if atomic.cas(&this.key,mutex_unlocked,wait) != Null
+                    return Null
+            }
+            osyield()
         }
-        osyield()
-    }
 
-    v = atomic.xchg(&this.key,mutex_sleeping)
-    if v == mutex_unlocked {
-        return Null
-    }
+        v = atomic.xchg(&this.key,mutex_sleeping)
+        if v == mutex_unlocked {
+            return Null
+        }
 
-    wait = mutex_sleeping
-    futexsleep(&this.key,mutex_sleeping,-1.(i8))
+        wait = mutex_sleeping
+        futexsleep(&this.key,mutex_sleeping,-1.(i8))
+    }
 }
 
 MutexInter::unlock(){
