@@ -68,7 +68,7 @@ fn osyield()
 fn procyield(cnt<i64>)
 fn futex(addr<u32*>,op<i32> ,val<u32>,ts<u64> ,addr2<u64>,val3<u32>)
 fn settls(tls<i64*>)
-
+fn ALIGNUP(x<i64> , a<i64>) { return ( x + (a - 1) ) & ( ~ (a - 1)) }
 fn bool2int(x<u8>){return x}
 fn sizeclass(sc<u8>){
     return sc >> 1

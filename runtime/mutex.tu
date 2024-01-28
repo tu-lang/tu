@@ -2,7 +2,7 @@ use std.atomic
 use std
 
 mem MutexInter {
-   u32 key
+   u64 key
 }
 mem SemaWaiter {
    u32* addr
@@ -186,12 +186,14 @@ MutexInter::init(){
 }
 MutexInter::lock(){
     c<Core> = core()
+    addr<u32*> = ALIGNUP(&this.key,4.(i8))
+
     c.locks += 1
     if c.locks < 0 {
         dief(*"runtime lock: lock count %d",c.locks)
     }
 
-    v<u32> = atomic.xchg(&this.key,mutex_locked)
+    v<u32> = atomic.xchg(addr,mutex_locked)
     if v == mutex_unlocked {
         return Null
     }
@@ -204,37 +206,38 @@ MutexInter::lock(){
     loop {
         for i<i32> = 0 ; i < spin ; i += 1 {
             while this.key == mutex_unlocked {
-                if atomic.cas(&this.key,mutex_unlocked,wait) != Null
+                if atomic.cas(addr,mutex_unlocked,wait) != Null
                     return Null
             }
             procyield(active_spin_cnt)
         }
         for j<i32> = 0 ; j < passive_spin ; j += 1 {
             while this.key == mutex_unlocked {
-                if atomic.cas(&this.key,mutex_unlocked,wait) != Null
+                if atomic.cas(addr,mutex_unlocked,wait) != Null
                     return Null
             }
             osyield()
         }
 
-        v = atomic.xchg(&this.key,mutex_sleeping)
+        v = atomic.xchg(addr,mutex_sleeping)
         if v == mutex_unlocked {
             return Null
         }
 
         wait = mutex_sleeping
-        futexsleep(&this.key,mutex_sleeping,-1.(i8))
+        futexsleep(addr,mutex_sleeping,-1.(i8))
     }
 }
 
 MutexInter::unlock(){
     c<Core> = core()
-    v<u32> = atomic.xchg(&this.key,mutex_unlocked)
+    addr<u32*> = ALIGNUP(&this.key,4.(i8))
+    v<u32> = atomic.xchg(addr,mutex_unlocked)
     if v == mutex_unlocked {
         dief(*"unlock of unlocked lock key:%d v:%d",this.key,v)
     }
     if  v == mutex_sleeping {
-        futexwakeup(&this.key,1.(i8))
+        futexwakeup(addr,1.(i8))
     }
 
     c.locks -= 1

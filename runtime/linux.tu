@@ -187,18 +187,24 @@ func sys_map(v<u64>,n<u64>)
 
 fn futexsleep(addr<u32*> , val<u32> , ns<i64>){
     if ns < 0 {
-        futex(addr,FUTEX_WAIT,val,Null,Null,Null)
+        ret<i32> = futex(addr,FUTEX_WAIT_PRIVATE,val,Null,Null,Null)
+    	if ret < 0 {
+			warn(*"[futexsleep] addr:%p cnt:%d flag:%d ret:%d\n",addr,val,FUTEX_WAIT_PRIVATE,ret)
+    	}
         return Null
     }
     ts<TimeSpec:> = null
-    futex(addr,FUTEX_WAIT,val,&ts,Null,Null)
+    ret<i32> = futex(addr,FUTEX_WAIT_PRIVATE,val,&ts,Null,Null)
+    if ret < 0 {
+		warn(*"[futexsleep] addr:%p ts:%p cnt:%d flag:%d ret:%d\n",addr,&ts,val,FUTEX_WAIT_PRIVATE,ret)
+    }
 }
 fn futexwakeup(addr<u32*> , cnt<u32>) {
-    ret<i32> = futex(addr,FUTEX_WAKE,cnt,Null,Null,Null)
+    ret<i32> = futex(addr,FUTEX_WAKE_PRIVATE,cnt,Null,Null,Null)
     if ret >= 0 {
         return Null
     }
-	warn(*"[futexwakeup] addr:%p cnt:%d flag:%d ret:%d\n",addr,cnt,FUTEX_WAKE,ret)
+	warn(*"[futexwakeup] addr:%p cnt:%d flag:%d ret:%d\n",addr,cnt,FUTEX_WAKE_PRIVATE,ret)
     panic<i32*> = 0x1006
     *panic = 0x1006
 }
