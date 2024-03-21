@@ -248,6 +248,18 @@ tm_end2:
 	}
 
 }
+
+fn test_while(){
+	fmt.println("test_while started")
+	i<u32> = 0
+	if i == 0 {
+		while i == 4 
+            i *= 3
+	}else{
+        b<i32> = 30
+	}
+	fmt.println("test_while successed")
+}
 func main(){
 	fmt.println("test var scope started")
 	test_common()
@@ -256,5 +268,6 @@ func main(){
 	test_if()
 	test_if_multi()
 	test_match()	
+	test_while()
 	fmt.println("test var scope passed")
 }

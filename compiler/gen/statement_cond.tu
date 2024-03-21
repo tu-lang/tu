@@ -171,7 +171,7 @@ WhileStmt::compile(ctx)
         if std.len(this.block.stmts) == 0 ctx.cancel()
         else ctx.destroy()
     }else {
-        ctx.destroy()
+        ctx.cancel()
     }
 
     compile.writeln("    jmp %s.L.while.begin.%d",compile.currentParser.label(),c)
