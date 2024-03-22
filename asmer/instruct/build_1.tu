@@ -139,13 +139,8 @@ Instruct::genOneInst() {
         this.append1(exchar)
     }
     else if(this.type == ast.KW_DIV || this.type == ast.KW_IDIV){
-        //div  && idiv
-        exchar = 0xf0
-        if(this.type == ast.KW_IDIV)
-            exchar = 0xf8
-        exchar += this.modrm.reg
-        this.append1(opcode)
-        this.append1(exchar)
+        opcode += this.modrm.reg
+        this.append2(opcode)
     }
     else if(this.type == ast.KW_INC || this.type == ast.KW_DEC || this.type == ast.KW_NEG )
     {
