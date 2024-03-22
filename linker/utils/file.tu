@@ -2,7 +2,7 @@ use std
 use fmt
 use os 
 
-#func fwrite(buffer<i8*> , size<u64> , count<u64> , fd<u64*>){
+//func fwrite(buffer<i8*> , size<u64> , count<u64> , fd<u64*>){
 func fwrite(fd<i64>,buffer<u64>,size<u64>){
 	s<i8> = 1
 	ret<u64> = std.fwrite(buffer,size,s,fd)
@@ -12,7 +12,7 @@ func fwrite(fd<i64>,buffer<u64>,size<u64>){
 	return true
 }
 
-#func fopen(filename,mode)
+//func fopen(filename,mode)
 func fopen(filename,mode){
 	utils.debug("linker.io:fopen",filename,mode)
 	if filename == "" {

@@ -1,25 +1,23 @@
+// u16 Elf32_Half;
+// u16 Elf64_Half;
+// u32 Elf32_Word;
+// int32  Elf32_Sword;
+// u32 Elf64_Word;
+// int32  Elf64_Sword;
 
+// u64 Elf32_Xword;
+// int64  Elf32_Sxword;
+// u64 Elf64_Xword;
+// int64  Elf64_Sxword;
 
-# u16 Elf32_Half;
-# u16 Elf64_Half;
-# u32 Elf32_Word;
-# int32  Elf32_Sword;
-# u32 Elf64_Word;
-# int32  Elf64_Sword;
-
-# u64 Elf32_Xword;
-# int64  Elf32_Sxword;
-# u64 Elf64_Xword;
-# int64  Elf64_Sxword;
-
-# u32 Elf32_Addr
-# u64 Elf64_Addr
-# u32 Elf32_Off;
-# u64 Elf64_Off
-# u16 Elf32_Section;
-# u16 Elf64_Section; 
-# u16 Elf32_Versym;
-# u16 Elf64_Versym;
+// u32 Elf32_Addr
+// u64 Elf64_Addr
+// u32 Elf32_Off;
+// u64 Elf64_Off
+// u16 Elf32_Section;
+// u16 Elf64_Section; 
+// u16 Elf32_Versym;
+// u16 Elf64_Versym;
 
 mem Elf64_Ehdr 
 {

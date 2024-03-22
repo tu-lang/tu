@@ -1,3 +1,4 @@
+use runtime
 use linker.linux
 use linker.utils
 use fmt
@@ -7,18 +8,18 @@ trace
 
 class Linker
 {
-	segLists = {}		# map[string]SegList
-	symLinks = []		# arr[SymLink*]
-	symDef	 = {}		# map[string]symLink*
-	secDef	 = []		# arr[symLink*]
-	elfs	 = []		# arr[elf,elf,elf]
-	segNames = [ 		# arr[string] 链接关心的段
+	segLists = {}		// map[string]SegList
+	symLinks = []		// arr[SymLink*]
+	symDef	 = {}		// map[string]symLink*
+	secDef	 = []		// arr[symLink*]
+	elfs	 = []		// arr[elf,elf,elf]
+	segNames = [ 		// arr[string] 
 		".text" , ".data" , 
 		".bss"  ,
 		".rodata" , ".data.rel.local"
 	]		
-	exe				    # File* 最后输出的文件
-	startOwner			# 拥有全局符号start _start的文件
+	exe				    // File* 
+	startOwner			// _start owner file
 	bssaddr  = 0
 	bytes
 }
@@ -36,11 +37,9 @@ Linker::addElf(obj)
 {
 	utils.debug("Linker::addElf add a elffile:",obj)
 	e = new linux.File()
-	# 解析elf文件
 	e.readElf(obj)
 	this.elfs[] = e
 }
-use runtime
 Linker::collectInfo()
 {
 	utils.msg(30,"Collecting object info")
@@ -74,7 +73,7 @@ Linker::collectInfo()
 					defm<linux.Elf64_Sym> = def.prov.symTab[def.name]
 					if linux.ELF64_ST_BIND(defm.st_info) == linux.STB_GLOBAL {
 						utils.errorf(
-							"符号名定义冲突: %s file:%s  from:%s",
+							"symbol conflict: %s file:%s  from:%s",
 							symLink.name,e.elfdir,def.prov.elfdir
 						)
 					}
@@ -108,18 +107,18 @@ Linker::symValid()
 			info<u8> = msym.st_info
 			type = ""
 			if   linux.ELF64_ST_TYPE(info)  == linux.STT_OBJECT {
-				type = "变量"
+				type = "variable"
 			}
 			if   linux.ELF64_ST_TYPE(info)  == linux.STT_FUNC {
-				type = "函数"
+				type = "function"
 			}
 			if  type == "" {
-				type = "符号"
+				type = "symbol"
 			}
-			utils.debug("文件%s的%s名%s未定义",undefine.recv.elf_dir,type,undefine.name)
+			utils.debug("file:%s type:%s var:%s undefine",undefine.recv.elf_dir,type,undefine.name)
 			if  flag {
 				utils.errorf(
-					"文件%s的%s名%s未定义",
+					"file:%s type:%s var:%s undefine",
 					undefine.recv.elf_dir,
 					type,
 					undefine.name

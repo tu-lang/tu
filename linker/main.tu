@@ -5,13 +5,13 @@ use os
 use std
 use linker.utils
 
-#[dir,dir,dir]
+//[dir,dir,dir]
 scan_dirs
 
-#[file,file]
+//[file,file]
 scan_files
 
-# executable file name
+// executable file name
 out
 
 func print_help(){
@@ -72,11 +72,11 @@ func command() {
     while i < std.len(os.argv())  {
         match os.argv()[i] {
             "-p" : {
-                scan_dirs[] = os.argv()[i+1]    # link dir
+                scan_dirs[] = os.argv()[i+1]    // link dir
                 i += 2
             }
             "-d" : {
-                link.trace = true          # debug mode
+                link.trace = true          // debug mode
                 i += 1
             }
             "-o" : {
@@ -84,7 +84,7 @@ func command() {
                 i += 2
             }
             _ : {
-                scan_dirs[] = os.argv()[i]   # link object
+                scan_dirs[] = os.argv()[i]   // link object
                 i += 1
             }
         }
@@ -95,9 +95,9 @@ func main() {
     if  os.argc() < 1 {
         return print_help()
     }
-    command()  # parse command
+    command()  // parse command
 
-    # link single files or scan dir
+    // link single files or scan dir
     if std.len(scan_dirs)        return scan()
     else if std.len(scan_files)  return scan()
     else                         return print_help()

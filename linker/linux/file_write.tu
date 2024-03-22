@@ -13,7 +13,7 @@ File::writeHeader(out)
 
     utils.fwrite(fp,ehdr,ehdr.e_ehsize)
 
-    if std.len(this.phdrTab) != 0 {  //程序头表
+    if std.len(this.phdrTab) != 0 {  //program header section
         for (phd : this.phdrTab) {
             bytes += int(ehdr.e_phentsize)
             utils.fwrite(fp,phd,ehdr.e_phentsize)

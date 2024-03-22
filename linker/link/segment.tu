@@ -4,17 +4,17 @@ use linker.utils
 
 class Seglist
 {
-	baseAddr  = 0   # base addr
-	offset    = 0   # finally offset
-	size	  = 0   # finally size
-	begin  	  = 0   # start address
-	ownerList = []  # array[ElfFile] 
-	blocks	  = []  # array[Block]
+	baseAddr  = 0   // base addr
+	offset    = 0   // finally offset
+	size	  = 0   // finally size
+	begin  	  = 0   // start address
+	ownerList = []  // array[ElfFile] 
+	blocks	  = []  // array[Block]
 }
 
-# @param name 
-# @param off 
-# @param base 
+// @param name 
+// @param off 
+// @param base 
 Seglist::allocAddr(name,base<i32*>,off<i32*>)
 {
 	utils.debug("Seglist::allocAddr ",name,int(*off))
@@ -83,7 +83,7 @@ Seglist::relocAddr(relAddr<u32>,type<u8>,symAddr<u32>,addend<i32>)
 			inst -= 1
 			opcode<u8*> = inst
 			if  *opcode == 0x8b {
-				# reg = (*modr - 0x05)/8
+				// reg = (*modr - 0x05)/8
 				_reg<u8> = *modr - 0x05
 				reg<u8> = _reg / 8
 				*opcode = 0xc7

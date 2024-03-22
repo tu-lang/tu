@@ -1,21 +1,21 @@
 use fmt
 
 class File {
-    ehdr   = new Elf64_Ehdr     # Elf64_Ehdr elf头
-	# char *buf,Elf64_Off offset,Elf64_Word size)
-	phdrTab = []    # Elf64_Phdr
-	shdrTab = {}    # Elf64_Shdr
-	shdrNames = []  # array[]
-	symTab  = {}    # Elf64_Sym
-	symNames = []   # array[]
-	symbols = []    # string name
-	relTab = []     # Elf64_Rela
+    ehdr   = new Elf64_Ehdr     // Elf64_Ehdr elf header
+	// char *buf,Elf64_Off offset,Elf64_Word size)
+	phdrTab = []    // Elf64_Phdr
+	shdrTab = {}    // Elf64_Shdr
+	shdrNames = []  // array[]
+	symTab  = {}    // Elf64_Sym
+	symNames = []   // array[]
+	symbols = []    // string name
+	relTab = []     // Elf64_Rela
 
-    elfdir      # file path
-    shstrtab    # char* str
-    shstrtabsize# size
-    strtab      # char* str
-    strtabsize  # size
+    elfdir      // file path
+    shstrtab    // char* str
+    shstrtabsize// size
+    strtab      // char* str
+    strtabsize  // size
 }
 
 

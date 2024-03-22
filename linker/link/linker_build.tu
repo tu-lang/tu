@@ -25,7 +25,7 @@ Linker::buildExe()
 	ehdr.e_flags = 0
 	ehdr.e_ehsize = sizeof(linux.Elf64_Ehdr)
 
-	#curOff = sizeof(linux.Elf64_Ehdr) + sizeof(linux.Elf64_Phdr) * std.len(this.segNames)
+	//curOff = sizeof(linux.Elf64_Ehdr) + sizeof(linux.Elf64_Phdr) * std.len(this.segNames)
 	curOff = int(sizeof(linux.Elf64_Ehdr)) + int(sizeof(linux.Elf64_Phdr)) * std.len(this.segNames)
 	zero = 0
 	exe.addShdr("",zero,zero,zero,zero,zero,zero,zero,zero,zero)
@@ -93,7 +93,6 @@ Linker::writeExe(out)
 			padnum -= 1
 			utils.fwrite(fp,&pad,one)
 		}
-		#输出
 		if  seg != ".bss" {
 			old<Block> = null
 			instPad<i8*> = 0x90

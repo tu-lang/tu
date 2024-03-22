@@ -27,7 +27,7 @@ File::readElf(file)
 	shstrTab<Elf64_Shdr> = utils.fread(fp,sizeof(Elf64_Shdr))
 	utils.fseek(fp,shstrTab.sh_offset)
 	shstrTabData<i8*> = utils.fread(fp,shstrTab.sh_size)
-	utils.debug("字符串表:",string.new(shstrTabData))
+	utils.debug("string table:",string.new(shstrTabData))
 
 	utils.fseek(fp,ehdr.e_shoff)
 	for(i<i32> = 0 ; i < ehdr.e_shnum ; i += 1){
@@ -35,7 +35,7 @@ File::readElf(file)
 		name = string.new(shstrTabData + shdr.sh_name)
 		//utils.debug("read section.name:", name)
 		this.shdrNames[] = name
-		# map映射
+		// map shstrtable
 		if name != "" {
 			this.shdrTab[name] = shdr
 		}
