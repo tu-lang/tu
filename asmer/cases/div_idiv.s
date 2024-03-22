@@ -16,3 +16,9 @@ lidiv:
     idiv %rdi
     idiv %r8
     div %rax
+    
+lidivq:
+    idivq %rax
+    idivq %rdi
+    idivq %r8
+    div %rax

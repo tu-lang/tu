@@ -23,3 +23,9 @@ Disassembly of section .text:
   1f:	48 f7 ff             	idiv   %rdi
   22:	49 f7 f8             	idiv   %r8
   25:	48 f7 f0             	div    %rax
+
+0000000000000028 <lidivq>:
+  28:   48 f7 f8                idiv   %rax
+  2b:   48 f7 ff                idiv   %rdi
+  2e:   49 f7 f8                idiv   %r8
+  31:   48 f7 f0                div    %rax

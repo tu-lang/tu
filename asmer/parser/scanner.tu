@@ -40,7 +40,7 @@ labels = {
     "cmp" : ast.KW_CMP,        "cmpxchgq": ast.KW_CMPXCHG,"cmpxchgl": ast.KW_CMPXCHG, "cmpxchgb": ast.KW_CMPXCHG,
     "xchg": ast.KW_XCHG,       "jbe": ast.KW_JBE,
     "je" : ast.KW_JE,          "jne": ast.KW_JNE,
-    "idiv": ast.KW_IDIV,       "div": ast.KW_DIV,        "or": ast.KW_OR,             "orl": ast.KW_OR,       
+    "idiv": ast.KW_IDIV,       "idivq": ast.KW_IDIV,       "div": ast.KW_DIV,        "or": ast.KW_OR,             "orl": ast.KW_OR,       
     "xor": ast.KW_XOR,          "xorl": ast.KW_XOR,
 
     "ret": ast.KW_RET,          "retq": ast.KW_RET,   "cltd": ast.KW_CLTD,       "cdq": ast.KW_CDQ,       "cqo": ast.KW_CQO,    
