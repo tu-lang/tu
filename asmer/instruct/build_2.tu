@@ -6,6 +6,9 @@ use fmt
 
 Instruct::insthead(){
     utils.debug("Instruct::insthead()".(i8))
+    if this.type == ast.KW_CVTSI2SD
+        this.append1(0xf2.(i8))
+
     if this.tks.addr[0] == ast.KW_FS || this.tks.addr[1] == ast.KW_FS {
         this.append2(0x6448.(i8))
         return true
@@ -38,6 +41,8 @@ Instruct::insthead(){
         }
         if(this.left == ast.TY_MEM || this.is_rel)
             this.append1(0x4c.(i8))
+        else if ast.isfreg(this.tks.addr[1])
+            this.append1(0x4c.(i8))
         else 
             this.append1(0x49.(i8))
         return true
@@ -48,6 +53,8 @@ Instruct::insthead(){
     }
     if(ast.r8ishigh(this.tks.addr[0]) && ast.r8islow(this.tks.addr[1])){
         if(this.left == ast.TY_MEM || this.type == ast.KW_MUL)
+            this.append1(0x49.(i8))
+        else if ast.isfreg(this.tks.addr[1])
             this.append1(0x49.(i8))
         else 
             this.append1(0x4c.(i8))
@@ -91,6 +98,7 @@ Instruct::need2byte_op2(){
         ast.KW_MOVZWL: return true
         ast.KW_MOVSWL: return true
         ast.KW_CMPXCHG: return true//cmpxchg
+        ast.KW_CVTSI2SD: return true //cvtsi2sd
         ast.KW_XADD:    return true//xadd
         ast.KW_SYSCALL: return true
         ast.KW_RDTSCP: return true

@@ -8,6 +8,11 @@ use os
 
 Parser::regoffset(){
     ty<i32> = this.scanner.curtoken
+    if ty >= ast.KW_XMM0 && ty < ast.KW_XMM8
+        return ty - ast.KW_XMM0
+    if ty >= ast.KW_XMM8 && ty <= ast.KW_XMM15
+        return ty - ast.KW_XMM8
+
     if(ty >= ast.KW_RAX && ty < ast.KW_R8)
             return ty - ast.KW_RAX
     if(ty >= ast.KW_EAX && ty <= ast.KW_EDI)
@@ -228,6 +233,8 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
                 inst.modrm.rm = inst.modrm.reg
                 if(ast.isr8(this.scanner.curtoken)){
                     if(ast.isr1(inst.tks.addr[0]) || ast.isr4(inst.tks.addr[0]) || inst.type == ast.KW_MUL){
+                        inst.modrm.reg = this.regoffset()
+                    }else if ast.isfreg(inst.tks.addr[1]){
                         inst.modrm.reg = this.regoffset()
                     }else{
                         inst.modrm.rm = this.regoffset()

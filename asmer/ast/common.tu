@@ -8,11 +8,13 @@ True<i64>  = 1
 False<i64> = 0
 
 func r8islow(tk<i32>){
-    if( (tk >= KW_RAX && tk < KW_R8 ) || tk == KW_RIP) return true
+    if (tk >= KW_RAX && tk < KW_R8 ) || tk == KW_RIP return true
+    if tk >= KW_XMM0 && tk < KW_XMM8  return true
     return false
 }
 func r8ishigh(tk<i32>){
     if tk >= KW_R8 && tk <= KW_R15 return true
+    if tk >= KW_XMM8 && tk <= KW_XMM15 return true
     return false
 }
 func isr8(tk<i32>){
@@ -21,6 +23,10 @@ func isr8(tk<i32>){
 }
 func isr4(tk<i32>){
     if(tk >= KW_EAX && tk <= KW_EDI) return true
+    return false
+}
+fn isfreg(tk<i32>){
+    if tk >= KW_XMM0 && tk <= KW_XMM15 return true
     return false
 }
 func isr1(tk<i32>){
@@ -47,6 +53,8 @@ func reglen(tk<i32>){
         return 4.(i8)
     }
     else if(tk >= KW_RAX && tk <= KW_R15){
+        return 8.(i8)
+    }else if tk >= KW_XMM0 && tk <= KW_XMM15 {
         return 8.(i8)
     }else{
         utils.error("reglen unkown tk:" + int(tk))
