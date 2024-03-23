@@ -125,7 +125,7 @@ Instruct::genTwoInst()
         -1 : {
             this.insthead()
             match this.type {
-                ast.KW_MOV:{
+                ast.KW_MOV | ast.KW_MOVQ :{
                     if(ast.isr4(this.tks.addr[1])){
                         opcode = 0xb8 + this.modrm.reg
                         this.append1(opcode)

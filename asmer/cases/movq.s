@@ -9,3 +9,6 @@ r8:
     movq %r9 , %rax
     movq %rax , %rax
     movq %rbx , %rax
+    movq	$4730986895511650304, %rax
+    movabsq	$4730986895511650304, %rax
+

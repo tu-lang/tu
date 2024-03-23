@@ -25,7 +25,7 @@ labels = {
     ".zero": ast.KW_ZERO,
 
     "push" : ast.KW_PUSH,      "pop" : ast.KW_POP,       "int" : ast.KW_INT,      
-    "movb": ast.KW_MOVB,       "movw": ast.KW_MOVW,     "movl": ast.KW_MOVL,        "movq": ast.KW_MOVQ,
+    "movb": ast.KW_MOVB,       "movw": ast.KW_MOVW,     "movl": ast.KW_MOVL,        "movq": ast.KW_MOVQ,       "movabsq": ast.KW_MOVQ,
     "mov" : ast.KW_MOV,        "movsxd": ast.KW_MOVSXD,   "movzb": ast.KW_MOVZB,    "movzbl": ast.KW_MOVZBL,   "movsbl": ast.KW_MOVSBL,
     "movzwl": ast.KW_MOVZWL,    "movswl": ast.KW_MOVSWL,   "movzx": ast.KW_MOVZX,      "shl": ast.KW_SHL,         "shr": ast.KW_SHR,        
     "sar": ast.KW_SAR,         "sub" : ast.KW_SUB,        
