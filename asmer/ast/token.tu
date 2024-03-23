@@ -23,7 +23,7 @@ enum {
     KW_MOVZWL,  KW_MOVSWL,  KW_SHL,     KW_SHR,     KW_SAR,
     KW_CMP,     KW_CMPXCHG, KW_XCHG,    KW_SUB,     KW_ADD,
     KW_XADD,    KW_AND,     KW_MUL,     KW_OR,      KW_XOR,
-    KW_CVTSI2SD,
+    KW_CVTSI2SD,KW_MOVSD,
     KW_LEA,
     // need 1 op
     KW_CALL,    KW_SETZ,    KW_SETE,    KW_SETL,    KW_SETLE,   KW_SETAE,   KW_SETGE,

@@ -12,3 +12,9 @@ Disassembly of section .text:
   2c:   f2 4c 0f 2a 4c 24 f0    cvtsi2sdq -0x10(%rsp),%xmm9
   33:   f2 4c 0f 2a 0f          cvtsi2sdq (%rdi),%xmm9
   38:   f2 4d 0f 2a 09          cvtsi2sdq (%r9),%xmm9
+
+0000000000000000 <movsd_32>:
+   0:   f2 0f 10 45 f8          movsd  -0x8(%rbp),%xmm0
+   5:   f2 44 0f 10 4d 10       movsd  0x10(%rbp),%xmm9
+   b:   f2 0f 11 45 f8          movsd  %xmm0,-0x8(%rbp)
+  10:   f2 44 0f 11 4d 10       movsd  %xmm9,0x10(%rbp)
