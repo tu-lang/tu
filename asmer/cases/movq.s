@@ -12,3 +12,12 @@ r8:
     movq	$4730986895511650304, %rax
     movabsq	$4730986895511650304, %rax
 
+float:
+	movq	-8(%rbp), %xmm0
+	movq	16(%rbp), %xmm9
+    movq	%xmm0 , -8(%rbp)
+	movq	%xmm9 , 16(%rbp)
+    movq    %rax,     %xmm0
+    movq    %r8,      %xmm12
+    movq    %xmm0 , %rax
+    movq    %xmm12, %r8

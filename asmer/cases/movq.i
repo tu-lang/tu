@@ -19,3 +19,14 @@ Disassembly of section .text:
   25:   d7 a7 41 
   28:   48 b8 00 00 00 00 84    movabs $0x41a7d78400000000,%rax
   2f:   d7 a7 41 
+
+    
+0000000000000000 <float>:
+   0:   f3 0f 7e 45 f8          movq   -0x8(%rbp),%xmm0
+   5:   f3 44 0f 7e 4d 10       movq   0x10(%rbp),%xmm9
+   b:   66 0f d6 45 f8          movq   %xmm0,-0x8(%rbp)
+  10:   66 44 0f d6 4d 10       movq   %xmm9,0x10(%rbp)
+  16:   66 48 0f 6e c0          movq   %rax,%xmm0
+  1b:   66 4d 0f 6e e0          movq   %r8,%xmm12
+  20:   66 48 0f 7e c0          movq   %xmm0,%rax
+  25:   66 4d 0f 7e e0          movq   %xmm12,%r8

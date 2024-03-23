@@ -8,6 +8,19 @@ Instruct::insthead(){
     utils.debug("Instruct::insthead()".(i8))
     if this.type == ast.KW_CVTSI2SD
         this.append1(0xf2.(i8))
+    else if this.left == ast.TY_MEM && ast.isfreg(this.tks.addr[1]) {
+        this.append1(0xf3.(i8))
+        if ast.isfreghi(this.tks.addr[1])
+            this.append1(0x44.(i8))
+        return true 
+    }else if ast.isfreg(this.tks.addr[0]) && this.right == ast.TY_MEM {
+        this.append1(0x66.(i8))
+        if ast.isfreghi(this.tks.addr[0])
+            this.append1(0x44.(i8))
+        return true
+    }else if ast.isfreg(this.tks.addr[0]) || ast.isfreg(this.tks.addr[1]) {
+        this.append1(0x66.(i8))
+    }
 
     if this.tks.addr[0] == ast.KW_FS || this.tks.addr[1] == ast.KW_FS {
         this.append2(0x6448.(i8))
@@ -103,6 +116,11 @@ Instruct::need2byte_op2(){
         ast.KW_SYSCALL: return true
         ast.KW_RDTSCP: return true
         ast.KW_PAUSE:   return true
+        ast.KW_MOVQ: {
+            if ast.isfreg(this.tks.addr[0]) || ast.isfreg(this.tks.addr[1]) {
+                return true
+            }
+        }
     }
     return false
 }
@@ -347,7 +365,14 @@ Instruct::genTwoInst()
                     }
                 }
                 ast.KW_MOVW: len = 2
-                ast.KW_MOVQ | ast.KW_MOVL : len = 4
+                ast.KW_MOVQ: {
+                    if ast.isfreg(this.tks.addr[0])
+                        opcode = 0x0fd6
+                    if ast.isfreg(this.tks.addr[1])
+                        opcode = 0x0f7e
+                    len = 4
+                }
+                ast.KW_MOVL : len = 4
             }
             if(needprefix)
                 this.insthead()
@@ -372,6 +397,12 @@ Instruct::genTwoInst()
                         opcode = 0x90 + this.modrm.rm
                         return this.append1(opcode)
                     }
+                }
+                ast.KW_MOVQ: {
+                    if ast.isfreg(this.tks.addr[0])
+                        opcode = 0x0f7e
+                    if ast.isfreg(this.tks.addr[1])
+                        opcode = 0x0f6e
                 }
             }
             if(this.need2byte_op2() || this.type == ast.KW_MUL)
