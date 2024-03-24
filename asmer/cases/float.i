@@ -31,3 +31,9 @@ Disassembly of section .text:
    5:	f2 44 0f 58 4d 08    	addsd  0x8(%rbp),%xmm9
    b:	f3 0f 58 45 f8       	addss  -0x8(%rbp),%xmm0
   10:	f3 44 0f 58 4d 10    	addss  0x10(%rbp),%xmm9
+
+0000000000000000 <subinst>:
+  49:   f2 0f 5c 45 f0          subsd  -0x10(%rbp),%xmm0
+  4e:   f2 44 0f 5c 55 08       subsd  0x8(%rbp),%xmm10
+  54:   f3 0f 5c 45 f0          subss  -0x10(%rbp),%xmm0
+  59:   f3 44 0f 5c 55 08       subss  0x8(%rbp),%xmm10

@@ -37,6 +37,20 @@ func isr1(tk<i32>){
     if(tk >= KW_AL && tk <= KW_BH) return true
     return false
 }
+fn isfloatinst(ty<i32> , dword<i32*>) {
+    *dword = 0
+    match ty {
+        KW_MOVSD | KW_ADDSD | KW_SUBSD:{
+            *dword = 1
+            return true
+        }
+        KW_MOVSS | KW_ADDSS | KW_SUBSS:{
+            *dword = 0
+            return true
+        }
+    }
+    return false
+}
 func typesize(ty<i32>){
     match ty {
         KW_QUAD:  return 8.(i8)

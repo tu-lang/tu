@@ -28,3 +28,8 @@ addinst:
 	addsd	8(%rbp), %xmm9
 	addss	-8(%rbp), %xmm0
 	addss	16(%rbp), %xmm9
+subinst:
+	subsd	-16(%rbp), %xmm0
+	subsd	8(%rbp), %xmm10
+	subss	-16(%rbp), %xmm0
+	subss	8(%rbp), %xmm10

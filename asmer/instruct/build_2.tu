@@ -6,16 +6,12 @@ use fmt
 
 Instruct::insthead(){
     utils.debug("Instruct::insthead()".(i8))
+    dword<i32> = 0
     if this.type == ast.KW_CVTSI2SD
         this.append1(0xf2.(i8))
-    else if this.type == ast.KW_MOVSD || 
-            this.type == ast.KW_MOVSS ||
-            this.type == ast.KW_ADDSD ||
-            this.type == ast.KW_ADDSS{
-        if this.type == ast.KW_MOVSD || this.type == ast.KW_ADDSD
-            this.append1(0xf2.(i8))
-        else 
-            this.append1(0xf3.(i8))
+    else if ast.isfloatinst(this.type,&dword) {
+        if dword this.append1(0xf2.(i8))
+        else     this.append1(0xf3.(i8))
         if ast.isfreghi(this.tks.addr[0]) ||
            ast.isfreghi(this.tks.addr[1]) 
            this.append1(0x44.(i8))
@@ -127,6 +123,8 @@ Instruct::need2byte_op2(){
         ast.KW_MOVSS: return true //movss
         ast.KW_ADDSD: return true //addsd
         ast.KW_ADDSS: return true //addss
+        ast.KW_SUBSD: return true //subsd
+        ast.KW_SUBSS: return true //subss
         ast.KW_CVTSI2SD: return true //cvtsi2sd
         ast.KW_XADD:    return true//xadd
         ast.KW_SYSCALL: return true
