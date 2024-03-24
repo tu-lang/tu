@@ -8,8 +8,11 @@ Instruct::insthead(){
     utils.debug("Instruct::insthead()".(i8))
     if this.type == ast.KW_CVTSI2SD
         this.append1(0xf2.(i8))
-    else if this.type == ast.KW_MOVSD {
-        this.append1(0xf2.(i8))
+    else if this.type == ast.KW_MOVSD || this.type == ast.KW_MOVSS {
+        if this.type == ast.KW_MOVSD
+            this.append1(0xf2.(i8))
+        else 
+            this.append1(0xf3.(i8))
         if ast.isfreghi(this.tks.addr[0]) ||
            ast.isfreghi(this.tks.addr[1]) 
            this.append1(0x44.(i8))
@@ -118,6 +121,7 @@ Instruct::need2byte_op2(){
         ast.KW_MOVSWL: return true
         ast.KW_CMPXCHG: return true//cmpxchg
         ast.KW_MOVSD: return true //movsd
+        ast.KW_MOVSS: return true //movss
         ast.KW_CVTSI2SD: return true //cvtsi2sd
         ast.KW_XADD:    return true//xadd
         ast.KW_SYSCALL: return true

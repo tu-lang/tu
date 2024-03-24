@@ -13,8 +13,15 @@ Disassembly of section .text:
   33:   f2 4c 0f 2a 0f          cvtsi2sdq (%rdi),%xmm9
   38:   f2 4d 0f 2a 09          cvtsi2sdq (%r9),%xmm9
 
-0000000000000000 <movsd_32>:
+
+0000000000000000 <movsd_64>:
    0:   f2 0f 10 45 f8          movsd  -0x8(%rbp),%xmm0
    5:   f2 44 0f 10 4d 10       movsd  0x10(%rbp),%xmm9
    b:   f2 0f 11 45 f8          movsd  %xmm0,-0x8(%rbp)
   10:   f2 44 0f 11 4d 10       movsd  %xmm9,0x10(%rbp)
+
+0000000000000000 <movss_32>:
+  16:	f3 0f 10 45 f8       	movss  -0x8(%rbp),%xmm0
+  1b:	f3 44 0f 10 4d 10    	movss  0x10(%rbp),%xmm9
+  21:	f3 0f 11 45 f8       	movss  %xmm0,-0x8(%rbp)
+  26:	f3 44 0f 11 4d 10    	movss  %xmm9,0x10(%rbp)
