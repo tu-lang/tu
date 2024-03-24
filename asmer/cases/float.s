@@ -22,4 +22,9 @@ movss_32:
 	movss	16(%rbp), %xmm9
     movss	%xmm0 , -8(%rbp)
 	movss	%xmm9 , 16(%rbp)
-
+    
+addinst:
+	addsd	-16(%rbp), %xmm0
+	addsd	8(%rbp), %xmm9
+	addss	-8(%rbp), %xmm0
+	addss	16(%rbp), %xmm9

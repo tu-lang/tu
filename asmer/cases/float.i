@@ -25,3 +25,9 @@ Disassembly of section .text:
   1b:	f3 44 0f 10 4d 10    	movss  0x10(%rbp),%xmm9
   21:	f3 0f 11 45 f8       	movss  %xmm0,-0x8(%rbp)
   26:	f3 44 0f 11 4d 10    	movss  %xmm9,0x10(%rbp)
+
+0000000000000000 <addinst>:
+   0:	f2 0f 58 45 f0       	addsd  -0x10(%rbp),%xmm0
+   5:	f2 44 0f 58 4d 08    	addsd  0x8(%rbp),%xmm9
+   b:	f3 0f 58 45 f8       	addss  -0x8(%rbp),%xmm0
+  10:	f3 44 0f 58 4d 10    	addss  0x10(%rbp),%xmm9

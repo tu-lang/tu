@@ -44,6 +44,7 @@ labels = {
     "xor": ast.KW_XOR,           "xorl": ast.KW_XOR,
     "cvtsi2sd": ast.KW_CVTSI2SD, "cvtsi2sdq": ast.KW_CVTSI2SD,
     "movsd": ast.KW_MOVSD,       "movss": ast.KW_MOVSS,
+    "addsd": ast.KW_ADDSD,       "addss": ast.KW_ADDSS,
 
     "ret": ast.KW_RET,          "retq": ast.KW_RET,   "cltd": ast.KW_CLTD,       "cdq": ast.KW_CDQ,       "cqo": ast.KW_CQO,    
     "lock": ast.KW_LOCK,        "leaveq": ast.KW_LEAVE,   "leave": ast.KW_LEAVE,
