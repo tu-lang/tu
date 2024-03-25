@@ -40,11 +40,11 @@ func isr1(tk<i32>){
 fn isfloatinst(ty<i32> , dword<i32*>) {
     *dword = 0
     match ty {
-        KW_MOVSD | KW_ADDSD | KW_SUBSD | KW_MULSD:{
+        KW_MOVSD | KW_ADDSD | KW_SUBSD | KW_MULSD | KW_DIVSD :{
             *dword = 1
             return true
         }
-        KW_MOVSS | KW_ADDSS | KW_SUBSS | KW_MULSS:{
+        KW_MOVSS | KW_ADDSS | KW_SUBSS | KW_MULSS | KW_DIVSS :{
             *dword = 0
             return true
         }

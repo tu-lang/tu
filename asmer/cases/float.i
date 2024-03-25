@@ -43,3 +43,9 @@ Disassembly of section .text:
    5:	f2 44 0f 59 55 08    	mulsd  0x8(%rbp),%xmm10
    b:	f3 0f 59 45 f0       	mulss  -0x10(%rbp),%xmm0
   10:	f3 44 0f 59 55 08    	mulss  0x8(%rbp),%xmm10
+
+0000000000000000 <div_op>:
+   0:	f2 0f 5e 45 f0       	divsd  -0x10(%rbp),%xmm0
+   5:	f2 44 0f 5e 55 08    	divsd  0x8(%rbp),%xmm10
+   b:	f3 0f 5e 45 f0       	divss  -0x10(%rbp),%xmm0
+  10:	f3 44 0f 5e 55 08    	divss  0x8(%rbp),%xmm10

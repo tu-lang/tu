@@ -126,6 +126,8 @@ Instruct::need2byte_op2(){
         ast.KW_SUBSS: return true //subss
         ast.KW_MULSD: return true //MULSD
         ast.KW_MULSS: return true //MULSS
+        ast.KW_DIVSD: return true //DIVSD
+        ast.KW_DIVSS: return true //DIVSS
         ast.KW_CVTSI2SD: return true //cvtsi2sd
         ast.KW_XADD:    return true//xadd
         ast.KW_SYSCALL: return true

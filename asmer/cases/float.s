@@ -39,3 +39,10 @@ mulinst:
 	mulsd	8(%rbp), %xmm10
 	mulss	-16(%rbp), %xmm0
 	mulss	8(%rbp), %xmm10
+
+divinst:
+	divsd	-16(%rbp), %xmm0
+	divsd	8(%rbp), %xmm10
+	divss	-16(%rbp), %xmm0
+	divss	8(%rbp), %xmm10
+
