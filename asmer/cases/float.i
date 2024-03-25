@@ -49,3 +49,12 @@ Disassembly of section .text:
    5:	f2 44 0f 5e 55 08    	divsd  0x8(%rbp),%xmm10
    b:	f3 0f 5e 45 f0       	divss  -0x10(%rbp),%xmm0
   10:	f3 44 0f 5e 55 08    	divss  0x8(%rbp),%xmm10
+
+0000000000000000 <unpcklpsinst>:
+   0:	0f 14 c0             	unpcklps %xmm0,%xmm0
+   3:	44 0f 14 c8          	unpcklps %xmm0,%xmm9
+   7:	41 0f 14 c2          	unpcklps %xmm10,%xmm0
+   b:	45 0f 14 db          	unpcklps %xmm11,%xmm11
+   f:	0f 14 44 24 08       	unpcklps 0x8(%rsp),%xmm0
+  14:	44 0f 14 4c 24 08    	unpcklps 0x8(%rsp),%xmm9
+

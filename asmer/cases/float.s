@@ -46,3 +46,14 @@ divinst:
 	divss	-16(%rbp), %xmm0
 	divss	8(%rbp), %xmm10
 
+unpcklpsinst:
+	unpcklps	%xmm0, %xmm0
+	unpcklps	%xmm0, %xmm9
+	unpcklps	%xmm10, %xmm0
+	unpcklps	%xmm11, %xmm11
+	unpcklps	8(%rsp) , %xmm0
+	unpcklps	8(%rsp) , %xmm9
+
+
+
+

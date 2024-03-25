@@ -9,7 +9,15 @@ Instruct::insthead(){
     dword<i32> = 0
     if this.type == ast.KW_CVTSI2SD
         this.append1(0xf2.(i8))
-    else if ast.isfloatinst(this.type,&dword) {
+    else if this.type == ast.KW_UNPCKLPS {
+        if ast.isfreghi(this.tks.addr[0]) && ast.isfreghi(this.tks.addr[1])
+            this.append1(0x45.(i8))
+        else if ast.isfreghi(this.tks.addr[0])
+            this.append1(0x41.(i8))
+        else if ast.isfreghi(this.tks.addr[1])
+            this.append1(0x44.(i8))
+        return true
+    }else if ast.isfloatinst(this.type,&dword) {
         if dword this.append1(0xf2.(i8))
         else     this.append1(0xf3.(i8))
         if ast.isfreghi(this.tks.addr[0]) ||
@@ -111,24 +119,16 @@ Instruct::insthead(){
 
 Instruct::need2byte_op2(){
     match this.type {
-        ast.KW_MOVSBL: return true
-        ast.KW_MOVZB:  return true
-        ast.KW_MOVZBL: return true
-        ast.KW_MOVZX:  return true
-        ast.KW_MOVZWL: return true
-        ast.KW_MOVSWL: return true
+        ast.KW_MOVSBL |ast.KW_MOVZB  |ast.KW_MOVZBL | ast.KW_MOVZX  |ast.KW_MOVZWL |
+        ast.KW_MOVSWL | ast.KW_MOVSD  | ast.KW_MOVSS : {
+            return true
+        }
+        ast.KW_ADDSD  |ast.KW_ADDSS |ast.KW_SUBSD |ast.KW_SUBSS |ast.KW_MULSD |
+        ast.KW_MULSS  |ast.KW_DIVSD |ast.KW_DIVSS |ast.KW_CVTSI2SD |
+        ast.KW_UNPCKLPS : {
+            return true
+        }
         ast.KW_CMPXCHG: return true//cmpxchg
-        ast.KW_MOVSD: return true //movsd
-        ast.KW_MOVSS: return true //movss
-        ast.KW_ADDSD: return true //addsd
-        ast.KW_ADDSS: return true //addss
-        ast.KW_SUBSD: return true //subsd
-        ast.KW_SUBSS: return true //subss
-        ast.KW_MULSD: return true //MULSD
-        ast.KW_MULSS: return true //MULSS
-        ast.KW_DIVSD: return true //DIVSD
-        ast.KW_DIVSS: return true //DIVSS
-        ast.KW_CVTSI2SD: return true //cvtsi2sd
         ast.KW_XADD:    return true//xadd
         ast.KW_SYSCALL: return true
         ast.KW_RDTSCP: return true
