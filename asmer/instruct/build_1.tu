@@ -137,16 +137,33 @@ Instruct::genOneInst() {
         exchar = 0xc0
         exchar += this.modrm.reg
         this.append1(exchar)
-    }
-    else if(this.type == ast.KW_DIV || this.type == ast.KW_IDIV){
-        opcode += this.modrm.reg
-        this.append2(opcode)
-    }
-    else if(this.type == ast.KW_INC || this.type == ast.KW_DEC || this.type == ast.KW_NEG )
+    }else if(this.type == ast.KW_DIV || this.type == ast.KW_IDIV){
+        if this.left == ast.TY_MEM {
+            if this.modrm.rm == 4 {
+                opcode = 0xf77c
+                this.append2(opcode)
+                this.writeSIB()
+            }else if this.modrm.rm == 5 {
+                opcode = 0xf77d
+                this.append2(opcode)
+            }else {
+                opcode = 0xf738
+                if this.inst.dispLen
+                    opcode = 0xf778
+                opcode += this.modrm.rm
+                this.append2(opcode)
+            }
+            if this.inst.dispLen
+                this.append(this.inst.disp,this.inst.dispLen)
+        }else{
+            opcode += this.modrm.reg
+            this.append2(opcode)
+
+        }
+    }else if(this.type == ast.KW_INC || this.type == ast.KW_DEC || this.type == ast.KW_NEG )
     {
         this.check(False,"unsupport instruct in inc dec neg div")
-    }
-    else if(this.type == ast.KW_POP)
+    }else if(this.type == ast.KW_POP)
     {
         if(this.left == ast.TY_MEM){
             opcode = 0x8f

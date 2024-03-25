@@ -21,4 +21,14 @@ lidivq:
     idivq %rax
     idivq %rdi
     idivq %r8
+    idivq %r9
+	idivq 8(%rsp)
+	idivq -16(%rsp)
+	idivq 8(%rbp)
+	idivq -16(%rbp)
     div %rax
+    div %r9
+	idivq (%rax)
+	idivq 8(%rax)
+	idivq (%r9)
+	idivq -16(%r9)
