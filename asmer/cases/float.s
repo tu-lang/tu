@@ -33,3 +33,9 @@ subinst:
 	subsd	8(%rbp), %xmm10
 	subss	-16(%rbp), %xmm0
 	subss	8(%rbp), %xmm10
+
+mulinst:
+	mulsd	-16(%rbp), %xmm0
+	mulsd	8(%rbp), %xmm10
+	mulss	-16(%rbp), %xmm0
+	mulss	8(%rbp), %xmm10

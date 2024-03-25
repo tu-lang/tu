@@ -109,7 +109,6 @@ Instruct::insthead(){
     }
 }
 
-
 Instruct::need2byte_op2(){
     match this.type {
         ast.KW_MOVSBL: return true
@@ -125,6 +124,8 @@ Instruct::need2byte_op2(){
         ast.KW_ADDSS: return true //addss
         ast.KW_SUBSD: return true //subsd
         ast.KW_SUBSS: return true //subss
+        ast.KW_MULSD: return true //MULSD
+        ast.KW_MULSS: return true //MULSS
         ast.KW_CVTSI2SD: return true //cvtsi2sd
         ast.KW_XADD:    return true//xadd
         ast.KW_SYSCALL: return true
