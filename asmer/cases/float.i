@@ -94,3 +94,14 @@ Disassembly of section .text:
   1e:	66 0f 5a 07          	cvtpd2ps (%rdi),%xmm0
   22:	66 44 0f 5a 0f       	cvtpd2ps (%rdi),%xmm9
   27:	66 45 0f 5a 09       	cvtpd2ps (%r9),%xmm9
+
+0000000000000000 <cvttss2siqinst>:
+   0:	f3 0f 2c c0          	cvttss2si %xmm0,%eax
+   4:	f3 41 0f 2c c1       	cvttss2si %xmm9,%eax
+   9:	f3 0f 2c d0          	cvttss2si %xmm0,%edx
+   d:	f3 41 0f 2c d1       	cvttss2si %xmm9,%edx
+   
+  12:	f3 48 0f 2c f8       	cvttss2si %xmm0,%rdi
+  17:	f3 4c 0f 2c c8       	cvttss2si %xmm0,%r9
+  1c:	f3 49 0f 2c f9       	cvttss2si %xmm9,%rdi
+  21:	f3 4d 0f 2c d1       	cvttss2si %xmm9,%r10

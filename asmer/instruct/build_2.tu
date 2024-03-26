@@ -22,6 +22,8 @@ Instruct::insthead(){
                 this.append1(0x44.(i8))
             return true
         }
+    }else if this.type == ast.KW_CVTTSS2SI || this.type == ast.KW_CVTTSS2SIQ {
+        this.append1(0xf3.(i8))
     }else if this.type == ast.KW_UNPCKLPS || this.type == ast.KW_CVTPS2PD || this.type == ast.KW_CVTPD2PS {
         if this.type == ast.KW_CVTPD2PS 
             this.append1(0x66.(i8))
@@ -86,20 +88,20 @@ Instruct::insthead(){
         }
         if(this.left == ast.TY_MEM || this.is_rel)
             this.append1(0x4c.(i8))
-        else if ast.isfreg(this.tks.addr[1])
+        else if ast.isfreg(this.tks.addr[1]) || ast.isfreg(this.tks.addr[0])
             this.append1(0x4c.(i8))
         else 
             this.append1(0x49.(i8))
         return true
     }
     if(ast.r8ishigh(this.tks.addr[0]) && ast.isr4(this.tks.addr[1])){
-        if(this.left == ast.TY_MEM)
+        if(this.left == ast.TY_MEM || ast.isfreghi(this.tks.addr[0]))
             return this.append1(0x41.(i8))
     }
     if(ast.r8ishigh(this.tks.addr[0]) && ast.r8islow(this.tks.addr[1])){
         if(this.left == ast.TY_MEM || this.type == ast.KW_MUL)
             this.append1(0x49.(i8))
-        else if ast.isfreg(this.tks.addr[1])
+        else if ast.isfreg(this.tks.addr[1]) || ast.isfreg(this.tks.addr[0])
             this.append1(0x49.(i8))
         else 
             this.append1(0x4c.(i8))
@@ -141,7 +143,7 @@ Instruct::need2byte_op2(){
         }
         ast.KW_ADDSD  |ast.KW_ADDSS |ast.KW_SUBSD |ast.KW_SUBSS |ast.KW_MULSD |
         ast.KW_MULSS  |ast.KW_DIVSD |ast.KW_DIVSS |ast.KW_CVTSI2SD | ast.KW_CVTPS2PD|
-        ast.KW_CVTSI2SS| ast.KW_CVTPD2PS| ast.KW_UNPCKLPS : {
+        ast.KW_CVTSI2SS| ast.KW_CVTPD2PS| ast.KW_UNPCKLPS | ast.KW_CVTTSS2SI | ast.KW_CVTTSS2SIQ: {
             return true
         }
         ast.KW_CMPXCHG: return true//cmpxchg

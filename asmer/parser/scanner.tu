@@ -44,6 +44,7 @@ labels = {
     "xor": ast.KW_XOR,           "xorl": ast.KW_XOR,
     "cvtsi2sd": ast.KW_CVTSI2SD, "cvtsi2sdq": ast.KW_CVTSI2SD,"cvtsi2ss": ast.KW_CVTSI2SS,
     "cvtps2pd": ast.KW_CVTPS2PD, "cvtpd2ps": ast.KW_CVTPD2PS,
+    "cvttss2si":ast.KW_CVTTSS2SI,"cvttss2siq": ast.KW_CVTTSS2SIQ,
     "movsd": ast.KW_MOVSD,       "movss": ast.KW_MOVSS,
     "addsd": ast.KW_ADDSD,       "addss": ast.KW_ADDSS,      "subsd": ast.KW_SUBSD,    "subss": ast.KW_SUBSS,
     "mulsd": ast.KW_MULSD,       "mulss": ast.KW_MULSS,      "divsd": ast.KW_DIVSD,    "divss": ast.KW_DIVSS,

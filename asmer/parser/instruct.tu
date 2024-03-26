@@ -234,13 +234,17 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
                 if(ast.isr8(this.scanner.curtoken)){
                     if(ast.isr1(inst.tks.addr[0]) || ast.isr4(inst.tks.addr[0]) || inst.type == ast.KW_MUL){
                         inst.modrm.reg = this.regoffset()
+                    }else if inst.type == ast.KW_CVTTSS2SIQ {
+                        inst.modrm.reg = this.regoffset()
                     }else if ast.isfreg(inst.tks.addr[1]){
                         inst.modrm.reg = this.regoffset()
                     }else{
                         inst.modrm.rm = this.regoffset()
                     }
                 }else if(ast.isr4(this.scanner.curtoken)){
-                    if(ast.isr1(inst.tks.addr[0]) || inst.type == ast.KW_MUL){
+                    if ast.isfreg(inst.tks.addr[0])
+                        inst.modrm.reg = this.regoffset()
+                    else if(ast.isr1(inst.tks.addr[0]) || inst.type == ast.KW_MUL){
                         inst.modrm.reg = this.regoffset()
                     }else{
                         inst.modrm.rm = this.regoffset()

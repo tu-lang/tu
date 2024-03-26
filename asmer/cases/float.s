@@ -95,5 +95,14 @@ cvtpd2psinst:
 	cvtpd2ps	(%rdi), %xmm9
 	cvtpd2ps	(%r9), %xmm9
 
+cvttss2siqinst:
+	cvttss2si	%xmm0, %eax
+	cvttss2si	%xmm9, %eax
+	cvttss2si	%xmm0, %edx
+	cvttss2si	%xmm9, %edx
+	cvttss2siq	%xmm0, %rdi
+	cvttss2siq	%xmm0, %r9
+	cvttss2siq	%xmm9, %rdi
+	cvttss2siq	%xmm9, %r10
 
 
