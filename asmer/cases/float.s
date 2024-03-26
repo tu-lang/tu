@@ -11,6 +11,23 @@ il2f_64:
     cvtsi2sdq   (%rdi) , %xmm9
     cvtsi2sdq   (%r9) , %xmm9
 
+cvtsi2ssinst:
+    cvtsi2ss	%rax, %xmm0
+    cvtsi2ss	%rdi, %xmm0
+    cvtsi2ss	%rax, %xmm13
+    cvtsi2ss	%rdi, %xmm13
+    cvtsi2ss	%r9, %xmm0
+    cvtsi2ss	%r10, %xmm14
+    cvtsi2ss   4(%rsp) , %xmm4
+    cvtsi2ss   8(%rsp) , %xmm9
+    cvtsi2ss   -16(%rsp) , %xmm9
+    cvtsi2ss   (%rdi) , %xmm9
+    cvtsi2ss   (%r9) , %xmm9
+	cvtsi2ss %eax, %xmm0
+	cvtsi2ss %edx, %xmm0
+	cvtsi2ss %edx, %xmm9
+
+
 movsd_64:
 	movsd	-8(%rbp), %xmm0
 	movsd	16(%rbp), %xmm9

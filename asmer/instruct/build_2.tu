@@ -9,7 +9,20 @@ Instruct::insthead(){
     dword<i32> = 0
     if this.type == ast.KW_CVTSI2SD
         this.append1(0xf2.(i8))
-    else if this.type == ast.KW_UNPCKLPS || this.type == ast.KW_CVTPS2PD || this.type == ast.KW_CVTPD2PS {
+    else if this.type == ast.KW_CVTSI2SS {
+        this.append1(0xf3.(i8))
+        if this.left == ast.TY_MEM {
+            if ast.r8ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1])
+                this.append1(0x45.(i8))
+            else if ast.r8ishigh(this.tks.addr[1])
+                this.append1(0x44.(i8))
+            return true
+        }else if ast.isr4(this.tks.addr[0]){
+            if ast.r8ishigh(this.tks.addr[1])
+                this.append1(0x44.(i8))
+            return true
+        }
+    }else if this.type == ast.KW_UNPCKLPS || this.type == ast.KW_CVTPS2PD || this.type == ast.KW_CVTPD2PS {
         if this.type == ast.KW_CVTPD2PS 
             this.append1(0x66.(i8))
 
@@ -128,7 +141,7 @@ Instruct::need2byte_op2(){
         }
         ast.KW_ADDSD  |ast.KW_ADDSS |ast.KW_SUBSD |ast.KW_SUBSS |ast.KW_MULSD |
         ast.KW_MULSS  |ast.KW_DIVSD |ast.KW_DIVSS |ast.KW_CVTSI2SD | ast.KW_CVTPS2PD|
-        ast.KW_CVTPD2PS| ast.KW_UNPCKLPS : {
+        ast.KW_CVTSI2SS| ast.KW_CVTPD2PS| ast.KW_UNPCKLPS : {
             return true
         }
         ast.KW_CMPXCHG: return true//cmpxchg

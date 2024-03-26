@@ -42,7 +42,7 @@ labels = {
     "je" : ast.KW_JE,            "jne": ast.KW_JNE,
     "idiv": ast.KW_IDIV,         "idivq": ast.KW_IDIV,       "div": ast.KW_DIV,        "or": ast.KW_OR,             "orl": ast.KW_OR,       
     "xor": ast.KW_XOR,           "xorl": ast.KW_XOR,
-    "cvtsi2sd": ast.KW_CVTSI2SD, "cvtsi2sdq": ast.KW_CVTSI2SD,
+    "cvtsi2sd": ast.KW_CVTSI2SD, "cvtsi2sdq": ast.KW_CVTSI2SD,"cvtsi2ss": ast.KW_CVTSI2SS,
     "cvtps2pd": ast.KW_CVTPS2PD, "cvtpd2ps": ast.KW_CVTPD2PS,
     "movsd": ast.KW_MOVSD,       "movss": ast.KW_MOVSS,
     "addsd": ast.KW_ADDSD,       "addss": ast.KW_ADDSS,      "subsd": ast.KW_SUBSD,    "subss": ast.KW_SUBSS,
