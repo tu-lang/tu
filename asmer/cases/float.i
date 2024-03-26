@@ -68,3 +68,14 @@ Disassembly of section .text:
   18:	0f 5a 07             	cvtps2pd (%rdi),%xmm0
   1b:	44 0f 5a 0f          	cvtps2pd (%rdi),%xmm9
   1f:	45 0f 5a 09          	cvtps2pd (%r9),%xmm9
+
+0000000000000000 <cvtpd2psinst>:
+   0:	66 0f 5a c8          	cvtpd2ps %xmm0,%xmm1
+   4:	66 44 0f 5a c8       	cvtpd2ps %xmm0,%xmm9
+   9:	66 41 0f 5a d1       	cvtpd2ps %xmm9,%xmm2
+   e:	66 45 0f 5a e1       	cvtpd2ps %xmm9,%xmm12
+  13:	66 0f 5a 45 08       	cvtpd2ps 0x8(%rbp),%xmm0
+  18:	66 44 0f 5a 4d f0    	cvtpd2ps -0x10(%rbp),%xmm9
+  1e:	66 0f 5a 07          	cvtpd2ps (%rdi),%xmm0
+  22:	66 44 0f 5a 0f       	cvtpd2ps (%rdi),%xmm9
+  27:	66 45 0f 5a 09       	cvtpd2ps (%r9),%xmm9
