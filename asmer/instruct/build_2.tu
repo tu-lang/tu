@@ -9,8 +9,8 @@ Instruct::insthead(){
     dword<i32> = 0
     if this.type == ast.KW_CVTSI2SD
         this.append1(0xf2.(i8))
-    else if this.type == ast.KW_UNPCKLPS {
-        if ast.isfreghi(this.tks.addr[0]) && ast.isfreghi(this.tks.addr[1])
+    else if this.type == ast.KW_UNPCKLPS || this.type == ast.KW_CVTPS2PD {
+        if ast.r8ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1])
             this.append1(0x45.(i8))
         else if ast.isfreghi(this.tks.addr[0])
             this.append1(0x41.(i8))
@@ -124,7 +124,7 @@ Instruct::need2byte_op2(){
             return true
         }
         ast.KW_ADDSD  |ast.KW_ADDSS |ast.KW_SUBSD |ast.KW_SUBSS |ast.KW_MULSD |
-        ast.KW_MULSS  |ast.KW_DIVSD |ast.KW_DIVSS |ast.KW_CVTSI2SD |
+        ast.KW_MULSS  |ast.KW_DIVSD |ast.KW_DIVSS |ast.KW_CVTSI2SD | ast.KW_CVTPS2PD|
         ast.KW_UNPCKLPS : {
             return true
         }

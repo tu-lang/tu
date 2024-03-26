@@ -53,6 +53,18 @@ unpcklpsinst:
 	unpcklps	%xmm11, %xmm11
 	unpcklps	8(%rsp) , %xmm0
 	unpcklps	8(%rsp) , %xmm9
+	
+cvtps2pdinst:
+	cvtps2pd	%xmm0, %xmm1
+	cvtps2pd	%xmm0, %xmm9
+	cvtps2pd	%xmm9, %xmm2
+	cvtps2pd	%xmm9, %xmm12
+
+	cvtps2pd	8(%rbp), %xmm0	
+	cvtps2pd	-16(%rbp), %xmm9
+	cvtps2pd	(%rdi), %xmm0	
+	cvtps2pd	(%rdi), %xmm9
+	cvtps2pd	(%r9), %xmm9
 
 
 
