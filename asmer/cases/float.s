@@ -113,3 +113,72 @@ cvttsd2siinst:
 	cvttsd2siq	%xmm10, %rax
 	cvttsd2siq	%xmm11, %r12
 
+addop:
+	addsd	300(%rbp), %xmm0
+	addsd	-500(%rbp), %xmm9
+	addsd	%xmm1, %xmm0
+	addsd	%xmm1, %xmm9
+	addsd	%xmm9, %xmm2
+	addsd	%xmm9, %xmm10
+	addss	300(%rbp), %xmm0
+	addss	-500(%rbp), %xmm9
+	addss	%xmm1, %xmm0
+	addss	%xmm1, %xmm9
+	addss	%xmm9, %xmm2
+	addss	%xmm9, %xmm10
+
+subop:
+	subsd	300(%rbp), %xmm0
+	subsd	-500(%rbp), %xmm9
+	subsd	%xmm1, %xmm0
+	subsd	%xmm1, %xmm9
+	subsd	%xmm9, %xmm2
+	subsd	%xmm9, %xmm10
+	subss	300(%rbp), %xmm0
+	subss	-500(%rbp), %xmm9
+	subss	%xmm1, %xmm0
+	subss	%xmm1, %xmm9
+	subss	%xmm9, %xmm2
+	subss	%xmm9, %xmm10
+
+mulop:
+	mulsd	300(%rbp), %xmm0
+	mulsd	-500(%rbp), %xmm9
+	mulsd	%xmm1, %xmm0
+	mulsd	%xmm1, %xmm9
+	mulsd	%xmm9, %xmm2
+	mulsd	%xmm9, %xmm10
+	mulss	300(%rbp), %xmm0
+	mulss	-500(%rbp), %xmm9
+	mulss	%xmm1, %xmm0
+	mulss	%xmm1, %xmm9
+	mulss	%xmm9, %xmm2
+	mulss	%xmm9, %xmm10
+
+divop:
+	divsd	300(%rbp), %xmm0
+	divsd	-500(%rbp), %xmm9
+	divsd	%xmm1, %xmm0
+	divsd	%xmm1, %xmm9
+	divsd	%xmm9, %xmm2
+	divsd	%xmm9, %xmm10
+	divss	300(%rbp), %xmm0
+	divss	-500(%rbp), %xmm9
+	divss	%xmm1, %xmm0
+	divss	%xmm1, %xmm9
+	divss	%xmm9, %xmm2
+	divss	%xmm9, %xmm10
+
+movop:
+	movsd	300(%rbp), %xmm0
+	movsd	-500(%rbp), %xmm9
+	movsd	%xmm1, %xmm0
+	movsd	%xmm1, %xmm9
+	movsd	%xmm9, %xmm2
+	movsd	%xmm9, %xmm10
+	movss	300(%rbp), %xmm0
+	movss	-500(%rbp), %xmm9
+	movss	%xmm1, %xmm0
+	movss	%xmm1, %xmm9
+	movss	%xmm9, %xmm2
+	movss	%xmm9, %xmm10

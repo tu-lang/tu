@@ -40,9 +40,15 @@ Instruct::insthead(){
     }else if ast.isfloatinst(this.type,&dword) {
         if dword this.append1(0xf2.(i8))
         else     this.append1(0xf3.(i8))
-        if ast.isfreghi(this.tks.addr[0]) ||
-           ast.isfreghi(this.tks.addr[1]) 
+
+        if ast.isfreghi(this.tks.addr[0]) && ast.isfreghi(this.tks.addr[1]) 
+           this.append1(0x45.(i8))
+        else if ast.isfreghi(this.tks.addr[0]) && this.right == ast.TY_MEM 
            this.append1(0x44.(i8))
+        else if ast.isfreghi(this.tks.addr[1])
+           this.append1(0x44.(i8))
+        else if ast.isfreghi(this.tks.addr[0])
+           this.append1(0x41.(i8))
         return true
     }else if this.left == ast.TY_MEM && ast.isfreg(this.tks.addr[1]) {
         this.append1(0xf3.(i8))

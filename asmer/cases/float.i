@@ -113,3 +113,94 @@ Disassembly of section .text:
    e:	f2 4c 0f 2c d0       	cvttsd2si %xmm0,%r10
   13:	f2 49 0f 2c c2       	cvttsd2si %xmm10,%rax
   18:	f2 4d 0f 2c e3       	cvttsd2si %xmm11,%r12
+
+
+0000000000000000 <addop>:
+   0:	f2 0f 58 85 2c 01 00 	addsd  0x12c(%rbp),%xmm0
+   7:	00 
+   8:	f2 44 0f 58 8d 0c fe 	addsd  -0x1f4(%rbp),%xmm9
+   f:	ff ff 
+  11:	f2 0f 58 c1          	addsd  %xmm1,%xmm0
+  15:	f2 44 0f 58 c9       	addsd  %xmm1,%xmm9
+  1a:	f2 41 0f 58 d1       	addsd  %xmm9,%xmm2
+  1f:	f2 45 0f 58 d1       	addsd  %xmm9,%xmm10
+  24:	f3 0f 58 85 2c 01 00 	addss  0x12c(%rbp),%xmm0
+  2b:	00 
+  2c:	f3 44 0f 58 8d 0c fe 	addss  -0x1f4(%rbp),%xmm9
+  33:	ff ff 
+  35:	f3 0f 58 c1          	addss  %xmm1,%xmm0
+  39:	f3 44 0f 58 c9       	addss  %xmm1,%xmm9
+  3e:	f3 41 0f 58 d1       	addss  %xmm9,%xmm2
+  43:	f3 45 0f 58 d1       	addss  %xmm9,%xmm10
+
+0000000000000048 <subop>:
+  48:	f2 0f 5c 85 2c 01 00 	subsd  0x12c(%rbp),%xmm0
+  4f:	00 
+  50:	f2 44 0f 5c 8d 0c fe 	subsd  -0x1f4(%rbp),%xmm9
+  57:	ff ff 
+  59:	f2 0f 5c c1          	subsd  %xmm1,%xmm0
+  5d:	f2 44 0f 5c c9       	subsd  %xmm1,%xmm9
+  62:	f2 41 0f 5c d1       	subsd  %xmm9,%xmm2
+  67:	f2 45 0f 5c d1       	subsd  %xmm9,%xmm10
+  6c:	f3 0f 5c 85 2c 01 00 	subss  0x12c(%rbp),%xmm0
+  73:	00 
+  74:	f3 44 0f 5c 8d 0c fe 	subss  -0x1f4(%rbp),%xmm9
+  7b:	ff ff 
+  7d:	f3 0f 5c c1          	subss  %xmm1,%xmm0
+  81:	f3 44 0f 5c c9       	subss  %xmm1,%xmm9
+  86:	f3 41 0f 5c d1       	subss  %xmm9,%xmm2
+  8b:	f3 45 0f 5c d1       	subss  %xmm9,%xmm10
+
+0000000000000090 <mulop>:
+  90:	f2 0f 59 85 2c 01 00 	mulsd  0x12c(%rbp),%xmm0
+  97:	00 
+  98:	f2 44 0f 59 8d 0c fe 	mulsd  -0x1f4(%rbp),%xmm9
+  9f:	ff ff 
+  a1:	f2 0f 59 c1          	mulsd  %xmm1,%xmm0
+  a5:	f2 44 0f 59 c9       	mulsd  %xmm1,%xmm9
+  aa:	f2 41 0f 59 d1       	mulsd  %xmm9,%xmm2
+  af:	f2 45 0f 59 d1       	mulsd  %xmm9,%xmm10
+  b4:	f3 0f 59 85 2c 01 00 	mulss  0x12c(%rbp),%xmm0
+  bb:	00 
+  bc:	f3 44 0f 59 8d 0c fe 	mulss  -0x1f4(%rbp),%xmm9
+  c3:	ff ff 
+  c5:	f3 0f 59 c1          	mulss  %xmm1,%xmm0
+  c9:	f3 44 0f 59 c9       	mulss  %xmm1,%xmm9
+  ce:	f3 41 0f 59 d1       	mulss  %xmm9,%xmm2
+  d3:	f3 45 0f 59 d1       	mulss  %xmm9,%xmm10
+
+00000000000000d8 <divop>:
+  d8:	f2 0f 5e 85 2c 01 00 	divsd  0x12c(%rbp),%xmm0
+  df:	00 
+  e0:	f2 44 0f 5e 8d 0c fe 	divsd  -0x1f4(%rbp),%xmm9
+  e7:	ff ff 
+  e9:	f2 0f 5e c1          	divsd  %xmm1,%xmm0
+  ed:	f2 44 0f 5e c9       	divsd  %xmm1,%xmm9
+  f2:	f2 41 0f 5e d1       	divsd  %xmm9,%xmm2
+  f7:	f2 45 0f 5e d1       	divsd  %xmm9,%xmm10
+  fc:	f3 0f 5e 85 2c 01 00 	divss  0x12c(%rbp),%xmm0
+ 103:	00 
+ 104:	f3 44 0f 5e 8d 0c fe 	divss  -0x1f4(%rbp),%xmm9
+ 10b:	ff ff 
+ 10d:	f3 0f 5e c1          	divss  %xmm1,%xmm0
+ 111:	f3 44 0f 5e c9       	divss  %xmm1,%xmm9
+ 116:	f3 41 0f 5e d1       	divss  %xmm9,%xmm2
+ 11b:	f3 45 0f 5e d1       	divss  %xmm9,%xmm10
+
+0000000000000120 <movop>:
+ 120:	f2 0f 10 85 2c 01 00 	movsd  0x12c(%rbp),%xmm0
+ 127:	00 
+ 128:	f2 44 0f 10 8d 0c fe 	movsd  -0x1f4(%rbp),%xmm9
+ 12f:	ff ff 
+ 131:	f2 0f 10 c1          	movsd  %xmm1,%xmm0
+ 135:	f2 44 0f 10 c9       	movsd  %xmm1,%xmm9
+ 13a:	f2 41 0f 10 d1       	movsd  %xmm9,%xmm2
+ 13f:	f2 45 0f 10 d1       	movsd  %xmm9,%xmm10
+ 144:	f3 0f 10 85 2c 01 00 	movss  0x12c(%rbp),%xmm0
+ 14b:	00 
+ 14c:	f3 44 0f 10 8d 0c fe 	movss  -0x1f4(%rbp),%xmm9
+ 153:	ff ff 
+ 155:	f3 0f 10 c1          	movss  %xmm1,%xmm0
+ 159:	f3 44 0f 10 c9       	movss  %xmm1,%xmm9
+ 15e:	f3 41 0f 10 d1       	movss  %xmm9,%xmm2
+ 163:	f3 45 0f 10 d1       	movss  %xmm9,%xmm10
