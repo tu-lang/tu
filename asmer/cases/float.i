@@ -105,3 +105,11 @@ Disassembly of section .text:
   17:	f3 4c 0f 2c c8       	cvttss2si %xmm0,%r9
   1c:	f3 49 0f 2c f9       	cvttss2si %xmm9,%rdi
   21:	f3 4d 0f 2c d1       	cvttss2si %xmm9,%r10
+
+0000000000000000 <cvttsd2siinst>:
+   0:	f2 0f 2c c0          	cvttsd2si %xmm0,%eax
+   4:	f2 41 0f 2c d1       	cvttsd2si %xmm9,%edx
+   9:	f2 48 0f 2c c0       	cvttsd2si %xmm0,%rax
+   e:	f2 4c 0f 2c d0       	cvttsd2si %xmm0,%r10
+  13:	f2 49 0f 2c c2       	cvttsd2si %xmm10,%rax
+  18:	f2 4d 0f 2c e3       	cvttsd2si %xmm11,%r12

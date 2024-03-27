@@ -105,4 +105,11 @@ cvttss2siqinst:
 	cvttss2siq	%xmm9, %rdi
 	cvttss2siq	%xmm9, %r10
 
+cvttsd2siinst:
+	cvttsd2si	%xmm0, %eax
+	cvttsd2si	%xmm9, %edx
+	cvttsd2siq	%xmm0, %rax
+	cvttsd2siq	%xmm0, %r10
+	cvttsd2siq	%xmm10, %rax
+	cvttsd2siq	%xmm11, %r12
 
