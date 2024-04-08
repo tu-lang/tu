@@ -31,7 +31,7 @@ enum {
     KW_LEA,
     // need 1 op
     KW_CALL,    KW_SETZ,    KW_SETE,    KW_SETL,    KW_SETLE,   KW_SETAE,   KW_SETGE,
-    KW_SETBE,   KW_SETA,    KW_SETG,    KW_SETNZ,   KW_SETNE,   KW_SETB,    KW_INT,
+    KW_SETBE,   KW_SETA,    KW_SETG,    KW_SETNZ,   KW_SETNE,   KW_SETP,    KW_SETNP,   KW_SETB,    KW_INT,
     KW_DIV,     KW_IDIV,    KW_NEG,     KW_INC,     KW_DEC,
     KW_JMP,     KW_JBE,     KW_JE,      KW_JG,      KW_JL,      KW_JLE,
     KW_JNE,     KW_JNA,     KW_NOT,     KW_PUSH,    KW_POP,

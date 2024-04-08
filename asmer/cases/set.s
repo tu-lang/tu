@@ -45,3 +45,10 @@ l.setae:
     setae %bl
     setae %bh
 
+l.setp_n:
+    setnp %dl
+    setnp %al
+    setp %dl
+    setp %al
+    sete %dl
+    sete %al

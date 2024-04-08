@@ -35,7 +35,8 @@ labels = {
 
     "callq": ast.KW_CALL,        "call": ast.KW_CALL,       "sete": ast.KW_SETE,       "setl": ast.KW_SETL,      "setle": ast.KW_SETLE,    
     "setge": ast.KW_SETGE,       "setbe": ast.KW_SETBE,     "setg": ast.KW_SETG,       "setne": ast.KW_SETNE,    "setb": ast.KW_SETB,
-    "setz": ast.KW_SETZ,         "setnz": ast.KW_SETNZ,     "seta": ast.KW_SETA,      "setae": ast.KW_SETAE,
+    "setp":  ast.KW_SETP,        "setnp": ast.KW_SETNP,
+    "setz": ast.KW_SETZ,         "setnz": ast.KW_SETNZ,     "seta": ast.KW_SETA,      "setae": ast.KW_SETAE,     
     "jmp" : ast.KW_JMP,          "not": ast.KW_NOT,         "lea" : ast.KW_LEA,        
     "cmp" : ast.KW_CMP,          "cmpxchgq": ast.KW_CMPXCHG,"cmpxchgl": ast.KW_CMPXCHG, "cmpxchgb": ast.KW_CMPXCHG,
     "xchg": ast.KW_XCHG,         "jbe": ast.KW_JBE,

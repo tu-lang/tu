@@ -61,3 +61,11 @@ Disassembly of section .text:
   5d:	0f 93 c0             	setae  %al
   60:	0f 93 c3             	setae  %bl
   63:	0f 93 c7             	setae  %bh
+
+0000000000000000 <l.setp_n>:
+   0:   0f 9b c2                setnp  %dl
+   3:   0f 9b c0                setnp  %al
+   6:   0f 9a c2                setp   %dl
+   9:   0f 9a c0                setp   %al
+   c:   0f 94 c2                sete   %dl
+   f:   0f 94 c0                sete   %al
