@@ -200,3 +200,13 @@ movop:
 	movss	%xmm1, %xmm9
 	movss	%xmm9, %xmm2
 	movss	%xmm9, %xmm10
+
+ucomisdinst:
+	ucomisd %xmm0, %xmm1
+    ucomisd %xmm0, %xmm10
+    ucomisd %xmm11, %xmm1
+    ucomisd %xmm11, %xmm9
+    ucomisd 8(%rsp), %xmm1
+    ucomisd 8(%rsp), %xmm9
+    ucomisd 8(%rbp), %xmm1
+    ucomisd 8(%rbp), %xmm9

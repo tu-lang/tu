@@ -222,3 +222,13 @@ Disassembly of section .text:
  159:	f3 44 0f 10 c9       	movss  %xmm1,%xmm9
  15e:	f3 41 0f 10 d1       	movss  %xmm9,%xmm2
  163:	f3 45 0f 10 d1       	movss  %xmm9,%xmm10
+
+0000000000000000 <ucomisdinst>:
+   0:   66 0f 2e c8             ucomisd %xmm0,%xmm1
+   4:   66 44 0f 2e d0          ucomisd %xmm0,%xmm10
+   9:   66 41 0f 2e cb          ucomisd %xmm11,%xmm1
+   e:   66 45 0f 2e cb          ucomisd %xmm11,%xmm9
+  13:   66 0f 2e 4c 24 08       ucomisd 0x8(%rsp),%xmm1
+  19:   66 44 0f 2e 4c 24 08    ucomisd 0x8(%rsp),%xmm9
+  20:   66 0f 2e 4d 08          ucomisd 0x8(%rbp),%xmm1
+  25:   66 44 0f 2e 4d 08       ucomisd 0x8(%rbp),%xmm9
