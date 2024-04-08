@@ -26,9 +26,17 @@ Instruct::insthead(){
         this.append1(0xf3.(i8))
     }else if this.type == ast.KW_CVTTSD2SI || this.type == ast.KW_CVTTSD2SIQ {
         this.append1(0xf2.(i8))
-    }else if this.type == ast.KW_UNPCKLPS || this.type == ast.KW_CVTPS2PD || this.type == ast.KW_CVTPD2PS {
+    }else if 
+        this.type == ast.KW_UNPCKLPS || this.type == ast.KW_CVTPS2PD || 
+        this.type == ast.KW_CVTPD2PS || this.type == ast.KW_CVTSS2SD || this.type == ast.KW_CVTSD2SS
+
+    {
         if this.type == ast.KW_CVTPD2PS 
             this.append1(0x66.(i8))
+        if this.type == ast.KW_CVTSS2SD
+            this.append1(0xf3.(i8))
+        if this.type == ast.KW_CVTSD2SS
+            this.append1(0xf2.(i8))
 
         if ast.r8ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1])
             this.append1(0x45.(i8))
@@ -147,6 +155,9 @@ Instruct::need2byte_op2(){
     match this.type {
         ast.KW_MOVSBL |ast.KW_MOVZB  |ast.KW_MOVZBL | ast.KW_MOVZX  |ast.KW_MOVZWL |
         ast.KW_MOVSWL | ast.KW_MOVSD  | ast.KW_MOVSS : {
+            return true
+        }
+        ast.KW_CVTSS2SD | ast.KW_CVTSD2SS : {
             return true
         }
         ast.KW_ADDSD  |ast.KW_ADDSS |ast.KW_SUBSD |ast.KW_SUBSS |ast.KW_MULSD |

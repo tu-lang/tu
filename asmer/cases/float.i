@@ -73,27 +73,45 @@ Disassembly of section .text:
    f:	0f 14 44 24 08       	unpcklps 0x8(%rsp),%xmm0
   14:	44 0f 14 4c 24 08    	unpcklps 0x8(%rsp),%xmm9
 
-0000000000000000 <cvts2pdinst>:
-   0:	0f 5a c8             	cvtps2pd %xmm0,%xmm1
-   3:	44 0f 5a c8          	cvtps2pd %xmm0,%xmm9
-   7:	41 0f 5a d1          	cvtps2pd %xmm9,%xmm2
-   b:	45 0f 5a e1          	cvtps2pd %xmm9,%xmm12
-   f:	0f 5a 45 08          	cvtps2pd 0x8(%rbp),%xmm0
-  13:	44 0f 5a 4d f0       	cvtps2pd -0x10(%rbp),%xmm9
-  18:	0f 5a 07             	cvtps2pd (%rdi),%xmm0
-  1b:	44 0f 5a 0f          	cvtps2pd (%rdi),%xmm9
-  1f:	45 0f 5a 09          	cvtps2pd (%r9),%xmm9
+0000000000000000 <cvtps2pdinst>:
+   0:   0f 5a c8                cvtps2pd %xmm0,%xmm1
+   3:   f3 0f 5a c8             cvtss2sd %xmm0,%xmm1
+   7:   44 0f 5a c8             cvtps2pd %xmm0,%xmm9
+   b:   f3 44 0f 5a c8          cvtss2sd %xmm0,%xmm9
+  10:   41 0f 5a d1             cvtps2pd %xmm9,%xmm2
+  14:   f3 41 0f 5a d1          cvtss2sd %xmm9,%xmm2
+  19:   45 0f 5a e1             cvtps2pd %xmm9,%xmm12
+  1d:   f3 45 0f 5a e1          cvtss2sd %xmm9,%xmm12
+  22:   0f 5a 45 08             cvtps2pd 0x8(%rbp),%xmm0
+  26:   f3 0f 5a 45 08          cvtss2sd 0x8(%rbp),%xmm0
+  2b:   44 0f 5a 4d f0          cvtps2pd -0x10(%rbp),%xmm9
+  30:   f3 44 0f 5a 4d f0       cvtss2sd -0x10(%rbp),%xmm9
+  36:   0f 5a 07                cvtps2pd (%rdi),%xmm0
+  39:   f3 0f 5a 07             cvtss2sd (%rdi),%xmm0
+  3d:   44 0f 5a 0f             cvtps2pd (%rdi),%xmm9
+  41:   f3 44 0f 5a 0f          cvtss2sd (%rdi),%xmm9
+  46:   45 0f 5a 09             cvtps2pd (%r9),%xmm9
+  4a:   f3 45 0f 5a 09          cvtss2sd (%r9),%xmm9
 
-0000000000000000 <cvtpd2psinst>:
-   0:	66 0f 5a c8          	cvtpd2ps %xmm0,%xmm1
-   4:	66 44 0f 5a c8       	cvtpd2ps %xmm0,%xmm9
-   9:	66 41 0f 5a d1       	cvtpd2ps %xmm9,%xmm2
-   e:	66 45 0f 5a e1       	cvtpd2ps %xmm9,%xmm12
-  13:	66 0f 5a 45 08       	cvtpd2ps 0x8(%rbp),%xmm0
-  18:	66 44 0f 5a 4d f0    	cvtpd2ps -0x10(%rbp),%xmm9
-  1e:	66 0f 5a 07          	cvtpd2ps (%rdi),%xmm0
-  22:	66 44 0f 5a 0f       	cvtpd2ps (%rdi),%xmm9
-  27:	66 45 0f 5a 09       	cvtpd2ps (%r9),%xmm9
+000000000000004f <cvtpd2psinst>:
+  4f:   66 0f 5a c8             cvtpd2ps %xmm0,%xmm1
+  53:   f2 0f 5a c8             cvtsd2ss %xmm0,%xmm1
+  57:   66 44 0f 5a c8          cvtpd2ps %xmm0,%xmm9
+  5c:   f2 44 0f 5a c8          cvtsd2ss %xmm0,%xmm9
+  61:   66 41 0f 5a d1          cvtpd2ps %xmm9,%xmm2
+  66:   f2 41 0f 5a d1          cvtsd2ss %xmm9,%xmm2
+  6b:   66 45 0f 5a e1          cvtpd2ps %xmm9,%xmm12
+  70:   f2 45 0f 5a e1          cvtsd2ss %xmm9,%xmm12
+  75:   66 0f 5a 45 08          cvtpd2ps 0x8(%rbp),%xmm0
+  7a:   f2 0f 5a 45 08          cvtsd2ss 0x8(%rbp),%xmm0
+  7f:   66 44 0f 5a 4d f0       cvtpd2ps -0x10(%rbp),%xmm9
+  85:   f2 44 0f 5a 4d f0       cvtsd2ss -0x10(%rbp),%xmm9
+  8b:   66 0f 5a 07             cvtpd2ps (%rdi),%xmm0
+  8f:   f2 0f 5a 07             cvtsd2ss (%rdi),%xmm0
+  93:   66 44 0f 5a 0f          cvtpd2ps (%rdi),%xmm9
+  98:   f2 44 0f 5a 0f          cvtsd2ss (%rdi),%xmm9
+  9d:   66 45 0f 5a 09          cvtpd2ps (%r9),%xmm9
+  a2:   f2 45 0f 5a 09          cvtsd2ss (%r9),%xmm9
 
 0000000000000000 <cvttss2siqinst>:
    0:	f3 0f 2c c0          	cvttss2si %xmm0,%eax

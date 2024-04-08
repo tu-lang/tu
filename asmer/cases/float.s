@@ -73,27 +73,45 @@ unpcklpsinst:
 
 cvtps2pdinst:
 	cvtps2pd	%xmm0, %xmm1
+	cvtss2sd	%xmm0, %xmm1
 	cvtps2pd	%xmm0, %xmm9
+	cvtss2sd	%xmm0, %xmm9
 	cvtps2pd	%xmm9, %xmm2
+	cvtss2sd	%xmm9, %xmm2
 	cvtps2pd	%xmm9, %xmm12
+	cvtss2sd	%xmm9, %xmm12
 
 	cvtps2pd	8(%rbp), %xmm0	
+	cvtss2sd	8(%rbp), %xmm0	
 	cvtps2pd	-16(%rbp), %xmm9
+	cvtss2sd	-16(%rbp), %xmm9
 	cvtps2pd	(%rdi), %xmm0	
+	cvtss2sd	(%rdi), %xmm0	
 	cvtps2pd	(%rdi), %xmm9
+	cvtss2sd	(%rdi), %xmm9
 	cvtps2pd	(%r9), %xmm9
+	cvtss2sd	(%r9), %xmm9
 
 cvtpd2psinst:
 	cvtpd2ps	%xmm0, %xmm1
+	cvtsd2ss	%xmm0, %xmm1
 	cvtpd2ps	%xmm0, %xmm9
+	cvtsd2ss	%xmm0, %xmm9
 	cvtpd2ps	%xmm9, %xmm2
+	cvtsd2ss	%xmm9, %xmm2
 	cvtpd2ps	%xmm9, %xmm12
+	cvtsd2ss	%xmm9, %xmm12
 
 	cvtpd2ps	8(%rbp), %xmm0	
+	cvtsd2ss	8(%rbp), %xmm0	
 	cvtpd2ps	-16(%rbp), %xmm9
+	cvtsd2ss	-16(%rbp), %xmm9
 	cvtpd2ps	(%rdi), %xmm0	
+	cvtsd2ss	(%rdi), %xmm0	
 	cvtpd2ps	(%rdi), %xmm9
+	cvtsd2ss	(%rdi), %xmm9
 	cvtpd2ps	(%r9), %xmm9
+	cvtsd2ss	(%r9), %xmm9
 
 cvttss2siqinst:
 	cvttss2si	%xmm0, %eax
