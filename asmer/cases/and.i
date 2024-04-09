@@ -40,3 +40,14 @@ Disassembly of section .text:
   58:	25 c0 00 00 00       	and    $0xc0,%eax
   5d:	48 81 e1 c0 00 00 00 	and    $0xc0,%rcx
   64:	48 81 e2 c0 00 00 00 	and    $0xc0,%rdx
+
+000000000000006b <i8i>:
+  6b:   48 83 e0 01             and    $0x1,%rax
+  6f:   83 e0 01                and    $0x1,%eax
+  72:   80 e0 01                and    $0x1,%al
+  75:   80 e1 01                and    $0x1,%cl
+  78:   80 e2 01                and    $0x1,%dl
+  7b:   80 e3 01                and    $0x1,%bl
+  7e:   20 d0                   and    %dl,%al
+  80:   21 d0                   and    %edx,%eax
+  82:   48 21 d0                and    %rdx,%rax

@@ -6,3 +6,6 @@ r8r8:
 r4r4:
     or %edi,%eax
     or %edi,%edx
+r1r1:
+    or %dl , %al
+    or %al , %cl

@@ -7,7 +7,7 @@ use fmt
 Instruct::insthead(){
     utils.debug("Instruct::insthead()".(i8))
     dword<i32> = 0
-    if this.type == ast.KW_CVTSI2SD
+    if this.type == ast.KW_CVTSI2SD || this.type == ast.KW_CVTSI2SDL
         this.append1(0xf2.(i8))
     else if this.type == ast.KW_CVTSI2SS {
         this.append1(0xf3.(i8))
@@ -93,7 +93,8 @@ Instruct::insthead(){
         return true
     }
     if( (this.tks.addr[0] == ast.TK_NUMBER || ast.r8islow(this.tks.addr[0])) && ast.r8islow(this.tks.addr[1])){
-        this.append1(0x48.(i8))
+        if this.type == ast.KW_CVTSI2SDL{}
+        else    this.append1(0x48.(i8))
         return true
     }
     if( (this.tks.addr[0] == ast.TK_NUMBER || ast.r8islow(this.tks.addr[0])) && ast.r8ishigh(this.tks.addr[1])){
@@ -103,7 +104,9 @@ Instruct::insthead(){
             else
                 return this.append1(0x4c.(i8))
         }
-        if(this.left == ast.TY_MEM || this.is_rel)
+        if this.type == ast.KW_CVTSI2SDL
+            this.append1(0x44.(i8))
+        else if(this.left == ast.TY_MEM || this.is_rel)
             this.append1(0x4c.(i8))
         else if ast.isfreg(this.tks.addr[1]) || ast.isfreg(this.tks.addr[0])
             this.append1(0x4c.(i8))
@@ -129,12 +132,15 @@ Instruct::insthead(){
         return true
     }
     if(ast.isr4(this.tks.addr[0]) && ast.r8islow(this.tks.addr[1])){
-        if(this.right != ast.TY_MEM)
+        if this.type == ast.KW_CVTSI2SDL{}
+        else if this.right != ast.TY_MEM
             return this.append1(0x48.(i8))
     }
     if(ast.isr4(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1])){
         if(this.right == ast.TY_MEM)
             this.append1(0x41.(i8))
+        else if this.type == ast.KW_CVTSI2SDL
+            this.append1(0x44.(i8))
         else 
             this.append1(0x4c.(i8))
         return true
@@ -158,7 +164,7 @@ Instruct::need2byte_op2(){
         ast.KW_MOVSWL | ast.KW_MOVSD  | ast.KW_MOVSS : {
             return true
         }
-        ast.KW_CVTSS2SD | ast.KW_CVTSD2SS | ast.KW_UCOMISD : {
+        ast.KW_CVTSS2SD | ast.KW_CVTSD2SS | ast.KW_UCOMISD | ast.KW_CVTSI2SDL: {
             return true
         }
         ast.KW_ADDSD  |ast.KW_ADDSS |ast.KW_SUBSD |ast.KW_SUBSS |ast.KW_MULSD |

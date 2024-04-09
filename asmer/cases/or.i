@@ -13,3 +13,7 @@ Disassembly of section .text:
 000000000000000c <r4r4>:
    c:	09 f8                	or     %edi,%eax
    e:	09 fa                	or     %edi,%edx
+
+0000000000000000 <r1r1>:
+   0:   08 d0                   or     %dl,%al
+   2:   08 c1                   or     %al,%cl

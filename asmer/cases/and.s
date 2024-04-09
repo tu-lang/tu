@@ -30,3 +30,14 @@ bigi:
     and $192, %eax
     and $192, %rcx
     and $192, %rdx
+
+i8i:
+    and $1 , %rax
+    and $1 , %eax
+    and $1 , %al
+    and $1 , %cl
+    and $1 , %dl
+    and $1 , %bl
+    and %dl, %al
+    and %edx, %eax
+    and %rdx, %rax
