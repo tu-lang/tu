@@ -87,6 +87,16 @@ Disassembly of section .text:
    f:	0f 14 44 24 08       	unpcklps 0x8(%rsp),%xmm0
   14:	44 0f 14 4c 24 08    	unpcklps 0x8(%rsp),%xmm9
 
+0000000000000000 <xorpsinst>:
+   0:   0f 57 c9                xorps  %xmm1,%xmm1
+   3:   44 0f 57 c9             xorps  %xmm1,%xmm9
+   7:   41 0f 57 d1             xorps  %xmm9,%xmm2
+   b:   45 0f 57 ca             xorps  %xmm10,%xmm9
+   f:   0f 57 4d 04             xorps  0x4(%rbp),%xmm1
+  13:   44 0f 57 4d 04          xorps  0x4(%rbp),%xmm9
+  18:   0f 57 4c 24 04          xorps  0x4(%rsp),%xmm1
+  1d:   44 0f 57 4c 24 04       xorps  0x4(%rsp),%xmm9
+
 0000000000000000 <cvtps2pdinst>:
    0:   0f 5a c8                cvtps2pd %xmm0,%xmm1
    3:   f3 0f 5a c8             cvtss2sd %xmm0,%xmm1
@@ -246,3 +256,13 @@ Disassembly of section .text:
   19:   66 44 0f 2e 4c 24 08    ucomisd 0x8(%rsp),%xmm9
   20:   66 0f 2e 4d 08          ucomisd 0x8(%rbp),%xmm1
   25:   66 44 0f 2e 4d 08       ucomisd 0x8(%rbp),%xmm9
+
+0000000000000000 <ucomissinst>:
+   0:   0f 2e c8                ucomiss %xmm0,%xmm1
+   3:   44 0f 2e d0             ucomiss %xmm0,%xmm10
+   7:   41 0f 2e cb             ucomiss %xmm11,%xmm1
+   b:   45 0f 2e cb             ucomiss %xmm11,%xmm9
+   f:   0f 2e 4c 24 08          ucomiss 0x8(%rsp),%xmm1
+  14:   44 0f 2e 4c 24 08       ucomiss 0x8(%rsp),%xmm9
+  1a:   0f 2e 4d 08             ucomiss 0x8(%rbp),%xmm1
+  1e:   44 0f 2e 4d 08          ucomiss 0x8(%rbp),%xmm9

@@ -84,6 +84,15 @@ unpcklpsinst:
 	unpcklps	%xmm11, %xmm11
 	unpcklps	8(%rsp) , %xmm0
 	unpcklps	8(%rsp) , %xmm9
+xorpsinst:
+	xorps %xmm1, %xmm1
+	xorps %xmm1, %xmm9
+	xorps %xmm9, %xmm2
+	xorps %xmm10, %xmm9
+	xorps 4(%rbp), %xmm1
+	xorps 4(%rbp), %xmm9
+	xorps 4(%rsp), %xmm1
+	xorps 4(%rsp), %xmm9
 
 cvtps2pdinst:
 	cvtps2pd	%xmm0, %xmm1
@@ -224,3 +233,13 @@ ucomisdinst:
     ucomisd 8(%rsp), %xmm9
     ucomisd 8(%rbp), %xmm1
     ucomisd 8(%rbp), %xmm9
+
+ucomissinst:
+	ucomiss %xmm0, %xmm1
+    ucomiss %xmm0, %xmm10
+    ucomiss %xmm11, %xmm1
+    ucomiss %xmm11, %xmm9
+    ucomiss 8(%rsp), %xmm1
+    ucomiss 8(%rsp), %xmm9
+    ucomiss 8(%rbp), %xmm1
+    ucomiss 8(%rbp), %xmm9
