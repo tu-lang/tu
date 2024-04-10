@@ -19,6 +19,13 @@ Disassembly of section .text:
   12:   f2 0f 2a 64 24 04       cvtsi2sdl 0x4(%rsp),%xmm4
   18:   f2 44 0f 2a 4c 24 08    cvtsi2sdl 0x8(%rsp),%xmm9
   1f:   f2 44 0f 2a 4c 24 f0    cvtsi2sdl -0x10(%rsp),%xmm9
+   0:   f3 0f 2a c0             cvtsi2ss %eax,%xmm0
+   4:   f3 0f 2a c7             cvtsi2ss %edi,%xmm0
+   8:   f3 44 0f 2a e8          cvtsi2ss %eax,%xmm13
+   d:   f3 44 0f 2a ef          cvtsi2ss %edi,%xmm13
+  12:   f3 0f 2a 64 24 04       cvtsi2ssl 0x4(%rsp),%xmm4
+  18:   f3 44 0f 2a 4c 24 08    cvtsi2ssl 0x8(%rsp),%xmm9
+  1f:   f3 44 0f 2a 4c 24 f0    cvtsi2ssl -0x10(%rsp),%xmm9
 
 0000000000000000 <cvtsi2ssinst>:
    0:	f3 48 0f 2a c0       	cvtsi2ss %rax,%xmm0

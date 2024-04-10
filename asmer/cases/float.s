@@ -17,6 +17,13 @@ il2f_64:
     cvtsi2sdl   4(%rsp) , %xmm4
     cvtsi2sdl   8(%rsp) , %xmm9
     cvtsi2sdl   -16(%rsp) , %xmm9
+	cvtsi2ssl   %eax, %xmm0
+    cvtsi2ssl   %edi, %xmm0
+    cvtsi2ssl   %eax, %xmm13
+    cvtsi2ssl   %edi, %xmm13
+    cvtsi2ssl   4(%rsp) , %xmm4
+    cvtsi2ssl   8(%rsp) , %xmm9
+    cvtsi2ssl   -16(%rsp) , %xmm9
 
 cvtsi2ssinst:
     cvtsi2ss	%rax, %xmm0
