@@ -4,6 +4,7 @@ use std
 use fmt
 use os
 use compiler.gen
+use compiler.utils
 
 func GenAddr(var){
     if var.is_local {
@@ -38,6 +39,13 @@ func LoadMember(m){
 func Load(){
     writeln("    mov (%%rax), %%rax")
 }
+fn Loadf(ty<i32>){
+    match ty {
+        ast.F32: writeln("  movss (%%rax), %%xmm0")
+        ast.F64: writeln("  movsd (%%rax), %%xmm0")
+        _  :    utils.error("unsupport type in loadf")
+    }
+}
 func LoadSize(size , isunsigned){
     prefix = "movs"
     if isunsigned prefix = "movz"
@@ -59,7 +67,17 @@ func CreateCmp(size<u64>){
         else            writeln("  cmp $0, %%rax")
     }
 }
-
+fn CreateFCmp(tk<i32>){
+    if tk == ast.F32 {
+        writeln("  xorps %%xmm1, %%xmm1")
+        writeln("  ucomiss %%xmm1, %%xmm0")
+    }else if tk == ast.F64 {
+        writeln("  xorpd %%xmm1, %%xmm1")
+        writeln("  ucomisd %%xmm1, %%xmm0")
+    }else {
+        utils.error("unknown typ in create fcmp")
+    }
+}
 func PushV(v){
     writeln("    mov $%d,%%rax",v)
     Push()
@@ -70,6 +88,28 @@ func PushS(arg){
 func Push(){
     writeln("    push %%rax")
 }
+
+fn Pushf(ty<i32>){
+    writeln("  sub $8, %%rsp")
+    if ty == ast.F32
+        writeln("  movss %%xmm0, (%%rsp)")
+    else if ty == ast.F64
+        writeln("  movsd %%xmm0, (%%rsp)")
+    else
+        utils.error("unsupport ty in pushf")
+
+}
 func Pop(arg){
     writeln("    pop %s",arg)
+}
+
+fn Popf(ty<i32>) {
+    if ty == ast.F32
+        writeln("  movss (%%rsp), %%xmm0")
+    else if ty == ast.F64
+        writeln("  movsd (%%rsp), %%xmm0")
+    else
+        utils.error("unsupport ty in popf")
+    writeln("  add $8, %%rsp")
+
 }

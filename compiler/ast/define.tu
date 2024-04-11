@@ -23,3 +23,7 @@ func GP(){
 func GF(){
    return compile.currentFunc
 }
+fn isfloattk(tk<i32>){
+    if(tk == F32 || tk == F64) return true
+    return false
+}

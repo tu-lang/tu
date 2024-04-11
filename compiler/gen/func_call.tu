@@ -71,7 +71,16 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 				compile.LoadMember(ce.ret)
 			}
 		}
-		compile.Push()
+
+        if ret != null {
+			ty<i32> = ret.getType(prevCtxChain)
+            if ast.isfloattk(ty)
+                compile.Pushf(ty)
+            else
+                compile.Push()
+        }else   compile.Push()
+	
+
 		stack += 1
 		//func(a,b,c,args...)
 		//call(1,2,3,4)

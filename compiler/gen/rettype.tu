@@ -167,7 +167,13 @@ StructInitExpr::getType(ctx){
 }
 BinaryExpr::getType(ctx){
 	
-	if !this.rhs return this.lhs.getType(ctx)
+	if !this.rhs {
+		ty = this.lhs.getType(ctx)
+		if ast.isfloattk(ty)
+			return ast.I64
+		return ty
+	}
+	
 	l = this.lhs.getType(ctx)
 	r = this.rhs.getType(ctx)
 	return utils.max(l,r)

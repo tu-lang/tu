@@ -58,7 +58,11 @@ OperatorHelper::gen()
 		}
 	} else {
 		this.genRight(true,this.lhs)
-		compile.Push()
+		ty = this.lhs.getType(this.ctx)
+		if ast.isfloattk(ty)
+			compile.Pushf(ty)
+		else 
+			compile.Push()
 	}
 	
 	if this.rhs && this.opt != ast.LOGAND && this.opt != ast.LOGOR 
@@ -115,7 +119,7 @@ OperatorHelper::assign()
 		if this.opt == ast.ASSIGN {
 			compile.Cast(this.rtoken,this.ltoken)
 		}else{
-			rettoken<i32> = utils.max(this.ltoken,this.rtoken)
+			rettoken = utils.max(this.ltoken,this.rtoken)
 			compile.Cast(rettoken,this.ltoken)
 		}
 		if this.ltoken == ast.F32 || this.ltoken == ast.F64
@@ -132,15 +136,25 @@ OperatorHelper::binary()
 {
 	utils.debug("gen.OperatorHelper::binary()")
 	if !this.rhs {
-		compile.Pop("%rax")
+		if ast.isfloattk(this.ltoken) compile.Popf(this.ltoken)
+		else  compile.Pop("%rax")
+
 		match this.opt {
 			ast.LOGNOT: {
-				compile.CreateCmp(this.ltypesize)
+				if ast.isfloattk(this.ltoken)
+					compile.CreateFCmp(this.ltoken)
+				else
+					compile.CreateCmp(this.ltypesize)
+
 				compile.writeln("	sete %%al")
 				compile.writeln("	movzx %%al, %%rax")
 				return null
 			}
 			ast.BITNOT: {
+				if ast.isfloattk(this.ltoken) {
+					this.lhs.check(false,"unsupport bitnot in float expression")
+				}
+
 				compile.writeln("	not %%rax")
 				return null
 			}
