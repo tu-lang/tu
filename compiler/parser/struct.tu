@@ -96,7 +96,7 @@ Parser::parseMembers(s ,idx ,isstruct){
         member.pointer = true
         reader.scan()
     }
-    this.check(tk >= ast.I8 && tk <= ast.U64,"member type only support i8 - u64")
+    this.check(tk >= ast.I8 && tk <= ast.F64,"member type only support i8 - u64")
     member.line = this.line
     member.column = this.column
     member.file  = this.filepath

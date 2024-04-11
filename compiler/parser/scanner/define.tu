@@ -5,6 +5,7 @@ EOF = -1
 keywords = {
 	"i8"    : ast.I8,      "i16"   : ast.I16,    "i32" 	   : ast.I32,       "i64" : ast.I64,
 	"u8"    : ast.U8,      "u16"   : ast.U16,    "u32" 	   : ast.U32,       "u64" : ast.U64,
+	"f32"	: ast.F32,	   "f64"   : ast.F64,
 	"if" 	: ast.IF,     "else"   : ast.ELSE,
 	"while" : ast.WHILE,   "loop"  : ast.LOOP,	   "for"   : ast.FOR,    	"false"   : ast.BOOL,
 	"true"  : ast.BOOL,    "null"  : ast.EMPTY,  "func"    : ast.FUNC, 		"fn"  : ast.FUNC,

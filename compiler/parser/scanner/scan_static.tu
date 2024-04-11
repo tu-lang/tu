@@ -125,11 +125,17 @@ ScannerStatic::parseNumber(first<i8>)
         return this.token(ast.INT,lexeme)
     }
 
-    while cn >= '0' && cn <= '9' {
-        if c == '.' && this.peek() != '(' 
+    while cn >= '0' && cn <= '9' || (!isDouble && cn == '.'){
+        cn = this.peek()
+        if c == '.' && cn != '(' 
             isDouble = true
         c = this.next()
         cn = this.peek()
+        if c == '.' && cn == '(' {
+            this.column -= 1
+            this.pos -= 1
+            break
+        }
         lexeme.putc(c)
     }
     if isDouble {

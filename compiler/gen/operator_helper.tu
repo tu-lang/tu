@@ -110,6 +110,21 @@ OperatorHelper::assign()
 			return null
 		}
 	}
+
+	if this.floatop() {
+		if this.opt == ast.ASSIGN {
+			compile.Cast(this.rtoken,this.ltoken)
+		}else{
+			rettoken<i32> = utils.max(this.ltoken,this.rtoken)
+			compile.Cast(rettoken,this.ltoken)
+		}
+		if this.ltoken == ast.F32 || this.ltoken == ast.F64
+			compile.Storef(this.ltoken)
+		else 
+			compile.Store(this.ltypesize)
+		return null
+	}
+
 	compile.Store(this.ltypesize)
 	return null
 }
@@ -139,7 +154,7 @@ OperatorHelper::binary()
 				// int(this.ltoken),int(this.rtoken),this.lhs.toString(),this.rhs.toString()
 		// )
 		tke = "token_max should in i8-u64"
-		this.lhs.check(base >= ast.I8 && base <= ast.U64,tke)
+		this.lhs.check(base >= ast.I8 && base <= ast.F64,tke)
 		compile.Cast(this.rtoken,base)
 		compile.writeln("	mov %%rax,%%rdi")
 		compile.Pop("%rax")
@@ -343,6 +358,12 @@ OperatorHelper::genRight(isleft,expr)
 			this.initcond(isleft,8,ast.I64,false)
 			return ie
 		}
+		type(FloatExpr) : {
+			compile.writeln("	mov $%ld,%%rax",expr.literal)
+			compile.writeln("	movq %%rax , %%xmm0")
+			this.initcond(isleft,8,ast.F64,false)
+			return expr
+		}
 		type(StringExpr): {
 			ie = expr
 			compile.writeln("	lea %s(%%rip), %%rax",ie.name)
@@ -467,4 +488,10 @@ OperatorHelper::initcond(left,varsize,type,ispointer)
 	this.rispointer  = ispointer
 	if ispointer this.rtoken = ast.U64
 
+}
+OperatorHelper::floatop(){
+	m = utils.max(this.ltoken,this.rtoken)
+	if m == ast.F32 || m == ast.F64
+		return true
+	return false
 }

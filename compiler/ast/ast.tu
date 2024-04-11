@@ -152,7 +152,7 @@ func getTokenString(tk) {
 
 func type_isunsigned(ty<i64>){
     match ty {
-        U8 | U16 | U32 | U64 : return true
+        U8 | U16 | U32 | U64 | F32 | F64 : return true
         _ : return false
     }
 }

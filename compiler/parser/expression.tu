@@ -292,15 +292,18 @@ Parser::parsePrimaryExpr()
         return ret
     }else if tk == ast.FLOAT
     {
-        val     = string.tonumber(reader.curLex.dyn())
+        //MENTION: use dyn 
+        val<f64> = utils.strtof64(reader.curLex.str())
         reader.scan()
-        ret    = new gen.DoubleExpr(this.line,this.column)
-        ret.lit = val
+        ret    = new gen.FloatExpr(this.line,this.column)
+        //MENTION: test bound value
+        valp<u64*> = &val
+        ret.lit = int(*valp)
         return ret
     }else if tk == ast.STRING {
         // fmt.vfprintf(std.STDOUT,*"1:%s\n",reader.curLex.inner)
-        // fmt.vfprintf(std.STDOUT,*"11:%s\n",string.fromulonglong(reader.curLex.hash64()))
-        // fmt.vfprintf(std.STDOUT,*"2:%d\n",reader.curLex.len())
+        // fmt.vfprintf(std.STDOUT,*"2:%s\n",string.fromulonglong(reader.curLex.hash64()))
+        // fmt.vfprintf(std.STDOUT,*"3:%d\n",reader.curLex.len())
         val     = reader.curLex.dyn()
         reader.scan()
         ret    = new gen.StringExpr(this.line,this.column)
@@ -610,7 +613,7 @@ Parser::parseVarExpr(var)
                 reader.scan()
 
                 return expr
-            }else if reader.curToken <= ast.U64 && reader.curToken >= ast.I8{
+            }else if reader.curToken <= ast.F64 && reader.curToken >= ast.I8{
             
                 expr.size = typesize[int(reader.curToken)]
                 expr.type = reader.curToken

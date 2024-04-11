@@ -17,7 +17,7 @@ CharExpr::getType(ctx){
 IntExpr::getType(ctx){
 	return ast.I64
 }
-DoubleExpr::getType(ctx){
+FloatExpr::getType(ctx){
 	this.panic("getType: unsupport double\n")
 }
 StringExpr::getType(ctx){
@@ -89,7 +89,7 @@ ChainExpr::getType(ctx){
 	member = ss.getMember(me.membername)
 	this.check(member != null,"mem not exist field:" + me.membername)
 	if member.pointer return ast.U64
-	if member.type >= ast.I8 && member.type <= ast.U64{
+	if member.type >= ast.I8 && member.type <= ast.F64{
 		return member.type
 	}
 	return ast.U64

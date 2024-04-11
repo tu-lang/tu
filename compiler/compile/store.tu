@@ -1,3 +1,4 @@
+use compiler.ast
 
 func Store_gp(r, offset, sz){
     match sz {
@@ -31,6 +32,16 @@ func Store(size<u64>) {
         4 : writeln("   mov %%eax, (%%rdi)")
         _ : writeln("   mov %%rax, (%%rdi)")
     }
+}
+fn Storef(ty<i32>)
+{
+    Pop("%rdi")
+    if ty == ast.F32
+        writeln("   movss %%xmm0, (%%rdi)")
+    else if (ty == ast.F64)
+        writeln("   movsd %%xmm0, (%%rdi)")
+    else 
+        utils.error("unkndown storef type")
 }
 func StoreNoPop(size)
 {

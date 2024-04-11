@@ -107,7 +107,7 @@ func genOffsets(fc)
     for var : fc.params_order_var {
         top = utils.ALIGN_UP(top, 8)
         var.offset = top
-        if var.structtype && !var.pointer && var.type <= ast.U64 && var.type >= ast.I8 {
+        if var.structtype && !var.pointer && var.type <= ast.F64 && var.type >= ast.I8 {
             top += var.size
         }else{
             top += 8
@@ -147,7 +147,7 @@ func assign_offsets(fc)
         } else{
             top = utils.ALIGN_UP(top, 8)
             var.offset = top
-            if var.structtype && !var.pointer && var.type <= ast.U64 && var.type >= ast.I8 {
+            if var.structtype && !var.pointer && var.type <= ast.F64 && var.type >= ast.I8 {
                 top += var.size
             }else{
                 top += 8

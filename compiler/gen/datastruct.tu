@@ -114,19 +114,19 @@ class IntExpr     : ast.Ast {
     }
 }
 
-class DoubleExpr  : ast.Ast { 
+class FloatExpr  : ast.Ast { 
     lit 
     func init(line,column){
         super.init(line,column)
     }
     func compile(ctx) {
-	    utils.debugf("gen.DoubleExpr::compile()")
+	    utils.debugf("gen.FloatExpr::compile()")
         this.record()
         internal.newobject(ast.Double,this.lit)
         return null
     }
     func toString() {
-        return "DoubleExpr(" + this.lit + ")"
+        return "FloatExpr(" + this.lit + ")"
     }
 }
 class StringExpr  : ast.Ast { 

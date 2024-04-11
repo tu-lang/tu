@@ -66,7 +66,7 @@ BuiltinFuncExpr::compile(ctx){
 	this.check(type(this.expr) != type(MapExpr))
 	this.check(type(this.expr) != type(NullExpr))
 	this.check(type(this.expr) != type(CharExpr))
-	this.check(type(this.expr) != type(DoubleExpr))
+	this.check(type(this.expr) != type(FloatExpr))
 
 	// %rax
 	ret = this.expr.compile(ctx)
@@ -75,7 +75,7 @@ BuiltinFuncExpr::compile(ctx){
 	if ret != null {
 		match type(ret){
 			type(VarExpr): {
-				if ret.type >= ast.I8 && ret.type <= ast.U64 
+				if ret.type >= ast.I8 && ret.type <= ast.F64
 				tk = ret.type
 			}
 			type(StructMemberExpr) : {

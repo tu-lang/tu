@@ -85,10 +85,10 @@ Parser::parseParameterList()
                             var.structname = reader.curLex.dyn()
                             reader.scan()
                         }
-                    }else if reader.curToken >= ast.I8 && reader.curToken <= ast.U64{
+                    }else if reader.curToken >= ast.I8 && reader.curToken <= ast.F64{
                     
                         i = reader.curToken
-                        this.check(i >= ast.I8 && i <= ast.U64)
+                        this.check(i >= ast.I8 && i <= ast.F64)
                         var.size = typesize[int(i)]
                         var.type = i
                         var.isunsigned = ast.type_isunsigned(i)
