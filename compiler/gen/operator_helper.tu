@@ -440,7 +440,19 @@ OperatorHelper::genRight(isleft,expr)
 			return ret
 		}
 		type(FunCallExpr) : {
-			this.initcond(isleft,8,ast.U64,false)
+
+			trtoken = ast.U64
+			if this.rhs != null
+				trtoken = this.rhs.getType(this.ctx)
+			if isleft && ast.isfloattk(trtoken) {
+				size = parser.typesize[int(trtoken)]
+				this.initcond(isleft,size,trtoken,false)
+			}else if(!isleft && ast.isfloattk(this.ltoken)){
+				size = parser.typesize[int(this.ltoken)]
+				this.initcond(isleft,size,this.ltoken,false)
+			}else{
+				this.initcond(isleft,8,ast.U64,false)
+			}
 			return ret
 		}
 		type(BuiltinFuncExpr) : {

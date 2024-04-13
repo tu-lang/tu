@@ -85,17 +85,20 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 if !me.pointer && !me.isarr this.check(false,"must be pointer member or arr")
  
 			 this.compileStaticIndex(ctx,me.size)
-			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
-			 compile.Pop("%rax")
-			 ss = me.size
-			 if (me.size > 8){
-				 if(me.structname == "" || me.pointer) {
-					 this.check(false,"only struct arr can size > 8")
-				 }
-				 this.ret = me
-				 break
-			 }
-			 compile.LoadSize(ss,me.isunsigned)
+			compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
+			compile.Pop("%rax")
+			ss = me.size
+			if (me.size > 8){
+				if(me.structname == "" || me.pointer) {
+					this.check(false,"only struct arr can size > 8")
+				}
+				this.ret = me
+				break
+			}
+			if ast.isfloattk(me.type)
+			 	compile.Loadf(me.type)
+			else
+			 	compile.LoadSize(ss,me.isunsigned)
 			 this.ret = me
 		 }
 		 _ : this.check(false,"array_static inex: unuspport dynamic var")

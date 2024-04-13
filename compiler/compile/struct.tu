@@ -33,7 +33,21 @@ func InitStructVar(gvar , s , fields){
 				mt = ast.typesizestring(ltok)
 				if(m.structname == "" || m.pointer ){
 					for(i : arr){
-						writeln("   .%s %s",mt,i.lit)
+						if type(i) == type(gen.IntExpr) {
+                            writeln("   .%s %s",mt,i.lit)
+                        }else{
+                            if ltok == ast.F32 {
+                                writeln("   .%s %s",mt,
+                                    string.tostring(i.tof32())
+                                )
+                            }else if ltok == ast.F64 {
+                                writeln("   .%s %s",mt,
+                                    string.tostring(i.lit)
+                                )
+                            }else{
+                                gvar.check(false,"something wroing in float cond")
+                            }
+                        }
 					}
 				}else{
 					s = package.getStruct(m.structpkg,m.structname) 
