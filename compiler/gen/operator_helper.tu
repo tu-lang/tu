@@ -219,6 +219,8 @@ OperatorHelper::binary()
       			compile.writeln("	mov %%rdx, %%rax")
 		}
 		ast.EQ | ast.NE | ast.LE | ast.LT | ast.GE | ast.GT: {
+			if this.isfloattk(base) return this.floatcmp()
+
 			cmp = "sete"
 			match this.opt {
 				ast.EQ : {
@@ -546,10 +548,45 @@ OperatorHelper::checkfloatop(){
 		return null
 	}
 	match this.opt {
+		ast.EQ | ast.NE | ast.LE | ast.LT | ast.GE | ast.GT : return true
 		ast.ADD | ast.ADD_ASSIGN: return true
 		ast.SUB | ast.SUB_ASSIGN: return true
 		ast.MUL | ast.MUL_ASSIGN: return true
 		ast.DIV | ast.DIV_ASSIGN: return true
 		_ : this.lhs.check(false,"unsupport op for float in " + ast.getTokenString(this.opt))
 	}
+}
+
+OperatorHelper::floatcmp(){
+	ori = this.ax
+	dst = this.di
+	if this.opt == ast.GE || this.opt == ast.GT {
+		ori = this.di
+		dst = this.ax
+	}
+	compile.writeln(
+		"	ucomi%s %s, %s",
+		this.floatopsuffix(),
+		ori,dst
+	)
+	match this.opt {
+		ast.EQ: {
+			compile.writeln("	sete %%al")
+			compile.writeln("	setnp %%dl")
+			compile.writeln("	and %%dl, %%al")
+		}
+		ast.NE: {
+			compile.writeln("	setne %%al")
+			compile.writeln("	setp %%dl")
+			compile.writeln("	or %%dl, %%al")
+		}
+		ast.LE:	compile.writeln("setae %%al")
+		ast.LT: compile.writeln("seta %%al")
+		ast.GE: compile.writeln("setae %%al")
+		ast.GT: compile.writeln("seta %%al")
+		_: this.lhs.check(false,"unsupport cmp op in float")
+	}
+	compile.writeln("	and $1 , %%al")
+	compile.writeln("	movzb %%al , %%rax")
+	return null
 }
