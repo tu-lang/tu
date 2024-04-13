@@ -33,3 +33,13 @@ VarExpr::expr_compile(){
 	}
 	return string.tonumber(realvar.ivalue)
 }
+
+fn toBinExpr(expr){
+	be = new BinaryExpr(expr.line,expr.column)
+    be.lhs = expr
+    be.opt = ast.GT
+	i = new IntExpr(expr.line,expr.column)
+    i.literal = "0"
+    be.rhs = i
+    return be
+}

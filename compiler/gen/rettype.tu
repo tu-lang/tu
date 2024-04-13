@@ -166,7 +166,13 @@ StructInitExpr::getType(ctx){
 	return ast.U64
 }
 BinaryExpr::getType(ctx){
-	
+	match this.opt {
+		ast.LOGNOT | ast.EQ | ast.NE: return ast.I64
+		ast.GT | ast.GE | ast.LT | ast.LE: return ast.I64
+	}
+	if this.opt == ast.LT || this.opt == ast.LOGAND
+		return ast.I64	
+
 	if !this.rhs {
 		ty = this.lhs.getType(ctx)
 		if ast.isfloattk(ty)

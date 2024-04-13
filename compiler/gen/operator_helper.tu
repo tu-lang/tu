@@ -590,3 +590,18 @@ OperatorHelper::floatcmp(){
 	compile.writeln("	movzb %%al , %%rax")
 	return null
 }
+
+OperatorHelper::astcheck(){
+	if this.opt == ast.LOGOR || this.opt == ast.LOGAND {
+		if exprIsMtype(this.lhs,this.ctx) && type(this.lhs) != type(BinaryExpr) {
+			this.lhs = toBinExpr(this.lhs)
+		}
+		if(
+			this.rhs != null && 
+			exprIsMtype(this.rhs,this.ctx) && 
+			type(this.rhs) != type(BinaryExpr)
+			){
+			this.rhs = toBinExpr(this.rhs)
+		}
+	}
+}
