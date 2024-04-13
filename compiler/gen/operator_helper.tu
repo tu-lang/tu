@@ -175,10 +175,10 @@ OperatorHelper::binary()
 		tke = "token_max should in i8-u64"
 		this.lhs.check(base >= ast.I8 && base <= ast.F64,tke)
 		compile.Cast(this.rtoken,base)
-		if this.isfloattk(base)	
+		if ast.isfloattk(base)	
 			 compile.writeln("	movsd %%xmm0 , %xmm1")
 		else compile.writeln("	mov %%rax, %%rdi") 
-		if this.isfloattk(this.ltoken) 
+		if ast.isfloattk(this.ltoken) 
 			compile.Popf(this.ltoken)
 		else compile.Pop("%rax")
 		compile.Cast(this.ltoken,base)
@@ -190,7 +190,7 @@ OperatorHelper::binary()
 		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add%s %s, %s", this.floatopsuffix(),this.di, this.ax)
 		ast.SUB_ASSIGN | ast.SUB:	compile.writeln("	sub%s %s,%s", this.floatopsuffix(),this.di,this.ax)
 		ast.MUL_ASSIGN | ast.MUL:	{
-			if this.isfloattk(base)
+			if ast.isfloattk(base)
 				compile.writeln("	mul%s %s,%s",this.floatopsuffix(), this.di,this.ax)
 			else 
 				compile.writeln("	imul %s,%s",this.di,this.ax)
@@ -205,7 +205,7 @@ OperatorHelper::binary()
 		ast.BITOR  | ast.BITOR_ASSIGN:	compile.writeln("	or %s,%s",this.di,this.ax)
 
 		ast.DIV_ASSIGN | ast.DIV | ast.MOD_ASSIGN | ast.MOD : {
-			if this.isfloattk(base)
+			if ast.isfloattk(base)
 				compile.writeln("	div%s %s,%s",this.floatopsuffix(),this.di,this.ax)
 			else if this.lisunsigned {
 				compile.writeln("	mov $0,%s",this.dx)
@@ -219,7 +219,7 @@ OperatorHelper::binary()
       			compile.writeln("	mov %%rdx, %%rax")
 		}
 		ast.EQ | ast.NE | ast.LE | ast.LT | ast.GE | ast.GT: {
-			if this.isfloattk(base) return this.floatcmp()
+			if ast.isfloattk(base) return this.floatcmp()
 
 			cmp = "sete"
 			match this.opt {

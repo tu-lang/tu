@@ -25,6 +25,9 @@ StructInitExpr::arrinit(ctx , field , arr){
 			compile.writeln("	mov $%s,%%rax",i.lit)
 		}else if type(i) == type(StringExpr) {
 			compile.writeln("	lea %s(%%rip),%%rax",i.name)
+		}else if type(i) == type(FloatExpr){
+			compile.writeln("	mov $%d , %%rax",i.lit)
+			compile.writeln("	movq %%rax , %%xmm0")
 		}else{
 			ret = i.compile(ctx)
 			if type(ret) == type(StructMemberExpr) {
@@ -34,8 +37,14 @@ StructInitExpr::arrinit(ctx , field , arr){
 			}
 		}
 		compile.writeln(" mov (%%rsp) , %%rdi")
-		compile.Cast(i.getType(ctx),ltok) 
-		compile.StoreNoPop(elmentsize)
+
+		itype = i.getType(ctx)
+		compile.Cast(itype,ltok)
+		if ast.isfloattk(itype)
+			compile.StorefNoPop(itype)
+		else 
+			compile.StoreNoPop(elmentsize)
+
 		compile.writeln("	add $%d , (%%rsp)",elmentsize)
 	}
 	compile.Pop("%rax")
@@ -68,6 +77,10 @@ StructInitExpr::compile(ctx){
 			rtok = value.getType(ctx)
 			ie   = value
 			compile.writeln("	mov $%s,%%rax",ie.lit)
+		}else if type(value) == type(FloatExpr) {
+			rtok = value.getType(ctx)
+			compile.writeln("	mov $%d,%%rax",value.lit)
+			compile.writeln("	movq %%rax , %%xmm0")
 		}else if type(value) == type(StringExpr) {
 			rtok = value.getType(ctx)
 			isunsigned = true
@@ -103,7 +116,11 @@ StructInitExpr::compile(ctx){
 		compile.Cast(rtok,ltok) 
 		size = field.size
 		if field.pointer size = 8
-		compile.StoreNoPop(size)
+
+		if ast.isfloattk(field.type)
+			compile.StorefNoPop(field.type)
+		else
+			compile.StoreNoPop(size)
 	}
 	compile.Pop("%rax")
 	return this

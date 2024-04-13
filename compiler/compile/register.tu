@@ -26,6 +26,8 @@ func LoadMember(m){
     if m.isstruct && !m.pointer return false
     if m.pointer
         LoadSize(8,true)
+    else if ast.isfloattk(m.type)
+        Loadf(m.type)
     else
         LoadSize(m.size,m.isunsigned)
     if m.bitfield {

@@ -128,6 +128,15 @@ class FloatExpr  : ast.Ast {
     func toString() {
         return "FloatExpr(" + this.lit + ")"
     }
+    fn tof32(){
+        nv<u64> = *this.lit
+        nvp<f64*> = &nv
+        ori<f64> = *nvp
+        ori32<f32> = ori
+        nv32p<i64*> = &ori32
+        nv32<i64> = *nv32p
+        return nv32
+    }
 }
 class StringExpr  : ast.Ast { 
     lit = "" 

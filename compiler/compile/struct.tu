@@ -97,8 +97,22 @@ func InitStructVar(gvar , s , fields){
 			mt = ast.typesizestring(m.type)
 			v = "0"
 			if fields[m.name] != null {
-				fields[m.name].check(type(fields[m.name]) == type(gen.IntExpr),"only support base type")
-				v = fields[m.name].lit
+				fields[m.name].check(
+                    type(fields[m.name]) == type(gen.IntExpr) ||
+                    type(fields[m.name]) == type(gen.FloatExpr),
+                    "only support base type"
+                )
+				expr = fields[m.name]
+                if type(expr) == type(gen.IntExpr)
+					v = expr.lit
+                else{
+					fexpr = expr
+                    if m.type == ast.F32 
+                        v = string.tostring(fexpr.tof32())
+                    else
+                        v = string.tostring(fexpr.lit)
+                    
+                }
 			}
 			writeln("   .%s %s",mt,v)
 			size += si

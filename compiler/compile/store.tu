@@ -43,6 +43,15 @@ fn Storef(ty<i32>)
     else 
         utils.error("unkndown storef type")
 }
+fn StorefNoPop(ty)
+{
+    if ty == ast.F32
+        writeln("   movss %%xmm0, (%%rdi)")
+    else if ty == ast.F64
+        writeln("   movsd %%xmm0, (%%rdi)")
+    else 
+        utils.error("unkndown storefnop type")
+}
 func StoreNoPop(size)
 {
     match size {

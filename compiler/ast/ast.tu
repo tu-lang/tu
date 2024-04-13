@@ -17,6 +17,7 @@ func parse_err(args...){
 }
 func isbase(ty){
     match ty {
+        F32 | F64 : return true
         I8 | U8 | I16 | U16 | I32 | U32 | I64 | U64 : {
             return true
         }
@@ -27,8 +28,8 @@ func typesizestring(ty){
     match ty {
         I8  | U8  :  return "byte"
         I16 | U16 :  return "value"
-        I32 | U32 :  return "long"
-        I64 | U64 :  return "quad"
+        I32 | U32 | F32 :  return "long"
+        I64 | U64 | F64 :  return "quad"
         _ :          return "byte"
     }    
 }
