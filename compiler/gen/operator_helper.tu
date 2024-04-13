@@ -72,6 +72,10 @@ OperatorHelper::gen()
 		this.di = "%edi"
 		this.dx = "%edx"
 	}
+	if this.floatop(){
+		this.ax = "%xmm0"
+		this.di = "%xmm1"
+	}
 	if this.needassign return this.assign()
 	else {
 		ret = this.binary()
@@ -135,6 +139,8 @@ OperatorHelper::assign()
 OperatorHelper::binary()
 {
 	utils.debug("gen.OperatorHelper::binary()")
+	base = utils.max(this.rtoken,this.ltoken)
+
 	if !this.rhs {
 		if ast.isfloattk(this.ltoken) compile.Popf(this.ltoken)
 		else  compile.Pop("%rax")
@@ -163,21 +169,24 @@ OperatorHelper::binary()
 	}
 	if this.opt == ast.ASSIGN return null
 	if this.opt != ast.LOGAND && this.opt != ast.LOGOR  {
-		base = utils.max(this.rtoken,this.ltoken)
 		// tke = fmt.sprintf("token_max(lhs,rhs) should in(i8,u64) ltoken:%d rtoken:%d\n %s\n %s\n",
 				// int(this.ltoken),int(this.rtoken),this.lhs.toString(),this.rhs.toString()
 		// )
 		tke = "token_max should in i8-u64"
 		this.lhs.check(base >= ast.I8 && base <= ast.F64,tke)
 		compile.Cast(this.rtoken,base)
-		compile.writeln("	mov %%rax,%%rdi")
-		compile.Pop("%rax")
+		if this.isfloattk(base)	
+			 compile.writeln("	movsd %%xmm0 , %xmm1")
+		else compile.writeln("	mov %%rax, %%rdi") 
+		if this.isfloattk(this.ltoken) 
+			compile.Popf(this.ltoken)
+		else compile.Pop("%rax")
 		compile.Cast(this.ltoken,base)
 	}
 	
 	match this.opt {
-		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add %s, %s", this.di, this.ax)
-		ast.SUB_ASSIGN | ast.SUB:	compile.writeln("	sub %s,%s",this.di,this.ax)
+		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add%s %s, %s", this.floatopsuffix(),this.di, this.ax)
+		ast.SUB_ASSIGN | ast.SUB:	compile.writeln("	sub%s %s,%s", this.floatopsuffix(),this.di,this.ax)
 		ast.MUL_ASSIGN | ast.MUL:	compile.writeln("	imul %s,%s",this.di,this.ax)
 		ast.BITXOR_ASSIGN | ast.BITXOR : {
 			if (this.ax == "%eax") 
@@ -508,4 +517,13 @@ OperatorHelper::floatop(){
 	if m == ast.F32 || m == ast.F64
 		return true
 	return false
+}
+
+OperatorHelper::floatopsuffix(){
+	base = utils.max(this.ltoken , this.rtoken)
+	if base == ast.F32
+		return "ss"
+	if base == ast.F64
+		return "sd"
+	return ""
 }
