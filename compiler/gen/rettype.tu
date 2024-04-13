@@ -18,7 +18,7 @@ IntExpr::getType(ctx){
 	return ast.I64
 }
 FloatExpr::getType(ctx){
-	this.panic("getType: unsupport double\n")
+	return ast.F64
 }
 StringExpr::getType(ctx){
 	return ast.U64

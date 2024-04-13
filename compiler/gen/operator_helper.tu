@@ -183,11 +183,18 @@ OperatorHelper::binary()
 		else compile.Pop("%rax")
 		compile.Cast(this.ltoken,base)
 	}
+
+	this.checkfloatop()
 	
 	match this.opt {
 		ast.ADD_ASSIGN | ast.ADD:	compile.writeln("	add%s %s, %s", this.floatopsuffix(),this.di, this.ax)
 		ast.SUB_ASSIGN | ast.SUB:	compile.writeln("	sub%s %s,%s", this.floatopsuffix(),this.di,this.ax)
-		ast.MUL_ASSIGN | ast.MUL:	compile.writeln("	imul %s,%s",this.di,this.ax)
+		ast.MUL_ASSIGN | ast.MUL:	{
+			if this.isfloattk(base)
+				compile.writeln("	mul%s %s,%s",this.floatopsuffix(), this.di,this.ax)
+			else 
+				compile.writeln("	imul %s,%s",this.di,this.ax)
+		}
 		ast.BITXOR_ASSIGN | ast.BITXOR : {
 			if (this.ax == "%eax") 
 				compile.writeln("	xorl %s,%s",this.di,this.ax)
@@ -198,7 +205,9 @@ OperatorHelper::binary()
 		ast.BITOR  | ast.BITOR_ASSIGN:	compile.writeln("	or %s,%s",this.di,this.ax)
 
 		ast.DIV_ASSIGN | ast.DIV | ast.MOD_ASSIGN | ast.MOD : {
-			if this.lisunsigned {
+			if this.isfloattk(base)
+				compile.writeln("	div%s %s,%s",this.floatopsuffix(),this.di,this.ax)
+			else if this.lisunsigned {
 				compile.writeln("	mov $0,%s",this.dx)
 				compile.writeln("	div %s",this.di)
 			}else{
@@ -526,4 +535,21 @@ OperatorHelper::floatopsuffix(){
 	if base == ast.F64
 		return "sd"
 	return ""
+}
+
+OperatorHelper::checkfloatop(){
+	base = this.ltoken
+	if this.rhs != null
+		base = utils.max(this.ltoken,this.rtoken)
+
+	if base != ast.F32 && base != ast.F64 {
+		return null
+	}
+	match this.opt {
+		ast.ADD | ast.ADD_ASSIGN: return true
+		ast.SUB | ast.SUB_ASSIGN: return true
+		ast.MUL | ast.MUL_ASSIGN: return true
+		ast.DIV | ast.DIV_ASSIGN: return true
+		_ : this.lhs.check(false,"unsupport op for float in " + ast.getTokenString(this.opt))
+	}
 }
