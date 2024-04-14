@@ -39,7 +39,7 @@ fn toBinExpr(expr){
     be.lhs = expr
     be.opt = ast.GT
 	i = new IntExpr(expr.line,expr.column)
-    i.literal = "0"
+    i.lit = "0"
     be.rhs = i
     return be
 }

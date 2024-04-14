@@ -47,6 +47,7 @@ OperatorHelper::memoryOp(lhs,rhs)
 OperatorHelper::gen()
 {
 	utils.debug("gen.OperatorHelpler::gen()")
+	this.astcheck()
 	if this.needassign {
 		this.genLeft()
 		compile.Push()
