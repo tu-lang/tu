@@ -205,6 +205,7 @@ Parser::isbase(){
         ast.I8 | ast.U8 | ast.I16 | ast.U16 |
         ast.I32| ast.U32| ast.I64 | ast.U64 :
             return true
+        ast.F32 | ast.F64 : return true
     }
     return false
 }

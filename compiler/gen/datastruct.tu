@@ -135,7 +135,7 @@ class FloatExpr  : ast.Ast {
         ori32<f32> = ori
         nv32p<i64*> = &ori32
         nv32<i64> = *nv32p
-        return nv32
+        return int(nv32)
     }
 }
 class StringExpr  : ast.Ast { 
