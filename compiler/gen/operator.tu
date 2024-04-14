@@ -96,7 +96,10 @@ DelRefExpr::compile(ctx){
             this.panic("type must be [i8 - u64]:" + this.expr.toString())
         }
         
-        compile.LoadSize(var.size,var.isunsigned)
+        if ast.isfloattk(var.type)
+            compile.Loadf(var.type)
+        else
+            compile.LoadSize(var.size,var.isunsigned)
         return ret
     }else if type(ret) == type(StructMemberExpr) {
         sm = ret

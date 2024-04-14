@@ -176,7 +176,7 @@ OperatorHelper::binary()
 		this.lhs.check(base >= ast.I8 && base <= ast.F64,tke)
 		compile.Cast(this.rtoken,base)
 		if ast.isfloattk(base)	
-			 compile.writeln("	movsd %%xmm0 , %xmm1")
+			 compile.writeln("	movsd %%xmm0 , %%xmm1")
 		else compile.writeln("	mov %%rax, %%rdi") 
 		if ast.isfloattk(this.ltoken) 
 			compile.Popf(this.ltoken)
@@ -393,7 +393,7 @@ OperatorHelper::genRight(isleft,expr)
 			return ie
 		}
 		type(FloatExpr) : {
-			compile.writeln("	mov $%ld,%%rax",expr.literal)
+			compile.writeln("	mov $%d,%%rax",expr.lit)
 			compile.writeln("	movq %%rax , %%xmm0")
 			this.initcond(isleft,8,ast.F64,false)
 			return expr
@@ -468,7 +468,9 @@ OperatorHelper::genRight(isleft,expr)
 	}else if type(ret) == type(VarExpr) 
 	{
 		v = ret
-		if !v.structtype
+		if ast.isfloattk(v.type)
+			this.initcond(isleft,parser.typesize[int(ast.I64)],v.type,false)
+		else if !v.structtype
 			this.initcond(isleft,8,ast.I64,false)
 		else
 			this.initcond(isleft,v.size,v.type,v.pointer)

@@ -169,7 +169,7 @@ VarExpr::compile(ctx){
             compile.GenAddr(this.ret)
             //UNSAFE: dyn & native in same expression is unsafe      
             if !this.ret.stack {
-                if ast.isfloattk(this.ret.type)
+                if ast.isfloattk(this.ret.type) && !this.ret.pointer
                     compile.Loadf(this.ret.type)
                 else if this.ret.structtype == true && 
                         this.ret.pointer == false   && 
