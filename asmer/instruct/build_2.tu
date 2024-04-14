@@ -201,6 +201,8 @@ Instruct::genTwoInst()
     exchar<u8> = 0
     needprefix<i32> = true
     immi64<i64> = 0
+    if this.type != ast.KW_ADD
+        this.check(opcode != 0,"inst unsupport")
     match this.modrm.mod {
         -1 : {
             this.insthead()
