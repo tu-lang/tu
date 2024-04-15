@@ -146,7 +146,7 @@ Parser::parseStructInit(pkgname,name){
 		this.expect(ast.VAR)
 		fieldname = reader.curLex.dyn()
 
-		this.next_expect(ast.COLON) //解析:
+		this.next_expect(ast.COLON) 
 		reader.scan()//eat :
 
 		fieldvalue = this.parseExpression(1)

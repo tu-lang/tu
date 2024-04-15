@@ -50,7 +50,7 @@ IndexExpr::compileStaticIndex(ctx,size){
  IndexExpr::compile_chain_static(ctx,ty){
 	 compile.Push() 
 	 this.compileStaticIndex(ctx,parser.typesize[int(ty)])
-	 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
+	 compile.writeln("\tadd %%rdi , (%%rsp)") 
 	 compile.Pop("%rax")
 	 return null
  }
@@ -68,7 +68,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 	compile.Load()
 			 compile.Push()
 			 this.compileStaticIndex(ctx,var.ret.size)
-			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
+			 compile.writeln("\tadd %%rdi , (%%rsp)") 
 			 compile.Pop("%rax")
 			 compile.LoadSize(var.ret.size,var.ret.isunsigned)
 		 }
@@ -85,7 +85,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 if !me.pointer && !me.isarr this.check(false,"must be pointer member or arr")
  
 			 this.compileStaticIndex(ctx,me.size)
-			compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
+			compile.writeln("\tadd %%rdi , (%%rsp)") 
 			compile.Pop("%rax")
 			ss = me.size
 			if (me.size > 8){
@@ -119,7 +119,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 	compile.Load()
 			 compile.Push()
 			 this.compileStaticIndex(ctx,var.ret.size)
-			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
+			 compile.writeln("\tadd %%rdi , (%%rsp)") 
 			 if(opt == ast.ASSIGN){
 				oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
 			    oh.genRight(false,rhs)
@@ -149,7 +149,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 if !me.pointer && !me.isarr this.check(false,"must be pointer member")
  
 			 this.compileStaticIndex(ctx,me.size)
-			 compile.writeln("\tadd %%rdi , (%%rsp)") //加上offset
+			 compile.writeln("\tadd %%rdi , (%%rsp)") 
 			 if(opt == ast.ASSIGN){
 				oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
                 oh.genRight(false,rhs)
