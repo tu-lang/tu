@@ -47,8 +47,8 @@ $ make tests
 ```
 
 ## @数据结构
-- [x] 动态类型 int string bool null array map closure object
-- [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 struct
+- [x] 动态类型 int float string bool null array map closure object
+- [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 f32 f64 struct
 - [x] func,goto,class,mem
 - [x] return,type,use,if,continue,break
 - [x] while,for|range for,loop
@@ -88,7 +88,7 @@ fn main(){
 use fmt
 use os
 fn main(){
-    map = { "1":'a' , "hello":"world" , 3:5 , "arr": [ 0,1,2,3,4] }
+    map = { "1":'a' , "hello":"world" , 3:5.11 , "arr": [ 0,1,2,3,4] }
     for k,v : map {
         if k == "arr" {
             for v2 : v {}
