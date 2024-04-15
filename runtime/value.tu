@@ -15,18 +15,23 @@ fn value_plus(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //有字符串就最终类型是字符串
     if lhs.type == String || rhs.type == String {
         result.type = String
         result.data = value_string_plus(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
+    if lhs.type == Float || rhs.type == Float {
+        fret<FloatValue> = new FloatValue
+        fret.type = Float
+        fret.data = value_float_plus(lhs,rhs)
+        return fret
+    }
     if lhs.type == Int || rhs.type == Int {
         result.type = Int
         result.data = value_int_plus(lhs,rhs)
         return result
     }
+
     if lhs.type == Char || rhs.type == Char {
         result.type = String
         if lhs.type == Int || rhs.type == Int 
@@ -52,13 +57,17 @@ fn value_minus(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //有字符串就最终类型是字符串
     if lhs.type == String || rhs.type == String {
         result.type = String
         result.data = value_string_minus(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
+    if  lhs.type == Float || rhs.type == Float {
+        fret<FloatValue> = new FloatValue
+        fret.type = Float
+        fret.data = value_float_minus(lhs,rhs)
+        return fret
+    }
     if  lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_minus(lhs,rhs)
@@ -76,13 +85,17 @@ fn value_mul(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //有字符串就最终类型是字符串
     if lhs.type == String || rhs.type == String {
         result.type = String
         result.data = value_string_mul(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
+    if  lhs.type == Float || rhs.type == Float {
+        fret<FloatValue> = new FloatValue
+        fret.type = Float
+        fret.data = value_float_mul(lhs,rhs)
+        return fret
+    }
     if (lhs.type == Int && rhs.type == Int ) || lhs.type == Null{
         result.type = Int
         result.data = value_int_mul(lhs,rhs)
@@ -114,13 +127,17 @@ fn value_div(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //字符串的触发运算全部返回0
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_div(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
+    if  lhs.type == Float || rhs.type == Float {
+        fret<FloatValue> = new FloatValue
+        fret.type = Float
+        fret.data = value_float_div(lhs,rhs)
+        return fret
+    }
     if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_div(lhs,rhs)
@@ -138,13 +155,11 @@ fn value_bitand(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //字符串的触发运算全部返回0
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_bitand(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
     if  lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_bitand(lhs,rhs)
@@ -162,13 +177,11 @@ fn value_bitor(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //字符串的触发运算全部返回0
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_bitor(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
     if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_bitor(lhs,rhs)
@@ -183,13 +196,11 @@ fn value_bitxor(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //字符串的触发运算全部返回0
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_bitxor(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
     if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.type = Int
         result.data = value_int_bitxor(lhs,rhs)
@@ -209,13 +220,11 @@ fn value_shift_left(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //字符串的触发运算全部返回0
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_shift_left(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
     if lhs.type == Int || rhs.type == Int {
         result.type = Int
         result.data = value_int_shift_left(lhs,rhs)
@@ -240,13 +249,11 @@ fn value_shift_right(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
-    //字符串的触发运算全部返回0
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_shift_right(lhs,rhs)
         return result
     }
-    //有int类型就进行int类型相加
     if lhs.type == Int || rhs.type == Int {
         result.type = Int
         result.data = value_int_shift_right(lhs,rhs)
@@ -269,11 +276,11 @@ fn value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
     result<Value> = new Value
     result.type = Bool
     result.data = 0
-    // 如果有string则直接进行string比较
     if lhs.type == String || rhs.type == String {
         result.data = value_string_equal(lhs,rhs,equal)
         return result
-    //有int类型就进行int类型相加
+    } else if lhs.type == Float || rhs.type == Float {
+        result.data = value_float_equal(lhs,rhs,equal)
     } else if lhs.type == Int || rhs.type == Int || lhs.type == Char {
         result.data = value_int_equal(lhs,rhs,equal)
     //other use int to compare
@@ -291,14 +298,15 @@ fn value_lowerthan(lhs<Value>,rhs<Value>,equal<i32>)
 {
     result<Value> = new Value
     result.type = Bool
-    //默认为true  小于
     result.data = 1
-    // 如果有string则直接进行string比较
     if lhs.type == String || rhs.type == String {
         result.data = value_string_lowerthan(lhs,rhs,equal)
         return result
     }
-    //有int类型就进行int类型相加
+    if lhs.type == Float || rhs.type == Float {
+        result.data = value_float_lowerthan(lhs,rhs,equal)
+        return result
+    }
     if lhs.type == Int || rhs.type == Int ||lhs.type == Char || rhs.type == Char {
         result.data = value_int_lowerthan(lhs,rhs,equal)
         return result
@@ -314,14 +322,15 @@ fn value_greaterthan(lhs<Value>,rhs<Value>,equal<i32>)
 {
     result<Value> = new Value
     result.type = Bool
-    //默认为true  大于
     result.data = 1
-    // 如果有string则直接进行string比较
     if lhs.type == String || rhs.type == String {
         result.data = value_string_greaterthan(lhs,rhs,equal)
         return result
     }
-    //有int类型就进行int类型相加
+    if lhs.type == Float || rhs.type == Float {
+        result.data = value_float_greaterthan(lhs,rhs,equal)
+        return result
+    }
     if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.data = value_int_greaterthan(lhs,rhs,equal)
     }
@@ -346,7 +355,7 @@ fn value_logor(lhs<Value>,rhs<Value>) {
     result<Value> = new Value
     result.type = Bool
     result.data = False
-    //FIXME: || 两边都是函数调用，导致这个会进行动态计算（但是两边是mem类型）
+    //FIXME: ||  dyn in  call() || call()
     if isTrue(lhs) == True || isTrue(rhs)  == True {
         result.data = True
     }
@@ -374,7 +383,10 @@ fn isTrue(cond<Value>){
     }
     match cond.type {
         Int:    return cond.data > 0
-        Float: return cond.data > 0
+        Float: {
+            cond2<FloatValue> = cond
+            return cond2.data > 0
+        }
         String: {
             str<string.Str> = cond.data
             return str.len() > Null
@@ -463,8 +475,8 @@ fn unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
     *lhs = ret
 }
 
-// lhs  rhs 都是堆变量
-// rhs == null时可能是一元操作符
+// lhs  rhs
+// rhs == null
 // @param opt
 // @param lhs
 // @param rhs
@@ -510,23 +522,53 @@ fn miss_objects(filename<i8*>,funcname<i8*>,line<i32>,column<i32>){
     )
 }
 
-//   value op int
-
+fn get_float_v(v<Value>){
+    ret<f64> = 0
+    match v.type {
+        Float : ret = v.(FloatValue).data
+        Int :   ret = v.data
+        Bool :  ret = v.data
+        Char :  ret = v.data
+        _ : fmt.println("[warn] unsupport type in float op")
+    }
+    return ret
+}
+//   value op int | float
 // +
 fn value_int_plus(lhs<Value>,rhs<Value>){
     return lhs.data + rhs.data
+}
+fn value_float_plus(lhs<Value>,rhs<Value>){
+    l<f64> = get_float_v(lhs)
+    r<f64> = get_float_v(rhs)
+    return l + r
 }
 // -
 fn value_int_minus(lhs<Value>,rhs<Value>){
     return lhs.data - rhs.data
 }
+fn value_float_minus(lhs<Value>,rhs<Value>){
+    l<f64> = get_float_v(lhs)
+    r<f64> = get_float_v(rhs)
+    return l - r
+}
 // *
 fn value_int_mul(lhs<Value>,rhs<Value>){
     return lhs.data * rhs.data
 }
+fn value_float_mul(lhs<Value>,rhs<Value>){
+    l<f64> = get_float_v(lhs)
+    r<f64> = get_float_v(rhs)
+    return l * r
+}
 // /
 fn value_int_div(lhs<Value>,rhs<Value>){
     return lhs.data / rhs.data
+}
+fn value_float_div(lhs<Value>,rhs<Value>){
+    l<f64> = get_float_v(lhs)
+    r<f64> = get_float_v(rhs)
+    return l / r
 }
 // &
 fn value_int_bitand(lhs<Value>,rhs<Value>){
@@ -552,6 +594,12 @@ fn value_int_equal(lhs<Value>,rhs<Value>,equal<i32>){
     if equal	return lhs.data == rhs.data
     else		return lhs.data != rhs.data
 }
+fn value_float_equal(lhs<Value>,rhs<Value>,equal<i32>){
+    l<f64> = get_float_v(lhs)
+    r<f64> = get_float_v(rhs)
+    if equal	return l == r
+    else		return l != r
+}
 // !=
 fn value_int_notequal(lhs<Value>,rhs<Value>){
     return lhs.data != rhs.data
@@ -561,10 +609,22 @@ fn value_int_lowerthan(lhs<Value>,rhs<Value>,equal<i32>){
     if equal	return lhs.data <= rhs.data
     else		return lhs.data < rhs.data
 }
+fn value_float_lowerthan(lhs<Value>,rhs<Value>,equal<i32>){
+    l<f64> = get_float_v(lhs)
+    r<f64> = get_float_v(rhs)
+    if equal	return l <= r
+    else		return l < r
+}
 // >
 fn value_int_greaterthan(lhs<Value>,rhs<Value>,equal<i32>){
     if equal	return lhs.data >= rhs.data
     else		return lhs.data > rhs.data
+}
+fn value_float_greaterthan(lhs<Value>,rhs<Value>,equal<i32>){
+    l<f64> = get_float_v(lhs)
+    r<f64> = get_float_v(rhs)
+    if equal	return l >= r
+    else		return l > r
 }
 
 //   value op string
@@ -602,7 +662,6 @@ fn value_string_plus(lhs<Value>,rhs<Value>)
 
 fn value_string_minus(lhs<Value>,rhs<Value>)
 {
-    //字符串的所有相加减直接返回原字符串
     match lhs.type {
         String : return lhs.data
         _      : return rhs.data
@@ -611,7 +670,6 @@ fn value_string_minus(lhs<Value>,rhs<Value>)
 
 fn value_string_mul(lhs<Value>,rhs<Value>)
 {
-    //如果两个都是字母则返回相加的那部分
     if lhs.type == String && rhs.type == String {
         tmstr<string.Str> = rhs.data.(string.Str).dup()
         tmstr = tmstr.cat(rhs.data)
@@ -624,7 +682,6 @@ fn value_string_mul(lhs<Value>,rhs<Value>)
         if rhs.type == Int count = rhs.data
         srcv<Value> = lhs
         if rhs.type == String srcv = rhs
-        // 在字符串运算中都是从新生成一份内存来进行存储结果
         tmstr<string.Str> = srcv.data.(string.Str).dup()
         count -= 1
         for (i<i64> = 0 ; i < count ; i += 1) {
@@ -689,18 +746,13 @@ fn value_string_shift_right(lhs<Value>,rhs<Value>){
     return Null
 }
 fn value_string_equal(lhs<Value>,rhs<Value>,equal<i32>){
-    //必须为两个string 才能比较
     if lhs.type != String || rhs.type != String {
-        // == 就返回false
-        // != 就返回true
         if equal return False
         else return True
     }
-    //TODO: c函数调用自动判断为mem运算 if _stringcmp(..) == 0 {}
+    //TODO: if _stringcmp(..) == 0 {}
     ret<i8> = lhs.data.(string.Str).cmp(rhs.data)
     if ret == 0 {
-        // == 返回true
-        // != 返回false
         if equal return True
         else return False
     }
@@ -710,7 +762,6 @@ fn value_string_equal(lhs<Value>,rhs<Value>,equal<i32>){
 }
 //< <=
 fn value_string_lowerthan(lhs<Value>,rhs<Value>,equal<i32>){
-    //必须为两个string 才能比较
     if lhs.type != String || rhs.type != String {
         return False
     }
@@ -722,7 +773,6 @@ fn value_string_lowerthan(lhs<Value>,rhs<Value>,equal<i32>){
 }
 //> >=
 fn value_string_greaterthan(lhs<Value>,rhs<Value>,equal<i32>){
-    //必须为两个string 才能比较
     if lhs.type != String || rhs.type != String {
         return False
     }

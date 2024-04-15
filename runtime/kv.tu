@@ -38,10 +38,10 @@ fn kv_get(index<Value>,root<Value>){
         String: return string.index_get(root,index)
         Null:  fmt.printf("[kv_get] arr or map for null ,probably something wrong %s\n",debug.callerpc())
         Int:   fmt.printf("[kv_get] arr or map for int ,probably something wrong %s\n",debug.callerpc())
-        Int:   fmt.printf("[kv_get] arr or map for float ,probably something wrong %s\n",debug.callerpc())
-        Int:   fmt.printf("[kv_get] arr or map for bool ,probably something wrong %s\n",debug.callerpc())
-        Int:   fmt.printf("[kv_get] arr or map for char ,probably something wrong %s\n",debug.callerpc())
-        Int:   fmt.printf("[kv_get] arr or map for object ,probably something wrong %s\n",debug.callerpc())
+        Float:   fmt.printf("[kv_get] arr or map for float ,probably something wrong %s\n",debug.callerpc())
+        Bool:   fmt.printf("[kv_get] arr or map for bool ,probably something wrong %s\n",debug.callerpc())
+        Char:   fmt.printf("[kv_get] arr or map for char ,probably something wrong %s\n",debug.callerpc())
+        Object:   fmt.printf("[kv_get] arr or map for object ,probably something wrong %s\n",debug.callerpc())
         _     : fmt.printf("[kv_get] arr or map is invalid ,probably something wrong %s\n",debug.callerpc())
     }
 }
@@ -56,6 +56,10 @@ fn len(v<Value>){
 		}
 		Int  : {
 			fmt.println("[warn] len(int)")
+			return 1
+		}
+		Float  : {
+			fmt.println("[warn] len(float)")
 			return 1
 		}
 		Bool : {
@@ -122,14 +126,9 @@ fn arr_get(varr<Value>,index<Value>){
     }
 
     arr<std.Array> = varr.data
-    // 计算索引
     i<i64> = 0
     match index.type {
         Int : i = index.data
-        String : {
-            str<string.Str> = index.data
-            i = str.len()
-        }
         _   : os.dief("[arr_get] invalid type: %s" , type_string(index) )
     }
     if  i >= arr.used {
@@ -157,13 +156,9 @@ fn arr_updateone(var<Value>,index<Value>,varr<Value>){
 
     match index.type {
         Int : i = index.data
-        String : {
-            str<string.Str> = index.data
-            i = str.len()
-        }
         _ : os.dief("[arr_update] invalid type %s" , type_string(index))
     }
-    // TODO:如果索引超出了 当前array的范围则需要扩充
+    // TODO: over index need scale
     if  i >= arr.used {
         fmt.printf("[arr_updateone] index is over the max size\n")
         return Null
@@ -196,13 +191,18 @@ fn arr_tostring(varr<Value>)
         p<u64*>  = orr + i * PointerSize
         v<Value> = *p
         //String
-        if v.type == String {
-            ret = ret.cat(v.data)
-            ret = ret.cat(*",")
-        //Int,Float,Bool,Char
-        }else {
-            ret = ret.catfmt(*"%I,",v.data)
-        }
+		match v.type {
+			String : {
+            	ret = ret.cat(v.data)
+            	ret = ret.cat(*",")
+			}
+			Float : {
+				fstr<string.String> = string.f64tostring(v.data , 5.(i8))
+				ret = ret.cat(fstr.str())
+            	ret = ret.cat(*",")
+			}
+            _ : ret = ret.catfmt(*"%I,",v.data)
+		}
     }
     return ret.cat(*"]")
 }

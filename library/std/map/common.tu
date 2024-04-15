@@ -21,7 +21,7 @@ func map_create(insertfn<u64>){
 func map_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode>)
 {
     // **p
-    // FIXME: p<rebtree_node*> parser报错
+    // FIXME: p<rebtree_node*> parser
     p<u64*> = null
 
     loop {
@@ -79,13 +79,9 @@ func map_insert( m<runtime.Value> ,k<runtime.Value>,v<runtime.Value>)
     tree<Rbtree> = m.data
     node<RbtreeNode> = new RbtreeNode
     hk<u64> = 0
-    if  k.type == runtime.Bool || k.type == runtime.Int {
-        hk = k.data
-    }
-    if  k.type == runtime.String {
-        // str<string.Str> = k.data
-        // hk = hash_key(k.data,str.len())
-        hk = k.data.(string.Str).hash64()
+    match k.type {
+        runtime.Bool | runtime.Int | runtime.Float : hk = k.data
+        runtime.String: hk = k.data.(string.Str).hash64()
     }
     node.key = hk
     node.k = k
@@ -96,8 +92,7 @@ func map_insert( m<runtime.Value> ,k<runtime.Value>,v<runtime.Value>)
 func map_find(m<runtime.Value>, key<runtime.Value>){
     hk<u64> = 0
     match key.type {
-        runtime.Bool   : hk = key.data
-        runtime.Int    : hk = key.data
+        runtime.Bool   | runtime.Int | runtime.Float : hk = key.data
         runtime.String : {
             hk = key.data.(string.Str).hash64()
             // str<string.Str> = key.data

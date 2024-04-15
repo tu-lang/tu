@@ -119,6 +119,10 @@ func tostring(num<runtime.Value>){
     		std.itoa(num.data,&buf,10.(i8)) 
     		return string.new(buf)
 		}
+		runtime.Float: {
+			s<string.String> = f64tostring(num.data,5.(i8))
+			return s.dyn()
+		}
 		_: os.dief("[tostring] unsupport type:%s",runtime.type_string(str))
 	}
 }
@@ -129,11 +133,33 @@ func tonumber(str<runtime.Value>){
 			ret<i64> = std.strtol(str.data,runtime.Null,base)
 			return int(ret) 
 		}
-		runtime.Int: return str
-		runtime.Char: {
-			return int(str.data)
+		runtime.Int:  return str
+		runtime.Char: return int(str.data)
+		runtime.Float: {
+			vf<runtime.FloatValue> = str
+			v<i64> = vf.data
+			return int(v)
 		}
 		_: os.dief("[tonumber] unsupport type:%s",runtime.type_string(str))
+
+	}
+}
+func tofloat(str<runtime.Value>){
+	match str.type {
+		runtime.String:{
+        	f<f64> = strtof64(str.data)
+			return runtime.newobject(runtime.Float,f)
+		}
+		runtime.Int:  {
+			f<f64> = str.data
+			return runtime.newobject(runtime.Float,f)
+		}
+		runtime.Char: {
+			f<f64> = str.data
+			return runtime.newobject(runtime.Float,f)
+		}
+		runtime.Float: return str
+		_: os.dief("[tofloat] unsupport type:%s",runtime.type_string(str))
 
 	}
 }

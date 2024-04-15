@@ -50,7 +50,6 @@ func newlen(init<u64*>, initlen<u64>) {
     s<u8*> = null
 
     type<i8> = stringReqType(initlen) 
-    //空字符串一般被作为 append 使用，类型现在设置为8
     if type == LSTRING_TYPE_5 && initlen == null 
         type = LSTRING_TYPE_8
 

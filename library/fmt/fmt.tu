@@ -60,6 +60,10 @@ func print(_args<u64*>...){
         }
         match var.type {
             runtime.Int:	vfprintf(std.STDOUT,*"%d",var.data)
+            runtime.Float:	{
+                s<string.String> = string.f64tostring(var.data,10.(i8))
+                vfprintf(std.STDOUT,s.str())
+            }
             runtime.Char:	vfprintf(std.STDOUT,*"%d",var.data)
             runtime.Bool:	vfprintf(std.STDOUT,*"%d",var.data)
             runtime.String:	vfprintf(std.STDOUT,*"%s",var.data)

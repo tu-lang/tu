@@ -94,7 +94,7 @@ fn hash_key(data<u8*>,len<u64>){
 }
 
 fn get_hash_key(key<Value>){
-    if  key.type == Bool || key.type == Int {
+    if  key.type == Bool || key.type == Int || key.type == Float {
 		return key.data
 	}
     str<string.Str> = key.data
