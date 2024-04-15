@@ -3,6 +3,7 @@ use os
 use runtime
 use std
 use fmt
+use string
 
 func fatal(args...){
     println(args)
@@ -24,6 +25,10 @@ func println(_args<u64*>...){
 		match var.type {
             runtime.Null:   vfprintf(std.STDOUT,*"null")
             runtime.Int:    vfprintf(std.STDOUT,string.fromlonglong(var.data))
+            runtime.Float: {
+                s<string.String> = string.f64tostring(var.data,10.(i8))
+                vfprintf(std.STDOUT,s.str())
+            }
             runtime.Bool:   {
                 if var.data == 0 vfprintf(std.STDOUT,*"false")
                 else             vfprintf(std.STDOUT,*"true")

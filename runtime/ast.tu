@@ -144,6 +144,10 @@ mem StringValue {
 	Value base
 	u64   hk
 }
+mem FloatValue {
+    i64 type
+    f64 data
+}
 mem Object { 
 	map.Rbtree* members
 	map.Rbtree* funcs
