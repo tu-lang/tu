@@ -115,6 +115,10 @@ BuiltinFuncExpr::compile(ctx){
 		compile.Cast(tk,ast.I64)
 		internal.newobject2(ast.Int)
 		return null
+	}else if this.funcname == "float" {
+		compile.Cast(tk,ast.F64)
+		internal.newfloat()
+		return null
 	}
 	return null
 }

@@ -15,7 +15,7 @@ keywords = {
 	"match" : ast.MATCH ,  "enum"  : ast.ENUM,   "goto"    : ast.GOTO,
 }
 builtins = {
-    "int" : true , "sizeof" : true , "type" : true,
+    "int" : true , "sizeof" : true , "type" : true, "float" : true,
 }
 specs = {
 	"\\n"  : 10.(i8),
