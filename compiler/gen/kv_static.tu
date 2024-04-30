@@ -97,7 +97,8 @@ IndexExpr::compileStaticIndex(ctx,size){
 			}
 			if ast.isfloattk(me.type)
 			 	compile.Loadf(me.type)
-			else
+			else if !me.pointer && me.isarr && me.structname != "" {
+			}else
 			 	compile.LoadSize(ss,me.isunsigned)
 			 this.ret = me
 		 }

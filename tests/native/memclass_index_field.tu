@@ -115,9 +115,50 @@ func test_mem_arr_field(){
 	}
 	fmt.println("test_mem_arrfield success")
 }
+
+mem Ts1 {
+    i32 a
+    i32 b
+}
+mem Ts {
+    Ts1 arr[10]
+}
+fn test_stack_memfield_index(){
+	fmt.println("test statck memfileld index")
+    count<i32> = sizeof(Ts) * 3
+    p<Ts1> = new count
+    p2<Ts1> = p
+    p2.a = 1	p2.b = 2
+    p2 += sizeof(Ts1)
+    p2.a = 3	p2.b = 4
+    p2 += sizeof(Ts1)
+    p2.a = 5	p2.b = 6
+
+    p3<Ts> = p
+	if p3.arr[0].a == 1 {} else os.die("p3.arr[0].a != 1")
+	if p3.arr[0].b == 2 {} else os.die("p3.arr[0].b != 2")
+	if p3.arr[1].a == 3 {} else os.die("p3.arr[1].a != 3")
+	if p3.arr[1].b == 4 {} else os.die("p3.arr[1].b != 4")
+	if p3.arr[2].a == 5 {} else os.die("p3.arr[2].a != 5")
+	if p3.arr[2].b == 6 {} else os.die("p3.arr[2].b != 6")
+
+	p3.arr[0].a = 11	p3.arr[0].b = 22
+	p3.arr[1].a = 33	p3.arr[1].b = 44
+	p3.arr[2].a = 55	p3.arr[2].b = 66
+	if p3.arr[0].a == 11 {} else os.die("p3.arr[0].a != 11")
+	if p3.arr[0].b == 22 {} else os.die("p3.arr[0].b != 22")
+	if p3.arr[1].a == 33 {} else os.die("p3.arr[1].a != 33")
+	if p3.arr[1].b == 44 {} else os.die("p3.arr[1].b != 44")
+	if p3.arr[2].a == 55 {} else os.die("p3.arr[2].a != 55")
+	if p3.arr[2].b == 66 {} else os.die("p3.arr[2].b != 66")
+
+
+	fmt.println("test statck memfileld index success")
+}
 func main(){
 	test_chain_index()
 
 	test_stack_field_index()
+	test_stack_memfield_index()
 	test_mem_arr_field()
 }
