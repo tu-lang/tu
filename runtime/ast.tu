@@ -144,6 +144,10 @@ mem StringValue {
 	Value base
 	u64   hk
 }
+mem ObjectValue {
+    Value base
+    u64   vid
+}
 mem FloatValue {
     i64 type
     f64 data

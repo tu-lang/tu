@@ -1,0 +1,174 @@
+
+use fmt
+use os
+use std
+use string
+use std
+use std.map
+
+mem VObjFunc {
+	u64 hid
+	u64 entry
+	i32 argsize
+	i32 asyncsize
+	u64 init
+}
+mem VObjMem {
+    u64 nid
+    i64 ofs
+}
+mem VObjHeader {
+	u64 parent
+	i32 membersize
+	i32	funcsize
+	VObjFunc fcs[1]
+}
+mem ObjectInner {
+    Value       base
+    VObjHeader* hdr
+}
+
+VObjHeader::funcentry(){
+	return &this.fcs
+}
+VObjHeader::mementry(){
+	return &this.fcs[this.funcsize]
+}
+
+fn objdataofs(hdr<VObjHeader>, data<i64*>, hid<u64>){
+    l<i32> = 0
+    r<i32> = hdr.membersize
+    middle<i32> = 0
+    arr<i64*> = hdr.mementry()
+    while l < r {
+        middle = (l + r) / 2
+        mtype<VObjMem> = arr +  (sizeof(VObjMem) * middle)
+        if hid == mtype.nid {
+            return data + mtype.ofs
+        }
+        else if hid < mtype.nid  r = middle
+        else if hid > mtype.nid l = middle + 1
+    }
+
+    if hdr.parent != null {
+        return objdataofs(
+            hdr.parent,
+            data + hdr.membersize * 8,
+            hid,
+        )
+    }
+    return Null
+}
+fn objfuncofs(hdr<VObjHeader>, hid<u64>){
+    l<i32> = 0
+    r<i32> = hdr.funcsize
+    middle<i32> = 0
+    arr<i64*> = hdr.funcentry()
+    while l < r {
+        middle = (l + r) / 2
+        mtype<VObjFunc> = arr +  (sizeof(VObjFunc) * middle)
+        if hid == mtype.hid {
+            return mtype
+        }
+        else if hid < mtype.hid  r = middle
+        else if hid > mtype.hid l = middle + 1
+    }
+
+    if hdr.parent != null {
+        return objfuncofs(
+            hdr.parent,
+            hid,
+        )
+    }
+    return Null
+}
+
+func newclsobject(vid<VObjHeader>, objsize<i64>)
+{
+    if vid == null dief("new cls obj is null".(i8))
+    if objsize <= 0 dief("new cls size is invalid")
+
+    obj<ObjectValue> = new ObjectValue {
+        base : Value {
+            type : Object,
+            data : new objsize
+        },
+        vid : vid
+    }
+    if  obj == null  {
+        fmt.println("[object_create2] failed to create")
+        return Null
+    }
+    return obj
+}
+
+func object_parent_get2(obj<ObjectInner>){
+    if obj == null {
+        return obj
+    }
+    if obj.base.type != Object {
+        fmt.println("[warn] super()  not object2")
+        return null
+    }
+    if obj.hdr.parent == null {
+        fmt.println("[warn] super() called not in child class 2")
+        return null
+    }
+    pm<u64> = obj.base.data + obj.hdr.membersize * 8
+    return new ObjectValue {
+        base : Value {
+            type : Object,
+            data : pm
+        },
+        vid : obj.hdr.parent
+    } 
+}
+
+fn object_member_update2(obj<ObjectInner>,k<u64>,v<Value>){
+    if  obj.base.type != Object {
+        dief("[object_membe_update2] invalid obj type".(i8))
+    }
+    member<i64*> = objdataofs(obj.hdr ,obj.base.data,k)
+    if member == Null {
+        warn("[object_membe_update2] warn not found object member".(i8))
+        return Null
+    }
+    *member = v
+}
+
+
+fn object_member_get2(k<u64>,obj<ObjectInner>){
+    if  obj.base.type != Object {
+        os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
+    }
+    v<Value> = objdataofs(obj.hdr,obj.base.data,k)
+    if v == null {
+        fmt.printf("[warn] class memeber not define in %s\n", debug.callerpc())
+        v = &internal_null
+    }
+    return v
+}
+fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectInner>){
+    if   obj == null || v == null  || obj.base.type != Object {
+        fmt.println(" [object-uop2] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
+        return Null
+    }
+    origin<Value> = object_member_get2(k,obj)
+    if origin == null origin = &internal_null
+    
+    ret<Value> = operator_switch(opt,origin,v)
+    object_member_update2(obj,k,ret)
+}
+
+fn object_func_addr2(k<u64>,obj<ObjectInner>){
+    if  obj.base.type != Object {
+        os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
+    }
+    fctype<VObjFunc> = objfuncofs(obj.hdr,k)
+    if fctype == null  {
+        os.dief("[object-func] func not exist in func table and members table")
+    }
+    return fctype.entry
+}
+
+

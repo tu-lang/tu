@@ -27,8 +27,7 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
             //     data : string.newstring(data)
             // }
             if hk == 0 {
-                fmt.vfprintf(std.STDOUT,"new string hk is null %s\n".(i8),data)
-                std.die(-1.(i8))
+                dief("new string hk is null %s\n".(i8),data)
             }
             //check exist
             if enable_object_pool {
