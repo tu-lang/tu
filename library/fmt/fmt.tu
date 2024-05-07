@@ -38,8 +38,9 @@ func println(_args<u64*>...){
             runtime.Array:	vfprintf(std.STDOUT,*"%s",runtime.arr_tostring(var))
 			runtime.Map:	vfprintf(std.STDOUT,*"map:%p",var)
 			runtime.Object:	{
-                vfprintf(std.STDOUT,*"obj:%s ",string.fromulonglong(var))
-                vfprintf(std.STDOUT,*"iner:%s",string.fromulonglong(var.data))
+                ov<runtime.ObjectValue> = var
+                vfprintf(std.STDOUT,*"obj:%s ",string.fromulonglong(ov))
+                vfprintf(std.STDOUT,*"inner:%s",string.fromulonglong(ov.vid))
             }
 			_:	vfprintf(std.STDOUT,*"pointer:%s",string.fromlonglong(var))
         }

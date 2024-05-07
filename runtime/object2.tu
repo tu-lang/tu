@@ -32,7 +32,19 @@ VObjHeader::funcentry(){
 	return &this.fcs
 }
 VObjHeader::mementry(){
-	return &this.fcs[this.funcsize]
+    return &this.fcs[this.funcsize]
+}
+VObjHeader::checknew(osize<i64>){
+    checksize<i64> = this.membersize * 8
+    prt<VObjHeader> = this.parent
+    while prt != null {
+        checksize += prt.membersize * 8
+        prt = prt.parent
+    }
+    if osize != checksize {
+        dief("[newclsobject] size not eq".(i8))
+    }
+
 }
 
 fn objdataofs(hdr<VObjHeader>, data<i64*>, hid<u64>){
@@ -86,12 +98,18 @@ fn objfuncofs(hdr<VObjHeader>, hid<u64>){
 func newclsobject(vid<VObjHeader>, objsize<i64>)
 {
     if vid == null dief("new cls obj is null".(i8))
-    if objsize <= 0 dief("new cls size is invalid")
+    if objsize < 0 dief("new cls size is invalid".(i8))
+    // if enable_debug {
+        vid.checknew(objsize)
+    // }
+    dptr<i64> = null
+    if objsize != 0
+        dptr = new objsize
 
     obj<ObjectValue> = new ObjectValue {
         base : Value {
             type : Object,
-            data : new objsize
+            data : dptr
         },
         vid : vid
     }
@@ -104,15 +122,13 @@ func newclsobject(vid<VObjHeader>, objsize<i64>)
 
 func object_parent_get2(obj<ObjectInner>){
     if obj == null {
-        return obj
+        dief("[error] super()  obj is null".(i8))
     }
     if obj.base.type != Object {
-        fmt.println("[warn] super()  not object2")
-        return null
+        dief("[error] super()  not object2".(i8))
     }
     if obj.hdr.parent == null {
-        fmt.println("[warn] super() called not in child class 2")
-        return null
+        dief("[error] super() called not in child class 2".(i8))
     }
     pm<u64> = obj.base.data + obj.hdr.membersize * 8
     return new ObjectValue {
@@ -136,18 +152,18 @@ fn object_member_update2(obj<ObjectInner>,k<u64>,v<Value>){
     *member = v
 }
 
-
 fn object_member_get2(k<u64>,obj<ObjectInner>){
     if  obj.base.type != Object {
         os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
     }
-    v<Value> = objdataofs(obj.hdr,obj.base.data,k)
+    v<u64*> = objdataofs(obj.hdr,obj.base.data,k)
     if v == null {
         fmt.printf("[warn] class memeber not define in %s\n", debug.callerpc())
-        v = &internal_null
+        return &internal_null
     }
-    return v
+    return *v
 }
+
 fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectInner>){
     if   obj == null || v == null  || obj.base.type != Object {
         fmt.println(" [object-uop2] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
@@ -166,7 +182,7 @@ fn object_func_addr2(k<u64>,obj<ObjectInner>){
     }
     fctype<VObjFunc> = objfuncofs(obj.hdr,k)
     if fctype == null  {
-        os.dief("[object-func] func not exist in func table and members table")
+        os.dief("[object-func] func not exist")
     }
     return fctype.entry
 }
