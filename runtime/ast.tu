@@ -158,6 +158,26 @@ mem Object {
 	Object* 	father
 	i32			typeid
 }
+
+fn type2(v<Value>){
+    match v.type {
+        Null : return 0
+        Int  : return 1
+        Float : return 2
+        String : return 3
+        Bool : return 4
+        Char : return 5
+        Array : return 6
+        Map  : return 7
+        Object : {
+            o<ObjectValue> = v
+            return int(o.vid)
+        }
+        _    : return "type: unknown type:" + int(v.type)				
+    }
+}
+
+
 fn type(v<Value>, obj<i8>){
 	if obj == 1 {
 		match v.type {
