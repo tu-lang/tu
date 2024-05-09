@@ -23,10 +23,6 @@ mem VObjHeader {
 	i32	funcsize
 	VObjFunc fcs[1]
 }
-mem ObjectInner {
-    Value       base
-    VObjHeader* hdr
-}
 
 VObjHeader::funcentry(){
 	return &this.fcs
@@ -106,12 +102,15 @@ func newclsobject(vid<VObjHeader>, objsize<i64>)
     if objsize != 0
         dptr = new objsize
 
+    members<map.Rbtree> = map.map_create()
+    members.insert = member_insert_or_update
     obj<ObjectValue> = new ObjectValue {
         base : Value {
             type : Object,
             data : dptr
         },
-        vid : vid
+        hdr : vid,
+        dynm : members, 
     }
     if  obj == null  {
         fmt.println("[object_create2] failed to create")
@@ -120,7 +119,7 @@ func newclsobject(vid<VObjHeader>, objsize<i64>)
     return obj
 }
 
-func object_parent_get2(obj<ObjectInner>){
+func object_parent_get2(obj<ObjectValue>){
     if obj == null {
         dief("[error] super()  obj is null".(i8))
     }
@@ -136,35 +135,42 @@ func object_parent_get2(obj<ObjectInner>){
             type : Object,
             data : pm
         },
-        vid : obj.hdr.parent
+        hdr : obj.hdr.parent ,
+        dynm: obj.dynm,
     } 
 }
 
-fn object_member_update2(obj<ObjectInner>,k<u64>,v<Value>){
+fn object_member_update2(obj<ObjectValue>,k<u64>,v<Value>){
     if  obj.base.type != Object {
         dief("[object_membe_update2] invalid obj type".(i8))
     }
     member<i64*> = objdataofs(obj.hdr ,obj.base.data,k)
     if member == Null {
-        warn("[object_membe_update2] warn not found object member".(i8))
+        //warn("[object_membe_update2] warn not found object member\n".(i8))
+        member_insert2(obj.dynm,k,v)
         return Null
     }
     *member = v
 }
 
-fn object_member_get2(k<u64>,obj<ObjectInner>){
+fn object_member_get2(k<u64>,obj<ObjectValue>){
     if  obj.base.type != Object {
         os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
     }
     v<u64*> = objdataofs(obj.hdr,obj.base.data,k)
     if v == null {
+        v = member_find2(obj.dynm,k)
+        if v != null {
+            return v
+        }
+
         fmt.printf("[warn] class memeber not define in %s\n", debug.callerpc())
         return &internal_null
     }
     return *v
 }
 
-fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectInner>){
+fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectValue>){
     if   obj == null || v == null  || obj.base.type != Object {
         fmt.println(" [object-uop2] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
         return Null
@@ -176,15 +182,55 @@ fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectInner>){
     object_member_update2(obj,k,ret)
 }
 
-fn object_func_addr2(k<u64>,obj<ObjectInner>){
+fn object_func_addr2(k<u64>,obj<ObjectValue>){
     if  obj.base.type != Object {
         os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
     }
     fctype<VObjFunc> = objfuncofs(obj.hdr,k)
     if fctype == null  {
+        //TODO: decorate dyn func
+        entry<u64> = member_find2(obj.dynm,k)
+        if entry != null {
+            return entry
+        } 
         os.dief("[object-func] func not exist")
     }
     return fctype.entry
 }
 
 
+fn member_find2(tree<map.Rbtree>,hk<u64>){
+
+	node<map.RbtreeNode> = null
+	sentinel<map.RbtreeNode> = null
+
+    node = tree.root
+    sentinel = tree.sentinel
+
+    while node != sentinel {
+
+        if hk != node.key {
+			if  hk < node.key  {
+				node = node.left
+			}else{
+				node = node.right
+			}
+            continue
+        }
+        //if  node.k.type == key.type {
+        //    return node.v
+        //}
+        return node.v
+    }
+    return Null
+}
+
+fn member_insert2(tree<map.Rbtree>, hk<u64>,v<Value>)
+{
+
+	node<map.RbtreeNode> = new map.RbtreeNode
+    node.key   = hk
+    //node.k     = hk
+    node.v     = v
+    tree.insert(node)
+}

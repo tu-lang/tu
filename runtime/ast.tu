@@ -145,8 +145,9 @@ mem StringValue {
 	u64   hk
 }
 mem ObjectValue {
-    Value base
-    u64   vid
+    Value         base
+    VObjHeader*   hdr
+	map.Rbtree*   dynm
 }
 mem FloatValue {
     i64 type
@@ -171,7 +172,7 @@ fn type2(v<Value>){
         Map  : return 7
         Object : {
             o<ObjectValue> = v
-            return int(o.vid)
+            return int(o.hdr)
         }
         _    : return "type: unknown type:" + int(v.type)				
     }

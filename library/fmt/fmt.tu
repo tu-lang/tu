@@ -40,7 +40,7 @@ func println(_args<u64*>...){
 			runtime.Object:	{
                 ov<runtime.ObjectValue> = var
                 vfprintf(std.STDOUT,*"obj:%s ",string.fromulonglong(ov))
-                vfprintf(std.STDOUT,*"inner:%s",string.fromulonglong(ov.vid))
+                vfprintf(std.STDOUT,*"inner:%s",string.fromulonglong(ov.hdr))
             }
 			_:	vfprintf(std.STDOUT,*"pointer:%s",string.fromlonglong(var))
         }
