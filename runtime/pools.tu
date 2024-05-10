@@ -54,6 +54,6 @@ func pools_init(){
 		}
 	}
 	//init map
-	strings = map.map_create(string_insert)
+	strings = map.map_create(string_insert.(i64))
 	enable_object_pool = 1
 }

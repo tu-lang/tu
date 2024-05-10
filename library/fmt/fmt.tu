@@ -42,6 +42,7 @@ func println(_args<u64*>...){
                 vfprintf(std.STDOUT,*"obj:%s ",string.fromulonglong(ov))
                 vfprintf(std.STDOUT,*"inner:%s",string.fromulonglong(ov.hdr))
             }
+			runtime.Func:	vfprintf(std.STDOUT,*"func:%p",var)
 			_:	vfprintf(std.STDOUT,*"pointer:%s",string.fromlonglong(var))
         }
         vfprintf(std.STDOUT,*"\t")
@@ -69,7 +70,7 @@ func print(_args<u64*>...){
             runtime.Bool:	vfprintf(std.STDOUT,*"%d",var.data)
             runtime.String:	vfprintf(std.STDOUT,*"%s",var.data)
             runtime.Array:	vfprintf(std.STDOUT,*"%s",runtime.arr_tostring(var))
-            _ :				vfprintf(std.STDOUT,*"undefine")
+            _ :				vfprintf(std.STDOUT,*"unsupport print")
         }
     }
     return total

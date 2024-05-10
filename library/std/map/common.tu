@@ -6,7 +6,7 @@ use fmt
 func map_create(insertfn<u64>){
 
     if insertfn == null {
-        insertfn = map_insert_or_update
+        insertfn = map_insert_or_update.(i64)
     }
     sentinel<RbtreeNode> = new RbtreeNode
 	sentinel.black()

@@ -114,6 +114,7 @@ enum
 	Array 
 	Map
 	Object
+    Func
 }
 
 PointerSize<i32>    = 8
@@ -149,6 +150,11 @@ mem ObjectValue {
     VObjHeader*   hdr
 	map.Rbtree*   dynm
 }
+mem FuncObject {
+    i64        type
+    VObjFunc   hdr  
+}
+
 mem FloatValue {
     i64 type
     f64 data
@@ -174,6 +180,7 @@ fn type2(v<Value>){
             o<ObjectValue> = v
             return int(o.hdr)
         }
+        Func : return 8
         _    : return "type: unknown type:" + int(v.type)				
     }
 }
@@ -194,6 +201,7 @@ fn type(v<Value>, obj<i8>){
 				o<Object> = v.data
 				return int(o.typeid)
 			}
+            Func: return 8
 			_    : return "type: unknown type:" + int(v.type)				
 		}
 	}else {
@@ -214,6 +222,7 @@ fn type_string(obj<Value>){
 		Array : return "array"
 		Map  : return "map"
 		Object : return "object"
+        Func : return "func"
 		_    : return "unknown type:" + int(t)
 	}
 }

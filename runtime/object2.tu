@@ -91,6 +91,17 @@ fn objfuncofs(hdr<VObjHeader>, hid<u64>){
     return Null
 }
 
+func newfuncobject(entry<u64>,as<i32>){
+    //printf("entry:%d size:%d\n".(i8),entry,as) 
+    return new FuncObject {
+        type : Func,
+        hdr : VObjFunc {
+            argsize : as,
+            entry: entry
+        }
+    } 
+}
+
 func newclsobject(vid<VObjHeader>, objsize<i64>)
 {
     if vid == null dief("new cls obj is null".(i8))
@@ -103,7 +114,7 @@ func newclsobject(vid<VObjHeader>, objsize<i64>)
         dptr = new objsize
 
     members<map.Rbtree> = map.map_create()
-    members.insert = member_insert_or_update
+    members.insert = member_insert_or_update.(i64)
     obj<ObjectValue> = new ObjectValue {
         base : Value {
             type : Object,
@@ -188,12 +199,14 @@ fn object_func_addr2(k<u64>,obj<ObjectValue>){
     }
     fctype<VObjFunc> = objfuncofs(obj.hdr,k)
     if fctype == null  {
-        //TODO: decorate dyn func
-        entry<u64> = member_find2(obj.dynm,k)
-        if entry != null {
-            return entry
+        entry<FuncObject> = member_find2(obj.dynm,k)
+        if entry == null {
+            os.dief("[object-func] func not exist")
         } 
-        os.dief("[object-func] func not exist")
+        if entry.type != Func {
+            os.dief("[object-func] dyn func invalid ")
+        }
+        return entry.hdr.entry
     }
     return fctype.entry
 }

@@ -42,6 +42,7 @@ fn kv_get(index<Value>,root<Value>){
         Bool:   fmt.printf("[kv_get] arr or map for bool ,probably something wrong %s\n",debug.callerpc())
         Char:   fmt.printf("[kv_get] arr or map for char ,probably something wrong %s\n",debug.callerpc())
         Object:   fmt.printf("[kv_get] arr or map for object ,probably something wrong %s\n",debug.callerpc())
+        Func:   fmt.printf("[kv_get] arr or map for func ,probably something wrong %s\n",debug.callerpc())
         _     : fmt.printf("[kv_get] arr or map is invalid ,probably something wrong %s\n",debug.callerpc())
     }
 }

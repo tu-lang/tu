@@ -130,7 +130,15 @@ func get_object_value(obj<Value>){
     }
     return obj.data
 }
-
+func get_func_value(obj<FuncObject>){
+    if  obj == null {
+        dief("func ptr is null".(i8))
+    }
+    if obj.type != Func {
+        dief("call not func object".(i8))
+    }
+    return obj.hdr.entry
+}
 func member_insert_or_update(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.RbtreeNode>)
 {
 	// RbtreeNode **
@@ -204,10 +212,10 @@ fn object_create(typeid<i32>){
     }
     c.typeid = typeid
     members<map.Rbtree> = map.map_create()
-    members.insert = member_insert_or_update
+    members.insert = member_insert_or_update.(i64)
 
     funcs<map.Rbtree> = map.map_create()
-    funcs.insert = member_insert_or_update
+    funcs.insert = member_insert_or_update.(i64)
 
     c.members = members
     c.funcs   = funcs

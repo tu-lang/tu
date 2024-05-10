@@ -40,7 +40,7 @@ fn recordspan(h<Heap> , s<Span>) {
 
 Heap::init(){
     this.treapalloc.init(sizeof(TreapNode),0.(i8),0.(i8))
-    this.spanalloc.init(sizeof(Span),recordspan,this)
+    this.spanalloc.init(sizeof(Span),recordspan.(i64),this)
     this.cachealloc.init(sizeof(Cache),0.(i8),0.(i8))
 
     this.arenaHintAlloc.init(sizeof(ArenaHint),0.(i8),0.(i8))
