@@ -31,7 +31,7 @@ func test_int(){
 }
 func test_string(){
 	fmt.println("test string")
-    m<map.Map> = map.map_new(hashkey,0.(i8))
+    m<map.Map> = map.map_new(hashkey.(u64),0.(i8))
     m.insert(string.S(*"test1"),1)
     m.insert(string.S(*"test2"),2)
     m.insert(string.S(*"test3"),3)

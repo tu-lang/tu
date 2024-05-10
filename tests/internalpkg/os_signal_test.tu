@@ -8,7 +8,7 @@ func test(){
 	os.exit(0)
 }
 func main(){
-	os.setsignal(os.SIGINT,test)
+	os.setsignal(os.SIGINT,test.(u64))
 	fmt.println("register signal")
 	//kill self
 	kstr = fmt.sprintf(
