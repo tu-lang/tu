@@ -91,7 +91,7 @@ fn park(unlockf<u64> , lk<u64>){
 }
 
 fn parkunlock(lk<MutexInter>){
-	park(unlock_callback,lk)
+	park(unlock_callback.(i64),lk)
 }
 
 func newcore(fc<u64>){
@@ -104,7 +104,7 @@ func newcore(fc<u64>){
     c.tls_hi = c.tls + THREAD_TLS_SIZE
 
 
-    cid<i32> = newosthread(corestart,c,c.stk_hi,c.tls_hi)
+    cid<i32> = newosthread(corestart.(u64),c,c.stk_hi,c.tls_hi)
 
 	if cid <= 0
         dief("pthread create faild %d".(i8),cid)

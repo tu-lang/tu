@@ -19,7 +19,7 @@ fn test_lock(){
 	lock.init()
 	println(*"start test_lock\n")
 	lock.lock()
-	runtime.newcore(thread1)
+	runtime.newcore(thread1.(u64))
 	time.sleep(1)
 	println(*"main prepare unlock\n")
 	lock.unlock()

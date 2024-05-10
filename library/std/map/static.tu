@@ -39,7 +39,7 @@ MapIter::next(){
 func map_new(hashfn<u64>,insertfn<u64>){
 
     if insertfn == null {
-        insertfn = map_insert_or_update_default
+        insertfn = map_insert_or_update_default.(u64)
     }
     sentinel<RbtreeNode> = new RbtreeNode
 	sentinel.black()
