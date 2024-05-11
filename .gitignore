@@ -32,4 +32,4 @@ asmer/*.s
 asmer/dev
 _tmp
 ./*.s
-core.*
+core.[0-9]*
