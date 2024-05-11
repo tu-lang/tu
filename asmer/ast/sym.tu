@@ -31,6 +31,7 @@ mem Sym {
 
     i32             global
     i32             isstr
+    i32             isrel
 }
 func newSym(name<string.String>, externed<i32>)
 {

@@ -175,6 +175,7 @@ ElfFile::buildRelTab(){
     relTab<std.Array> = this.relTab 
     for(i<i32> = 0 ;i < this.relTab.len() ; i += 1)
     {
+        rel<RelInfo> = this.relTab.addr[i]
         rela<Elf64_Rela> = new Elf64_Rela
         rela.r_offset  = relTab.addr[i].(RelInfo).offset
         rela.r_info    = ELF64_R_INFO(
@@ -183,7 +184,9 @@ ElfFile::buildRelTab(){
             ),
             relTab.addr[i].(RelInfo).type
         )
-        rela.r_addend  = -4
+        if rel.tarSeg.cmpstr(".data".(i8)) != string.Equal
+            rela.r_addend  = -4
+
         if relTab.addr[i].(RelInfo).type == R_X86_64_PC32 {
             sym<ast.Sym> = this.asmer.parser.symtable.getSym(
                 relTab.addr[i].(RelInfo).name

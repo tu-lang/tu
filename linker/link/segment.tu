@@ -72,6 +72,9 @@ Seglist::relocAddr(relAddr<u32>,type<u8>,symAddr<u32>,addend<i32>)
 			break
 		}
 	}
+	if b == null {
+		utils.error("data reloction over offset")
+	}
 	base<i8*> = b.data
 	paddr<i32*> = base + relOffset - b.offset
 

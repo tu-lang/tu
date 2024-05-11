@@ -160,6 +160,9 @@ ElfFile::sortGlobal()
 ElfFile::addRel(seg<string.String>,addr<i32>,name<string.String>,type<i32>)
 {
 	utils.debug("ElfFIle::addRel() %S %S".(i8),seg.str(),name.str())
+	if name.empty() == string.True {
+		utils.error("add empty rel")
+	}
 	rel<RelInfo> = new RelInfo(seg,addr,name,type)
 	this.relTab.push(rel)
 	return rel

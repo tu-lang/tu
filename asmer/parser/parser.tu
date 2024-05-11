@@ -134,9 +134,14 @@ Parser::printToken()
     }
 
 }
-Parser::check(check<i8>,err)
+Parser::check(check<u64>,err)
 {
-    if(check) return true
+    if check == 1 return  null
+    if check == 0 goto tap_check_panic 
+    //dyn
+    c = check
+    if c return null
+tap_check_panic:
     os.dief(
         "parse: found token error token:%d:%s %s\n" + 
         "msg:%s\n" +

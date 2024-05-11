@@ -99,8 +99,14 @@ fn Pushf(ty<i32>){
         writeln("  movsd %%xmm0, (%%rsp)")
     else
         utils.error("unsupport ty in pushf")
-
 }
+
+fn PopMRet(sz<i32>){
+    for sz -= 1; sz >= 0 ; sz -= 1 {
+        Pop(argm64[int(sz)])
+    }
+}
+
 func Pop(arg){
     writeln("    pop %s",arg)
 }

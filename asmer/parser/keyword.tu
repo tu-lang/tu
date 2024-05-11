@@ -60,20 +60,32 @@ Parser::parseData(labelname<string.String>) {
     while this.isdata() {
         ty<i32> = this.scanner.curtoken
         tysize<i32> = ast.typesize(this.scanner.curtoken)
-        this.check(this.scanner.scan() == ast.TK_NUMBER ,"should be number in quad")
+        tk<i32> = this.scanner.scan()
+        if tk == ast.KW_LABEL {
+            sym.isrel = true
+            sym.str = this.scanner.curlex
 
-        v<string.String> = this.scanner.curlex
-        dl<u64> = v.tonumber()
-        sym.addBlock(new ast.ByteBlock(ty,dl))
+            this.elf.addRel(
+                string.S(*".data"),this.data_size,sym.str,elf.R_X86_64_64
+            )
+            sym.addBlock(new ast.ByteBlock(ty,0.(i8)))
+        }else if tk == ast.TK_NUMBER {
+            v<string.String> = this.scanner.curlex
+            dl<u64> = v.tonumber()
+            sym.addBlock(new ast.ByteBlock(ty,dl))
 
-        if(ty == ast.KW_ZERO){
-            tysize = dl 
+            if(ty == ast.KW_ZERO){
+                tysize = dl 
+            }
+        } else {
+            this.check(tk == ast.TK_NUMBER,"should be number in quad")
         }
         this.data_size += tysize
         
         //next
         this.scanner.scan()
     }
+    this.check(!this.isdata(),"not should be here in data vec")
     this.symtable.addSym(sym)
 }
 Parser::parseString(labelname<string.String>) {
