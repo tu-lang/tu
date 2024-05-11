@@ -98,6 +98,7 @@ Parser::parseClassDef()
 
     }
     this.pkg.addClass(s.name,s)
+    this.classes[s.name] = s
     reader.scan()
 }
 

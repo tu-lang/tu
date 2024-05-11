@@ -23,6 +23,8 @@ parser.Parser::compile()
     compile.funcs_offsets()
     compile.registerVars()
     compile.registerStrings(true)
+    compile.registerObjects()
+
     compile.writeln(".text")
     
     compile.registerFuncs()

@@ -25,16 +25,18 @@ class Parser {
     gvars = {} # map{string:VarExpr} global vars
 
     //stor all global function
-    funcs = {}         # map{string:Function}
-    extern_funcs = {}  # map[string]Function
+    funcs = {}         // map{string:Function}
+    extern_funcs = {}  // map[string]Function
 
-    strs = []          # [gen.StringExpr]  all static string
+    strs = []          // [gen.StringExpr]  all static string
     
-    links = []         # [string] ld link args
+    links = []         // [string] ld link args
+
+    classes = {}       //[string]Class
 
     line column fileno
 
-    pkg         = pkg   # Package*
+    pkg         = pkg   // Package*
     currentFunc = null
     filename   
     asmfile

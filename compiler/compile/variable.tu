@@ -89,3 +89,9 @@ func CreateGlobalString(var){
     writeln("%s:", var.name)
     writeln("    .string \"%s\"",var.lit)
 }
+
+fn registerObjects(){
+    for cls : currentParser.classes {
+
+    }
+}
