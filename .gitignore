@@ -32,3 +32,4 @@ asmer/*.s
 asmer/dev
 _tmp
 ./*.s
+core.*
