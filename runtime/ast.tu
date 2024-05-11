@@ -180,7 +180,7 @@ fn type2(v<Value>){
             o<ObjectValue> = v
             return int(o.hdr)
         }
-        Func : return 8
+        Func : return 9
         _    : return "type: unknown type:" + int(v.type)				
     }
 }

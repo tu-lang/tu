@@ -49,6 +49,8 @@ func test_complex_expr(){
 	if type(gvar.arr[1]) != type(string) os.die("gvar.arr should be string")
 	if type(gvar.arr[2][0]) != type(int) os.die("gvar.arr[2][0] should be int")
 	if type(gvar.getarr()[2][1]) != type(string) os.die("should be string in chain express")
+	cf = fn(){}
+	if type(cf) != type(function) os.die("should be function")
 	fmt.println("test complex expression sucess")
 }
 func main(){
