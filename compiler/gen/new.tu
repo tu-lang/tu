@@ -59,3 +59,47 @@ NewExpr::compile(ctx)
 	 return this
  }
  
+NewClassExpr::compile(ctx)
+{
+	utils.debug("gen.NewClassExpr::compile()")
+	this.record()
+	utils.debug("new expr got: type:%s",this.name)
+
+	s = this.getReal()
+	objsize = std.len(s.membervars) * 8
+
+	parent = s.father
+	while parent != null {
+		parent = parent.getReal()
+		objsize += std.len(parent.membervars) * 8
+		parent = parent.father
+	}
+
+	fullpackage = GP().getImport(this.package)
+	m = package.getStruct(fullpackage,this.name)
+	if m != null {
+		internal.gc_malloc(m.size)
+	}else{
+		internal.newclsobject(s.virtname(),objsize)
+	}
+	compile.Push()
+
+	call = new FunCallExpr(this.line,this.column)
+	call.package = s.parser.getpkgname()
+	call.funcname = "init"
+	call.cls     = s
+	call.is_pkgcall = true
+	params = this.args
+	pos = new ArgsPosExpr(1,this.line,this.column)
+	//find params count
+	fc = s.getFunc("init")
+	pos.pos = std.len(fc.params_order_var)  - 1
+
+	call.args[] = pos
+	std.merge(call.args,params)
+	call.compile(ctx)
+
+	compile.Pop("%rax")
+
+	return null
+}

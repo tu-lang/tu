@@ -38,6 +38,10 @@ func type_id(id,isobj){
     }
     call("runtime_type",2)
 }
+fn type_id2(){
+    compile.writeln("   push %%rax")
+    call("runtime_type2",1)
+}
 func malloc(size)
 {
     compile.writeln("    push $%d", size)
@@ -55,6 +59,13 @@ func newobject(typ,data)
     compile.writeln("   push $%d",typ)
 
     call("runtime_newobject",size)
+}
+fn newclsobject(vid,objsize){
+    compile.writeln("   push    $%d",objsize)
+    compile.writeln("   lea %s(%%rip) , %%rax",vid)
+    compile.Push()
+
+    call("runtime_newclsobject",2)
 }
 func newinherit_object(type_id){
     // compile.Pop("%rdi")
@@ -145,7 +156,17 @@ func object_member_get(expr,name)
     compile.writeln("   push %%rsi")
 
     call("runtime_object_member_get",2)
+}
+fn object_member_get2(expr,name)
+{
+    // check_object(expr)
+    // compile.Pop("%rdi")
+    hk = utils.hash(name)
+    compile.writeln("# [debug] object_member_get name:%s  hk:%d",name,hk)
+    compile.writeln("   mov $%d,%%rsi",hk)
+    compile.writeln("   push %%rsi")
 
+    call("runtime_object_member_get2",2)
 }
 func object_func_add(name)
 {
@@ -169,6 +190,18 @@ func object_func_addr(expr,name)
     compile.writeln("   push %%rsi")
 
     call("runtime_object_func_addr",2)
+}
+fn object_func_addr2(expr,name)
+{
+    // check_object(expr) 
+    // compile.Pop("%rdi")
+
+    hk = utils.hash(name)
+    compile.writeln("# [debug] object_func_addr name:%s  hk:%d",name,hk)
+    compile.writeln("   mov $%d,%%rsi",hk)
+    compile.writeln("   push %%rsi")
+
+    call("runtime_object_func_addr2",2)
 }
 func gen_true(){
     compile.writeln("    lea runtime_internal_bool_true(%%rip), %%rax")

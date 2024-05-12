@@ -30,6 +30,29 @@ BuiltinFuncExpr::compile(ctx){
 			return null
 		}
 		"type": {
+			if type(this.expr) == type(VarExpr) {
+				ve = this.expr
+				if typeids[ve.varname] != null {
+					type_id = typeids[ve.varname]
+					internal.newobject(ast.Int,type_id)
+					return null
+				}else {
+					pkg = GP().pkg.getPackage(ve.package)
+					if pkg != null {
+						s = pkg.getClass(ve.varname)
+						if s != null {
+							compile.writeln("	lea %s(%%rip) , %%rax", s.virtname())
+							internal.newobject2(ast.Int)
+							return null
+						}
+					}
+				}
+			}
+			this.expr.compile(ctx)
+			internal.type_id2()
+			return null
+		}
+		"type2": {
 			isobj = false
 			type_id = 0
 			if type(this.expr) == type(VarExpr) {

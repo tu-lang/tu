@@ -39,7 +39,7 @@ NewClassExpr::getReal(){
     return s
 }
 
-NewClassExpr::compile(ctx)
+NewClassExpr::compile2(ctx)
 {
 	utils.debug("gen.NewClassExpr::compile()")
 	this.record()
@@ -127,7 +127,7 @@ MemberExpr::compile(ctx)
 	utils.debug("gen.MemberExpr::compile()")
 	this.record()
 	if this.varname == "" {
-		internal.object_member_get(this,this.membername)
+		internal.object_member_get2(this,this.membername)
 		return null
 	}
 	var = GP().getGlobalVar("",this.varname)
@@ -152,7 +152,7 @@ MemberExpr::compile(ctx)
 	compile.GenAddr(var)
 	compile.Load()
 	compile.Push()
-	internal.object_member_get(this,this.membername)
+	internal.object_member_get2(this,this.membername)
 	return var
 }
 MemberExpr::assign(ctx, opt ,rhs)
@@ -185,7 +185,7 @@ MemberExpr::assign(ctx, opt ,rhs)
     ret1 = rhs.compile(ctx)
     check_load(ctx,rhs,ret1)
     compile.Push()
-    internal.call_object_operator(opt,this.membername,"runtime_object_unary_operator")
+    internal.call_object_operator(opt,this.membername,"runtime_object_unary_operator2")
     return null
 }
 
@@ -242,7 +242,7 @@ MemberCallExpr::compile(ctx)
         return this.static_compile(ctx,s)
     }
     compile.Push()
-    internal.object_member_get(this,this.membername)
+    internal.object_member_get2(this,this.membername)
     compile.Push()
 	params = this.call.args
     

@@ -118,3 +118,19 @@ Class::virtname(){
 		return s.virtname()
 	}
 }
+
+Class::getReal(){
+    s = null
+    if this.pkg != "" {
+        pkg = this.parser.pkg.getPackage(this.pkg)
+        if pkg != null
+            s = pkg.getClass(this.name)
+    }else{
+        s = this.parser.pkg.getClass(this.name)
+    }
+
+    if s == null
+        this.parser.check(false,"AsmError: class is not define of " + this.name)
+
+    return s
+}

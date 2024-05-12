@@ -214,7 +214,7 @@ ChainExpr::assign(ctx , opt, rhs) {
 		me  = this.last
         rhs.compile(ctx)
         compile.Push()
-        internal.call_object_operator(opt,me.membername,"runtime_object_unary_operator")
+        internal.call_object_operator(opt,me.membername,"runtime_object_unary_operator2")
 	}else if type(this.last) == type(IndexExpr) {
 		this.last.assign(ctx,opt,rhs)
 	}else{

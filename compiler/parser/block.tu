@@ -157,7 +157,7 @@ Parser::genSuperInitStmt(f){
 
     rhs = new gen.FunCallExpr(this.line,this.column)
     rhs.package = "runtime"
-    rhs.funcname = "object_parent_get"
+    rhs.funcname = "object_parent_get2"
     var = new gen.VarExpr("this",this.line,this.column)
     rhs.args[] = var
     rhs.is_pkgcall = true

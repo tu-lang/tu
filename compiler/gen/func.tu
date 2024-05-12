@@ -111,7 +111,7 @@ FunCallExpr::compile(ctx)
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
-		internal.object_func_addr(this,this.funcname)
+		internal.object_func_addr2(this,this.funcname)
 		compile.Push()
 		fc = new ast.Function()
 		fc.isExtern    = false

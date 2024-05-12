@@ -156,7 +156,7 @@ VarExpr::compile(ctx){
             compile.Load()
             compile.Push()
             
-            internal.object_member_get(this,this.varname)
+            internal.object_member_get2(this,this.varname)
         }
         ast.Var_Global_Local_Static_Field : {
             sm = new StructMemberExpr(this.package,this.line,this.column)
@@ -203,7 +203,7 @@ VarExpr::assign(ctx , opt , rhs){
             ret1 = rhs.compile(ctx)
             check_load(ctx,rhs,ret1)
             compile.Push()
-            internal.call_object_operator(opt,this.varname,"runtime_object_unary_operator")
+            internal.call_object_operator(opt,this.varname,"runtime_object_unary_operator2")
             return null
         }
         ast.Var_Global_Local_Static_Field:{
