@@ -102,11 +102,17 @@ StructInitExpr::compile(ctx){
 		}else{
 			rtok = value.getType(ctx)
 			ret = value.compile(ctx)
-			if ret != null && type(ret) == type(StructMemberExpr) {
+			if ret == null {}
+			else if type(ret) == type(StructMemberExpr) {
 				m = ret
 				m = ret
 				v = m.getMember() 
 				compile.LoadMember(v)
+			}else if type(ret) == type(ChainExpr) {
+				if type(ret.last) == type(MemberCallExpr){}
+				else {
+					compile.LoadMember(ret.ret)
+				}
 			}
 		}
 		compile.writeln(" mov (%%rsp) , %%rdi")
