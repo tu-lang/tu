@@ -51,7 +51,7 @@ ChainExpr::indexgen(ctx)
 	}
 
 	index = this.last
-	index.compile_chain_static(ctx,member.type)
+	index.compile_chain_static(ctx,member.size)
 	this.ret = member
 	return this
 }

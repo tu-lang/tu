@@ -47,9 +47,9 @@ IndexExpr::compileStaticIndex(ctx,size){
 	compile.writeln("\tmov %%rax , %%rdi")
 
 }
- IndexExpr::compile_chain_static(ctx,ty){
+ IndexExpr::compile_chain_static(ctx,tysize){
 	 compile.Push() 
-	 this.compileStaticIndex(ctx,parser.typesize[int(ty)])
+	 this.compileStaticIndex(ctx,tysize)
 	 compile.writeln("\tadd %%rdi , (%%rsp)") 
 	 compile.Pop("%rax")
 	 return null
