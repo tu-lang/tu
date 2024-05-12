@@ -6,12 +6,13 @@ class Class
 {
 	pkg = pkg
 	name
-	members     = [] # [Expression]
-	initmembers = [] # [Expression]
-	funcs       = [] # [Function] 
+	members     = [] // [Expression]
+	initmembers = [] // [Expression]
+	membervars  = [] // use by gen
+	funcs       = [] // [Function] 
 
 	father
-	parser      # Parser
+	parser      // Parser
 	type_id     = 0
 	found       = false
 	func init(pkg){}
@@ -97,4 +98,23 @@ Member::getarrcount(){
 	}
 	this.arrsize = arrcount
 	return arrcount
+}
+Class::virtname(){
+	if this.found {
+		return "virth_" + this.parser.getpkgname() + "_" + this.name
+	}else{
+		s = null
+		if this.pkg != "" {
+			pkg = compile.currentParser.pkg.getPackage(this.pkg)
+			if pkg != null {
+				s = pkg.getClass(this.name)
+			}
+		}else {
+			s = compile.currentParser.pkg.getClass(this.name)
+		}
+		if s == null {
+			this.parser.check(false,"father not exist in virtb gen")
+		}
+		return s.virtname()
+	}
 }

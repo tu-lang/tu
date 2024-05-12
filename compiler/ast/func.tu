@@ -4,35 +4,36 @@ use std
 use os
 
 class Function {
-    clsname  = "" # class name
-    name     = "" # func name
-    isExtern  = false # c ffi ; extern define
-    isObj     = false # object call
-    isMem     = false # static class function
+    clsname  = "" // class name
+    name     = "" // func name
+    namehid  
+    isExtern  = false // c ffi ; extern define
+    isObj     = false // object call
+    isMem     = false // static class function
     structname = ""
     rettype
 
-    parser   # Parser*
-    package  # Package
+    parser   // Parser*
+    package  // Package
 
-    locals     = []  # map{string:VarExpr,}  local variables
-    params_var = {}  # map{string:VarExpr,} function params
-    params_order_var = [] # [VarExpr*,...]  function order params
+    locals     = []  // map{string:VarExpr,}  local variables
+    params_var = {}  // map{string:VarExpr,} function params
+    params_order_var = [] // [VarExpr*,...]  function order params
 
     //next for asm compute
-    is_variadic   = false # function params is variadic
+    is_variadic   = false // function params is variadic
     size    stack   l_stack g_stack
 
-    stack_size  # total function stack size
+    stack_size  // total function stack size
 
-    closures    = [] # [Function*,]
+    closures    = [] // [Function*,]
     closureidx 
 
-    receiver    # ClosureExpr* for reciever point
+    receiver    // ClosureExpr* for reciever point
 
-    params      = [] # [string...]
-    block       # BlockStmt*
-    retExpr     # Expression*
+    params      = [] // [string...]
+    block       // BlockStmt*
+    retExpr     // Expression*
 
     funcnameid
 }

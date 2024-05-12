@@ -7,6 +7,7 @@ use fmt
 
 class VarExpr : ast.Ast {
     varname = varname
+    varnamehid
     offset
     name
     is_local    = true

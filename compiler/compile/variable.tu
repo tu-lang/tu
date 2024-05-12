@@ -92,6 +92,54 @@ func CreateGlobalString(var){
 
 fn registerObjects(){
     for cls : currentParser.classes {
+        // gen object type info
+        obj_virtname = cls.virtname()
 
+        writeln("   .global %s",obj_virtname)
+        writeln("%s:",obj_virtname)
+
+        if cls.father != null 
+            writeln("   .quad %s",cls.father.virtname())
+        else 
+            writeln("   .quad 0")
+        writeln("   .long %d",std.len(cls.membervars))
+        writeln("   .long %d",std.len(cls.funcs))
+
+        orderf = []
+        for fc : cls.funcs {
+            if fc.name == "" 
+                cls.parser.check(false,"regist object find fn nmae is empty")
+            fc.namehid = utils.hash(fc.name)
+            orderf[] = fc
+        }
+        utils.quick_sort(orderf,fn(l,r){
+            return l.namehid < r.namehid
+        })
+
+        orderm = []
+        for var : cls.membervars {
+            if var.varname == "" 
+                var.check(false,"regist object find var name is empty")
+            var.varnamehid = utils.hash(var.varname)
+            orderm[] = var
+        }
+        utils.quick_sort(orderm,fn(l,r){
+            return l.varnamehid < r.varnamehid
+        })
+
+        for fc : orderf {
+            writeln("   .quad %d",fc.namehid)
+            writeln("   .quad %s",fc.fullname())
+            writeln("   .long %d",std.len(fc.params))
+            writeln("   .long 0")
+            writeln("   .quad 0")
+        }
+
+        offset = 0
+        for var : orderm {
+            writeln("   .quad %d",var.varnamehid)
+            writeln("   .quad %d",offset)
+            offset += 8
+        }
     }
 }

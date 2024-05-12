@@ -43,7 +43,7 @@ class Parser {
     filepath    = filepath
 
     //currently scanner
-    scanner #Scanner*
+    scanner        //Scanner*
 }
 
 Parser::init(filepath,pkg) {

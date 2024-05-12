@@ -60,6 +60,7 @@ Parser::parseClassDef()
                 se.opt = ast.ASSIGN
                 se.rhs = new gen.NullExpr(this.line,this.column)
                 s.initmembers[] = se
+                s.membervars[] = member
             }else {
                 if type(member) != type(gen.AssignExpr) {
                     this.panic("class member only support assign expr:%s",member.toString(""))
@@ -73,6 +74,7 @@ Parser::parseClassDef()
                 me.membername = var.varname
                 member.lhs = me
                 s.initmembers[] = member
+                s.membervars[] = var
             }
         }else if reader.curToken == ast.FUNC {
             this.ctx = new ast.Context()
