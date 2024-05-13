@@ -46,7 +46,7 @@ mem Dir{
     runtime.Value* path
 }
 //for user space
-class Dir1 {}
+class Dir1 {dirent}
 //dirent::init(type,name){
 //    fmt.println(type,name)
 //    this.type = type
@@ -59,7 +59,7 @@ mem Dirent{
     u16 d_reclen
     i8 d_name
 }
-class FileFd {}
+class FileFd {type name path}
 //opendir
 //@param  dir_path
 //@return Dir

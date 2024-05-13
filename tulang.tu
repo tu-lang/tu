@@ -20,7 +20,7 @@ class Compiler {
     args = []
     // compiler || asmer || linker  
     // default compiler
-    flag_type = "compiler"
+    type = "compiler"
     flag_gcc  = false
     //default executeable name
     out       = "a.out"

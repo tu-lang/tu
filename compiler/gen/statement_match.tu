@@ -18,12 +18,12 @@ MatchStmt::compile(ctx){
     ctx.create()
 
     mainPoint = ast.incr_labelid()
-    this.endLabel = compile.currentParser.label() + ".L.match.end." + mainPoint
+    endLabel = compile.currentParser.label() + ".L.match.end." + mainPoint
     
     for(cs : this.cases){
         c = ast.incr_labelid()
         cs.label = compile.currentParser.label() + ".L.match.case." + c
-        cs.endLabel = this.endLabel
+        cs.endLabel = endLabel
     }
     
     if this.defaultCase == null {
@@ -31,7 +31,7 @@ MatchStmt::compile(ctx){
         this.defaultCase.matchCond = this.cond
     }
     this.defaultCase.label = compile.currentParser.label() + ".L.match.default." + ast.incr_labelid()
-    this.defaultCase.endLabel = this.endLabel
+    this.defaultCase.endLabel = endLabel
     
     for(cs : this.cases){
         cond = null

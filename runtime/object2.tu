@@ -186,8 +186,19 @@ fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectValue>){
         fmt.println(" [object-uop2] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
         return Null
     }
-    origin<Value> = object_member_get2(k,obj)
-    if origin == null origin = &internal_null
+    origin<Value> = null
+    mber<u64*> = objdataofs(obj.hdr,obj.base.data,k)
+    if mber == null {
+        mber = member_find2(obj.dynm,k)
+        if mber != null {
+            origin = mber
+        }else {
+            fmt.printf("[warn] unary class memeber not define in %s\n", debug.callerpc())
+            origin = &internal_null
+        }
+    } else {
+        origin = *mber
+    }
     
     ret<Value> = operator_switch(opt,origin,v)
     object_member_update2(obj,k,ret)
