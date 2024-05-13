@@ -11,8 +11,49 @@ func test_lognot(){
 	if !b != true {
 		os.die("should true")
 	}
+
+    v = null
+    if !v {} else os.die("!null")
+    v = 0
+    if !v {} else os.die("!0")
+    v = 1
+    if !v os.die("!1")
+
+    v = true
+    if !v os.die("!true")
+    v = false
+    if !v {} else os.die("!false")
+
+    v = '0'
+    if !v {} else os.die("! char 0")
+    v = '1'
+    if !v os.die("! char 1")
+
+    v = 1.2
+    if !v os.die("!1.2")
+    v = 0.0
+    if !v {} else os.die("!0.0")
+
+    v = ""
+    if !v {} else os.die("!emptry string")
+    v = "test"
+    if !v os.die("!test")
+
+    v = []
+    if !v {} else os.die("! emptry arr")
+    v = [1]
+    if !v os.die("! emptry arr")
+
+    v  = new Emptyc()
+    if !v os.die("! obj")
+    v = fn(){}
+    if !v os.die("! func")
+    v = {}
+    if !v os.die("! map")
+
 	fmt.println("test lognot ! success")
 }
+class Emptyc{}
 //~
 func test_bitnot(){
 	//1010 1010 == 170
