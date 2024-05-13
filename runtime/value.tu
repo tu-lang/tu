@@ -364,7 +364,33 @@ fn value_logor(lhs<Value>,rhs<Value>) {
 fn value_lognot(lhs<Value>) {
     result<Value> = new Value
     result.type = Bool
-    result.data = !lhs.data
+    match lhs.type {
+        Null | Int | Bool :  {
+            result.data = !lhs.data
+        }
+        Char: {
+            if lhs.data == '0'
+                 result.data = 1
+            else result.data = 0
+        }
+        Float : {
+            fl<FloatValue> = lhs 
+            result.data = !fl.data
+        }
+        String : {
+            l<i64> = lhs.data.(string.Str).len()
+            result.data = !l
+        }
+        Array : {
+            l<i64> = lhs.data.(std.Array).len()
+            result.data = !l
+        }
+        Object | Func | Map : {
+            result.data = 0
+        }
+        _    : return "[!]: unknown type:" + int(lhs.type)				
+    }
+
     return result
 }
 fn value_bitnot(lhs<Value>){
