@@ -32,6 +32,7 @@ class VarExpr : ast.Ast {
     
     ret 
     funcpkg  = ""
+    funcargs = 0
     funcname = ""
 
     tyassert
@@ -128,6 +129,7 @@ VarExpr::_getVarType(ctx)
 
         this.funcname = fc.name //save funcname ;compile will use it
         this.funcpkg = fc.package.getFullName()
+        this.funcargs = std.len(fc.params_order_var)
         return ast.Var_Func
     }   
     for(i = 0 ; i < std.len(GF().locals) ; i += 1){
@@ -185,6 +187,8 @@ VarExpr::compile(ctx){
             fc = this.funcpkg + "_" + this.funcname
             utils.debug("found function pointer:%s",fc)
             compile.writeln("    lea %s(%%rip), %%rax", fc)
+            if this.tyassert != null
+                internal.newfuncobject(this.funcargs)
         }
         _ : this.check(false,"unkonwn var type")
     }

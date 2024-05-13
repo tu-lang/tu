@@ -9,6 +9,7 @@ use compiler.utils
 
 class ClosureExpr : ast.Ast { 
 	varname = varname
+	def
 	func init(varname,line,column){
 		super.init(line,column)
 	}
@@ -17,17 +18,21 @@ class ClosureExpr : ast.Ast {
 
 ClosureExpr::compile(ctx){
 	compile.writeln("    lea %s(%%rip), %%rax", this.varname)
+	internal.newfuncobject(
+		std.len(this.def.params_order_var)
+	)
 	return null
 }
 
 class FunCallExpr : ast.Ast {
     funcname = ""
     package  = ""
-    args = [] # [Ast]
-	cls       # Class
+    args = [] // [Ast]
+	cls       // Class
     is_pkgcall
     is_extern
     is_delref
+	is_memcall = false
 
 	tyassert
 	func init(line,column){
@@ -67,6 +72,10 @@ FunCallExpr::compile(ctx)
 		packagename      = cfunc.parser.getpkgname()
 	}
 	if  std.empty(this.funcname) {
+		if !this.is_memcall {
+			internal.get_func_value_nq()
+			compile.writeln("	mov %%rax , (%%rsp)")
+		}
 		fc = new ast.Function()
 		fc.isExtern    = false
 		fc.isObj       = true
@@ -125,6 +134,8 @@ FunCallExpr::compile(ctx)
 		var = ctx.getOrNewVar(this.funcname)
 		compile.GenAddr(var)
 		compile.Load()
+		if !var.structtype 
+			internal.get_func_value()
 		compile.Push()
 		fc = new ast.Function()
 		fc.isExtern    = false

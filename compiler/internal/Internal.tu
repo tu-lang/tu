@@ -67,6 +67,12 @@ fn newclsobject(vid,objsize){
 
     call("runtime_newclsobject",2)
 }
+fn newfuncobject(funcargs){
+    compile.writeln("   push $%d",funcargs)
+    compile.Push()
+
+    call("runtime_newfuncobject",2)
+}
 func newinherit_object(type_id){
     // compile.Pop("%rdi")
     // compile.writeln("   mov $%d , %%rsi",type_id)
@@ -100,6 +106,13 @@ func isTrue()
 {
     compile.writeln("   push %%rax")
     call("runtime_isTrue",1)
+}
+fn get_func_value(){
+    compile.writeln("   push %%rax")
+    call("runtime_get_func_value",1)
+}
+fn get_func_value_nq(){
+    call("runtime_get_func_value",0)
 }
 func get_object_value()
 {

@@ -222,6 +222,7 @@ MemberCallExpr::static_compile(ctx,s){
 	params = call.args
 	pos = new ArgsPosExpr(0,this.line,this.column)
     pos.pos = std.len(params) + 1
+    call.is_memcall = true
     call.args = []
     call.args[] = pos
 	std.merge(call.args,params)
@@ -242,7 +243,7 @@ MemberCallExpr::compile(ctx)
         return this.static_compile(ctx,s)
     }
     compile.Push()
-    internal.object_member_get2(this,this.membername)
+    internal.object_func_addr2(this,this.membername)
     compile.Push()
 	params = this.call.args
     
@@ -256,6 +257,7 @@ MemberCallExpr::compile(ctx)
     //push $arg3
     //push $arg2
 	call = this.call
+    call.is_memcall = true
 	call.args = [pos]
 	std.merge(call.args , params)
     call.compile(ctx)

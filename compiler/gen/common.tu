@@ -16,7 +16,8 @@ typeids = []
 func init(){
     typeids = {
         "null":ast.Null , "int" : ast.Int , "double" : ast.Double, "string" : ast.String,
-        "bool":ast.Bool , "char": ast.Char, "array"  : ast.Array , "map"    : ast.Map
+        "bool":ast.Bool , "char": ast.Char, "array"  : ast.Array , "map"    : ast.Map,
+        "function": ast.Func
     }
 }
 func exprIsMtype(cond,ctx){

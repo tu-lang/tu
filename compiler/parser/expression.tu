@@ -270,6 +270,7 @@ Parser::parsePrimaryExpr()
         
         var = new gen.ClosureExpr("placeholder",this.line,this.column)
         closure.receiver = var
+        var.def = closure
         
         this.currentFunc = prev
         this.ctx = prev_ctx
@@ -491,7 +492,15 @@ Parser::parseVarExpr(var)
             reader.scan()
             ta = null
             if reader.curToken == ast.LPAREN {
-                ta = this.parseTypeAssert(true)
+                ta = this.parseTypeAssert(false)
+                if reader.curToken == ast.DOT {
+                    reader.scan()
+                }else{
+                    gvar = new gen.VarExpr(package,this.line,this.column)
+                    gvar.tyassert = ta
+                    gvar.is_local = false
+                    return gvar
+                }
             }
             this.expect( ast.VAR)
             pfuncname = reader.curLex.dyn()
