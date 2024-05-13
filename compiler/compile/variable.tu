@@ -112,10 +112,14 @@ fn registerObjects(){
             fc.namehid = utils.hash(fc.name)
             orderf[] = fc
         }
-        utils.quick_sort(orderf,fn(l,r){
-            return l.namehid < r.namehid
+        orderf = utils.quick_sort(orderf,fn(l,r){
+            ll<runtime.Value> = l.namehid
+            rr<runtime.Value> = r.namehid
+            lv<u64> = ll.data
+            rv<u64> = rr.data
+            if lv < rv return true
+            return false
         })
-
         orderm = []
         for var : cls.membervars {
             if var.varname == "" 
@@ -123,10 +127,14 @@ fn registerObjects(){
             var.varnamehid = utils.hash(var.varname)
             orderm[] = var
         }
-        utils.quick_sort(orderm,fn(l,r){
-            return l.varnamehid < r.varnamehid
+        orderm = utils.quick_sort(orderm,fn(l,r){
+            ll<runtime.Value> = l.varnamehid
+            rr<runtime.Value> = r.varnamehid
+            lv<u64> = ll.data
+            rv<u64> = rr.data
+            if lv < rv return true
+            return false
         })
-
         for fc : orderf {
             writeln("   .quad %d",fc.namehid)
             writeln("   .quad %s",fc.fullname())

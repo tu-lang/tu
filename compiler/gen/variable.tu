@@ -187,7 +187,7 @@ VarExpr::compile(ctx){
             fc = this.funcpkg + "_" + this.funcname
             utils.debug("found function pointer:%s",fc)
             compile.writeln("    lea %s(%%rip), %%rax", fc)
-            if this.tyassert != null
+            if this.tyassert == null
                 internal.newfuncobject(this.funcargs)
         }
         _ : this.check(false,"unkonwn var type")

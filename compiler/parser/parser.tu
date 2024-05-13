@@ -39,6 +39,7 @@ class Parser {
     pkg         = pkg   // Package*
     currentFunc = null
     filename   
+    filenameid  = ""
     asmfile
     filepath    = filepath
 

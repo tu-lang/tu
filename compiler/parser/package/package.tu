@@ -46,7 +46,7 @@ Package::parse()
     utils.notice("start scan the package:%s",abpath)
     fd = std.opendir(abpath)
     if !fd {
-        this.panic("file|dir not exist " +abpath)
+        utils.error("file|dir not exist " +abpath)
     }
     while true {
         file = fd.readdir()
