@@ -50,7 +50,7 @@ labels = {
     "movsd": ast.KW_MOVSD,       "movss": ast.KW_MOVSS,
     "addsd": ast.KW_ADDSD,       "addss": ast.KW_ADDSS,      "subsd": ast.KW_SUBSD,    "subss": ast.KW_SUBSS,
     "mulsd": ast.KW_MULSD,       "mulss": ast.KW_MULSS,      "divsd": ast.KW_DIVSD,    "divss": ast.KW_DIVSS,
-    "unpcklps": ast.KW_UNPCKLPS, "xorps": ast.KW_XORPS,
+    "unpcklps": ast.KW_UNPCKLPS, "xorps": ast.KW_XORPS,      "xorpd": ast.KW_XORPD,
 
     "ret": ast.KW_RET,          "retq": ast.KW_RET,   "cltd": ast.KW_CLTD,       "cdq": ast.KW_CDQ,       "cqo": ast.KW_CQO,    
     "lock": ast.KW_LOCK,        "leaveq": ast.KW_LEAVE,   "leave": ast.KW_LEAVE,

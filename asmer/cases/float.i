@@ -97,6 +97,16 @@ Disassembly of section .text:
   18:   0f 57 4c 24 04          xorps  0x4(%rsp),%xmm1
   1d:   44 0f 57 4c 24 04       xorps  0x4(%rsp),%xmm9
 
+0000000000000023 <xorpdinst>:
+  23:   66 0f 57 c9             xorpd  %xmm1,%xmm1
+  27:   66 44 0f 57 c9          xorpd  %xmm1,%xmm9
+  2c:   66 41 0f 57 d1          xorpd  %xmm9,%xmm2
+  31:   66 45 0f 57 ca          xorpd  %xmm10,%xmm9
+  36:   66 0f 57 4d 04          xorpd  0x4(%rbp),%xmm1
+  3b:   66 44 0f 57 4d 04       xorpd  0x4(%rbp),%xmm9
+  41:   66 0f 57 4c 24 04       xorpd  0x4(%rsp),%xmm1
+  47:   66 44 0f 57 4c 24 04    xorpd  0x4(%rsp),%xmm9
+
 0000000000000000 <cvtps2pdinst>:
    0:   0f 5a c8                cvtps2pd %xmm0,%xmm1
    3:   f3 0f 5a c8             cvtss2sd %xmm0,%xmm1

@@ -33,6 +33,7 @@ test_asmer_compile(){
     tu -o . -o /usr/local/lib/colib/
     check
     chmod 777 a.out
+    log "./a.out -p asmer/cases"
     ./a.out -p asmer/cases
     check
     clean "a.out"

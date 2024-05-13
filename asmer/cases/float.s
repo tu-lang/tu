@@ -93,6 +93,16 @@ xorpsinst:
 	xorps 4(%rbp), %xmm9
 	xorps 4(%rsp), %xmm1
 	xorps 4(%rsp), %xmm9
+xorpdinst:
+	xorpd %xmm1, %xmm1
+	xorpd %xmm1, %xmm9
+	xorpd %xmm9, %xmm2
+	xorpd %xmm10, %xmm9
+	xorpd 4(%rbp), %xmm1
+	xorpd 4(%rbp), %xmm9
+	xorpd 4(%rsp), %xmm1
+	xorpd 4(%rsp), %xmm9
+    
 
 cvtps2pdinst:
 	cvtps2pd	%xmm0, %xmm1
