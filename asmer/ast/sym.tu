@@ -43,6 +43,7 @@ func newSym(name<string.String>, externed<i32>)
         datas : std.array_create(),
         externed : externed,
         isstr : false,
+        isrel : false
     }
     if externed {
         s.segName = string.emptyS()
@@ -59,6 +60,7 @@ func newStringSym(name<string.String>, str<string.String>,pos<i32>)
         datas : std.array_create(),
         externed : false,
         isstr : true,
+        isrel : false,
         global: false,
         str : str
     }
@@ -71,6 +73,7 @@ func newDataSym(name<string.String>,pos<i32>)
         global : false,
         addr : pos,
         isstr : false,
+        isrel : false,
         segName : string.S(".data".(i8)),
         externed : false,
         datas : std.array_create(),

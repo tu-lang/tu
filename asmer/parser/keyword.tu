@@ -68,6 +68,7 @@ Parser::parseData(labelname<string.String>) {
             this.elf.addRel(
                 string.S(*".data"),this.data_size,sym.str,elf.R_X86_64_64
             )
+            this.symtable.getSym(sym.str)
             sym.addBlock(new ast.ByteBlock(ty,0.(i8)))
         }else if tk == ast.TK_NUMBER {
             v<string.String> = this.scanner.curlex
