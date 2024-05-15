@@ -164,6 +164,14 @@ fn object_member_update2(obj<ObjectValue>,k<u64>,v<Value>){
     *member = v
 }
 
+fn object_offset_get(ofs<u32> , obj<ObjectValue>){
+    if  obj.base.type != Object {
+        os.dief("[op-obj-ofs] invalid obj type :%s %d",runtime.type_string(obj),obj)
+    }
+    mber<u64*> = obj.base.data + ofs
+    return *mber
+}
+
 fn object_member_get2(k<u64>,obj<ObjectValue>){
     if  obj.base.type != Object {
         os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
