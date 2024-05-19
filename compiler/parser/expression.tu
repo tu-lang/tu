@@ -100,42 +100,14 @@ Parser::parseExpression(oldPriority)
         p = this.parseChainExpr(p)
     }
     
-    if this.isassign() {
+    if !this.ismultiassign && this.isassign() {
         this.check(p != null)
-        if type(p) != type(gen.VarExpr) &&
-            type(p) != type(gen.ChainExpr) &&
-            type(p) != type(gen.IndexExpr) &&
-            type(p) != type(gen.MemberExpr) &&
-            type(p) != type(gen.DelRefExpr) &&
-            type(p) != type(gen.StructMemberExpr)  
-        {
-            this.check(false,"ParseError: can not assign to " + p.name())
-        }
-        
+        this.lassigner(p)
         if type(p) == type(gen.StructMemberExpr) && this.currentFunc {
             sm = p
             sm.assign = true
         }
-        if type(p) == type(gen.VarExpr) && this.currentFunc {
-            var = p
-            
-            // if !std.exist(var.varname,this.currentFunc.params_var) 
-            //         && 
-            //    !std.exist(var.varname,this.currentFunc.locals) {
-            //     this.currentFunc.locals[var.varname] = var
-            // }
-            if var.package == "" && this.currentFunc.params_var[var.varname] == null {
-                hascontext = this.ctx.hasVar(var.varname)
-                if(hascontext != null){
-                    if(!this.currentFunc.FindLocalVar(hascontext.level,var.varname))
-                        this.check(false,"ctx has var , local doesn't has")
-                }else{
-                    this.currentFunc.InsertLocalVar(this.ctx.toplevel(),var)
-                    this.ctx.createVar(var.varname,var)
-                }
-            }
-        }
-
+        this.newvar(p)
         
         assignExpr = new gen.AssignExpr(this.line, this.column)
         assignExpr.opt = reader.curToken

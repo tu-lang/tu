@@ -113,3 +113,53 @@ GotoStmt::compile(ctx){
     compile.writeln("   jmp %s",this.label)
     return null
 }
+
+class MultiAssignStmt : ast.Ast {
+    ls = []
+    rs = []
+    opt
+    fn init(line,column){
+        super.init(line,column)
+    }
+}
+
+MultiAssignStmt::toString(){
+    ret = "("
+
+    for it : this.ls {
+        ret += it.toString()
+        ret += ","
+    }
+    ret += ")"
+    ret += ast.getTokenString(this.opt)
+    ret += "("
+    for it : this.rs {
+        ret += it.toString()
+        ret += ","
+    }
+    ret += ")"
+    return ret    
+}
+
+MultiAssignStmt::compile(ctx){
+    if std.len(this.ls) == std.len(this.rs) {
+        return this.compile1(ctx)
+    }
+    this.ls[0].check(false,"multiassign != multireciver")
+    return null
+}
+
+MultiAssignStmt::compile1(ctx){
+    for i = 0 ; i < std.len(this.ls) ; i += 1 {
+        lexpr = this.ls[i]
+        rexpr = this.rs[i]
+
+        opexpr = new AssignExpr(lexpr.line,lexpr.column)
+        opexpr.opt = this.opt
+        opexpr.lhs = lexpr
+        opexpr.rhs = rexpr
+
+        opexpr.compile(ctx)
+    }
+    return null
+}

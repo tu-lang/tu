@@ -45,6 +45,7 @@ class Parser {
 
     //currently scanner
     scanner        //Scanner*
+    ismultiassign = false
 }
 
 Parser::init(filepath,pkg) {
@@ -150,6 +151,20 @@ Parser::next_expect(tk,err<i8*>){
     return this.expect(tk,err)
 }
 
+Parser::lassigner(p){
+    match type(p) {
+        type(gen.VarExpr) : return true
+        type(gen.ChainExpr) : return true
+        type(gen.IndexExpr) : return true
+        type(gen.MemberExpr): return true
+        type(gen.DelRefExpr): return true
+        type(gen.StructMemberExpr)  : return true
+        _:{
+            this.check(false,"ParseError: can not assign to " + p.name())
+        }
+    }
+}
+
 Parser::isunary(){
     reader<scanner.ScannerStatic> = this.scanner
     match reader.curToken {
@@ -211,4 +226,21 @@ Parser::isbase(){
         ast.F32 | ast.F64 : return true
     }
     return false
+}
+
+Parser::newvar(p){
+    if type(p) == type(gen.VarExpr) && this.currentFunc {
+        var = p
+        
+        if var.package == "" && this.currentFunc.params_var[var.varname] == null {
+            hascontext = this.ctx.hasVar(var.varname)
+            if(hascontext != null){
+                if(!this.currentFunc.FindLocalVar(hascontext.level,var.varname))
+                    this.check(false,"ctx has var , local doesn't has")
+            }else{
+                this.currentFunc.InsertLocalVar(this.ctx.toplevel(),var)
+                this.ctx.createVar(var.varname,var)
+            }
+        }
+    }
 }

@@ -48,7 +48,12 @@ Parser::parseStatement()
         ast.LBRACE: {
             node = this.parseBlock(false,false)
         }
-        _ : node = this.parseExpression(1)
+        _ : {
+            node = this.parseExpression(1)
+            if reader.curToken == ast.COMMA {
+                node = this.parseMultiAssignStmt(node)
+            }
+        }
     }
     return node
 }
@@ -244,4 +249,50 @@ Parser::parseReturnStmt() {
     
     node.ret = this.parseExpression(1)
     return node
+}
+
+Parser::parseMultiAssignStmt(firstv){
+    utils.debug("parser.Parser::parseMultiAssignStmt()")
+    reader<scanner.ScannerStatic> = this.scanner
+
+    this.expect(ast.COMMA)
+    reader.scan()
+
+    this.lassigner(firstv)
+    this.newvar(firstv)
+
+    this.ismultiassign = true
+    stmt = new gen.MultiAssignStmt(this.line,this.column)
+    stmt.ls[] = firstv
+    stmt.opt = ast.ASSIGN
+    loop {
+        p = this.parseExpression()
+        this.lassigner(p)
+        if type(p) == type(gen.StructMemberExpr) && this.currentFunc {
+            p.assign = true
+        }
+        this.newvar(p)
+        stmt.ls[] = p
+
+        tk<i32> = reader.curToken
+        if tk == ast.COMMA {
+            reader.scan()
+        }else if this.isassign() {
+            stmt.opt = reader.curToken
+            reader.scan()
+            break
+        }else{
+            this.check(false,"parse multi var error")
+        }
+    }
+    loop {
+        p = this.parseExpression()
+        stmt.rs[] = p
+        if reader.curToken != ast.COMMA 
+            break
+        reader.scan()
+    }
+
+    this.ismultiassign = false
+    return stmt
 }
