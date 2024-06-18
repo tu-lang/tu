@@ -141,7 +141,7 @@ Rbtree::insert(node<RbtreeNode>)
     }
 
     //TODO: tree.insert(*root,node,sentinel)
-    insert<u64> = this.insert
+    insert<type_insert_or_update> = this.insert
     if Update == insert(*root, node, sentinel) {
         //update value do nothing here
         return Null

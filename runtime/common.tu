@@ -63,6 +63,9 @@ TimeSpec::init(ns<i64>){
     this.tv_nsec = ns % 1000000000
 }
 
+fn type_sched_debug()
+fn type_core_start()
+
 // impl by asm
 fn osyield()
 fn procyield(cnt<i64>)

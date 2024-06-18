@@ -3,6 +3,9 @@ use runtime
 use string
 use fmt
 
+fn type_hash_key(k<string.String>)
+fn type_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode>)
+
 func map_create(insertfn<u64>){
 
     if insertfn == null {

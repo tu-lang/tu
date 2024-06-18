@@ -86,7 +86,7 @@ Map::insert( k<u64*>,v<u64*>){
     tree<Rbtree> = this.rb
     hk<u64> = k
 	if this.hashfn != null {
-		hfn<u64> = this.hashfn
+		hfn<type_hash_key> = this.hashfn
 		hk = hfn(k)
 	}
 	node<RbtreeNode> = new RbtreeNode {
@@ -101,7 +101,7 @@ Map::insert( k<u64*>,v<u64*>){
 Map::find(key<u64>){
     hk<u64> = key
 	if this.hashfn != null {
-		hashfn<u64*> = this.hashfn
+		hashfn<type_hash_key> = this.hashfn
 		hk = hashfn(key)
 	}
 	return this.rb.find(hk)

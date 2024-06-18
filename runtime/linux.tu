@@ -263,6 +263,8 @@ globalAlloc<Palloc:>   = null
 ga_lock<MutexInter:>
 persistentChunks<u64*> = 0
 
+fn type_fixalloc_first(h<Heap> , s<Span>)
+
 Fixalloc::init(size<u64>,first<u64*>,arg<u64*>){
     this.size   = size
     this.first  = first
@@ -304,7 +306,7 @@ Fixalloc::alloc()
     
     v = this.chunk
     if this.first != null  {
-        callback<u64> = this.first
+        callback<type_fixalloc_first> = this.first
         callback(this.arg, v)
     }
     this.chunk  =  this.chunk + this.size

@@ -80,10 +80,11 @@ Sched::rmcore(c<Core>){
 	sched.lock.unlock()
 }
 
+fn type_unlock_callback(lk<MutexInter>)
 fn unlock_callback(lk<MutexInter>){
 	lk.unlock()
 }
-fn park(unlockf<u64> , lk<u64>){
+fn park(unlockf<type_unlock_callback> , lk<u64>){
 	if unlockf != null {
 		ok<i32> = unlockf(lk)
 	}
@@ -146,7 +147,7 @@ fn corestart(c<Core>){
     sched.addcore(c)
     gc.worldSeam.unlock()
 
-    startfn<u64> = c.cfn
+    startfn<type_core_start> = c.cfn
     startfn()
     schedule()
     sched.rmcore(c)
@@ -197,7 +198,7 @@ top:
 		goto top
 	}
     if sched.debug != Null{
-        debugfn<u64> = sched.debug
+        debugfn<type_sched_debug> = sched.debug
         debugfn()
     }
 }
