@@ -7,10 +7,9 @@ use std
 use std.map
 
 mem VObjFunc {
-	u64 hid
-	u64 entry
-	i32 argsize
-	i32 asyncsize
+	u64 hid    , entry
+    i32 isvarf , argstack
+	i32 argsize, asyncsize
 	u64 init
 }
 mem VObjMem {
@@ -91,11 +90,13 @@ fn objfuncofs(hdr<VObjHeader>, hid<u64>){
     return Null
 }
 
-func newfuncobject(entry<u64>,as<i32>){
+func newfuncobject(entry<u64>,as<i32>,isvarf<i32>){
     //printf("entry:%d size:%d\n".(i8),entry,as) 
     return new FuncObject {
         type : Func,
         hdr : VObjFunc {
+            isvarf : isvarf,
+            argstack: as * 8,
             argsize : as,
             entry: entry
         }
@@ -212,25 +213,6 @@ fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectValue>){
     object_member_update2(obj,k,ret)
 }
 
-fn object_func_addr2(k<u64>,obj<ObjectValue>){
-    if  obj.base.type != Object {
-        os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
-    }
-    fctype<VObjFunc> = objfuncofs(obj.hdr,k)
-    if fctype == null  {
-        entry<FuncObject> = member_find2(obj.dynm,k)
-        if entry == null {
-            os.dief("[object-func] func not exist")
-        } 
-        if entry.type != Func {
-            os.dief("[object-func] dyn func invalid ")
-        }
-        return entry.hdr.entry
-    }
-    return fctype.entry
-}
-
-
 fn member_find2(tree<map.Rbtree>,hk<u64>){
 
 	node<map.RbtreeNode> = null
@@ -265,4 +247,32 @@ fn member_insert2(tree<map.Rbtree>, hk<u64>,v<Value>)
     //node.k     = hk
     node.v     = v
     tree.insert(node)
+}
+
+fn object_func_addr2(k<u64>,obj<ObjectValue>){
+    if  obj.base.type != Object {
+        os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
+    }
+    fctype<VObjFunc> = objfuncofs(obj.hdr,k)
+    if fctype == null  {
+        entry<FuncObject> = member_find2(obj.dynm,k)
+        if entry == null {
+            os.dief("[object-func] func not exist")
+        } 
+        if entry.type != Func {
+            os.dief("[object-func] dyn func invalid ")
+        }
+        return &entry.hdr
+    }
+    return fctype
+}
+
+func get_func_value(obj<FuncObject>){
+    if  obj == null {
+        dief("func ptr is null".(i8))
+    }
+    if obj.type != Func {
+        dief("call not func object".(i8))
+    }
+    return &obj.hdr
 }

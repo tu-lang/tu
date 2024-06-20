@@ -130,15 +130,7 @@ func get_object_value(obj<Value>){
     }
     return obj.data
 }
-func get_func_value(obj<FuncObject>){
-    if  obj == null {
-        dief("func ptr is null".(i8))
-    }
-    if obj.type != Func {
-        dief("call not func object".(i8))
-    }
-    return obj.hdr.entry
-}
+
 func member_insert_or_update(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.RbtreeNode>)
 {
 	// RbtreeNode **
