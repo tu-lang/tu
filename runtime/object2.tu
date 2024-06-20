@@ -267,7 +267,7 @@ fn object_func_addr2(k<u64>,obj<ObjectValue>){
     return fctype
 }
 
-func get_func_value(obj<FuncObject>){
+fn get_func_value(obj<FuncObject>){
     if  obj == null {
         dief("func ptr is null".(i8))
     }
@@ -275,4 +275,53 @@ func get_func_value(obj<FuncObject>){
         dief("call not func object".(i8))
     }
     return &obj.hdr
+}
+
+
+fn dynarg_pass(fc<VObjFunc>...){ 
+    passstack<u64*> = &fc  
+    passstack += ptrSize          
+
+    userstack<u64*> = passstack + fc.argstack 
+    count<i32> = userstack[0]       
+    countaddr<i64*> = userstack     
+
+    userstack += ptrSize  
+    if fc.isvarf { 
+        copy<i32> = fc.argsize - 1 
+        if copy == 0 {
+            passstack[0] = countaddr  
+        }else{
+            j<i32> = 0
+            last<i32> = 0
+            for i<i32> = 0 ; i < copy ; i += 1 {
+                if j + 1 > count {
+                    passstack[i] = &internal_null
+                }else{
+                    passstack[i] = userstack[j]
+                    last = j 
+                    j += 1   
+                }
+            }
+            if count == 0 {
+                passstack[copy] = countaddr
+            }else {
+                passstack[copy] = userstack + last * 8
+                userstack[last] = count - j
+            }
+        }
+        return True
+    }
+
+    copy<i32> = fc.argsize 
+    j<i32> = 0
+    for i<i32> = 0 ; i < copy ; i += 1 {
+        if j + 1 > count { 
+            passstack[i] = &internal_null
+        }else{
+            passstack[i] = userstack[j]
+            j  += 1
+        }
+    } 
+    return True
 }
