@@ -8,7 +8,7 @@ use std.map
 
 mem VObjFunc {
 	u64 hid    , entry
-    i32 isvarf , argstack
+    i64 isvarf , argstack
 	i32 argsize, asyncsize
 	u64 init
 }
@@ -310,7 +310,7 @@ fn dynarg_pass(fc<VObjFunc>...){
                 userstack[last] = count - j
             }
         }
-        return True
+        return fc.entry
     }
 
     copy<i32> = fc.argsize 
@@ -323,5 +323,9 @@ fn dynarg_pass(fc<VObjFunc>...){
             j  += 1
         }
     } 
-    return True
+    return fc.entry
+}
+
+fn dynarg_varadicerr1(){
+    os.die("pass varadict args, miss args")
 }
