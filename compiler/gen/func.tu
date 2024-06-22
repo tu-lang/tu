@@ -19,7 +19,8 @@ class ClosureExpr : ast.Ast {
 ClosureExpr::compile(ctx){
 	compile.writeln("    lea %s(%%rip), %%rax", this.varname)
 	internal.newfuncobject(
-		std.len(this.def.params_order_var)
+		std.len(this.def.params_order_var),
+		this.def.is_variadic
 	)
 	return null
 }

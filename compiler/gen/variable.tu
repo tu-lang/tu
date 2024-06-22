@@ -188,11 +188,14 @@ VarExpr::compile(ctx){
             }
         }
         ast.Var_Func : {  
-            fc = this.funcpkg + "_" + this.funcname
-            utils.debug("found function pointer:%s",fc)
-            compile.writeln("    lea %s(%%rip), %%rax", fc)
+            fcname = this.funcpkg + "_" + this.funcname
+            fc = package.packages[this.funcpkg].getFunc(this.funcname,false)
+            this.check(fc != null ,"function pointer used not found")
+            
+            utils.debug("found function pointer:%s",fcname)
+            compile.writeln("    lea %s(%%rip), %%rax", fcname)
             if this.tyassert == null
-                internal.newfuncobject(this.funcargs)
+                internal.newfuncobject(this.funcargs,fc.is_variadic)
         }
         _ : this.check(false,"unkonwn var type")
     }

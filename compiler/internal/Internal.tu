@@ -66,7 +66,8 @@ fn newclsobject(vid,objsize){
 
     call("runtime_newclsobject")
 }
-fn newfuncobject(funcargs){
+fn newfuncobject(funcargs,isvarf){
+    compile.writeln("   push $%d", isvarf)
     compile.writeln("   push $%d",funcargs)
     compile.Push()
 
