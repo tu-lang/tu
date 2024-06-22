@@ -93,9 +93,9 @@ func CreateFunction(fc) {
 
     args = std.len(fc.params_order_var)
     if args > 0 {
-        writeln("   pop %d(%%rsp)", args * 8)
+        writeln("   pop %d(%%rsp)", (args - 1) * 8 )
         if args > 1 {
-            writeln("   sub $%d , %%rsp",(args - 1) * 8)
+            writeln("   add $%d , %%rsp",(args - 1) * 8)
         }
     }
 
