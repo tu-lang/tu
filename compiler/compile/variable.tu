@@ -138,7 +138,7 @@ fn registerObjects(){
         for fc : orderf {
             writeln("   .quad %d",fc.namehid)
             writeln("   .quad %s",fc.fullname())
-            writeln("   .long %d",std.len(fc.params))
+            writeln("   .long %d",std.len(fc.params_order_var))
             writeln("   .long 0")
             writeln("   .quad 0")
         }

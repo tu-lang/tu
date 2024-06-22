@@ -131,11 +131,9 @@ Parser::parseFuncDef(member,closure)
         var = new gen.VarExpr("this",this.line,this.column)
         node.params_var["this"] = var
         node.params_order_var[] = var
-        node.params[] = "this"
     }
 
     params  = this.parseParameterList()
-    std.merge(node.params,params)
 
     for(it : node.params_order_var){
         this.ctx.createVar(it.varname,it)
@@ -259,7 +257,6 @@ Parser::genClassInitFunc(clsname)
     var = new gen.VarExpr("this",this.line,this.column)
     f.params_var["this"] = var
     f.params_order_var[] = var
-    f.params[] = "this"
 
     f.block = new gen.BlockStmt()
 

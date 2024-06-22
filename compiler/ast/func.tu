@@ -36,7 +36,6 @@ class Function {
 
     receiver    // ClosureExpr* for reciever point
 
-    params      = [] // [string...]
     block       // BlockStmt*
     retExpr     // Expression*
 
