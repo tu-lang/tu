@@ -10,7 +10,7 @@ use compiler.utils
 FunCallExpr::dyncompile(ctx, ty, obj){
 	match ty {
     	ast.ChainCall: {
-            internal.get_func_value_nq()
+            internal.get_func_value()
 			compile.writeln(" mov %%rax , (%%rsp)")
     	}
     	ast.MemberCall: {
@@ -28,8 +28,7 @@ FunCallExpr::dyncompile(ctx, ty, obj){
     	ast.ClosureCall: {
 			compile.GenAddr(obj)
         	compile.Load()
-			if !obj.structtype
-				internal.get_func_value()
+			internal.get_func_value()
 			compile.Push()
 		}
     	_: this.check(false,"unknown dyn compile")

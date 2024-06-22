@@ -162,7 +162,7 @@ FunCallExpr::registercall(ctx,fc)
 		c = ast.incr_labelid()
 		compile.Push()
 		compile.writeln("    push -8(%%rbp)")
-		internal.call("runtime_get_object_value",0)
+		internal.call("runtime_get_object_value")
 		compile.writeln("    mov %%rax,%d(%%rbp)",compile.currentFunc.stack)
 		compile.Pop("%rax") 
 

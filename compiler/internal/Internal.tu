@@ -5,7 +5,7 @@ use compiler.compile
 func call_operator(opt,name)
 {
     compile.writeln("   push $%d",int(opt))
-    call(name,0)
+    call(name)
 }
 
 func call_object_operator(opt, name,method) {
@@ -15,17 +15,17 @@ func call_object_operator(opt, name,method) {
     compile.writeln("    mov $%d,%%rdx",hk)
     compile.writeln("   push %%rdx")
     compile.writeln("   push $%d",int(opt))
-    call(method,4)
+    call(method)
 }
 func gc_malloc(size)
 {
     if size != null {
         compile.writeln("    push $%d", size)
-        call("runtime_gc_malloc",1)
+        call("runtime_gc_malloc")
     }else {
         //pass args by prev expression.compile & %rax
         compile.writeln("    push %%rax")
-        call("runtime_gc_malloc",1)
+        call("runtime_gc_malloc")
     }
 }
 func type_id(id,isobj){
@@ -36,16 +36,16 @@ func type_id(id,isobj){
         compile.writeln("    push $0")
         compile.writeln("    push $%d",id)
     }
-    call("runtime_type",2)
+    call("runtime_type")
 }
 fn type_id2(){
     compile.writeln("   push %%rax")
-    call("runtime_type2",1)
+    call("runtime_type2")
 }
 func malloc(size)
 {
     compile.writeln("    push $%d", size)
-    call("malloc",1)
+    call("malloc")
 }
 //@typ  ast.Int ... ast.Object
 func newobject(typ,data)
@@ -57,26 +57,26 @@ func newobject(typ,data)
     }
     compile.writeln("   push $%d",typ)
 
-    call("runtime_newobject",0)
+    call("runtime_newobject")
 }
 fn newclsobject(vid,objsize){
     compile.writeln("   push    $%d",objsize)
     compile.writeln("   lea %s(%%rip) , %%rax",vid)
     compile.Push()
 
-    call("runtime_newclsobject",2)
+    call("runtime_newclsobject")
 }
 fn newfuncobject(funcargs){
     compile.writeln("   push $%d",funcargs)
     compile.Push()
 
-    call("runtime_newfuncobject",2)
+    call("runtime_newfuncobject")
 }
 func newinherit_object(type_id){
     // compile.Pop("%rdi")
     // compile.writeln("   mov $%d , %%rsi",type_id)
     compile.writeln("   push $%d",type_id)
-    call("runtime_newinherit_object",2)
+    call("runtime_newinherit_object")
 }
 use runtime
 func newint(typ, data)
@@ -85,14 +85,14 @@ func newint(typ, data)
     compile.writeln("    mov $%s , %%rax",data)
     compile.Push()
     compile.writeln("    push $%d", typ)
-    call("runtime_newobject",2)
+    call("runtime_newobject")
 }
 
 func newfloat()
 {
     compile.Pushf(ast.F64)
     compile.writeln("    push $%d", ast.Double)
-    call("runtime_newobject",2)
+    call("runtime_newobject")
 }
 
 func newobject2(typ)
@@ -101,40 +101,36 @@ func newobject2(typ)
     compile.writeln("    push %%rax")
     compile.writeln("    push $%d", typ)
 
-    call("runtime_newobject",2)
+    call("runtime_newobject")
 }
 func isTrue()
 {
     compile.writeln("   push %%rax")
-    call("runtime_isTrue",1)
+    call("runtime_isTrue")
 }
 fn get_func_value(){
     compile.writeln("   push %%rax")
-    call("runtime_get_func_value",1)
-}
-fn get_func_value_nq(){
-    compile.writeln("   push (%%rsp)")
-    call("runtime_get_func_value",0)
+    call("runtime_get_func_value")
 }
 func get_object_value()
 {
     compile.writeln("    push %%rax")
-    call("runtime_get_object_value",1)
+    call("runtime_get_object_value")
 }
 
 func arr_pushone() {
     
-    call("runtime_arr_pushone",1)
+    call("runtime_arr_pushone")
 }
 
 func kv_update() {
     
-    call("runtime_kv_update",2)
+    call("runtime_kv_update")
 }
 
 func kv_get() {
     
-    call("runtime_kv_get",2)
+    call("runtime_kv_get")
 }
 func call(funcname,add)
 {
@@ -167,7 +163,7 @@ func object_member_get(expr,name)
     compile.writeln("   mov $%d,%%rsi",hk)
     compile.writeln("   push %%rsi")
 
-    call("runtime_object_member_get",2)
+    call("runtime_object_member_get")
 }
 fn object_member_get2(expr,name)
 {
@@ -178,7 +174,7 @@ fn object_member_get2(expr,name)
     compile.writeln("   mov $%d,%%rsi",hk)
     compile.writeln("   push %%rsi")
 
-    call("runtime_object_member_get2",2)
+    call("runtime_object_member_get2")
 }
 func object_func_add(name)
 {
@@ -189,7 +185,7 @@ func object_func_add(name)
     compile.writeln("   push %%rsi")
 
     // compile.writeln("    mov (%%rsp),%%rdi")
-    call("runtime_object_func_add",2)
+    call("runtime_object_func_add")
 }
 func object_func_addr(expr,name)
 {
@@ -201,7 +197,7 @@ func object_func_addr(expr,name)
     compile.writeln("   mov $%d,%%rsi",hk)
     compile.writeln("   push %%rsi")
 
-    call("runtime_object_func_addr",2)
+    call("runtime_object_func_addr")
 }
 fn object_func_addr2(expr,name)
 {
@@ -213,7 +209,7 @@ fn object_func_addr2(expr,name)
     compile.writeln("   mov $%d,%%rsi",hk)
     compile.writeln("   push %%rsi")
 
-    call("runtime_object_func_addr2",2)
+    call("runtime_object_func_addr2")
 }
 func gen_true(){
     compile.writeln("    lea runtime_internal_bool_true(%%rip), %%rax")
@@ -233,5 +229,5 @@ func miss_args(pos,funcname,isclass){
     compile.writeln("    push %%rax")
 
     compile.writeln("    push $%d",pos)
-    call("runtime_miss_args",3)
+    call("runtime_miss_args")
 }
