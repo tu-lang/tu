@@ -32,7 +32,6 @@ class FunCallExpr : ast.Ast {
     is_pkgcall
     is_extern
     is_delref
-	is_memcall = false
 
 	tyassert
 	func init(line,column){
@@ -72,8 +71,10 @@ FunCallExpr::compile(ctx)
 		packagename      = cfunc.parser.getpkgname()
 	}
 	if  std.empty(this.funcname) {
-		return this.dyncompile(ctx,ast.ChainCall,this.funcname)
-	}else if this.cls != null {
+		this.check(false,"funcname is empty")
+	} 
+	
+	if this.cls != null {
         fc = this.cls.getFunc(this.funcname)
         if fc == null
             this.check(false,
@@ -105,13 +106,10 @@ FunCallExpr::compile(ctx)
 			return null
 		}
 		this.checkobjcall(var)
-		compile.GenAddr(var)
-		compile.Load()
-		compile.Push()
-
-		return this.dyncompile(ctx,ast.ObjCall,this.funcname)
+		return this.dyncompile(ctx,ast.ObjCall,var)
 	}else if this.package == "" && ctx.getOrNewVar(this.funcname) != null {
-		return this.dyncompile(ctx,ast.ClosureCall,this.funcname)
+		var = ctx.getOrNewVar(this.funcname)
+		return this.dyncompile(ctx,ast.ClosureCall,var)
 	}else{
 		pkg  = package.packages[packagename]
 		if !pkg {

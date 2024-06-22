@@ -224,7 +224,6 @@ MemberCallExpr::static_compile(ctx,s){
 	params = call.args
 	pos = new ArgsPosExpr(0,this.line,this.column)
     pos.pos = std.len(params)
-    call.is_memcall = true
     call.args = []
     call.args[] = pos
 	std.merge(call.args,params)
@@ -251,17 +250,17 @@ MemberCallExpr::compile(ctx)
 	pos = new ArgsPosExpr(0,this.line,this.column)
     pos.pos = std.len(params) + 1
     //push obj
-    //push obj.func
     //push $arg6
     //push $arg5
     //push $arg4
     //push $arg3
     //push $arg2
 	call = this.call
-    call.is_memcall = true
 	call.args = [pos]
 	std.merge(call.args , params)
-    call.dyncompile(ctx,ast.MemberCall,this.membername)
+
+    call.funcname = this.membername
+    call.dyncompile(ctx,ast.MemberCall,null)
     compile.writeln("    add $8, %%rsp")
 	return null
 }

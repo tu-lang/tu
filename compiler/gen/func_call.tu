@@ -10,7 +10,7 @@ use compiler.utils
 
 FunCallExpr::call(ctx,fc)
 {
-	if !fc.isObj && fc.block == null {
+	if fc.block == null {
 		compile.writeln("#    register %s",compile.currentFunc.fullname())
 		return this.registercall(ctx,fc)
 	}
@@ -26,20 +26,15 @@ FunCallExpr::stackcall(ctx,fc)
 		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_order_var),std.len(this.args))
 
 	stack_args = this.PushStackArgs(ctx,fc)
-	if !fc.isObj {
-		if !fc.isExtern {
-			callname = fc.fullname()
-		}
-		compile.writeln("    call %s",callname)
-	}else{
-		//push funcaddr,argn,argn-1,arg....,arg1
-		compile.writeln("    mov %d(%%rsp),%%r10",stack_args * 8)
-		compile.writeln("    mov $0, %%rax")
-		compile.writeln("    call *%%r10")
+	if !fc.isExtern {
+		callname = fc.fullname()
 	}
+	compile.writeln("    call %s",callname)
+
 	compile.writeln("    add $%d, %%rsp", stack_args * 8)
 	return null
 }
+
 FunCallExpr::PushStackArgs(prevCtxChain,fc)
 {
 	stack = 0

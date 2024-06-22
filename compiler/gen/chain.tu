@@ -197,7 +197,13 @@ ChainExpr::objgen(ctx)
 		i.compile(ctx)
 		compile.Push()
 	}
-	this.last.compile(ctx)
+
+	if type(this.last) == type(FunCallExpr) {
+		this.last.dyncompile(ctx,ast.ChainCall,null)
+	}else {
+		this.last.compile(ctx)
+	}
+
     return null
 }
 
