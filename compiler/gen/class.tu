@@ -216,12 +216,14 @@ MemberCallExpr::static_compile(ctx,s){
     this.check(cls != null,"class not define "+s.name)
     fc = cls.getFunc(this.membername)
     if fc == null this.check(false,"func not exist:" + this.membername)
-    compile.writeln("    lea %s(%%rip), %%rax", fc.fullname())
-    compile.Push()
+
 	call = this.call
+    call.cls = cls
+    call.funcname = this.membername
+
 	params = call.args
 	pos = new ArgsPosExpr(0,this.line,this.column)
-    pos.pos = std.len(params) + 1
+    pos.pos = std.len(params)
     call.is_memcall = true
     call.args = []
     call.args[] = pos
