@@ -119,26 +119,17 @@ FunCallExpr::registercall(ctx,fc)
 			compile.Pop(compile.args64[gp])
 			gp += 1
 		}
-	if !fc.isObj {
-		if fc.isExtern {
-			compile.writeln("    lea %s(%%rip), %%rax", funcname)
-		}else{
-			realfuncname = fc.fullname()
-			compile.writeln("    lea %s(%%rip), %%rax", realfuncname)
-		}
 
-		compile.writeln("    mov %%rax, %%r10")
-		compile.writeln("    mov $%d, %%rax", fp)
-		compile.writeln("    call *%%r10")
+	if fc.isExtern {
+		compile.writeln("    lea %s(%%rip), %%rax", funcname)
 	}else{
-		if std.len(args) > 6 {
-			compile.writeln("   mov %d(%%rsp),%%r10",(std.len(args) - 6) * 8)
-		}else{
-			compile.Pop("%%r10")
-		}
-		compile.writeln("    mov $%d, %%rax", fp)
-		compile.writeln("    call *%%r10")
+		realfuncname = fc.fullname()
+		compile.writeln("    lea %s(%%rip), %%rax", realfuncname)
 	}
+
+	compile.writeln("    mov %%rax, %%r10")
+	compile.writeln("    mov $%d, %%rax", fp)
+	compile.writeln("    call *%%r10")
 
 	if compile.currentFunc && compile.currentFunc.is_variadic && have_variadic {
 		c = ast.incr_labelid()

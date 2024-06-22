@@ -76,11 +76,6 @@ FunCallExpr::compile(ctx)
 	
 	if this.cls != null {
         fc = this.cls.getFunc(this.funcname)
-        if fc == null
-            this.check(false,
-                "can not find class func definition of " + this.funcname
-			)
-        fc.isObj       = false
     }else if this.package != "" && GP().getGlobalVar("",this.package) != null {
         var = GP().getGlobalVar("",this.package)
         goto OBJECT_MEMBER_CALL
@@ -119,17 +114,17 @@ FunCallExpr::compile(ctx)
 			)
 		}
 		fc = pkg.getFunc(this.funcname,this.is_extern)
-		if !fc {
-			this.check(false,
-				fmt.sprintf(
-					"can not find func definition of %s : pkgname:%s  this.pkgname:%s ",
-					this.funcname,
-					packagename,
-					this.package
-				)
+	}
+
+	if !fc {
+		this.check(false,
+			fmt.sprintf(
+				"can not find func definition of %s : pkgname:%s  this.pkgname:%s ",
+				this.funcname,
+				packagename,
+				this.package
 			)
-		}
-		fc.isObj       = false
+		)
 	}
 	this.call(ctx,fc)
 	return null
