@@ -133,3 +133,14 @@ package.Package::defaultvarsinit(){
 		}
 	}
 }
+
+fn getGLobalFunc(pkgname ,name){
+	if pkgname == "" {
+		pkgname  = compile.currentFunc.parser.getpkgname()
+	}
+	pkg  = package.packages[pkgname]
+    if !pkg {
+		return null
+    }
+	return pkg.getFunc(name,false)
+}

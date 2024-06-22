@@ -47,6 +47,7 @@ ForStmt::rangeFor(ctx)
     compile.Push()
     
     // compile.writeln("   mov (%%rsp),%%rdi")
+    compile.Push()
     internal.call("runtime_for_first",0)
     compile.Push()
     
@@ -59,8 +60,11 @@ ForStmt::rangeFor(ctx)
     
     if this.key != null{
         ctx.getOrNewVar(this.key.varname)
-        // compile.writeln("   mov 8(%%rsp),%%rdi")
-        // compile.writeln("   mov (%%rsp),%%rsi")
+        
+        compile.writeln("   mov 8(%%rsp),%%rdi")
+        compile.writeln("   mov (%%rsp),%%rsi")
+        compile.writeln("   push %%rdi")
+        compile.writeln("   push %%rsi")
         internal.call("runtime_for_get_key",0)
         compile.Push()
 
@@ -70,8 +74,10 @@ ForStmt::rangeFor(ctx)
     }
     if this.value != null {
         ctx.getOrNewVar(this.value.varname)
-        // compile.writeln("   mov 8(%%rsp),%%rdi")
-        // compile.writeln("   mov (%%rsp),%%rsi")
+        compile.writeln("   mov 8(%%rsp),%%rdi")
+        compile.writeln("   mov (%%rsp),%%rsi")
+        compile.writeln("   push %%rdi")
+        compile.writeln("   push %%rsi")
         internal.call("runtime_for_get_value",0)
         compile.Push()
         compile.GenAddr(this.value.getVar(ctx,this.value))
@@ -87,9 +93,12 @@ ForStmt::rangeFor(ctx)
     this.block.compile(ctx) 
 
     compile.writeln("%s.L.for.continue.%d:",compile.currentParser.label(),c)
-    // compile.writeln("   mov 8(%%rsp),%%rdi")
-    // compile.Pop("%rsi")
-    internal.call("runtime_for_get_next",1)
+    compile.writeln("   mov 8(%%rsp),%%rdi")
+    compile.Pop("%rsi")
+    compile.writeln("    push %%rdi")
+    compile.writeln("    push %%rsi")
+
+    internal.call("runtime_for_get_next",0)
     compile.Push()
 
     compile.writeln("    jmp %s.L.forr.begin.%d",compile.currentParser.label(),c)

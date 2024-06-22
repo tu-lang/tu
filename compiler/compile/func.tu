@@ -90,6 +90,15 @@ func CreateFunction(fc) {
     writeln("%s.L.return.%s:",fc.parser.label(), funcname)
     writeln("    mov %%rbp, %%rsp")
     writeln("    pop %%rbp")
+
+    args = std.len(fc.params_order_var)
+    if args > 0 {
+        writeln("   pop %d(%%rsp)", args * 8)
+        if args > 1 {
+            writeln("   sub $%d , %%rsp",(args - 1) * 8)
+        }
+    }
+
     writeln("    ret")
     writeln("    .size %s , .-%s",funcname,funcname)
 }

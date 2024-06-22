@@ -174,7 +174,6 @@ ASSIGN_INDEX:
         compile.Push()
 
         internal.arr_pushone()
-        compile.Pop("%rdi")
         return null
     }
     this.index.compile(ctx)
@@ -183,8 +182,6 @@ ASSIGN_INDEX:
     compile.Push()
     //call arr_updateone(arr,index,var)
     internal.kv_update()
-    //rm unuse 
-    compile.Pop("%rdi")
     return null
     
 }

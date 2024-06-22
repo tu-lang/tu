@@ -5,7 +5,7 @@ use compiler.compile
 func call_operator(opt,name)
 {
     compile.writeln("   push $%d",int(opt))
-    call(name,3)
+    call(name,0)
 }
 
 func call_object_operator(opt, name,method) {
@@ -50,15 +50,14 @@ func malloc(size)
 //@typ  ast.Int ... ast.Object
 func newobject(typ,data)
 {
-    size = 3
     if typ != ast.String {
-        size = 2
+        compile.writeln("    push $0")
         compile.writeln("   mov $%d , %%rax",data)
         compile.Push()
     }
     compile.writeln("   push $%d",typ)
 
-    call("runtime_newobject",size)
+    call("runtime_newobject",0)
 }
 fn newclsobject(vid,objsize){
     compile.writeln("   push    $%d",objsize)
@@ -82,6 +81,7 @@ func newinherit_object(type_id){
 use runtime
 func newint(typ, data)
 {
+    compile.writeln("    push $0")
     compile.writeln("    mov $%s , %%rax",data)
     compile.Push()
     compile.writeln("    push $%d", typ)
@@ -97,6 +97,7 @@ func newfloat()
 
 func newobject2(typ)
 {
+    compile.writeln("    push $0")
     compile.writeln("    push %%rax")
     compile.writeln("    push $%d", typ)
 
@@ -112,6 +113,7 @@ fn get_func_value(){
     call("runtime_get_func_value",1)
 }
 fn get_func_value_nq(){
+    compile.writeln("   push (%%rsp)")
     call("runtime_get_func_value",0)
 }
 func get_object_value()
@@ -137,9 +139,6 @@ func kv_get() {
 func call(funcname,add)
 {
     compile.writeln("   call %s",funcname)
-    if add > 0 {
-        compile.writeln("   add $%d , %%rsp" , add * 8)
-    }
     // compile.writeln("    mov %s@GOTPCREL(%%rip), %%rax", funcname)
     // compile.writeln("    mov %%rax, %%r10")
     // compile.writeln("    mov $%d, %%rax", 0)

@@ -60,6 +60,10 @@ VarExpr::isMemtype(ctx){
         dst = package.getStruct(acualPkg,v.structname)
         
         if (dst == null && v.structname != ""){
+            fc = getGLobalFunc(v.structpkg,v.structname)
+            if  fc != null {
+                return true
+            }
             this.check(false,fmt.sprintf("memtype:%s.%s not define" ,v.package , v.structname))
         }
         return true

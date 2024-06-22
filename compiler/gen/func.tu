@@ -104,6 +104,10 @@ FunCallExpr::compile(ctx)
 		return this.dyncompile(ctx,ast.ObjCall,var)
 	}else if this.package == "" && ctx.getOrNewVar(this.funcname) != null {
 		var = ctx.getOrNewVar(this.funcname)
+
+		if var.structtype {
+			return this.closcall(ctx,var)
+		}
 		return this.dyncompile(ctx,ast.ClosureCall,var)
 	}else{
 		pkg  = package.packages[packagename]

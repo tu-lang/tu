@@ -16,6 +16,7 @@ FunCallExpr::call(ctx,fc)
 	}
 	return this.stackcall(ctx,fc)
 }
+
 FunCallExpr::stackcall(ctx,fc)
 {
 	args = this.args
@@ -31,8 +32,34 @@ FunCallExpr::stackcall(ctx,fc)
 	}
 	compile.writeln("    call %s",callname)
 
-	compile.writeln("    add $%d, %%rsp", stack_args * 8)
-	return null
+    if stack_args > std.len(fc.params_var) {
+		delta = stack_args - std.len(fc.params_var)
+        compile.writeln("    add $%d, %%rsp", delta * 8)
+    }
+    return null
+}
+
+FunCallExpr::closcall(ctx , obj)
+{
+	fc = getGLobalFunc(obj.structpkg,obj.structname)
+    this.check(fc != null," closcall func not define")
+
+	args = this.args
+
+    if std.len(fc.params_var_order) != std.len(this.args)
+        utils.debugf("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_var_order),std.len(this.args))
+
+	stack_args = this.PushStackArgs(ctx,fc)
+
+    compile.GenAddr(obj)
+    compile.Load()
+    compile.writeln("    call *%%rax")
+
+    if stack_args > std.len(fc.params_var_order) {
+		delta = stack_args - std.len(fc.params_var_order)
+        compile.writeln("    add $%d, %%rsp", delta * 8)
+    }
+    return null
 }
 
 FunCallExpr::PushStackArgs(prevCtxChain,fc)
@@ -135,7 +162,7 @@ FunCallExpr::registercall(ctx,fc)
 		c = ast.incr_labelid()
 		compile.Push()
 		compile.writeln("    push -8(%%rbp)")
-		internal.call("runtime_get_object_value",1)
+		internal.call("runtime_get_object_value",0)
 		compile.writeln("    mov %%rax,%d(%%rbp)",compile.currentFunc.stack)
 		compile.Pop("%rax") 
 

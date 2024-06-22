@@ -23,6 +23,7 @@ ArrayExpr::compile(ctx){
     compile.Push()
 
     for(element: this.lit){
+        compile.writeln("    push (%%rsp)")
         //new element & push element
         element.compile(ctx)
         compile.Push()
