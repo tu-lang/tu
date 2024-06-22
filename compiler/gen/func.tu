@@ -72,19 +72,7 @@ FunCallExpr::compile(ctx)
 		packagename      = cfunc.parser.getpkgname()
 	}
 	if  std.empty(this.funcname) {
-		if !this.is_memcall {
-			internal.get_func_value_nq()
-			compile.writeln("	mov %%rax , (%%rsp)")
-		}
-		fc = new ast.Function()
-		fc.isExtern    = false
-		fc.isObj       = true
-		fc.is_variadic = false
-		// funcexec(ctx,fc,this)
-		this.call(ctx,fc)
-		compile.writeln("	add $8 , %%rsp")
-
-		return null
+		return this.dyncompile(ctx,ast.ChainCall,this.funcname)
 	}else if this.cls != null {
         fc = this.cls.getFunc(this.funcname)
         if fc == null
@@ -120,30 +108,10 @@ FunCallExpr::compile(ctx)
 		compile.GenAddr(var)
 		compile.Load()
 		compile.Push()
-		internal.object_func_addr2(this,this.funcname)
-		compile.Push()
-		fc = new ast.Function()
-		fc.isExtern    = false
-		fc.isObj       = true
-		fc.is_variadic = false
-		this.call(ctx,fc)
 
-		compile.writeln("	add $8, %%rsp")
-		return null
+		return this.dyncompile(ctx,ast.ObjCall,this.funcname)
 	}else if this.package == "" && ctx.getOrNewVar(this.funcname) != null {
-		var = ctx.getOrNewVar(this.funcname)
-		compile.GenAddr(var)
-		compile.Load()
-		if !var.structtype 
-			internal.get_func_value()
-		compile.Push()
-		fc = new ast.Function()
-		fc.isExtern    = false
-		fc.isObj       = true
-		fc.is_variadic = false
-		this.call(ctx,fc)
-		compile.writeln("   add $8,%%rsp")
-		return null
+		return this.dyncompile(ctx,ast.ClosureCall,this.funcname)
 	}else{
 		pkg  = package.packages[packagename]
 		if !pkg {

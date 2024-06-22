@@ -232,6 +232,7 @@ MemberCallExpr::static_compile(ctx,s){
     compile.writeln("    add $8, %%rsp")
     return null
 }
+
 MemberCallExpr::compile(ctx)
 {
 	this.record()
@@ -244,8 +245,6 @@ MemberCallExpr::compile(ctx)
         s = this.tyassert.getStruct()
         return this.static_compile(ctx,s)
     }
-    compile.Push()
-    internal.object_func_addr2(this,this.membername)
     compile.Push()
 	params = this.call.args
     
@@ -262,7 +261,7 @@ MemberCallExpr::compile(ctx)
     call.is_memcall = true
 	call.args = [pos]
 	std.merge(call.args , params)
-    call.compile(ctx)
+    call.dyncompile(ctx,ast.MemberCall,this.membername)
     compile.writeln("    add $8, %%rsp")
 	return null
 }

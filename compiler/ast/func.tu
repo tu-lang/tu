@@ -3,6 +3,11 @@ use compiler.utils
 use std
 use os
 
+ChainCall   = 1
+MemberCall  = 2
+ObjCall     = 3
+ClosureCall = 4
+
 class Function {
     clsname  = "" // class name
     name     = "" // func name

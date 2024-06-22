@@ -17,6 +17,7 @@ class Class
 	found       = false
 	func init(pkg){}
 }
+
 Class::getFunc(name){
 	for it : this.funcs {
 		if it.name == name {
@@ -25,6 +26,7 @@ Class::getFunc(name){
 	}
 	return null
 }
+
 Class::getMember(name)
 {
 	utils.debugf("ast.Class::getMember() name:%s",name)
