@@ -186,12 +186,17 @@ FunCallExpr::registercall(ctx,fc)
 }
 
 FunCallExpr::hasVariadic(){
-	for(arg : this.args){
+	count = std.len(this.args)
+	for i = 0 ; i < count ; i +=1 {
+		arg = this.args[i]
 		if (type(arg) == type(gen.VarExpr) && compile.currentFunc){
 			var = arg
 			if( compile.currentFunc.params_var[var.varname] != null ){
 				var2 = compile.currentFunc.params_var[var.varname]
 				if(var2 && var2.is_variadic){
+					if (i + 1) != count {
+                        this.check(false,"pass vardic ,must be last postion")
+                    }
 					return true
 				}
 			}
