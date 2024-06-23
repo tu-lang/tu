@@ -91,10 +91,15 @@ NewClassExpr::compile2(ctx)
 		pos = new ArgsPosExpr(1,this.line,this.column)
         //find params count
         fc = s.getFunc("init")
-        pos.pos = std.len(fc.params_order_var)  - 1
 
 		call.args[] = pos
 		std.merge(call.args,params)
+        
+        if std.len(fc.params_order_var) > std.len(call.args) {
+            pos.pos = std.len(fc.params_order_var) - 1 
+        }else{
+            pos.pos = std.len(call.args)  - 1
+        }
 		call.compile(ctx)
 	}
 	compile.Pop("%rax")
@@ -223,10 +228,16 @@ MemberCallExpr::static_compile(ctx,s){
 
 	params = call.args
 	pos = new ArgsPosExpr(0,this.line,this.column)
-    pos.pos = std.len(params)
     call.args = []
     call.args[] = pos
 	std.merge(call.args,params)
+
+    if std.len(fc.params_order_var) > std.len(call.args) {
+        pos.pos = std.len(fc.params_order_var) - 1 
+    }else{
+        pos.pos = std.len(call.args)  - 1
+    }
+
     call.compile(ctx)
     compile.writeln("    add $8, %%rsp")
     return null

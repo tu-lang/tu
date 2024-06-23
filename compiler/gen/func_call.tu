@@ -32,8 +32,8 @@ FunCallExpr::stackcall(ctx,fc)
 	}
 	compile.writeln("    call %s",callname)
 
-    if stack_args > std.len(fc.params_var) {
-		delta = stack_args - std.len(fc.params_var)
+    if stack_args > std.len(fc.params_order_var) {
+		delta = stack_args - std.len(fc.params_order_var)
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
     return null
@@ -46,8 +46,8 @@ FunCallExpr::closcall(ctx , obj)
 
 	args = this.args
 
-    if std.len(fc.params_var_order) != std.len(this.args)
-        utils.debugf("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_var_order),std.len(this.args))
+    if std.len(fc.params_order_var) != std.len(this.args)
+        utils.debugf("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_order_var),std.len(this.args))
 
 	stack_args = this.PushStackArgs(ctx,fc)
 
@@ -55,8 +55,8 @@ FunCallExpr::closcall(ctx , obj)
     compile.Load()
     compile.writeln("    call *%%rax")
 
-    if stack_args > std.len(fc.params_var_order) {
-		delta = stack_args - std.len(fc.params_var_order)
+    if stack_args > std.len(fc.params_order_var) {
+		delta = stack_args - std.len(fc.params_order_var)
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
     return null
