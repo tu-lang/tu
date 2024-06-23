@@ -11,7 +11,7 @@ FunCallExpr::dyncompile(ctx, ty, obj){
 	match ty {
     	ast.ChainCall: {
             internal.get_func_value()
-			compile.writeln(" mov %%rax , (%%rsp)")
+			compile.Push()
     	}
     	ast.MemberCall: {
 			internal.object_func_addr2(this,this.funcname)
@@ -35,22 +35,44 @@ FunCallExpr::dyncompile(ctx, ty, obj){
     }
 
 	this.dynstackcall(ctx)
-	compile.writeln("	add $8 , %%rsp")
 	return null
 }
 
 FunCallExpr::dynstackcall(ctx){
+
 	args = this.args
 	cfunc = compile.currentFunc
+	vlid = ast.incr_labelid()	
+	argsvardic_label = cfunc.fullname() + "_cfv_" + vlid
+	argseq_label   = cfunc.fullname() + "_cfe_" + vlid
+	argsdone_label   = cfunc.fullname() + "_done_" + vlid
 
+    //push argn,argn-1,arg....,arg1 ,argcount
     stack_args = this.DynPushStackArgs(ctx)
+	compile.writeln("    mov %d(%%rsp) , %%rax", stack_args * 8)
+    compile.writeln("    cmp $1 , 16(%%rax)")
+    compile.writeln("    je %s",argsvardic_label)
 
-    //push funcaddr,argn,argn-1,arg....,arg1
-    compile.writeln("    mov %d(%%rsp),%r10",stack_args * 8)
-    compile.writeln("    mov $0, %%rax")
+	compile.writeln("    cmpq $%d , 24(%%rax)",std.len(args) * 8)
+    compile.writeln("    je %s",argseq_label)
+
+	compile.writeln("%s:",argsvardic_label)
+	compile.writeln("    push $%d",stack_args)
+	compile.writeln("	   sub 24(%%rax) , %%rsp")
+	compile.Push()
+	internal.dynarg_pass() 
+
+    compile.writeln("    call *%rax")
+    compile.writeln("    add $%d , %%rsp",(stack_args + 1 + 1) * 8 )
+    compile.writeln("    jmp %s",argsdone_label)
+
+    compile.writeln("%s:",argseq_label)
+    compile.writeln("    mov 8(%%rax) , %%r10")
     compile.writeln("    call *%%r10")
+    compile.Pop("%rdi") 
 
-    compile.writeln("    add $%d, %%rsp", stack_args * 8)
+    compile.writeln("%s:",argsdone_label)
+
     return null    
 }
 

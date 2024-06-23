@@ -232,3 +232,7 @@ func miss_args(pos,funcname,isclass){
     compile.writeln("    push $%d",pos)
     call("runtime_miss_args")
 }
+
+fn dynarg_pass(){
+    call("runtime_dynarg_pass")
+}
