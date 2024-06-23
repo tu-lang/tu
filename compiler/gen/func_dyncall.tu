@@ -65,7 +65,7 @@ FunCallExpr::dynstackcall(ctx){
 	compile.Push()
 	internal.dynarg_pass() 
 
-    compile.writeln("    call *%rax")
+    compile.writeln("    call *%%rax")
     compile.writeln("    add $%d , %%rsp",(stack_args + 1 + 1) * 8 )
     compile.writeln("    jmp %s",argsdone_label)
 

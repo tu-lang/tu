@@ -137,7 +137,7 @@ FunCallExpr::registercall(ctx,fc)
 		}
 	}
 	if std.len(fc.params_order_var) != std.len(this.args)
-		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params),std.len(this.args))
+		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_order_var),std.len(this.args))
 
 	stack_args = this.PushRegisterArgs(ctx,fc)
 
