@@ -36,3 +36,10 @@ Disassembly of section .text:
   71:   3d 01 f0 ff ff          cmp    $0xfffff001,%eax
   76:   48 81 f9 01 f0 ff ff    cmp    $0xfffffffffffff001,%rcx
   7d:   81 f9 01 f0 ff ff       cmp    $0xfffff001,%ecx
+
+0000000000000000 <r4m>:
+   0:   48 83 f8 01             cmp    $0x1,%rax
+   4:   48 3d c0 00 00 00       cmp    $0xc0,%rax
+   a:   83 78 10 01             cmpl   $0x1,0x10(%rax)
+   e:   48 81 78 10 c0 00 00    cmpq   $0xc0,0x10(%rax)
+  15:   00 

@@ -424,9 +424,28 @@ Instruct::genTwoInst()
                     }
                 }
                 ast.KW_CMP:{
-                    if(this.left == ast.TY_IMMED && this.right == ast.TY_MEM){
-                        opcode = 0x78 + this.modrm.rm
+                    needprefix = false
+                    imm<i32> = this.inst.imm
+                    if imm > I8_MAX || imm <= I8_MIN {
+                        opcode = 0x8178
+                        len = 4
+                        needprefix = true
+                    }else{
+                        opcode  = 0x8378
+                        len = 1
                     }
+
+                    if needprefix
+                        this.insthead()
+
+                    this.append2(opcode)
+                    if this.modrm.rm == 4 || this.modrm.rm == 5
+                        this.writeSIB()
+                    if this.inst.dispLen
+                        this.append(this.inst.disp,this.inst.dispLen)
+                    if this.left == ast.TY_IMMED
+                        this.append(this.inst.imm,len)
+                    return true
                 }
                 ast.KW_MOVW: len = 2
                 ast.KW_MOVQ: {

@@ -29,3 +29,9 @@ common:
     cmp    $0xfffffffffffff001,%eax
     cmp    $0xfffffffffffff001,%rcx
     cmp    $0xfffffffffffff001,%ecx
+
+r2m:
+    cmp $1 , %rax
+    cmp $192 , %rax
+    cmp $1 , 16(%rax)
+    cmpq $192 , 16(%rax)
