@@ -9,6 +9,17 @@ pushr8:
     push %r9
     push %rbp
     push %rsp
+
+pushm:
+	push (%rsp)
+	push 16(%rsp)
+	push (%rax)
+	push 16(%rax)
+	push (%rdi)
+	push 16(%rdi)
+	push (%r9)
+	push 16(%r9)
+
 popr8:
     pop %rax
     pop %rdi

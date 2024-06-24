@@ -5,7 +5,12 @@ use string
 
 Instruct::instheads(){
     utils.debug("Instruct::instheads()".(i8))
-    if(this.type == ast.KW_PUSH) return true
+    if this.type == ast.KW_PUSH {
+        if this.left == ast.TY_MEM && ast.r8ishigh(this.tks.addr[0]) {
+            this.append1(0x41.(i8))
+        }
+        return true
+    }
 
     if(this.type == ast.KW_CALL){
         if(ast.r8ishigh(this.tks.addr[0]))
@@ -119,7 +124,22 @@ Instruct::genOneInst() {
             this.append1(opcode)
             this.append(this.inst.imm,len)
         }
-        else if(this.tks.addr[0] < ast.KW_R8)
+        else if this.left == ast.TY_MEM {
+            this.append1(0xff.(i8))
+
+            if this.inst.dispLen {
+                exchar = 0x70 + this.modrm.rm
+            }else{
+                exchar = 0x30 + this.modrm.rm
+            }
+            this.append1(exchar)
+            if this.modrm.rm == 4 || this.modrm.rm == 5
+                this.writeSIB()
+
+            if this.inst.dispLen {
+                this.append(this.inst.disp,this.inst.dispLen)
+            }
+        }else if(this.tks.addr[0] < ast.KW_R8)
         {
             opcode += this.modrm.reg
             this.append1(opcode)

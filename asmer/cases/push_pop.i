@@ -17,6 +17,16 @@ Disassembly of section .text:
   15:	55                   	push   %rbp
   16:	54                   	push   %rsp
 
+0000000000000000 <pushm>:
+   0:	ff 34 24             	pushq  (%rsp)
+   3:	ff 74 24 10          	pushq  0x10(%rsp)
+   7:	ff 30                	pushq  (%rax)
+   9:	ff 70 10             	pushq  0x10(%rax)
+   c:	ff 37                	pushq  (%rdi)
+   e:	ff 77 10             	pushq  0x10(%rdi)
+  11:	41 ff 31             	pushq  (%r9)
+  14:	41 ff 71 10          	pushq  0x10(%r9)
+
 0000000000000017 <popr8>:
   17:	58                   	pop    %rax
   18:	5f                   	pop    %rdi
