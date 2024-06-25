@@ -56,6 +56,11 @@ INSTALL_ALL = install_all() {                              			\
 	ar -x tulang.a;													\
 	mv *.o $(prefix)/lib/colib/;									\
 }
+TEST_COMPILER = test_compiler() {									\
+	sh compiler/test.sh;											\
+	sh asmer/test.sh;												\
+	sh linker/test.sh;												\
+}
 
 .PHONY: build-liba
 build-liba:
@@ -92,15 +97,16 @@ clean:
 check: install test
 
 test_dev:
-	sh compiler/test.sh
-	sh asmer/test.sh
-	sh linker/test.sh
+	@$(TEST_COMPILER); test_compiler
+	@echo "test compiler success"
 
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 
 # make test -j9
 tests: $(cases)
 	@echo "all test cases passed"
+	@$(TEST_COMPILER); test_compiler
+	@echo "compiler tests passed"
 
 %: ./tests/%
 	@sh tests_all.sh $@ ;
