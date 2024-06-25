@@ -32,7 +32,7 @@ Instruct::insthead(){
         this.type == ast.KW_UCOMISD  || this.type == ast.KW_UCOMISS
 
     {
-        if this.type == ast.KW_CVTPD2PS || this.type == ast.KW_UCOMISD
+        if this.type == ast.KW_CVTPD2PS || this.type == ast.KW_UCOMISD || this.type == ast.KW_XORPD
             this.append1(0x66.(i8))
         if this.type == ast.KW_CVTSS2SD
             this.append1(0xf3.(i8))
