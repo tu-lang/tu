@@ -86,13 +86,6 @@ FunCallExpr::DynPushStackArgs(prevCtxChain)
 	for  i = std.len(this.args) - 1; i >= 0; i -= 1 {
 		arg = this.args[i]
 		ret = arg.compile(prevCtxChain,true)
-		if ret != null && type(ret) == type(gen.ChainExpr) {
-			ce = ret
-			if type(ce.last) == type(gen.MemberCallExpr) {
-			}
-			else if type(arg) != type(gen.AddrExpr) {
-			}
-		}
 
         if ret != null {
 			ty<i32> = ret.getType(prevCtxChain)

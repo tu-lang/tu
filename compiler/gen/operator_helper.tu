@@ -308,8 +308,7 @@ OperatorHelper::genLeft()
 	var = this.var
 	match type(this.lhs) {
 		type(DelRefExpr) : {
-			dr = this.lhs
-			ret = dr.expr.compile(this.ctx,false)
+			ret = this.lhs.compile(this.ctx)
 
 			if type(ret) == type(ChainExpr) {
 				ce = ret
@@ -491,14 +490,6 @@ OperatorHelper::genRight(isleft,expr)
 		tk = v.type
 		if v.isstruct tk = ast.U64
 		this.initcond(isleft,v.size,tk,v.pointer)
-		
-		if type(expr) == type(AddrExpr) {
-			
-		}else if type(expr) == type(DelRefExpr) {
-		}else if type(m.last) == type(IndexExpr) {
-		}else if type(m.last) == type(MemberCallExpr) {
-		}else{
-		}
 	}else{
 		ret.check(false,fmt.sprintf("not allowed expression in memory operator:%s" + ret.toString()))
 	}

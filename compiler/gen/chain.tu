@@ -102,7 +102,7 @@ ChainExpr::compile(ctx,load)
 			}
 			mexpr.member = me.membername
 			this.first = mexpr
-			return this.memgen(ctx)
+			return this.memgen(ctx,load)
 		}
 	}	
 
@@ -181,7 +181,7 @@ ChainExpr::memgen(ctx,load)
 	}		
 	this.ret = member
 
-	if type(this.last) != type(MemberCallExpr) && load == true {
+	if (type(this.last) != type(MemberCallExpr)) && load == true {
 		compile.LoadMember(member)
 	}
 	return this

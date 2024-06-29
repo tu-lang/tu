@@ -25,18 +25,7 @@ ReturnStmt::compile(ctx)
     if this.ret == null {
         compile.writeln("   mov $0,%%rax")
     }else{
-        ret = this.ret.compile(ctx,true)
-        if ret && type(this.ret) == type(gen.AddrExpr) {}
-        else if ret && type(ret) == type(gen.StructMemberExpr) {
-        }else if ret && type(ret) == type(gen.ChainExpr) {
-            ce = ret
-            if ce.ismem(ctx) && type(ce.last) == type(MemberCallExpr) {
-		    }else{
-                if ce.ret {
-                }
-
-            }
-        }
+        this.ret.compile(ctx,true)
     }
     for(i = std.len(ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
         p = ctx.ctxs[i]
