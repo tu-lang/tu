@@ -121,6 +121,9 @@ StructMemberExpr::compile(ctx,load)
 	compile.writeln("	add $%d, %%rax", m.offset)
 	
 	this.ret = m
+	if load {
+		compile.LoadMember(m)
+	}
 	return this
 }
 

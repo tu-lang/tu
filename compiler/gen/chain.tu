@@ -77,7 +77,7 @@ ChainExpr::compile(ctx,load)
 				   mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
 				   mexpr.var = realVar
 				   mexpr.member = this.last.membername
-				   return mexpr.compile(ctx)
+				   return mexpr.compile(ctx,load)
 			   }
 		   }
 		}

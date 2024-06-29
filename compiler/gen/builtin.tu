@@ -92,7 +92,7 @@ BuiltinFuncExpr::compile(ctx,load){
 	this.check(type(this.expr) != type(FloatExpr))
 
 	// %rax
-	ret = this.expr.compile(ctx)
+	ret = this.expr.compile(ctx,true)
 
 	tk<i32> = ast.I64
 	if ret != null {
@@ -108,9 +108,6 @@ BuiltinFuncExpr::compile(ctx,load){
 					this.panic("del ref can't find the struct member: " + 
 						this.expr.toString()
 					)
-				}
-				if type(this.expr) != type(DelRefExpr) {
-					compile.LoadMember(m)
 				}
 				tk = m.type
 			}

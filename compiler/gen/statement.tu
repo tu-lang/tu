@@ -25,14 +25,9 @@ ReturnStmt::compile(ctx)
     if this.ret == null {
         compile.writeln("   mov $0,%%rax")
     }else{
-        ret = this.ret.compile(ctx)
+        ret = this.ret.compile(ctx,true)
         if ret && type(this.ret) == type(gen.AddrExpr) {}
         else if ret && type(ret) == type(gen.StructMemberExpr) {
-            sm = ret
-            m = sm.ret
-            
-            compile.LoadMember(m)
-        
         }else if ret && type(ret) == type(gen.ChainExpr) {
             ce = ret
             if ce.ismem(ctx) && type(ce.last) == type(MemberCallExpr) {

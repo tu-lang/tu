@@ -78,7 +78,7 @@ DelRefExpr::compile(ctx,load){
         compile.writeln("    lea %s(%%rip), %%rax", se.name)
         return this
     }
-    ret = this.expr.compile(ctx)
+    ret = this.expr.compile(ctx,true)
     
     if (ret == null){
         this.check(false,"del refexpr error")
@@ -106,10 +106,6 @@ DelRefExpr::compile(ctx,load){
         m = sm.ret
         if m == null{
             this.panic("del ref can't find the class member:" + this.expr.toString())
-        }
-        if type(this.expr) != type(DelRefExpr) {
-            
-            compile.LoadMember(m)
         }
         compile.LoadSize(m.size,m.isunsigned)
         return ret

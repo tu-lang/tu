@@ -143,7 +143,7 @@ MemberExpr::compile(ctx,load)
 		mexpr = new StructMemberExpr(this.varname,this.line,this.column)
 		mexpr.var = var
 		mexpr.member = this.membername
-		return mexpr.compile(ctx)
+		return mexpr.compile(ctx,load)
 	}else if this.tyassert != null { 
 		mexpr = new StructMemberExpr(this.varname,this.line,this.column)
         vv = var.clone()
@@ -151,7 +151,7 @@ MemberExpr::compile(ctx,load)
         vv.structname = this.tyassert.name
         mexpr.var = vv
         mexpr.member = this.membername
-        return mexpr.compile(ctx)
+        return mexpr.compile(ctx,load)
 	}
     compile.writeln("# %s line:%d column:%d ",var.varname,this.line,this.column)
 	compile.GenAddr(var)
@@ -187,7 +187,7 @@ MemberExpr::assign(ctx, opt ,rhs)
     compile.Load()
     compile.Push()
 
-    ret1 = rhs.compile(ctx)
+    ret1 = rhs.compile(ctx,true)
     check_load(ctx,rhs,ret1)
     compile.Push()
     internal.call_object_operator(opt,this.membername,"runtime_object_unary_operator2")

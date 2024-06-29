@@ -49,15 +49,7 @@ func check_load(ctx,expr,ret){
     if !exprIsMtype(expr,ctx) {
         return true
 	}
-	if type(ret) == type(StructMemberExpr) 
-	{
-		m = ret
-		v = m.getMember() 
-		
-		if type(expr) != type(AddrExpr) && type(expr) != type(DelRefExpr){
-			compile.LoadMember(v)
-		}
-	}else if type(ret) == type(ChainExpr) {
+    if type(ret) == type(ChainExpr) {
 		m = ret
 		v = m.ret
 		

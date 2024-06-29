@@ -81,11 +81,8 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 	staticcount = std.len(fc.params_order_var) - 1
 	for  i = std.len(this.args) - 1; i >= 0; i -= 1 {
 		arg = this.args[i]
-		ret = arg.compile(prevCtxChain)
-		if ret != null && type(ret) == type(gen.StructMemberExpr) {
-			sm = ret
-			compile.LoadMember(sm.getMember())
-		}else if ret != null && type(ret) == type(gen.ChainExpr) {
+		ret = arg.compile(prevCtxChain,true)
+		if ret != null && type(ret) == type(gen.ChainExpr) {
 			ce = ret
 			if type(ce.last) == type(gen.MemberCallExpr) {
 			}

@@ -309,7 +309,7 @@ OperatorHelper::genLeft()
 	match type(this.lhs) {
 		type(DelRefExpr) : {
 			dr = this.lhs
-			ret = dr.expr.compile(this.ctx)
+			ret = dr.expr.compile(this.ctx,true)
 
 			if type(ret) == type(ChainExpr) {
 				ce = ret
@@ -323,7 +323,6 @@ OperatorHelper::genLeft()
 			}else if type(ret) == type(StructMemberExpr) {
 				smember = ret
 				m = smember.getMember()
-				compile.LoadMember(m)
 				lmember = m
 				this.initcond(true,m.size,m.type,m.pointer)
 				return smember
