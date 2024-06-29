@@ -50,10 +50,10 @@ ChainExpr::compile(ctx,load)
 {
 	utils.debug("gen.ChainExpr::compile() ")
 	this.record()
-    if type(this.first) == type(StructMemberExpr) return this.memgen(ctx)
+    if type(this.first) == type(StructMemberExpr) return this.memgen(ctx,load)
 	if(type(this.first) == type(IndexExpr)){
 		if(exprIsMtype(this.first,ctx)) 
-			return this.memgen(ctx)
+			return this.memgen(ctx,load)
 	}
 
 	if type(this.first) == type(VarExpr) {
@@ -66,7 +66,7 @@ ChainExpr::compile(ctx,load)
 			   mexpr.member = this.fields[0].membername
 			   std.pop_head(this.fields)
 			   this.first = mexpr
-			   return this.memgen(ctx)
+			   return this.memgen(ctx,load)
 		   }else{
 			   if(type(this.last) == type(MemberCallExpr)){
 				   fc = new FunCallExpr(realVar.line,realVar.column)
@@ -87,7 +87,7 @@ ChainExpr::compile(ctx,load)
 			mexpr.var = realVar
 			mexpr.member = varexpr.varname
 			this.first = mexpr
-			return this.memgen(ctx)
+			return this.memgen(ctx,load)
 		}
 	}else if type(this.first) == type(MemberExpr) {
 		me = this.first
@@ -109,7 +109,7 @@ ChainExpr::compile(ctx,load)
 	return this.objgen(ctx)
 }
 
-ChainExpr::memgen(ctx)
+ChainExpr::memgen(ctx,load)
 {
 	utils.debug("gen.ChainExpr::memgen()")
 	if(type(this.last) == type(IndexExpr)){
@@ -180,6 +180,10 @@ ChainExpr::memgen(ctx)
 		this.panic("chain invalid")
 	}		
 	this.ret = member
+
+	if type(this.last) != type(MemberCallExpr) && load == true {
+		compile.LoadMember(member)
+	}
 	return this
 }
 

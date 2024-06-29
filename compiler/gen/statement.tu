@@ -33,7 +33,6 @@ ReturnStmt::compile(ctx)
             if ce.ismem(ctx) && type(ce.last) == type(MemberCallExpr) {
 		    }else{
                 if ce.ret {
-                    compile.LoadMember(ce.ret)
                 }
 
             }

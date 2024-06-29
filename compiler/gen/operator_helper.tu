@@ -309,7 +309,7 @@ OperatorHelper::genLeft()
 	match type(this.lhs) {
 		type(DelRefExpr) : {
 			dr = this.lhs
-			ret = dr.expr.compile(this.ctx,true)
+			ret = dr.expr.compile(this.ctx,false)
 
 			if type(ret) == type(ChainExpr) {
 				ce = ret
@@ -423,7 +423,7 @@ OperatorHelper::genRight(isleft,expr)
 		}
 	}
 	
-	ret = expr.compile(this.ctx)
+	ret = expr.compile(this.ctx,true)
 	
 	if !exprIsMtype(expr,this.ctx) && ( this.opt == ast.LOGAND || this.opt == ast.LOGOR) {
 		internal.isTrue()
@@ -486,10 +486,6 @@ OperatorHelper::genRight(isleft,expr)
 		m = ret
 		v = m.getMember() 
 		this.initcond(isleft,v.size,v.type,v.pointer)
-		
-		if type(expr) != type(AddrExpr) && type(expr) != type(DelRefExpr){
-			compile.LoadMember(v)
-		}
 	}else if type(ret) == type(ChainExpr) {
 		m = ret
 		v = m.ret
@@ -500,12 +496,10 @@ OperatorHelper::genRight(isleft,expr)
 		if type(expr) == type(AddrExpr) {
 			
 		}else if type(expr) == type(DelRefExpr) {
-			compile.LoadSize(v.size,v.isunsigned)
 		}else if type(m.last) == type(IndexExpr) {
 			compile.LoadSize(v.size,v.isunsigned)
 		}else if type(m.last) == type(MemberCallExpr) {
 		}else{
-			compile.LoadMember(v)
 		}
 	}else{
 		ret.check(false,fmt.sprintf("not allowed expression in memory operator:%s" + ret.toString()))

@@ -101,19 +101,7 @@ StructInitExpr::compile(ctx,load){
 			continue
 		}else{
 			rtok = value.getType(ctx)
-			ret = value.compile(ctx)
-			if ret == null {}
-			else if type(ret) == type(StructMemberExpr) {
-				m = ret
-				m = ret
-				v = m.getMember() 
-				compile.LoadMember(v)
-			}else if type(ret) == type(ChainExpr) {
-				if type(ret.last) == type(MemberCallExpr){}
-				else {
-					compile.LoadMember(ret.ret)
-				}
-			}
+			ret = value.compile(ctx,true)
 		}
 		compile.writeln(" mov (%%rsp) , %%rdi")
 		compile.writeln(" add $%d , %%rdi",field.offset)

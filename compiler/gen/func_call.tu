@@ -87,7 +87,6 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 			if type(ce.last) == type(gen.MemberCallExpr) {
 			}
 			else if type(arg) != type(gen.AddrExpr) {
-				compile.LoadMember(ce.ret)
 			}
 		}
 
@@ -290,7 +289,6 @@ FunCallExpr::PushRegisterArgs(ctx,fc){
                 ce = ret
                 if type(ce.last) == type(gen.MemberCallExpr) {
                 }else if type(this.args[i]) != type(gen.AddrExpr) {
-                    compile.LoadMember(ce.ret)
                 }
             }
             compile.Push()

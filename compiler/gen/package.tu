@@ -46,15 +46,15 @@ package.Package::genStruct(s)
 
     
 		if m.bitfield && m.bitwidth == 0 {
-		bits = utils.ALIGN_UP(bits, m.size * 8)
+			bits = utils.ALIGN_UP(bits, m.size * 8)
 		}else if m.bitfield{
-		sz = m.size
-		if (bits / (sz * 8) ) !=  ((bits + m.bitwidth - 1) / (sz * 8))
-			bits = utils.ALIGN_UP(bits, sz * 8)
+			sz = m.size
+			if (bits / (sz * 8) ) !=  ((bits + m.bitwidth - 1) / (sz * 8))
+				bits = utils.ALIGN_UP(bits, sz * 8)
 
-		m.offset = utils.ALIGN_DOWN(bits / 8, sz)
-		m.bitoffset = bits % (sz * 8)
-		bits += m.bitwidth
+			m.offset = utils.ALIGN_DOWN(bits / 8, sz)
+			m.bitoffset = bits % (sz * 8)
+			bits += m.bitwidth
 		} else 
 		{
 			if !s.ispacked  bits = utils.ALIGN_UP(bits,m.align * 8)

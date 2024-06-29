@@ -168,7 +168,7 @@ VarExpr::compile(ctx,load){
             sm = new StructMemberExpr(this.package,this.line,this.column)
             sm.member = this.varname
             sm.var    = this.ret
-            sm.compile(ctx)
+            sm.compile(ctx,load)
             return sm
         }
         ast.Var_Global_Extern_Static | ast.Var_Local | ast.Var_Global_Local | ast.Var_Global_Extern | ast.Var_Local_Static : 

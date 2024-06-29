@@ -111,14 +111,11 @@ DelRefExpr::compile(ctx,load){
         return ret
     
     }else if type(ret) == type(ChainExpr) {
-        ce = ret
-        
-        if ce.ret {
-            m = ce.ret
-            compile.LoadMember(m)
-
-            return ret
+        me = ret.ret
+        if load {
+            compile.LoadSize(me.size,me.isunsigned)
         }
+        return ret
     }
     this.panic("only support del ref for expression :" + this.expr.toString())
 }

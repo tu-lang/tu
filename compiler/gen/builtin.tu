@@ -120,7 +120,6 @@ BuiltinFuncExpr::compile(ctx,load){
 					tk = ast.U64
 				}else if type(this.expr) == type(AddrExpr){
 				}else{
-					compile.LoadMember(ce.ret)
 					tk = ce.ret.type
 				}
 			}

@@ -58,10 +58,8 @@ func check_load(ctx,expr,ret){
 		}else if type(expr) == type(DelRefExpr) {
 			compile.LoadSize(v.size,v.isunsigned)
 		}else if type(m.last) == type(IndexExpr) {
-			compile.LoadSize(v.size,v.isunsigned)
 		}else if type(m.last) == type(MemberCallExpr) {
 		}else{
-			compile.LoadMember(v)
 		}
 	}
     return true
