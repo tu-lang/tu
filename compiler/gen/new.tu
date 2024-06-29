@@ -24,7 +24,7 @@ NewExpr::toString(){
     return str
 }
 
-NewExpr::compile(ctx)
+NewExpr::compile(ctx,load)
 {
 	utils.debug("gen.NewExpr::compile()")
 	this.record()
@@ -59,7 +59,7 @@ NewExpr::compile(ctx)
 	 return this
  }
  
-NewClassExpr::compile(ctx)
+NewClassExpr::compile(ctx,load)
 {
 	utils.debug("gen.NewClassExpr::compile()")
 	this.record()

@@ -127,7 +127,7 @@ MemberExpr::toString(){
 }
 
 
-MemberExpr::compile(ctx)
+MemberExpr::compile(ctx,load)
 {
 	utils.debug("gen.MemberExpr::compile()")
 	this.record()
@@ -243,7 +243,7 @@ MemberCallExpr::static_compile(ctx,s){
     return null
 }
 
-MemberCallExpr::compile(ctx)
+MemberCallExpr::compile(ctx,load)
 {
 	this.record()
 	utils.debug("gen.MemberCallExpr::compile")

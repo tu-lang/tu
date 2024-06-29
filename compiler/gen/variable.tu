@@ -152,7 +152,7 @@ VarExpr::_getVarType(ctx)
         )
     )
 }
-VarExpr::compile(ctx){
+VarExpr::compile(ctx,load){
     utils.debugf("gen.VarExpr::compile() package :%s varname:%s \n",this.package,this.varname)
     this.record()
     match this.getVarType(ctx,this)

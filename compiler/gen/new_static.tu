@@ -50,7 +50,7 @@ StructInitExpr::arrinit(ctx , field , arr){
 	compile.Pop("%rax")
 	return this
 }
-StructInitExpr::compile(ctx){
+StructInitExpr::compile(ctx,load){
     utils.debugf("gen.StructInitExpr::compile()")
 	compile.Push()
 	fullpkg = GP().getImport(this.pkgname)
@@ -131,7 +131,7 @@ StructInitExpr::compile(ctx){
 	compile.Pop("%rax")
 	return this
 }
-NewStructExpr::compile(ctx){
+NewStructExpr::compile(ctx,load){
 	if this.init == null this.check(false,"new struct is null")
 	fullpackage = GP().getImport(this.init.pkgname)
 	s = package.getStruct(fullpackage,this.init.name)

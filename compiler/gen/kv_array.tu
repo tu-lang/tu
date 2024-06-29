@@ -14,7 +14,7 @@ class ArrayExpr   : ast.Ast {
 
 // @param ctx [Context]
 // @return Expression
-ArrayExpr::compile(ctx){
+ArrayExpr::compile(ctx,load){
     utils.debug("gen.ArrayExpr::compile()")
     this.record()
     //new Array & push array

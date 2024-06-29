@@ -46,7 +46,7 @@ ChainExpr::ismem(ctx) {
 	 }
 	 return false
 }
-ChainExpr::compile(ctx)
+ChainExpr::compile(ctx,load)
 {
 	utils.debug("gen.ChainExpr::compile() ")
 	this.record()

@@ -20,7 +20,7 @@ KVExpr::toString() {
     return str
 }
 
-KVExpr::compile(ctx){
+KVExpr::compile(ctx,load){
     this.record()
     utils.debugf("gen.KVExpr::compile() gen... k:%s v:%s",this.key,this.value)
 
@@ -53,7 +53,7 @@ IndexExpr::toString() {
     return str
 }
 
-IndexExpr::compile(ctx) {
+IndexExpr::compile(ctx,load) {
     utils.debug("gen.Index::compile() ")
     this.record()
     var = new VarExpr(this.varname,this.line,this.column)

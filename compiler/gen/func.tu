@@ -16,7 +16,7 @@ class ClosureExpr : ast.Ast {
 	func toString() { return "ClosureExpr(" + this.varname + ")" }
 }
 
-ClosureExpr::compile(ctx){
+ClosureExpr::compile(ctx,load){
 	compile.writeln("    lea %s(%%rip), %%rax", this.varname)
 	internal.newfuncobject(
 		std.len(this.def.params_order_var),
@@ -60,7 +60,7 @@ FunCallExpr::checkFirstThis(ctx,var){
 
     return null
 }
-FunCallExpr::compile(ctx)
+FunCallExpr::compile(ctx,load)
 {
 	this.record()
 	utils.debugf("FunCallExpr:  package:%s func:%s",this.package,this.funcname)

@@ -89,7 +89,7 @@ StructMemberExpr::getStruct()
 	return s
 }
 
-StructMemberExpr::compile(ctx)
+StructMemberExpr::compile(ctx,load)
 {
     utils.debugf("gen.StructMemberExpr::compile()")
 	this.record()

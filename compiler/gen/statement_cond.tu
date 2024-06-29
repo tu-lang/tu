@@ -227,7 +227,7 @@ IfCaseExpr::toString(){
     str += "])"
     return str
 }
-IfCaseExpr::compile(ctx){
+IfCaseExpr::compile(ctx,load){
     utils.debug("gen.IfCaseExpr::compile()")
     this.record()
     compile.writeln("%s:",this.label)

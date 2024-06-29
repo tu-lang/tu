@@ -12,7 +12,7 @@ class  ArgsPosExpr : ast.Ast {
     func init(pos,line,column){super.init(line,column)}
     func toString(){return "ArgsPosExpr"}
 }
-ArgsPosExpr::compile(ctx){
+ArgsPosExpr::compile(ctx,load){
     this.record()
     //push this.obj
     //push this.obj.func
@@ -33,7 +33,7 @@ class LabelExpr : ast.Ast {
     }
 }
 
-LabelExpr::compile(ctx){
+LabelExpr::compile(ctx,load){
 	this.record()
 	compile.writeln("%s:",this.label)
 	return this
@@ -42,7 +42,7 @@ class NullExpr    : ast.Ast {
     func init(line,column){
         super.init(line,column)
     }
-    func compile(ctx)
+    func compile(ctx,load)
     {
         this.record()
         compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
@@ -57,7 +57,7 @@ class BoolExpr   : ast.Ast {
     func init(line,column){
         super.init(line,column)
     }
-    func compile(ctx)
+    func compile(ctx,load)
     {
 	    utils.debugf("gen.BoolExpr::compile()")
         this.record()
@@ -79,7 +79,7 @@ class CharExpr    : ast.Ast {
     func init(line,column){
         super.init(line,column)
     }
-    func compile(ctx) {
+    func compile(ctx,load) {
 	    utils.debugf("gen.CharExpr::compile()")
         this.record()
         if this.tyassert != null {
@@ -99,7 +99,7 @@ class IntExpr     : ast.Ast {
     func init(line,column){
         super.init(line,column)
     }
-    func compile( ctx) {
+    func compile( ctx,load) {
 	    utils.debugf("gen.IntExpr::compile()")
         this.record()
         if this.tyassert != null {
@@ -119,7 +119,7 @@ class FloatExpr  : ast.Ast {
     func init(line,column){
         super.init(line,column)
     }
-    func compile(ctx) {
+    func compile(ctx,load) {
 	    utils.debugf("gen.FloatExpr::compile()")
         this.record()
         internal.newobject(ast.Double,this.lit)
@@ -146,7 +146,7 @@ class StringExpr  : ast.Ast {
     func init(line,column){
         super.init(line,column)
     }
-    func compile(ctx) {
+    func compile(ctx,load) {
 	    utils.debugf("gen.StringExpr::compile()")
         this.record()
         if this.tyassert != null {

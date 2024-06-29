@@ -17,7 +17,7 @@ TypeAssertExpr::toString() {
 	)
 }
 
-TypeAssertExpr::compile(ctx){
+TypeAssertExpr::compile(ctx,load){
     return null
 
 }

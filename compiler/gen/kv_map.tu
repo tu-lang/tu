@@ -19,7 +19,7 @@ MapExpr::toString() {
     str += "})"
     return str
 }
-MapExpr::compile(ctx){
+MapExpr::compile(ctx,load){
     this.record()
     utils.debug("gen.MapExpr::compile() ")
     

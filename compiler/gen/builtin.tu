@@ -13,7 +13,7 @@ class BuiltinFuncExpr : ast.Ast {
 		super.init(line,column)
 	}
 }
-BuiltinFuncExpr::compile(ctx){
+BuiltinFuncExpr::compile(ctx,load){
 	funcname = this.funcname
 	utils.debugf("gen.BuiltinFuncExpr::compile() funcname:%s",funcname)
 	match funcname {

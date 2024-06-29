@@ -38,7 +38,7 @@ AssignExpr::toString() {
     str += ")"
     return str
 }
-AssignExpr::compile(ctx){
+AssignExpr::compile(ctx,load){
     this.record()
 
     utils.debugf("AssignExpr: parsing... lhs:%s opt:%s rhs:%s",
@@ -69,7 +69,7 @@ AssignExpr::compile(ctx){
     }
     this.panic("SyntaxError: can not assign to " + this.lhs.toString())
 }
-DelRefExpr::compile(ctx){
+DelRefExpr::compile(ctx,load){
     utils.debugf("gen.DelExpr::compile()")
     this.record()
     
@@ -127,7 +127,7 @@ DelRefExpr::compile(ctx){
     this.panic("only support del ref for expression :" + this.expr.toString())
 }
 
-AddrExpr::compile(ctx){
+AddrExpr::compile(ctx,load){
     utils.debugf("gen.AddrExpr::compile()")
     this.record()
     
@@ -204,7 +204,7 @@ BinaryExpr::isMemtype(ctx)
     return false
 }
 
-BinaryExpr::compile(ctx)
+BinaryExpr::compile(ctx,load)
 {
     this.record()
 
