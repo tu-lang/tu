@@ -43,7 +43,9 @@ package.Package::genStruct(s)
 			m.structref = dst
 			compile.currentParser = p
 		}
-
+		if m.pointer {
+			m.align = 8
+		}
     
 		if m.bitfield && m.bitwidth == 0 {
 			bits = utils.ALIGN_UP(bits, m.size * 8)
@@ -70,9 +72,13 @@ package.Package::genStruct(s)
 		if !s.ispacked && align < m.align
 		align = m.align
 	}
-  
-	s.size = utils.ALIGN_UP(bits, align * 8) / 8
-	s.align = align
+	if s.ispacked {
+		s.size = utils.ALIGN_UP(bits, align * 8) / 8
+		s.align = align
+	} else {
+		s.size = utils.ALIGN_UP(bits, 8 * 8) / 8
+		s.align = align
+	} 
 	
 	s.iscomputed = true
 	compile.currentParser = null
