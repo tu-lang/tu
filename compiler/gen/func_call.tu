@@ -82,14 +82,6 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 	for  i = std.len(this.args) - 1; i >= 0; i -= 1 {
 		arg = this.args[i]
 		ret = arg.compile(prevCtxChain,true)
-		if ret != null && type(ret) == type(gen.ChainExpr) {
-			ce = ret
-			if type(ce.last) == type(gen.MemberCallExpr) {
-			}
-			else if type(arg) != type(gen.AddrExpr) {
-			}
-		}
-
         if ret != null {
 			ty<i32> = ret.getType(prevCtxChain)
             if ast.isfloattk(ty)
@@ -281,16 +273,7 @@ FunCallExpr::PushRegisterArgs(ctx,fc){
                 stack += 1
             }
             gp += 1
-            ret = this.args[i].compile(ctx)
-            if ret != null && type(ret) == type(gen.StructMemberExpr) {
-                sm = ret
-                compile.LoadMember(sm.getMember())
-            }else if ret != null && type(ret) == type(gen.ChainExpr) {
-                ce = ret
-                if type(ce.last) == type(gen.MemberCallExpr) {
-                }else if type(this.args[i]) != type(gen.AddrExpr) {
-                }
-            }
+			this.args[i].compile(ctx,true)
             compile.Push()
         }
         

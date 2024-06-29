@@ -29,12 +29,7 @@ StructInitExpr::arrinit(ctx , field , arr){
 			compile.writeln("	mov $%d , %%rax",i.lit)
 			compile.writeln("	movq %%rax , %%xmm0")
 		}else{
-			ret = i.compile(ctx)
-			if type(ret) == type(StructMemberExpr) {
-				m = ret
-				v = m.getMember() 
-				compile.LoadMember(v)
-			}
+			i.compile(ctx,true)
 		}
 		compile.writeln(" mov (%%rsp) , %%rdi")
 
@@ -101,7 +96,7 @@ StructInitExpr::compile(ctx,load){
 			continue
 		}else{
 			rtok = value.getType(ctx)
-			ret = value.compile(ctx,true)
+			value.compile(ctx,true)
 		}
 		compile.writeln(" mov (%%rsp) , %%rdi")
 		compile.writeln(" add $%d , %%rdi",field.offset)

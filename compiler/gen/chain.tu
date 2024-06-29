@@ -191,10 +191,7 @@ ChainExpr::objgen(ctx)
 {
 	utils.debug("gen.ChainExpr::objgen()")
 	this.record()
-	ret = this.first.compile(ctx)
-	if ret != null && type(ret) == type(StructMemberExpr) {
-		compile.LoadMember(ret.ret)
-	}
+	this.first.compile(ctx,true)
 	compile.Push()
 
 	for(i : this.fields){

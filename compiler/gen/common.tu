@@ -45,25 +45,6 @@ func exprIsMtype(cond,ctx){
     }
     return ismtype
 }
-func check_load(ctx,expr,ret){
-    if !exprIsMtype(expr,ctx) {
-        return true
-	}
-    if type(ret) == type(ChainExpr) {
-		m = ret
-		v = m.ret
-		
-		if type(expr) == type(AddrExpr) {
-			
-		}else if type(expr) == type(DelRefExpr) {
-			compile.LoadSize(v.size,v.isunsigned)
-		}else if type(m.last) == type(IndexExpr) {
-		}else if type(m.last) == type(MemberCallExpr) {
-		}else{
-		}
-	}
-    return true
-}
 func GP(){
     return compile.currentParser
 }

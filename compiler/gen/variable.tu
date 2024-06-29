@@ -211,8 +211,7 @@ VarExpr::assign(ctx , opt , rhs){
             compile.Load()
             compile.Push()
 
-            ret1 = rhs.compile(ctx,true)
-            check_load(ctx,rhs,ret1)
+            rhs.compile(ctx,true)
             compile.Push()
             internal.call_object_operator(opt,this.varname,"runtime_object_unary_operator2")
             return null
@@ -236,7 +235,7 @@ VarExpr::assign(ctx , opt , rhs){
                 return oh.gen()
             }
             // rhs.compile(ctx)
-            check_load(ctx,rhs,rhs.compile(ctx,true))
+            rhs.compile(ctx,true)
             compile.Push()
 
             compile.GenAddr(this.ret)
