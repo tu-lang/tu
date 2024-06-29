@@ -5,7 +5,7 @@ use std
 use compiler.utils
 
 
-ChainExpr::indexgen(ctx)
+ChainExpr::indexgen(ctx,load)
 {
 	utils.debugf("gen.ChainExpr::indexgen()")
 	member = null
@@ -53,5 +53,9 @@ ChainExpr::indexgen(ctx)
 	index = this.last
 	index.compile_chain_static(ctx,member.size)
 	this.ret = member
+
+	if load {
+		compile.LoadSize(member.size,member.isunsigned)
+	}
 	return this
 }

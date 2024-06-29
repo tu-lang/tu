@@ -95,11 +95,12 @@ DelRefExpr::compile(ctx,load){
         if var.size != 1 && var.size != 2 && var.size != 4 && var.size != 8{
             this.panic("type must be [i8 - u64]:" + this.expr.toString())
         }
-        
-        if ast.isfloattk(var.type)
-            compile.Loadf(var.type)
-        else
-            compile.LoadSize(var.size,var.isunsigned)
+        if load { 
+            if ast.isfloattk(var.type)
+                compile.Loadf(var.type)
+            else
+                compile.LoadSize(var.size,var.isunsigned)
+        }
         return ret
     }else if type(ret) == type(StructMemberExpr) {
         sm = ret
@@ -107,7 +108,9 @@ DelRefExpr::compile(ctx,load){
         if m == null{
             this.panic("del ref can't find the class member:" + this.expr.toString())
         }
-        compile.LoadSize(m.size,m.isunsigned)
+        if load {
+            compile.LoadSize(m.size,m.isunsigned)
+        }
         return ret
     
     }else if type(ret) == type(ChainExpr) {

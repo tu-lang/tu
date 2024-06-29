@@ -314,7 +314,6 @@ OperatorHelper::genLeft()
 			if type(ret) == type(ChainExpr) {
 				ce = ret
 				m = ce.ret
-				if m.pointer compile.Load()
 				this.lmember = m
 				tk = m.type
 				if m.isstruct tk = ast.U64
@@ -497,7 +496,6 @@ OperatorHelper::genRight(isleft,expr)
 			
 		}else if type(expr) == type(DelRefExpr) {
 		}else if type(m.last) == type(IndexExpr) {
-			compile.LoadSize(v.size,v.isunsigned)
 		}else if type(m.last) == type(MemberCallExpr) {
 		}else{
 		}

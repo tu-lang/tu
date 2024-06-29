@@ -113,7 +113,7 @@ ChainExpr::memgen(ctx,load)
 {
 	utils.debug("gen.ChainExpr::memgen()")
 	if(type(this.last) == type(IndexExpr)){
-		return this.indexgen(ctx)
+		return this.indexgen(ctx,load)
 	}
 	member = null
 	if(type(this.first) == type(StructMemberExpr)){
