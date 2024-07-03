@@ -499,6 +499,7 @@ fn unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
     ret<Value> = operator_switch(opt,*lhs,rhs)
     //*(Value**)lhs = ret
     *lhs = ret
+    return ret
 }
 
 // lhs  rhs

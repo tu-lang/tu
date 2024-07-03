@@ -18,7 +18,6 @@ func test_no_brace(){
 
     if arr[2] != "test" os.die("should be test")
 
-    # 没有括号的时候只能生效一行语句，而不是表达式
     f = func(){
         var = 100
         if var == 200 os.die("not 200")
@@ -29,7 +28,7 @@ func test_no_brace(){
     
 	fmt.println("else if test success")
 }
-# 测试有括号的情况
+
 func test_has_brace(){
     a = 1
     if  a == 1 {
@@ -43,7 +42,6 @@ func test_has_brace(){
         fmt.println("OK\n")
         os.exit(1)
     }
-    //测试 elseif
 
     map = {"one":100 , "second":333 , 44:55}
     if map["one"] == 101 {
@@ -56,9 +54,15 @@ func test_has_brace(){
     fmt.println("test if else if has brace success")
 
 }
+fn test_common(){
+    fmt.println("test common")
+    if (p = null) == null {} else os.die("p != null")
+    fmt.println("test common success")
+}
 
 func main(){
     test_has_brace()
     test_no_brace()
+    test_common()
 }
 
