@@ -4,6 +4,8 @@ use os
 use string
 use runtime.debug
 
+cfg(mod_static,true)
+
 gcBitsChunkBytes<u64>  = 65536
 gcBitsHeaderBytes<u64> = 16
 arenaBaseOffset<u64> =  140737488355328

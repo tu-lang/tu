@@ -2,6 +2,8 @@ use fmt
 use os
 use runtime
 
+cfg(mod_static,true)
+
 lines<Lines> = null
 elf<Elf>	 = null
 //NOTICE: set by compiler

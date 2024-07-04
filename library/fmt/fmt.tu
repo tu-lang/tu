@@ -5,6 +5,8 @@ use std
 use fmt
 use string
 
+cfg(mod_static,true)
+
 func fatal(args...){
     println(args)
     os.exit(-1)

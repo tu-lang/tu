@@ -3,6 +3,8 @@ use fmt
 use std.map
 use os
 
+cfg(mod_static,true)
+
 func rand(v<runtime.Value>){
 
 	seed = (seed * 1103515245) + 12345

@@ -2,6 +2,7 @@ use std
 use runtime
 use string
 use fmt
+cfg(mod_static,true)
 
 fn type_hash_key(k<string.String>)
 fn type_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode>)

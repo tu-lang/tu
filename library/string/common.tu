@@ -1,4 +1,5 @@
 use runtime
+cfg(mod_static,true)
 
 func isspace(c<i32>){
     match c {
