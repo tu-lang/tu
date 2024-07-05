@@ -4,7 +4,6 @@ use std.map
 
 chars<std.Array> = null
 strings<map.Rbtree> = null
-//TODO: remove
 enable_object_pool<i64> = 0
 
 func string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.RbtreeNode>)
@@ -39,6 +38,7 @@ func string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.Rbtre
 
     // make red
     node.color = 1
+    return map.Insert
 }
 
 func pools_init(){

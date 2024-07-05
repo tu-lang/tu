@@ -185,12 +185,11 @@ Rbtree::insert(node<RbtreeNode>)
                 }
 
                 node.parent.black()
-                node.parent.parent
+                node.parent.parent.red()
                 this.rbtree_left_rotate(root, sentinel, node.parent.parent)
             }
         }
     }
-    //TODO: multi layer pointer
-    _temp<RbtreeNode> = *root
-    _temp.black()
+    tn<RbtreeNode> = *root
+    tn.black()
 }
