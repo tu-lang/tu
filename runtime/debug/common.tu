@@ -2,7 +2,7 @@ use fmt
 use os
 use runtime
 
-cfg(mod_static,true)
+// cfg(mod_static,true)
 
 lines<Lines> = null
 elf<Elf>	 = null

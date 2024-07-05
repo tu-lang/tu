@@ -48,9 +48,7 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
                 key : hk,
                 v   : objs
             }
-            //save string pools
-            //FIXME: performance problem - [014]
-            // if enable_object_pool strings.insert(node)
+            if enable_object_pool strings.insert(node)
             return objs
         }
         Bool:   {

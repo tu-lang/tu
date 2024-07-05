@@ -3,7 +3,7 @@ use fmt
 use std.map
 use os
 
-cfg(mod_static,true)
+// cfg(mod_static,true)
 
 func rand(v<runtime.Value>){
 
