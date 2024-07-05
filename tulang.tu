@@ -6,9 +6,11 @@ use compiler.compile
 use compiler.parser
 use asmer.asm
 use linker.link 
+use runtime
 //TODO: set by compiler
 root = "/usr/local/lib"
 version = "1.0.0"
+printlat = false
 
 class Compiler {
     // origin file
@@ -68,10 +70,11 @@ Compiler::commadparse(){
                 asm.trace     = true  
                 link.trace    = true
             }
-            "-g"  : compile.debug    = true
+            "-g"   : compile.debug    = true
             "-std" : compile.nostd = false
-            "-gcc"   : this.flag_gcc = true
-            "-v"  : {
+            "-gcc" : this.flag_gcc = true
+            "-lat" : printlat = true
+            "-v"   : {
                 fmt.printf(
                     "tu-lang version: %s\n" +
                     "Target         : x86_64 linux\n",
@@ -196,6 +199,7 @@ Compiler::compile(){
     }
 }
 func main() {
+    start<i64> = std.ntime()
     eng = new Compiler()
     if os.argc() < 1 {
         return eng.print_help() 
@@ -203,4 +207,13 @@ func main() {
     os.set_stack(10.(i8))
     eng.commadparse() // handle options
     eng.compile()
+
+    end<i64> = std.ntime()
+    if printlat {
+        latency<i64> = end - start
+        latency /= 1000000 // ms
+        utils.msg(0,
+            fmt.sprintf("latency: %d ms\n",int(latency))
+        )
+    }
 }
