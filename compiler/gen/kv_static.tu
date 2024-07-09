@@ -73,6 +73,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 compile.writeln("\tadd %%rdi , (%%rsp)") 
 			 compile.Pop("%rax")
 			 compile.LoadSize(var.ret.size,var.ret.isunsigned)
+			 return var.ret
 		 }
 		 ast.Var_Global_Local_Static_Field | ast.Var_Local_Static_Field:{ 
 			 sm = new StructMemberExpr(var.package,this.line,this.column)
@@ -95,14 +96,15 @@ IndexExpr::compileStaticIndex(ctx,size){
 					this.check(false,"only struct arr can size > 8")
 				}
 				this.ret = me
-				break
+				return sm
 			}
 			if ast.isfloattk(me.type)
 			 	compile.Loadf(me.type)
 			else if !me.pointer && me.isarr && me.structname != "" {
 			}else
 			 	compile.LoadSize(ss,me.isunsigned)
-			 this.ret = me
+			this.ret = me
+			return sm
 		 }
 		 _ : this.check(false,"array_static inex: unuspport dynamic var")
 	 }

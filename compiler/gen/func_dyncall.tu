@@ -38,7 +38,9 @@ FunCallExpr::dyncompile(ctx, ty, obj){
     }else{
         this.dynstackcall(ctx)
     }
-	return null
+
+	this.is_dyn = false
+	return this
 }
 
 FunCallExpr::dynstackcall(ctx){

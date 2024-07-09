@@ -85,7 +85,7 @@ IndexExpr::compile(ctx,load) {
                 compile.writeln("\tadd %%rdi , (%%rsp)")
                 compile.Pop("%rax")
                 compile.LoadSize(me.size,me.isunsigned)
-                return null
+                return sm
             }            
             compile.GenAddr(var.ret)
             compile.Load()
@@ -99,8 +99,7 @@ IndexExpr::compile(ctx,load) {
             compile.Push()
         }
         ast.Var_Global_Extern_Static | ast.Var_Local_Static | ast.Var_Local_Static_Field | ast.Var_Global_Local_Static_Field :{
-            this.compile_static(ctx) 
-            return this
+            return this.compile_static(ctx) 
         }
         ast.Var_Func : {
             this.panic("meme type can't used in indexpr :" + this.toString(""))

@@ -184,7 +184,11 @@ ChainExpr::memgen(ctx,load)
 	if (type(this.last) != type(MemberCallExpr)) && load == true {
 		compile.LoadMember(member)
 	}
-	return this
+
+	ret = new StructMemberExpr("",this.line,this.column)
+	ret.s = member.structref
+	ret.m = member
+	return ret
 }
 
 ChainExpr::objgen(ctx)
@@ -200,12 +204,11 @@ ChainExpr::objgen(ctx)
 	}
 
 	if type(this.last) == type(FunCallExpr) {
-		this.last.dyncompile(ctx,ast.ChainCall,null)
+		return this.last.dyncompile(ctx,ast.ChainCall,null)
 	}else {
-		this.last.compile(ctx,true)
+		return this.last.compile(ctx,true)
 	}
-
-    return null
+	this.panic("should not be here")
 }
 
 ChainExpr::assign(ctx , opt, rhs) {

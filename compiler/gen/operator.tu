@@ -76,7 +76,7 @@ DelRefExpr::compile(ctx,load){
     if type(this.expr) == type(StringExpr) {
         se = this.expr
         compile.writeln("    lea %s(%%rip), %%rax", se.name)
-        return this
+        return this.expr
     }
     ret = this.expr.compile(ctx,true)
     
@@ -103,20 +103,12 @@ DelRefExpr::compile(ctx,load){
         }
         return ret
     }else if type(ret) == type(StructMemberExpr) {
-        sm = ret
-        m = sm.ret
+        m = ret.getMember()
         if m == null{
             this.panic("del ref can't find the class member:" + this.expr.toString())
         }
         if load {
             compile.LoadSize(m.size,m.isunsigned)
-        }
-        return ret
-    
-    }else if type(ret) == type(ChainExpr) {
-        me = ret.ret
-        if load {
-            compile.LoadSize(me.size,me.isunsigned)
         }
         return ret
     }
@@ -170,7 +162,7 @@ AddrExpr::compile(ctx,load){
         
         var = GP().getGlobalVar(this.package,this.varname)
         compile.GenAddr(var)
-        return this
+        return var
     }
     var = ctx.getOrNewVar(this.varname)
     if var == null
@@ -183,7 +175,7 @@ AddrExpr::compile(ctx,load){
     realVar = var.getVar(ctx,this)
     compile.GenAddr(realVar)
 
-    return this
+    return realVar
 }
 class BinaryExpr : ast.Ast {
     opt

@@ -305,77 +305,27 @@ OperatorHelper::binary()
 OperatorHelper::genLeft()
 {
     utils.debugf("gen.OpHelper::genLeft()")
-	var = this.var
-	match type(this.lhs) {
-		type(DelRefExpr) : {
-			ret = this.lhs.compile(this.ctx)
 
-			if type(ret) == type(ChainExpr) {
-				ce = ret
-				m = ce.ret
-				this.lmember = m
-				tk = m.type
-				if m.isstruct tk = ast.U64
-				this.initcond(true,m.size,tk,m.pointer)
-				return ce
-			}else if type(ret) == type(StructMemberExpr) {
-				smember = ret
-				m = smember.getMember()
-				lmember = m
-				this.initcond(true,m.size,m.type,m.pointer)
-				return smember
-			}
-
-			if ret == null || type(ret) != type(VarExpr) 
-				this.lhs.panic(fmt.sprintf(
-						"not VarExpr,only support *(class var) = expression :%s %d\n",
-						this.lhs.toString(),
-						this.lhs.line
-					)
-				)
-			rv = ret
-			if !rv.structtype
-				this.lhs.panic(
-					fmt.sprintf(
-						"not structtype,only support *(class var) = expression :%s\n",
-						this.lhs.toString()
-					)
-				)
-			
-			this.initcond(true,rv.size,rv.type,rv.pointer)
-			return rv
-		}
-		type(ChainExpr) : {
-			ce = this.lhs
-			ce.compile(this.ctx)
-			m = ce.ret
-			this.lmember = m
-			
-			tk = m.type
-			if m.isstruct tk = ast.U64
-			this.initcond(true,m.size,tk,m.pointer)
-			return ce
-		}
-		type(StructMemberExpr) : {
-			smember = this.lhs
-			smember.compile(this.ctx)
-			m = smember.getMember()
-			this.lmember = m
-			this.initcond(true,m.size,m.type,m.pointer)
-			return smember
-		}
+	ret = this.lhs.compile(this.ctx,false)
+	match type(ret) {
 		type(VarExpr) : {
-			if !var.structtype
+			var = ret
+			if !var.structtype {
 				this.lhs.panic(
 					fmt.sprintf(
 						"genLeft: lhs not structExpr %s \n",
 						this.lhs.toString()
 					)
 				)
-			
+			}
 			this.initcond(true,var.size,var.type,var.pointer)
-			compile.GenAddr(var)
 			return var
+		}
+		type(StructMemberExpr) : {
+			m = ret.getMember()
+			this.lmember = m
+			this.initcond(true,m.size,m.type,m.pointer)
+			return ret
 		}
 		_ : this.lhs.panic("genLeft: unknow left type")
 	}
@@ -472,24 +422,13 @@ OperatorHelper::genRight(isleft,expr)
 			this.initcond(isleft,8,ast.I64,false)
 		else
 			this.initcond(isleft,v.size,v.type,v.pointer)
-	}else if type(ret) == type(IndexExpr)
-	{
-		member = ret.ret
-		if(member == null)
-			this.initcond(isleft,8,ast.U64,false)
-		else
-			this.initcond(isleft, member.size,member.type,member.pointer)
 	}else if type(ret) == type(StructMemberExpr) 
 	{
 		m = ret
 		v = m.getMember() 
 		this.initcond(isleft,v.size,v.type,v.pointer)
-	}else if type(ret) == type(ChainExpr) {
-		m = ret
-		v = m.ret
-		tk = v.type
-		if v.isstruct tk = ast.U64
-		this.initcond(isleft,v.size,tk,v.pointer)
+	}else if type(ret) == type(FunCallExpr) {
+		this.initcond(isleft,8,ast.U64,false)
 	}else{
 		ret.check(false,fmt.sprintf("not allowed expression in memory operator:%s" + ret.toString()))
 	}

@@ -34,6 +34,8 @@ class FunCallExpr : ast.Ast {
     is_extern
     is_delref
 
+	is_dyn = false
+	fcs    = null
 	tyassert
 	func init(line,column){
 		super.init(line,column)
@@ -91,7 +93,7 @@ FunCallExpr::compile(ctx,load)
 			if(fc == null) this.panic("func not exist")
 			this.checkFirstThis(ctx,var)
 			this.call(ctx,fc)
-			return null
+			return this
 		}else if this.tyassert != null {
 			s = compile.currentParser.pkg
 					.getPackage(this.tyassert.pkgname)
@@ -99,7 +101,7 @@ FunCallExpr::compile(ctx,load)
 			fc = s.getFunc(this.funcname)
 			this.checkFirstThis(ctx,var)
 			this.call(ctx,fc)
-			return null
+			return this
 		}
 		this.checkobjcall(var)
 		return this.dyncompile(ctx,ast.ObjCall,var)
@@ -132,7 +134,7 @@ FunCallExpr::compile(ctx,load)
 		)
 	}
 	this.call(ctx,fc)
-	return null
+	return this
 }
 
 FunCallExpr::toString() {

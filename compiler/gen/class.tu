@@ -239,7 +239,7 @@ MemberCallExpr::static_compile(ctx,s){
 
     call.compile(ctx,true)
     compile.writeln("    add $8, %%rsp")
-    return null
+    return call
 }
 
 MemberCallExpr::compile(ctx,load)
@@ -272,7 +272,8 @@ MemberCallExpr::compile(ctx,load)
     call.funcname = this.membername
     call.dyncompile(ctx,ast.MemberCall,null)
     compile.writeln("    add $8, %%rsp")
-	return null
+    
+    return call
 }
 
 MemberExpr::ismem(ctx){

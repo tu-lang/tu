@@ -10,6 +10,8 @@ use compiler.utils
 
 FunCallExpr::call(ctx,fc)
 {
+	this.is_dyn = false
+	this.fcs = fc
 	if fc.block == null {
 		compile.writeln("#    register %s",compile.currentFunc.fullname())
 		return this.registercall(ctx,fc)
@@ -43,6 +45,9 @@ FunCallExpr::closcall(ctx , obj)
 {
 	fc = getGLobalFunc(obj.structpkg,obj.structname)
     this.check(fc != null," closcall func not define")
+
+	this.is_dyn = false
+	this.fcs    = fc
 
 	args = this.args
 

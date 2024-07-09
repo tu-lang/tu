@@ -102,8 +102,7 @@ BuiltinFuncExpr::compile(ctx,load){
 				tk = ret.type
 			}
 			type(StructMemberExpr) : {
-				sm = ret
-				m = sm.ret
+				m = ret.getMember()
 				if m == null {
 					this.panic("del ref can't find the struct member: " + 
 						this.expr.toString()
@@ -111,17 +110,9 @@ BuiltinFuncExpr::compile(ctx,load){
 				}
 				tk = m.type
 			}
+			type(FunCallExpr): tk = ast.U64
 			type(ChainExpr) : {
-				ce = ret
-				if ce.ret == null {
-					this.panic(fmt.sprintf("struct chain exp: something wrong here :%s\n",ret.toString()))
-				}
-				if type(ce.last) == type(MemberCallExpr) {
-					tk = ast.U64
-				}else if type(this.expr) == type(AddrExpr){
-				}else{
-					tk = ce.ret.type
-				}
+				this.panic(fmt.sprintf("struct chain exp: something wrong here :%s\n",ret.toString()))
 			}
 		}
 	}

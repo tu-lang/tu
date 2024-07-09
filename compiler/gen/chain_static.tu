@@ -57,5 +57,9 @@ ChainExpr::indexgen(ctx,load)
 	if load {
 		compile.LoadSize(member.size,member.isunsigned)
 	}
-	return this
+
+	ret = new StructMemberExpr("",this.line,this.column)
+	ret.s = member.structref
+	ret.m = member
+	return ret
 }
