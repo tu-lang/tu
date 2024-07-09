@@ -23,12 +23,12 @@ IndexExpr::compileStaticIndex(ctx,size){
 			if var.pointer this.index.check(false,"index can't be pointer")
 			if !var.structtype  this.index.check(false,"index must be statictype")
 			if var.type < ast.I8 || var.type > ast.U64 this.check(false,"index must be 1 - 8 bytes type")
-			var.compile(ctx)
+			var.compile(ctx,true)
 		}
 		type(BinaryExpr): {
 			b = this.index
 			if !b.isMemtype(ctx) this.index.check(false,"must be mem binary operator for array index")
-			b.compile(ctx)
+			b.compile(ctx,false)
 		}
 		type(StructMemberExpr): this.index.compile(ctx,true)
 		type(MemberExpr) : {
@@ -37,7 +37,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			me.compile(ctx,true)
 		}
 		type(FunCallExpr) : {
-        	this.index.compile(ctx)
+        	this.index.compile(ctx,false)
     	}
 		_: {
 			this.index.check(false,"index must be var in arry index")
@@ -78,7 +78,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 sm = new StructMemberExpr(var.package,this.line,this.column)
 			 sm.member = var.varname
 			 sm.var    = var.ret
-			 sm.compile(ctx)
+			 sm.compile(ctx,false)
 			 me = sm.ret
 			 if me.pointer && !me.isarr {
 				 compile.LoadMember(me)
@@ -143,7 +143,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 sm = new StructMemberExpr(var.package,this.line,this.column)
 			 sm.member = var.varname
 			 sm.var    = var.ret
-			 sm.compile(ctx) 
+			 sm.compile(ctx,false) 
 			 me = sm.ret
 			 if me.pointer && !me.isarr{
 				compile.LoadMember(me)

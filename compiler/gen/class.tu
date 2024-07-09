@@ -53,7 +53,7 @@ NewClassExpr::compile2(ctx)
 		father.package = s.father.pkg
 		father.name = s.father.name
 		// gen father
-		father.compile(ctx)
+		father.compile(ctx,true)
 		compile.Push()
 
 		internal.newinherit_object(s.type_id)
@@ -100,7 +100,7 @@ NewClassExpr::compile2(ctx)
         }else{
             pos.pos = std.len(call.args)  - 1
         }
-		call.compile(ctx)
+		call.compile(ctx,true)
 	}
 	compile.Pop("%rax")
 
@@ -237,7 +237,7 @@ MemberCallExpr::static_compile(ctx,s){
         pos.pos = std.len(call.args)  - 1
     }
 
-    call.compile(ctx)
+    call.compile(ctx,true)
     compile.writeln("    add $8, %%rsp")
     return null
 }

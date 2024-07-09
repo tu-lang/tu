@@ -25,7 +25,7 @@ ArrayExpr::compile(ctx,load){
     for(element: this.lit){
         compile.writeln("    push (%%rsp)")
         //new element & push element
-        element.compile(ctx)
+        element.compile(ctx,true)
         compile.Push()
 
         internal.arr_pushone() 

@@ -48,7 +48,7 @@ BuiltinFuncExpr::compile(ctx,load){
 					}
 				}
 			}
-			this.expr.compile(ctx)
+			this.expr.compile(ctx,true)
 			internal.type_id2()
 			return null
 		}
@@ -67,16 +67,16 @@ BuiltinFuncExpr::compile(ctx,load){
 						// if ( (s = package.packages[packagename].getClass(ve.varname)) && s != null ) {
 							type_id = s.type_id
 						}else{
-							this.expr.compile(ctx)
+							this.expr.compile(ctx,true)
 							isobj = true
 						}
 					}else{
-						this.expr.compile(ctx)
+						this.expr.compile(ctx,true)
 						isobj = true
 					}
 				}
 			}else{
-				this.expr.compile(ctx)
+				this.expr.compile(ctx,true)
 				isobj = true
 			}
 			internal.type_id(type_id,isobj)

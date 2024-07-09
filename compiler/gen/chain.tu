@@ -70,7 +70,7 @@ ChainExpr::compile(ctx,load)
 		   }else{
 			   if(type(this.last) == type(MemberCallExpr)){
 				   fc = new FunCallExpr(realVar.line,realVar.column)
-				   realVar.compile(ctx)
+				   realVar.compile(ctx,true)
 				   s = package.getStruct(realVar.package,realVar.structname)
 				   return this.last.static_compile(ctx,s)
 			   }else{
@@ -117,7 +117,7 @@ ChainExpr::memgen(ctx,load)
 	}
 	member = null
 	if(type(this.first) == type(StructMemberExpr)){
-		this.first.compile(ctx)
+		this.first.compile(ctx,false)
 		s = this.first
 		member = s.getMember()
 	}else if(type(this.first) == type(IndexExpr)){
@@ -195,14 +195,14 @@ ChainExpr::objgen(ctx)
 	compile.Push()
 
 	for(i : this.fields){
-		i.compile(ctx)
+		i.compile(ctx,true)
 		compile.Push()
 	}
 
 	if type(this.last) == type(FunCallExpr) {
 		this.last.dyncompile(ctx,ast.ChainCall,null)
 	}else {
-		this.last.compile(ctx)
+		this.last.compile(ctx,true)
 	}
 
     return null
@@ -211,15 +211,15 @@ ChainExpr::objgen(ctx)
 ChainExpr::assign(ctx , opt, rhs) {
 	utils.debug("gen.ChainExpr::assign()")
 	this.record()
-    this.first.compile(ctx)
+    this.first.compile(ctx,true)
     compile.Push()
 	for i : this.fields {
-		i.compile(ctx)
+		i.compile(ctx,true)
 		compile.Push()
 	}
 	if  type(this.last) == type(MemberExpr) {
 		me  = this.last
-        rhs.compile(ctx)
+        rhs.compile(ctx,true)
         compile.Push()
         internal.call_object_operator(opt,me.membername,"runtime_object_unary_operator2")
 	}else if type(this.last) == type(IndexExpr) {

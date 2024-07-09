@@ -46,7 +46,7 @@ NewExpr::compile(ctx,load)
 				this.panic("AsmError: var must be memtype in (new var)")
 			}
 			real_var = var.getVar(ctx,this)
-			real_var.compile(ctx)
+			real_var.compile(ctx,true)
 			internal.gc_malloc()
 			return this
 		}
@@ -97,7 +97,7 @@ NewClassExpr::compile(ctx,load)
 
 	call.args[] = pos
 	std.merge(call.args,params)
-	call.compile(ctx)
+	call.compile(ctx,true)
 
 	compile.Pop("%rax")
 

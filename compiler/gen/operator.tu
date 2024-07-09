@@ -132,7 +132,7 @@ AddrExpr::compile(ctx,load){
         if !ce.ismem(ctx){
             this.panic("only support & struct.menber " + this.expr.toString())
         }
-        ce.compile(ctx)
+        ce.compile(ctx,false)
         
         return ce
     }
@@ -218,11 +218,11 @@ BinaryExpr::compile(ctx,load)
     if this.opt == ast.LOGOR || this.opt == ast.LOGAND 
         return this.FirstCompile(ctx)
     
-    if this.rhs   this.rhs.compile(ctx)
+    if this.rhs   this.rhs.compile(ctx,true)
     else            compile.writeln("   mov $0,%%rax")
     compile.Push()
 
-    this.lhs.compile(ctx)
+    this.lhs.compile(ctx,true)
     compile.Push()
     
     internal.call_operator(this.opt,"runtime_binary_operator")
@@ -233,7 +233,7 @@ BinaryExpr::FirstCompile(ctx){
     utils.debugf("gen.BinaryExpr::Firstcompile()")
     this.record()
     c = ast.incr_labelid()
-    this.lhs.compile(ctx)
+    this.lhs.compile(ctx,true)
     internal.isTrue()
     match this.opt {
         ast.LOGAND:{
@@ -245,7 +245,7 @@ BinaryExpr::FirstCompile(ctx){
 			compile.writeln("	je %s.L.true.%d",compile.currentParser.label(), c) 
         }
     }
-    this.rhs.compile(ctx)
+    this.rhs.compile(ctx,true)
     internal.isTrue()
     match this.opt {
         ast.LOGAND: {

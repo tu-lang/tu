@@ -25,10 +25,10 @@ KVExpr::compile(ctx,load){
     utils.debugf("gen.KVExpr::compile() gen... k:%s v:%s",this.key,this.value)
 
     //push key
-    this.key.compile(ctx)
+    this.key.compile(ctx,true)
     compile.Push()
     //push value
-    this.value.compile(ctx)
+    this.value.compile(ctx,true)
     compile.Push()
     return null
 }
@@ -73,7 +73,7 @@ IndexExpr::compile(ctx,load) {
                 vv.structname = this.tyassert.name
                 sm.member = this.varname
                 sm.var    = vv
-                sm.compile(ctx)
+                sm.compile(ctx,false)
                 me = sm.ret
                 if me.pointer
                     compile.LoadMember(me)
@@ -109,7 +109,7 @@ IndexExpr::compile(ctx,load) {
     }
 COMPILE_INDEX:
     this.check(this.index != null,"index is null")
-    this.index.compile(ctx)
+    this.index.compile(ctx,true)
     compile.Push()
     //call arr_get(arr,index)
     internal.kv_get()
@@ -133,7 +133,7 @@ IndexExpr::assign( ctx , opt ,rhs) {
                 vv.structpkg = this.tyassert.pkgname
                 vv.structname = this.tyassert.name
                 sm.var    = vv
-                sm.compile(ctx)
+                sm.compile(ctx,false)
                 me = sm.ret
                 if me.pointer
                     compile.LoadMember(me)
@@ -170,15 +170,15 @@ IndexExpr::assign( ctx , opt ,rhs) {
     }
 ASSIGN_INDEX:
     if !this.index {
-        rhs.compile(ctx)
+        rhs.compile(ctx,true)
         compile.Push()
 
         internal.arr_pushone()
         return null
     }
-    this.index.compile(ctx)
+    this.index.compile(ctx,true)
     compile.Push()
-    rhs.compile(ctx)
+    rhs.compile(ctx,true)
     compile.Push()
     //call arr_updateone(arr,index,var)
     internal.kv_update()

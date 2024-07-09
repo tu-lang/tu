@@ -85,7 +85,7 @@ StructInitExpr::compile(ctx,load){
 			if field.structname != ie.name this.panic("type sould be same")
 			compile.writeln("	mov (%%rsp) , %%rax")
 			compile.writeln("	add $%d , %%rax",field.offset)
-			ie.compile(ctx)
+			ie.compile(ctx,true)
 			continue 
 		}else if type(value) == type(ArrayExpr) {
 			ie = value
@@ -120,6 +120,6 @@ NewStructExpr::compile(ctx,load){
 	s = package.getStruct(fullpackage,this.init.name)
 	if s == null this.check(false,"struct not exist when new struct")
 	internal.gc_malloc(s.size)
-	this.init.compile(ctx)
+	this.init.compile(ctx,true)
 	return this
 }

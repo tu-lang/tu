@@ -43,7 +43,7 @@ ForStmt::rangeFor(ctx)
     if this.obj == null 
         this.panic("statement: for(x,y : obj) obj should pass value.")
     
-    this.obj.compile(ctx)
+    this.obj.compile(ctx,true)
     compile.Push()
     
     // compile.writeln("   mov (%%rsp),%%rdi")
@@ -111,10 +111,10 @@ ForStmt::triFor(ctx)
 {
     utils.debugf("gen.ForExpr::triFor()")
     c = ast.incr_labelid()
-    this.init.compile(ctx)
+    this.init.compile(ctx,true)
     
     compile.writeln("%s.L.for.begin.%d:",compile.currentParser.label(), c)
-    this.cond.compile(ctx)
+    this.cond.compile(ctx,true)
     if !exprIsMtype(this.cond,ctx) {
         internal.isTrue()
     }
@@ -130,7 +130,7 @@ ForStmt::triFor(ctx)
     
     compile.writeln("%s.L.for.continue.%d:",compile.currentParser.label(),c)
     
-    this.after.compile(ctx)
+    this.after.compile(ctx,true)
 
     compile.writeln("    jmp %s.L.for.begin.%d",compile.currentParser.label(),c)
     compile.writeln("%s.L.for.end.%d:",compile.currentParser.label(), c)
@@ -161,7 +161,7 @@ WhileStmt::compile(ctx)
     
     compile.writeln("%s.L.while.begin.%d:", compile.currentParser.label(),c)
     
-    this.cond.compile(ctx)
+    this.cond.compile(ctx,true)
     if !exprIsMtype(this.cond,ctx){
         internal.isTrue()
     }
@@ -277,7 +277,7 @@ IfStmt::compile(ctx){
             be.rhs = i
             cs.cond = be
         }
-        cs.cond.compile(ctx)
+        cs.cond.compile(ctx,true)
         if !exprIsMtype(cs.cond,ctx)
             internal.isTrue()
         compile.writeln("    cmp $1, %%rax")
@@ -289,9 +289,9 @@ IfStmt::compile(ctx){
     compile.writeln("   jmp %s.L.if.end.%d", compile.currentParser.label(),mainPoint)
     
     for(cs : this.cases){
-        cs.compile(ctx)
+        cs.compile(ctx,true)
     }
-    if this.elseCase this.elseCase.compile(ctx)
+    if this.elseCase this.elseCase.compile(ctx,true)
 
     compile.writeln("%s.L.if.end.%d:",compile.currentParser.label(),mainPoint)
     return null

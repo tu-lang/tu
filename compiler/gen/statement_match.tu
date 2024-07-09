@@ -44,7 +44,7 @@ MatchStmt::compile(ctx){
             be.rhs = cs.cond
             cond = be
         }
-        cond.compile(ctx)
+        cond.compile(ctx,true)
 
         if !exprIsMtype(cond,ctx)
             internal.isTrue()
@@ -59,9 +59,9 @@ MatchStmt::compile(ctx){
     ctx.top().end_str = compile.currentParser.label() + ".L.match.end"
 
     for(cs : this.cases){
-        cs.compile(ctx)
+        cs.compile(ctx,true)
     }
-    this.defaultCase.compile(ctx)
+    this.defaultCase.compile(ctx,true)
     ctx.destroy()
 
     compile.writeln("%s.L.match.end.%d:",compile.currentParser.label(),mainPoint)

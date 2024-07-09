@@ -10,7 +10,7 @@ ChainExpr::indexgen(ctx,load)
 	utils.debugf("gen.ChainExpr::indexgen()")
 	member = null
 	if(type(this.first) == type(StructMemberExpr)){
-		this.first.compile(ctx)
+		this.first.compile(ctx,false)
 		s = this.first
 		member = s.getMember()
 	}else if(type(this.first) == type(IndexExpr)){

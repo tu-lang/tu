@@ -28,7 +28,7 @@ MapExpr::compile(ctx,load){
 
     for(element: this.lit){
         compile.writeln("    push (%%rsp)")
-        element.compile(ctx)
+        element.compile(ctx,true)
         internal.kv_update()
     }
 
