@@ -6,7 +6,7 @@ use compiler.parser
 use compiler.compile
 
 class Package {
-    parsers = {} # parsers map[filepath + name] = parser
+    parsers = {} // parsers map[filepath + name] = parser
     package = name
     path    = path
     full_package = path
@@ -14,9 +14,11 @@ class Package {
     inits = []
     initid = 0
     initvars 
-    classes = {} # map{string : Class  }
-    structs = {} # map{string : Struct }
-    imports = {} # map[string: string}
+    classes = {} // map{string : Class  }
+    structs = {} // map{string : Struct }
+    imports = {} // map[string: string}
+
+    cfgs    = new ast.ConfigOpts()
 }
 
 Package::init(name , path , multi) {

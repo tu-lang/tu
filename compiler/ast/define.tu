@@ -1,5 +1,9 @@
 use compiler.compile
 
+class ConfigOpts {
+   base_static = false
+}
+
 # auto increment closure id
 closureidx = 0
 # auto increment count
@@ -27,3 +31,4 @@ fn isfloattk(tk<i32>){
     if(tk == F32 || tk == F64) return true
     return false
 }
+

@@ -46,6 +46,8 @@ class Parser {
     //currently scanner
     scanner        //Scanner*
     ismultiassign = false
+
+    cfgs          = new ast.ConfigOpts()
 }
 
 Parser::init(filepath,pkg) {
@@ -92,6 +94,7 @@ Parser::parse()
             ast.CLASS : this.parseClassDef()
             ast.MEM   : this.parseStructDef()
             ast.ENUM  : this.parseEnumDef()
+            ast.CFG   : this.parseCfg()
             ast.END   : return null 
             _     : this.parseGlobalDef()
         }

@@ -219,3 +219,27 @@ Parser::parseGlobalAssign()
 
     this.pkg.InsertInitVarExpression(assign)
 } 
+
+Parser::parseCfg(){
+    reader<scanner.ScannerStatic> = this.scanner
+    utils.debugf("parser.Parser::parseCfg() %s line:%d\n",reader.curLex.dyn(),this.line)
+    //eat cfg 
+    this.next_expect(ast.LPAREN,"cfg()")
+    this.next_expect(ast.VAR,"cfg(var,..)")
+
+    key = reader.curLex.dyn()
+    this.next_expect(ast.COMMA)
+    tk = reader.scan()
+
+    if key == "static" {
+        this.expect(ast.BOOL)
+        if reader.curLex.dyn() == "true"
+            this.cfgs.base_static =  true
+        else
+            this.cfgs.base_static =  false
+    }else{
+        this.check(false,"unkown cfg key:" + key)
+    }
+    this.next_expect(ast.RPAREN)
+    reader.scan()
+}
