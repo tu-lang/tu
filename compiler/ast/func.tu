@@ -40,6 +40,8 @@ class Function {
     retExpr     // Expression*
 
     funcnameid
+
+    mcount = 0
 }
 func incr_closureidx(){
     idx = closureidx

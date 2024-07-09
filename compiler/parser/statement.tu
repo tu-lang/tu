@@ -244,10 +244,25 @@ Parser::parseWhileStmt(dead) {
     return node
 }
 Parser::parseReturnStmt() {
+    reader<scanner.ScannerStatic> = this.scanner
     utils.debug("parser.Parser::parseReturnStmt()")
     node = new gen.ReturnStmt(this.line, this.column)
-    
-    node.ret = this.parseExpression(1)
+
+    ret = [] 
+    loop {
+        ret[] = this.parseExpression(1)
+        if reader.curToken != ast.COMMA
+            break
+        else 
+            reader.scan()
+    }
+    fc = this.currentFunc
+    this.check(fc != null)
+
+    if fc.mcount < std.len(ret)
+        fc.mcount = std.len(ret)
+
+    node.ret = ret
     return node
 }
 

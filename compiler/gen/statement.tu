@@ -3,15 +3,15 @@ use std
 
 
 class ReturnStmt     : ast.Ast { 
-    ret 
+    ret = []
     func init(line,column){
         super.init(line,column)
     }
     func toString() {
         str = "ReturnStmt("
-        if (this.ret) {
+        for v : this.ret {
             str += "ret="
-            str += this.ret.toString()
+            str += v.toString()
         }
         str += ")"
         return str
@@ -22,10 +22,13 @@ ReturnStmt::compile(ctx)
     utils.debugf("gen.ReturnExpr::compile()")
     this.record()
     
-    if this.ret == null {
-        compile.writeln("   mov $0,%%rax")
-    }else{
-        this.ret.compile(ctx,true)
+    fc = ast.GF()
+    if fc.mcount == 0 {
+        if ast.cfg_static()
+             compile.writeln("   mov $0 , %%rax")
+        else compile.writeln("   lea runtime_internal_null(%%rip) , %%rax")
+    }else {
+        this.compilemulti(ctx)
     }
     for(i = std.len(ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
         p = ctx.ctxs[i]
@@ -36,6 +39,50 @@ ReturnStmt::compile(ctx)
         } 
     }
     return null
+}
+ReturnStmt::compilemulti(ctx){
+    fc = ast.GF()
+    if fc.mcount == 1 {
+        if std.len(this.ret) == 0{
+            if ast.cfg_static()
+                compile.writeln(" mov $0 , %%rax")
+            else compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+        }else if std.len(this.ret) == 1 {
+            this.ret[0].compile(ctx,true)
+        }else{
+            this.ret[0].check(false,"should not be here")
+        }
+    }else{ //>=2
+        stackpointer = fc.ret_stack
+        this.ret[0].check(stackpointer > 0)
+        for i = fc.mcount; i >= 0 ; i -= 1 {
+            cur = i - 1 - 1
+            if i == 1 { 
+                if std.len(this.ret) > 0 {
+                    this.ret[0].compile(ctx,true)
+                }else{
+                    if ast.cfg_static()
+                         compile.writeln(" mov $0 , %%rax")
+                    else compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+                }
+                break
+            }
+            if i > std.len(this.ret) {
+                compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
+                if ast.cfg_static() {
+                    compile.writeln(" mov $0 , %d(%%rdi)",cur)
+                }else{
+                    compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+                    compile.writeln(" mov %%rax , %d(%%rdi)",cur)
+                }
+            }else{ 
+                this.ret[i - 1].compile(ctx,true)
+                compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
+                compile.writeln(" mov %%rax , %d(%%rdi)",cur)
+            }
+
+        }
+    }    
 }
 //TODO: not parser
 class BreakStmt      : ast.Ast {

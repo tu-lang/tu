@@ -32,3 +32,11 @@ fn isfloattk(tk<i32>){
     return false
 }
 
+fn cfg_static(){
+   if GP().cfgs.base_static return true
+
+   if GP().pkg.cfgs.base_static return true
+   
+   return false
+}
+
