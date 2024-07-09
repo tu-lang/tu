@@ -32,7 +32,7 @@ func block(){
 fn test_empty(){
 	fc = fn(){}
 	a = fc()
-	// if a == null {} else os.die("a should be null")
+	if a == null {} else os.die("a should be null")
 }
 
 func main(){

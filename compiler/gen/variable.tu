@@ -174,8 +174,7 @@ VarExpr::compile(ctx,load){
         ast.Var_Global_Extern_Static | ast.Var_Local | ast.Var_Global_Local | ast.Var_Global_Extern | ast.Var_Local_Static : 
         { 
             compile.GenAddr(this.ret)
-            //UNSAFE: dyn & native in same expression is unsafe      
-            if !this.ret.stack {
+            if load && !this.ret.stack {
                 if ast.isfloattk(this.ret.type) && !this.ret.pointer
                     compile.Loadf(this.ret.type)
                 else if this.ret.structtype == true && 
