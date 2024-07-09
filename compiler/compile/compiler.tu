@@ -113,6 +113,10 @@ func genOffsets(fc)
             top += 8
         }
     }
+    
+    top = utils.ALIGN_UP(top,8)
+    fc.ret_stack = top
+
     for (local : fc.locals){
         for var : local {
             bottom += var.getStackSize(currentParser)

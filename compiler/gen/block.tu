@@ -63,3 +63,16 @@ BlockStmt::compile(ctx){
         ctx.destroy()
     }
 }
+
+
+BlockStmt::checkLastRet(){
+    retstmt = new ReturnStmt(this.line,this.column)
+    if std.len(this.stmts) == 0 {
+        this.stmts[] = retstmt
+    }else{
+        lastexpr = this.stmts[std.len(this.stmts) - 1]
+        if type(lastexpr) != type(ReturnStmt) {
+            this.stmts[] = retstmt
+        }
+    }
+}

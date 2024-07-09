@@ -175,6 +175,11 @@ MultiAssignStmt::compile(ctx){
     if std.len(this.ls) == std.len(this.rs) {
         return this.compile1(ctx)
     }
+
+    if std.len(this.rs) > 1 {
+        this.rs[0].check(false,"multiassign right is != 1")
+    }
+
     this.ls[0].check(false,"multiassign != multireciver")
     return null
 }

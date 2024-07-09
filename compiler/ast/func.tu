@@ -27,7 +27,7 @@ class Function {
 
     //next for asm compute
     is_variadic   = false // function params is variadic
-    size    stack   l_stack g_stack
+    size    stack   l_stack g_stack ret_stack
 
     stack_size  // total function stack size
 
@@ -37,7 +37,6 @@ class Function {
     receiver    // ClosureExpr* for reciever point
 
     block       // BlockStmt*
-    retExpr     // Expression*
 
     funcnameid
 

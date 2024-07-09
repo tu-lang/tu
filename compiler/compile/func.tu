@@ -56,6 +56,9 @@ func CreateFunction(fc) {
     vardic = fc.getVariadic()
     i = 1
     if fc.block != null {
+        //check
+        fc.block.checkLastRet()
+        
         ctx = new ast.Context()
         ctx.create()
         funcCtx = ctx.top()

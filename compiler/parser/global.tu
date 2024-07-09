@@ -237,6 +237,12 @@ Parser::parseCfg(){
             this.cfgs.base_static =  true
         else
             this.cfgs.base_static =  false
+    }else if key == "mode_static" {
+        this.expect(ast.BOOL)
+        if reader.curLex.dyn() == "true"
+            this.pkg.cfgs.base_static =  true
+        else
+            this.pkg.cfgs.base_static =  false
     }else{
         this.check(false,"unkown cfg key:" + key)
     }

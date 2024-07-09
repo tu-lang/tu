@@ -250,7 +250,10 @@ Parser::parseReturnStmt() {
 
     ret = [] 
     loop {
-        ret[] = this.parseExpression(1)
+        retexpr = this.parseExpression(1)
+        if retexpr != null
+            ret[] = retexpr
+
         if reader.curToken != ast.COMMA
             break
         else 
