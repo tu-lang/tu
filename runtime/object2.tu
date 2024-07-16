@@ -9,6 +9,7 @@ use std.map
 mem VObjFunc {
 	u64 hid    , entry
     i64 isvarf , argstack
+    i64 retsize, retstack
 	i32 argsize, asyncsize
 	u64 init
 }
@@ -90,14 +91,15 @@ fn objfuncofs(hdr<VObjHeader>, hid<u64>){
     return Null
 }
 
-func newfuncobject(entry<u64>,as<i32>,isvarf<i32>){
-    //printf("entry:%d size:%d\n".(i8),entry,as) 
+func newfuncobject(entry<u64>,as<i32>,isvarf<i32>,retsize<i32>){
     return new FuncObject {
         type : Func,
         hdr : VObjFunc {
             isvarf : isvarf,
             argstack: as * 8,
             argsize : as,
+            retsize: retsize,
+            retstack: (retsize - 1) * 8,
             entry: entry
         }
     } 
