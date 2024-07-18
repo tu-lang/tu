@@ -433,7 +433,7 @@ fn isTrue(cond<Value>){
 fn operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
     if rhs == null {
         if opt != LOGNOT && opt != BITNOT {
-            fmt.vfprintf(std.STDOUT,*"[operator] only !,~ at unary expression,not:%d\n",opt)
+            warn(*"[operator] only !,~ at unary expression,not:%d\n",opt)
             os.exit(-1)
         }
     }

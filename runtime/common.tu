@@ -120,22 +120,21 @@ fn nextpc(){
 	return callerpc()
 }
 
-fn warn(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
-	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+fn warn(str<i8*>,args<i64*>...){
+	fmt.vfprintf(STDOUT,str,args)
 }
 
-fn printf(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
-	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+fn printf(str<i8*>,args<i64*>...){
+	fmt.vfprintf(STDOUT,str,args)
 }
 
-fn debug(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+fn debug(str<i8*>,args<i64*>...){
 	if !enable_debug return Null
-	fmt.vfprintf(STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+		fmt.vfprintf(STDOUT,str,args)
 }
 
-fn dief(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
-	fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
-
+fn dief(str<i8*>,args<i64*>...){
+	fmt.vfprintf(std.STDOUT,str,args)
 	infos = debug.stack(10.(i8))
     fmt.println("debug backtrace:")
     i = 1
@@ -146,9 +145,9 @@ fn dief(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
 	std.die(-1.(i8))
 }
 
-fn tracef(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+fn tracef(str<i8*>,args<i64>...){
 	if enable_trace {
-		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+		fmt.vfprintf(std.STDOUT,str,args)
 	}
 }
 
@@ -190,8 +189,8 @@ fn debug_alllock(){
 
 }
 
-fn dgc(str<i8*>,arg1<i64>,arg2<i64>,arg3<i64>,arg4<i64>,arg5<i64>){
+fn dgc(str<i8*>,args<i64*>...){
 	if enable_debug_gc {
-		fmt.vfprintf(std.STDOUT,str,arg1,arg2,arg3,arg4,arg5)
+		fmt.vfprintf(std.STDOUT,str,args)
 	}
 }

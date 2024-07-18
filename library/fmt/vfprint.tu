@@ -21,11 +21,12 @@ func fputc(c<i8>,out<u64*>){
 	return c
 }
 //vfprintf
-func vfprintf(out<u64>, format<i8*>, args_<u64*>)
+func vfprintf(out<u64>, format<i8*>, args_<u64*>...)
 {
 	translating<u64> = 0
 	ret<u64>		 = 0
-	args<u64*> = &args_
+	count<i32> = args_[0]
+	args<u64*> = args_ + 8
 	i<i32>  = 0
 	for (p<i8*> = format ; *p != 0 ; p += 1)
 	{
