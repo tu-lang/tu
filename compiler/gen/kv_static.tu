@@ -37,7 +37,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			me.compile(ctx,true)
 		}
 		type(FunCallExpr) : {
-        	this.index.compile(ctx,false)
+        	this.index.compile(ctx,true)
     	}
 		_: {
 			this.index.check(false,"index must be var in arry index")

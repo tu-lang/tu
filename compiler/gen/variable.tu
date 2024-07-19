@@ -210,6 +210,10 @@ VarExpr::assign(ctx , opt , rhs){
             compile.Load()
             compile.Push()
 
+            if type(rhs) == type(StackPosExpr) {
+                rhs.pos = 1
+                rhs.ismem = false
+            }
             rhs.compile(ctx,true)
             compile.Push()
             internal.call_object_operator(opt,this.varname,"runtime_object_unary_operator2")

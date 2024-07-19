@@ -8,7 +8,7 @@ use std
 use compiler.utils
 
 
-FunCallExpr::call(ctx,fc)
+FunCallExpr::call(ctx,fc,free)
 {
 	this.is_dyn = false
 	this.fcs = fc
@@ -16,10 +16,10 @@ FunCallExpr::call(ctx,fc)
 		compile.writeln("#    register %s",compile.currentFunc.fullname())
 		return this.registercall(ctx,fc)
 	}
-	return this.stackcall(ctx,fc)
+	return this.stackcall(ctx,fc,free)
 }
 
-FunCallExpr::stackcall(ctx,fc)
+FunCallExpr::stackcall(ctx,fc,free)
 {
 	args = this.args
 	callname = this.funcname
@@ -38,10 +38,13 @@ FunCallExpr::stackcall(ctx,fc)
 		delta = stack_args - std.len(fc.params_order_var)
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
+	if free && fc.mcount > 1 {
+		compile.writeln("    add $%d, %%rsp", (fc.mcount - 1) * 8)
+	}
     return null
 }
 
-FunCallExpr::closcall(ctx , obj)
+FunCallExpr::closcall(ctx , obj, free)
 {
 	fc = getGLobalFunc(obj.structpkg,obj.structname)
     this.check(fc != null," closcall func not define")
@@ -64,6 +67,9 @@ FunCallExpr::closcall(ctx , obj)
 		delta = stack_args - std.len(fc.params_order_var)
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
+	if free && fc.mcount > 1 {
+		compile.writeln("    add $%d, %%rsp", (fc.mcount - 1) * 8)
+	}
     return null
 }
 

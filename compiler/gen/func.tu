@@ -92,7 +92,7 @@ FunCallExpr::compile(ctx,load)
 			fc = s.getFunc(this.funcname)
 			if(fc == null) this.panic("func not exist")
 			this.checkFirstThis(ctx,var)
-			this.call(ctx,fc)
+			this.call(ctx,fc,load)
 			return this
 		}else if this.tyassert != null {
 			s = compile.currentParser.pkg
@@ -100,7 +100,7 @@ FunCallExpr::compile(ctx,load)
 					.getClass(this.tyassert.name)
 			fc = s.getFunc(this.funcname)
 			this.checkFirstThis(ctx,var)
-			this.call(ctx,fc)
+			this.call(ctx,fc,load)
 			return this
 		}
 		this.checkobjcall(var)
@@ -109,7 +109,7 @@ FunCallExpr::compile(ctx,load)
 		var = ctx.getOrNewVar(this.funcname)
 
 		if var.structtype {
-			return this.closcall(ctx,var)
+			return this.closcall(ctx,var,load)
 		}
 		return this.compile2(ctx,load,ast.ClosureCall,var)
 	}else{
@@ -133,7 +133,7 @@ FunCallExpr::compile(ctx,load)
 			)
 		)
 	}
-	this.call(ctx,fc)
+	this.call(ctx,fc,load)
 	return this
 }
 
@@ -173,7 +173,14 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 	return this
 }
 
+FunCallExpr::freeret(){
+	fc = this.fcs
+    if fc.mcount == 0 return null
 
+    stack = fc.mcount
+    stack *= 8
+    compile.writeln("    add $%d , %%rsp",stack)
+}
 FunCallExpr::toString() {
     str = "FunCallExpr[func = "
     str += this.package + "." + this.funcname

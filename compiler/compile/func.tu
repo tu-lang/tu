@@ -95,12 +95,13 @@ func CreateFunction(fc) {
     writeln("    pop %%rbp")
 
     args = std.len(fc.params_order_var)
+    if fc.mcount > 1
+        args += 1
+        
     if args > 0 {
         writeln("   pop %d(%%rsp)", (args - 1) * 8 )
         if args > 1 {
             stack = args - 1
-            if fc.mcount > 1
-                stack += 1
             writeln("   add $%d , %%rsp",stack * 8)
         }
     }

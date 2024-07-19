@@ -23,6 +23,40 @@ ArgsPosExpr::compile(ctx,load){
     return null
 }
 
+class StackPosExpr : ast.Ast {
+    ismem = false
+    cur = 0
+    total = 0
+    pos = -1
+    fn init(line,column){ super.init(line,column) }
+    fn toString(){return "StackPosExpr"}
+}
+
+StackPosExpr::compile(ctx , load){
+    this.record()
+
+    if this.cur > this.total{
+        if this.ismem {
+            compile.writeln("    mov $0 , %%rax")
+        }else{
+            compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+        }
+        return null
+    }
+    //push 3
+    //push 2
+    // mov 1 %rax
+
+    //push left
+    //this.pos = 1 
+    count = this.pos
+    count += this.cur
+    count -= 1
+    this.check(this.pos >= 0,"sotmehting wrong here in stack pos expr")
+    compile.writeln("    mov %d(%rsp),%rax",count * 8)
+    return null
+}
+
 class LabelExpr : ast.Ast {
     label = label
 	func init(label,line,column){

@@ -180,8 +180,7 @@ MultiAssignStmt::compile(ctx){
         this.rs[0].check(false,"multiassign right is != 1")
     }
 
-    this.ls[0].check(false,"multiassign != multireciver")
-    return null
+    return this.compile2(ctx)
 }
 
 MultiAssignStmt::compile1(ctx){
@@ -197,4 +196,44 @@ MultiAssignStmt::compile1(ctx){
         opexpr.compile(ctx)
     }
     return null
+}
+
+MultiAssignStmt::compile2(ctx){
+    rex = this.rs[0]
+    ret = rex.compile(ctx,false)
+    if ret == null || type(ret) != type(FunCallExpr) {
+        rex.check(false,"right must be funcall in multi assign statement")
+    }
+    fcexpr = ret
+    isdyn = fcexpr.is_dyn
+
+    if isdyn {
+        return this.assign2(ctx)
+    }
+    return this.assign(ctx,fcexpr)
+}
+
+MultiAssignStmt::assign(ctx, fce){
+    fc = fce.fcs
+    if fc.mcount != 0
+        compile.Push()
+    for i = 0 ; i < std.len(this.ls) ;i += 1 {
+        lexpr = this.ls[i]
+        rexpr = new StackPosExpr(this.line,this.column)
+        rexpr.total = fc.mcount
+        rexpr.cur = i + 1
+
+        assignExpr = new AssignExpr(lexpr.line,lexpr.column)
+        assignExpr.opt = this.opt
+        assignExpr.lhs = lexpr
+        assignExpr.rhs = rexpr
+
+        assignExpr.compile(ctx)
+    }
+    fce.freeret()
+    return null
+}
+
+MultiAssignStmt::assign2(ctx){
+    utils.panic("should not be assign2 here")
 }
