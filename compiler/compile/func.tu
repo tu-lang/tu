@@ -98,7 +98,10 @@ func CreateFunction(fc) {
     if args > 0 {
         writeln("   pop %d(%%rsp)", (args - 1) * 8 )
         if args > 1 {
-            writeln("   add $%d , %%rsp",(args - 1) * 8)
+            stack = args - 1
+            if fc.mcount > 1
+                stack += 1
+            writeln("   add $%d , %%rsp",stack * 8)
         }
     }
 

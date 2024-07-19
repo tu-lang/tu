@@ -104,14 +104,14 @@ FunCallExpr::compile(ctx,load)
 			return this
 		}
 		this.checkobjcall(var)
-		return this.dyncompile(ctx,ast.ObjCall,var)
+		return this.compile2(ctx,load,ast.ObjCall,var)
 	}else if this.package == "" && ctx.getOrNewVar(this.funcname) != null {
 		var = ctx.getOrNewVar(this.funcname)
 
 		if var.structtype {
 			return this.closcall(ctx,var)
 		}
-		return this.dyncompile(ctx,ast.ClosureCall,var)
+		return this.compile2(ctx,load,ast.ClosureCall,var)
 	}else{
 		pkg  = package.packages[packagename]
 		if !pkg {
@@ -136,6 +136,43 @@ FunCallExpr::compile(ctx,load)
 	this.call(ctx,fc)
 	return this
 }
+
+FunCallExpr::compile2(ctx, load, ty, obj){
+	match ty {
+    	ast.ChainCall: {
+            internal.get_func_value()
+			compile.Push()
+    	}
+    	ast.MemberCall: {
+			internal.object_func_addr2(this,this.funcname)
+			compile.Push()
+    	}
+    	ast.ObjCall: {
+			compile.GenAddr(obj)
+        	compile.Load()
+        	compile.Push()
+
+			internal.object_func_addr2(this,this.funcname)
+			compile.Push()
+		}
+    	ast.ClosureCall: {
+			compile.GenAddr(obj)
+        	compile.Load()
+			internal.get_func_value()
+			compile.Push()
+		}
+    	_: this.check(false,"unknown dyn compile")
+    }
+    if this.hasVariadic() {
+        this.dynstackcall2(ctx)
+    }else{
+        this.dynstackcall(ctx)
+    }
+
+	this.is_dyn = true
+	return this
+}
+
 
 FunCallExpr::toString() {
     str = "FunCallExpr[func = "

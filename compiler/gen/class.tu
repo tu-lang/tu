@@ -270,7 +270,7 @@ MemberCallExpr::compile(ctx,load)
 	std.merge(call.args , params)
 
     call.funcname = this.membername
-    call.dyncompile(ctx,ast.MemberCall,null)
+    call.compile2(ctx,load, ast.MemberCall,null)
     compile.writeln("    add $8, %%rsp")
     
     return call

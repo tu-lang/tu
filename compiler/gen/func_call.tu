@@ -83,6 +83,13 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 			}
 		}
 	}
+
+	if fc.mcount > 1 {
+        retstack = fc.mcount - 1
+        compile.writeln("    sub $%d , %%rsp",retstack * 8)
+        compile.writeln("    push %%rsp")
+    }
+
 	staticcount = std.len(fc.params_order_var) - 1
 	for  i = std.len(this.args) - 1; i >= 0; i -= 1 {
 		arg = this.args[i]

@@ -7,41 +7,6 @@ use compiler.parser.package
 use std
 use compiler.utils
 
-FunCallExpr::dyncompile(ctx, ty, obj){
-	match ty {
-    	ast.ChainCall: {
-            internal.get_func_value()
-			compile.Push()
-    	}
-    	ast.MemberCall: {
-			internal.object_func_addr2(this,this.funcname)
-			compile.Push()
-    	}
-    	ast.ObjCall: {
-			compile.GenAddr(obj)
-        	compile.Load()
-        	compile.Push()
-
-			internal.object_func_addr2(this,this.funcname)
-			compile.Push()
-		}
-    	ast.ClosureCall: {
-			compile.GenAddr(obj)
-        	compile.Load()
-			internal.get_func_value()
-			compile.Push()
-		}
-    	_: this.check(false,"unknown dyn compile")
-    }
-    if this.hasVariadic() {
-        this.dynstackcall2(ctx)
-    }else{
-        this.dynstackcall(ctx)
-    }
-
-	this.is_dyn = false
-	return this
-}
 
 FunCallExpr::dynstackcall(ctx){
 

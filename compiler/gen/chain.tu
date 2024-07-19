@@ -106,7 +106,7 @@ ChainExpr::compile(ctx,load)
 		}
 	}	
 
-	return this.objgen(ctx)
+	return this.objgen(ctx,load)
 }
 
 ChainExpr::memgen(ctx,load)
@@ -173,9 +173,9 @@ ChainExpr::memgen(ctx,load)
 	}else if type(this.last) == type(MemberCallExpr) {
 		lastn = this.last
 		if lastn.tyassert != null
-			lastn.static_compile(ctx,lastn.tyassert.getStruct())
+			return lastn.static_compile(ctx,lastn.tyassert.getStruct())
 		else 
-			lastn.static_compile(ctx,member.structref)
+			return lastn.static_compile(ctx,member.structref)
 	}else{
 		this.panic("chain invalid")
 	}		
@@ -191,7 +191,7 @@ ChainExpr::memgen(ctx,load)
 	return ret
 }
 
-ChainExpr::objgen(ctx)
+ChainExpr::objgen(ctx,load)
 {
 	utils.debug("gen.ChainExpr::objgen()")
 	this.record()
@@ -204,7 +204,7 @@ ChainExpr::objgen(ctx)
 	}
 
 	if type(this.last) == type(FunCallExpr) {
-		return this.last.dyncompile(ctx,ast.ChainCall,null)
+		return this.last.compile2(ctx,load, ast.ChainCall,null)
 	}else {
 		return this.last.compile(ctx,true)
 	}
