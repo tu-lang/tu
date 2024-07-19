@@ -75,7 +75,7 @@ Parser::parseLex()
     utils.debug("Parser::parseLex()".(i8))
     this.scanner.scan()
     if(this.scanner.curtoken == ast.TK_EOF) {
-        os.die("[asmer] unrecognized file format :%s\n",this.filepath)
+        os.dief("[asmer] unrecognized file format :%s\n",this.filepath)
     }
 
     loop {

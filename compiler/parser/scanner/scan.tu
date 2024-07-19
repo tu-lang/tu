@@ -436,7 +436,8 @@ Scanner::print()
 {
     this.get_next()
     while this.curToken != ast.END {
-        fmt.println(ast.getTokenString(this.curToken,this.curLex))
+        // fmt.println(ast.getTokenString(this.curToken,this.curLex))
+        fmt.println(ast.getTokenString(this.curToken))
         this.get_next()
     }
 

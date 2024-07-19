@@ -191,7 +191,7 @@ Parser::parseExtra() {
     cl = reader.curLex.dyn() 
     if cl == "link"{
         lines = reader.consumeLine()
-        lines = lines.substr(std.len(0,lines))
+        lines = lines.substr(0,std.len(lines))
         
         this.links[] = lines
         return

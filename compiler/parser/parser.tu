@@ -56,7 +56,8 @@ Parser::init(filepath,pkg) {
         filepath,pkg.package,pkg.full_package
     )
     fullname = std.pop(string.split(filepath,"/"))
-    this.filename = string.sub(fullname,0,std.len(fullname) - 3)
+    //this.filename = string.sub(fullname,0,std.len(fullname) - 3)
+    this.filename = fullname
     this.asmfile  = this.filename + ".s"
     if pkg.package != "main"
         this.asmfile  = "co_" + pkg.getFullName() + "_" + this.asmfile

@@ -50,7 +50,7 @@ func codegen(filename){
                     std.itoa(p[k],buf,16.(i8))
                     utils.printf("%s ".(i8),buf)
                 }
-                os.die(
+                os.dief(
                     "failed asmer gen(%d): line:%d column:%d\n",
                     int(psize),
                     int(inst.line),

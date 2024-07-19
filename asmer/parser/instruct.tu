@@ -61,7 +61,7 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
                     number   = std.strtol(this.scanner.curlex.inner,0.(i8),10.(i8))
                     number   = 0 - number
                 }
-                _ : utils.error(
+                _ : utils.errorf(
                         "[Parser] should be number at but got instruct:%s\n", this.scanner.curlex.dyn()
                     )
             }
