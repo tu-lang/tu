@@ -282,17 +282,21 @@ fn get_func_value(obj<FuncObject>){
 
 fn dynarg_pass(fc<VObjFunc>...){ 
     passstack<u64*> = &fc  
-    passstack += ptrSize          
+    passstack += ptrSize  //typeinfo         
 
-    userstack<u64*> = passstack + fc.argstack 
+    userstack<u64*> = passstack + fc.argstack + ptrSize //pad
     count<i32> = userstack[0]       
     countaddr<i64*> = userstack     
-
     userstack += ptrSize  
+    retstackptr<u64> = userstack[count]
+
+    //variadic args pass
     if fc.isvarf { 
         copy<i32> = fc.argsize - 1 
         if copy == 0 {
             passstack[0] = countaddr  
+            if fc.retsize > 1
+                passstack[1] =  retstackptr
         }else{
             j<i32> = 0
             last<i32> = 0
@@ -311,10 +315,12 @@ fn dynarg_pass(fc<VObjFunc>...){
                 passstack[copy] = userstack + last * 8
                 userstack[last] = count - j
             }
+            if fc.retsize > 1
+                passstack[copy + 1] = retstackptr
         }
         return fc.entry
     }
-
+    //normal pass args
     copy<i32> = fc.argsize 
     j<i32> = 0
     for i<i32> = 0 ; i < copy ; i += 1 {
@@ -325,9 +331,12 @@ fn dynarg_pass(fc<VObjFunc>...){
             j  += 1
         }
     } 
+    //make the ret pointer be the last user arg
+    if fc.retsize > 1
+        passstack[copy] = retstackptr
     return fc.entry
 }
 
 fn dynarg_varadicerr1(){
-    os.die("pass varadict args, miss args")
+    os.die("pass varadict args, args count is not equal")
 }
