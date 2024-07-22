@@ -52,6 +52,25 @@ func incr_labelid(){
     labelidx += 1
     return idx
 }
+
+Function::InsertFuncallHead(inits){
+	if std.len(inits) <= 0  return true
+
+    exprs = []
+	for it : inits {
+        call = new gen.FunCallExpr(this.parser.line,this.parser.column)
+		call.package = it[0]
+		call.funcname = it[1]
+		call.is_pkgcall = true
+		exprs[] = call
+	}
+
+	if this.block == null {
+		this.block = new gen.BlockStmt()
+	}
+	this.block.InsertExpressionsHead(exprs)
+}
+
 Function::InsertFuncall(fullpackage,funcname){
     utils.debugf("ast.Function::InsertFuncall() fullpackage:%s funcname:%s",
         fullpackage,funcname

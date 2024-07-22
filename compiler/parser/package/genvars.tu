@@ -25,10 +25,12 @@ Package::genvarsinit(){
 		p = std.head(this.parsers)
         mf = this.InsertInitFunc(p) 
     } 
-
+    inits = []
     for(pkg : packages){
         if(pkg.getFunc(this.getInitVarsFuncName(),false)){
-            mf.InsertFuncall(pkg.getFullName(),this.getInitVarsFuncName())
+            // mf.InsertFuncall(pkg.getFullName(),this.getInitVarsFuncName())
+            inits[] = [pkg.getFullName(),this.getInitVarsFuncName()]
         }
     }
+    mf.InsertFuncallHead(inits)
 }
