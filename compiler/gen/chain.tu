@@ -222,6 +222,11 @@ ChainExpr::assign(ctx , opt, rhs) {
 	}
 	if  type(this.last) == type(MemberExpr) {
 		me  = this.last
+
+		if type(rhs) == type(StackPosExpr) {
+			rhs.pos = 1
+			rhs.ismem = false
+        }
         rhs.compile(ctx,true)
         compile.Push()
         internal.call_object_operator(opt,me.membername,"runtime_object_unary_operator2")
