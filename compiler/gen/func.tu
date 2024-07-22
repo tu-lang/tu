@@ -166,9 +166,9 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 	mretnull_label   = cfunc.fullname() + "_mrnull_" + vlid
 	mretdone_label   = cfunc.fullname() + "_mrdone_" + vlid
 
-    compile.writeln("  cmp $1 , 32(%%rax)")
-    compile.writeln("  jle %s",mretnull_label)
-	compile.writeln("	   sub 40(%%rax) , %%rsp")
+    compile.writeln("    cmp $1 , 32(%%rax)")
+    compile.writeln("    jle %s",mretnull_label)
+	compile.writeln("	 sub 40(%%rax) , %%rsp")
     compile.writeln("    mov %%rsp , %%rdi")
     compile.Push()
     compile.writeln("    push %%rdi")
@@ -176,6 +176,7 @@ FunCallExpr::compile2(ctx, load, ty, obj){
     //else
     compile.writeln("%s:",mretnull_label)
     compile.Push()
+	compile.Push()
     //done
     compile.writeln("%s:",mretdone_label)
 
@@ -205,6 +206,7 @@ FunCallExpr::dynfreeret(){
 	freedone_label   = cfunc.fullname() + "_freedone_" + vlid
     //sub 40(%rax) , %rsp 
     //push typeinfo  
+    compile.Pop("%rdi")
     compile.Pop("%rdi")
     compile.writeln("    cmp $1 , 32(%%rdi)")
     compile.writeln("    jle %s",freenull_label)

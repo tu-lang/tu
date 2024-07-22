@@ -38,8 +38,11 @@ FunCallExpr::stackcall(ctx,fc,free)
 		delta = stack_args - std.len(fc.params_order_var)
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
-	if free && fc.mcount > 1 {
-		compile.writeln("    add $%d, %%rsp", (fc.mcount - 1) * 8)
+	if fc.mcount > 1 {
+		compile.Pop("%rdi")
+		if free {
+			compile.writeln("    add $%d, %%rsp", (fc.mcount - 1) * 8)
+		}
 	}
     return null
 }
@@ -67,8 +70,11 @@ FunCallExpr::closcall(ctx , obj, free)
 		delta = stack_args - std.len(fc.params_order_var)
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
-	if free && fc.mcount > 1 {
-		compile.writeln("    add $%d, %%rsp", (fc.mcount - 1) * 8)
+	if fc.mcount > 1 {
+		compile.Pop("%rdi")
+		if free {
+			compile.writeln("    add $%d, %%rsp", (fc.mcount - 1) * 8)
+		}
 	}
     return null
 }

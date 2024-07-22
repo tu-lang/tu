@@ -20,6 +20,8 @@ FunCallExpr::dynstackcall(ctx,free){
     //push argn,argn-1,arg....,arg1 ,argcount
     stack_args = this.DynPushStackArgs(ctx)
     vfinfo = stack_args * 8
+    vfinfo += 8
+
 	compile.writeln("    mov %d(%%rsp) , %%rax", vfinfo)
     compile.writeln("    cmp $1 , 16(%%rax)")
     compile.writeln("    je %s",argsvardic_label)
@@ -87,6 +89,7 @@ FunCallExpr::dynstackcall2(ctx){
 	compile.writeln("    mov %d(%%rsp) , %%rax", stack_args * 8)
     compile.writeln("    mov 8(%%rax) , %%r10")
     compile.writeln("    call *%%r10")
+    compile.Pop("%rdi")
     compile.Pop("%rdi")
 
     return null

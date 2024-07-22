@@ -262,7 +262,7 @@ MemberCallExpr::compile(ctx,load)
 	params = this.call.args
     
 	pos = new ArgsPosExpr(0,this.line,this.column)
-    pos.pos = std.len(params) + 1
+    pos.pos = std.len(params) + 1 + 1
     //push obj
     //push $arg6
     //push $arg5
