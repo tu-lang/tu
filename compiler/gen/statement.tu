@@ -81,7 +81,7 @@ ReturnStmt::compilemulti(ctx){
                 ty = expr.getType(ctx)
                 compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
 
-                if ast.isfloattk(ty) {
+                if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
                     compile.PushfDst(ty,"%rdi",cur * 8)
                 }else {
                     compile.writeln("   mov %%rax , %d(%%rdi)", cur * 8)

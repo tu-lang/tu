@@ -238,6 +238,10 @@ VarExpr::assign(ctx , opt , rhs){
                 return oh.gen()
             }
             // rhs.compile(ctx)
+            if type(rhs) == type(StackPosExpr) {
+                rhs.pos = 0
+                rhs.ismem = false
+            }
             rhs.compile(ctx,true)
             compile.Push()
 
