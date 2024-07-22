@@ -83,10 +83,24 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 {
 	stack = 0
 	hashvariadic = this.hasVariadic()
+
+    if fc.mcount > 1 {
+		retstack = fc.mcount - 1
+        compile.writeln("    sub $%d , %%rsp",retstack * 8)
+        compile.writeln("    push %%rsp")
+    }
+	
 	if std.len(fc.params_order_var) > std.len(this.args) {
 		miss = std.len(fc.params_order_var) - std.len(this.args)
 		for i  = 0 ; i < miss ; i += 1 {
 			stack += 1
+
+			if i == 0 && fc.is_variadic {
+                compile.writeln("    push $0")
+                stack += 1
+                compile.writeln("    push %%rsp")
+                continue
+            }
 			if fc.params_order_var[std.len(fc.params_order_var) - 1 - i].structtype {
 				compile.writeln("    push $0")
 			}else{
@@ -96,15 +110,19 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 		}
 	}
 
-	if fc.mcount > 1 {
-        retstack = fc.mcount - 1
-        compile.writeln("    sub $%d , %%rsp",retstack * 8)
-        compile.writeln("    push %%rsp")
-    }
-
 	staticcount = std.len(fc.params_order_var) - 1
 	for  i = std.len(this.args) - 1; i >= 0; i -= 1 {
 		arg = this.args[i]
+
+		if !fc.is_variadic && i > staticcount {
+			utils.warn(
+				" pass params too much in variadic pass, file:%s line:%d",
+				compile.currentParser.filepath,
+				this.line
+			)
+            continue
+        }
+
 		ret = arg.compile(prevCtxChain,true)
         if ret != null {
 			ty<i32> = ret.getType(prevCtxChain)

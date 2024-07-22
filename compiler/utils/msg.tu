@@ -9,6 +9,11 @@ func notice(args...){
         fmt.println(print_green(msg1))
     }
 }
+func warn(args...){
+    fmt.print("[warn]\t")
+    msg1 = fmt.sprintf(args)
+    fmt.println(print_red(msg1))
+}
 func debug(args...){
     if compile.trace {
         fmt.print("[debug]\t")
