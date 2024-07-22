@@ -57,7 +57,7 @@ BlockStmt::compile(ctx){
         ctx.create()
     }
     for( stmt : this.stmts ){
-        stmt.compile(ctx)
+        stmt.compile(ctx,true)
     }
     if !this.hasctx && std.len(this.stmts) > 0 {
         ctx.destroy()

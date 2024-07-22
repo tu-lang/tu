@@ -200,7 +200,7 @@ MultiAssignStmt::compile1(ctx){
         opexpr.lhs = lexpr
         opexpr.rhs = rexpr
 
-        opexpr.compile(ctx)
+        opexpr.compile(ctx,false)
     }
     return null
 }
@@ -244,7 +244,7 @@ MultiAssignStmt::assign(ctx, fce){
         assignExpr.lhs = lexpr
         assignExpr.rhs = rexpr
 
-        assignExpr.compile(ctx)
+        assignExpr.compile(ctx,false)
     }
     fce.freeret()
     return null
@@ -273,7 +273,7 @@ MultiAssignStmt::assign2(ctx,fce){
         assignExpr.lhs = lexpr
         assignExpr.rhs = rexpr
 
-        assignExpr.compile(ctx)
+        assignExpr.compile(ctx,false)
     }
     compile.Pop("%rdi")
     fce.freeret()

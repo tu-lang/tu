@@ -66,7 +66,7 @@ FunCallExpr::checkFirstThis(ctx,var){
 FunCallExpr::compile(ctx,load)
 {
 	this.record()
-	utils.debugf("FunCallExpr:  package:%s func:%s",this.package,this.funcname)
+	utils.debugf("FunCallExpr:  package:%s func:%s free:%d",this.package,this.funcname,load)
 	cfunc = compile.currentFunc
 	packagename = this.package
 	fc = null
