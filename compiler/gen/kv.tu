@@ -169,6 +169,10 @@ IndexExpr::assign( ctx , opt ,rhs) {
     }
 ASSIGN_INDEX:
     if !this.index {
+        if type(rhs) == type(StackPosExpr) {
+            rhs.pos = 1
+            rhs.ismem = false
+        }
         rhs.compile(ctx,true)
         compile.Push()
 
@@ -177,6 +181,11 @@ ASSIGN_INDEX:
     }
     this.index.compile(ctx,true)
     compile.Push()
+
+    if type(rhs) == type(StackPosExpr) {
+        rhs.pos = 2
+        rhs.ismem = false
+    }
     rhs.compile(ctx,true)
     compile.Push()
     //call arr_updateone(arr,index,var)

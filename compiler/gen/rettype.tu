@@ -6,7 +6,8 @@ ArgsPosExpr::getType(ctx){
 	this.panic("getType: unsupport argsposexpr")
 }
 StackPosExpr::getType(ctx){
-	this.panic("getType: unsupport stackposexpr")
+	// this.panic("getType: unsupport stackposexpr")
+	return ast.I64
 }
 NullExpr::getType(ctx){
 	return ast.U8
