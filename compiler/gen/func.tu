@@ -20,7 +20,8 @@ ClosureExpr::compile(ctx,load){
 	compile.writeln("    lea %s(%%rip), %%rax", this.varname)
 	internal.newfuncobject(
 		std.len(this.def.params_order_var),
-		this.def.is_variadic
+		this.def.is_variadic,
+		this.def.mcount
 	)
 	return null
 }
@@ -138,14 +139,13 @@ FunCallExpr::compile(ctx,load)
 }
 
 FunCallExpr::compile2(ctx, load, ty, obj){
+	cfunc = compile.currentFunc
 	match ty {
     	ast.ChainCall: {
             internal.get_func_value()
-			compile.Push()
     	}
     	ast.MemberCall: {
 			internal.object_func_addr2(this,this.funcname)
-			compile.Push()
     	}
     	ast.ObjCall: {
 			compile.GenAddr(obj)
@@ -153,20 +153,36 @@ FunCallExpr::compile2(ctx, load, ty, obj){
         	compile.Push()
 
 			internal.object_func_addr2(this,this.funcname)
-			compile.Push()
 		}
     	ast.ClosureCall: {
 			compile.GenAddr(obj)
         	compile.Load()
 			internal.get_func_value()
-			compile.Push()
 		}
     	_: this.check(false,"unknown dyn compile")
     }
+
+	vlid = ast.incr_labelid()
+	mretnull_label   = cfunc.fullname() + "_mrnull_" + vlid
+	mretdone_label   = cfunc.fullname() + "_mrdone_" + vlid
+
+    compile.writeln("  cmp $1 , 32(%%rax)")
+    compile.writeln("  jle %s",mretnull_label)
+	compile.writeln("	   sub 40(%%rax) , %%rsp")
+    compile.writeln("    mov %%rsp , %%rdi")
+    compile.Push()
+    compile.writeln("    push %%rdi")
+    compile.writeln("    jmp %s",mretdone_label)
+    //else
+    compile.writeln("%s:",mretnull_label)
+    compile.Push()
+    //done
+    compile.writeln("%s:",mretdone_label)
+
     if this.hasVariadic() {
         this.dynstackcall2(ctx)
     }else{
-        this.dynstackcall(ctx)
+        this.dynstackcall(ctx,load)
     }
 
 	this.is_dyn = true
@@ -181,6 +197,21 @@ FunCallExpr::freeret(){
     stack *= 8
     compile.writeln("    add $%d , %%rsp",stack)
 }
+
+FunCallExpr::dynfreeret(){
+	cfunc = compile.currentFunc
+	vlid = ast.incr_labelid()
+	freenull_label   = cfunc.fullname() + "_freenull_" + vlid
+	freedone_label   = cfunc.fullname() + "_freedone_" + vlid
+    //sub 40(%rax) , %rsp 
+    //push typeinfo  
+    compile.Pop("%rdi")
+    compile.writeln("    cmp $1 , 32(%%rdi)")
+    compile.writeln("    jle %s",freenull_label)
+	compile.writeln("	   add 40(%%rdi) , %%rsp")
+    compile.writeln("%s:",freenull_label)
+}
+
 FunCallExpr::toString() {
     str = "FunCallExpr[func = "
     str += this.package + "." + this.funcname

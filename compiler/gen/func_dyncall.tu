@@ -8,7 +8,7 @@ use std
 use compiler.utils
 
 
-FunCallExpr::dynstackcall(ctx){
+FunCallExpr::dynstackcall(ctx,free){
 
 	args = this.args
 	cfunc = compile.currentFunc
@@ -19,7 +19,8 @@ FunCallExpr::dynstackcall(ctx){
 
     //push argn,argn-1,arg....,arg1 ,argcount
     stack_args = this.DynPushStackArgs(ctx)
-	compile.writeln("    mov %d(%%rsp) , %%rax", stack_args * 8)
+    vfinfo = stack_args * 8
+	compile.writeln("    mov %d(%%rsp) , %%rax", vfinfo)
     compile.writeln("    cmp $1 , 16(%%rax)")
     compile.writeln("    je %s",argsvardic_label)
 
@@ -39,7 +40,10 @@ FunCallExpr::dynstackcall(ctx){
     compile.writeln("%s:",argseq_label)
     compile.writeln("    mov 8(%%rax) , %%r10")
     compile.writeln("    call *%%r10")
-    compile.Pop("%rdi") 
+    // compile.Pop("%rdi") 
+    if free {
+        this.dynfreeret()
+    }
 
     compile.writeln("%s:",argsdone_label)
 
