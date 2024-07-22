@@ -52,7 +52,7 @@ Str::mark(){
     if !s return runtime.Null
     size<i32> = stringHdrSize(s[-1])
     if size == 0 return runtime.Null
-    runtime.gc_mark(s - size)
+    // runtime.gc_mark(s - size)
 }
 
 Str::dup() {

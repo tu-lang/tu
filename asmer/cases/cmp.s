@@ -35,3 +35,5 @@ r2m:
     cmp $192 , %rax
     cmp $1 , 16(%rax)
     cmpq $192 , 16(%rax)
+    cmp $1 , 32(%rdi)
+    cmp $1 , 32(%rsp)

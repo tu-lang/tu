@@ -43,3 +43,5 @@ Disassembly of section .text:
    a:   83 78 10 01             cmpl   $0x1,0x10(%rax)
    e:   48 81 78 10 c0 00 00    cmpq   $0xc0,0x10(%rax)
   15:   00 
+   9:   83 7f 20 01             cmpl   $0x1,0x20(%rdi)
+   4:   83 7c 24 20 01          cmpl   $0x1,0x20(%rsp)

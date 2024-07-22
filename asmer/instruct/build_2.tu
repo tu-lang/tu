@@ -434,7 +434,8 @@ Instruct::genTwoInst()
                         opcode  = 0x8378
                         len = 1
                     }
-
+                    opcode += this.modrm.rm
+                    
                     if needprefix
                         this.insthead()
 
