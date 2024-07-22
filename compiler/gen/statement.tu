@@ -68,7 +68,7 @@ ReturnStmt::compilemulti(ctx){
                 break
             }
             if i > std.len(this.ret) {
-                compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
+                compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
                 if ast.cfg_static() {
                     compile.writeln(" mov $0 , %d(%%rdi)",cur)
                 }else{
@@ -79,7 +79,7 @@ ReturnStmt::compilemulti(ctx){
                 expr = this.ret[i - 1]
                 expr.compile(ctx,true)
                 ty = expr.getType(ctx)
-                compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
+                compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
 
                 if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
                     compile.PushfDst(ty,"%rdi",cur * 8)

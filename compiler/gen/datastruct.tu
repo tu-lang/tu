@@ -57,7 +57,7 @@ StackPosExpr::compile(ctx , load){
     count += this.cur
     count -= 1
     this.check(this.pos >= 0,"sotmehting wrong here in stack pos expr")
-    compile.writeln("    mov %d(%rsp),%rax",count * 8)
+    compile.writeln("    mov %d(%%rsp),%%rax",count * 8)
     return null
 }
 
