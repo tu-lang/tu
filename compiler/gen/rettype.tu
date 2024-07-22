@@ -27,7 +27,8 @@ StringExpr::getType(ctx){
 	return ast.U64
 }
 ArrayExpr::getType(ctx){
-	this.panic("getType: unsupport array\n")
+	// this.panic("getType: unsupport array\n")
+	return ast.I64
 }
 MapExpr::getType(ctx){
 	this.panic("getType: unsupport map\n")

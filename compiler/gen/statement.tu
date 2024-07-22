@@ -76,9 +76,16 @@ ReturnStmt::compilemulti(ctx){
                     compile.writeln(" mov %%rax , %d(%%rdi)",cur)
                 }
             }else{ 
-                this.ret[i - 1].compile(ctx,true)
+                expr = this.ret[i - 1]
+                expr.compile(ctx,true)
+                ty = expr.getType(ctx)
                 compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
-                compile.writeln(" mov %%rax , %d(%%rdi)",cur)
+
+                if ast.isfloattk(ty) {
+                    compile.PushfDst(ty,"%rdi",cur * 8)
+                }else {
+                    compile.writeln("   mov %%rax , %d(%%rdi)", cur * 8)
+                }
             }
 
         }
@@ -215,13 +222,22 @@ MultiAssignStmt::compile2(ctx){
 
 MultiAssignStmt::assign(ctx, fce){
     fc = fce.fcs
-    if fc.mcount != 0
-        compile.Push()
+    if fc.mcount != 0 {
+        firstexpr = this.ls[0]
+        ty = firstexpr.getType(ctx)
+        if ast.isfloattk(ty) {
+            compile.Pushf(ty)
+        }else{
+            compile.Push()
+        }
+    }
+
     for i = 0 ; i < std.len(this.ls) ;i += 1 {
         lexpr = this.ls[i]
         rexpr = new StackPosExpr(this.line,this.column)
         rexpr.total = fc.mcount
         rexpr.cur = i + 1
+        rexpr.pos = -1
 
         assignExpr = new AssignExpr(lexpr.line,lexpr.column)
         assignExpr.opt = this.opt

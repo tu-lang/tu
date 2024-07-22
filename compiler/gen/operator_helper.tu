@@ -340,6 +340,17 @@ OperatorHelper::genRight(isleft,expr)
 			this.initcond(isleft,8,ast.I64,false)
 			return ie
 		}
+		type(StackPosExpr): {
+			expr.ismem = true
+			expr.pos = 1
+			expr.compile(this.ctx,true)
+			if ast.isfloattk(this.ltoken) {
+				this.initcond(isleft,this.lvarsize,this.ltoken,false)
+			}else{
+				this.initcond(isleft,8,ast.I64,false)
+			}
+			return expr
+		}
 		type(FloatExpr) : {
 			compile.writeln("	mov $%d,%%rax",expr.lit)
 			compile.writeln("	movq %%rax , %%xmm0")
