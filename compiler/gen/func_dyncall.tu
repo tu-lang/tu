@@ -28,26 +28,27 @@ FunCallExpr::dynstackcall(ctx,free){
 
 	compile.writeln("    cmpq $%d , 24(%%rax)",std.len(args) * 8)
     compile.writeln("    je %s",argseq_label)
-
+    //1. variadic
 	compile.writeln("%s:",argsvardic_label)
 	compile.writeln("    push $%d",stack_args)
-	compile.writeln("	   sub 24(%%rax) , %%rsp")
+	compile.writeln("	 sub 24(%%rax) , %%rsp")
+    compile.writeln("    sub $8 , %%rsp") //padding for retstack
 	compile.Push()
 	internal.dynarg_pass() 
 
     compile.writeln("    call *%%rax")
     compile.writeln("    add $%d , %%rsp",(stack_args + 1 + 1) * 8 )
     compile.writeln("    jmp %s",argsdone_label)
-
+    //2. eq
     compile.writeln("%s:",argseq_label)
     compile.writeln("    mov 8(%%rax) , %%r10")
     compile.writeln("    call *%%r10")
     // compile.Pop("%rdi") 
+    //3. done
+    compile.writeln("%s:",argsdone_label)
     if free {
         this.dynfreeret()
     }
-
-    compile.writeln("%s:",argsdone_label)
 
     return null    
 }
@@ -73,7 +74,7 @@ FunCallExpr::DynPushStackArgs(prevCtxChain)
 	return stack
 }
 
-FunCallExpr::dynstackcall2(ctx){
+FunCallExpr::dynstackcall2(ctx,free){
 	args = this.args
 	cfunc = compile.currentFunc
 	vlid = ast.incr_labelid()
@@ -86,11 +87,14 @@ FunCallExpr::dynstackcall2(ctx){
     compile.writeln("%s:",argsvardic_label)
     //push argn,argn-1,arg....,arg1 ,argcount
     stack_args = this.DynPushStackArgs(ctx)
-	compile.writeln("    mov %d(%%rsp) , %%rax", stack_args * 8)
+	compile.writeln("    mov %d(%%rsp) , %%rax", (stack_args + 1) * 8)
     compile.writeln("    mov 8(%%rax) , %%r10")
     compile.writeln("    call *%%r10")
-    compile.Pop("%rdi")
-    compile.Pop("%rdi")
+    // compile.Pop("%rdi")
+    // compile.Pop("%rdi")
+    if free {
+        this.dynfreeret()
+    }
 
     return null
 }

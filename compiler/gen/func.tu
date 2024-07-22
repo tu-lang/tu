@@ -181,7 +181,7 @@ FunCallExpr::compile2(ctx, load, ty, obj){
     compile.writeln("%s:",mretdone_label)
 
     if this.hasVariadic() {
-        this.dynstackcall2(ctx)
+        this.dynstackcall2(ctx,load)
     }else{
         this.dynstackcall(ctx,load)
     }
