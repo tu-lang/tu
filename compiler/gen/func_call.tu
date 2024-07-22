@@ -39,7 +39,7 @@ FunCallExpr::stackcall(ctx,fc,free)
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
 	if fc.mcount > 1 {
-		compile.Pop("%rdi")
+		// compile.Pop("%rdi")
 		if free {
 			compile.writeln("    add $%d, %%rsp", (fc.mcount - 1) * 8)
 		}
@@ -71,7 +71,7 @@ FunCallExpr::closcall(ctx , obj, free)
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
 	if fc.mcount > 1 {
-		compile.Pop("%rdi")
+		// compile.Pop("%rdi")
 		if free {
 			compile.writeln("    add $%d, %%rsp", (fc.mcount - 1) * 8)
 		}
@@ -87,7 +87,18 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
     if fc.mcount > 1 {
 		retstack = fc.mcount - 1
         compile.writeln("    sub $%d , %%rsp",retstack * 8)
-        compile.writeln("    push %%rsp")
+
+        if hashvariadic && fc.is_variadic && (std.len(this.args) == std.len(fc.params_order_var)) {
+            stack += 1
+            compile.writeln("    push %%rsp")
+        }else if !fc.is_variadic {
+            stack += 1
+            compile.writeln("    push %%rsp")
+        }
+    }
+
+	if hashvariadic && fc.is_variadic && (std.len(this.args) != std.len(fc.params_order_var)) {
+        this.check(false,"vardic args pass need eq")
     }
 	
 	if std.len(fc.params_order_var) > std.len(this.args) {
@@ -96,9 +107,20 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 			stack += 1
 
 			if i == 0 && fc.is_variadic {
-                compile.writeln("    push $0")
                 stack += 1
-                compile.writeln("    push %%rsp")
+                if fc.mcount > 1 {
+                    compile.writeln(
+                        "    push $0\n" +
+                        "    mov %%rsp , %%rdi\n" +
+                        "    lea 8(%%rsp) , %%rcx\n" +
+                        "    push %%rcx\n" +
+                        "    push %%rdi\n" 
+                    )
+                    stack += 1
+                }else{
+                    compile.writeln("    push $0")
+                    compile.writeln("    push %%rsp")
+                }
                 continue
             }
 			if fc.params_order_var[std.len(fc.params_order_var) - 1 - i].structtype {
@@ -137,8 +159,24 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 		//func(a,b,c,args...)
 		//call(1,2,3,4)
 		if !hashvariadic && fc.is_variadic && std.len(this.args) >= std.len(fc.params_order_var) && i == staticcount {
-			compile.writeln("    push $%d",std.len(this.args) - staticcount)
-			compile.writeln("    push %%rsp")
+
+			varidcnum = std.len(this.args) - staticcount
+            if fc.mcount > 1 {
+                compile.writeln(
+                    "   push $%d\n" +
+                    "   mov %%rsp , %%rdi\n" +
+                    "   lea %d(%%rsp), %%rcx\n" +
+                    "   push %%rcx\n" +
+                    "   push %%rdi\n", 
+                    varidcnum,
+                    (varidcnum + 1) *8 
+                )
+                stack += 1
+            }else{
+                compile.writeln("    push $%d",varidcnum)
+                compile.writeln("    push %%rsp")
+            }
+
 			stack += 2
 		}
 	}
