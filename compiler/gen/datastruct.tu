@@ -28,11 +28,15 @@ class StackPosExpr : ast.Ast {
     cur = 0
     total = 0
     pos = -1
+
+    isdyn = false
     fn init(line,column){ super.init(line,column) }
     fn toString(){return "StackPosExpr"}
 }
 
 StackPosExpr::compile(ctx , load){
+    if this.isdyn
+        return this.compile2(ctx,load)
     this.record()
 
     if this.cur > this.total{
@@ -54,6 +58,53 @@ StackPosExpr::compile(ctx , load){
     count -= 1
     this.check(this.pos >= 0,"sotmehting wrong here in stack pos expr")
     compile.writeln("    mov %d(%rsp),%rax",count * 8)
+    return null
+}
+
+StackPosExpr::compile2(ctx , load) {
+    lid = ast.incr_labelid()
+    cfunc = compile.currentFunc
+    l1 = cfunc.fullname() + "_mda_" + lid
+    l1_end = cfunc.fullname() + "_mda_end_" + lid
+    final_end = cfunc.fullname() + "_mda_fend_" + lid
+    count = this.pos
+    typeinfo = this.pos + 1 + 1 //pos + first arg + retstack
+    typeinfo *= 8
+    retstack = this.pos + 1
+    retstack *= 8
+
+    if this.cur == 1 {
+        compile.writeln("    mov %d(%%rsp) , %%rax",this.pos * 8)
+        return null
+    }
+    compile.writeln(
+        "   mov %d(%%rsp) , %%rax \n" + 
+        "   cmp $%d , 32(%%rax) \n"   +
+        "   jge  %s\n",                
+        typeinfo,this.cur,l1_end
+    )
+    if this.ismem {
+        compile.writeln("    mov $0 , %%rax")
+        compile.writeln("    jmp %s",final_end)
+    }else{
+        compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+        compile.writeln("    jmp %s",final_end)
+    }    
+    compile.writeln(
+        "%s:", l1_end
+    )
+
+    count += this.cur
+    count -= 1
+    this.check(this.pos >= 0,"sotmehting wrong here in stack pos expr")
+    this.check(this.cur >= 2,"sotmething wroong here in cur pos expr")
+    compile.writeln(
+        "   mov %d(%%rsp) , %%rdi \n" +
+        "   mov %d(%%rdi) , %%rax\n",
+        retstack,
+        (this.cur - 2) * 8
+    )
+    compile.writeln("%s:",final_end)
     return null
 }
 
