@@ -60,27 +60,30 @@ $ make tests
 use fmt
 class Http {
     request
-    fn handler(){
-        fmt.println("hello world!",this.request)
-    }
 }
 Http::closure(){
     return fn(){
         return ["arr1","arr2",3,4]
     }
 }
+fn factory(){
+    a = ["1",2,"some string word"]     // array
+    b = {1:2,"sdfds":3,"a":a} // map
+    return a,b
+}
 fn main(){
     a = "this is a string" #string
-    a = 1000 # int
+    b = 1000 # int
     fmt.println(a,b)
-    a = ["1",2,"33",4,"some string word"]     // array
-    fmt.print(a[0],a[1],a[2],a[3],a[4])
-    b = {"sdfds":"sdfsd",1:2,"sdfds":3,"a":a} // map
+
+    a,b = factory()
+    fmt.print(a[0],a[1],a[2])
     fmt.print(b["a"],b["sdfds"])
-    obj = new Http() # object
+
+    obj = new Http() # objectkk
     obj.request = {"method":"POST"}
     obj.handler()
-    cfunc = obj.closure()
+    cfunc = obj.closure() //member
     fmt.println(cfunc())
 }
 ```
