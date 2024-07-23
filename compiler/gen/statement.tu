@@ -213,7 +213,6 @@ MultiAssignStmt::compile2(ctx){
     }
     fcexpr = ret
     isdyn = fcexpr.is_dyn
-
     if isdyn {
         return this.assign2(ctx,fcexpr)
     }
@@ -251,16 +250,15 @@ MultiAssignStmt::assign(ctx, fce){
 }
 
 MultiAssignStmt::assign2(ctx,fce){
-    fc = fce.fcs
-    if fc.mcount != 0 {
-        firstexpr = this.ls[0]
-        ty = firstexpr.getType(ctx)
-        if ast.isfloattk(ty) {
-            compile.Pushf(ty)
-        }else{
-            compile.Push()
-        }
+
+    firstexpr = this.ls[0]
+    ty = firstexpr.getType(ctx)
+    if ast.isfloattk(ty) {
+        compile.Pushf(ty)
+    }else{
+        compile.Push()
     }
+
     for i = 0 ; i < std.len(this.ls) ;i += 1 {
         lexpr = this.ls[i]
         rexpr = new StackPosExpr(this.line,this.column)
@@ -276,6 +274,6 @@ MultiAssignStmt::assign2(ctx,fce){
         assignExpr.compile(ctx,false)
     }
     compile.Pop("%rdi")
-    fce.freeret()
+    fce.dynfreeret()
     return null    
 }

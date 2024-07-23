@@ -177,7 +177,8 @@ fn object_offset_get(ofs<u32> , obj<ObjectValue>){
 
 fn object_member_get2(k<u64>,obj<ObjectValue>){
     if  obj.base.type != Object {
-        os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
+        dief(*"[object_membe_get] invalid obj type")
+        // os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
     }
     v<u64*> = objdataofs(obj.hdr,obj.base.data,k)
     if v == null {
