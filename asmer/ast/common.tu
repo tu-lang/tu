@@ -97,6 +97,7 @@ func tk_to_string(tk<i32>){
         KW_JBE:    return "jbe"
         KW_JE:     return "je"
         KW_JG:     return "jg"
+        KW_JGE:    return "jge"
         KW_JL:     return "jl"
         KW_JLE:    return "jle"
         KW_JNE:    return "jne"

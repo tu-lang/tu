@@ -42,7 +42,7 @@ Instruct::genOneInst() {
     if(this.type == ast.KW_CALL || this.type >= ast.KW_JMP && this.type <= ast.KW_JNA)
     {
         match this.type {
-            ast.KW_CALL | ast.KW_JMP | ast.KW_JBE | ast.KW_JE | ast.KW_JG | ast.KW_JL | ast.KW_JLE | ast.KW_JNE | ast.KW_JNA : {
+            ast.KW_CALL | ast.KW_JMP | ast.KW_JBE | ast.KW_JE | ast.KW_JG | ast.KW_JGE | ast.KW_JL | ast.KW_JLE | ast.KW_JNE | ast.KW_JNA : {
                 if this.type == ast.KW_CALL && this.left == ast.TY_REG {
                     opcode = 0xff
                     this.append1(opcode)

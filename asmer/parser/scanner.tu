@@ -30,7 +30,7 @@ labels = {
     "movzwl": ast.KW_MOVZWL,    "movswl": ast.KW_MOVSWL,   "movzx": ast.KW_MOVZX,      "shl": ast.KW_SHL,         "shr": ast.KW_SHR,        
     "sar": ast.KW_SAR,         "sub" : ast.KW_SUB,        
     "add" : ast.KW_ADD,        "addq" : ast.KW_ADD,      "xadd": ast.KW_XADD,
-    "and" : ast.KW_AND,        "imul" : ast.KW_MUL,      "jg" : ast.KW_JG,        "jl": ast.KW_JL,
+    "and" : ast.KW_AND,        "imul" : ast.KW_MUL,      "jg" : ast.KW_JG,          "jge" : ast.KW_JGE,         "jl": ast.KW_JL,
     "jle" : ast.KW_JLE,        "jna": ast.KW_JNA,        "dec" : ast.KW_DEC,
 
     "callq": ast.KW_CALL,        "call": ast.KW_CALL,       "sete": ast.KW_SETE,       "setl": ast.KW_SETL,      "setle": ast.KW_SETLE,    
