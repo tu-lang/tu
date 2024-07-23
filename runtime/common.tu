@@ -107,7 +107,7 @@ fn get_hash_key(key<Value>){
         return str.hash64()
 		// return hash_key(str,str.len())
 	}
-    os.dief("[hash_key] unsupport type:%s" , type_string(key))
+    os.dief("[hash_key] unsupport type:%s" , debug.stack(10.(i8)))
 }
 fn assert(ret<i8>,str){
     if ret return True

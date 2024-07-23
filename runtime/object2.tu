@@ -254,7 +254,7 @@ fn member_insert2(tree<map.Rbtree>, hk<u64>,v<Value>)
 
 fn object_func_addr2(k<u64>,obj<ObjectValue>){
     if  obj.base.type != Object {
-        os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
+        os.dief("[object_func_addr] invalid obj type :%s",debug.stack(5.(i8)))
     }
     fctype<VObjFunc> = objfuncofs(obj.hdr,k)
     if fctype == null  {
