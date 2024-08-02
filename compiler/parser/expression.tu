@@ -506,9 +506,7 @@ Parser::parseVarExpr(var)
                 call.is_delref = package == "__"
                 
                 obj = this.getVar(var)
-                if obj == null {
-                    obj = this.gvars[var]
-                }else{
+                if obj != null {
                     call.package = obj.varname
                 }
                 

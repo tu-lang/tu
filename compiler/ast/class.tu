@@ -52,9 +52,9 @@ Class::initClassInitFunc()
 {
   	utils.debugf("ast.Class::initClassInitFunc() cls:%s",this.name)
     f = null
-    for(var : this.funcs){
-        if var.name == "init" {
-            f = var
+    for fc : this.funcs {
+        if fc.name == "init" {
+            f = fc
             break
         }
     }
@@ -69,9 +69,7 @@ Class::initClassInitFunc()
     if f.block == null {
         f.block = new gen.BlockStmt()
     }
-    if this.father == null {
-      f.block.checkAndRmFirstSuperDefine()
-    }
+	
     f.block.InsertExpressionsHead(this.initmembers)
 
     return true
