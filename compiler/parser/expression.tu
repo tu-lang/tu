@@ -190,7 +190,13 @@ Parser::parsePrimaryExpr()
         addr = new gen.AddrExpr(int(reader.line),int(reader.column))
         tk = reader.scan()
         if tk == ast.VAR {
-            addr.varname = reader.curLex.dyn()
+            varname = reader.curLex.dyn()
+            if this.currentFunc != null {
+                varexpr = this.getvar(varname)
+                if varexpr != null 
+                    varname = varexpr.varname
+            }
+            addr.varname = varname
         }
         tk = reader.scan()
         if tk == ast.DOT {
@@ -435,6 +441,12 @@ Parser::parseNewExpr()
         ret = new gen.NewExpr(this.line,this.column)
         ret.package = package
         ret.name    = name
+
+        if package == "" {
+            var = this.getvar(name)
+            if var != null
+                ret.name = var.varname
+        }
         return ret
     }
     ret = new gen.NewClassExpr(this.line,this.column)
@@ -496,6 +508,8 @@ Parser::parseVarExpr(var)
                 obj = this.ctx.getVar(this.currentFunc,var)
                 if obj == null {
                     obj = this.gvars[var]
+                }else{
+                    call.package = obj.varname
                 }
                 
                 if obj != null {
@@ -518,6 +532,9 @@ Parser::parseVarExpr(var)
                     if this.currentFunc.parser.getImport(package) != "" {
                         index.is_pkgcall  = true
                     }
+                    varexpr = this.getvar(package)
+                    if varexpr != null 
+                        package = varexpr.varname
                 }
                 index.is_pkgcall  = true
                 index.package = package
@@ -559,8 +576,22 @@ Parser::parseVarExpr(var)
                 return gvar
             }
         }
-        ast.LPAREN:     return this.parseFuncallExpr(var)
-        ast.LBRACKET:   return this.parseIndexExpr(var)
+        ast.LPAREN:     {
+            if this.currentFunc != null {
+                varexpr = this.ctx.getVar(this.currentFunc,var)
+                if varexpr != null 
+                    var = varexpr.varname
+            }
+            return this.parseFuncallExpr(var)
+        }
+        ast.LBRACKET:   {
+            if this.currentFunc != null {
+                varexpr = this.ctx.getVar(this.currentFunc,var)
+                if varexpr != null 
+                    var = varexpr.varname
+            }
+            return this.parseIndexExpr(var)
+        }
         ast.LT : {
             tx = reader.transaction()
 

@@ -234,23 +234,34 @@ Parser::isbase(){
 
 Parser::tolevelvar(var){
     if this.currentFunc == null  return true
+    if var.package != "" return true
 
-    realvar = this.ctx.getVar(this.currentFunc,var.varname)
+    realvar = this.getvar(var.varname)
     if realvar {
         var.isdefine = false
         var.varname = realvar.varname
     }
 }
 
+Parser::getvar(varname){
+    if this.currentFunc == null return null
+
+    varexpr = this.ctx.getVar(this.currentFunc,varname)
+
+	if varexpr != null return varexpr
+
+	return this.getGlobalVar("",varname)
+}
+
 Parser::newvar(var){
     if type(var) == type(gen.VarExpr) && this.currentFunc {
-        if !var->isdefine {
+        if !var.isdefine {
             return true
         } 
         if var.package == "" && this.currentFunc.params_var[var.varname] == null {
             hascontext = this.ctx.hasVar(var.varname)
             if(hascontext != null){
-                if(!this.currentFunc.FindLocalVar(var.varname))
+                if(!this.getvar(var.varname))
                     this.check(false,"ctx has var , local doesn't has")
             }else{
                 varname = var.varname

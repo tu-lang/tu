@@ -138,7 +138,7 @@ VarExpr::_getVarType(ctx)
         return ast.Var_Func
     }   
     for( k,v : GF().locals){
-        fmt.printf("%s:\n",name)
+        fmt.printf("%s:\n",k)
     }
     fmt.printf("\ntoplevel:%d\n",ctx.toplevel())
     this.check(false,

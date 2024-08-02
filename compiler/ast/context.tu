@@ -10,7 +10,7 @@ Context::getLocalVar(varname)
     var = GP().getGlobalVar(varname)
     if var != null return var
 
-    utils.warn(
+    utils.debug(
         "variable:%s not define in local or params or global filename:%s"
         ,varname,GF().parser.filename
     )
