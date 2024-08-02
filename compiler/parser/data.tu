@@ -1,10 +1,14 @@
 use std
 use fmt
 use compiler.parser.package
+use compiler.compile
 
 Parser::addFunc(name, f)
 {
     if name == "init" {
+        if compile.phase == compile.GlobalPhase {
+            return true
+        }
         f.name = f.name + this.pkg.geninitid()
         name = f.name
         this.pkg.inits[f.name] = f
