@@ -22,7 +22,7 @@ parser.Parser::compile()
     compile.writeln(".data")
     compile.funcs_offsets()
     compile.registerVars()
-    compile.registerStrings(true)
+    compile.registerStrings()
     compile.registerObjects()
 
     compile.writeln(".text")

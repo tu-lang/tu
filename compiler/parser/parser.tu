@@ -28,7 +28,7 @@ class Parser {
     funcs = {}         // map{string:Function}
     extern_funcs = {}  // map[string]Function
 
-    strs = []          // [gen.StringExpr]  all static string
+    strs = {}          // string:StringExpr  all static string
     
     links = []         // [string] ld link args
 
@@ -270,4 +270,12 @@ Parser::newvar(var){
             }
         }
     }
+}
+
+Parser::add_string(str){
+    if package.get_string(str) != null {
+        return true
+    }
+    package.add_string(str)
+    this.strs[str.lit] = str
 }

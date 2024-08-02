@@ -1,8 +1,19 @@
 use compiler.compile
 use std
 
-packages = {} # map{name: Package}
+packages = {} // map{name: Package}
+gstrs = {}
 
+fn add_string(str){
+    if gstrs[str.lit] != null 
+        return true
+
+    gstrs[str.lit] = str
+}
+
+fn get_string(str){
+    return gstrs[str.lit]
+}
 
 func getStruct(packagename,name) {    
     pkgname = packagename

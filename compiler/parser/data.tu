@@ -7,7 +7,7 @@ Parser::addFunc(name, f)
     if name == "init" {
         f.name = f.name + this.pkg.geninitid()
         name = f.name
-        this.pkg.inits[] = f
+        this.pkg.inits[f.name] = f
     }
     if f.isExtern   this.extern_funcs[name] = f
     else            this.funcs[name] = f

@@ -116,11 +116,7 @@ package.Package::classinit(){
 }
 package.Package::compile(){
     utils.debugf("gen.Package::compile()")
-	for(it : this.parsers){
-		compile.currentParser = it
-		compile.registerStrings(false)
-		compile.currentParser = null
-	}
+
 	for(p : this.parsers){
 		p.compile()
 	}

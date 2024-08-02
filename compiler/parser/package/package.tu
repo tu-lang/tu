@@ -11,7 +11,7 @@ class Package {
     path    = path
     full_package = path
 
-    inits = []
+    inits = {}   // string,func
     initid = 0
     initvars 
     classes = {} // map{string : Class  }

@@ -296,8 +296,8 @@ Parser::parsePrimaryExpr()
             ret.tyassert = this.parseTypeAssert(false)
         }        
 
-        this.strs[] = ret
         ret.lit = val
+        this.add_string(ret)
         return ret
     }else if tk == ast.CHAR
     {

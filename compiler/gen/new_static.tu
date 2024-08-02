@@ -24,7 +24,8 @@ StructInitExpr::arrinit(ctx , field , arr){
 		if type(i) == type(IntExpr) {
 			compile.writeln("	mov $%s,%%rax",i.lit)
 		}else if type(i) == type(StringExpr) {
-			compile.writeln("	lea %s(%%rip),%%rax",i.name)
+			real = package.get_string(i)
+			compile.writeln("	lea %s(%%rip),%%rax",real.name)
 		}else if type(i) == type(FloatExpr){
 			compile.writeln("	mov $%d , %%rax",i.lit)
 			compile.writeln("	movq %%rax , %%xmm0")
@@ -77,9 +78,10 @@ StructInitExpr::compile(ctx,load){
 			compile.writeln("	mov $%d,%%rax",value.lit)
 			compile.writeln("	movq %%rax , %%xmm0")
 		}else if type(value) == type(StringExpr) {
+			real = package.get_string(value)
 			rtok = value.getType(ctx)
 			isunsigned = true
-			compile.writeln("	lea %s(%%rip),%%rax",value.name)
+			compile.writeln("	lea %s(%%rip),%%rax",real.name)
 		}else if type(value) == type(StructInitExpr) {
 			ie = value
 			if field.structname != ie.name this.panic("type sould be same")

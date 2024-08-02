@@ -234,8 +234,13 @@ class StringExpr  : ast.Ast {
     func compile(ctx,load) {
 	    utils.debugf("gen.StringExpr::compile()")
         this.record()
+        
+        real = package.get_string(this)
+        if real.name == "" {
+            this.check(false,"string not computed :")
+        }
         if this.tyassert != null {
-            compile.writeln("	lea %s(%%rip),%%rax",this.name)
+            compile.writeln("	lea %s(%%rip),%%rax",real.name)
             return null
         }
         if this.name == "" 
@@ -244,13 +249,13 @@ class StringExpr  : ast.Ast {
         hk = string.hash64string(
             //cal escape hash value 
             utils.getescapestr(
-                this.lit
+                real.lit
             )
         )
         compile.writeln("   mov $%s , %%rdx",hk)
         compile.writeln("   push %%rdx")
 
-        compile.writeln("   lea %s(%%rip), %%rsi", this.name)
+        compile.writeln("   lea %s(%%rip), %%rsi", real.name)
         compile.writeln("   push %%rsi")
         // compile.writeln("    mov $%s,%%rdx",string.hash64string(this.lit))
 
