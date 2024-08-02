@@ -76,16 +76,32 @@ Parser::parseClassFunc(var){
     reader.curToken  = ast.FUNC
    
     this.ctx = new ast.Context()
-    f = this.parseFuncDef(true,false)
+
+    pdefine = new ast.Class("")
+    fctype  = ClassFunc
+    if compile.phase != compile.GlobalPhase{
+        st = package.getStruct("",var)
+        if st != null {
+            fctype = StructFunc
+            pdefine = st
+        }else{
+            cls = package.getClass("",var)
+            this.check(cls != null , "class not define")
+            fctype = ClassFunc
+            pdefine = cls
+        }
+    }
+
+    f = this.parseFuncDef(fctype,pdefine)
     this.ctx = null
     this.check(f != null)
     
-    f.clsname = var
     this.pkg.addClassFunc(var,f,this)
     
     this.addFunc(var + f.name,f)
     return
 }
+
 Parser::parseExternClassFunc(pkgname){
     utils.debugf("parser.Parser::parseExternClassFunc() name:%s",pkgname)
     reader<scanner.ScannerStatic> = this.scanner
@@ -104,11 +120,25 @@ Parser::parseExternClassFunc(pkgname){
     
     reader.curToken  = ast.FUNC
     this.ctx = new ast.Context()
-    f = this.parseFuncDef(true,false)
+
+    pdefine = new ast.Class("")
+    fctype  = ClassFunc
+    if compile.phase != compile.GlobalPhase{
+        st = package.getStruct(this.package,clsname)
+        if st != null {
+            fctype = StructFunc
+            pdefine = st
+        }else{
+            cls = package.getClass(this.package,clsname)
+            this.check(cls != null , "class not define")
+            fctype = ClassFunc
+            pdefine = cls
+        }
+    }
+    f = this.parseFuncDef(fctype,pdefine)
     this.ctx = null
     this.check(f != null)
     
-    f.clsname = clsname
     pkg = this.pkg.getPackage(pkgname)
     pkg.addClassFunc(clsname,f,this)
     f.package = pkg

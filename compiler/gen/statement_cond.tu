@@ -59,7 +59,7 @@ ForStmt::rangeFor(ctx)
 
     
     if this.key != null{
-        ctx.getOrNewVar(this.key.varname)
+        ctx.getLocalVar(this.key.varname)
         
         compile.writeln("   mov 8(%%rsp),%%rdi")
         compile.writeln("   mov (%%rsp),%%rsi")
@@ -73,7 +73,7 @@ ForStmt::rangeFor(ctx)
         compile.writeln("   mov %%rdi,(%%rax)")
     }
     if this.value != null {
-        ctx.getOrNewVar(this.value.varname)
+        ctx.getLocalVar(this.value.varname)
         compile.writeln("   mov 8(%%rsp),%%rdi")
         compile.writeln("   mov (%%rsp),%%rsi")
         compile.writeln("   push %%rdi")

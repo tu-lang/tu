@@ -20,7 +20,7 @@ Package::InsertInitVarExpression(expr){
 }
 
 Package::genvarsinit(){
-	mf = this.getFunc("init0",false)
+	mf = this.getFunc("init.0",false)
     if mf == null {
 		p = std.head(this.parsers)
         mf = this.InsertInitFunc(p) 

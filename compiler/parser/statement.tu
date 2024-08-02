@@ -135,22 +135,8 @@ Parser::parseForStmt()
             //    && !std.exist(node.value.varname,this.currentFunc.params_var)
             //    && !std.exist(node.value.varname,this.currentFunc.locals)
             //     this.currentFunc.locals[node.value.varname] = node.value
-            if(node.key && this.currentFunc.params_var[node.key.varname] == null){
-                hascontext = this.ctx.hasVar(node.key.varname)
-                if(hascontext == null)
-                {
-                    this.ctx.createVar(node.key.varname,node.key)
-                    this.currentFunc.InsertLocalVar(this.ctx.toplevel(),node.key)
-                }
-            }
-            if node.value && this.currentFunc.params_var[node.value.varname] == null {
-                hascontext = this.ctx.hasVar(node.value.varname)
-                if(hascontext == null)
-                {
-                    this.ctx.createVar(node.value.varname,node.value)
-                    this.currentFunc.InsertLocalVar(this.ctx.toplevel(),node.value)
-                }
-            }
+            this.newvar(node.key)
+            this.newvar(node.value)
             
             if (hashlparen ){
                 this.expect(ast.RPAREN)

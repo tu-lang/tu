@@ -4,13 +4,9 @@ use compiler.parser.package
 use compiler.utils
 use fmt
 
-func registerStrings(c){
+func registerStrings(){
     for(var : currentParser.strs){
-        if !c {
-            var.name = fmt.sprintf(
-                "%s.L%d",currentParser.label(),ast.incr_labelid()
-            )
-        } else CreateGlobalString(var)
+        CreateGlobalString(var)
     }
 }
 func registerVars(){

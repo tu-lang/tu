@@ -83,8 +83,8 @@ FunCallExpr::compile(ctx,load)
     }else if this.package != "" && GP().getGlobalVar("",this.package) != null {
         var = GP().getGlobalVar("",this.package)
         goto OBJECT_MEMBER_CALL
-    }else if ctx.getOrNewVar(this.package) != null {
-		var = ctx.getOrNewVar(this.package)
+    }else if ctx.getLocalVar(this.package) != null {
+		var = ctx.getLocalVar(this.package)
 		OBJECT_MEMBER_CALL:
 		if var.structname != "" && var.structname != null {
 			s = compile.currentParser.pkg.getPackage(var.structpkg)
@@ -106,8 +106,8 @@ FunCallExpr::compile(ctx,load)
 		}
 		this.checkobjcall(var)
 		return this.compile2(ctx,load,ast.ObjCall,var)
-	}else if this.package == "" && ctx.getOrNewVar(this.funcname) != null {
-		var = ctx.getOrNewVar(this.funcname)
+	}else if this.package == "" && ctx.getLocalVar(this.funcname) != null {
+		var = ctx.getLocalVar(this.funcname)
 
 		if var.structtype {
 			return this.closcall(ctx,var,load)

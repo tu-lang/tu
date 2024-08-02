@@ -75,7 +75,8 @@ DelRefExpr::compile(ctx,load){
     
     if type(this.expr) == type(StringExpr) {
         se = this.expr
-        compile.writeln("    lea %s(%%rip), %%rax", se.name)
+        real = package.get_string(se)
+        compile.writeln("    lea %s(%%rip), %%rax", real.name)
         return this.expr
     }
     ret = this.expr.compile(ctx,true)
@@ -130,7 +131,7 @@ AddrExpr::compile(ctx,load){
     }
     if this.package != ""{
         
-        var = ctx.getOrNewVar(this.package)
+        var = ctx.getLocalVar(this.package)
         if var != null && var.structtype {
             
             sm = new StructMemberExpr(this.package,this.line,this.column)
@@ -164,7 +165,7 @@ AddrExpr::compile(ctx,load){
         compile.GenAddr(var)
         return var
     }
-    var = ctx.getOrNewVar(this.varname)
+    var = ctx.getLocalVar(this.varname)
     if var == null
         this.panic(
             fmt.sprintf(

@@ -9,7 +9,7 @@ main:
 	push %rdi
 	call runtime_args_init
 	call runtime_runtimeinit
-	call main_init0
+	call main_init.0
 	call main_main
 	mov $0,%rdi
 	call std_die

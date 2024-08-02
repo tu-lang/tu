@@ -12,6 +12,12 @@ stdpackages = {
     "runtime":true,      "runtime_sys":true,    "runtime_malloc":true,
     "runtime_debug":true,"runtime_gc":true,
 }
+
+GlobalPhase   = 1
+FunctionPhase = 2
+
+phase = GlobalPhase
+
 func compile(){
     utils.debug("ast.compile()")
     //compute structs
@@ -20,6 +26,12 @@ func compile(){
         for s : pkg.structs {
             if !s.iscomputed pkg.genStruct(s)
         }
+    }
+    //cal string id
+    for str : package.gstrs {
+        str.name = fmt.sprintf(
+            "string.L.%d",ast.incr_labelid()
+        )        
     }
     //register package
     for(p : package.packages){
@@ -117,12 +129,18 @@ func genOffsets(fc)
     top = utils.ALIGN_UP(top,8)
     fc.ret_stack = top
 
-    for (local : fc.locals){
-        for var : local {
-            bottom += var.getStackSize(currentParser)
-            bottom = utils.ALIGN_UP(bottom, 8)
-            var.offset = 0 - bottom
-        }
+    order_locals = []
+    for local : fc.locals {
+        order_locals[] = local
+    }
+    order_locals = utils.quick_sort(order_locals,fn(l,r){
+        return l.varid > r.varid
+    })
+
+    for var : order_locals {
+        bottom += var.getStackSize(currentParser)
+        bottom = utils.ALIGN_UP(bottom, 8)
+        var.offset = 0 - bottom
     }
     if fc.is_variadic {
         bottom += 8
@@ -161,12 +179,10 @@ func assign_offsets(fc)
     if fc.is_variadic {
         bottom = 48
     }
-    for(local : fc.locals){
-        for(var : local){
-            bottom += var.getStackSize(currentParser)
-            bottom = utils.ALIGN_UP(bottom, 8)
-            var.offset = 0 - bottom
-        }
+    for var : fc.locals {
+        bottom += var.getStackSize(currentParser)
+        bottom = utils.ALIGN_UP(bottom, 8)
+        var.offset = 0 - bottom
     }
     if fc.is_variadic {
         bottom += 8

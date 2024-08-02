@@ -208,7 +208,10 @@ NewExpr::getType(ctx){
 MemberExpr::getType(ctx){
 	var = GP().getGlobalVar("",this.varname)
 	if var == null
-		var = ctx.getOrNewVar(this.varname)
+		var = ctx.getLocalVar(this.varname)
+	if var == null {
+		this.panic("getTYpe: var is null")
+	}
 	return var.getType(ctx)
 }
 MemberCallExpr::getType(ctx){

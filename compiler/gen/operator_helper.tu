@@ -359,7 +359,8 @@ OperatorHelper::genRight(isleft,expr)
 		}
 		type(StringExpr): {
 			ie = expr
-			compile.writeln("	lea %s(%%rip), %%rax",ie.name)
+			real = package.get_string(ie)
+			compile.writeln("	lea %s(%%rip), %%rax",real.name)
 			this.initcond(isleft,8,ast.U64,true)
 			return ie
 		}

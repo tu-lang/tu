@@ -17,8 +17,15 @@ typesize = {
     U8 : 1 , U16 : 2 , U32 : 4 , U64 : 8,
     F32: 4 , F64 : 8
 }
+
 EOF = -1 //FXIME: EOF
 count = 1 
+
+ClassFunc   = 1
+StructFunc  = 2
+CommonFunc  = 3
+ClosureFunc = 4
+
 
 class Parser {
     ctx 
@@ -28,7 +35,7 @@ class Parser {
     funcs = {}         // map{string:Function}
     extern_funcs = {}  // map[string]Function
 
-    strs = []          // [gen.StringExpr]  all static string
+    strs = {}          // string:StringExpr  all static string
     
     links = []         // [string] ld link args
 
@@ -82,7 +89,7 @@ Parser::parse()
         match reader.curToken  {
             ast.FUNC : {
                 this.ctx = new ast.Context()
-                f = this.parseFuncDef(false,false)
+                f = this.parseFuncDef(CommonFunc,null)
                 this.ctx = null
                 this.addFunc(f.name,f)
             }
@@ -131,6 +138,7 @@ check_panic:
         int(reader.line),int(reader.column),this.filepath
     )
 }
+
 Parser::expect(tok<i32>,str){
     reader<scanner.ScannerStatic> = this.scanner
     if reader.curToken == tok {
@@ -232,19 +240,53 @@ Parser::isbase(){
     return false
 }
 
-Parser::newvar(p){
-    if type(p) == type(gen.VarExpr) && this.currentFunc {
-        var = p
-        
+Parser::tolevelvar(var){
+    if this.currentFunc == null  return true
+    if var.package != "" return true
+
+    realvar = this.getvar(var.varname)
+    if realvar {
+        var.isdefine = false
+        var.varname = realvar.varname
+    }
+}
+
+Parser::getvar(varname){
+    if this.currentFunc == null {
+        return this.getGlobalVar("",varname)
+    }
+
+    varexpr = this.ctx.getVar(this.currentFunc,varname)
+
+	if varexpr != null return varexpr
+
+	return this.getGlobalVar("",varname)
+}
+
+Parser::newvar(var){
+    if(var == null) return true
+    if type(var) == type(gen.VarExpr) && this.currentFunc {
+        if !var.isdefine {
+            return true
+        } 
         if var.package == "" && this.currentFunc.params_var[var.varname] == null {
             hascontext = this.ctx.hasVar(var.varname)
             if(hascontext != null){
-                if(!this.currentFunc.FindLocalVar(hascontext.level,var.varname))
+                if(!this.getvar(var.varname))
                     this.check(false,"ctx has var , local doesn't has")
             }else{
+                varname = var.varname
                 this.currentFunc.InsertLocalVar(this.ctx.toplevel(),var)
-                this.ctx.createVar(var.varname,var)
+                this.ctx.createVar(varname,var)
             }
         }
     }
+}
+
+Parser::add_string(str){
+    if package.get_string(str) != null {
+        return true
+    }
+    package.add_string(str)
+    this.strs[str.lit] = str
 }

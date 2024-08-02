@@ -34,6 +34,13 @@ TxStatic::init(pos<i32>,tk<i32>,lex<string.String>){
 func char(cn<i8>){
     return runtime.newobject(runtime.Char,cn)
 }
+
+ScannerStatic::reset(){
+    this.line = 1
+    this.column  = 0
+    this.pos = 0
+}
+
 ScannerStatic::init(filepath,parser){
     utils.debugf("parser.scanner.ScannerStatic::init() filepath:%s",filepath)
     this.pos = 0

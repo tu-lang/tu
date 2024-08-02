@@ -190,7 +190,13 @@ Parser::parsePrimaryExpr()
         addr = new gen.AddrExpr(int(reader.line),int(reader.column))
         tk = reader.scan()
         if tk == ast.VAR {
-            addr.varname = reader.curLex.dyn()
+            varname = reader.curLex.dyn()
+            if this.currentFunc != null {
+                varexpr = this.getvar(varname)
+                if varexpr != null 
+                    varname = varexpr.varname
+            }
+            addr.varname = varname
         }
         tk = reader.scan()
         if tk == ast.DOT {
@@ -236,7 +242,7 @@ Parser::parsePrimaryExpr()
         prev_ctx    = this.ctx
 
         this.ctx = new ast.Context()
-        closure = this.parseFuncDef(false,true)
+        closure = this.parseFuncDef(ClosureFunc,null)
         this.ctx = null
         prev.closures[] = closure
         
@@ -251,7 +257,11 @@ Parser::parsePrimaryExpr()
     {
         var = reader.curLex.dyn()
         reader.scan()
-        return this.parseVarExpr(var)
+        expr = this.parseVarExpr(var)
+        if type(expr) == type(gen.VarExpr) {
+            this.tolevelvar(expr)
+        }
+        return expr
     }else if tk == ast.INT
     {
         ret = new gen.IntExpr(this.line,this.column)
@@ -286,8 +296,8 @@ Parser::parsePrimaryExpr()
             ret.tyassert = this.parseTypeAssert(false)
         }        
 
-        this.strs[] = ret
         ret.lit = val
+        this.add_string(ret)
         return ret
     }else if tk == ast.CHAR
     {
@@ -431,6 +441,12 @@ Parser::parseNewExpr()
         ret = new gen.NewExpr(this.line,this.column)
         ret.package = package
         ret.name    = name
+
+        if package == "" {
+            var = this.getvar(name)
+            if var != null
+                ret.name = var.varname
+        }
         return ret
     }
     ret = new gen.NewClassExpr(this.line,this.column)
@@ -489,17 +505,12 @@ Parser::parseVarExpr(var)
                     call.is_extern = true
                 call.is_delref = package == "__"
                 
-                obj = null
-                if this.currentFunc != null {
-                    if this.currentFunc.FindLocalVar(this.ctx.toplevel(),var) != null 
-                        obj = this.currentFunc.FindLocalVar(this.ctx.toplevel(),var)
-                    else
-                        obj = this.currentFunc.params_var[var]
-                }else if std.exist(var,this.gvars) {
-                    obj = this.gvars[var]
+                obj = this.getVar(var)
+                if obj != null {
+                    call.package = obj.varname
                 }
                 
-                if obj {
+                if obj != null {
                     obj = obj.clone()
                     obj.line = call.line
                     obj.column = call.line
@@ -519,6 +530,9 @@ Parser::parseVarExpr(var)
                     if this.currentFunc.parser.getImport(package) != "" {
                         index.is_pkgcall  = true
                     }
+                    varexpr = this.getvar(package)
+                    if varexpr != null 
+                        package = varexpr.varname
                 }
                 index.is_pkgcall  = true
                 index.package = package
@@ -531,9 +545,9 @@ Parser::parseVarExpr(var)
                     me.varname = var
                     me.membername = pfuncname
                     return me
-                }else if(this.currentFunc && (mvar = this.ctx.getVar(this.currentFunc, package)) && mvar != null ){
+                }else if( (mvar = this.getvar(package)) && mvar != null ){
                     if ( mvar.structname != "") {
-                        mexpr = new gen.StructMemberExpr(package,int(reader.line),int(reader.column))
+                        mexpr = new gen.StructMemberExpr(mvar.varname,int(reader.line),int(reader.column))
                         mexpr.tyassert = ta
                         mexpr.var = mvar
                         mexpr.member = pfuncname
@@ -541,17 +555,10 @@ Parser::parseVarExpr(var)
                     }else{
                         me = new gen.MemberExpr(this.line,this.column)
                         me.tyassert = ta
-                        me.varname = package
+                        me.varname = mvar.varname
                         me.membername = pfuncname
                         return me
                     }            
-                }else if (mvar = this.getGvar(package)) && mvar.structname != "" {
-                    mexpr = new gen.StructMemberExpr(package,int(reader.line),int(reader.column))
-                    mexpr.tyassert = ta
-                    
-                    mexpr.var = mvar
-                    mexpr.member = pfuncname
-                    return mexpr
                 }
                 gvar    = new gen.VarExpr(pfuncname,this.line,this.column)
                 gvar.tyassert = ta
@@ -560,8 +567,18 @@ Parser::parseVarExpr(var)
                 return gvar
             }
         }
-        ast.LPAREN:     return this.parseFuncallExpr(var)
-        ast.LBRACKET:   return this.parseIndexExpr(var)
+        ast.LPAREN:     {
+            varexpr = this.getvar(var)
+            if varexpr != null 
+                var = varexpr.varname
+            return this.parseFuncallExpr(var)
+        }
+        ast.LBRACKET:   {
+            varexpr = this.getvar(var)
+            if varexpr != null 
+                var = varexpr.varname
+            return this.parseIndexExpr(var)
+        }
         ast.LT : {
             tx = reader.transaction()
 

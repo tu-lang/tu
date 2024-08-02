@@ -11,7 +11,7 @@ class Package {
     path    = path
     full_package = path
 
-    inits = []
+    inits = {}   // string,func
     initid = 0
     initvars 
     classes = {} // map{string : Class  }
@@ -100,6 +100,7 @@ Package::addClass(name, f)
 Package::addStruct(name, f)
 {
     if std.exist(name,this.structs) {
+        this.structs[name] = f
         return true
     }
     this.structs[name] = f

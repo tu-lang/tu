@@ -38,27 +38,28 @@ Package::parseinit(){
 HasGen = {}
 Package::geninit(){
 	if std.exist(this.getFullName(),HasGen){
-	return false
+		return false
 	}
 	HasGen[this.getFullName()] = true
 	if std.len(this.inits) <= 0 {
-	return false
+		return false
 	}
-	mf = this.inits[0]
+	mf = std.head(this.inits)
 	for(fullpackage : this.imports){
 		if !std.exist(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
 		dpkg = packages[fullpackage]
 		if(dpkg.geninit()){
-			for(init : dpkg.inits){
-			mf.InsertFuncall(fullpackage,init.name)
+			for( fc : dpkg.inits){
+				mf.InsertFuncall(fullpackage,fc.name)
 			}
 		}
 	}
 
 	if this.package == "main" {
-		for(init : this.inits){
-			if init.name == mf.name continue
-			mf.InsertFuncall(init.package.getFullName(),init.name)
+		for(fc : this.inits){
+			if fc.name == mf.name continue
+
+			mf.InsertFuncall(fc.package.getFullName(),fc.name)
 		}
 
 	}

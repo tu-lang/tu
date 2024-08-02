@@ -44,7 +44,7 @@ BlockStmt::checkAndRmFirstSuperDefine(){
         if type(assign.lhs) == type(VarExpr) 
         {
             var = assign.lhs
-            if var.varname == "super" 
+            if var.varname == "super.0" 
                 std.pop_head(this.stmts)
         }
     }

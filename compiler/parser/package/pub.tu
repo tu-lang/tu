@@ -1,19 +1,47 @@
 use compiler.compile
 use std
 
-packages = {} # map{name: Package}
+packages = {} // map{name: Package}
+gstrs = {}
 
+fn add_string(str){
+    if gstrs[str.lit] != null 
+        return true
+
+    gstrs[str.lit] = str
+}
+
+fn get_string(str){
+    return gstrs[str.lit]
+}
 
 func getStruct(packagename,name) {    
     pkgname = packagename
     if GP().pkg.imports[packagename] != null {
         pkgname = GP().pkg.imports[packagename]
     }
-    if pkgname == "" || pkgname == null pkgname = compile.currentParser.getpkgname() 
+    if pkgname == "" || pkgname == null 
+        pkgname = GP().getpkgname() 
 
     if packages[pkgname] == null {
         return null
     }
     pkg = packages[pkgname]
     return pkg.getStruct(name)
+}
+
+fn getClass(package,name)
+{    
+    pkgname = package
+    if GP().pkg.imports[package] != null {
+        pkgname = GP().pkg.imports[package]
+    }
+    if pkgname == ""
+        pkgname = GP().getpkgname()
+
+    if packages[pkgname] == null {
+        return null
+    }
+    pkg = packages[pkgname]
+    return pkg.getClass(name)
 }
