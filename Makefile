@@ -1,5 +1,5 @@
 prefix = /usr/local
-
+TIMEFORMAT = "\nTime elapsed: %E"
 BUILD_LIBA = build_install_liba() {                              	\
     if [ ! -d $(prefix)/lib/colib ]; then                        	\
         mkdir -p $(prefix)/lib/colib;                            	\
@@ -103,11 +103,15 @@ test_dev:
 cases = mixed class common datastruct internalpkg memory native operator runtime statement
 
 # make test -j9
-tests: $(cases)
+tests_cases: $(cases)
 	@echo "all test cases passed"
 	@$(TEST_COMPILER); test_compiler
 	@echo "compiler tests passed"
-
+tests_start:
+	@echo "tests start"
+tests: tests_start
+	@$(TIME) $(MAKE) tests_cases
+	#Time elapsed: 2:16.05
 %: ./tests/%
 	@sh tests_all.sh $@ ;
-
+TIME = /usr/bin/time -f $(TIMEFORMAT)
