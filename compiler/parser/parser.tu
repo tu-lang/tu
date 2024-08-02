@@ -232,18 +232,30 @@ Parser::isbase(){
     return false
 }
 
-Parser::newvar(p){
-    if type(p) == type(gen.VarExpr) && this.currentFunc {
-        var = p
-        
+Parser::tolevelvar(var){
+    if this.currentFunc == null  return true
+
+    realvar = this.ctx.getVar(this.currentFunc,var.varname)
+    if realvar {
+        var.isdefine = false
+        var.varname = realvar.varname
+    }
+}
+
+Parser::newvar(var){
+    if type(var) == type(gen.VarExpr) && this.currentFunc {
+        if !var->isdefine {
+            return true
+        } 
         if var.package == "" && this.currentFunc.params_var[var.varname] == null {
             hascontext = this.ctx.hasVar(var.varname)
             if(hascontext != null){
-                if(!this.currentFunc.FindLocalVar(hascontext.level,var.varname))
+                if(!this.currentFunc.FindLocalVar(var.varname))
                     this.check(false,"ctx has var , local doesn't has")
             }else{
+                varname = var.varname
                 this.currentFunc.InsertLocalVar(this.ctx.toplevel(),var)
-                this.ctx.createVar(var.varname,var)
+                this.ctx.createVar(varname,var)
             }
         }
     }

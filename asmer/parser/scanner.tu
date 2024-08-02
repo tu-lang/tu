@@ -3,6 +3,7 @@ use asmer.utils
 use std
 use string
 use os
+use runtime
 
 EOF<i32> = -1
 Null<i32> = 0

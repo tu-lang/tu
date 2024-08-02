@@ -34,6 +34,7 @@ class VarExpr : ast.Ast {
     funcpkg  = ""
     funcargs = 0
     funcname = ""
+    isdefine = true
 
     tyassert
     func init(varname,line,column){
@@ -111,7 +112,7 @@ VarExpr::_getVarType(ctx)
             return ast.Var_Local_Static
         return ast.Var_Global_Local
     }
-    this.ret = ctx.getOrNewVar(this.package)
+    this.ret = ctx.getLocalVar(this.package)
     if(this.ret != null){
         if this.ret.structtype
             return ast.Var_Local_Static_Field
@@ -119,7 +120,7 @@ VarExpr::_getVarType(ctx)
     } 
 
     if this.package == "" {
-        this.ret = ctx.getOrNewVar(this.varname)
+        this.ret = ctx.getLocalVar(this.varname)
         if this.ret != null {
             if this.ret.structtype
                 return ast.Var_Local_Static
@@ -136,12 +137,8 @@ VarExpr::_getVarType(ctx)
         this.funcargs = std.len(fc.params_order_var)
         return ast.Var_Func
     }   
-    for(i = 0 ; i < std.len(GF().locals) ; i += 1){
-        fmt.printf("[%d]:",i)
-        for(name,var : GF().locals[i]){
-            fmt.printf("%s\t",name)
-        }
-        fmt.printf("\n")
+    for( k,v : GF().locals){
+        fmt.printf("%s:\n",name)
     }
     fmt.printf("\ntoplevel:%d\n",ctx.toplevel())
     this.check(false,

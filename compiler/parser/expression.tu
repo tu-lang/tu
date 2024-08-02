@@ -251,7 +251,11 @@ Parser::parsePrimaryExpr()
     {
         var = reader.curLex.dyn()
         reader.scan()
-        return this.parseVarExpr(var)
+        expr = this.parseVarExpr(var)
+        if type(expr) == type(gen.VarExpr) {
+            this.tolevelvar(expr)
+        }
+        return expr
     }else if tk == ast.INT
     {
         ret = new gen.IntExpr(this.line,this.column)
@@ -489,17 +493,12 @@ Parser::parseVarExpr(var)
                     call.is_extern = true
                 call.is_delref = package == "__"
                 
-                obj = null
-                if this.currentFunc != null {
-                    if this.currentFunc.FindLocalVar(this.ctx.toplevel(),var) != null 
-                        obj = this.currentFunc.FindLocalVar(this.ctx.toplevel(),var)
-                    else
-                        obj = this.currentFunc.params_var[var]
-                }else if std.exist(var,this.gvars) {
+                obj = this.ctx.getVar(this.currentFunc,var)
+                if obj == null {
                     obj = this.gvars[var]
                 }
                 
-                if obj {
+                if obj != null {
                     obj = obj.clone()
                     obj.line = call.line
                     obj.column = call.line
@@ -533,7 +532,7 @@ Parser::parseVarExpr(var)
                     return me
                 }else if(this.currentFunc && (mvar = this.ctx.getVar(this.currentFunc, package)) && mvar != null ){
                     if ( mvar.structname != "") {
-                        mexpr = new gen.StructMemberExpr(package,int(reader.line),int(reader.column))
+                        mexpr = new gen.StructMemberExpr(mvar.varname,int(reader.line),int(reader.column))
                         mexpr.tyassert = ta
                         mexpr.var = mvar
                         mexpr.member = pfuncname
@@ -541,7 +540,7 @@ Parser::parseVarExpr(var)
                     }else{
                         me = new gen.MemberExpr(this.line,this.column)
                         me.tyassert = ta
-                        me.varname = package
+                        me.varname = mvar.varname
                         me.membername = pfuncname
                         return me
                     }            

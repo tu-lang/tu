@@ -153,6 +153,8 @@ Parser::genSuperInitStmt(f){
     lhs.type = ast.U64
     lhs.size = 8
     lhs.isunsigned = true
+    if this.ctx != null
+        this.ctx.createVar(lhs.varname,lhs)
     f.InsertLocalVar(0,lhs)
 
     rhs = new gen.FunCallExpr(this.line,this.column)

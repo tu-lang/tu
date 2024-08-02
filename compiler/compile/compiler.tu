@@ -117,12 +117,10 @@ func genOffsets(fc)
     top = utils.ALIGN_UP(top,8)
     fc.ret_stack = top
 
-    for (local : fc.locals){
-        for var : local {
-            bottom += var.getStackSize(currentParser)
-            bottom = utils.ALIGN_UP(bottom, 8)
-            var.offset = 0 - bottom
-        }
+    for var : fc.locals {
+        bottom += var.getStackSize(currentParser)
+        bottom = utils.ALIGN_UP(bottom, 8)
+        var.offset = 0 - bottom
     }
     if fc.is_variadic {
         bottom += 8
@@ -161,12 +159,10 @@ func assign_offsets(fc)
     if fc.is_variadic {
         bottom = 48
     }
-    for(local : fc.locals){
-        for(var : local){
-            bottom += var.getStackSize(currentParser)
-            bottom = utils.ALIGN_UP(bottom, 8)
-            var.offset = 0 - bottom
-        }
+    for var : fc.locals {
+        bottom += var.getStackSize(currentParser)
+        bottom = utils.ALIGN_UP(bottom, 8)
+        var.offset = 0 - bottom
     }
     if fc.is_variadic {
         bottom += 8

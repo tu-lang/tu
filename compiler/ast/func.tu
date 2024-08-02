@@ -21,7 +21,7 @@ class Function {
     parser   // Parser*
     package  // Package
 
-    locals     = []  // map{string:VarExpr,}  local variables
+    locals     = {}  // map{string:VarExpr,}  local variables
     params_var = {}  // map{string:VarExpr,} function params
     params_order_var = [] // [VarExpr*,...]  function order params
 
@@ -124,12 +124,9 @@ Function::getVar(name){
         if varname == name  
             return var
     }
+    if this.locals[name] != null
+        return this.locals[name]
 
-    for local : this.locals {
-        for varname , var : local 
-            if varname == name
-                return var
-    }
     return null
 }
 Function::beautyName(){
@@ -153,12 +150,9 @@ Function::getVariadic(){
 
 Function::InsertLocalVar(level , var){
 
-	while(level >= std.len(this.locals)){
-        this.locals[] = {}
-	}
-	if(level > std.len(this.locals))
-        utils.error("level > this->locals.size()")
-	if this.locals[level][var.varname] != null {
+    newname = var.varname + "." + level
+    var.varname = newname
+	if this.locals[var.varname] != null {
 		utils.errorf("something wrong here l:%d top:%d varname:%s fle:%s line %d column %d",
 			level,this.parser.ctx.level,
 			var.varname,
@@ -167,14 +161,9 @@ Function::InsertLocalVar(level , var){
 			this.parser.column
 		)
 	}
-	this.locals[level][var.varname] = var
+	this.locals[var.varname] = var
 }
 
-Function::FindLocalVar(level , varname){
-	if level >= std.len(this.locals)
-		return null
-	if this.locals[level][varname] != null {
-		return this.locals[level][varname]
-	}
-	return null
+Function::FindLocalVar(varname){
+    return this.getVar(varname)
 }
