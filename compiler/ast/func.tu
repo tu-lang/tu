@@ -22,6 +22,7 @@ class Function {
     package  // Package
 
     locals     = {}  // map{string:VarExpr,}  local variables
+    varid      = 0
     params_var = {}  // map{string:VarExpr,} function params
     params_order_var = [] // [VarExpr*,...]  function order params
 
@@ -161,6 +162,9 @@ Function::InsertLocalVar(level , var){
 			this.parser.column
 		)
 	}
+
+    var.varid = this.varid
+    this.varid += 1
 	this.locals[var.varname] = var
 }
 

@@ -35,6 +35,7 @@ class VarExpr : ast.Ast {
     funcargs = 0
     funcname = ""
     isdefine = true
+    varid    = 0
 
     tyassert
     func init(varname,line,column){

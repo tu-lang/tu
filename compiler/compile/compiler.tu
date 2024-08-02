@@ -129,7 +129,15 @@ func genOffsets(fc)
     top = utils.ALIGN_UP(top,8)
     fc.ret_stack = top
 
-    for var : fc.locals {
+    order_locals = []
+    for local : fc.locals {
+        order_locals[] = local
+    }
+    order_locals = utils.quick_sort(order_locals,fn(l,r){
+        return l.varid > r.varid
+    })
+
+    for var : order_locals {
         bottom += var.getStackSize(currentParser)
         bottom = utils.ALIGN_UP(bottom, 8)
         var.offset = 0 - bottom
