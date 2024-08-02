@@ -505,7 +505,7 @@ Parser::parseVarExpr(var)
                     call.is_extern = true
                 call.is_delref = package == "__"
                 
-                obj = this.ctx.getVar(this.currentFunc,var)
+                obj = this.getVar(var)
                 if obj == null {
                     obj = this.gvars[var]
                 }else{
@@ -547,7 +547,7 @@ Parser::parseVarExpr(var)
                     me.varname = var
                     me.membername = pfuncname
                     return me
-                }else if(this.currentFunc && (mvar = this.ctx.getVar(this.currentFunc, package)) && mvar != null ){
+                }else if( (mvar = this.getvar(package)) && mvar != null ){
                     if ( mvar.structname != "") {
                         mexpr = new gen.StructMemberExpr(mvar.varname,int(reader.line),int(reader.column))
                         mexpr.tyassert = ta
@@ -561,13 +561,6 @@ Parser::parseVarExpr(var)
                         me.membername = pfuncname
                         return me
                     }            
-                }else if (mvar = this.getGvar(package)) && mvar.structname != "" {
-                    mexpr = new gen.StructMemberExpr(package,int(reader.line),int(reader.column))
-                    mexpr.tyassert = ta
-                    
-                    mexpr.var = mvar
-                    mexpr.member = pfuncname
-                    return mexpr
                 }
                 gvar    = new gen.VarExpr(pfuncname,this.line,this.column)
                 gvar.tyassert = ta
@@ -577,19 +570,15 @@ Parser::parseVarExpr(var)
             }
         }
         ast.LPAREN:     {
-            if this.currentFunc != null {
-                varexpr = this.ctx.getVar(this.currentFunc,var)
-                if varexpr != null 
-                    var = varexpr.varname
-            }
+            varexpr = this.getvar(var)
+            if varexpr != null 
+                var = varexpr.varname
             return this.parseFuncallExpr(var)
         }
         ast.LBRACKET:   {
-            if this.currentFunc != null {
-                varexpr = this.ctx.getVar(this.currentFunc,var)
-                if varexpr != null 
-                    var = varexpr.varname
-            }
+            varexpr = this.getvar(var)
+            if varexpr != null 
+                var = varexpr.varname
             return this.parseIndexExpr(var)
         }
         ast.LT : {

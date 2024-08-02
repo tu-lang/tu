@@ -244,7 +244,9 @@ Parser::tolevelvar(var){
 }
 
 Parser::getvar(varname){
-    if this.currentFunc == null return null
+    if this.currentFunc == null {
+        return this.getGlobalVar("",varname)
+    }
 
     varexpr = this.ctx.getVar(this.currentFunc,varname)
 
@@ -254,6 +256,7 @@ Parser::getvar(varname){
 }
 
 Parser::newvar(var){
+    if(var == null) return true
     if type(var) == type(gen.VarExpr) && this.currentFunc {
         if !var.isdefine {
             return true
