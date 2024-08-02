@@ -118,7 +118,7 @@ Parser::parseFuncDef(member,closure)
     this.currentFunc = node
     if !closure {
         cl = reader.curLex.dyn()
-        if this.hasFunc(cl,false)
+        if compile.phase == compile.GlobalPhase && this.hasFunc(cl,false)
             this.check(false,"SyntaxError: already define function :" + cl)
         node.name = cl
         
@@ -250,7 +250,7 @@ Parser::genClassInitFunc(clsname)
     //set parser
     f.parser = this
     f.package = this.pkg
-    if this.hasFunc(clsname + "init",false)
+    if compile.phase == compile.GlobalPhase && this.hasFunc(clsname + "init",false)
         this.check(false,"SyntaxError: already define function %s init",clsname)
     f.name = "init"
 

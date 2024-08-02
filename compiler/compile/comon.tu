@@ -32,6 +32,12 @@ func genast(filename)
         //recursively scan code files
         if !pkg.parse() utils.error("AsmError: runtime lib import failed")
     }
+
+    phase = FunctionPhase
+    ast.resetTypeId()
+    for( pkg : package.packages ){
+        pkg.parse2()
+    }
 }
 func editast(){
     utils.debug("ast.editast()")

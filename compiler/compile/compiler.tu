@@ -12,6 +12,12 @@ stdpackages = {
     "runtime":true,      "runtime_sys":true,    "runtime_malloc":true,
     "runtime_debug":true,"runtime_gc":true,
 }
+
+GlobalPhase   = 1
+FunctionPhase = 2
+
+phase = GlobalPhase
+
 func compile(){
     utils.debug("ast.compile()")
     //compute structs

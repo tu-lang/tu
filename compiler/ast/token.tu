@@ -33,8 +33,12 @@ enum {
 
 type_id = 9
 
-func getTypeId(){
+fn getTypeId(){
     ret = type_id
     type_id += 1
     return ret
+}
+
+fn resetTypeId(){
+    type_id = 9
 }

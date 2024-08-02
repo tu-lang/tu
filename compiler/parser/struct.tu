@@ -4,6 +4,7 @@ use compiler.ast
 use compiler.parser.scanner
 use compiler.utils
 use compiler.gen
+use compiler.compile
 
 Parser::parseStructDef()
 {
@@ -57,7 +58,7 @@ Parser::parseStructDef()
         }
 	}
 	// s.compute()
-	if this.pkg.structs[s.name] != null {
+	if compile.phase == compile.GlobalPhase && this.pkg.structs[s.name] != null {
 		this.check(false,"already define " + s.name)
 	}
 	this.pkg.addStruct(s.name,s)

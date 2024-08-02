@@ -100,6 +100,7 @@ Package::addClass(name, f)
 Package::addStruct(name, f)
 {
     if std.exist(name,this.structs) {
+        this.structs[name] = f
         return true
     }
     this.structs[name] = f
