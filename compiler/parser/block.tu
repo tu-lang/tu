@@ -6,7 +6,7 @@ use string
 use compiler.gen
 use compiler.utils
 
-Parser::parseBlock(member,hasctx)
+Parser::parseBlock(insertsuper,hasctx)
 {
     utils.debug("parser.Parser::parseBlock()")
     if (!hasctx)
@@ -20,7 +20,7 @@ Parser::parseBlock(member,hasctx)
     }
     node = new gen.BlockStmt()
     reader.scan()
-    if member {
+    if insertsuper {
         stmt = this.genSuperInitStmt(this.currentFunc)
         node.stmts[] = stmt
     }

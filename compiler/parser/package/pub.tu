@@ -20,11 +20,28 @@ func getStruct(packagename,name) {
     if GP().pkg.imports[packagename] != null {
         pkgname = GP().pkg.imports[packagename]
     }
-    if pkgname == "" || pkgname == null pkgname = compile.currentParser.getpkgname() 
+    if pkgname == "" || pkgname == null 
+        pkgname = GP().getpkgname() 
 
     if packages[pkgname] == null {
         return null
     }
     pkg = packages[pkgname]
     return pkg.getStruct(name)
+}
+
+fn getClass(package,name)
+{    
+    pkgname = package
+    if GP().pkg.imports[package] != null {
+        pkgname = GP().pkg.imports[package]
+    }
+    if pkgname == ""
+        pkgname = GP().getpkgname()
+
+    if packages[pkgname] == null {
+        return null
+    }
+    pkg = packages[pkgname]
+    return pkg.getClass(name)
 }

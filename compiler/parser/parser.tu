@@ -17,8 +17,15 @@ typesize = {
     U8 : 1 , U16 : 2 , U32 : 4 , U64 : 8,
     F32: 4 , F64 : 8
 }
+
 EOF = -1 //FXIME: EOF
 count = 1 
+
+ClassFunc   = 1
+StructFunc  = 2
+CommonFunc  = 3
+ClosureFunc = 4
+
 
 class Parser {
     ctx 
@@ -82,7 +89,7 @@ Parser::parse()
         match reader.curToken  {
             ast.FUNC : {
                 this.ctx = new ast.Context()
-                f = this.parseFuncDef(false,false)
+                f = this.parseFuncDef(CommonFunc,null)
                 this.ctx = null
                 this.addFunc(f.name,f)
             }
@@ -131,6 +138,7 @@ check_panic:
         int(reader.line),int(reader.column),this.filepath
     )
 }
+
 Parser::expect(tok<i32>,str){
     reader<scanner.ScannerStatic> = this.scanner
     if reader.curToken == tok {

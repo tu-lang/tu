@@ -85,32 +85,10 @@ package.Package::genStruct(s)
 }
 package.Package::classinit(){
     utils.debugf("gen.Package::classinit()")
-	for  pkg : package.packages {
-		for c : pkg.classes {
-			if !c.found {
-				s = pkg.getStruct(c.name)
-				if s != null {
-					for i : c.funcs {
-						i.isMem = true
-						i.isObj = false
-						This = i.params_var["this"]
-						This.structtype = true
-						This.type = ast.U64
-						This.size = 8
-						This.isunsigned = true
-						This.structpkg = s.pkg
-						This.structname = s.name
-						i.block.checkAndRmFirstSuperDefine()
-					}
-				}
-			}
-		}
-	}
 	for(pkg : package.packages){
 		for(cls : pkg.classes){
 			if !cls.found continue
 			cls.initClassInitFunc()
-			cls.checkRmSupers()
 		}
 	}
 }

@@ -78,14 +78,10 @@ Parser::parseClassDef()
             }
         }else if reader.curToken == ast.FUNC {
             this.ctx = new ast.Context()
-            f = this.parseFuncDef(true,false)
+            f = this.parseFuncDef(ClassFunc,s)
             this.ctx = null
             this.check(f != null)
 
-            f.isObj = true
-            
-            f.clsname = s.name
-            f.structname = s.name
             s.funcs[] = f
             
             this.addFunc(s.name + f.name,f)
@@ -104,7 +100,7 @@ Parser::parseClassDef()
     reader.scan()
 }
 
-Parser::parseFuncDef(member,closure)
+Parser::parseFuncDef(ft, pdefine)
 {
     utils.debug(
         "parser.Parser::parseFuncDef() found function: "
@@ -113,10 +109,23 @@ Parser::parseFuncDef(member,closure)
     this.expect(ast.FUNC)
     reader.scan()
     node = new ast.Function()
+
+    node.clsname = pdefine.name
+    match ft {
+        StructFunc : {
+            node.isMem = true
+            node.isObj = false
+        }
+        ClassFunc :{
+            node.isObj = true
+            node.structname = pdefine.name
+        }
+    }    
+
     node.parser = this
     node.package = this.pkg
     this.currentFunc = node
-    if !closure {
+    if ft != ClosureFunc {
         cl = reader.curLex.dyn()
         if compile.phase == compile.GlobalPhase && this.hasFunc(cl,false)
             this.check(false,"SyntaxError: already define function :" + cl)
@@ -127,8 +136,17 @@ Parser::parseFuncDef(member,closure)
 
     this.expect( ast.LPAREN)
     this.ctx.create()
-    if member {
+    if ft == ClassFunc || ft == StructFunc {
+
         var = new gen.VarExpr("this",this.line,this.column)
+        if ft == StructFunc {
+            var.structtype = true
+            var.type = U64
+            var.size = 8
+            var.isunsigned = true
+            var.structpkg = pdefine.pkg
+            var.structname = pdefine.name
+        }
         node.params_var["this"] = var
         node.params_order_var[] = var
     }
@@ -139,8 +157,13 @@ Parser::parseFuncDef(member,closure)
         this.ctx.createVar(it.varname,it)
     }
     node.block = null
-    if (reader.curToken == ast.LBRACE)
-        node.block = this.parseBlock(member,true)
+    if (reader.curToken == ast.LBRACE){
+        insertsuper = false
+        if ft == ClassFunc && pdefine.father != null {
+            insertsuper = true
+        }
+        node.block = this.parseBlock(insertsuper,true)
+    }
     
     this.currentFunc = null
     this.ctx.destroy()
