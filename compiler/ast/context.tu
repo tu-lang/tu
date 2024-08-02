@@ -7,7 +7,7 @@ Context::getLocalVar(varname)
     var = GF().FindLocalVar(varname)
     if var != null return var
 
-    var = GP().getGlobalVar(varname)
+    var = GP().getGlobalVar("",varname)
     if var != null return var
 
     utils.debug(

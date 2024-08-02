@@ -78,11 +78,14 @@ Context::getVar(gf , varname)
         var =  ctx.getVar(varname)
         if  var != null {
             hasctx = true
-            if gf.FindLocalVar(varname) != null {
-                ret = gf.FindLocalVar(varname)
-            }else if gf.params_var[varname] != null
-                ret = gf.params_var[varname]
+            if gf.FindLocalVar(var.varname) != null {
+                ret = gf.FindLocalVar(var.varname)
+            }
             if (ret != null) return ret
+            utils.warn(
+                "parser: ctx not var: %s,but local has var filename:%s"
+                ,varname,gf.parser.filename
+            )
             return null
         }
     }
@@ -90,8 +93,6 @@ Context::getVar(gf , varname)
         if gf.FindLocalVar(varname) != null {
             ret = gf.FindLocalVar(varname)
         }
-        else if gf.params_var[varname] != null
-            ret = gf.params_var[varname]
         if ret != null {
             utils.errorf(
                 "parser: ctx not var: %s,but local has var filename:%s line:%d"

@@ -59,8 +59,6 @@ ForStmt::rangeFor(ctx)
 
     
     if this.key != null{
-        ctx.getLocalVar(this.key.varname)
-        
         compile.writeln("   mov 8(%%rsp),%%rdi")
         compile.writeln("   mov (%%rsp),%%rsi")
         compile.writeln("   push %%rdi")
@@ -73,7 +71,6 @@ ForStmt::rangeFor(ctx)
         compile.writeln("   mov %%rdi,(%%rax)")
     }
     if this.value != null {
-        ctx.getLocalVar(this.value.varname)
         compile.writeln("   mov 8(%%rsp),%%rdi")
         compile.writeln("   mov (%%rsp),%%rsi")
         compile.writeln("   push %%rdi")
@@ -209,7 +206,7 @@ WhileStmt::dead_compile(ctx)
     compile.writeln("%s.L.while.end.%d:", compile.currentParser.label(),c)
 }
 class IfCaseExpr : ast.Ast {
-    cond
+    cond = null
     block
     label = ""
     endLabel = ""

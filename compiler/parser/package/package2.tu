@@ -6,7 +6,7 @@ Package::parse2()
 {
 	for(cls : this.classes){
         cls.type_id = 0
-        cls.funcs.clear()
+        cls.funcs = []
     }
 
     this.initid = 0
