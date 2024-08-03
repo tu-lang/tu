@@ -75,9 +75,10 @@ fn len(v<Value>){
             s<string.Str> = v.data
             return int(s.len())
         }
-		Map   : os.die("unsupport len(map)")
+		Map   : dief(*"unsupport len(map)\n")
 		_     : {
-			os.dief("[warn] len(unknow type:%s)",type_string(v))
+			str<Value> = type_string(v)
+			dief(*"[warn] len(unknow type:%s)\n",str.data)
 		}
 	}
 	return 0

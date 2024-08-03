@@ -11,7 +11,7 @@ func callerpc(){
 	return "??:??"
 }
 func stack(level<i32>){
-	bp<u64*> = runtime.get_bp()
+	bp<u64*> = inter_get_bp()
 	i<i32> = 0
 	arr = []
 	//stack backtrace 
@@ -21,6 +21,7 @@ func stack(level<i32>){
 		if rip == null break
 		arr[] = findpc(rip)
 		bp = *bp
+		if bp == null break
 		i += 1
 	}
 	return arr
