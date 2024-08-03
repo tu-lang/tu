@@ -1,6 +1,7 @@
 
 use fmt
 use os
+use pkg
 
 class Http {
     request
@@ -41,6 +42,8 @@ Http::test_memberfunc(){
     }
     fmt.println("test_memberfunc success")
 }
+
+pkg.Factory::f3(){}
 func main(){
     a = new Http()
     a.request = "request"
@@ -51,4 +54,7 @@ func main(){
     //成员变量当做成员函数调用
     a. fc = extern_func
     a.test_memberfunc()
+    //包外成员函数定义
+    obj = new pkg.Factory()
+    obj.f1() obj.f2() obj.f3()
 }
