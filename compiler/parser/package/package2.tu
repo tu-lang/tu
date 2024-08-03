@@ -11,7 +11,10 @@ Package::parse2()
 
     this.initid = 0
     this.inits = {}
+}
 
+Package::parse3()
+{
     for(p : this.parsers){
 		reader<scanner.ScannerStatic> = p.scanner
         reader.reset()

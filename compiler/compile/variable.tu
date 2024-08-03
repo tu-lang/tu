@@ -88,6 +88,9 @@ func CreateGlobalString(var){
 
 fn registerObjects(){
     for cls : currentParser.classes {
+        //skip struct
+        if !cls.found continue
+
         // gen object type info
         obj_virtname = cls.virtname()
 

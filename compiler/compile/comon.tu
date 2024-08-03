@@ -38,6 +38,9 @@ func genast(filename)
     for( pkg : package.packages ){
         pkg.parse2()
     }
+    for( pkg : package.packages ){
+        pkg.parse3()
+    }
 }
 func editast(){
     utils.debug("ast.editast()")
