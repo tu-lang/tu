@@ -44,7 +44,7 @@ Package::geninit(){
 	if std.len(this.inits) <= 0 {
 		return false
 	}
-	mf = std.head(this.inits)
+	mf = this.inits[0]
 	for(fullpackage : this.imports){
 		if !std.exist(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
 		dpkg = packages[fullpackage]

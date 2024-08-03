@@ -10,7 +10,7 @@ Package::parse2()
     }
 
     this.initid = 0
-    this.inits = {}
+    this.inits = []
 }
 
 Package::parse3()
