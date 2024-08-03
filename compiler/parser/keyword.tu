@@ -110,15 +110,16 @@ Parser::parseFuncDef(ft, pdefine)
     reader.scan()
     node = new ast.Function()
 
-    node.clsname = pdefine.name
     match ft {
         StructFunc : {
             node.isMem = true
             node.isObj = false
+            node.clsname = pdefine.name
         }
         ClassFunc :{
             node.isObj = true
             node.structname = pdefine.name
+            node.clsname = pdefine.name
         }
     }    
 
