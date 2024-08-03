@@ -29,6 +29,10 @@ BuiltinFuncExpr::compile(ctx,load){
 			compile.writeln("   mov $%d , %%rax",m.size)
 			return null
 		}
+		"inter_get_bp" : {
+			compile.writeln("   mov %%rbp , %%rax")
+			return null
+		}
 		"type": {
 			if type(this.expr) == type(VarExpr) {
 				ve = this.expr
@@ -143,5 +147,8 @@ BuiltinFuncExpr::isMem(ctx){
     if this.funcname == "sizeof" {
         return true
     }
+	if this.funcname == "inter_get_bp" {
+		return true
+	}
     return false
 }

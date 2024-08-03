@@ -16,6 +16,7 @@ keywords = {
 }
 builtins = {
     "int" : true , "sizeof" : true , "type" : true, "float" : true,
+	"inter_get_bp" : true,
 }
 specs = {
 	"\\n"  : 10.(i8),
