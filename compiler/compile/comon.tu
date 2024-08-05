@@ -26,7 +26,7 @@ func genast(filename)
     mparser.parse()    # token parsering
     package.packages["main"] = mpkg
     //check runtime has been parsered
-    if package.packages["runtime"] != null {
+    if package.packages["runtime"] == null {
         pkg = new package.Package("runtime","runtime",false) 
         package.packages["runtime"] = pkg 
         //recursively scan code files

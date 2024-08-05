@@ -142,7 +142,7 @@ Parser::parseFuncDef(ft, pdefine)
         var = new gen.VarExpr("this",this.line,this.column)
         if ft == StructFunc {
             var.structtype = true
-            var.type = U64
+            var.type = ast.U64
             var.size = 8
             var.isunsigned = true
             var.structpkg = pdefine.pkg

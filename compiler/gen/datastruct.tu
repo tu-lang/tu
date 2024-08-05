@@ -243,8 +243,6 @@ class StringExpr  : ast.Ast {
             compile.writeln("	lea %s(%%rip),%%rax",real.name)
             return null
         }
-        if this.name == "" 
-            this.panic("string not computed :" + this.toString(""))
         
         hk = string.hash64string(
             //cal escape hash value 

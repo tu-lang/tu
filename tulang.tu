@@ -136,10 +136,14 @@ Compiler::compiler(file){
         //Self Asmer && Linker
             this.code_files = []
             this.scandir(".",".s")
+            if !compile.nostd 
+                this.scandir(root + "/coasm/",".s")
             this.asmer()
+
             this.code_files = []
             this.scandir(".",".o")
-            this.scandir(root + "/colib/",".o")
+            if compile.nostd 
+                this.scandir(root + "/colib/",".o")
             this.linker()
             os.shell("rm *.o *.s")
         }

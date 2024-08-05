@@ -9,7 +9,7 @@ Parser::addFunc(name, f)
         if compile.phase == compile.GlobalPhase {
             return true
         }
-        f.name = f.name + this.pkg.geninitid()
+        f.name = f.name + "." + this.pkg.geninitid()
         name = f.name
         this.pkg.inits[] = f
     }

@@ -137,9 +137,13 @@ BuiltinFuncExpr::compile(ctx,load){
 	return null
 }
 BuiltinFuncExpr::toString(){
+	exprs = ""
+	if this.expr != null {
+		exprs = this.expr.toString("")
+	}
 	return fmt.sprintf("BuiltinFuncExpr:%s(%s)"
 		this.funcname,
-		this.expr.toString("")
+		exprs
 	)
 }
 

@@ -54,7 +54,9 @@ VarExpr::record(){
             this.line,this.column,cfunc.parser.filepath
         )
 }
-VarExpr::toString() { return fmt.sprintf("VarExpr(%.%s)",this.package,this.varname) }
+VarExpr::toString() { 
+    return fmt.sprintf("VarExpr(%s.%s)",this.package,this.varname) 
+}
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx,this)
     if v != null && v.structtype {
