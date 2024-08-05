@@ -2,17 +2,16 @@ use compiler.compile
 use std
 
 packages = {} // map{name: Package}
-gstrs = {}
 
-fn add_string(str){
-    if gstrs[str.lit] != null 
+Package::add_string(str){
+    if this.gstrs[str.lit] != null 
         return true
 
-    gstrs[str.lit] = str
+    this.gstrs[str.lit] = str
 }
 
-fn get_string(str){
-    return gstrs[str.lit]
+Package::get_string(str){
+    return this.gstrs[str.lit]
 }
 
 func getStruct(packagename,name) {    

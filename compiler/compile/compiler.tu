@@ -26,13 +26,14 @@ func compile(){
         for s : pkg.structs {
             if !s.iscomputed pkg.genStruct(s)
         }
+        //cal string id
+        for str : pkg.gstrs {
+            str.name = fmt.sprintf(
+                "string.%s.L.%d",pkg.getuid(),ast.incr_labelid()
+            )        
+        }
     }
-    //cal string id
-    for str : package.gstrs {
-        str.name = fmt.sprintf(
-            "string.L.%d",ast.incr_labelid()
-        )        
-    }
+
     //register package
     for(p : package.packages){
         if nostd && stdpackages[p.full_package]

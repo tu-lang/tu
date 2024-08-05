@@ -9,6 +9,9 @@ uniquesig = "initvars_" + utils.strRand()
 Package::getInitVarsFuncName(){
 	return uniquesig
 }
+Package::getuid(){
+    return uniquesig
+}
 
 Package::initClassInitFunc(name)
 {

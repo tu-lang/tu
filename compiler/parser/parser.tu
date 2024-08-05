@@ -284,9 +284,9 @@ Parser::newvar(var){
 }
 
 Parser::add_string(str){
-    if package.get_string(str) != null {
+    if this.pkg.get_string(str) != null {
         return true
     }
-    package.add_string(str)
+    this.pkg.add_string(str)
     this.strs[str.lit] = str
 }

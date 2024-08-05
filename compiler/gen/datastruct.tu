@@ -235,7 +235,7 @@ class StringExpr  : ast.Ast {
 	    utils.debugf("gen.StringExpr::compile()")
         this.record()
         
-        real = package.get_string(this)
+        real = GP().pkg.get_string(this)
         if real.name == "" {
             this.check(false,"string not computed :")
         }

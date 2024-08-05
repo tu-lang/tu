@@ -17,6 +17,7 @@ class Package {
     classes = {} // map{string : Class  }
     structs = {} // map{string : Struct }
     imports = {} // map[string: string}
+    gstrs = {}
 
     cfgs    = new ast.ConfigOpts()
 }

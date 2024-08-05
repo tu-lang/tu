@@ -75,7 +75,7 @@ DelRefExpr::compile(ctx,load){
     
     if type(this.expr) == type(StringExpr) {
         se = this.expr
-        real = package.get_string(se)
+        real = GP().pkg.get_string(se)
         compile.writeln("    lea %s(%%rip), %%rax", real.name)
         return this.expr
     }
