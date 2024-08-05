@@ -123,15 +123,17 @@ fn arr_get(varr<Value>,index<Value>){
     }
 
     if  varr == null || varr.data == null || index == null {
-        fmt.println("[arr_get] arr or index is null ,probably something wrong\n")
-        os.exit(-1)
+		dief(*"[arr_get] arr or index is null ,probably something wrong\n")
     }
 
     arr<std.Array> = varr.data
     i<i64> = 0
     match index.type {
         Int : i = index.data
-        _   : os.dief("[arr_get] invalid type: %s" , type_string(index) )
+        _   : {
+			ts = type_string(index)
+			dief(*"[arr_get] invalid type: %s\n" , *ts)
+		}
     }
     if  i >= arr.used {
         return newobject(Null,Null)
