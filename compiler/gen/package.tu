@@ -21,7 +21,7 @@ package.Package::genStruct(s)
 			acualPkg = ps.getImport(m.structpkg)
 			dst = package.getStruct(acualPkg,m.structname)
 			if dst == null {
-				this.panic(
+				p.panic(
 					fmt.sprintf(
 						"struct.member: inner class not exist <%s.%s>\n",
 						m.structpkg,
