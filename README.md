@@ -68,22 +68,21 @@ Http::closure(){
 }
 fn factory(){
     a = ["1",2,"some string word"]     // array
-    b = {1:2,"sdfds":3,"a":a} // map
+    b = {1:2,"sdfds":3,"a":a}          // map
     return a,b
 }
 fn main(){
-    a = "this is a string" #string
-    b = 1000 # int
-    fmt.println(a,b)
+    a = "this is a string"             // string
+    b,c = 1000,200.33                  // number
+    fmt.println(a,b,c)
 
     a,b = factory()
     fmt.print(a[0],a[1],a[2])
     fmt.print(b["a"],b["sdfds"])
 
-    obj = new Http() # objectkk
+    obj = new Http()                    // object
     obj.request = {"method":"POST"}
-    obj.handler()
-    cfunc = obj.closure() //member
+    cfunc = obj.closure()               // member
     fmt.println(cfunc())
 }
 ```
@@ -114,6 +113,8 @@ fn main(){
 ### @静态写法
 更多用例请看`/tests`
 ```
+use runtime
+Null<i64> = 0
 enum {
     Insert,
     Update
@@ -153,6 +154,7 @@ Rbtree::find(hk<u64>){
     }
     return Null
 }
+fn main(){}
 ```
 ## License
 Copyright @2016-2024 The tu-lang author. All rights reserved.
