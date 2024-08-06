@@ -123,14 +123,14 @@ Parser::parseExternClassFunc(pkgname){
 
     pdefine = new ast.Class("")
     fctype  = ClassFunc
-    if compile.phase != compile.GlobalPhase{
-        st = package.getStruct(this.package,clsname)
+    if compile.phase != compile.GlobalPhase {
+        st = package.getStruct(pkgname,clsname)
         if st != null {
             fctype = StructFunc
             pdefine = st
         }else{
-            cls = package.getClass(this.package,clsname)
-            this.check(cls != null , "class not define")
+            cls = package.getClass(pkgname,clsname)
+            this.check(cls != null , "class not define "+ pkgname + "." + clsname)
             fctype = ClassFunc
             pdefine = cls
         }
