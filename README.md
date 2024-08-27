@@ -46,13 +46,13 @@ $ sudo make install
 $ make tests
 ```
 
-## @数据结构
+## @基础类型
 - [x] 动态类型 int float string bool null array map closure object
 - [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 f32 f64 struct
 - [x] func,goto,class,mem
 - [x] return,type,use,if,continue,break
-- [x] while,for|range for,loop
-- [x] match
+- [x] while,for|range for,loop,match
+- [ ] async await
 
 ### @动态写法
 更多用例请看`/tests`
