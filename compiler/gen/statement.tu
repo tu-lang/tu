@@ -91,8 +91,9 @@ ReturnStmt::compilemulti(ctx){
         }
     }    
 }
-//TODO: not parser
+
 class BreakStmt      : ast.Ast {
+    breakto   = null
     func init(line,column){
         super.init(line,column)
     }  
@@ -113,6 +114,7 @@ BreakStmt::compile(ctx)
     return null
 }
 class ContinueStmt   : ast.Ast {
+    continueto = null
     func init(line,column){
         super.init(line,column)
     }  
@@ -140,6 +142,7 @@ ContinueStmt::compile(ctx)
 
 class GotoStmt   : ast.Ast {
     label = label
+    case1 = null // future case
     func init(label,line,column){
         super.init(line,column)
     }

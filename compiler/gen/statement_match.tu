@@ -5,6 +5,7 @@ class MatchStmt : ast.Ast {
     cond
     cases = []
     defaultCase
+    breakid = ""
     func init(line,column){
         super.init(line,column)
     }
@@ -68,7 +69,6 @@ MatchStmt::compile(ctx){
     return null
 }
 
-//TODO: not parser
 class MatchCaseExpr : ast.Ast {
     cond
     block
@@ -79,6 +79,9 @@ class MatchCaseExpr : ast.Ast {
 
     label  = ""
     endLabel = ""
+
+    id     = 0
+    blocks = []
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -120,6 +123,7 @@ MatchCaseExpr::bitOrToLogOr(expr){
 			node.rhs = this.bitOrToLogOr(node.rhs)
 		}
 	}
+    node.checkawait()
 	return node
 }
 MatchCaseExpr::compile(ctx,load){

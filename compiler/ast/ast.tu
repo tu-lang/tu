@@ -5,9 +5,10 @@ use compiler.compile
 use runtime
 
 class Ast {
-    line = line
-    column = column
-    hasctx = false
+    line     = line
+    column   = column
+    hasctx   = false
+    hasawait = false
     func init(line,column) {}
 
     func toString() { return "Ast()" }

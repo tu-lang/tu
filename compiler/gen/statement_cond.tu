@@ -15,6 +15,9 @@ class ForStmt : ast.Ast {
     key   = null
     value = null
     obj   = null
+
+    breakid    = ""
+    continueid = ""
 }
 ForStmt::toString() {
     str = "ForStmt("
@@ -137,6 +140,9 @@ class WhileStmt : ast.Ast {
     cond
     block
     dead = false
+
+    breakid    = ""
+    continueid = ""
     func init(line,column){
         super.init(line,column)
     }

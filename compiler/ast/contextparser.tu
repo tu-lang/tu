@@ -1,29 +1,6 @@
 use compiler.utils
 use std
 
-class Ctx {
-    level        = 0
-    vars         = {} // map{string:VarExpr}
-    isFuncArg    = {} // map{string,bool}
-
-    cur_funcname = ""
-    end_str      = ""
-    start_str    = ""
-    continue_str = ""
-    point        = 0
-}
-
-Ctx::createVar(varname,ident)
-{
-    this.vars[varname] = ident
-}
-Ctx::getVar(varname)
-{
-    if this.vars[varname] != null {
-        return this.vars[varname]
-    } 
-    return null
-}
 
 class Context {
     level = 0

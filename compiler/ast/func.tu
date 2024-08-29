@@ -12,6 +12,7 @@ class Function {
     clsname  = "" // class name
     name     = "" // func name
     namehid  
+    isasync   = false // future
     isExtern  = false // c ffi ; extern define
     isObj     = false // object call
     isMem     = false // static class function
@@ -34,14 +35,14 @@ class Function {
 
     closures    = [] // [Function*,]
     closureidx 
-
     receiver    // ClosureExpr* for reciever point
-
     block       // BlockStmt*
-
     funcnameid
-
     mcount = 0
+    //async future
+    endstates = []
+    returns   = []
+
 }
 func incr_closureidx(){
     idx = closureidx
@@ -151,8 +152,11 @@ Function::getVariadic(){
 
 Function::InsertLocalVar(level , var){
 
-    newname = var.varname + "." + level
-    var.varname = newname
+    newname = var.varname
+    if level >= 0 {
+        newname = var.varname + "." + level
+        var.varname = newname
+    }
 	if this.locals[var.varname] != null {
 		utils.errorf("something wrong here l:%d top:%d varname:%s fle:%s line %d column %d",
 			level,this.parser.ctx.level,
