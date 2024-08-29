@@ -90,6 +90,19 @@ ScannerStatic::token(tk<i32>,lex<string.String>){
     this.curLex = lex
     this.curToken = tk
 }
+
+ScannerStatic::skipblock() {
+    if this.curToken != ast.LBRACE {
+        os.dief("[error] skipblock not {")
+    }
+    block<i32> = 1
+    while block != 0 {
+        tk<i64> = this.scan()
+        if tk == ast.RBRACE block -= 1
+        if tk == ast.LBRACE block += 1
+    }
+    this.scan()
+}
 ScannerStatic::emptyline(){
     tx<TxStatic> = this.transaction()
     c<i8> = this.next()

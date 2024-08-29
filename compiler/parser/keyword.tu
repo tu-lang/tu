@@ -163,7 +163,12 @@ Parser::parseFuncDef(ft, pdefine)
         if ft == ClassFunc && pdefine.father != null {
             insertsuper = true
         }
-        node.block = this.parseBlock(insertsuper,true)
+        if compile.phase == compile.GlobalPhase {
+            reader.skipblock() 
+            node.block = null
+        }else 
+            node.block = this.parseBlock(insertsuper,true)
+
     }
     
     this.currentFunc = null
