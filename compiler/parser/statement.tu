@@ -30,7 +30,7 @@ Parser::parseStatement()
         }
         ast.BREAK: {
             reader.scan()
-            node = new gen.BreakStmt(this.line,this.column)
+            node = this.parseBreakStmt()
         }
         ast.GOTO: {
             reader.scan()
@@ -39,7 +39,7 @@ Parser::parseStatement()
         }
         ast.CONTINUE: {
             reader.scan()
-            node = new gen.ContinueStmt(this.line,this.column)
+            node = this.parseContinueStmt()
         }
         ast.MATCH: {
             reader.scan()
@@ -83,6 +83,7 @@ Parser::parseIfStmt()
             node.elseCase = ice
         }
     }
+    node.checkawait()
     return node
 }
 Parser::parseForStmt()
@@ -100,6 +101,8 @@ Parser::parseForStmt()
     
     this.expect( ast.VAR)
 
+    this.ctx.top().breakto    = node
+    this.ctx.top().continueto = node
     tx = reader.transaction()
     // {
         key = null
@@ -144,6 +147,9 @@ Parser::parseForStmt()
             }
             node.block = this.parseBlock(false,true)
             this.ctx.destroy()
+
+            if node.obj.hasawait   node.hasawait = true
+            if node.block.hasawait node.hasawait = true
             return node
         }
         
@@ -165,6 +171,10 @@ Parser::parseForStmt()
     
     node.block = this.parseBlock(false,true)
     this.ctx.destroy()
+
+    if node.init.hasawait || node.cond.hasawait || node.after.hasawait || node.block.hasawait {
+        node.hasawait = true
+    }
     return node
 }
 Parser::parseMatchSmt(){
@@ -172,11 +182,19 @@ Parser::parseMatchSmt(){
     this.ctx.create()
     reader<scanner.ScannerStatic> = this.scanner
     ms = new gen.MatchStmt(this.line,this.column)
+    this.ctx.top().breakto = ms
+
     ms.cond = this.parseExpression(1)
+    if ms.cond.hasawait
+        ms.hasawait = true
+
     this.expect( ast.LBRACE)
     reader.scan()
     while reader.curToken != ast.RBRACE {
         cs = this.parseMatchCase(ms.cond)
+        if cs.hasawait 
+            ms.hasawait = true
+
         if cs.defaultCase {
             ms.defaultCase = cs
             continue
@@ -207,12 +225,20 @@ Parser::parseMatchCase(cond)
     this.expect( ast.COLON)
     reader.scan()
     cs.block = this.parseBlock(false,false)
+
+    if cs.cond.hasawait
+        cs.hasawait = true
+    if cs.block.hasawait
+        cs.hasawait = true
     return cs
 }
 Parser::parseWhileStmt(dead) {
     utils.debug("parser.Parser::parseWhileStmt()")
     reader<scanner.ScannerStatic> = this.scanner
     node = new gen.WhileStmt(this.line, this.column)
+    this.ctx.top().breakto    = node
+    this.ctx.top().continueto = node
+
     node.dead = dead
     if !dead {
         if reader.curToken == ast.LPAREN {
@@ -220,6 +246,8 @@ Parser::parseWhileStmt(dead) {
         }
         
         node.cond = this.parseExpression(1)
+        if node.cond.hasawait
+            node.hasawait = true
         
         if reader.curToken == ast.RPAREN {
             reader.scan()
@@ -227,6 +255,8 @@ Parser::parseWhileStmt(dead) {
     } 
     
     node.block = this.parseBlock(false,false)
+    if node.block.hasawait
+        node.hasawait = true
     return node
 }
 Parser::parseReturnStmt() {
@@ -235,10 +265,16 @@ Parser::parseReturnStmt() {
     node = new gen.ReturnStmt(this.line, this.column)
 
     ret = [] 
+    if this.currentFunc.isasync 
+        ret[] = new gen.VarExpr("",0,0)
     loop {
         retexpr = this.parseExpression(1)
-        if retexpr != null
+        if retexpr != null{
             ret[] = retexpr
+            if retexpr.hasawait {
+                node.hasawait = true
+            }
+        }
 
         if reader.curToken != ast.COMMA
             break
@@ -291,6 +327,8 @@ Parser::parseMultiAssignStmt(firstv){
     }
     loop {
         p = this.parseExpression()
+        if p.hasawait
+            stmt.hasawait = true
         stmt.rs[] = p
         if reader.curToken != ast.COMMA 
             break
@@ -299,4 +337,52 @@ Parser::parseMultiAssignStmt(firstv){
 
     this.ismultiassign = false
     return stmt
+}
+
+Parser::parseBreakStmt(){
+    bs = new gen.BreakStmt(this.line,this.column)
+
+    if this.currentFunc.isasync == null {
+        return bs
+    }
+
+    stmt = null
+    for(i = std.len(this.ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
+        p = this.ctx.ctxs[i]
+        if p.breakto != null {
+            stmt = p.breakto
+        }
+    }
+    if stmt == null {
+        this.check(false,"break not in while for match")
+    }
+    if type(stmt) != type(gen.ForStmt) && type(stmt) != type(gen.WhileStmt) && type(stmt) != type(gen.MatchStmt) {
+        this.check(false,"break to invalid stmt")
+    }
+    bs.breakto = stmt
+    return bs
+}
+
+Parser::parseContinueStmt(){
+    cs = new gen.ContinueStmt(this.line,this.column)
+
+    if this.currentFunc.isasync == null {
+        return cs
+    }
+
+    stmt = null
+    for(i = std.len(this.ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
+        p = this.ctx.ctxs[i]
+        if p.continueto != null {
+            stmt = p.continueto
+        }
+    }
+    if stmt == null {
+        this.check(false,"continue not in while for match")
+    }
+    if type(stmt) != type(gen.ForStmt) && type(stmt) != type(gen.WhileStmt) {
+        this.check(false,"break to invalid stmt")
+    }
+    cs.continueto = stmt
+    return cs
 }

@@ -114,6 +114,7 @@ Parser::parseExpression(oldPriority)
         assignExpr.lhs = p
         reader.scan()
         assignExpr.rhs = this.parseExpression(1)
+        assignExpr.checkawait()
         return assignExpr
     }
 
@@ -128,6 +129,7 @@ Parser::parseExpression(oldPriority)
         tmp.opt = reader.curToken
         reader.scan()
         tmp.rhs = this.parseExpression(currentPriority + 1)
+        tmp.checkawait()
         p = tmp
     }
     return p
@@ -150,6 +152,7 @@ Parser::parseUnaryExpr()
         if this.ischain() {
             val.lhs = this.parseChainExpr(val.lhs)
         }
+        val.checkawait()
         return val
     }else if this.isprimary() {
         return this.parsePrimaryExpr()
@@ -664,6 +667,17 @@ Parser::parseFuncallExpr(callname)
     
     this.expect( ast.RPAREN )
     reader.scan()
+
+    if reader.curToken == ast.DOT {
+        tx = reader.transaction()
+        reader.scan()
+        if reader.curToken == ast.AWAIT {
+            val.hasawait = true
+            reader.scan()
+        }else{
+            reader.rollback(tx)
+        }
+    }
     return val  
 }
 Parser::parseIndexExpr(varname){

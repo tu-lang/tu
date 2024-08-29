@@ -11,7 +11,7 @@ keywords = {
 	"true"  : ast.BOOL,    "null"  : ast.EMPTY,  "func"    : ast.FUNC, 		"fn"  : ast.FUNC,
 	"return": ast.RETURN,  "break" : ast.BREAK,  "continue": ast.CONTINUE,
 	"use"   : ast.USE, 	   "extern": ast.EXTERN, "class"   : ast.CLASS,
-	"new"   : ast.NEW,     "co"    : ast.CO,     "mem" 	   : ast.MEM, 
+	"new"   : ast.NEW,     "co"    : ast.CO,     "mem" 	   : ast.MEM, 		"await": ast.AWAIT,
 	"match" : ast.MATCH ,  "enum"  : ast.ENUM,   "goto"    : ast.GOTO,		"cfg"  : ast.CFG,
 }
 builtins = {
