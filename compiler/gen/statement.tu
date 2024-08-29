@@ -103,6 +103,17 @@ BreakStmt::compile(ctx)
 {
     utils.debugf("gen.BreakExpr::compile()")
     this.record()
+
+    if this.breakto != null && this.breakto.hasawait {
+        stmt = this.breakto
+        if type(stmt) != type(ForStmt) && type(stmt) != type(WhileStmt) && type(stmt) != type(MatchStmt) {
+            stmt.check(false,"brek to invalid statement")
+        }
+        label = stmt.breakid
+
+        gs = new GotoStmt(label,this.line,this.column)
+        return gs.compile(ctx)
+    }
     
     for(i = std.len(ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
         c = ctx.ctxs[i]
@@ -125,6 +136,17 @@ ContinueStmt::compile(ctx)
 {
     utils.debugf("gen.ContinueExpr::compile()")
     this.record()
+
+    if this.continueto != null && this.continueto.hasawait {
+        stmt = this.continueto
+        if type(stmt) != type(ForStmt) && type(stmt) != type(WhileStmt)  {
+            stmt.check(false,"continue to invalid statement")
+        }
+        label = stmt.continueid
+
+        gs = new GotoStmt(label,this.line,this.column)
+        return gs.compile(ctx)
+    }
     
     for(i = std.len(ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
         c = ctx.ctxs[i]
@@ -147,9 +169,14 @@ class GotoStmt   : ast.Ast {
         super.init(line,column)
     }
 }
+
 GotoStmt::compile(ctx){
     utils.debugf("gen.GotoExpr::compile()")
     this.record()
+
+    if this.label == "" {
+        this.check(false,"goto label is null")
+    }
     compile.writeln("   jmp %s",this.label)
     return null
 }

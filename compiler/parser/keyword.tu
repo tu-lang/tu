@@ -176,6 +176,88 @@ Parser::parseFuncDef(ft, pdefine)
     return node
 }
 
+Parser::parseAsyncDef(ft, pdefine)
+{
+    utils.debug(
+        "parser.Parser::parseAsyncDef() found function: "
+    )
+    reader<scanner.ScannerStatic> = this.scanner
+    this.expect(ast.ASYNC)
+    reader.scan()
+
+    this.expect(ast.FUNC)
+    reader.scan()
+
+    node = new ast.Function()
+
+    match ft {
+        StructFunc : {
+            node.isMem = true
+            node.isObj = false
+            node.clsname = pdefine.name
+        }
+        ClassFunc :{
+            node.isObj = true
+            node.structname = pdefine.name
+            node.clsname = pdefine.name
+        }
+    }    
+
+    node.isasync = true
+    node.parser = this
+    node.package = this.pkg
+    this.currentFunc = node
+    if ft != ClosureFunc {
+        cl = reader.curLex.dyn()
+        if compile.phase == compile.GlobalPhase && this.hasFunc(cl,false)
+            this.check(false,"SyntaxError: already define function :" + cl)
+        node.name = cl
+        
+        reader.scan()
+    }
+
+    this.expect( ast.LPAREN)
+    this.ctx.create()
+    if ft == ClassFunc || ft == StructFunc {
+
+        var = new gen.VarExpr("this",this.line,this.column)
+        if ft == StructFunc {
+            var.structtype = true
+            var.type = ast.U64
+            var.size = 8
+            var.isunsigned = true
+            var.structpkg = pdefine.pkg
+            var.structname = pdefine.name
+        }
+        node.params_var["this"] = var
+        node.params_order_var[] = var
+    }
+
+    params  = this.parseParameterList()
+
+    for(it : node.params_order_var){
+        this.ctx.createVar(it.varname,it)
+    }
+    node.block = null
+    if (reader.curToken == ast.LBRACE){
+        insertsuper = false
+        if ft == ClassFunc && pdefine.father != null {
+            insertsuper = true
+        }
+        if compile.phase == compile.GlobalPhase {
+            reader.skipblock() 
+            node.block = null
+        }else 
+            node.block = this.parseBlock(insertsuper,true)
+
+    }
+    
+    this.currentFunc = null
+    this.ctx.destroy()
+    return node
+}
+
+
 Parser::parseExternDef()
 {
     utils.debug("parser.Parser::parseExternDef() found extern .start parser..")

@@ -93,6 +93,18 @@ Parser::parse()
                 this.ctx = null
                 this.addFunc(f.name,f)
             }
+            ast.ASYNC: {
+                f = this.parseAsyncDef()
+                if compile.phase != compile.GlobalPhase {
+                    f = this.compileAsync(f)
+                }else{
+                    s = new ast.Struct()
+                    s.name = f.name
+                    s.parser = this
+                    this.pkg.addStruct(s.name,s)
+                }
+                this.addFunc(f.name,f)
+            }
             ast.EXTERN : {
                 f = this.parseExternDef()
                 this.addFunc(f.name, f)
@@ -289,4 +301,18 @@ Parser::add_string(str){
     }
     this.pkg.add_string(str)
     this.strs[str.lit] = str
+}
+
+Parser::getStruct(pkg,name) {
+    pkgname = pkg
+    if this.pkg.imports[pkg] != null {
+        pkgname = this.pkg.imports[pkg]
+    }
+    if pkgname == "" pkgname = this.getpkgname()
+
+    if package.packages[pkgname] == null {
+        return null
+    }
+    pkg2 = package.packages[pkgname]
+    return pkg2.getStruct(name)
 }

@@ -14,9 +14,20 @@ Parser::parseBlock(insertsuper,hasctx)
     
     reader<scanner.ScannerStatic>  = this.scanner 
     if(reader.curToken != ast.LBRACE){
-        if(!hasctx)
-            this.ctx.cancel() 
-        return this.parseStatement()
+        stmt = this.parseStatement()
+        node = new gen.BlockStmt()
+        if !this.currentFunc.isasync || stmt.hasawait || type(stmt) != type(gen.ReturnStmt) {
+            node.stmts[] = stmt
+        }else{
+            endstate = new gen.AssignExpr(0,0)
+            node.stmts[] = endstate
+            node.stmts[] = stmt
+            this.currentFunc.endstates[] = endstate
+            this.currentFunc.returns[] = stmt
+        }
+        if !hasctx this.ctx.destroy()
+
+        return node
     }
     node = new gen.BlockStmt()
     reader.scan()
@@ -27,6 +38,15 @@ Parser::parseBlock(insertsuper,hasctx)
     stmts = []
     while( (p = this.parseStatement()) != null )
     {
+        if p.hasawait node.hasawait = true
+
+        if this.currentFunc.isasync && !p.hasawait && type(p) == type(gen.ReturnStmt) {
+            endstate = new gen.AssignExpr(0,0)
+            stmts[] = endstate
+
+            this.currentFunc.endstates[] = endstate
+            this.currentFunc.returns[]   = p
+        }
         stmts[] = p
     }
     
@@ -35,10 +55,7 @@ Parser::parseBlock(insertsuper,hasctx)
     this.expect(ast.RBRACE,"parse block ")
     reader.scan()
 
-    if(hasctx){
-    }else if std.len(node.stmts) < 1
-        this.ctx.cancel()
-    else {
+    if !hasctx {
         this.ctx.destroy()
     }
     return node
@@ -165,5 +182,6 @@ Parser::genSuperInitStmt(f){
     rhs.is_pkgcall = true
     ass.lhs = lhs
     ass.rhs = rhs
+    ass.checkawait()
     return ass
 }
