@@ -83,7 +83,6 @@ AsyncBlock::genawait2(s , callargs , recvs){
 
     prevcur = std.tail(this.queue)
     this.create()
-    //不用再走match switch了，直接goto到下一个状态机
     prevcur.blocks[] = this.genstate(std.tail(this.queue))
     prevcur.blocks[] = this.genswitch(std.tail(this.queue))
 
