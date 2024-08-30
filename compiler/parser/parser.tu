@@ -4,6 +4,7 @@ use compiler.ast
 use compiler.parser.scanner
 use compiler.utils
 use runtime
+use compiler.parser.future
 
 EMPTY_STR = ""
 
