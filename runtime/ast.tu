@@ -82,6 +82,10 @@ deBruijnIdx64<u8:64> = [
 	61, 22, 43, 51, 60, 42, 59, 58,
 ]
 
+PollError<i64>   = 0
+PollReady<i64>   = 1
+PollPending<i64> = 2
+
 
 enum 
 {

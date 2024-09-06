@@ -133,10 +133,11 @@ fn debug(str<i8*>,args<i64*>...){
 		fmt.vfprintf(STDOUT,str,args)
 }
 
+
 fn dief(str<i8*>,args<i64*>...){
 	fmt.vfprintf(std.STDOUT,str,args)
 	infos = debug.stack(10.(i8))
-    fmt.println("debug backtrace:")
+    fmt.vfprintf(std.STDOUT,*"debug backtrace:\n")
     i = 1
     for v : infos {
         fmt.printf("%d: %s\n",i,v)
@@ -149,6 +150,17 @@ fn tracef(str<i8*>,args<i64>...){
 	if enable_trace {
 		fmt.vfprintf(std.STDOUT,str,args)
 	}
+}
+
+fn futuredone(){
+    fmt.vfprintf(std.STDOUT,*"Future already Done!:\n")
+	infos = debug.stack(5.(i8))
+    i = 1
+    for v : infos {
+        fmt.printf("%d: %s\n",i,v)
+        i += 1
+    }
+	std.die(-1.(i8))
 }
 
 fn checkalldead(){
