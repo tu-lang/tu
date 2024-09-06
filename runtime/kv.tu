@@ -211,7 +211,88 @@ fn arr_tostring(varr<Value>)
     return ret.cat(*"]")
 }
 
-fn for_first(data<Value>){
+//compiler: function iter var size
+mem KvIter {
+	i64  type , root
+	u64* addr , cur
+}
+
+fn for_first(data<Value>,iter<KvIter>){
+	iter.root = data.data
+	match data.type 
+	{
+		Map : {
+			tree<map.Rbtree> = data.data
+			if tree.root == tree.sentinel { return Null}
+			iter.type = Map
+			iter.addr = tree.root.min(tree.sentinel)
+			return iter
+		}
+		Array : {
+			arr<std.Array> = data.data
+			if  arr.used <= 0 { return Null}
+			iter.type = Array
+			iter.addr = arr.addr
+			init_index = 0
+			iter.cur  = init_index
+			return iter
+		}
+		_     : dief(*"[for range]: first unsupport type:%d" , data.type)
+	}
+}
+fn for_get_key(iter<KvIter>){
+	match iter.type {
+		Map : {
+			map_node<map.RbtreeNode> = iter.addr
+			if map_node == Null {
+				fmt.println("for get key null")
+			}
+			return map_node.k
+		}
+		Array : {
+			return iter.cur
+		}
+		_  : dief(*"[for range]: get key unsupport type:%d" , iter.type)
+	}
+}
+fn for_get_value(iter<KvIter>){
+	match iter.type  {
+		Map : {
+			map_node<map.RbtreeNode> = iter.addr
+			return map_node.v
+		}
+		Array : {
+			rv<u64*> = iter.addr
+			return *rv
+		}
+		_  : dief(*"[for range]: get value unsupport type:%d" , iter.type)
+	}
+}
+fn for_get_next(iter<KvIter>){
+	match iter.type {
+		Map : {
+			m<map.Rbtree> = iter.root
+			if m == null {
+				dief(*"iter next for null map")
+			}
+			iter.addr = m.next(iter.addr)
+			return iter.addr
+		}
+		Array : {
+			arr<std.Array> = iter.root
+			index<Value> = iter.cur
+			index.data += 1
+			if index.data >= arr.used { 
+				return Null
+			}
+			iter.addr += 8
+			return iter
+		}
+		_  : dief(*"[for range]: next unsupport type:%d" , iter.type)
+	}
+}
+
+fn for_first2(data<Value>){
 	match data.type 
 	{
 		Map : {
@@ -231,7 +312,7 @@ fn for_first(data<Value>){
 		_     : os.dief("[for range]: first unsupport type:%s" , type_string(data))
 	}
 }
-fn for_get_key(node,data<Value>){
+fn for_get_key2(node,data<Value>){
 	match data.type {
 		Map : {
 			map_node<map.RbtreeNode> = node
@@ -247,7 +328,7 @@ fn for_get_key(node,data<Value>){
 		_  : os.dief("[for range]: get key unsupport type:%s" ,type_string(data))
 	}
 }
-fn for_get_value(node,data<Value>){
+fn for_get_value2(node,data<Value>){
 	match data.type  {
 		Map : {
 			map_node<map.RbtreeNode> = node
@@ -261,7 +342,7 @@ fn for_get_value(node,data<Value>){
 		_ : os.dief("[for range]: get value unsupport type:%s" , type_string(data))
 	}
 }
-fn for_get_next(node,data<Value>){
+fn for_get_next2(node,data<Value>){
 	match data.type {
 		Map : {
 			m<map.Rbtree> = data.data
