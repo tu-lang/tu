@@ -42,7 +42,7 @@ class Function {
     //async future
     endstates = []
     returns   = []
-
+    iterid    = 0
 }
 func incr_closureidx(){
     idx = closureidx
@@ -174,4 +174,18 @@ Function::InsertLocalVar(level , var){
 
 Function::FindLocalVar(varname){
     return this.getVar(varname)
+}
+
+Function::getIterVar(){
+    varname = "iter."
+	varname += this.iterid
+
+	this.iterid += 1
+    iter = new gen.VarExpr(varname,0,0)
+	iter.structtype = true
+	iter.type = I64
+	iter.size = 8
+	iter.stack = true
+	iter.stacksize = 4
+	return iter
 }

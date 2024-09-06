@@ -140,6 +140,9 @@ Parser::parseForStmt()
             //     this.currentFunc.locals[node.value.varname] = node.value
             this.newvar(node.key)
             this.newvar(node.value)
+
+            node.iter = this.currentFunc.getIterVar()
+            this.newvar(node.iter)
             
             if (hashlparen ){
                 this.expect(ast.RPAREN)

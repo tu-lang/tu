@@ -15,6 +15,7 @@ class ForStmt : ast.Ast {
     key   = null
     value = null
     obj   = null
+    iter  = null
 
     breakid    = ""
     continueid = ""
@@ -39,7 +40,63 @@ ForStmt::compile(ctx)
     else            this.triFor(ctx)
     ctx.destroy()
 }
+
 ForStmt::rangeFor(ctx)
+{
+    utils.debugf("gen.ForExpr::rangeFor()")
+    c = ast.incr_labelid()
+    if this.obj == null 
+        this.panic("statement: for(x,y : obj) obj should pass value.")
+
+    compile.GenAddr(this.iter)
+    compile.Push()
+    this.obj.compile(ctx,true)
+    compile.Push()
+    internal.call("runtime_for_first")
+    
+    compile.writeln("%s.L.forr.begin.%d:",compile.currentParser.label(), c)
+    compile.CreateCmp()
+    compile.writeln("    je  %s.L.forr.end.%d",compile.currentParser.label(), c)
+
+    
+    if this.key != null{
+        compile.GenAddr(this.iter)
+        compile.Push()
+        internal.call("runtime_for_get_key")
+        compile.Push()
+
+        compile.GenAddr(this.key.getVar(ctx,this.key))
+        compile.Pop("%rdi")
+        compile.writeln("   mov %%rdi,(%%rax)")
+    }
+    if this.value != null {
+        compile.GenAddr(this.iter)
+        compile.Push()
+        internal.call("runtime_for_get_value")
+        compile.Push()
+        compile.GenAddr(this.value.getVar(ctx,this.value))
+        compile.Pop("%rdi")
+        compile.writeln("   mov %%rdi,(%%rax)")
+    }
+    
+    ctx.top().point = c
+    ctx.top().end_str   = compile.currentParser.label() + ".L.forr.end"
+    ctx.top().start_str = compile.currentParser.label() + ".L.forr.begin"
+    ctx.top().continue_str = compile.currentParser.label() + ".L.for.continue"
+    
+    this.block.compile(ctx) 
+
+    compile.writeln("%s.L.for.continue.%d:",compile.currentParser.label(),c)
+    compile.GenAddr(this.iter)
+    compile.Push()
+    internal.call("runtime_for_get_next")
+
+    compile.writeln("    jmp %s.L.forr.begin.%d",compile.currentParser.label(),c)
+    compile.writeln("%s.L.forr.end.%d:",compile.currentParser.label(), c)
+    return null
+}
+
+ForStmt::rangeFor2(ctx)
 {
     utils.debugf("gen.ForExpr::rangeFor()")
     c = ast.incr_labelid()
@@ -107,6 +164,7 @@ ForStmt::rangeFor(ctx)
     compile.writeln("   add $16,%%rsp")
     return null
 }
+
 ForStmt::triFor(ctx)
 {
     utils.debugf("gen.ForExpr::triFor()")
