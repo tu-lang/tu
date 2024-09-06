@@ -190,6 +190,9 @@ Parser::parseMatchSmt(){
     ms.cond = this.parseExpression(1)
     if ms.cond.hasawait
         ms.hasawait = true
+    
+    ms.condrecv = this.currentFunc.getMatchcondVar()
+    this.newvar(ms.condrecv)
 
     this.expect( ast.LBRACE)
     reader.scan()
@@ -215,7 +218,7 @@ Parser::parseMatchCase(cond)
     cs = new gen.MatchCaseExpr(this.line,this.column)
     cs.matchCond = cond 
 
-    cs.cond  = cs.bitOrToLogOr(this.parseExpression(1))
+    cs.cond  = this.parseExpression(1)
     cs.block = null
     
     if type(cs.cond) == type(gen.VarExpr) {

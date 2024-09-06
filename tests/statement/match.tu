@@ -81,10 +81,44 @@ func test_logor(){
 	}
 	fmt.println("test logor success")
 }
+
+conce<i32> = 0
+fn call_once(){
+    if conce > 0 {
+        os.die("should only call once")
+    }
+    conce = 1
+    return 3
+}
+mem T1 {
+    i64 a
+}
+fn test_cond(){
+	fmt.println("test cond")
+    //case1
+    v<T1> = new T1 {
+        a : 3
+    }
+    match  v.a {
+        1 : os.die("v.a != 1")
+        2 : os.die("v.a != 2")
+        3 : fmt.println("3")
+        _ : os.die("not default")
+    }
+    //case2
+    match  call_once() {
+        1 : os.die("once() != 1")
+        2 : os.die("once() != 2")
+        3 : fmt.println("once 3")
+        _ : os.die("not default")
+    }   
+	fmt.println("test cond success")
+}
 func main(){
 	test_int()
 	test_string()
 	test_kv()
 	test_no_brace()
 	test_logor()
+	test_cond()
 }

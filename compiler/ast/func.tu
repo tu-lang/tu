@@ -189,3 +189,10 @@ Function::getIterVar(){
 	iter.stacksize = 4
 	return iter
 }
+
+Function::getMatchcondVar(){
+	varname = "mcond."
+	varname += this.iterid
+	this.iterid += 1
+    return new gen.VarExpr(varname,0,0)
+}

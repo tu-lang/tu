@@ -1,8 +1,10 @@
 use compiler.ast
 use compiler.utils
+use compiler.parser
 
 class MatchStmt : ast.Ast {
     cond
+    condrecv
     cases = []
     defaultCase
     breakid = ""
@@ -13,7 +15,80 @@ class MatchStmt : ast.Ast {
 MatchStmt::toString(){
     return "match stmt"
 }
+
 MatchStmt::compile(ctx){
+    utils.debug("gen.MatchStmt::compile()")
+    this.record()
+    ctx.create()
+
+    mainPoint = ast.incr_labelid()
+    endLabel = compile.currentParser.label() + ".L.match.end." + mainPoint
+
+    if type(this.cond) != type(VarExpr) {
+        storesize = 8
+        if exprIsMtype(this.cond,ctx) {
+            condrecv = this.condrecv
+            tk = this.cond.getType(ctx)
+            condrecv.structtype = true
+            condrecv.type = tk
+            storesize = parser.typesize[int(tk)]
+            condrecv.size = storesize
+        }
+        compile.GenAddr(this.condrecv)
+        compile.Push()
+        this.cond.compile(ctx,true)
+        compile.Store(storesize)
+        this.cond = this.condrecv
+    }
+    
+    for(cs : this.cases){
+        cs.matchCond = this.cond
+        c = ast.incr_labelid()
+        cs.label = compile.currentParser.label() + ".L.match.case." + c
+        cs.endLabel = endLabel
+    }
+    
+    if this.defaultCase == null {
+        this.defaultCase = new MatchCaseExpr(this.line,this.column)
+        this.defaultCase.matchCond = this.cond
+    }
+    this.defaultCase.label = compile.currentParser.label() + ".L.match.default." + ast.incr_labelid()
+    this.defaultCase.endLabel = endLabel
+    
+    for(cs : this.cases){
+        cond = cs.bitOrToLogOr(cs.cond)
+        if !cs.logor {
+            be = new BinaryExpr(cs.line,cs.column)
+            be.lhs = this.cond
+            be.opt = ast.EQ
+            be.rhs = cond
+            cond = be
+        }
+        cond.compile(ctx,true)
+
+        if !exprIsMtype(cond,ctx)
+            internal.isTrue()
+        
+        compile.writeln("    cmp $1, %%rax")
+        compile.writeln("    je  %s", cs.label)
+    }
+    
+    compile.writeln("   jmp %s", this.defaultCase.label)
+    
+    ctx.top().point = mainPoint
+    ctx.top().end_str = compile.currentParser.label() + ".L.match.end"
+
+    for(cs : this.cases){
+        cs.compile(ctx,true)
+    }
+    this.defaultCase.compile(ctx,true)
+    ctx.destroy()
+
+    compile.writeln("%s.L.match.end.%d:",compile.currentParser.label(),mainPoint)
+    return null
+}
+
+MatchStmt::compile2(ctx){
     utils.debug("gen.MatchStmt::compile()")
     this.record()
     ctx.create()
