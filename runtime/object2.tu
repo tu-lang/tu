@@ -127,7 +127,7 @@ func newclsobject(vid<VObjHeader>, objsize<i64>)
         dynm : members, 
     }
     if  obj == null  {
-        fmt.println("[object_create2] failed to create")
+        dief(*"[object_create2] failed to create")
         return Null
     }
     return obj
@@ -187,7 +187,7 @@ fn object_member_get2(k<u64>,obj<ObjectValue>){
             return v
         }
 
-        fmt.printf("[warn] class memeber not define in %s\n", debug.callerpc())
+        printf("[warn] class memeber not define in %s\n", debug.callerpc())
         return &internal_null
     }
     return *v
@@ -195,7 +195,7 @@ fn object_member_get2(k<u64>,obj<ObjectValue>){
 
 fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectValue>){
     if   obj == null || v == null  || obj.base.type != Object {
-        fmt.println(" [object-uop2] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
+        warn(*" [object-uop2] probably wrong at there! object:%p rhs:%p\n",obj,v)
         return Null
     }
     origin<Value> = null
@@ -205,7 +205,7 @@ fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectValue>){
         if mber != null {
             origin = mber
         }else {
-            fmt.printf("[warn] unary class memeber not define in %s\n", debug.callerpc())
+            printf("[warn] unary class memeber not define in %s\n", debug.callerpc())
             origin = &internal_null
         }
     } else {
