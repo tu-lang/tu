@@ -192,6 +192,15 @@ Parser::parseMatchSmt(){
         ms.hasawait = true
     
     ms.condrecv = this.currentFunc.getMatchcondVar()
+    if type(ms.cond) != type(gen.VarExpr) {
+        if gen.exprIsMtype(ms.cond,this.ctx) {
+            condrecv = ms.condrecv
+            tk = ms.cond.getType(this.ctx)
+            condrecv.structtype = true
+            condrecv.type = tk
+            condrecv.size = typesize[int(tk)]
+        }
+    }
     this.newvar(ms.condrecv)
 
     this.expect( ast.LBRACE)

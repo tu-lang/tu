@@ -159,6 +159,31 @@ func test_ref(){
 	f(var.u.i,&var.u.i)
 	fmt.println("test ref success")
 }
+
+mem Tc2 {
+	i32 inner
+}
+mem Tc1 {
+    Tc2* inner
+}
+
+Tc1::test()
+{
+    match this.inner.inner {
+		1 : os.die("should be 2")
+		2 : fmt.println("2")
+		_ : os.die("not default")
+	}
+}
+
+fn test_common(){
+	fmt.println("test common")
+	v1<Tc2> = new Tc2{inner: 2}
+	v2<Tc1> = new Tc1{inner: v1}
+	v2.test()
+	fmt.println("test common success")
+}
+
 func main(){
 	test_args()
 	test_op()
@@ -166,4 +191,5 @@ func main(){
 	test_return()
 	test_delref()
 	test_ref()
+	test_common()
 }

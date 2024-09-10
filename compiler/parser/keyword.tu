@@ -3,6 +3,7 @@ use string
 use std
 use compiler.parser.package
 use compiler.gen
+use compiler.compile
 use compiler.utils
 
 Parser::parseClassDef()
@@ -125,7 +126,8 @@ Parser::parseFuncDef(ft, pdefine)
 
     node.parser = this
     node.package = this.pkg
-    this.currentFunc = node
+    this.currentFunc    = node
+    compile.currentFunc = node
     if ft != ClosureFunc {
         cl = reader.curLex.dyn()
         if compile.phase == compile.GlobalPhase && this.hasFunc(cl,false)
@@ -172,6 +174,7 @@ Parser::parseFuncDef(ft, pdefine)
     }
     
     this.currentFunc = null
+    compile.currentFunc = null
     this.ctx.destroy()
     return node
 }
@@ -206,7 +209,8 @@ Parser::parseAsyncDef(ft, pdefine)
     node.isasync = true
     node.parser = this
     node.package = this.pkg
-    this.currentFunc = node
+    this.currentFunc    = node
+    compile.currentFunc = node
     if ft != ClosureFunc {
         cl = reader.curLex.dyn()
         if compile.phase == compile.GlobalPhase && this.hasFunc(cl,false)
@@ -252,7 +256,8 @@ Parser::parseAsyncDef(ft, pdefine)
 
     }
     
-    this.currentFunc = null
+    this.currentFunc    = null
+    compile.currentFunc = null
     this.ctx.destroy()
     return node
 }

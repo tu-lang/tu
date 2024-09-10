@@ -2,6 +2,7 @@ use compiler.ast
 use os
 use std
 use fmt
+use compiler.compile
 use compiler.gen
 use compiler.utils
 use compiler.parser.scanner
@@ -253,7 +254,8 @@ Parser::parsePrimaryExpr()
         closure.receiver = var
         var.def = closure
         
-        this.currentFunc = prev
+        this.currentFunc    = prev
+        compile.currentFunc = prev
         this.ctx = prev_ctx
         return var
     }else if tk == ast.VAR

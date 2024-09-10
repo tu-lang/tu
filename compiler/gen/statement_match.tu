@@ -25,19 +25,10 @@ MatchStmt::compile(ctx){
     endLabel = compile.currentParser.label() + ".L.match.end." + mainPoint
 
     if type(this.cond) != type(VarExpr) {
-        storesize = 8
-        if exprIsMtype(this.cond,ctx) {
-            condrecv = this.condrecv
-            tk = this.cond.getType(ctx)
-            condrecv.structtype = true
-            condrecv.type = tk
-            storesize = parser.typesize[int(tk)]
-            condrecv.size = storesize
-        }
         compile.GenAddr(this.condrecv)
         compile.Push()
         this.cond.compile(ctx,true)
-        compile.Store(storesize)
+        compile.Store(this.condrecv.size)
         this.cond = this.condrecv
     }
     

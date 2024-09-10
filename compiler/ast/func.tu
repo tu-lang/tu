@@ -194,5 +194,8 @@ Function::getMatchcondVar(){
 	varname = "mcond."
 	varname += this.iterid
 	this.iterid += 1
-    return new gen.VarExpr(varname,0,0)
+
+    var = new gen.VarExpr(varname,0,0)
+    var.size = 8
+    return  var
 }

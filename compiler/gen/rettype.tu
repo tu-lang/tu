@@ -102,9 +102,11 @@ ChainExpr::getType(ctx){
 		member.structref = me.tyassert.getStruct()
 	}
 	this.check(member != null,"member is not exist in chainexpr")
-	this.check(member.structref != null,"must be memref in chain expr")
-	ss = member.structref
-	member = ss.getMember(me.membername)
+	// this.check(member.structref != null,"must be memref in chain expr")
+	if member.structref != null {
+		ss = member.structref
+		member = ss.getMember(me.membername)
+	}
 	this.check(member != null,"mem not exist field:" + me.membername)
 	if member.pointer return ast.U64
 	if member.type >= ast.I8 && member.type <= ast.F64{
