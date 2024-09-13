@@ -43,11 +43,13 @@ class AsyncBlock {
     }
     fn gstatevar(){return this.root.state}
     fn gpollvar(){return this.root.pollstate}
+
     fn gencasevar(){
         pollvarname = this.gstatevar().varname + "." + this.topid()
         casevar = new gen.VarExpr(pollvarname,0,0)
         casevar.structtype = true
         casevar.type = ast.U64
+        casevar.size = 8
         this.fc.InsertLocalVar(-1,casevar)
         return casevar
     }
@@ -56,6 +58,7 @@ class AsyncBlock {
         retvar = new gen.VarExpr(retvarname,0,0)
         retvar.structtype = true
         retvar.type = ast.U64
+        retvar.size = 8
         this.fc.InsertLocalVar(-1,retvar)
         return retvar
     }
@@ -100,7 +103,9 @@ class AsyncBlock {
         case1.id = -1
 
         fc = new gen.FunCallExpr(0,0)
-        fc.funcname = "panic"
+        fc.package = "runtime"
+        fc.funcname = "futuredone"
+        fc.is_pkgcall = true
         case1.blocks[] = fc
         this.queue[]   = case1
     }

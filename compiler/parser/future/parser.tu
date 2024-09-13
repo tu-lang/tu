@@ -144,9 +144,11 @@ parser.Parser::compileAsync(f){
     ctx.state = new gen.VarExpr(state,0,0)
     ctx.state.structtype = true
     ctx.state.type = ast.U64
+    ctx.state.size = 8
     ctx.pollstate = new gen.VarExpr("poll" + state,0,0)
     ctx.pollstate.structtype = true
     ctx.pollstate.type = ast.U64
+    ctx.pollstate.size = 8
 
     endstate = new gen.IntExpr(0,0)
     endstate.literal = "-1"
