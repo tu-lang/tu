@@ -107,6 +107,11 @@ Parser::parseFuncDef(ft, pdefine)
         "parser.Parser::parseFuncDef() found function: "
     )
     reader<scanner.ScannerStatic> = this.scanner
+    isasync = false
+    if reader.curToken == ast.ASYNC {
+        isasync = true
+        reader.scan()
+    }
     this.expect(ast.FUNC)
     reader.scan()
     node = new ast.Function()
@@ -115,7 +120,11 @@ Parser::parseFuncDef(ft, pdefine)
         StructFunc : {
             node.isMem = true
             node.isObj = false
-            node.clsname = pdefine.name
+            if isasync {
+                node.clsname = reader.curLex.dyn()
+            }else {
+                node.clsname = pdefine.name
+            }
         }
         ClassFunc :{
             node.isObj = true
@@ -123,6 +132,7 @@ Parser::parseFuncDef(ft, pdefine)
             node.clsname = pdefine.name
         }
     }    
+    node.isasync = isasync
 
     node.parser = this
     node.package = this.pkg
@@ -147,8 +157,12 @@ Parser::parseFuncDef(ft, pdefine)
             var.type = ast.U64
             var.size = 8
             var.isunsigned = true
-            var.structpkg = pdefine.pkg
-            var.structname = pdefine.name
+            if isasync {
+                var.structname = node.name
+            }else{
+                var.structpkg = pdefine.pkg
+                var.structname = pdefine.name
+            }
         }
         node.params_var["this"] = var
         node.params_order_var[] = var

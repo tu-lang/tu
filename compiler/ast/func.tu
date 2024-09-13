@@ -110,10 +110,16 @@ Function::fullname(){
         	if c == null || !c.found {
                 os.die("class not define :" + this.clsname)
         	}
-        	funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
+            if this.isasync
+        	    funcsig = this.parser.getpkgname() + "_" + c.name + "_poll"
+            else 
+        	    funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
 		}else{
             c = this.package.getStruct(this.clsname)
-        	funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
+            if this.isasync
+        	    funcsig = this.parser.getpkgname() + "_" + c.name + "_poll"
+            else 
+        	    funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
 		}
     }
     return funcsig
@@ -138,7 +144,10 @@ Function::beautyName(){
         if c == null {
             os.die("fn exception class not exist:" + this.clsname)
         }
-        funcname = this.parser.getpkgname() + "::" + c.name + "::" + this.name
+        if this.isasync
+            funcname = this.parser.getpkgname() + "::" + c.name + "::poll"
+        else
+            funcname = this.parser.getpkgname() + "::" + c.name + "::" + this.name
     }
 	return funcname
 }

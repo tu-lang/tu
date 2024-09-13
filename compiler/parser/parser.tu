@@ -95,7 +95,10 @@ Parser::parse()
                 this.addFunc(f.name,f)
             }
             ast.ASYNC: {
-                f = this.parseAsyncDef()
+                this.ctx = new ast.Context()
+                f = this.parseFuncDef(StructFunc,null)
+                this.ctx = null
+
                 if compile.phase != compile.GlobalPhase {
                     f = this.compileAsync(f)
                 }else{
@@ -104,6 +107,7 @@ Parser::parse()
                     s.parser = this
                     this.pkg.addStruct(s.name,s)
                 }
+                this.pkg.addClassFunc(f.name,f,this)
                 this.addFunc(f.name,f)
             }
             ast.EXTERN : {
