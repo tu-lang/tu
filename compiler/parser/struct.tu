@@ -65,6 +65,26 @@ Parser::parseStructDef()
 	//eat }
 	reader.scan()
 }
+
+Parser::genAsyncPollMember(s , idx){
+	member = new ast.Member()
+	tk = ast.I64
+    member.line = this.line
+    member.column = this.column
+    member.file  = this.filepath
+    member.isunsigned = ast.type_isunsigned(tk)
+    member.type = tk
+    member.size = typesize[int(tk)]
+    member.align = typesize[int(tk)]
+    member.arrsize = 1
+    member.arrvar = null
+    member.idx = idx
+	idx += 1
+    member.name = "poll.f"
+
+	s.member[] = member
+}
+
 Parser::parseMembers(s ,idx ,isstruct){
 	reader<scanner.ScannerStatic> = this.scanner
 	utils.debug("Parser::parseMembers ")
@@ -136,6 +156,7 @@ Parser::parseMembers(s ,idx ,isstruct){
         break
     }
 }
+
 Parser::parseStructInit(pkgname,name){
 	reader<scanner.ScannerStatic> = this.scanner
 	init = new gen.StructInitExpr(this.line,this.column)

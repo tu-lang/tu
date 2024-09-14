@@ -35,7 +35,7 @@ class AsyncBlock {
         }
         this.funcname = fc.name
         this.labelid = 0
-        this.stateid = 1
+        this.stateid = 0
 
         case1 = new gen.MatchCaseExpr(0,0)
         case1.id = this.genstateid()

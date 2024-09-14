@@ -124,7 +124,7 @@ AsyncBlock::compile(){
         it.ret[0] = this.gpollvar()
     }
 
-    this.stmts[] = this.genstate2(1)
+    // this.stmts[] = this.genstate2(1)
     this.stmts[] = this.genpollstate(PollReady)
     this.stmts[] = matche
 

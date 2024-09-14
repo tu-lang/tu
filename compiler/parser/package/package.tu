@@ -106,6 +106,18 @@ Package::addStruct(name, f)
     }
     this.structs[name] = f
 }
+
+Package::addAsyncStruct(name, f)
+{
+
+    f.isasync = true
+    if std.exist(name,this.structs) {
+        this.structs[name] = f
+        return true
+    }
+    this.structs[name] = f
+}
+
 Package::getStruct(name)
 {    
     if std.exist(name,this.structs) 

@@ -105,10 +105,13 @@ Parser::parse()
                     s = new ast.Struct()
                     s.name = f.name
                     s.parser = this
-                    this.pkg.addStruct(s.name,s)
+                    this.genAsyncPollMember(s,0)
+                    this.pkg.addAsyncStruct(s.name,s)
                 }
-                this.pkg.addClassFunc(f.name,f,this)
-                this.addFunc(f.name,f)
+                structname = f.name
+                f.name = "poll"
+                this.pkg.addClassFunc(structname,f,this)
+                this.addFunc(structname + f.name,f)
             }
             ast.EXTERN : {
                 f = this.parseExternDef()
