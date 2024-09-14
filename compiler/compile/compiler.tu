@@ -24,6 +24,7 @@ func compile(){
     for pkg : package.packages {
         //need compute the memeber offset early
         for s : pkg.structs {
+            if s.isasync continue
             if !s.iscomputed pkg.genStruct(s)
         }
         //cal string id
@@ -91,7 +92,11 @@ func _funcs_offsets(fc)
     }
 
     // assign_offsets(fc)
-    genOffsets(fc)
+    if fc.isasync {
+        genFuture(fc)
+    }else{
+        genOffsets(fc)
+    }
 
 }
 func funcs_offsets() 
@@ -154,6 +159,46 @@ func genOffsets(fc)
         fc.stack_size = utils.ALIGN_UP(bottom, 16)
     }
 }
+
+func genFuture(fc)
+{
+    top = 16
+
+    for var : fc.params_order_var {
+        top = utils.ALIGN_UP(top, 8)
+        var.offset = top
+        if var.structtype && !var.pointer && var.type <= ast.F64 && var.type >= ast.I8 {
+            top += var.size
+        }else{
+            top += 8
+        }
+    }
+    
+    top = utils.ALIGN_UP(top,8)
+    fc.ret_stack = top
+
+    order_locals = []
+    for local : fc.locals {
+        order_locals[] = local
+    }
+    order_locals = utils.quick_sort(order_locals,fn(l,r){
+        return l.varid > r.varid
+    })
+
+    ofs = 0
+    for var : order_locals {
+        var.offset = ofs
+        ofs += var.getStackSize(currentParser)
+        ofs = utils.ALIGN_UP(ofs, 8)
+    }
+    if fc.is_variadic {
+        utils.error("async fn unsupport variadic")
+    }
+    fc.state.size = ofs
+    fc.state.align = 8
+    fc.state.iscomputed = true
+}
+
 func assign_offsets(fc)
 {
     utils.debug("compile.assign_offsets()")

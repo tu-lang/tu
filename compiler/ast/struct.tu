@@ -3,10 +3,11 @@ class Struct {
 	name = ""
 	size = 0
 	align = 0
-	member = [] # [Member]
+	member = [] //[Member]
 
 	iscomputed = false
 	ispacked = false
+	isasync  = false
 	parser = null
 
 }

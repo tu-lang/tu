@@ -42,6 +42,7 @@ class Function {
     //async future
     endstates = []
     returns   = []
+    state     = null
     iterid    = 0
 }
 func incr_closureidx(){

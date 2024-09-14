@@ -101,12 +101,17 @@ Parser::parse()
 
                 if compile.phase != compile.GlobalPhase {
                     f = this.compileAsync(f)
+                    f.state = this.pkg.getStruct(f.name)
+                    if f.state == null {
+                        this.check(false,"async state is null")
+                    }
                 }else{
                     s = new ast.Struct()
                     s.name = f.name
                     s.parser = this
                     this.genAsyncPollMember(s,0)
                     this.pkg.addAsyncStruct(s.name,s)
+                    f.state = s
                 }
                 structname = f.name
                 f.name = "poll"

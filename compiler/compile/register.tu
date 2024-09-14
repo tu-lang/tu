@@ -8,7 +8,16 @@ use compiler.utils
 
 func GenAddr(var){
     if var.is_local {
-        writeln("    lea %d(%%rbp), %%rax", var.offset)
+        if ast.GF().isasync {
+            This = ast.GF().FindLocalVar("this")
+            if This == null {
+                var.check(false,"this param not found in async fn")
+            }
+            writeln("    mov %d(%%rbp), %%rax", This.offset)
+            writeln("    add $%d , %%rax", var.offset)
+        }else{
+            writeln("    lea %d(%%rbp), %%rax", var.offset)
+        }
         return var
     }else{
         full = currentFunc.parser.getImport(var.package)
