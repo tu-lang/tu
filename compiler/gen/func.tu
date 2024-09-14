@@ -38,6 +38,7 @@ class FunCallExpr : ast.Ast {
 	is_dyn = false
 	fcs    = null
 	tyassert
+	p  	   = null 
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -256,4 +257,22 @@ FunCallExpr::checkobjcall(var){
         }
     }
 
+}
+
+FunCallExpr::getStruct(){
+	s = this.p.getStruct(this.package,this.funcname)
+	if s == null {
+		this.check(false,"await function not found")
+	}
+	return s
+}
+
+FunCallExpr::gennewawait(){
+	s = this.getStruct()
+
+	newsvar = new NewStructExpr(0,0)
+	newsvar.init = new StructInitExpr(0,0)
+	newsvar.init.pkgname = s.pkg
+    newsvar.init.name = s.name
+    return newsvar
 }

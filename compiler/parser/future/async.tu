@@ -103,6 +103,7 @@ class AsyncBlock {
         case1.id = -1
 
         fc = new gen.FunCallExpr(0,0)
+        fc.p = this.root.curp
         fc.package = "runtime"
         fc.funcname = "futuredone"
         fc.is_pkgcall = true

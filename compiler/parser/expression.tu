@@ -658,6 +658,7 @@ Parser::parseFuncallExpr(callname)
     reader<scanner.ScannerStatic> = this.scanner
     reader.scan()
     val = new gen.FunCallExpr(this.line,this.column)
+    val.p = this
     val.funcname = callname
 
     while reader.curToken != ast.RPAREN {

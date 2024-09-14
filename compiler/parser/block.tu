@@ -175,6 +175,7 @@ Parser::genSuperInitStmt(f){
     f.InsertLocalVar(0,lhs)
 
     rhs = new gen.FunCallExpr(this.line,this.column)
+    rhs.p = this
     rhs.package = "runtime"
     rhs.funcname = "object_parent_get2"
     var = new gen.VarExpr("this",this.line,this.column)
