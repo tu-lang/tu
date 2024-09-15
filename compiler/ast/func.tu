@@ -7,6 +7,7 @@ ChainCall   = 1
 MemberCall  = 2
 ObjCall     = 3
 ClosureCall = 4
+FutureCall  = 5
 
 class Function {
     clsname  = "" // class name

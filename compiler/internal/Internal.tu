@@ -114,6 +114,10 @@ fn get_func_value(){
     compile.writeln("   push %%rax")
     call("runtime_get_func_value")
 }
+fn get_future_poll(){
+    compile.writeln("   push %%rax")
+    call("runtime_get_future_poll")
+}
 func get_object_value()
 {
     compile.writeln("    push %%rax")

@@ -87,6 +87,16 @@ FunCallExpr::compile(ctx,load)
     }else if ctx.getLocalVar(this.package) != null {
 		var = ctx.getLocalVar(this.package)
 		OBJECT_MEMBER_CALL:
+		if var.structname == "Future" && this.funcname == "poll" {
+			if var.structpkg == "runtime" {
+				this.compile2(ctx,load,ast.FutureCall,var)
+				return this
+			}	
+			if var.structpkg == "" && GP().getpkgname() == "runtime" {
+				this.compile2(ctx,load,ast.FutureCall,var)
+				return this
+			}
+		}
 		if var.structname != "" && var.structname != null {
 			s = compile.currentParser.pkg.getPackage(var.structpkg)
 				.getClass(var.structname)
@@ -159,6 +169,11 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 			compile.GenAddr(obj)
         	compile.Load()
 			internal.get_func_value()
+		}
+		ast.FutureCall: {
+			compile.GenAddr(obj)
+			compile.Load()
+			internal.get_future_poll()
 		}
     	_: this.check(false,"unknown dyn compile")
     }
