@@ -40,7 +40,7 @@ AsyncBlock::genawait(stmt , recvs){
     if type(stmt) == type(gen.FunCallExpr) {
         fc = stmt
         s = this.getstruct(stmt)
-        retvar = this.genawait2(s,fc,recvs)
+        retvar = this.genawait2(s,fc,recvs,false)
         return retvar
     }else if type(stmt) == type(gen.AssignExpr) {
         ae = stmt
@@ -74,7 +74,7 @@ AsyncBlock::genawait(stmt , recvs){
     }        
 }
 
-AsyncBlock::genawait2(s , callargs , recvs){
+AsyncBlock::genawait2(s , callargs , recvs, isstatic){
     casevar = this.gencasevar()
     casevar.structname = s.name 
     casevar.structpkg = s.pkg
@@ -101,7 +101,7 @@ AsyncBlock::genawait2(s , callargs , recvs){
         pollassign = this.genpollrecv2(casevar,recvs,callargs)
         retvar = null
     }else{
-        retvar = this.genretvar()
+        retvar = this.genretvar(isstatic)
         pollassign = this.genpollrecv(
             casevar,retvar,callargs
         )
@@ -128,7 +128,7 @@ AsyncBlock::genawait3(sv, s, callargs, recvs){
         pollassign = this.genpollrecv2(casevar,recvs,callargs)
         retvar = null
     }else{
-        retvar = this.genretvar()
+        retvar = this.genretvar(true)
         pollassign = this.genpollrecv(
             casevar,retvar,callargs
         )

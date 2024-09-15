@@ -54,12 +54,14 @@ class AsyncBlock {
         this.fc.InsertLocalVar(-1,casevar)
         return casevar
     }
-    fn genretvar(){
+    fn genretvar(isstatic){
         retvarname = "fut.r." + this.topid()
         retvar = new gen.VarExpr(retvarname,0,0)
-        retvar.structtype = true
-        retvar.type = ast.U64
         retvar.size = 8
+        if isstatic {
+            retvar.structtype = true
+            retvar.type = ast.U64
+        }
         this.fc.InsertLocalVar(-1,retvar)
         return retvar
     }
