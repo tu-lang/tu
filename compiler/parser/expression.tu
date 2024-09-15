@@ -495,6 +495,13 @@ Parser::parseVarExpr(var)
                     return gvar
                 }
             }
+
+            if reader.curToken == ast.AWAIT {
+                gvar = new gen.VarExpr(package,this.line,this.column)
+                gvar.hasawait = true
+                reader.scan()
+                return gvar
+            }
             this.expect( ast.VAR)
             pfuncname = reader.curLex.dyn()
             

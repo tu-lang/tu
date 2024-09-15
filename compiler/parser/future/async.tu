@@ -6,6 +6,7 @@ use compiler.utils
 use runtime
 use compiler.gen
 
+PollError2  = 0
 PollReady   = 1
 PollPending = 2
 PollError   = 3

@@ -60,6 +60,15 @@ AsyncBlock::genawait(stmt , recvs){
             be.rhs = this.genawait(be.rhs,recvs)
         }
        return be       
+    }else if type(stmt) == type(gen.VarExpr) {
+        rv = this.fc.FindLocalVar(stmt.varname)
+        if rv == null {
+            stmt.check(false,"await gen in var, var not exist")
+        }
+        astruct = this.curp.getStruct(rv.structpkg,rv.structname)
+        call    = new gen.FunCallExpr(0,0)
+        retvar  = this.genawait3(rv.astruct,call,recvs)
+        return retvar
     }else {
         utils.error("unkown type")
     }        
@@ -105,6 +114,34 @@ AsyncBlock::genawait2(s , callargs , recvs){
     
     return retvar
 }
+AsyncBlock::genawait3(sv, s, callargs, recvs){
+    casevar = sv
+
+    prevcur = std.tail(this.queue)
+    this.create()
+    prevcur.blocks[] = this.genstate(std.tail(this.queue))
+    prevcur.blocks[] = this.genswitch(std.tail(this.queue))
+
+    pollassign = null
+    retvar = null
+    if recvs != null {
+        pollassign = this.genpollrecv2(casevar,recvs,callargs)
+        retvar = null
+    }else{
+        retvar = this.genretvar()
+        pollassign = this.genpollrecv(
+            casevar,retvar,callargs
+        )
+    }
+
+    this.push(pollassign)
+
+    pollif = this.genpollisready()
+    this.push(pollif)
+
+    return retvar
+}
+
 AsyncBlock::genawaitresult(retvar , stmt){
     if type(stmt) == type(gen.FunCallExpr) {
         return retvar
@@ -158,13 +195,11 @@ AsyncBlock::genpollrecv(pollvar , retvar , callargs){
     mret.opt = ast.ASSIGN
     mret.ls[] = this.gpollvar()
     mret.ls[] = retvar
-    fcexpr = new gen.MemberCallExpr(0,0)
-    fcexpr.varname = pollvar.varname
-    fcexpr.membername = "poll"
 
-    fcexpr.call = callargs
-    mret.rs[] = fcexpr
+    callargs.package = pollvar.varname
+    callargs.funcname = "poll"
 
+    mret.rs[] = callargs
     return mret 
 }
 AsyncBlock::genpollrecv2(pollvar,recvs, callargs){
@@ -173,16 +208,12 @@ AsyncBlock::genpollrecv2(pollvar,recvs, callargs){
     ls = mret.ls
     mret.ls = []
     mret.ls[] = this.gpollvar()
-
     std.merge(mret.ls,ls)
 
-    fcexpr = new gen.MemberCallExpr(0,0)
-    fcexpr.varname = pollvar.varname
-    fcexpr.membername = "poll"
+    callargs.package = pollvar.varname
+    callargs.funcname = "poll"
 
-    fcexpr.call = callargs
-    mret.rs[0] = fcexpr
-
+    mret.rs[0] = callargs
     return mret 
 }
 AsyncBlock::genpollisready(){

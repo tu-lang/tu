@@ -197,6 +197,8 @@ func genFuture(fc)
     fc.state.size = ofs
     fc.state.align = 8
     fc.state.iscomputed = true
+
+    fc.stack_size = 0
 }
 
 func assign_offsets(fc)

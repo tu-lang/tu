@@ -174,6 +174,9 @@ GotoStmt::compile(ctx){
     utils.debugf("gen.GotoExpr::compile()")
     this.record()
 
+    if this.case1 != null {
+        this.label = this.case1.label
+    }
     if this.label == "" {
         this.check(false,"goto label is null")
     }

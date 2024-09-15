@@ -48,6 +48,9 @@ func CreateFunction(fc) {
     writeln("    push %%rbp")
     writeln("    mov %%rsp, %%rbp")
     writeln("    sub $%d, %%rsp", fc.stack_size)
+    if fc.stack_size > 1024*1024 {
+        utils.error("function stack > 1mb")
+    }
     
     //params args offset is over rbp + 16；not register
     //for i = 0; i < 6; i += 1
