@@ -232,7 +232,27 @@ AsyncBlock::parseMatchStmt(stmt){
     endid = this.gen_end_label()
     stmt.breakid = endid
 
+    if type(stmt.cond) != type(gen.VarExpr) {
+        if stmt.cond.hasawait {
+            recvs = new gen.MultiAssignStmt(0,0)
+            recvs.opt = ast.ASSIGN
+            recvs.ls[] = stmt.condrecv
+            recvs.rs[] = stmt.condrecv
+            this.genawait(stmt.cond,recvs)
+        }else{
+            assignExpr = new gen.AssignExpr(0, 0)
+            assignExpr.opt = ast.ASSIGN
+            assignExpr.lhs = stmt.condrecv
+            assignExpr.rhs = stmt.cond
+            this.push(assignExpr)
+        }
+        stmt.cond = stmt.condrecv
+    }else if stmt.cond.hasawait {
+        stmt.cond = this.genawait(stmt.cond,null)
+    }    
+
     for(case1 : stmt.cases){
+        case1.matchCond = stmt.cond
         newctx = new AsyncBlock(this.fc,this.root)
         newctx.parse(case1.block)
         newctx.pushendstate(endid) 
@@ -240,17 +260,16 @@ AsyncBlock::parseMatchStmt(stmt){
 
         ifs = new gen.IfStmt(0,0)
         ifc = new gen.IfCaseExpr(0,0)
-        cond = null
-        if (case1.logor) {
-            cond = case1.cond
-        }else{
+
+        cond = case1.bitOrToLogOr(case1.cond)
+        if !case1.logor {
             be = new gen.BinaryExpr(case1.line,case1.column)
-            be.lhs = case1.matchCond
+            be.lhs = stmt.cond
             be.opt = ast.EQ
-            be.rhs = case1.cond
+            be.rhs = cond
+            be.checkawait()
             cond = be
         }
-        cond.checkawait()
 
         if(cond.hasawait){
            ifc.cond = this.genawait(cond,null) 

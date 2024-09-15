@@ -137,15 +137,13 @@ parser.Parser::compileAsync(f){
     ctx = new AsyncBlock(f,null)
     ctx.curp = this
     f.mcount += 1
-    state = "s_" + utils.strRand()			
-    while(f.getVar(state) != null){
-        state = "s_"+ utils.strRand()
-    }
+
+    state = "fut.s"
     ctx.state = new gen.VarExpr(state,0,0)
     ctx.state.structtype = true
     ctx.state.type = ast.U64
     ctx.state.size = 8
-    ctx.pollstate = new gen.VarExpr("poll" + state,0,0)
+    ctx.pollstate = new gen.VarExpr("fut.p",0,0)
     ctx.pollstate.structtype = true
     ctx.pollstate.type = ast.U64
     ctx.pollstate.size = 8

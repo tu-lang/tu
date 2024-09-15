@@ -46,7 +46,7 @@ class AsyncBlock {
     fn gpollvar(){return this.root.pollstate}
 
     fn gencasevar(){
-        pollvarname = this.gstatevar().varname + "." + this.topid()
+        pollvarname = "fut.c." + this.topid()
         casevar = new gen.VarExpr(pollvarname,0,0)
         casevar.structtype = true
         casevar.type = ast.U64
@@ -55,7 +55,7 @@ class AsyncBlock {
         return casevar
     }
     fn genretvar(){
-        retvarname = this.gstatevar().varname + "_ret_" + this.topid()
+        retvarname = "fut.r." + this.topid()
         retvar = new gen.VarExpr(retvarname,0,0)
         retvar.structtype = true
         retvar.type = ast.U64
