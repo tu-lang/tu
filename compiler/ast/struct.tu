@@ -1,3 +1,6 @@
+use compiler.parser.package
+use compiler.utils
+
 class Struct {
 	pkg  = ""
 	name = ""
@@ -76,4 +79,21 @@ Member::clone(){
 	m.column = this.column
 	m.file = this.file
 	return m
+}
+
+Struct::getFunc(name){
+	s = package.getClass(this.pkg,this.name)
+	if s == null {
+		utils.errorf("class not exist pkg:%s cls:%s",this.pkg,this.name)
+	}
+	return s.getFunc(name)
+}
+
+Struct::futurepollname(){
+	p = this.parser
+	name = "virtfh_" + p.getpkgname()
+	name += "_"
+	name += this.name
+	name += "poll"
+	return name
 }

@@ -33,10 +33,14 @@ Parser::parseStructDef()
 		//eat :
 		reader.scan()
 		//must var
-		this.check(reader.curToken == ast.VAR)
+		// this.check(reader.curToken == ast.VAR)
 		cl = reader.curLex.dyn()
-		if (cl == "pack" ){
+		if cl == "pack" {
 			s.ispacked = true
+		} else if cl == "async" {
+			s.isasync = true
+		}else {
+			this.check(false,"should be pack or async")
 		}
 		//eat var
 		reader.scan()
@@ -46,6 +50,9 @@ Parser::parseStructDef()
 	reader.scan()
 	//end for }
 	idx = 0
+	if s.isasync {
+		this.genAsyncPollMember(s,idx)
+	}
 	while(reader.curToken != ast.RBRACE)
 	{
 		if(reader.curToken == ast.VAR){
@@ -62,6 +69,7 @@ Parser::parseStructDef()
 		this.check(false,"already define " + s.name)
 	}
 	this.pkg.addStruct(s.name,s)
+	this.structs[s.name] = s
 	//eat }
 	reader.scan()
 }

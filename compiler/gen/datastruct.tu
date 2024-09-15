@@ -265,3 +265,12 @@ class StringExpr  : ast.Ast {
     }
 }
 
+class AsmExpr : ast.Ast {
+    label = label
+    fn init(label,line,column){
+        super.init(line,column)
+    }
+    fn toString(){
+        return this.label
+    }
+}

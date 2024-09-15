@@ -24,7 +24,6 @@ func compile(){
     for pkg : package.packages {
         //need compute the memeber offset early
         for s : pkg.structs {
-            if s.isasync continue
             if !s.iscomputed pkg.genStruct(s)
         }
         //cal string id
@@ -185,7 +184,7 @@ func genFuture(fc)
         return l.varid > r.varid
     })
 
-    ofs = 0
+    ofs = fc.state.size
     for var : order_locals {
         var.offset = ofs
         ofs += var.getStackSize(currentParser)

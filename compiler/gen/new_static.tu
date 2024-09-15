@@ -52,6 +52,17 @@ StructInitExpr::compile(ctx,load){
 	fullpkg = GP().getImport(this.pkgname)
 	s = package.getStruct(fullpkg,this.name)
 	if(s == null) this.check(false,"struct not exist when new struct")
+
+	if s.isasync {
+		fc = s.getFunc("poll")
+		if fc == null {
+			this.check(false,"poll not exist")
+		}
+		value = "	lea "
+		value += s.futurepollname()
+		value += "(%%rip) , %%rax"
+		this.fields["poll.f"] = new AsmExpr(value,this.line,this.column)
+	}
 	for key,value : this.fields {
 		field = s.getMember(key)
 		if field == null  this.check(false,"struct member field not exist :"+ key)
@@ -96,6 +107,8 @@ StructInitExpr::compile(ctx,load){
 			compile.writeln("	add $%d , %%rax",field.offset)
 			this.arrinit(ctx,field,ie)
 			continue
+		}else if type(value) == type(AsmExpr) {
+			compile.writeln(value.label)
 		}else{
 			rtok = value.getType(ctx)
 			value.compile(ctx,true)

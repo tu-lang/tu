@@ -160,3 +160,30 @@ fn registerObjects(){
         }
     }
 }
+
+fn registerFutures(){
+    for st : currentParser.structs {
+        if !st.isasync continue
+        cls = package.getClass(st.pkg,st.name)
+        if cls == null {
+            utils.error("cls not exist in future struct")
+        }
+        pollf = cls.getFunc("poll")
+        if pollf == null {
+            utils.error("future not impl poll")
+        }
+        virtname = st.futurepollname()
+        writeln("    .global %s",virtname)
+        writeln("%s:",virtname)
+
+        writeln("   .quad 0")
+        writeln("   .quad %s",pollf.fullname())
+        writeln("   .quad %d",pollf.is_variadic)
+        writeln("   .quad %d",std.len(pollf.params_order_var) * 8)
+        writeln("   .quad %d",pollf.mcount)
+        writeln("   .quad %d",(pollf.mcount - 1) * 8)
+        writeln("   .long %d",std.len(pollf.params_order_var))
+        writeln("   .long 0")
+        writeln("   .quad 0")
+    }
+}
