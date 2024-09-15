@@ -251,6 +251,7 @@ Parser::parseWhileStmt(dead) {
     utils.debug("parser.Parser::parseWhileStmt()")
     reader<scanner.ScannerStatic> = this.scanner
     node = new gen.WhileStmt(this.line, this.column)
+    this.ctx.create()
     this.ctx.top().breakto    = node
     this.ctx.top().continueto = node
 
@@ -269,9 +270,10 @@ Parser::parseWhileStmt(dead) {
         }
     } 
     
-    node.block = this.parseBlock(false,false)
+    node.block = this.parseBlock(false,true)
     if node.block.hasawait
         node.hasawait = true
+    this.ctx.destroy()
     return node
 }
 Parser::parseReturnStmt() {
