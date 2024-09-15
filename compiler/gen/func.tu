@@ -145,6 +145,12 @@ FunCallExpr::compile(ctx,load)
 			)
 		)
 	}
+	if fc.isasync {
+		if this.hasawait {
+			this.check(false,"unsupport future execute without in future env")
+		}
+		return this.gennewawait().compile(ctx,load)
+	}
 	this.call(ctx,fc,load)
 	return this
 }

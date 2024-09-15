@@ -118,7 +118,7 @@ Parser::parse()
                 structname = f.name
                 f.name = "poll"
                 this.pkg.addClassFunc(structname,f,this)
-                this.addFunc(structname + f.name,f)
+                this.addFunc(structname,f)
             }
             ast.EXTERN : {
                 f = this.parseExternDef()
