@@ -65,7 +65,7 @@ AsyncBlock::genawait(stmt , recvs){
         if rv == null {
             stmt.check(false,"await gen in var, var not exist")
         }
-        astruct = this.curp.getStruct(rv.structpkg,rv.structname)
+        astruct = this.root.curp.getStruct(rv.structpkg,rv.structname)
         call    = new gen.FunCallExpr(0,0)
         retvar  = this.genawait3(rv.astruct,call,recvs)
         return retvar
