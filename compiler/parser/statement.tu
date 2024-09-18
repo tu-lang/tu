@@ -368,6 +368,7 @@ Parser::parseBreakStmt(){
         p = this.ctx.ctxs[i]
         if p.breakto != null {
             stmt = p.breakto
+            break
         }
     }
     if stmt == null {
@@ -383,7 +384,7 @@ Parser::parseBreakStmt(){
 Parser::parseContinueStmt(){
     cs = new gen.ContinueStmt(this.line,this.column)
 
-    if this.currentFunc.isasync == null {
+    if !this.currentFunc.isasync {
         return cs
     }
 
@@ -392,6 +393,7 @@ Parser::parseContinueStmt(){
         p = this.ctx.ctxs[i]
         if p.continueto != null {
             stmt = p.continueto
+            break
         }
     }
     if stmt == null {

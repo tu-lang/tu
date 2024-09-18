@@ -54,7 +54,7 @@ ReturnStmt::compilemulti(ctx){
         }
     }else{ //>=2
         stackpointer = fc.ret_stack
-        this.ret[0].check(stackpointer > 0)
+        this.check(stackpointer > 0)
         for i = fc.mcount; i >= 0 ; i -= 1 {
             cur = i - 1 - 1
             if i == 1 { 
