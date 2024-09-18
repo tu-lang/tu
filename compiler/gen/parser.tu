@@ -24,6 +24,7 @@ parser.Parser::compile()
     compile.registerVars()
     compile.registerStrings()
     compile.registerObjects()
+    compile.registerFutures()
 
     compile.writeln(".text")
     

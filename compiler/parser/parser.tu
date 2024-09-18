@@ -112,7 +112,7 @@ Parser::parse()
                     s.parser = this
                     this.genAsyncPollMember(s,0)
                     this.pkg.addAsyncStruct(s.name,s)
-                    this.structs[s.name = s]
+                    this.structs[s.name] = s
                     f.state = s
                 }
                 structname = f.name

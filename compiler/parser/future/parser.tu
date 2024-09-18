@@ -79,7 +79,7 @@ AsyncBlock::parse( stmt ) {
     }else {
         stmt1 = stmt
         if(stmt.hasawait){
-            this.genawait(stmt1.expr,null)
+            this.genawait(stmt1,null)
             return null
         }
         this.push(stmt)
@@ -106,7 +106,7 @@ AsyncBlock::compile(){
 
     for (case1 : total){
         state = new gen.IntExpr(0,0)
-        state.literal =  case1.id + ""
+        state.lit =  case1.id + ""
         case1.cond = state
 
         mblock = new gen.BlockStmt()
@@ -149,7 +149,7 @@ parser.Parser::compileAsync(f){
     ctx.pollstate.size = 8
 
     endstate = new gen.IntExpr(0,0)
-    endstate.literal = "-1"
+    endstate.lit = "-1"
     ctx.endstate = endstate
 
     f.InsertLocalVar(-1,ctx.state)

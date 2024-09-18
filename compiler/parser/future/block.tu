@@ -11,7 +11,7 @@ AsyncBlock::genstate(case1){
     assignExpr.opt = ast.ASSIGN
     assignExpr.lhs = this.gstatevar()
     state = new gen.IntExpr(0,0)
-    state.literal = case1.id + ""
+    state.lit = case1.id + ""
     assignExpr.rhs = state
     return assignExpr
 }
@@ -67,10 +67,10 @@ AsyncBlock::genawait(stmt , recvs){
         }
         astruct = this.root.curp.getStruct(rv.structpkg,rv.structname)
         call    = new gen.FunCallExpr(0,0)
-        retvar  = this.genawait3(rv.astruct,call,recvs)
+        retvar  = this.genawait3(rv,astruct,call,recvs)
         return retvar
     }else {
-        utils.error("unkown type")
+        stmt.check(false,"unknown await stmt type")
     }        
 }
 
@@ -164,7 +164,7 @@ AsyncBlock::editstate( snum ){
     assignExpr.opt = ast.ASSIGN
     assignExpr.lhs = this.root.state
     state = new gen.IntExpr(0,0)
-    state.literal = snum + ""
+    state.lit = snum + ""
     assignExpr.rhs = state
 
     this.push( assignExpr)
@@ -174,7 +174,7 @@ AsyncBlock::genstate2( snum){
     assignExpr.opt = ast.ASSIGN
     assignExpr.lhs = this.root.state
     state = new gen.IntExpr(0,0)
-    state.literal = snum + ""
+    state.lit = snum + ""
     assignExpr.rhs = state
     return assignExpr
 }
@@ -183,7 +183,7 @@ AsyncBlock::genpollstate(snum){
     assignExpr.opt = ast.ASSIGN
     assignExpr.lhs = this.root.pollstate
     state = new gen.IntExpr(0,0)
-    state.literal = snum + ""
+    state.lit = snum + ""
     assignExpr.rhs = state
 
     return assignExpr
@@ -223,7 +223,7 @@ AsyncBlock::genpollisready(){
     cmpexpr.opt = ast.NE
     cmpexpr.lhs = this.root.pollstate
     readstate = new gen.IntExpr(0,0)
-    readstate.literal = PollReady + ""
+    readstate.lit = PollReady + ""
     cmpexpr.rhs = readstate
 
     pollcase.cond = cmpexpr
