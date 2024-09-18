@@ -150,7 +150,7 @@ AsyncBlock::parseForTriStmt(stmt){
     if(stmt.cond.hasawait){
         cond = stmt.cond
         newcond = new gen.BoolExpr(0,0)
-        newcond.literal = true
+        newcond.lit = true
         stmt.cond = newcond
         ifs = new gen.IfStmt(0,0)
         ifs.hasawait = true
