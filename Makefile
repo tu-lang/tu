@@ -75,7 +75,7 @@ release: install build-liba install
 # NOTICE: don't use this
 .PHONEY: release
 dev_release: install
-	tuc run tulang.tu	
+	tuc run tulang.tu 
 	mv a.out release/tu
 	cp release/tu $(prefix)/bin/tu
 
@@ -100,7 +100,7 @@ test_dev:
 	@$(TEST_COMPILER); test_compiler
 	@echo "test compiler success"
 
-cases = mixed class common datastruct internalpkg memory native operator runtime statement
+cases = async mixed class common datastruct internalpkg memory native operator runtime statement
 
 # make test -j9
 tests_cases: $(cases)

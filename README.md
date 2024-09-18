@@ -52,7 +52,7 @@ $ make tests
 - [x] func,goto,class,mem
 - [x] return,type,use,if,continue,break
 - [x] while,for|range for,loop,match
-- [ ] async await
+- [x] async await
 
 ### @动态写法
 更多用例请看`/tests`
@@ -124,7 +124,7 @@ enum {
 mem Rbtree {
     RbtreeNode* root
     RbtreeNode* sentinel
-	u64         insert
+    u64         insert
 }
 mem RbtreeNode {
     u64  key
@@ -155,6 +155,43 @@ Rbtree::find(hk<u64>){
     return Null
 }
 fn main(){}
+```
+### @特性相关
+async
+```
+use fmt
+use runtime
+use os
+
+mem ReadStream: async {
+    i32 bytes
+    i32 readn
+    i32 fd
+}
+ReadStream::poll(){
+    if this.readn != this.bytes {
+	this.readn += 1
+	return runtime.PollPending
+    }	
+    match this.fd {
+	1 : return runtime.PollReady , "hello "
+	2 : return runtime.PollReady , "world"
+	_ : os.die("")
+    }
+}
+async fn read(){
+    fut<ReadStream> = new ReadStream { fd: 1, bytes: 5}
+    buf += fut.await
+
+    fut2<ReadStream> = new ReadStream { fd: 2, bytes: 5}
+    buf += fut2.await
+    return buf
+}
+
+fn main(){
+    body = runtime.block(read())
+    fmt.println(body)
+}
 ```
 ## License
 Copyright @2016-2024 The tu-lang author. All rights reserved.
