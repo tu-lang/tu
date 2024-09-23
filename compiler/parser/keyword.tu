@@ -242,6 +242,9 @@ Parser::parseAsyncDef()
             }
         }
     }
+    if f.mcount == 0 {
+        f.mcount = 1
+    }
     structname = f.name
     f.name = "poll"
     this.pkg.addClassFunc(structname,f,this)
