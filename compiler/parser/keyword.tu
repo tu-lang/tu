@@ -204,6 +204,7 @@ Parser::parseAsyncDef()
 
     if compile.phase != compile.GlobalPhase {
         f.state = this.pkg.getStruct(f.name)
+        f.state.asyncfn = f
         if f.state == null {
             this.check(false,"async state is null")
         }

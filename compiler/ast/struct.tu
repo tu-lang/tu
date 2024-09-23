@@ -11,6 +11,8 @@ class Struct {
 	iscomputed = false
 	ispacked = false
 	isasync  = false
+	asyncfn  = null
+	
 	parser = null
 
 }

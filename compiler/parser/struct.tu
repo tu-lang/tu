@@ -102,7 +102,7 @@ Parser::genAsyncParamMember(s , var){
 	}
 
 	if var.structname != "" {
-		if !var.pointer {
+		if var.stack {
 			this.check(false,"async param is stack struct")
 		}
 		member.structname = var.structname

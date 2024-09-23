@@ -46,6 +46,71 @@ StructInitExpr::arrinit(ctx , field , arr){
 	compile.Pop("%rax")
 	return this
 }
+
+StructInitExpr::compile_field(ctx,load,s,value,field){
+	rtok = ast.U64
+	isunsigned = false
+
+	if type(value) == type(AsmExpr) {
+		compile.writeln(value.label)
+		return rtok
+	}
+
+	if s.asyncfn != null {
+		utils.debugf("asyncfn struct compile: filed:%s",s.asyncfn.name)
+		if exprIsMtype(value,ctx) {
+			rtok = value.getType(ctx)
+		}
+		value.compile(ctx,true)
+		return rtok
+	}
+
+	if type(value) == type(BoolExpr) {
+		rtok = value.getType(ctx)
+		ie   = value
+		compile.writeln("	mov $%d,%%rax",ie.lit)
+	}else if type(value) == type(NullExpr) {
+		rtok = value.getType(ctx)
+		ie   = value
+		compile.writeln("	mov $%d,%%rax",0)
+	}else if type(value) == type(CharExpr) {
+		rtok = value.getType(ctx)
+		ie   = value
+		compile.writeln("	mov $%s,%%rax",ie.lit)
+	}else if type(value) == type(IntExpr) {
+		rtok = value.getType(ctx)
+		ie   = value
+		compile.writeln("	mov $%s,%%rax",ie.lit)
+	}else if type(value) == type(FloatExpr) {
+		rtok = value.getType(ctx)
+		compile.writeln("	mov $%d,%%rax",value.lit)
+		compile.writeln("	movq %%rax , %%xmm0")
+	}else if type(value) == type(StringExpr) {
+		real = GP().pkg.get_string(value)
+		rtok = value.getType(ctx)
+		isunsigned = true
+		compile.writeln("	lea %s(%%rip),%%rax",real.name)
+	}else if type(value) == type(StructInitExpr) {
+		ie = value
+		if field.structname != ie.name this.panic("type sould be same")
+		compile.writeln("	mov (%%rsp) , %%rax")
+		compile.writeln("	add $%d , %%rax",field.offset)
+		ie.compile(ctx,true)
+		return rtok
+	}else if type(value) == type(ArrayExpr) {
+		ie = value
+		if !field.isarr this.panic("mem field must be static arr")
+		compile.writeln("	mov (%%rsp) , %%rax")
+		compile.writeln("	add $%d , %%rax",field.offset)
+		this.arrinit(ctx,field,ie)
+		return rtok
+	}else{
+		rtok = value.getType(ctx)
+		value.compile(ctx,true)
+	}
+	return rtok
+}
+
 StructInitExpr::compile(ctx,load){
     utils.debugf("gen.StructInitExpr::compile()")
 	compile.Push()
@@ -66,53 +131,13 @@ StructInitExpr::compile(ctx,load){
 	for key,value : this.fields {
 		field = s.getMember(key)
 		if field == null  this.check(false,"struct member field not exist :"+ key)
-		rtok = ast.U64
-		isunsigned = false
-		if type(value) == type(BoolExpr) {
-			rtok = value.getType(ctx)
-			ie   = value
-			compile.writeln("	mov $%d,%%rax",ie.lit)
-		}else if type(value) == type(NullExpr) {
-			rtok = value.getType(ctx)
-			ie   = value
-			compile.writeln("	mov $%d,%%rax",0)
-		}else if type(value) == type(CharExpr) {
-			rtok = value.getType(ctx)
-			ie   = value
-			compile.writeln("	mov $%s,%%rax",ie.lit)
-		}else if type(value) == type(IntExpr) {
-			rtok = value.getType(ctx)
-			ie   = value
-			compile.writeln("	mov $%s,%%rax",ie.lit)
-		}else if type(value) == type(FloatExpr) {
-			rtok = value.getType(ctx)
-			compile.writeln("	mov $%d,%%rax",value.lit)
-			compile.writeln("	movq %%rax , %%xmm0")
-		}else if type(value) == type(StringExpr) {
-			real = GP().pkg.get_string(value)
-			rtok = value.getType(ctx)
-			isunsigned = true
-			compile.writeln("	lea %s(%%rip),%%rax",real.name)
-		}else if type(value) == type(StructInitExpr) {
-			ie = value
-			if field.structname != ie.name this.panic("type sould be same")
-			compile.writeln("	mov (%%rsp) , %%rax")
-			compile.writeln("	add $%d , %%rax",field.offset)
-			ie.compile(ctx,true)
-			continue 
-		}else if type(value) == type(ArrayExpr) {
-			ie = value
-			if !field.isarr this.panic("mem field must be static arr")
-			compile.writeln("	mov (%%rsp) , %%rax")
-			compile.writeln("	add $%d , %%rax",field.offset)
-			this.arrinit(ctx,field,ie)
-			continue
-		}else if type(value) == type(AsmExpr) {
-			compile.writeln(value.label)
-		}else{
-			rtok = value.getType(ctx)
-			value.compile(ctx,true)
+
+		rtok = this.compile_field(ctx,load,s,value,field)
+		if s.asyncfn == null {
+			if type(value) == type(StructInitExpr) continue
+			if type(value) == type(ArrayExpr) continue
 		}
+
 		compile.writeln(" mov (%%rsp) , %%rdi")
 		compile.writeln(" add $%d , %%rdi",field.offset)
 		ltok = field.type
