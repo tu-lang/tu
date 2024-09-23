@@ -96,29 +96,7 @@ Parser::parse()
                 this.addFunc(f.name,f)
             }
             ast.ASYNC: {
-                this.ctx = new ast.Context()
-                f = this.parseFuncDef(StructFunc,null)
-                this.ctx = null
-
-                if compile.phase != compile.GlobalPhase {
-                    f = this.compileAsync(f)
-                    f.state = this.pkg.getStruct(f.name)
-                    if f.state == null {
-                        this.check(false,"async state is null")
-                    }
-                }else{
-                    s = new ast.Struct()
-                    s.name = f.name
-                    s.parser = this
-                    this.genAsyncPollMember(s,0)
-                    this.pkg.addAsyncStruct(s.name,s)
-                    this.structs[s.name] = s
-                    f.state = s
-                }
-                structname = f.name
-                f.name = "poll"
-                this.pkg.addClassFunc(structname,f,this)
-                this.addFunc(structname,f)
+                this.parseAsyncDef()
             }
             ast.EXTERN : {
                 f = this.parseExternDef()

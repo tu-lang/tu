@@ -35,6 +35,7 @@ Parser::parseEnumDef(){
     }
     reader.scan()
 }
+
 Parser::parseStructVar(varname)
 {
     utils.debug("parser.Parsr::parseStructVar()")
@@ -79,6 +80,7 @@ Parser::parseClassFunc(var){
 
     pdefine = new ast.Class("")
     fctype  = ClassFunc
+    st      = null
     if compile.phase != compile.GlobalPhase{
         st = package.getStruct("",var)
         if st != null {
@@ -95,6 +97,12 @@ Parser::parseClassFunc(var){
     f = this.parseFuncDef(fctype,pdefine)
     this.ctx = null
     this.check(f != null)
+
+    if fctype == StructFunc && st.isasync && f.name == "poll" {
+        if std.len(f.params_order_var) != 2 {
+            this.check(false,"async:poll(self,ctx) signature need! :" + st.name + f.name)
+        }
+    }
     
     this.pkg.addClassFunc(var,f,this)
     

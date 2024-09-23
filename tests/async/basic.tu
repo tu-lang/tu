@@ -545,6 +545,48 @@ fn test_rtblockon(){
     }
     fmt.println("test rtblock on success")
 }
+
+
+mem PollFuture2:async {
+    i32 ready
+    i32 count
+}
+PollFuture2::pending(){this.ready = 0}
+PollFuture2::poll(ctx){
+    this.count += 1
+    if !this.ready {
+        this.ready = 1 //ready
+        return runtime.PollPending
+    }
+    return runtime.PollReady,this.count
+}
+
+async fn tc2(){
+    fmt.println("test common2")
+    fut<PollFuture2> = new PollFuture2{}
+    count<i32> = fut.await //block 1 count 2
+    if count != 2 {
+        os.dief("poll should be 2 times, now:%d",int(count))
+    }
+    count = fut.await     //block 0  count 1
+    if count != 3 {
+        os.dief("poll should be 3 times, now:%d",int(count))
+    }
+    // set block
+    fut.pending()
+    count<i32> = fut.await //block 1  count 2
+    if count != 5 {
+        os.dief("poll should be 5 times, now:%d",int(count))
+    }
+    fmt.println("test common2 success")
+    return count
+}
+fn test_common2(){
+    ret<i32> = runtime.block(tc2())
+    if ret != 5 {
+        os.dief("test cmmon 2 poll should be 5 times")
+    }
+}
 fn main(){
     test_common()
     test_stmt_if()
@@ -557,4 +599,6 @@ fn main(){
 
     test_blockon()
     test_rtblockon()
+
+    test_common2()
 }
