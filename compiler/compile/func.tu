@@ -71,6 +71,8 @@ func CreateFunction(fc) {
         i = 1
         for(arg : fc.params_order_var){
             funcCtx.createVar(arg.varname,arg)
+            if fc.isasync continue
+
             //fixme: ignore internal pkg for debug
             match fc.package.full_package {
                 "std" | "os" | "string" | "runtime" | "fmt" : continue
@@ -100,6 +102,9 @@ func CreateFunction(fc) {
     args = std.len(fc.params_order_var)
     // if fc.mcount > 1
         // args += 1
+    if fc.isasync {
+        args = 2
+    }
         
     if args > 0 {
         writeln("   pop %d(%%rsp)", (args - 1) * 8 )

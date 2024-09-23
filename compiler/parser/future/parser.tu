@@ -136,7 +136,6 @@ AsyncBlock::compile(){
 parser.Parser::compileAsync(f){
     ctx = new AsyncBlock(f,null)
     ctx.curp = this
-    f.mcount += 1
 
     state = "fut.s"
     ctx.state = new gen.VarExpr(state,0,0)

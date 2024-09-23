@@ -163,13 +163,24 @@ func genFuture(fc)
 {
     top = 16
 
+    st = fc.state
     for var : fc.params_order_var {
-        top = utils.ALIGN_UP(top, 8)
-        var.offset = top
-        if var.structtype && !var.pointer && var.type <= ast.F64 && var.type >= ast.I8 {
-            top += var.size
+        if var.onmem {
+            m = st.getMember(var.varname)
+            if m == null {
+                utils.errorf("future param:%s not in struct",var.varname)
+            }
+            if m.offset < 0 {
+                utils.errorf("future param offset < 0")
+            }
+            var.offset = m.offset
         }else{
-            top += 8
+            var.offset = top 
+            if var.structtype && !var.pointer && var.type <= ast.F64 && var.type >= ast.I8 {
+                top += var.size
+            }else{
+                top += 8
+            }
         }
     }
     

@@ -295,5 +295,15 @@ FunCallExpr::gennewawait(){
 	newsvar.init = new StructInitExpr(0,0)
 	newsvar.init.pkgname = s.pkg
     newsvar.init.name = s.name
+
+	for i = 1 ; i < std.len(s.member) ; i += 1 {
+		m = s.member[i]
+		if i <= std.len(this.args) {
+			newsvar.init.fields[m.name] = this.args[i - 1]
+		}else {
+			newsvar.init.fields[m.name] = new gen.NullExpr(0,0)
+		}
+	}
+
     return newsvar
 }

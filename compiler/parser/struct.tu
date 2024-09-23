@@ -93,6 +93,40 @@ Parser::genAsyncPollMember(s , idx){
 	s.member[] = member
 }
 
+Parser::genAsyncParamMember(s , var){
+	member = new ast.Member()
+	tk = ast.I64
+
+	if var.structtype {
+		tk = var.type
+	}
+
+	if var.structname != "" {
+		if !var.pointer {
+			this.check(false,"async param is stack struct")
+		}
+		member.structname = var.structname
+		member.structpkg  = var.structpkg
+		member.isstruct   = true
+		member.pointer    = true
+		member.structref  = null
+		tk = ast.U64
+	}
+    member.line = this.line
+    member.column = this.column
+    member.file  = this.filepath
+    member.isunsigned = ast.type_isunsigned(tk)
+    member.type = tk
+    member.size = typesize[int(tk)]
+    member.align = typesize[int(tk)]
+    member.arrsize = 1
+    member.arrvar = null
+	member.name = var.varname
+
+	s.member[] = member
+}
+
+
 Parser::parseMembers(s ,idx ,isstruct){
 	reader<scanner.ScannerStatic> = this.scanner
 	utils.debug("Parser::parseMembers ")

@@ -178,11 +178,16 @@ fn registerFutures(){
 
         writeln("   .quad 0")
         writeln("   .quad %s",pollf.fullname())
+
+        if pollf.is_variadic {
+            currentParser.check(false,"async params can't be variadic")
+        }
         writeln("   .quad %d",pollf.is_variadic)
-        writeln("   .quad %d",std.len(pollf.params_order_var) * 8)
+
+        writeln("   .quad %d",2 * 8)
         writeln("   .quad %d",pollf.mcount)
         writeln("   .quad %d",(pollf.mcount - 1) * 8)
-        writeln("   .long %d",std.len(pollf.params_order_var))
+        writeln("   .long %d",2)
         writeln("   .long 0")
         writeln("   .quad 0")
     }

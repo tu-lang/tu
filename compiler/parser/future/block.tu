@@ -67,6 +67,10 @@ AsyncBlock::genawait(stmt , recvs){
         }
         astruct = this.root.curp.getStruct(rv.structpkg,rv.structname)
         call    = new gen.FunCallExpr(0,0)
+
+        call.args[] = rv
+        call.args[] = this.fc.ctx
+
         retvar  = this.genawait3(rv,astruct,call,recvs)
         return retvar
     }else {
@@ -86,6 +90,17 @@ AsyncBlock::genawait2(s , callargs , recvs, isstatic){
     newsvar.init = new gen.StructInitExpr(0,0)
     newsvar.init.pkgname = s.pkg
     newsvar.init.name = s.name
+
+    for i = 1 ; i < std.len(s.member) ; i += 1 {
+        m = s.member[i]
+        if i < std.len(callargs) {
+            newsvar.init.fields[m.name] = callargs.args[i - 1]
+        }else{
+            newsvar.init.fields[m.name] = new gen.NullExpr(0,0)
+        }
+    }
+    callargs.args = []
+    callargs.args[] = this.fc.ctx
 
     assignExpr.rhs = newsvar
     this.push(assignExpr)

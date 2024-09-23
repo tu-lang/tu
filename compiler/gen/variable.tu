@@ -37,6 +37,8 @@ class VarExpr : ast.Ast {
     isdefine = true
     varid    = 0
 
+    isparam = false
+    onmem   = false
     tyassert
     func init(varname,line,column){
         super.init(line,column)
@@ -281,6 +283,8 @@ VarExpr::clone(){
     nvar.ret = this.ret
     nvar.funcpkg = this.funcpkg
     nvar.funcname = this.funcname
+    nvar.isparam = this.isparam
+    nvar.onmem = this.onmem
     return nvar
 }
 

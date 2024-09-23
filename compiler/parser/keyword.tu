@@ -203,11 +203,27 @@ Parser::parseAsyncDef()
     this.ctx = null
 
     if compile.phase != compile.GlobalPhase {
-        f = this.compileAsync(f)
         f.state = this.pkg.getStruct(f.name)
         if f.state == null {
             this.check(false,"async state is null")
         }
+
+        for i = 0 ;i < std.len(f.params_order_var) ; i += 1 {
+            pvar = f.params_order_var[i]
+            pvar.isparam = true
+            if i == 0 {
+                continue
+            }
+
+            pvar.onmem = true
+        }
+        ctxvar = new gen.VarExpr("ctx.0",0,0)
+        f.params_var["ctx.0"] = ctxvar
+        ctxvar.isparam = true
+        f.params_order_var[] = ctxvar
+        f.ctx = ctxvar
+
+        f = this.compileAsync(f)
     }else{
         s = new ast.Struct()
         s.name = f.name
@@ -216,6 +232,15 @@ Parser::parseAsyncDef()
         this.pkg.addAsyncStruct(s.name,s)
         this.structs[s.name] = s
         f.state = s
+
+        for i = 0 ; i < std.len(f.params_order_var) ; i += 1 {
+            if i == 0 {
+                continue
+            }else {
+                pvar = f.params_order_var[i]
+                this.genAsyncParamMember(s,pvar)
+            }
+        }
     }
     structname = f.name
     f.name = "poll"
