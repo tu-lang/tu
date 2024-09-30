@@ -11,11 +11,7 @@ $ tu -c .
 ```
 链接生成可执行文件生成可执行文件
 ```
-$ cd linker
-$ ./bin/amd64_linux_tl1 -p ./demo # v1 基于std.malloc版编译,比较慢
-$ chmod 777 a.out
-
-$ ./bin/amd64_linux_tl2 -p ./demo # v2 基于高性能版runtime.malloc版编译,非常快
+$ ./bin/amd64_linux_tl2 -p ./demo
 $ chmod 777 a.out
 
 $ ./a.out

@@ -1,7 +1,8 @@
 主要分为两大类测试
 - 包装类型的语法+依赖库+运行时测试
-    - class 类，基础，成员变量，成员函数
-    - common 一些特性测试
+    - async       异步future状态机相关基础测试
+    - class       类，基础，成员变量，成员函数
+    - common      一些特性测试
     - datastruct  数据结构
     - internalpkg 内部依赖库
     - operator    操作符号相关

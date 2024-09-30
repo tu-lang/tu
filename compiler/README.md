@@ -19,7 +19,6 @@ func main(){
 # 自举测试
 ```
 > cd tu-lang
-> cd compiler
-> tu run main.tu
+> tu build tulang.tu
 ```
 ![image](../assets/compiler_compiler.png#w50)
