@@ -107,7 +107,7 @@ fn get_hash_key(key<Value>){
         return str.hash64()
 		// return hash_key(str,str.len())
 	}
-    os.dief("[hash_key] unsupport type:%s" , debug.stack(10.(i8)))
+    dief(*"[hash_key] unsupport type:%s" , type_string(key))
 }
 fn assert(ret<i8>,str){
     if ret return True
@@ -127,6 +127,12 @@ fn warn(str<i8*>,args<i64*>...){
 fn printf(str<i8*>,args<i64*>...){
 	fmt.vfprintf(STDOUT,str,args)
 }
+
+fn println(str<i8*>,args<i64*>...){
+	fmt.vfprintf(STDOUT,str,args)
+	fmt.vfprintf(STDOUT,*"\n")
+}
+
 
 fn debug(str<i8*>,args<i64*>...){
 	if !enable_debug return Null

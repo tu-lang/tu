@@ -1,5 +1,3 @@
-
-use fmt
 use os
 use std
 use string
@@ -169,7 +167,7 @@ fn object_member_update2(obj<ObjectValue>,k<u64>,v<Value>){
 
 fn object_offset_get(ofs<u32> , obj<ObjectValue>){
     if  obj.base.type != Object {
-        os.dief("[op-obj-ofs] invalid obj type :%s %d",runtime.type_string(obj),obj)
+        dief(*"[op-obj-ofs] invalid obj type :%s %d",type_string(obj),obj)
     }
     mber<u64*> = obj.base.data + ofs
     return *mber
@@ -177,8 +175,7 @@ fn object_offset_get(ofs<u32> , obj<ObjectValue>){
 
 fn object_member_get2(k<u64>,obj<ObjectValue>){
     if  obj.base.type != Object {
-        dief(*"[object_membe_get] invalid obj type :%d\n",obj.base.type)
-        // os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
+        dief(*"[object_membe_get] invalid obj type :%s %p\n",type_string(obj),obj)
     }
     v<u64*> = objdataofs(obj.hdr,obj.base.data,k)
     if v == null {
@@ -186,8 +183,8 @@ fn object_member_get2(k<u64>,obj<ObjectValue>){
         if v != null {
             return v
         }
-
-        printf("[warn] class memeber not define in %s\n", debug.callerpc())
+        dsinfo = debug.callerpc()
+        printf(*"[warn] class memeber not define in %s\n", *dsinfo)
         return &internal_null
     }
     return *v
@@ -205,7 +202,8 @@ fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectValue>){
         if mber != null {
             origin = mber
         }else {
-            printf("[warn] unary class memeber not define in %s\n", debug.callerpc())
+            dsinfo = debug.callerpc()
+            printf(*"[warn] unary class memeber not define in %s\n", *dsinfo)
             origin = &internal_null
         }
     } else {
@@ -339,5 +337,5 @@ fn dynarg_pass(fc<VObjFunc>...){
 }
 
 fn dynarg_varadicerr1(){
-    os.die("pass varadict args, args count is not equal")
+    dief(*"pass varadict args, args count is not equal")
 }

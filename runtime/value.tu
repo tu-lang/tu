@@ -1,7 +1,6 @@
 
 use std
 use os
-use fmt
 use string
 
 
@@ -45,7 +44,7 @@ fn value_plus(lhs<Value>,rhs<Value>) {
             return result
         }
     }
-    os.dief("[operator+] unknown type lhs:%s rhs:%s" ,type_string(lhs) ,type_string(rhs))
+    dief(*"[operator+] unknown type lhs:%s rhs:%s" ,type_string(lhs) ,type_string(rhs))
 }
  // - operator
  // @param lhs
@@ -73,7 +72,7 @@ fn value_minus(lhs<Value>,rhs<Value>) {
         result.data = value_int_minus(lhs,rhs)
         return result
     }
-    os.dief("[operator-] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator-] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
  //* operator
  // @param lhs
@@ -115,7 +114,7 @@ fn value_mul(lhs<Value>,rhs<Value>) {
         result.data = value_char2char_mul(lhs,rhs)
         return result
     }
-    os.dief("[operator*] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator*] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
  // / operator
  // @param lhs
@@ -143,7 +142,7 @@ fn value_div(lhs<Value>,rhs<Value>) {
         result.data = value_int_div(lhs,rhs)
         return result
     }
-    os.dief("[operator/] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator/] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
  // & operator
  // @param lhs
@@ -165,7 +164,7 @@ fn value_bitand(lhs<Value>,rhs<Value>) {
         result.data = value_int_bitand(lhs,rhs)
         return result
     }
-    os.dief("[operator&] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator&] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
  // | operator
  // @param lhs
@@ -187,7 +186,7 @@ fn value_bitor(lhs<Value>,rhs<Value>) {
         result.data = value_int_bitor(lhs,rhs)
         return result
     }
-    os.dief("[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 // @return
 fn value_bitxor(lhs<Value>,rhs<Value>) {
@@ -206,7 +205,7 @@ fn value_bitxor(lhs<Value>,rhs<Value>) {
         result.data = value_int_bitxor(lhs,rhs)
         return result
     }
-    os.dief("[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // << operator
@@ -235,7 +234,7 @@ fn value_shift_left(lhs<Value>,rhs<Value>) {
         result.data = value_string_plus(lhs,rhs)
         return result
     }
-    os.dief("[operator<<] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator<<] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // >> operator
@@ -264,7 +263,7 @@ fn value_shift_right(lhs<Value>,rhs<Value>) {
         result.data = value_string_plus(lhs,rhs)
         return result
     }
-    os.dief("[operator>>] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator>>] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // == operator
@@ -311,7 +310,7 @@ fn value_lowerthan(lhs<Value>,rhs<Value>,equal<i32>)
         result.data = value_int_lowerthan(lhs,rhs,equal)
         return result
     }
-    os.dief("[operator>=] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator>=] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // > operator
@@ -405,7 +404,7 @@ fn value_bitnot(lhs<Value>){
 // @return bool
 fn isTrue(cond<Value>){
     if cond == False {
-        os.die("isTrue: cond is null ,something wrong  probably")
+        dief(*"isTrue: cond is null ,something wrong  probably")
     }
     match cond.type {
         Int:    return cond.data > 0
@@ -433,8 +432,7 @@ fn isTrue(cond<Value>){
 fn operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
     if rhs == null {
         if opt != LOGNOT && opt != BITNOT {
-            warn(*"[operator] only !,~ at unary expression,not:%d\n",opt)
-            os.exit(-1)
+            dief(*"[operator] only !,~ at unary expression,not:%d\n",opt)
         }
     }
     ret<Value> = null
@@ -475,7 +473,7 @@ fn operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
             }
         }
         _ : {
-            fmt.println("[unary-op] unknown opt:" + int(opt))
+            println(*"[unary-op] unknown opt:%d" ,opt)
             ret = rhs
         }
     }
@@ -491,10 +489,10 @@ fn unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
 {
     //lhs == Value**
     if lhs == null  {
-        os.dief("[unary-op] %s lhs arg is null",token_string(opt))
+        dief(*"[unary-op] %s lhs arg is null",token_string(opt))
     }
     if rhs == null {
-        os.dief("[unary-op] %s rhs arg is null",token_string(opt))
+        dief(*"[unary-op] %s rhs arg is null",token_string(opt))
     }
     ret<Value> = operator_switch(opt,*lhs,rhs)
     //*(Value**)lhs = ret
@@ -510,28 +508,28 @@ fn unary_operator(opt<i32>,lhs<u64*>,rhs<Value>)
 fn binary_operator(opt<i32>, lhs<Value>, rhs<Value>)
 {
     if lhs == null {
-        os.dief(
-            "[binary-op] op:%s probably wrong at there!",
+        dief(
+            *"[binary-op] op:%s probably wrong at there!",
             token_string(opt)
         )
     }
     ret<Value> = operator_switch(opt,lhs,rhs)
     if ret.data == 1 && ret.type == String 
-        fmt.println("[binaryop] something error") 
+        println(*"[binaryop] something error") 
     
     return ret
 }
 
 fn miss_args(pos<i32>,fname<i8*>,isclass<i8>){
-    str = string.new(fname)
+    // str = string.new(fname)
     if isclass {
         pos -= 1
     }
     if isclass && pos == 0 {
-        fmt.printf("[warn] Missing first argument \'this\' for class memthod %s()\n",str)
+        printf(*"[warn] Missing first argument \'this\' for class memthod %s()\n",fname)
         return Null
     }
-    fmt.printf("[warn] Missing argument %I for %s()\n",int(pos),str)
+    printf(*"[warn] Missing argument %d for %s()\n",pos,fname)
 }
 fn check_object(obj<Value>){
     if obj == Null return Null
@@ -539,13 +537,11 @@ fn check_object(obj<Value>){
     return True
 }
 fn miss_objects(filename<i8*>,funcname<i8*>,line<i32>,column<i32>){
-    l = int(line)
-    c = int(column)
-    os.dief(
-        "[error] call to undefined method %s in %s on line  %d column %d\n",
-        string.new(funcname),
-        string.new(filename),
-        l,c
+    dief(
+        *"[error] call to undefined method %s in %s on line  %d column %d\n",
+        funcname,
+        filename,
+        line,column
     )
 }
 
@@ -556,7 +552,7 @@ fn get_float_v(v<Value>){
         Int :   ret = v.data
         Bool :  ret = v.data
         Char :  ret = v.data
-        _ : fmt.println("[warn] unsupport type in float op")
+        _ : println(*"[warn] unsupport type in float op")
     }
     return ret
 }
@@ -731,10 +727,10 @@ fn value_string_mul(lhs<Value>,rhs<Value>)
                     tmstr = tmstr.putc(rhs.data)
                     return tmstr
                 }
-                _: os.dief("[string *] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+                _: dief(*"[string *] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
             }
         }
-        _: os.dief("[string *] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+        _: dief(*"[string *] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
     }
 }
 //char int

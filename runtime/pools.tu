@@ -15,7 +15,7 @@ func string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.Rbtre
             if node.k != temp.k  {
 				//TODO:
 				//string hash conflict
-                fmt.printf("[kv_update] hash conflict %s %s\n",node.v,temp.v)
+                printf(*"[kv_update] hash conflict %s %s\n",node.v,temp.v)
             }
             temp.v = node.v
             return map.Update
@@ -50,7 +50,7 @@ func pools_init(){
 			data : i
 		}
 		if chars.push(c) == Null {
-			os.die("chars pool init: memory failed")
+			dief(*"chars pool init: memory failed")
 		}
 	}
 	//init map

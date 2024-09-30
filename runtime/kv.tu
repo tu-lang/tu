@@ -11,7 +11,7 @@ fn cap(v<Value>){
         arr<std.Array> = v.data
         return int(arr.cap())
 	}
-	fmt.println("[warn] len(unknow type)")
+	printf(*"[warn] len(unknow type)")
 	return 0
 }
 
@@ -21,8 +21,7 @@ fn kv_update(var<Value>,index<Value>,root<Value>)
         Array : return arr_updateone(var,index,root)
         Map   : return map.map_insert(root,index,var)
         _     : {
-            os.dief("[kv_update] arr or map is invalid,ty:%s\n",type_string(root))
-            // fmt.println("[kv_update] arr or map is invalid ,probably something wrong")
+            dief(*"[kv_update] arr or map is invalid,ty:%s\n",type_string(root))
         }
     }
 }
@@ -36,14 +35,14 @@ fn kv_get(index<Value>,root<Value>){
             return ret
         }
         String: return string.index_get(root,index)
-        Null:  fmt.printf("[kv_get] arr or map for null ,probably something wrong %s\n",debug.callerpc())
-        Int:   fmt.printf("[kv_get] arr or map for int ,probably something wrong %s\n",debug.callerpc())
-        Float:   fmt.printf("[kv_get] arr or map for float ,probably something wrong %s\n",debug.callerpc())
-        Bool:   fmt.printf("[kv_get] arr or map for bool ,probably something wrong %s\n",debug.callerpc())
-        Char:   fmt.printf("[kv_get] arr or map for char ,probably something wrong %s\n",debug.callerpc())
-        Object:   fmt.printf("[kv_get] arr or map for object ,probably something wrong %s\n",debug.callerpc())
-        Func:   fmt.printf("[kv_get] arr or map for func ,probably something wrong %s\n",debug.callerpc())
-        _     : fmt.printf("[kv_get] arr or map is invalid ,probably something wrong %s\n",debug.callerpc())
+        Null:  printf(*"[kv_get] arr or map for null ,probably something wrong %s\n",debug.callerpc())
+        Int:   printf(*"[kv_get] arr or map for int ,probably something wrong %s\n",debug.callerpc())
+        Float: printf(*"[kv_get] arr or map for float ,probably something wrong %s\n",debug.callerpc())
+        Bool:  printf(*"[kv_get] arr or map for bool ,probably something wrong %s\n",debug.callerpc())
+        Char:  printf(*"[kv_get] arr or map for char ,probably something wrong %s\n",debug.callerpc())
+        Object: printf(*"[kv_get] arr or map for object ,probably something wrong %s\n",debug.callerpc())
+        Func:   printf(*"[kv_get] arr or map for func ,probably something wrong %s\n",debug.callerpc())
+        _     : printf(*"[kv_get] arr or map is invalid ,probably something wrong %s\n",debug.callerpc())
     }
 }
 
@@ -52,19 +51,19 @@ fn len(v<Value>){
 	data<i8> = v.data
 	match type {
 		Null : {
-			fmt.println("[warn] len(null)")
+			println(*"[warn] len(null)")
 			return 0
 		}
 		Int  : {
-			fmt.println("[warn] len(int)")
+			println(*"[warn] len(int)")
 			return 1
 		}
 		Float  : {
-			fmt.println("[warn] len(float)")
+			println(*"[warn] len(float)")
 			return 1
 		}
 		Bool : {
-			fmt.println("[warn] len(bool)")
+			println(*"[warn] len(bool)")
 			return 1
 		}
 		Array : {
@@ -77,8 +76,7 @@ fn len(v<Value>){
         }
 		Map   : dief(*"unsupport len(map)\n")
 		_     : {
-			str<Value> = type_string(v)
-			dief(*"[warn] len(unknow type:%s)\n",str.data)
+			dief(*"[warn] len(unknow type:%s)\n",type_string(v))
 		}
 	}
 	return 0
@@ -92,7 +90,7 @@ fn pop(v<Value>){
 			return arr.pop()
 		}
 		_      : {
-			fmt.println("[warn] pop(unknow type)")
+			println(*"[warn] pop(unknow type)")
 			return null
 		}
 	}
@@ -110,7 +108,7 @@ fn head(v<Value>){
             return m.head()
         }
 		_      : {
-			fmt.println("[warn] head(unknow type)")
+			println(*"[warn] head(unknow type)")
 			return Null
 		}
 	}
@@ -118,8 +116,7 @@ fn head(v<Value>){
 }
 fn arr_get(varr<Value>,index<Value>){
     if  varr.type != Array {
-        fmt.println("[arr_get] not array type")
-        os.exit(-1)
+        dief(*"[arr_get] not array type\n")
     }
 
     if  varr == null || varr.data == null || index == null {
@@ -131,8 +128,7 @@ fn arr_get(varr<Value>,index<Value>){
     match index.type {
         Int : i = index.data
         _   : {
-			ts = type_string(index)
-			dief(*"[arr_get] invalid type: %s\n" , *ts)
+			dief(*"[arr_get] invalid type: %s\n" , type_string(index))
 		}
     }
     if  i >= arr.used {
@@ -142,8 +138,7 @@ fn arr_get(varr<Value>,index<Value>){
 }
 fn arr_pushone(var<Value>,varr<Value>){
     if  varr == null || varr.data == null || var == null {
-        os.dief("[arr_push] arr or var is null\n")
-        // fmt.println("[arr_pushone] arr or var is null ,probably something wrong\n")
+        dief(*"[arr_push] arr or var is null\n")
         // return Null
     }
     arr<std.Array> = varr.data
@@ -152,7 +147,7 @@ fn arr_pushone(var<Value>,varr<Value>){
 }
 fn arr_updateone(var<Value>,index<Value>,varr<Value>){
     if  varr == null || varr.data == null || index == null || var == null {
-        fmt.println("[arr_updateone] arr or var or index is null ,probably something wrong\n")
+        println(*"[arr_updateone] arr or var or index is null ,probably something wrong\n")
         return Null
     }
     arr<std.Array> = varr.data
@@ -160,11 +155,11 @@ fn arr_updateone(var<Value>,index<Value>,varr<Value>){
 
     match index.type {
         Int : i = index.data
-        _ : os.dief("[arr_update] invalid type %s" , type_string(index))
+        _ : dief(*"[arr_update] invalid type %s" , type_string(index))
     }
     // TODO: over index need scale
     if  i >= arr.used {
-        fmt.printf("[arr_updateone] index is over the max size\n")
+        printf(*"[arr_updateone] index is over the max size\n")
         return Null
     }
     arr.addr[i] = var
@@ -245,7 +240,7 @@ fn for_get_key(iter<KvIter>){
 		Map : {
 			map_node<map.RbtreeNode> = iter.addr
 			if map_node == Null {
-				fmt.println("for get key null")
+				println(*"for get key null")
 			}
 			return map_node.k
 		}
@@ -309,7 +304,7 @@ fn for_first2(data<Value>){
 			iter.cur  = init_index
 			return iter
 		}
-		_     : os.dief("[for range]: first unsupport type:%s" , type_string(data))
+		_     : dief(*"[for range]: first unsupport type:%s\n" , type_string(data))
 	}
 }
 fn for_get_key2(node,data<Value>){
@@ -317,7 +312,7 @@ fn for_get_key2(node,data<Value>){
 		Map : {
 			map_node<map.RbtreeNode> = node
 			if node == Null {
-				fmt.println("for get key null")
+				println(*"for get key null")
 			}
 			return map_node.k
 		}
@@ -325,7 +320,7 @@ fn for_get_key2(node,data<Value>){
 			iter<std.Array_iter> = node
 			return iter.cur
 		}
-		_  : os.dief("[for range]: get key unsupport type:%s" ,type_string(data))
+		_  : dief(*"[for range]: get key unsupport type:%s" ,type_string(data))
 	}
 }
 fn for_get_value2(node,data<Value>){
@@ -339,7 +334,7 @@ fn for_get_value2(node,data<Value>){
 			rv<u64*> = iter.addr
 			return *rv
 		}
-		_ : os.dief("[for range]: get value unsupport type:%s" , type_string(data))
+		_ : dief(*"[for range]: get value unsupport type:%s" , type_string(data))
 	}
 }
 fn for_get_next2(node,data<Value>){
@@ -347,7 +342,7 @@ fn for_get_next2(node,data<Value>){
 		Map : {
 			m<map.Rbtree> = data.data
 			if m == null {
-				fmt.println("empty")
+				println(*"empty")
 			}
 			return m.next(node)
 		}
@@ -364,6 +359,6 @@ fn for_get_next2(node,data<Value>){
 			arr_node.addr += 8
 			return arr_node
 		}
-		_ : os.dief("[for range]: next unsupport type:%s" , type_string(data))
+		_ : dief(*"[for range]: next unsupport type:%s" , type_string(data))
 	}
 }

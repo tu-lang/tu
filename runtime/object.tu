@@ -1,5 +1,3 @@
-
-use fmt
 use os
 use std
 use string
@@ -85,7 +83,7 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
                 data : object_create(data)
             }
         }
-        _ : os.dief("[new obj] unknown type")
+        _ : dief(*"[new obj] unknown type")
     } 
     return Null
 }
@@ -106,12 +104,12 @@ func newinherit_object(typeid<i32>,father<Value>){
 func object_parent_get(obj<Value>){
     if obj == null return obj
     if obj.type != Object {
-        fmt.println("[warn] super()  not object")
+        println(*"[warn] super()  not object")
         return null
     }
     o<Object> = obj.data
     if o.father == null {
-        fmt.println("[warn] super() called not in child class")
+        println(*"[warn] super() called not in child class")
         return null
     }
     ret<Value> = new Value
@@ -124,7 +122,6 @@ func object_parent_get(obj<Value>){
 // don't do anything in those who called by compiler,will cause terriable problem
 func get_object_value(obj<Value>){
     if obj == null {
-        //FIXME: fmt.println("[get obj] null")
         return Null
     }
     return obj.data
@@ -198,7 +195,7 @@ fn member_insert(tree<map.Rbtree>, k<Value>,v<Value>)
 fn object_create(typeid<i32>){
     c<Object> = new Object
     if  c == null  {
-        fmt.println("[object_create] failed to create")
+        println(*"[object_create] failed to create")
         return Null
     }
     c.typeid = typeid
@@ -218,8 +215,7 @@ fn object_create(typeid<i32>){
 fn object_member_update(obj<Value>,k<u32>,v<Value>){
     key<Value> = int(k)
     if  obj.type != Object {
-        fmt.println("[object_membe_update] invalid obj type")
-        os.exit(-1)
+        dief(*"[object_membe_update] invalid obj type")
     }
     c<Object> = obj.data
     member_insert(c.members,key,v)
@@ -240,18 +236,18 @@ fn _object_member_get(obj<Object>,key<Value>){
 fn object_member_get(k<u32>,obj<Value>){
     key<Value> = int(k)
     if  obj.type != Object {
-        os.dief("[object_membe_get] invalid obj type :%s %d",runtime.type_string(obj),obj)
+        dief(*"[object_membe_get] invalid obj type :%s %p",type_string(obj),obj)
     }
     v<Value> = _object_member_get(obj.data,key)
     if v == null {//myabe v is this.name = 0.(i8)
-        fmt.printf("[warn] class memeber not define in %s\n", debug.callerpc())
+        printf(*"[warn] class memeber not define in %s\n", debug.callerpc())
         v = &internal_null
     }
     return v
 }
 fn object_unary_operator(opt<i32>,k<u32>,v<Value>,obj<Value>){
     if   obj == null || v == null  || obj.type != Object {
-        fmt.println(" [object-uop] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
+        println(*"[object-uop] probably wrong at there! object:%p rhs:%p\n",obj,int(v))
         return Null
     }
     origin<Value> = _object_member_get(obj.data,int(k))
@@ -279,13 +275,13 @@ fn get_member_func_addr(obj<Object>,key<Value>){
     }
     //not find finally
     if funcaddr == null {
-        os.dief("[object-func] func not exist in func table and members table")
+        dief(*"[object-func] func not exist in func table and members table")
     }
     return funcaddr
 }
 fn object_func_addr(k<u32>,obj<Value>){
     if  obj.type != Object {
-        os.dief("[object_func_addr] invalid obj type :%s",runtime.type_string(obj))
+        dief(*"[object_func_addr] invalid obj type :%s",type_string(obj))
     }
     key<Value> = int(k)
     return get_member_func_addr(obj.data,key)

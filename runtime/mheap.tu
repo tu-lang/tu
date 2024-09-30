@@ -1,7 +1,6 @@
 use std
 use std.atomic
 use os
-use fmt
 
 mem Heap {
     MutexInter  lock

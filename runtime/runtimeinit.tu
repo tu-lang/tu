@@ -120,14 +120,15 @@ fn runtimeinit(){
 }
 
 fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
-	fmt.println("\npanicked! stack backtrace:")
+	println(*"\npanicked! stack backtrace:")
 	buf_o<i8:10> = null
 	rip<u64> = segsegv_rip(ctxt)
 	//self path
 	selfpath = string.new(self_path)
-	if debug.enabled == 1
-		fmt.println("0: " + debug.findpc(rip))
-	else {
+	if debug.enabled == 1{
+		pc = debug.findpc(rip)
+		println(*"0: %s" ,*pc)
+	}else {
 		buf<i8*>	 = &buf_o
 		std.itoa(rip,buf,16.(i8))
 		os.shell(

@@ -1,4 +1,3 @@
-use fmt
 use os
 use std
 
@@ -117,7 +116,7 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 {
 	if size == 0 {
 		//only this can use dynamic grammer,cos it's easy to backtrace
-		os.die("malloc size == 0")
+		dief(*"malloc size == 0\n")
 	}
 	if( gcphase != _GCoff){}
 	if( gcBlackenEnabled != 0 ){}
