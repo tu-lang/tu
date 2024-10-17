@@ -40,7 +40,7 @@ Reader::poll(ctx){
 	}
 	return runtime.PollReady,this.a
 }
-async fn case1(a,b,c){
+async case1(a,b,c){
 	if a == 1 {} else os.dief("a != 1")
 	if b == "2" {} else os.dief("b != 2")
 	if c == '3' {} else os.dief("c != 3")
@@ -75,7 +75,7 @@ StopOnce::poll(ctx){
 	return runtime.PollReady
 }
 
-async fn tda(a,b,c,d,e,h,i){
+async tda(a,b,c,d,e,h,i){
 	if a == true {} else os.die("a hould be true")
 	if b == null {} else os.die("b should be null")
 	if c == 'o' {} else  os.die("c != o")
@@ -113,7 +113,7 @@ fn test_pass_dynarg(){
 mem T1 {
 	i32 a
 }
-async fn tsa(v1<i8>,v2<i8>,v3<f64>,v4<T1>){
+async tsa(v1<i8>,v2<i8>,v3<f64>,v4<T1>){
 	if v1 == 127 {} else os.die("v1 != 127")
 	if v2 == -127 {} else os.die("v2 != 127")
 	if v3 == 34.56 {} else os.die("v3 != 34.56")

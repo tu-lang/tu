@@ -2,12 +2,12 @@ use fmt
 use runtime
 use os
 
-mem PollFuture {
+mem PollFuture:async {
     i32 ready
     i32 count
 }
 PollFuture::pending(){this.ready = 0}
-PollFuture::poll(){
+PollFuture::poll(ctx){
     this.count += 1
     if !this.ready {
         this.ready = 1 //ready
@@ -16,7 +16,7 @@ PollFuture::poll(){
     return runtime.PollReady,this.count
 }
 
-async fn tc(){
+async tc(){
     fut<PollFuture> = new PollFuture{}
     count<i32> = fut.await //block 1 count 2
     if count != 2 {
@@ -62,7 +62,7 @@ fn test_common(){
 }
 
 
-async fn tsi(){
+async tsi(){
     fut<PollFuture> = new PollFuture {
         ready: 0,
         count: 0,
@@ -138,7 +138,7 @@ fn test_stmt_if(){
     }
     fmt.println("test future statement - success")
 }
-async fn tsw(){
+async tsw(){
     fut<PollFuture> = new PollFuture{}
     //case1
     fmt.println("case1 ",int(fut.count))
@@ -220,7 +220,7 @@ fn test_stmt_while(){
     fmt.println("test future statement - while success")
 }
 
-async fn tstf(){
+async tstf(){
     fut<PollFuture> = new PollFuture{} 
     //case1
     fmt.println("case1",int(fut.count))
@@ -305,18 +305,18 @@ fn test_stmt_trifor(){
     }
     fmt.println("test future statement - tri for success")
 }
-mem GetArrFuture {
+mem GetArrFuture: async {
     i32 ready
 }
 GetArrFuture::pending(){this.ready = 0}
-GetArrFuture::poll(){
+GetArrFuture::poll(ctx){
     if !this.ready {
         this.ready = 1
         return runtime.PollPending
     }
     return runtime.PollReady, [1,2,3]
 }
-async fn tsfr(){
+async tsfr(){
     getarr<GetArrFuture> = new GetArrFuture{}
     //case1
     i = 0
@@ -387,9 +387,9 @@ fn test_stmt_forrange(){
     }
     fmt.println("test future statement - for range success")
 }
-async fn tsm_ret4(){ return 4.(i8)}
-async fn tsm_ret6(){ return 6.(i8)}
-async fn tsm(){
+async tsm_ret4(){ return 4.(i8)}
+async tsm_ret6(){ return 6.(i8)}
+async tsm(){
     fut<PollFuture> = new PollFuture{}
     //case1
     match fut.await {  //block 1 count 2
@@ -465,16 +465,16 @@ fn test_stmt_match(){
     fmt.println("test future statement - match success")
 }
 
-async fn tms1(){
+async tms1(){
     return 3,4
 }
-async fn tms2(){
+async tms2(){
     return 5,6
 }
-async fn tms3(){
+async tms3(){
     return [7,8,9]
 }
-async fn tms(){
+async tms(){
     //case 1
     a,b = tms1().await
     if a != 3 || b != 4 {
@@ -561,7 +561,7 @@ PollFuture2::poll(ctx){
     return runtime.PollReady,this.count
 }
 
-async fn tc2(){
+async tc2(){
     fmt.println("test common2")
     fut<PollFuture2> = new PollFuture2{}
     count<i32> = fut.await //block 1 count 2
