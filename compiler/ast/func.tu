@@ -14,7 +14,9 @@ class Function {
     name     = "" // func name
     namehid  
     isasync   = false // future
-    ctx       = null
+    ctxvar    = null
+    thisvar   = null
+
     isExtern  = false // c ffi ; extern define
     isObj     = false // object call
     isMem     = false // static class function

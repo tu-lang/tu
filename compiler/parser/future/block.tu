@@ -69,7 +69,7 @@ AsyncBlock::genawait(stmt , recvs){
         call    = new gen.FunCallExpr(0,0)
 
         call.args[] = rv
-        call.args[] = this.fc.ctx
+        call.args[] = this.fc.ctxvar
 
         retvar  = this.genawait3(rv,astruct,call,recvs)
         return retvar
@@ -100,7 +100,7 @@ AsyncBlock::genawait2(s , callargs , recvs, isstatic){
         }
     }
     callargs.args = []
-    callargs.args[] = this.fc.ctx
+    callargs.args[] = this.fc.ctxvar
 
     assignExpr.rhs = newsvar
     this.push(assignExpr)

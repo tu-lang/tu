@@ -159,6 +159,7 @@ Parser::parseFuncDef(ft, pdefine)
             var.isunsigned = true
             if isasync {
                 var.structname = node.name
+                var.varname = "this.0"
             }else{
                 var.structpkg = pdefine.pkg
                 var.structname = pdefine.name
@@ -208,11 +209,16 @@ Parser::parseAsyncDef()
         if f.state == null {
             this.check(false,"async state is null")
         }
+        if std.len(f.params_order_var) == 0 
+            this.check(false,"async fn params size is 0")
 
         for i = 0 ;i < std.len(f.params_order_var) ; i += 1 {
             pvar = f.params_order_var[i]
             pvar.isparam = true
             if i == 0 {
+                if pvar.varname == "this"
+                    this.check(false,"first var can't be this in async fn")
+                f.thisvar = pvar
                 continue
             }
 
@@ -222,7 +228,7 @@ Parser::parseAsyncDef()
         f.params_var["ctx.0"] = ctxvar
         ctxvar.isparam = true
         f.params_order_var[] = ctxvar
-        f.ctx = ctxvar
+        f.ctxvar = ctxvar
 
         f = this.compileAsync(f)
     }else{

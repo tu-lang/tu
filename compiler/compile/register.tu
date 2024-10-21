@@ -13,7 +13,7 @@ func GenAddr(var){
                 writeln("   lea %d(%%rbp) , %%rax",var.offset)
                 return var
             }
-            This = ast.GF().FindLocalVar("this")
+            This = ast.GF().thisvar
             if This == null {
                 var.check(false,"this param not found in async fn")
             }
