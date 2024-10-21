@@ -22,12 +22,6 @@ typesize = {
 EOF = -1 //FXIME: EOF
 count = 1 
 
-ClassFunc   = 1
-StructFunc  = 2
-CommonFunc  = 3
-ClosureFunc = 4
-
-
 class Parser {
     ctx 
     gvars = {} # map{string:VarExpr} global vars
@@ -91,7 +85,7 @@ Parser::parse()
         match reader.curToken  {
             ast.FUNC : {
                 this.ctx = new ast.Context()
-                f = this.parseFuncDef(CommonFunc,null)
+                f = this.parseFuncDef(ast.CommonFunc,null)
                 this.ctx = null
                 this.addFunc(f.name,f)
             }

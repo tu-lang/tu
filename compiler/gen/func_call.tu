@@ -29,7 +29,7 @@ FunCallExpr::stackcall(ctx,fc,free)
 		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_order_var),std.len(this.args))
 
 	stack_args = this.PushStackArgs(ctx,fc)
-	if !fc.isExtern {
+	if fc.fntype != ast.ExternFunc {
 		callname = fc.fullname()
 	}
 	compile.writeln("    call %s",callname)
@@ -215,7 +215,7 @@ FunCallExpr::registercall(ctx,fc)
 			gp += 1
 		}
 
-	if fc.isExtern {
+	if fc.fntype == ast.ExternFunc {
 		compile.writeln("    lea %s(%%rip), %%rax", funcname)
 	}else{
 		realfuncname = fc.fullname()

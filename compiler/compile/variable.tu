@@ -163,7 +163,7 @@ fn registerObjects(){
 
 fn registerFutures(){
     for st : currentParser.structs {
-        if !st.isasync continue
+        if !st.isasync() continue
         cls = package.getClass(st.pkg,st.name)
         if cls == null {
             utils.error("cls not exist in future struct")

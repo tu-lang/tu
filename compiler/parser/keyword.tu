@@ -79,7 +79,7 @@ Parser::parseClassDef()
             }
         }else if reader.curToken == ast.FUNC {
             this.ctx = new ast.Context()
-            f = this.parseFuncDef(ClassFunc,s)
+            f = this.parseFuncDef(ast.ClassFunc,s)
             this.ctx = null
             this.check(f != null)
 
@@ -107,38 +107,33 @@ Parser::parseFuncDef(ft, pdefine)
         "parser.Parser::parseFuncDef() found function: "
     )
     reader<scanner.ScannerStatic> = this.scanner
-    isasync = false
-    if reader.curToken == ast.ASYNC {
-        isasync = true
-        reader.scan()
-    }
-    this.expect(ast.FUNC)
+
+    if ft != ast.AsyncFunc
+        this.expect(ast.FUNC,"parse func define ,tok not fun")
+
+    cls = pdefine
+    st  = pdefine
     reader.scan()
     node = new ast.Function()
+    node.fntype = ft
 
     match ft {
-        StructFunc : {
-            node.isMem = true
-            node.isObj = false
-            if isasync {
-                node.clsname = reader.curLex.dyn()
-            }else {
-                node.clsname = pdefine.name
-            }
+        ast.StructFunc : node.st = st
+        ast.ClassFunc :  node.cls = cls
+        ast.AsyncFunc : {
+            node.asyncst = st
+            node.asyncst.asyncfn = node
         }
-        ClassFunc :{
-            node.isObj = true
-            node.structname = pdefine.name
-            node.clsname = pdefine.name
+        _ : {
+            this.check(false,"unknown fn typ3")
         }
     }    
-    node.isasync = isasync
 
     node.parser = this
     node.package = this.pkg
     this.currentFunc    = node
     compile.currentFunc = node
-    if ft != ClosureFunc {
+    if ft != ast.ClosureFunc  && ft != ast.AsyncFunc {
         cl = reader.curLex.dyn()
         if compile.phase == compile.GlobalPhase && this.hasFunc(cl,false)
             this.check(false,"SyntaxError: already define function :" + cl)
@@ -149,15 +144,15 @@ Parser::parseFuncDef(ft, pdefine)
 
     this.expect( ast.LPAREN)
     this.ctx.create()
-    if ft == ClassFunc || ft == StructFunc {
+    if ft == ast.ClassFunc || ft == ast.StructFunc || ft == ast.AsyncFunc {
 
         var = new gen.VarExpr("this",this.line,this.column)
-        if ft == StructFunc {
+        if ft == ast.StructFunc || ft == ast.AsyncFunc {
             var.structtype = true
             var.type = ast.U64
             var.size = 8
             var.isunsigned = true
-            if isasync {
+            if ft == ast.AsyncFunc {
                 var.structname = node.name
                 var.varname = "this.0"
             }else{
@@ -177,7 +172,7 @@ Parser::parseFuncDef(ft, pdefine)
     node.block = null
     if (reader.curToken == ast.LBRACE){
         insertsuper = false
-        if ft == ClassFunc && pdefine.father != null {
+        if ft == ast.ClassFunc && pdefine.father != null {
             insertsuper = true
         }
         if compile.phase == compile.GlobalPhase {
@@ -199,16 +194,35 @@ Parser::parseAsyncDef()
     utils.debug(
         "parser.Parser::parseAsyncDef() found function: "
     )
+    reader<scanner.ScannerStatic> = this.scanner
     this.ctx = new ast.Context()
-    f = this.parseFuncDef(StructFunc,null)
+    this.check(reader.curToken == ast.ASYNC,"should be async")
+    reader.scan()
+
+    st = null
+    this.check(reader.curToken == ast.FUNC,"async should be func token")
+    reader.scan()
+
+    asyncname = reader.curLex.dyn()
+    if compile.phase != compile.GlobalPhase {
+        st = new ast.Struct()
+        st.name = asyncname
+        st.parser = this
+
+        this.genAsyncPollMember(st,0)
+        this.pkg.addAsyncStruct(st.name,st)
+        this.structs[st.name] = st
+    }else {
+        st = this.pkg.getStruct(asyncname)
+        this.check(st != null,"phase 2 st is null")
+    }
+
+
+    f = this.parseFuncDef(ast.AsyncFunc,st)
+    f.name = asyncname
     this.ctx = null
 
     if compile.phase != compile.GlobalPhase {
-        f.state = this.pkg.getStruct(f.name)
-        f.state.asyncfn = f
-        if f.state == null {
-            this.check(false,"async state is null")
-        }
         if std.len(f.params_order_var) == 0 
             this.check(false,"async fn params size is 0")
 
@@ -232,20 +246,12 @@ Parser::parseAsyncDef()
 
         f = this.compileAsync(f)
     }else{
-        s = new ast.Struct()
-        s.name = f.name
-        s.parser = this
-        this.genAsyncPollMember(s,0)
-        this.pkg.addAsyncStruct(s.name,s)
-        this.structs[s.name] = s
-        f.state = s
-
         for i = 0 ; i < std.len(f.params_order_var) ; i += 1 {
             if i == 0 {
                 continue
             }else {
                 pvar = f.params_order_var[i]
-                this.genAsyncParamMember(s,pvar)
+                this.genAsyncParamMember(st,pvar)
             }
         }
     }
@@ -266,7 +272,7 @@ Parser::parseExternDef()
     
     this.expect(ast.EXTERN)
     node     = new ast.Function()
-    node.isExtern = true
+    node.fntype = ast.ExternFunc
     node.parser   = this
 
     reader.scan()
@@ -372,8 +378,5 @@ Parser::genClassInitFunc(clsname)
 
     f.block = new gen.BlockStmt()
 
-    f.isObj = true
-    f.clsname = clsname
-    f.structname = clsname
     return f
 }

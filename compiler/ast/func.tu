@@ -9,18 +9,24 @@ ObjCall     = 3
 ClosureCall = 4
 FutureCall  = 5
 
+ClassFunc   = 1
+AsyncFunc   = 2
+StructFunc  = 3
+CommonFunc  = 4
+ClosureFunc = 5
+ExternFunc  = 6
+
 class Function {
-    clsname  = "" // class name
     name     = "" // func name
+    fntype   = CommonFunc
+    st       = null
+    cls      = null
+    asyncst  = null
+
     namehid  
-    isasync   = false // future
     ctxvar    = null
     thisvar   = null
 
-    isExtern  = false // c ffi ; extern define
-    isObj     = false // object call
-    isMem     = false // static class function
-    structname = ""
     rettype
 
     parser   // Parser*
@@ -46,8 +52,11 @@ class Function {
     //async future
     endstates = []
     returns   = []
-    state     = null
     iterid    = 0
+
+    fn isasync(){
+        return this.fntype == AsyncFunc
+    }
 }
 func incr_closureidx(){
     idx = closureidx
@@ -105,27 +114,24 @@ Function::InsertExpression(expr){
 Function::fullname(){
     funcsig = fmt.sprintf("%s_%s",this.parser.getpkgname(),this.name)
     utils.debugf(
-        "ast.Function.fullname(): funcname signature:%s clsname:%s",
-        funcsig,this.clsname
+        "ast.Function.fullname(): funcname signature:%s fntype:%d",
+        funcsig,this.fntype
     )
-    //class memeber function
-    if !std.empty(this.clsname) {
-        if !this.isMem {
-        	c = this.package.getClass(this.clsname)
-        	if c == null || !c.found {
-                os.die("class not define :" + this.clsname)
-        	}
-            if this.isasync
-        	    funcsig = this.parser.getpkgname() + "_" + c.name + "_poll"
-            else 
-        	    funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
-		}else{
-            c = this.package.getStruct(this.clsname)
-            if this.isasync
-        	    funcsig = this.parser.getpkgname() + "_" + c.name + "_poll"
-            else 
-        	    funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
-		}
+    match this.fntype {
+        ClassFunc: {
+            c = this.cls
+        	funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
+        }
+        StructFunc: {
+            c = this.st
+        	funcsig = this.parser.getpkgname() + "_" + c.name + "_" + this.name
+        }
+        AsyncFunc: {
+        	funcsig = this.parser.getpkgname() + "_" + this.asyncst.name + "_poll"
+        }
+        _ : {
+            utils.error("unknow fn type")
+        }
     }
     return funcsig
 }
@@ -143,18 +149,24 @@ Function::getVar(name){
     return null
 }
 Function::beautyName(){
-    funcname = this.parser.getpkgname() + "::" + this.name
-	if this.clsname != "" {
-        c = this.package.getClass(this.clsname)
-        if c == null {
-            os.die("fn exception class not exist:" + this.clsname)
+    funcsig = this.parser.getpkgname() + "::" + this.name
+    match this.fntype {
+        ClassFunc: {
+            c = this.cls
+        	funcsig = this.parser.getpkgname() + "::" + c.name + "::" + this.name
         }
-        if this.isasync
-            funcname = this.parser.getpkgname() + "::" + c.name + "::poll"
-        else
-            funcname = this.parser.getpkgname() + "::" + c.name + "::" + this.name
+        StructFunc: {
+            c = this.st
+        	funcsig = this.parser.getpkgname() + "::" + c.name + "::" + this.name
+        }
+        AsyncFunc: {
+        	funcsig = this.parser.getpkgname() + "::" + this.asyncst.name + "::poll"
+        }
+        _ : {
+            utils.error("unknow fn type")
+        }
     }
-	return funcname
+    return funcsig
 }
 Function::getVariadic(){
 	for var : this.params_order_var {

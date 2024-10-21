@@ -60,6 +60,9 @@ Class::initClassInitFunc()
     }
     if f == null {
         f = this.parser.genClassInitFunc(this.name) 
+		f.fntype = ClassFunc
+		f.cls = this
+
         this.funcs[] = f
         this.parser.addFunc(this.name + f.name,f)
         if this.father != null {

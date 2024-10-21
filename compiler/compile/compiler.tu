@@ -91,7 +91,7 @@ func _funcs_offsets(fc)
     }
 
     // assign_offsets(fc)
-    if fc.isasync {
+    if fc.isasync() {
         genFuture(fc)
     }else{
         genOffsets(fc)
@@ -163,7 +163,7 @@ func genFuture(fc)
 {
     top = 16
 
-    st = fc.state
+    st = fc.asyncst
     for var : fc.params_order_var {
         if var.onmem {
             m = st.getMember(var.varname)
@@ -195,7 +195,7 @@ func genFuture(fc)
         return l.varid > r.varid
     })
 
-    ofs = fc.state.size
+    ofs = fc.asyncst.size
     for var : order_locals {
         var.offset = ofs
         ofs += var.getStackSize(currentParser)
@@ -204,9 +204,9 @@ func genFuture(fc)
     if fc.is_variadic {
         utils.error("async fn unsupport variadic")
     }
-    fc.state.size = ofs
-    fc.state.align = 8
-    fc.state.iscomputed = true
+    st.size = ofs
+    st.align = 8
+    st.iscomputed = true
 
     fc.stack_size = 0
 }

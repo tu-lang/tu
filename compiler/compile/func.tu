@@ -31,7 +31,7 @@ func registerFuncs(){
     }
 }
 func CreateFunction(fc) {
-    if fc.isExtern return true
+    if fc.fntype == ast.ExternFunc return true
     if fc.block == null return true
 
     funcname = fc.fullname()
@@ -71,7 +71,7 @@ func CreateFunction(fc) {
         i = 1
         for(arg : fc.params_order_var){
             funcCtx.createVar(arg.varname,arg)
-            if fc.isasync continue
+            if fc.isasync() continue
 
             //fixme: ignore internal pkg for debug
             match fc.package.full_package {
@@ -82,7 +82,7 @@ func CreateFunction(fc) {
                 count  = ast.incr_labelid()
                 writeln("   cmp $0,%%rax")
                 writeln("   jne %s.L.args.%d",fc.parser.label(),count)
-                // internal.miss_args(i,lid,fc.clsname != "")
+                // internal.miss_args(i,lid,fc.fntype != ClssFunc)
                 writeln("%s.L.args.%d:",fc.parser.label(),count)
             }
             i += 1
@@ -102,7 +102,7 @@ func CreateFunction(fc) {
     args = std.len(fc.params_order_var)
     // if fc.mcount > 1
         // args += 1
-    if fc.isasync {
+    if fc.isasync() {
         args = 2
     }
         

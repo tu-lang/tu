@@ -14,7 +14,7 @@ class Struct {
 	asyncfn  = null
 	
 	parser = null
-
+	funcs = []
 }
 class Member
 {

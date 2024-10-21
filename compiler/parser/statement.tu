@@ -282,7 +282,7 @@ Parser::parseReturnStmt() {
     node = new gen.ReturnStmt(this.line, this.column)
 
     ret = [] 
-    if this.currentFunc.isasync 
+    if this.currentFunc.isasync() 
         ret[] = new gen.VarExpr("",0,0)
     loop {
         retexpr = this.parseExpression(1)
@@ -359,7 +359,7 @@ Parser::parseMultiAssignStmt(firstv){
 Parser::parseBreakStmt(){
     bs = new gen.BreakStmt(this.line,this.column)
 
-    if this.currentFunc.isasync == null {
+    if this.currentFunc.isasync() == null {
         return bs
     }
 
@@ -384,7 +384,7 @@ Parser::parseBreakStmt(){
 Parser::parseContinueStmt(){
     cs = new gen.ContinueStmt(this.line,this.column)
 
-    if !this.currentFunc.isasync {
+    if !this.currentFunc.isasync() {
         return cs
     }
 

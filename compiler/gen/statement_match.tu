@@ -88,6 +88,9 @@ MatchStmt::compile2(ctx){
     endLabel = compile.currentParser.label() + ".L.match.end." + mainPoint
     
     for(cs : this.cases){
+        if ast.GF().isasync()
+            cs.matchCond = this.cond        
+
         c = ast.incr_labelid()
         cs.label = compile.currentParser.label() + ".L.match.case." + c
         cs.endLabel = endLabel

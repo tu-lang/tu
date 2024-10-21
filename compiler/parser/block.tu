@@ -16,7 +16,7 @@ Parser::parseBlock(insertsuper,hasctx)
     if(reader.curToken != ast.LBRACE){
         stmt = this.parseStatement()
         node = new gen.BlockStmt()
-        if !this.currentFunc.isasync || stmt.hasawait || type(stmt) != type(gen.ReturnStmt) {
+        if !this.currentFunc.isasync() || stmt.hasawait || type(stmt) != type(gen.ReturnStmt) {
             node.stmts[] = stmt
         }else{
             endstate = new gen.AssignExpr(0,0)
@@ -40,7 +40,7 @@ Parser::parseBlock(insertsuper,hasctx)
     {
         if p.hasawait node.hasawait = true
 
-        if this.currentFunc.isasync && !p.hasawait && type(p) == type(gen.ReturnStmt) {
+        if this.currentFunc.isasync() && !p.hasawait && type(p) == type(gen.ReturnStmt) {
             endstate = new gen.AssignExpr(0,0)
             stmts[] = endstate
 

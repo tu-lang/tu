@@ -99,7 +99,8 @@ StructInitExpr::compile_field(ctx,load,s,value,field){
 		return rtok
 	}else if type(value) == type(ArrayExpr) {
 		ie = value
-		if !field.isarr this.panic("mem field must be static arr")
+		if !field.isarr 
+			this.check(false,"mem field must be static arr")
 		compile.writeln("	mov (%%rsp) , %%rax")
 		compile.writeln("	add $%d , %%rax",field.offset)
 		this.arrinit(ctx,field,ie)

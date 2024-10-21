@@ -79,17 +79,17 @@ Parser::parseClassFunc(var){
     this.ctx = new ast.Context()
 
     pdefine = new ast.Class("")
-    fctype  = ClassFunc
+    fctype  = ast.ClassFunc
     st      = null
     if compile.phase != compile.GlobalPhase{
         st = package.getStruct("",var)
         if st != null {
-            fctype = StructFunc
+            fctype = ast.StructFunc
             pdefine = st
         }else{
             cls = package.getClass("",var)
             this.check(cls != null , "class not define")
-            fctype = ClassFunc
+            fctype = ast.ClassFunc
             pdefine = cls
         }
     }
@@ -98,7 +98,7 @@ Parser::parseClassFunc(var){
     this.ctx = null
     this.check(f != null)
 
-    if fctype == StructFunc && st.isasync && f.name == "poll" {
+    if fctype == ast.StructFunc && st.isasync && f.name == "poll" {
         if std.len(f.params_order_var) != 2 {
             this.check(false,"async:poll(self,ctx) signature need! :" + st.name + f.name)
         }
@@ -130,16 +130,16 @@ Parser::parseExternClassFunc(pkgname){
     this.ctx = new ast.Context()
 
     pdefine = new ast.Class("")
-    fctype  = ClassFunc
+    fctype  = ast.ClassFunc
     if compile.phase != compile.GlobalPhase {
         st = package.getStruct(pkgname,clsname)
         if st != null {
-            fctype = StructFunc
+            fctype = ast.StructFunc
             pdefine = st
         }else{
             cls = package.getClass(pkgname,clsname)
             this.check(cls != null , "class not define "+ pkgname + "." + clsname)
-            fctype = ClassFunc
+            fctype = ast.ClassFunc
             pdefine = cls
         }
     }

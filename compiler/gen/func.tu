@@ -145,7 +145,7 @@ FunCallExpr::compile(ctx,load)
 			)
 		)
 	}
-	if fc.isasync {
+	if fc.isasync() {
 		if this.hasawait {
 			this.check(false,"unsupport future execute without in future env")
 		}

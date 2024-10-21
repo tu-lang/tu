@@ -8,7 +8,7 @@ use compiler.utils
 
 func GenAddr(var){
     if var.is_local {
-        if ast.GF().isasync {
+        if ast.GF().isasync() {
             if var.isparam && !var.onmem {
                 writeln("   lea %d(%%rbp) , %%rax",var.offset)
                 return var
