@@ -30,7 +30,8 @@ class FunCallExpr : ast.Ast {
     funcname = ""
     package  = ""
     args = [] // [Ast]
-	cls       // Class
+	st	 = null   	  // Struct
+	cls  = null       // Class
     is_pkgcall
     is_extern
     is_delref
@@ -78,8 +79,9 @@ FunCallExpr::compile(ctx,load)
 	if  std.empty(this.funcname) {
 		this.check(false,"funcname is empty")
 	} 
-	
-	if this.cls != null {
+	if this.st != null {
+		fc = this.st.getFunc(this.funcname)
+	}else if this.cls != null {
         fc = this.cls.getFunc(this.funcname)
     }else if this.package != "" && GP().getGlobalVar("",this.package) != null {
         var = GP().getGlobalVar("",this.package)
@@ -99,7 +101,7 @@ FunCallExpr::compile(ctx,load)
 		}
 		if var.structname != "" && var.structname != null {
 			s = compile.currentParser.pkg.getPackage(var.structpkg)
-				.getClass(var.structname)
+				.getStruct(var.structname)
 			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)
 			fc = s.getFunc(this.funcname)
 			if(fc == null) this.panic("func not exist")
@@ -109,7 +111,7 @@ FunCallExpr::compile(ctx,load)
 		}else if this.tyassert != null {
 			s = compile.currentParser.pkg
 					.getPackage(this.tyassert.pkgname)
-					.getClass(this.tyassert.name)
+					.getStruct(this.tyassert.name)
 			fc = s.getFunc(this.funcname)
 			this.checkFirstThis(ctx,var)
 			this.call(ctx,fc,load)

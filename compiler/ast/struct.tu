@@ -84,11 +84,12 @@ Member::clone(){
 }
 
 Struct::getFunc(name){
-	s = package.getClass(this.pkg,this.name)
-	if s == null {
-		utils.errorf("class not exist pkg:%s cls:%s",this.pkg,this.name)
+	for it : this.funcs {
+		if it.name == name {
+			return it
+		}
 	}
-	return s.getFunc(name)
+	return null
 }
 
 Struct::futurepollname(){

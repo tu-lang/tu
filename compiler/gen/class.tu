@@ -219,14 +219,12 @@ MemberCallExpr::static_compile(ctx,s){
 	utils.debugf("gen.MemberCallExpr::static_compile()")
     this.record()
     compile.Push()
-	p = s.parser
-    cls = p.pkg.getClass(s.name)
-    this.check(cls != null,"class not define "+s.name)
-    fc = cls.getFunc(this.membername)
+
+    fc = s.getFunc(this.membername)
     if fc == null this.check(false,"func not exist:" + this.membername)
 
 	call = this.call
-    call.cls = cls
+    call.st = s
     call.funcname = this.membername
 
 	params = call.args

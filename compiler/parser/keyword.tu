@@ -260,7 +260,7 @@ Parser::parseAsyncDef()
     }
     structname = f.name
     f.name = "poll"
-    this.pkg.addClassFunc(structname,f,this)
+    this.pkg.addStructFunc(structname,f,st)
     this.addFunc(structname,f)
 }
 

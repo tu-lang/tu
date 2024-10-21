@@ -103,8 +103,11 @@ Parser::parseClassFunc(var){
             this.check(false,"async:poll(self,ctx) signature need! :" + st.name + f.name)
         }
     }
-    
-    this.pkg.addClassFunc(var,f,this)
+    if fctype == ast.StructFunc {
+        this.pkg.addStructFunc(var,f,st)
+    } else{
+        this.pkg.addClassFunc(var,f,this)
+    }
     
     this.addFunc(var + f.name,f)
     return
@@ -129,6 +132,7 @@ Parser::parseExternClassFunc(pkgname){
     reader.curToken  = ast.FUNC
     this.ctx = new ast.Context()
 
+    st = null
     pdefine = new ast.Class("")
     fctype  = ast.ClassFunc
     if compile.phase != compile.GlobalPhase {
@@ -148,7 +152,11 @@ Parser::parseExternClassFunc(pkgname){
     this.check(f != null)
     
     pkg = this.pkg.getPackage(pkgname)
-    pkg.addClassFunc(clsname,f,this)
+    if fctype == ast.StructFunc {
+        pkg.addStructFunc(clsname,f,st)
+    }else{
+        pkg.addClassFunc(clsname,f,this)
+    }
     f.package = pkg
     
     this.addFunc(clsname + f.name,f)

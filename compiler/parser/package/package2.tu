@@ -9,6 +9,10 @@ Package::parse2()
         cls.funcs = []
     }
 
+    for st : this.structs {
+        st.funcs = []
+    }
+
     this.initid = 0
     this.inits = []
 }

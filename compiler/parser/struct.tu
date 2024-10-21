@@ -68,8 +68,11 @@ Parser::parseStructDef()
 	if compile.phase == compile.GlobalPhase && this.pkg.structs[s.name] != null {
 		this.check(false,"already define " + s.name)
 	}
-	this.pkg.addStruct(s.name,s)
-	this.structs[s.name] = s
+
+	if compile.phase == compile.GlobalPhase {
+		this.pkg.addStruct(s.name,s)
+		this.structs[s.name] = s
+	}
 	//eat }
 	reader.scan()
 }

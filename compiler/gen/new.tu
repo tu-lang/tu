@@ -64,7 +64,7 @@ NewClassExpr::compile(ctx,load)
 	utils.debug("gen.NewClassExpr::compile()")
 	this.record()
 	utils.debug("new expr got: type:%s",this.name)
-
+	isstruct = false
 	s = this.getReal()
 	objsize = std.len(s.membervars) * 8
 
@@ -77,22 +77,31 @@ NewClassExpr::compile(ctx,load)
 
 	fullpackage = GP().getImport(this.package)
 	m = package.getStruct(fullpackage,this.name)
+	fc = null
 	if m != null {
+		fc = m.getFunc("init")
 		internal.gc_malloc(m.size)
+		isstruct = true
 	}else{
+		fc = s.getFunc("init")
 		internal.newclsobject(s.virtname(),objsize)
 	}
+	if fc == null
+		this.check(false,"unimpl init fn")
 	compile.Push()
 
 	call = new FunCallExpr(this.line,this.column)
 	call.package = s.parser.getpkgname()
 	call.funcname = "init"
-	call.cls     = s
+	if isstruct {
+		call.st = m
+	}else{
+		call.cls = s
+	}
 	call.is_pkgcall = true
 	params = this.args
 	pos = new ArgsPosExpr(1,this.line,this.column)
 	//find params count
-	fc = s.getFunc("init")
 	pos.pos = std.len(fc.params_order_var)  - 1
 
 	call.args[] = pos

@@ -164,11 +164,8 @@ fn registerObjects(){
 fn registerFutures(){
     for st : currentParser.structs {
         if !st.isasync() continue
-        cls = package.getClass(st.pkg,st.name)
-        if cls == null {
-            utils.error("cls not exist in future struct")
-        }
-        pollf = cls.getFunc("poll")
+
+        pollf = st.getFunc("poll")
         if pollf == null {
             utils.error("future not impl poll")
         }
