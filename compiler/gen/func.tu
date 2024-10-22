@@ -104,7 +104,7 @@ FunCallExpr::compile(ctx,load)
 				.getStruct(var.structname)
 			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)
 			fc = s.getFunc(this.funcname)
-			if(fc == null) this.panic("func not exist")
+			if(fc == null) this.panic("func not exist in funccall expr compile")
 			this.checkFirstThis(ctx,var)
 			this.call(ctx,fc,load)
 			return this

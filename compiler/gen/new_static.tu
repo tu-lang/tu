@@ -120,7 +120,7 @@ StructInitExpr::compile(ctx,load){
 	if(s == null) this.check(false,"struct not exist when new struct")
 
 	if s.isasync {
-		fc = s.getFunc("poll")
+		fc = s.getPoll()
 		if fc == null {
 			this.check(false,"poll not exist")
 		}

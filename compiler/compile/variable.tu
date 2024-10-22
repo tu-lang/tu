@@ -165,7 +165,7 @@ fn registerFutures(){
     for st : currentParser.structs {
         if !st.isasync() continue
 
-        pollf = st.getFunc("poll")
+        pollf = st.getPoll()
         if pollf == null {
             utils.error("future not impl poll")
         }

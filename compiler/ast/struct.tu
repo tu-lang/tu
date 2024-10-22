@@ -83,6 +83,20 @@ Member::clone(){
 	return m
 }
 
+Struct::getPoll(){
+	if !this.isasync {
+		this.parser.check(false,"not async struct,can't get poll")
+	}
+	fc = this.asyncfn
+	if fc != nullptr {
+		if fc.fntype != ast.AsyncFunc {
+			this.parser.check(false,"asyncfn not async type")
+		}
+		return fc
+	}
+	return this.getFunc("poll")
+}
+
 Struct::getFunc(name){
 	for it : this.funcs {
 		if it.name == name {
