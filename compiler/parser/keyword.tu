@@ -200,9 +200,6 @@ Parser::parseAsyncDef()
     reader.scan()
 
     st = null
-    this.check(reader.curToken == ast.FUNC,"async should be func token")
-    reader.scan()
-
     asyncname = reader.curLex.dyn()
     if compile.phase != compile.GlobalPhase {
         st = new ast.Struct()

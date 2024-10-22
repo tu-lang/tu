@@ -88,7 +88,7 @@ Struct::getPoll(){
 		this.parser.check(false,"not async struct,can't get poll")
 	}
 	fc = this.asyncfn
-	if fc != nullptr {
+	if fc != null {
 		if fc.fntype != ast.AsyncFunc {
 			this.parser.check(false,"asyncfn not async type")
 		}
