@@ -189,34 +189,30 @@ Parser::parseFuncDef(ft, pdefine)
     return node
 }
 
-Parser::parseAsyncDef()
+Parser::parseAsyncDef2(fcname)
 {
     utils.debug(
-        "parser.Parser::parseAsyncDef() found function: "
+        "parser.Parser::parseAsyncDef2() found function: "
     )
     reader<scanner.ScannerStatic> = this.scanner
-    this.ctx = new ast.Context()
-    this.check(reader.curToken == ast.ASYNC,"should be async")
-    reader.scan()
 
     st = null
-    asyncname = reader.curLex.dyn()
     if compile.phase != compile.GlobalPhase {
         st = new ast.Struct()
-        st.name = asyncname
+        st.name = fcname
         st.parser = this
 
         this.genAsyncPollMember(st,0)
         this.pkg.addAsyncStruct(st.name,st)
         this.structs[st.name] = st
     }else {
-        st = this.pkg.getStruct(asyncname)
+        st = this.pkg.getStruct(fcname)
         this.check(st != null,"phase 2 st is null")
     }
 
 
     f = this.parseFuncDef(ast.AsyncFunc,st)
-    f.name = asyncname
+    f.name = fcname
     this.ctx = null
 
     if compile.phase != compile.GlobalPhase {
@@ -255,10 +251,46 @@ Parser::parseAsyncDef()
     if f.mcount == 0 {
         f.mcount = 1
     }
-    structname = f.name
-    f.name = "poll"
-    this.pkg.addStructFunc(structname,f,st)
-    this.addFunc(structname,f)
+    return f
+}
+
+Parser::parseAsyncDef()
+{
+    utils.debug(
+        "parser.Parser::parseAsyncDef() found function: "
+    )
+    reader<scanner.ScannerStatic> = this.scanner
+    this.ctx = new ast.Context()
+    this.check(reader.curToken == ast.ASYNC,"should be async")
+    reader.scan()
+
+    st = null
+    isstruct = false
+    structname = ""
+    fcname = reader.curLex.dyn()
+
+    nexc<i8> = reader.peek()
+    if nexc == ':' {
+        reader.scan()
+        this.check(reader.curToken == ast.COLON,"need be : in async::member")
+        reader.scan()
+
+        structname = fcname
+        fcname = reader.curLex.dyn()
+        isstruct = true
+    }
+
+    f = this.parseAsyncDef2(fcname)
+
+    if isstruct {
+        this.addFunc(structname + fcname , f)
+        this.pkg.addStructFunc(structname,f,st)
+    }else{
+        structname = f.name
+        f.name = "poll"
+        this.pkg.addStructFunc(structname,f,st)
+        this.addFunc(structname,f)
+    }
 }
 
 
