@@ -85,7 +85,7 @@ Parser::parse()
         match reader.curToken  {
             ast.FUNC : {
                 this.ctx = new ast.Context()
-                f = this.parseFuncDef(ast.CommonFunc,null)
+                f = this.parseFuncDef(ast.CommonFunc,null,null)
                 this.ctx = null
                 this.addFunc(f.name,f)
             }

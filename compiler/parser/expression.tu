@@ -246,7 +246,7 @@ Parser::parsePrimaryExpr()
         prev_ctx    = this.ctx
 
         this.ctx = new ast.Context()
-        closure = this.parseFuncDef(ast.ClosureFunc,null)
+        closure = this.parseFuncDef(ast.ClosureFunc,null,null)
         this.ctx = null
         prev.closures[] = closure
         

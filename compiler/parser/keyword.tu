@@ -79,7 +79,7 @@ Parser::parseClassDef()
             }
         }else if reader.curToken == ast.FUNC {
             this.ctx = new ast.Context()
-            f = this.parseFuncDef(ast.ClassFunc,s)
+            f = this.parseFuncDef(ast.ClassFunc,s,null)
             this.ctx = null
             this.check(f != null)
 
@@ -101,7 +101,7 @@ Parser::parseClassDef()
     reader.scan()
 }
 
-Parser::parseFuncDef(ft, pdefine)
+Parser::parseFuncDef(ft, pdefine , node)
 {
     utils.debug(
         "parser.Parser::parseFuncDef() found function: "
@@ -114,7 +114,8 @@ Parser::parseFuncDef(ft, pdefine)
     cls = pdefine
     st  = pdefine
     reader.scan()
-    node = new ast.Function()
+    if node == null
+        node = new ast.Function()
     node.fntype = ft
 
     match ft {
@@ -160,7 +161,7 @@ Parser::parseFuncDef(ft, pdefine)
                 var.structname = pdefine.name
             }
         }
-        node.params_var["this"] = var
+        node.params_var[var.varname] = var
         node.params_order_var[] = var
     }
 
@@ -189,7 +190,7 @@ Parser::parseFuncDef(ft, pdefine)
     return node
 }
 
-Parser::parseAsyncDef2(fcname)
+Parser::parseAsyncDef2(fcname , parethis)
 {
     utils.debug(
         "parser.Parser::parseAsyncDef2() found function: "
@@ -210,8 +211,14 @@ Parser::parseAsyncDef2(fcname)
         this.check(st != null,"phase 2 st is null")
     }
 
+    memfn = null
+    if parethis != null {
+        memfn = new ast.Function()
+        memfn.params_var["this"] = parethis
+        memfn.params_order_var[] = parethis
+    }
 
-    f = this.parseFuncDef(ast.AsyncFunc,st)
+    f = this.parseFuncDef(ast.AsyncFunc,st,memfn)
     f.name = fcname
     this.ctx = null
 
@@ -222,9 +229,7 @@ Parser::parseAsyncDef2(fcname)
         for i = 0 ;i < std.len(f.params_order_var) ; i += 1 {
             pvar = f.params_order_var[i]
             pvar.isparam = true
-            if i == 0 {
-                if pvar.varname == "this"
-                    this.check(false,"first var can't be this in async fn")
+            if pvar.varname == "this.0" {
                 f.thisvar = pvar
                 continue
             }
@@ -240,10 +245,10 @@ Parser::parseAsyncDef2(fcname)
         f = this.compileAsync(f)
     }else{
         for i = 0 ; i < std.len(f.params_order_var) ; i += 1 {
-            if i == 0 {
+            pvar = f.params_order_var[i]
+            if pvar.varname == "this.0" {
                 continue
             }else {
-                pvar = f.params_order_var[i]
                 this.genAsyncParamMember(st,pvar)
             }
         }
@@ -269,18 +274,37 @@ Parser::parseAsyncDef()
     structname = ""
     fcname = reader.curLex.dyn()
 
+    parethis = null
     nexc<i8> = reader.peek()
     if nexc == ':' {
         reader.scan()
         this.check(reader.curToken == ast.COLON,"need be : in async::member")
         reader.scan()
+        reader.scan()
 
         structname = fcname
         fcname = reader.curLex.dyn()
         isstruct = true
+
+        //parent obj
+        parethis = new gen.VarExpr("this",this.line,this.column)
+        parethis.structtype = true
+        parethis.type = ast.U64
+        parethis.size = 8
+        parethis.isunsigned = true
+        parethis.structname = structname
+
+        if compile.phase != compile.GlobalPhase {
+            st = this.pkg.getStruct(structname)
+            if st == null {
+                utils.errorf("async member func not found parent struct:%s",structname)
+            }
+            parethis.structpkg = st.pkg
+            parethis.structname = st.name
+        }       
     }
 
-    f = this.parseAsyncDef2(fcname)
+    f = this.parseAsyncDef2(fcname,parethis)
 
     if isstruct {
         this.addFunc(structname + fcname , f)

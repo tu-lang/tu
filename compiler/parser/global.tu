@@ -94,7 +94,7 @@ Parser::parseClassFunc(var){
         }
     }
 
-    f = this.parseFuncDef(fctype,pdefine)
+    f = this.parseFuncDef(fctype,pdefine,null)
     this.ctx = null
     this.check(f != null)
 
@@ -147,7 +147,7 @@ Parser::parseExternClassFunc(pkgname){
             pdefine = cls
         }
     }
-    f = this.parseFuncDef(fctype,pdefine)
+    f = this.parseFuncDef(fctype,pdefine,null)
     this.ctx = null
     this.check(f != null)
     
