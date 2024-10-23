@@ -86,7 +86,7 @@ Parser::parseChainExpr(first){
     }
     this.check(std.len(chainExpr.fields),"parse chain expression,need at least 2 field")
     chainExpr.last = std.pop(chainExpr.fields)
-
+    chainExpr.checkawait()
     return ret
 }
 

@@ -202,6 +202,7 @@ Parser::parseAsyncDef2(fcname , parethis)
         st = new ast.Struct()
         st.name = fcname
         st.parser = this
+        st.pkg  = this.pkg.package
 
         this.genAsyncPollMember(st,0)
         this.pkg.addAsyncStruct(st.name,st)
