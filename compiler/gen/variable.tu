@@ -302,7 +302,11 @@ VarExpr::getStackSize(p){
                 )
             }
             if(s.size == 0) {
-                this.check(false,"static var size is 0")
+                if !s.iscomputed
+                    s.parser.pkg.
+                    gen.genStruct(s)
+                if s.size == 0
+                    this.check(false,"static var size is 0")
             }
             return s.size * this.stacksize
         }

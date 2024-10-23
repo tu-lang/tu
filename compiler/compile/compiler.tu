@@ -24,7 +24,7 @@ func compile(){
     for pkg : package.packages {
         //need compute the memeber offset early
         for s : pkg.structs {
-            if !s.iscomputed pkg.genStruct(s)
+            if !s.iscomputed gen.genStruct(s)
         }
         //cal string id
         for str : pkg.gstrs {
@@ -92,7 +92,7 @@ func _funcs_offsets(fc)
 
     // assign_offsets(fc)
     if fc.isasync() {
-        genFuture(fc)
+        // genFuture(fc)
     }else{
         genOffsets(fc)
     }
@@ -164,6 +164,9 @@ func genFuture(fc)
     top = 16
 
     st = fc.asyncst
+    if !st.iscomputed {
+        utils.error("must compute async struct first")
+    }
     for var : fc.params_order_var {
         if var.onmem {
             m = st.getMember(var.varname)

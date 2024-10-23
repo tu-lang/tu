@@ -120,6 +120,8 @@ StructInitExpr::compile(ctx,load){
 	if(s == null) this.check(false,"struct not exist when new struct")
 
 	if s.isasync {
+		if !s.iscomputed
+			this.check(false,"dest async fn not compute stacksize")
 		fc = s.getPoll()
 		if fc == null {
 			this.check(false,"poll not exist")

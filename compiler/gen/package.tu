@@ -4,7 +4,7 @@ use compiler.compile
 use compiler.utils
 use string
 
-package.Package::genStruct(s)
+fn genStruct(s)
 {
 	utils.debug("gen.package.Package::genStruct()")  
 	bits = 0
@@ -32,7 +32,7 @@ package.Package::genStruct(s)
         
 			m.align = 8
 			if !dst.iscomputed && !m.pointer {
-				this.genStruct(dst)
+				genStruct(dst)
 				if !dst.iscomputed os.panic("dst is not computed")
 				m.align = dst.align
 			}
@@ -81,6 +81,9 @@ package.Package::genStruct(s)
 	} 
 	
 	s.iscomputed = true
+	if s.asyncnf != null {
+		compile.genFuture(s.asyncfn)
+	}
 	compile.currentParser = null
 }
 package.Package::classinit(){
