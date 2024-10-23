@@ -91,6 +91,7 @@ AsyncBlock::genawait(stmt , recvs){
 
         call.args[] = rv
         call.args[] = this.fc.ctxvar
+        stmt.check(astruct.isasync,"not future var,can't be await")
 
         retvar  = this.genawait3(rv,astruct,call,recvs)
         return retvar

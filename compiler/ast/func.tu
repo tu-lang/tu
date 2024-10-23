@@ -57,6 +57,11 @@ class Function {
     fn isasync(){
         return this.fntype == AsyncFunc
     }
+    fn argscount(){
+        if this.fntype == AsyncFunc
+            return 2
+        return std.len(this.params_order_var)
+    }
 }
 func incr_closureidx(){
     idx = closureidx

@@ -33,9 +33,7 @@ FunCallExpr::stackcall(ctx,fc,free)
 	callname = this.funcname
 	cfunc = compile.currentFunc
 
-	paramsize = std.len(fc.params_order_var)
-	if fc.isasync()
-		paramsize = 2
+	paramsize = fc.argscount()
 
 	if paramsize != std.len(this.args) 
 		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_order_var),std.len(this.args))
@@ -94,9 +92,7 @@ FunCallExpr::closcall(ctx , obj, free)
 FunCallExpr::PushStackArgs(ctx,fc)
 {
 	
-	paramsize = std.len(fc.params_order_var)
-	if fc.isasync()
-		paramsize = 2
+	paramsize = fc.argscount()
 
 	stack = 0
 	hashvariadic = this.hasVariadic()
