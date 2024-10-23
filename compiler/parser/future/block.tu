@@ -234,6 +234,7 @@ AsyncBlock::genpollrecv(pollvar , retvar , callargs){
 
     callargs.package = pollvar.varname
     callargs.funcname = "poll"
+    callargs.asyncgen = true
 
     mret.rs[] = callargs
     return mret 
@@ -248,6 +249,7 @@ AsyncBlock::genpollrecv2(pollvar,recvs, callargs){
 
     callargs.package = pollvar.varname
     callargs.funcname = "poll"
+    callargs.asyncgen = true
 
     mret.rs[0] = callargs
     return mret 

@@ -32,6 +32,7 @@ class FunCallExpr : ast.Ast {
     args = [] // [Ast]
 	st	 = null   	  // Struct
 	cls  = null       // Class
+	asyncgen = false
     is_pkgcall
     is_extern
     is_delref
@@ -147,12 +148,7 @@ FunCallExpr::compile(ctx,load)
 			)
 		)
 	}
-	if fc.isasync() {
-		if this.hasawait {
-			this.check(false,"unsupport future execute without in future env")
-		}
-		return this.gennewawait().compile(ctx,load)
-	}
+
 	this.call(ctx,fc,load)
 	return this
 }
@@ -290,8 +286,38 @@ FunCallExpr::getStruct(){
 	return s
 }
 
+FunCallExpr::getFutureStruct(){
+	p = this.p
+    fc = this
+	curf = ast.GF()
+    if !this.asyncgen && fc.package != "" && fc.package != null {
+		var = ast.GP().getGlobalVar("",fc.package)
+        if  var == null {
+            var = curf.FindLocalVar(fc.package)
+        }
+        if var != null {
+            if !var.structtype || var.structname == "" {
+                this.check(false,"await function only support for struct member")
+            }
+			s = p.pkg.getPackage(var.structpkg).getStruct(var.structname)
+            if s == null this.check(false,"gen await static class not exist:" + var.structpkg + "." +  var.structname)
+			asyncfn = s.getFunc(fc.funcname)
+            if(asyncfn == null || asyncfn.fntype != ast.AsyncFunc){
+                this.check(false,"gen await: func not async ")
+            }
+            return asyncfn.asyncst
+        }
+    }
+
+	s = this.p.getStruct(this.package,this.funcname)
+    if s == null {
+        this.check(false,"await function not found when genawait")
+    }
+    return s
+}
+
 FunCallExpr::gennewawait(){
-	s = this.getStruct()
+	s = this.getFutureStruct()
 	if s == null {
 		this.check(false,"await function not found when gen await")
 	}

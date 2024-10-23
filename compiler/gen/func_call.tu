@@ -10,6 +10,14 @@ use compiler.utils
 
 FunCallExpr::call(ctx,fc,free)
 {
+
+	if !this.asyncgen &&  fc.isasync() {
+		if this.hasawait {
+			this.check(false,"unsupport future execute without in future env")
+		}
+		return this.gennewawait().compile(ctx,free)
+	}
+
 	this.is_dyn = false
 	this.fcs = fc
 	if fc.block == null {
