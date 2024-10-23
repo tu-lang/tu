@@ -2,10 +2,10 @@ use compiler.parser.package
 use compiler.utils
 
 class Struct {
-	pkg  = ""
-	name = ""
-	size = 0
-	align = 0
+	pkg    = ""
+	name   = ""
+	size   = 0
+	align  = 0
 	member = [] //[Member]
 
 	iscomputed = false
@@ -14,7 +14,7 @@ class Struct {
 	asyncfn  = null
 	
 	parser = null
-	funcs = []
+	funcs  = {} // funcs
 }
 class Member
 {
@@ -98,11 +98,8 @@ Struct::getPoll(){
 }
 
 Struct::getFunc(name){
-	for it : this.funcs {
-		if it.name == name {
-			return it
-		}
-	}
+	if this.funcs[name] != null
+		return this.funcs[name]
 	return null
 }
 

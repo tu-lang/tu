@@ -285,13 +285,16 @@ FunCallExpr::checkobjcall(var){
 FunCallExpr::getStruct(){
 	s = this.p.getStruct(this.package,this.funcname)
 	if s == null {
-		this.check(false,"await function not found")
+		this.check(false,"await function not found in no async env")
 	}
 	return s
 }
 
 FunCallExpr::gennewawait(){
 	s = this.getStruct()
+	if s == null {
+		this.check(false,"await function not found when gen await")
+	}
 
 	newsvar = new NewStructExpr(0,0)
 	newsvar.init = new StructInitExpr(0,0)

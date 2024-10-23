@@ -275,6 +275,7 @@ Parser::parseAsyncDef()
     fcname = reader.curLex.dyn()
 
     parethis = null
+    parentst = null
     nexc<i8> = reader.peek()
     if nexc == ':' {
         reader.scan()
@@ -297,23 +298,27 @@ Parser::parseAsyncDef()
         if compile.phase != compile.GlobalPhase {
             st = this.pkg.getStruct(structname)
             if st == null {
-                utils.errorf("async member func not found parent struct:%s",structname)
+                parentst = this.pkg.getStruct(structname)
+                if parentst == null
+                    utils.errorf("async member func not found parent struct:%s",structname)
             }
-            parethis.structpkg = st.pkg
-            parethis.structname = st.name
+            parethis.structpkg = parentst.pkg
+            parethis.structname = parentst.name
         }       
     }
 
     f = this.parseAsyncDef2(fcname,parethis)
 
     if isstruct {
-        this.addFunc(structname + fcname , f)
-        this.pkg.addStructFunc(structname,f,st)
-    }else{
-        structname = f.name
+        asyncname = f.name
         f.name = "poll"
-        this.pkg.addStructFunc(structname,f,st)
-        this.addFunc(structname,f)
+        this.pkg.addStructFunc(structname,asyncname,f,null)
+        this.pkg.addStructFunc(asyncname,f.name,f,st)
+    }else{
+        asyncname = f.name
+        f.name = "poll"
+        this.pkg.addStructFunc(asyncname,f.name,f,st)
+        this.addFunc(asyncname,f)
     }
 }
 

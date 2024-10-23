@@ -23,12 +23,33 @@ AsyncBlock::genswitch(case1){
 }
 
 AsyncBlock::getstruct(expr){
-    p = this.root.curp
+    p    = this.root.curp
+    curf = this.root.fc
     if type(expr) == type(gen.FunCallExpr) {
         fc = expr
+        if fc.package != null && fc.package != "" {
+            var = ast.GP().getGlobalVar("",fc.package)
+            if var == null {
+                var = curf.FindLocalVar(fc.package)
+            }
+            if var != null {
+                if !var.structtype || var.structname == "" {
+                    expr.check(false,"await function only support for struct member")
+                }
+                s = p.pkg.getPackage(var.structpkg).getStruct(var.structname)
+                if s == null expr.check(false,"gen await static struct not exist")
+                asyncfn = s.getFunc(fc.funcname)
+                if asyncfn == null || asyncfn.fntype != ast.AsyncFunc {
+                    expr.check(false,"gen await: func not async")
+                }
+
+                return asyncfn.asyncst
+            }
+        }
+
         s = p.getStruct(fc.package,fc.funcname) 
         if s == null {
-            expr.check(false,"await function not found")
+            expr.check(false,"await function not found when async gen")
         }
         return s
     }else{

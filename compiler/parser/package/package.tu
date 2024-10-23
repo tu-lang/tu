@@ -124,14 +124,14 @@ Package::getStruct(name)
         return this.structs[name]
     return null
 }
-Package::addStructFunc(name , f, s)
+Package::addStructFunc(name , fcname , f, s)
 {
     if std.exist(name,this.structs) {
-        this.structs[name].funcs[] = f
+        this.structs[name].funcs[fcname] = f
         return null
     }
     this.structs[name] = s
-    s.funcs[] = f
+    s.funcs[fcname] = f
 }
 Package::addClassFunc(name,f,p)
 {

@@ -104,7 +104,7 @@ Parser::parseClassFunc(var){
         }
     }
     if fctype == ast.StructFunc {
-        this.pkg.addStructFunc(var,f,st)
+        this.pkg.addStructFunc(var,f.name,f,st)
     } else{
         this.pkg.addClassFunc(var,f,this)
     }
@@ -153,7 +153,7 @@ Parser::parseExternClassFunc(pkgname){
     
     pkg = this.pkg.getPackage(pkgname)
     if fctype == ast.StructFunc {
-        pkg.addStructFunc(clsname,f,st)
+        pkg.addStructFunc(clsname,f.name,f,st)
     }else{
         pkg.addClassFunc(clsname,f,this)
     }
