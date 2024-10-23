@@ -25,7 +25,11 @@ FunCallExpr::stackcall(ctx,fc,free)
 	callname = this.funcname
 	cfunc = compile.currentFunc
 
-	if std.len(fc.params_order_var) != std.len(this.args) 
+	paramsize = std.len(fc.params_order_var)
+	if fc.isasync()
+		paramsize = 2
+
+	if paramsize != std.len(this.args) 
 		utils.debug("ArgumentError: expects %d arguments but got %d\n",std.len(fc.params_order_var),std.len(this.args))
 
 	stack_args = this.PushStackArgs(ctx,fc)
@@ -34,8 +38,8 @@ FunCallExpr::stackcall(ctx,fc,free)
 	}
 	compile.writeln("    call %s",callname)
 
-    if stack_args > std.len(fc.params_order_var) {
-		delta = stack_args - std.len(fc.params_order_var)
+    if stack_args > paramsize {
+		delta = stack_args - paramsize
         compile.writeln("    add $%d, %%rsp", delta * 8)
     }
 	if fc.mcount > 1 {
@@ -79,8 +83,13 @@ FunCallExpr::closcall(ctx , obj, free)
     return null
 }
 
-FunCallExpr::PushStackArgs(prevCtxChain,fc)
+FunCallExpr::PushStackArgs(ctx,fc)
 {
+	
+	paramsize = std.len(fc.params_order_var)
+	if fc.isasync()
+		paramsize = 2
+
 	stack = 0
 	hashvariadic = this.hasVariadic()
 
@@ -88,7 +97,7 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 		retstack = fc.mcount - 1
         compile.writeln("    sub $%d , %%rsp",retstack * 8)
 
-        if hashvariadic && fc.is_variadic && (std.len(this.args) == std.len(fc.params_order_var)) {
+        if hashvariadic && fc.is_variadic && (std.len(this.args) == paramsize) {
             stack += 1
             compile.writeln("    push %%rsp")
         }else if !fc.is_variadic {
@@ -97,12 +106,12 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
         }
     }
 
-	if hashvariadic && fc.is_variadic && (std.len(this.args) != std.len(fc.params_order_var)) {
+	if hashvariadic && fc.is_variadic && (std.len(this.args) != paramsize) {
         this.check(false,"vardic args pass need eq")
     }
 	
-	if std.len(fc.params_order_var) > std.len(this.args) {
-		miss = std.len(fc.params_order_var) - std.len(this.args)
+	if paramsize > std.len(this.args) {
+		miss = paramsize - std.len(this.args)
 		for i  = 0 ; i < miss ; i += 1 {
 			stack += 1
 
@@ -132,7 +141,7 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 		}
 	}
 
-	staticcount = std.len(fc.params_order_var) - 1
+	staticcount = paramsize - 1
 	for  i = std.len(this.args) - 1; i >= 0; i -= 1 {
 		arg = this.args[i]
 
@@ -145,9 +154,9 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
             continue
         }
 
-		ret = arg.compile(prevCtxChain,true)
+		ret = arg.compile(ctx,true)
         if ret != null {
-			ty<i32> = ret.getType(prevCtxChain)
+			ty<i32> = ret.getType(ctx)
             if ast.isfloattk(ty)
                 compile.Pushf(ty)
             else
@@ -158,7 +167,7 @@ FunCallExpr::PushStackArgs(prevCtxChain,fc)
 		stack += 1
 		//func(a,b,c,args...)
 		//call(1,2,3,4)
-		if !hashvariadic && fc.is_variadic && std.len(this.args) >= std.len(fc.params_order_var) && i == staticcount {
+		if !hashvariadic && fc.is_variadic && std.len(this.args) >= paramsize && i == staticcount {
 
 			varidcnum = std.len(this.args) - staticcount
             if fc.mcount > 1 {
