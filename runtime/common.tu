@@ -143,7 +143,7 @@ fn debug(str<i8*>,args<i64*>...){
 fn dief(str<i8*>,args<i64*>...){
 	fmt.vfprintf(std.STDOUT,str,args)
 	infos = debug.stack(10.(i8))
-    fmt.vfprintf(std.STDOUT,*"debug backtrace:\n")
+    fmt.vfprintf(std.STDOUT,*"\ndebug backtrace:\n")
     i = 1
     for v : infos {
         fmt.printf("%d: %s\n",i,v)

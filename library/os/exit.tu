@@ -23,7 +23,7 @@ func panic(args...){
         *p = 1
     }    
     infos = debug.stack(debug_stack)
-    fmt.println("debug backtrace:")
+    fmt.println("\ndebug backtrace:")
     i = 1
     for v : infos {
         fmt.printf("%d: %s\n",i,v)
@@ -39,7 +39,7 @@ func die(str){
         *p = 1
     }
     infos = debug.stack(debug_stack)
-    fmt.println("debug backtrace:")
+    fmt.println("\ndebug backtrace:")
     i = 1
     for v : infos {
         fmt.printf("%d: %s\n",i,v)
@@ -58,7 +58,7 @@ func dief(args...){
     }
     code<i8> = -1
     infos = debug.stack(debug_stack)
-    fmt.println("debug backtrace:")
+    fmt.println("\ndebug backtrace:")
     i = 1
     for v : infos {
         fmt.printf("%d: %s\n",i,v)
