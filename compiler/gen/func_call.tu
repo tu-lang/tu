@@ -136,10 +136,10 @@ FunCallExpr::PushStackArgs(ctx,fc)
                 }
                 continue
             }
-			if fc.params_order_var[std.len(fc.params_order_var) - 1 - i].structtype {
+			if fc.params_order_var[paramsize - 1 - i].structtype {
 				compile.writeln("    push $0")
 			}else{
-				compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+				compile.writeln("	lea runtime_internal_null(%%rip), %%rax")
 				compile.Push()
 			}
 		}

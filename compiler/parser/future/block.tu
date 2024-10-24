@@ -115,7 +115,7 @@ AsyncBlock::genawait2(s , callargs , recvs, isstatic){
 
     for i = 1 ; i < std.len(s.member) ; i += 1 {
         m = s.member[i]
-        if i < std.len(callargs) {
+        if i < std.len(callargs.args) {
             newsvar.init.fields[m.name] = callargs.args[i - 1]
         }else{
             newsvar.init.fields[m.name] = new gen.NullExpr(0,0)
