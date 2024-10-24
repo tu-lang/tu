@@ -19,7 +19,7 @@ class AsyncBlock {
     pollstate = null        // varexpr
 
     funcname  = ""
-    ortt      = null
+    root      = null
     stateid   = 0
 
     fc        = null        // async fn

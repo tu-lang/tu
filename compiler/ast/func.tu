@@ -134,9 +134,6 @@ Function::fullname(){
         AsyncFunc: {
         	funcsig = this.parser.getpkgname() + "_" + this.asyncst.name + "_poll"
         }
-        _ : {
-            utils.error("unknow fn type")
-        }
     }
     return funcsig
 }
@@ -166,9 +163,6 @@ Function::beautyName(){
         }
         AsyncFunc: {
         	funcsig = this.parser.getpkgname() + "::" + this.asyncst.name + "::poll"
-        }
-        _ : {
-            utils.error("unknow fn type")
         }
     }
     return funcsig

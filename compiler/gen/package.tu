@@ -81,7 +81,7 @@ fn genStruct(s)
 	} 
 	
 	s.iscomputed = true
-	if s.asyncnf != null {
+	if s.asyncfn != null {
 		compile.genFuture(s.asyncfn)
 	}
 	compile.currentParser = null

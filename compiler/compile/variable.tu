@@ -163,7 +163,7 @@ fn registerObjects(){
 
 fn registerFutures(){
     for st : currentParser.structs {
-        if !st.isasync() continue
+        if !st.isasync continue
 
         pollf = st.getPoll()
         if pollf == null {

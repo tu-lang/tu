@@ -125,9 +125,6 @@ Parser::parseFuncDef(ft, pdefine , node)
             node.asyncst = st
             node.asyncst.asyncfn = node
         }
-        _ : {
-            this.check(false,"unknown fn typ3")
-        }
     }    
 
     node.parser = this
@@ -198,7 +195,7 @@ Parser::parseAsyncDef2(fcname , parethis)
     reader<scanner.ScannerStatic> = this.scanner
 
     st = null
-    if compile.phase != compile.GlobalPhase {
+    if compile.phase == compile.GlobalPhase {
         st = new ast.Struct()
         st.name = fcname
         st.parser = this

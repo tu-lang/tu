@@ -10,7 +10,7 @@ Package::parse2()
     }
 
     for st : this.structs {
-        st.funcs = []
+        st.funcs = {}
     }
 
     this.initid = 0
