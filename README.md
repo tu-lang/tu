@@ -179,11 +179,11 @@ ReadStream::poll(){
 	_ : os.die("")
     }
 }
-async fn read(){
-    fut<ReadStream> = new ReadStream { fd: 1, bytes: 5}
+async read(){
+    fut<ReadStream> = new ReadStream  { fd: 1, bytes: 5 }
     buf += fut.await
 
-    fut2<ReadStream> = new ReadStream { fd: 2, bytes: 5}
+    fut2<ReadStream> = new ReadStream { fd: 2, bytes: 5 }
     buf += fut2.await
     return buf
 }
