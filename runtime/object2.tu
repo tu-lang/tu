@@ -278,7 +278,8 @@ fn get_func_value(obj<FuncObject>){
     return &obj.hdr
 }
 
-
+// internal call
+// @ban usercall
 fn dynarg_pass(fc<VObjFunc>...){ 
     passstack<u64*> = &fc  
     passstack += ptrSize  //typeinfo         

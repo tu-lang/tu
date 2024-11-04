@@ -41,3 +41,31 @@ fn block(p<Future>){
         procyield(spincnt)
     }
 }
+
+// internal call
+// @return Future
+fn dynfuturenew(obj<Value> , callid<u64>, args<i64*>...) {
+    fh<VObjFunc> = object_func_addr2(callid,obj)    
+    if fh.asyncsize < fh.argsize * 8 {
+        dief(*"future stack size wrong %d:%d\n",fh.asyncsize,fh.argsize*8)
+    }
+    //alloc stack
+    fut<Future> = new fh.asyncsize
+    fut.virf = fh.entry
+
+    //copy args
+    paramscount<i32> = fh.argsize
+    argscount<i32>   = args[0]
+    argstack<i64*>   = args + ptrSize
+    futpstack<i64*>  = fut + ptrSize
+    for i<i32> = 0 ; i < paramscount ; i += 1 {
+        //miss
+        if i + 1 > argscount {
+            futpstack[i] = &internal_null
+        }else{
+            futpstack[i] = argstack[i]
+        }
+    }
+    return fut
+}
+
