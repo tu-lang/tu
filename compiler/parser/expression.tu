@@ -451,6 +451,10 @@ Parser::parseNewExpr()
             var = this.getvar(name)
             if var != null
                 ret.name = var.varname
+        }else{
+            var = this.getvar(package)
+            if var != null
+                ret.package = var.varname
         }
         return ret
     }

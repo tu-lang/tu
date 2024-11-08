@@ -51,6 +51,14 @@ NewExpr::compile(ctx,load)
 			return this
 		}
 	 }
+	// new p<struct>.member
+	if this.package != "" && this.name != "" {
+		se = new StructMemberExpr(this.package,this.line,this.column)
+        se.member = this.name
+        se.compile(ctx,true)
+        internal.gc_malloc()
+        return this
+    }
 	 this.panic(
 		"asmgen: New(%s.%s) not right maybe package(%s) not import? line:%d column:%d",
 	 	this.package,this.name,this.package,this.line,this.column
