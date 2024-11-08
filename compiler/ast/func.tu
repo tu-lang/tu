@@ -55,6 +55,8 @@ class Function {
     iterid    = 0
 
     fn isasync(){
+        if this.asyncst != null
+            return true
         return this.fntype == AsyncFunc
     }
     fn argscount(){
