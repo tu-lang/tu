@@ -295,22 +295,32 @@ Parser::parseAsyncDef()
 
         if compile.phase != compile.GlobalPhase {
             parentst = this.pkg.getStruct(structname)
-            if parentst == null {
-                utils.errorf("async member func not found parent struct:%s",structname)
+            if parentst != null {
+                parethis.structpkg = parentst.pkg
+                parethis.structname = parentst.name
             }
-            parethis.structpkg = parentst.pkg
-            parethis.structname = parentst.name
         }       
     }
 
     f = this.parseAsyncDef2(fcname,parethis)
-    
+
     // consume global phase
     if compile.phase != compile.FunctionPhase {
         return f
     }
 
     if isstruct {
+        clsd = this.pkg.getClass(structname)
+        if clsd != null && clsd.found {
+            f.asyncst.asyncobj = true
+            f.cls = clsd
+            f.fntype = ast.ClassFunc
+            
+            this.pkg.addClassFunc(structname,f,this)
+            this.addFunc(structname + f.name,f)
+            return f
+        }
+
         this.addFunc(structname+fcname,f)
 
         asyncname = f.name

@@ -15,8 +15,9 @@ fn genStruct(s)
 	
 	for(m : s.member){
 		compile.currentParser = p
-		if m.isstruct {
-			ps = s.parser # Parser
+
+		if !s.asyncobj && m.isstruct {
+			ps = s.parser // Parser
 			compile.currentParser  = ps
 			acualPkg = ps.getImport(m.structpkg)
 			dst = package.getStruct(acualPkg,m.structname)

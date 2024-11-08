@@ -142,13 +142,24 @@ fn registerObjects(){
             writeln("   .quad %s",fc.fullname())
 
             writeln("   .quad %d",fc.is_variadic)
-            writeln("   .quad %d",std.len(fc.params_order_var) * 8)
+            //future
+            if fc.isasync()
+                writeln("   .quad %d",2 * 8)
+            else
+                writeln("   .quad %d",std.len(fc.params_order_var) * 8)
 
             writeln("   .quad %d",fc.mcount)
             writeln("   .quad %d", (fc.mcount - 1) * 8)
 
-            writeln("   .long %d",std.len(fc.params_order_var))
-            writeln("   .long 0")
+            if fc.isasync()
+                writeln("   .long %d",2)
+            else
+                writeln("   .long %d",std.len(fc.params_order_var))
+            
+            if fc.isasync()
+                writeln("   .long %d",fc.asyncst.size)
+            else
+                writeln("   .long 0")
             writeln("   .quad 0")
         }
 
@@ -164,6 +175,7 @@ fn registerObjects(){
 fn registerFutures(){
     for st : currentParser.structs {
         if !st.isasync continue
+        if st.asyncobj continue //skip class future member func
 
         pollf = st.getPoll()
         if pollf == null {
