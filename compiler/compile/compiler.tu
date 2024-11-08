@@ -179,11 +179,13 @@ func genFuture(fc)
             var.offset = m.offset
         }else{
             var.offset = top 
-            if var.structtype && !var.pointer && var.type <= ast.F64 && var.type >= ast.I8 {
-                top += var.size
-            }else{
-                top += 8
-            }
+            // params take 8 byte rsp stack
+            // if var.structtype && !var.pointer && var.type <= ast.F64 && var.type >= ast.I8 {
+                // top += var.size
+            // }else{
+                // top += 8
+            // }
+            top += 8
         }
     }
     
