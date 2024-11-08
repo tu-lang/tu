@@ -160,7 +160,7 @@ fn registerObjects(){
                 writeln("   .long %d",fc.asyncst.size)
             else
                 writeln("   .long 0")
-            writeln("   .quad 0")
+            writeln("   .quad %d" , fc.argsmem())
         }
 
         offset = 0

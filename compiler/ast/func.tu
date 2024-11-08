@@ -64,6 +64,14 @@ class Function {
             return 2
         return std.len(this.params_order_var)
     }
+    fn argsmem(){
+        i = 0
+        for it : this.params_order_var {
+            if it.onmem
+                i += 1
+        }
+        return i
+    }
 }
 func incr_closureidx(){
     idx = closureidx
