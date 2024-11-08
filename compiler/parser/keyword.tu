@@ -304,6 +304,11 @@ Parser::parseAsyncDef()
     }
 
     f = this.parseAsyncDef2(fcname,parethis)
+    
+    // consume global phase
+    if compile.phase != compile.FunctionPhase {
+        return f
+    }
 
     if isstruct {
         this.addFunc(structname+fcname,f)
