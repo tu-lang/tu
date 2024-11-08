@@ -34,6 +34,7 @@ AsyncBlock::getstruct(expr){
             }
             if var != null {
                 if !var.structtype || var.structname == "" {
+                    return null
                     expr.check(false,"await function only support for struct member")
                 }
                 s = p.pkg.getPackage(var.structpkg).getStruct(var.structname)
@@ -61,6 +62,9 @@ AsyncBlock::genawait(stmt , recvs){
     if type(stmt) == type(gen.FunCallExpr) {
         fc = stmt
         s = this.getstruct(stmt)
+        if s == null {
+            return this.dynawait(fc,recvs)
+        }
         retvar = this.genawait2(s,fc,recvs,false)
         return retvar
     }else if type(stmt) == type(gen.AssignExpr) {
@@ -98,6 +102,73 @@ AsyncBlock::genawait(stmt , recvs){
     }else {
         stmt.check(false,"unknown await stmt type")
     }        
+}
+
+AsyncBlock::dynawait(fc , recvs){
+    casevar = this.gencasevar()
+    casevar.structname = "Future" 
+    casevar.structpkg = "runtime"
+
+    //assign expression
+    assignExpr = new gen.AssignExpr(0, 0)
+    assignExpr.opt = ast.ASSIGN
+    assignExpr.lhs = casevar
+    objname = fc.package
+    callname = fc.funcname
+    fc.package = "runtime"
+    fc.funcname = "dynfuturenew"
+    // args
+    oldargs = fc.args
+    newargs = []
+
+    newargs[] = new gen.VarExpr(objname,0,0)
+    fsig      = new gen.IntExpr(0,0)
+
+    hk = utils.hash(callname)
+    fsig.lit = fmt.sprintf("%d",hk)
+
+    fsig.tyassert = new gen.TypeAssertExpr(0,0)
+    newargs[] = fsig
+    //merge
+    std.merge(newargs,oldargs)
+    fc.args = newargs
+
+    assignExpr.rhs = fc
+    this.push(assignExpr)
+
+    pollcall = new gen.FunCallExpr(fc.line,fc.column)
+    pollcall.p = fc.p
+    pollcall.package = casevar.varname
+    pollcall.funcname = "poll"
+    pollcall.args[] = casevar
+    pollcall.args[] = this.fc.ctxvar
+
+    prevcur = std.tail(this.queue)
+    this.create()
+    prevcur.blocks[] = this.genstate(
+        std.tail(this.queue)
+    )
+    prevcur.blocks[] = this.genswitch(
+        std.tail(this.queue)
+    )
+    pollassign = null 
+    retvar = null
+    if recvs != null {
+        pollassign = this.genpollrecv2(casevar,recvs,pollcall)
+        retvar = null//CONSIDER: mayb multiassign return a value too?
+    }else{
+        retvar = this.genretvar(false)
+        pollassign = this.genpollrecv(
+            casevar,retvar,pollcall
+        )
+    }
+
+    this.push(pollassign)
+
+    pollif = this.genpollisready()
+    this.push(pollif)
+    
+    return retvar
 }
 
 AsyncBlock::genawait2(s , callargs , recvs, isstatic){
