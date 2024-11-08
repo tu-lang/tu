@@ -9,7 +9,7 @@ mem VObjFunc {
     i64 isvarf , argstack
     i64 retsize, retstack
 	i32 argsize, asyncsize
-	u64 init
+	u64 asyncargs 
 }
 mem VObjMem {
     u64 nid

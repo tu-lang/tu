@@ -46,15 +46,49 @@ fn block(p<Future>){
 // @return Future
 fn dynfuturenew(obj<Value> , callid<u64>, args<i64*>...) {
     fh<VObjFunc> = object_func_addr2(callid,obj)    
-    if fh.asyncsize < fh.argsize * 8 {
-        dief(*"future stack size wrong %d:%d\n",fh.asyncsize,fh.argsize*8)
+    if fh.asyncsize == 0 {
+        dief(*"not future object fn\n")
+    }
+    if fh.asyncsize < fh.asyncargs * 8 {
+        dief(*"future stack size wrong %d:%d\n",fh.asyncsize,fh.asyncargs*8)
     }
     //alloc stack
     fut<Future> = new fh.asyncsize
-    fut.virf = fh.entry
+    fut.virf = fh
 
     //copy args
-    paramscount<i32> = fh.argsize
+    paramscount<i32> = fh.asyncargs
+    argscount<i32>   = args[0]
+    argstack<i64*>   = args + ptrSize
+    futpstack<i64*>  = fut + ptrSize
+    for i<i32> = 0 ; i < paramscount ; i += 1 {
+        //miss
+        if i + 1 > argscount {
+            futpstack[i] = &internal_null
+        }else{
+            futpstack[i] = argstack[i]
+        }
+    }
+    return fut
+}
+
+
+// internal call
+// @return Future
+fn dynfuturenew2(virf<VObjFunc> , args_<i64*>...) {
+    args<i64*> = &args_
+    if virf.asyncsize == 0 {
+        dief(*"not future object fn2\n")
+    }
+    if virf.asyncsize < virf.asyncargs * 8 {
+        dief(*"future stack size wrong2 %d:%d\n",virf.asyncsize,virf.asyncargs*8)
+    }
+    //alloc stack
+    fut<Future> = new virf.asyncsize
+    fut.virf = virf
+
+    //copy args
+    paramscount<i32> = virf.asyncargs
     argscount<i32>   = args[0]
     argstack<i64*>   = args + ptrSize
     futpstack<i64*>  = fut + ptrSize
