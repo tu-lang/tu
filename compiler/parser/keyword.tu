@@ -299,10 +299,15 @@ Parser::parseAsyncDef()
         parethis.structname = structname
 
         if compile.phase != compile.GlobalPhase {
-            parentst = this.pkg.getStruct(structname)
-            if parentst != null {
-                parethis.structpkg = parentst.pkg
-                parethis.structname = parentst.name
+            clsd = this.pkg.getClass(structname)
+            if clsd != null && clsd.found {
+                parethis.structtype = false
+            }else {
+                parentst = this.pkg.getStruct(structname)
+                if parentst != null {
+                    parethis.structpkg = parentst.pkg
+                    parethis.structname = parentst.name
+                }
             }
         }       
     }

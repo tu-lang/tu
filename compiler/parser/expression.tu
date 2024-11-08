@@ -562,7 +562,7 @@ Parser::parseVarExpr(var)
                     me.membername = pfuncname
                     return me
                 }else if( (mvar = this.getvar(package)) && mvar != null ){
-                    if ( mvar.structname != "") {
+                    if ( mvar.structtype && mvar.structname != "") {
                         mexpr = new gen.StructMemberExpr(mvar.varname,int(reader.line),int(reader.column))
                         mexpr.tyassert = ta
                         mexpr.var = mvar
