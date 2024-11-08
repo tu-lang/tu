@@ -100,7 +100,7 @@ FunCallExpr::compile(ctx,load)
 				return this
 			}
 		}
-		if var.structname != "" && var.structname != null {
+		if var.structtype && var.structname != "" && var.structname != null {
 			s = compile.currentParser.pkg.getPackage(var.structpkg)
 				.getStruct(var.structname)
 			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)

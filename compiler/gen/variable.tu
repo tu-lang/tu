@@ -65,7 +65,7 @@ VarExpr::isMemtype(ctx){
         acualPkg = compile.currentParser.getImport(v.structpkg)
         dst = package.getStruct(acualPkg,v.structname)
         
-        if (dst == null && v.structname != ""){
+        if (dst == null && v.structtype && v.structname != ""){
             fc = getGLobalFunc(v.structpkg,v.structname)
             if  fc != null {
                 return true
@@ -291,7 +291,7 @@ VarExpr::clone(){
 VarExpr::getStackSize(p){
     utils.debug("gen.VarExpr.getStackSize()")
     if this.stack {
-        if this.structname != ""  {
+        if this.structtype && this.structname != ""  {
             this.check(this.stacksize != 0)
             acualPkg = p.getImport(this.structpkg)
             s = package.getStruct(acualPkg,this.structname)
