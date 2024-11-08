@@ -198,6 +198,8 @@ Parser::parseAsyncDef2(fcname , parethis)
     if compile.phase == compile.GlobalPhase {
         st = new ast.Struct()
         st.name = fcname
+        if parethis != null
+            st.name = parethis.structname + fcname
         st.parser = this
         st.pkg  = this.pkg.package
 
@@ -205,7 +207,10 @@ Parser::parseAsyncDef2(fcname , parethis)
         this.pkg.addAsyncStruct(st.name,st)
         this.structs[st.name] = st
     }else {
-        st = this.pkg.getStruct(fcname)
+        if parethis != null
+            st = this.pkg.getStruct(parethis.structname + fcname)
+        else
+            st = this.pkg.getStruct(fcname)
         this.check(st != null,"phase 2 st is null")
     }
 
@@ -326,7 +331,7 @@ Parser::parseAsyncDef()
         asyncname = f.name
         f.name = "poll"
         this.pkg.addStructFunc(structname,asyncname,f,null)
-        this.pkg.addStructFunc(asyncname,f.name,f,st)
+        this.pkg.addStructFunc(structname + asyncname,f.name,f,st)
     }else{
         asyncname = f.name
         f.name = "poll"

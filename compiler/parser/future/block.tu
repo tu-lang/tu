@@ -117,6 +117,7 @@ AsyncBlock::dynawait(fc , recvs){
     callname = fc.funcname
     fc.package = "runtime"
     fc.funcname = "dynfuturenew"
+    fc.is_pkgcall = true
     // args
     oldargs = fc.args
     newargs = []
