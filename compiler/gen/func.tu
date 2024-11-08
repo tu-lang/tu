@@ -186,6 +186,15 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 	mretnull_label   = cfunc.fullname() + "_mrnull_" + vlid
 	mretdone_label   = cfunc.fullname() + "_mrdone_" + vlid
 
+	//rfc100-4:
+	if ty != ast.FutureCall {
+        compile.writeln(
+            "   cmp $0, 52(%%rax)\n" +
+            "   jg  %s",
+            mretnull_label
+        )
+    }
+
     compile.writeln("    cmp $1 , 32(%%rax)")
     compile.writeln("    jle %s",mretnull_label)
 	compile.writeln("	 sub 40(%%rax) , %%rsp")
@@ -203,7 +212,7 @@ FunCallExpr::compile2(ctx, load, ty, obj){
     if this.hasVariadic() {
         this.dynstackcall2(ctx,load)
     }else{
-        this.dynstackcall(ctx,load)
+        this.dynstackcall(ctx,ty,load)
     }
 
 	this.is_dyn = true

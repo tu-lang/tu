@@ -8,7 +8,7 @@ use std
 use compiler.utils
 
 
-FunCallExpr::dynstackcall(ctx,free){
+FunCallExpr::dynstackcall(ctx, ty, free){
 
 	args = this.args
 	cfunc = compile.currentFunc
@@ -16,6 +16,7 @@ FunCallExpr::dynstackcall(ctx,free){
 	argsvardic_label = cfunc.fullname() + "_cfv_" + vlid
 	argseq_label   = cfunc.fullname() + "_cfe_" + vlid
 	argsdone_label   = cfunc.fullname() + "_done_" + vlid
+	dynfuture_label   = cfunc.fullname() + "_dynf_" + vlid
 
     //push argn,argn-1,arg....,arg1 ,argcount
     stack_args = this.DynPushStackArgs(ctx)
@@ -23,6 +24,24 @@ FunCallExpr::dynstackcall(ctx,free){
     vfinfo += 8
 
 	compile.writeln("    mov %d(%%rsp) , %%rax", vfinfo)
+    //rfc100-4:
+    if ty != ast.FutureCall {
+        compile.writeln(
+            "   cmp $0 , 52(%%rax)\n" +
+            "   jle %s\n" +
+            "   push $%d\n" +
+            "   push %%rax\n" +
+            "   call runtime_dynfuturenew2\n" +
+            "   add $%d , %%rsp\n" +
+            "   lea runtime_default_virfuture , %%rdi\n" +
+            "   mov %%rdi , %d(%%rsp)\n" +
+            "   jmp %s", //over
+            dynfuture_label, stack_args, stack_args * 8,
+            8, argsdone_label
+        )
+        compile.writeln("%s:",dynfuture_label)
+    }
+
     compile.writeln("    cmp $1 , 16(%%rax)")
     compile.writeln("    je %s",argsvardic_label)
 

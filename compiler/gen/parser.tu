@@ -3,6 +3,27 @@ use std
 use compiler.parser
 use compiler.utils
 
+rd_done = false
+
+parser.Parser::registeDefault(){
+    if rd_done return true
+
+    if this.pkg.package == "runtime" {
+        compile.writeln("    .global runtime_default_virfuture")
+        compile.writeln("runtime_default_virfuture:")
+        compile.writeln("   .quad 0")
+        compile.writeln("   .quad 0")
+        compile.writeln("   .quad 0")
+        compile.writeln("   .quad 0")
+        compile.writeln("   .quad 1")
+        compile.writeln("   .quad 0")
+        compile.writeln("   .long 0")
+        compile.writeln("   .long 0") 
+        compile.writeln("   .quad 0")
+        rd_done = true
+    }
+}
+
 parser.Parser::compile()
 {    
     utils.debug("gen.parser.Parser::compile()")
@@ -25,6 +46,7 @@ parser.Parser::compile()
     compile.registerStrings()
     compile.registerObjects()
     compile.registerFutures()
+    this.registeDefault()
 
     compile.writeln(".text")
     
