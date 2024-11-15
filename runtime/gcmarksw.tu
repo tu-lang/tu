@@ -74,7 +74,31 @@ fn gcsweephelper(){
 	if atomic.xadd(&sched.stopsweep, 1.(i8)) == sched.cores
 		sched.allsweepdone.Wake()
 }
+
 Gc::markroot(){
+    c<Core> = core()
+	// entry of global root stack
+	moudleptr<i64*> = moudlestack
+	while moudleptr != null {
+		subms<i64*> = *moudleptr
+		subme<i64*> = *subms
+
+		//OPTIMIZE: align ptr 8 byte
+		for ptr<i64*> = subms; ptr <= (subme - 8); ptr += 1 {
+			s<Span> = null
+			objIndex<u64> = 0
+			base<u64> = findObject(*ptr,&s,&objIndex)
+			if base != Null {
+				tracef(*"root find object: %p(%p) obj:%d",ptr,base,objIndex)
+				greyobject(base, s,&c.queue,objIndex)
+			}
+		}
+		//next moudle
+		moudleptr = *subme
+	}
+}
+
+Gc::markroot2(){
     c<Core> = core()
     data1<u64> = &sched
     data1_end<u64> = data1 + sizeof(Sched)

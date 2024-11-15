@@ -123,7 +123,7 @@ Zero<i32>			= 0
 Positive1<i32>		= 1
 Negative1<i32> 		= -1
 
-//TODO: prohibit modificate
+//TODO: prohibit modify
 internal_bool_true<Value:> = new Value {
 	type : 4,//Bool
 	data : 1
@@ -136,6 +136,8 @@ internal_null<Value:> = new Value {
 	type : 0, //Null
 	data : 0
 }
+// Set by Compiler
+moudlestack<i64> = 0
 
 mem Value  { 
 	i64 type,data 
