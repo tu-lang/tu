@@ -47,16 +47,16 @@ std_atomic_xadd:
     mov     %esi , %eax  
     lock 
     xadd    %eax , (%rdx)
-    add     %ecx , %eax
+    add     %esi , %eax
     ret
 
 .global std_atomic_xadd64
 std_atomic_xadd64:
-    mov     %rdi , %rax
-    mov     %rsi , %rcx
+    mov     %rdi , %rdx
+    mov     %rsi , %rax
     lock 
-    xadd    %rcx , (%rax)
-    mov    (%rax) ,%rax
+    xadd    %rax , (%rdx)
+    add     %rsi , %rax
     retq
 
 .global std_atomic_or8

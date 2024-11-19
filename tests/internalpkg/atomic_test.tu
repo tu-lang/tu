@@ -137,7 +137,7 @@ func test_add_i32(){
 	j<i32> = 0
 	for delta<i32> = 1 ; delta+delta > delta; delta += delta {
 		k<i32> = atomic.xadd(&x.i, delta) //xadd return old value
-		k += delta
+		// k += delta
 		j += delta
 		if x.i != j || k != j {
 			os.dief("delta=%d i=%d j=%d k=%d", int(delta), int(x.i), int(j), int(k))
