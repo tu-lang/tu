@@ -143,7 +143,7 @@ func is_array(arr<runtime.Value>){
 }
 
 func ntime(){
-	ts<TimeSpec> = new TimeSpec	
+	ts<TimeSpec:> = null
 	clock_gettime(CLOCK_REALTIME,ts)
 	return ts.sec * 1000000000 + ts.nsec
 }

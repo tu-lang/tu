@@ -193,7 +193,7 @@ fn gcstopworld(){
 fn schedule(){
 top:
 	if sched.gcwaiting {
-        dgc(*"Found Need Gc")
+        dgc(*"Found Need Gc\n")
 		gcstopworld()
 		goto top
 	}

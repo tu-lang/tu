@@ -1,6 +1,7 @@
 use std.atomic
 
 Gc::startcycle(){
+	dgc(*"start cycle\n")
 	if this.gc_trigger <= heapmin {
 		this.heapmarked = this.gc_trigger / 2
 	}
@@ -23,6 +24,7 @@ Gc::trigger(kind<i32>){
 }
 
 Gc::markinit(){
+	dgc(*"mark init\n")
 	heap_.lock.lock()
 	arenas<std.Array> = heap_.allarenas
 	heap_.lock.unlock()
@@ -38,8 +40,10 @@ Gc::markinit(){
 		}
 	}
 	gc.marked = 0
+	dgc(*"mark init done\n")
 }
 Gc::finishsweep(){
+	dgc(*"finish sweep\n")
 	while sweepone() >= Null {
 	}
 
@@ -66,14 +70,14 @@ fn gcmarkhelper(){
 	c<Core> = core()
 	gc.markscan2(&c.queue)
 	
-	if atomic.xadd(&sched.stopmark, 1.(i8)) == sched.cores - 1
+	if atomic.xadd(&sched.stopmark, 1.(i8)) == sched.cores
 		sched.allmarkdone.Wake()
 }
 fn gcsweephelper(){
 	tracef(*"gcsweephelper:\n")
     while sweepone() >= Null {}
 
-	if atomic.xadd(&sched.stopsweep, 1.(i8)) == sched.cores - 1
+	if atomic.xadd(&sched.stopsweep, 1.(i8)) == sched.cores
 		sched.allsweepdone.Wake()
 }
 
@@ -83,8 +87,9 @@ Gc::markroot(){
 	// entry of global root stack
 	moudleptr<i64*> = moudlestack
 	while moudleptr != null {
-		subms<i64*> = *moudleptr
+		subms<i64*> = moudleptr
 		subme<i64*> = *subms
+		dgc(*"moudle[%p - %p] file:%s\n",subms,subme,moudleptr - 5)
 
 		//OPTIMIZE: align ptr 8 byte
 		for ptr<i64*> = subms; ptr <= (subme - 8); ptr += 1 {
@@ -131,6 +136,7 @@ Gc::markroot2(){
 }
 
 Gc::markscan(){
+	dgc(*"mark scan\n")
     _c<Core> = core()
    	for c<Core> = sched.allcores; c != Null ; c = c.link
         c.local.releaseAll()
@@ -144,7 +150,7 @@ Gc::markscan(){
     dgc(*"Wake all thread start marking\n")
     this.markscan2(&_c.queue)
 	dgc(*"check all scan has done before:%d total:%d\n",sched.stopmark, sched.cores)
-    if atomic.xadd(&sched.stopmark,1.(i8)) != sched.cores - 1 {
+    if atomic.xadd(&sched.stopmark,1.(i8)) != sched.cores {
         sched.allmarkdone.Sleep()
         sched.allmarkdone.Clear()
     }
@@ -153,7 +159,7 @@ Gc::markscan(){
 
 Gc::markscan2(queue<Queue>)
 {
-
+	dgc(*"mark scan 2\n")
     c<Core> = core()
     stk_end<u64> = get_sp()
     debug(*"scan stack range[%p - %p] == %d\n",stk_end,c.stktop,c.stktop - stk_end)
@@ -188,6 +194,7 @@ Gc::markscan2(queue<Queue>)
 	tracef(*"markscan2 done\n")
 }
 Gc::marktinys(){
+	dgc(*"mark tinys \n")
     for c<Core> = sched.allcores; c != Null ; c = c.link {
         cache<Cache> = c.local
 		if cache.tiny == 0 continue
@@ -209,6 +216,7 @@ MarkBits::span_obj(s<Span> , obj<u64>)
 	this.mask = mask
 	this.index = obj
 }
+
 fn objIsUsing(p<u64>){
     s<Span> = null
     objIndex<u64> = 0
@@ -345,7 +353,7 @@ Gc::sweep(){
 	dgc(*"Wake all thread sweeping\n")
 	while sweepone() >= Null {}
 	dgc(*"all sweep one done\n")
-	if atomic.xadd(&sched.stopsweep,1.(i8)) != sched.cores - 1 {
+	if atomic.xadd(&sched.stopsweep,1.(i8)) != sched.cores {
 		sched.allsweepdone.Sleep()
 		sched.allsweepdone.Clear()
 	}
@@ -357,7 +365,7 @@ Gc::sweep(){
 fn sweepone(){
 	s<Span> = null 
 	sg<u32> = heap_.sweepgen
-	debug(*"heap_.sweepdone:%d i:%d wait:%d\n",heap_.sweepdone,1-sg/2%2,heap_.sweepSpans[1-sg/2%2].spineLen)
+	debug(*"heap_.sweepone:%d i:%d wait:%d\n",heap_.sweepdone,1-sg/2%2,heap_.sweepSpans[1-sg/2%2].spineLen)
 	if heap_.sweepdone != 0 {
 		return -1.(i8)
 	}
@@ -433,6 +441,7 @@ Gc::flush(preempt<i32>) {
 
 Span::sweep(preserve<i32>)
 {
+	dgc(*"span sweep\n")
 	//DEBUG_SPAN(this)
 	h<Heap> = &heap_
 	sweepgen<u32> = h.sweepgen
