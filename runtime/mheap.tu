@@ -65,6 +65,7 @@ Heap::alloc_m(npage<u64>,spanc<u8>,large<u8>)
     s<Span> = heap_.allocSpanLocked(npage)
 	if  s != null {
         atomic.store(&s.sweepgen,this.sweepgen)
+		this.sweepSpans[this.sweepgen/2%2].push(s)
 		s.state = mSpanInUse
 		s.allocCount = 0
 		s.sc  = spanc
@@ -350,7 +351,7 @@ Heap::spanOf(p<u64>)
 {
 	ri<u32> = arenaIndex(p)
 	if  arenaL1Bits == 0  {
-		if  arena_l2(ri) >= ( 1 << arenaL2Bits ) {
+		if  arena_l2(ri) >= ( 1 << arenaL2Bits )  || arena_l2(ri) < Null {
 			return 0.(i8)
 		}
 	}
