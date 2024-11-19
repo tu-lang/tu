@@ -113,12 +113,12 @@ Gc::start(kind<i32>)
 	}
 	// debugcachegen()
 	this.worldSeam.lock()
-	dgc(*"Got GC lock %d---",this.cycles)
+	dgc(*"Got GC lock %d---\n",this.cycles)
 	this.stopSTW()
 
 	this.gc0()
     this.startSTW()
-	dgc(*"Free GC lock %d---",this.cycles)
+	dgc(*"Free GC lock %d---\n",this.cycles)
 	this.worldSeam.unlock()
 	this.startSema.unlock()
 	debug(*"-----------------------------end(%d)----------------------\n",this.cycles)
@@ -128,8 +128,8 @@ Gc::gc0(){
 		fg<u32> = atomic.load(&c.local.flushGen)
 		if fg != heap_.sweepgen {
 			debugcachegen()
-			warn(*"runtime cid:%d flushgen:%d  != sweepgen:%d",c.cid,fg,heap_.sweepgen)
-			dief(*"p machce not flushed")
+			warn(*"runtime cid:%d flushgen:%d  != sweepgen:%d\n",c.cid,fg,heap_.sweepgen)
+			dief(*"p machce not flushed\n")
 		}
 	}
 	this.markinit()
@@ -149,7 +149,7 @@ Gc::gc0(){
 
 Gc::markdone()
 {
-	debug(*"gcphase:%d",_GCmark)
+	debug(*"gcphase:%d\n",_GCmark)
 	if( gcphase != _GCmark ){
 		return True
 	}
@@ -162,14 +162,14 @@ Gc::markdone()
 
 Gc::markterm()
 {
-	debug(*" start markterm")
+	debug(*" start markterm\n")
 	atomic.store(&gcBlackenEnabled, false)
 	atomic.store(&gcphase,_GCmarktermination)
 	for c<Core> = sched.allcores ; c != Null ; c = c.link {
 		queue<Queue> = &c.queue	
 		if queue.empty() == False {
-			warn(*"wb1.nobj:%d wb2.nobj:%d",queue.buf1.nobj,queue.buf2.nobj)
-			dief(*"M has cached gc work atg end of mark termination")
+			warn(*"wb1.nobj:%d wb2.nobj:%d\n",queue.buf1.nobj,queue.buf2.nobj)
+			dief(*"M has cached gc work atg end of mark termination\n")
 		}
 	}
 	gc.heapmarked = this.marked
@@ -202,7 +202,7 @@ Gc::setratio(){
 			trigger = min_trigger
 		}
 		if trigger < 0 {
-			dief(*"gc_trigger underflow")
+			dief(*"gc_trigger underflow\n")
 		}
 	}
 	this.gc_trigger = trigger
@@ -246,15 +246,15 @@ Gc::stopSTW() {
 	}
     if sched.stopwait > 0 {
         // checkalldead()
-        dief(*"sched.stopwait:%d != 0 m:%d",sched.stopwait,sched.cores)
+        dief(*"sched.stopwait:%d != 0 m:%d\n",sched.stopwait,sched.cores)
     }
     for c = sched.allcores; c != Null ; c = c.link {
         if c.status != CoreStop {
             checkalldead()
-            dief(*"m.status not stop plan:%d now:%d",allcores,sched.cores)
+            dief(*"m.status not stop plan:%d now:%d\n",allcores,sched.cores)
         }
 	}
-    dgc(*"all world stop")
+    dgc(*"all world stop\n")
 }
 Gc::startSTW()
 {
@@ -266,9 +266,9 @@ Gc::startSTW()
         if c.cid == c_.cid continue
 
         if c.status != CoreStop
-            dief(*"m.status not stop")
+            dief(*"m.status not stop\n")
         if c.status != CoreStop
-            dief(*"thread:%d cur:%d not sleep",c.cid,core().cid)
+            dief(*"thread:%d cur:%d not sleep\n",c.cid,core().cid)
         c.status = CoreRun
         c.park.Wake()
 	} 

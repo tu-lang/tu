@@ -62,20 +62,23 @@ Gc::finishsweep(){
 	gbArenas.lock.unlock()
 }
 fn gcmarkhelper(){
+	tracef(*"gcmarkhelper:\n")
 	c<Core> = core()
 	gc.markscan2(&c.queue)
 	
-	if atomic.xadd(&sched.stopmark, 1.(i8)) == sched.cores
+	if atomic.xadd(&sched.stopmark, 1.(i8)) == sched.cores - 1
 		sched.allmarkdone.Wake()
 }
 fn gcsweephelper(){
+	tracef(*"gcsweephelper:\n")
     while sweepone() >= Null {}
 
-	if atomic.xadd(&sched.stopsweep, 1.(i8)) == sched.cores
+	if atomic.xadd(&sched.stopsweep, 1.(i8)) == sched.cores - 1
 		sched.allsweepdone.Wake()
 }
 
 Gc::markroot(){
+	tracef(*"markroot:\n")
     c<Core> = core()
 	// entry of global root stack
 	moudleptr<i64*> = moudlestack
@@ -89,7 +92,7 @@ Gc::markroot(){
 			objIndex<u64> = 0
 			base<u64> = findObject(*ptr,&s,&objIndex)
 			if base != Null {
-				tracef(*"root find object: %p(%p) obj:%d",ptr,base,objIndex)
+				tracef(*"root find object: %p(%p) obj:%d\n",ptr,base,objIndex)
 				greyobject(base, s,&c.queue,objIndex)
 			}
 		}
@@ -99,6 +102,7 @@ Gc::markroot(){
 }
 
 Gc::markroot2(){
+	tracef(*"markroot2\n")
     c<Core> = core()
     data1<u64> = &sched
     data1_end<u64> = data1 + sizeof(Sched)
@@ -109,7 +113,7 @@ Gc::markroot2(){
         objIndex<u64> = 0
         base<u64> = findObject(*start,&s,&objIndex)
         if base != Null {
-            tracef(*"root find object: %p(%p) obj:%d",start,base,objIndex)
+            tracef(*"root find object: %p(%p) obj:%d\n",start,base,objIndex)
             //DEBUG_SPAN(s)
             greyobject(base, s,&c.queue,objIndex)
         }
@@ -119,7 +123,7 @@ Gc::markroot2(){
         objIndex<u64> = null
         base<u64> = findObject(*start,&s,&objIndex)
         if base != Null {
-            tracef(*"root find object: %p(%p) obj:%d",start,base,objIndex)
+            tracef(*"root find object: %p(%p) obj:%d\n",start,base,objIndex)
             //DEBUG_SPAN(s)
             greyobject(base, s,&c.queue,objIndex)
         }
@@ -134,35 +138,37 @@ Gc::markscan(){
         if c.cid == _c.cid continue
         c.helpmark = 1
         if c.status != CoreStop
-            dief(*"thread:%d cur:%d not sleep",c.cid,_c.cid)
+            dief(*"thread:%d cur:%d not sleep\n",c.cid,_c.cid)
         c.park.Wake()
 	}
-    dgc(*"Wake all thread start marking")
+    dgc(*"Wake all thread start marking\n")
     this.markscan2(&_c.queue)
-    if atomic.xadd(&sched.stopmark,1.(i8)) != sched.cores {
+	dgc(*"check all scan has done before:%d total:%d\n",sched.stopmark, sched.cores)
+    if atomic.xadd(&sched.stopmark,1.(i8)) != sched.cores - 1 {
         sched.allmarkdone.Sleep()
         sched.allmarkdone.Clear()
     }
-    dgc(*"all thread mark done")
+    dgc(*"all thread mark done\n")
 }
 
 Gc::markscan2(queue<Queue>)
 {
+
     c<Core> = core()
     stk_end<u64> = get_sp()
-    debug(*"scan stack range[%p - %p] == %d",stk_end,c.stktop,c.stktop - stk_end)
+    debug(*"scan stack range[%p - %p] == %d\n",stk_end,c.stktop,c.stktop - stk_end)
 
     cur_sp<u64*> = stk_end
     if c.stktop <= stk_end {
-        dief(*"stack error!")
+        dief(*"stack error!\n")
     }
-    tracef(*"find object: %p -  %p",cur_sp,c.stktop)
+    tracef(*"find object: %p -  %p\n",cur_sp,c.stktop)
     for cur_sp = stk_end ; cur_sp <= c.stktop ; cur_sp += ptrSize {
         s<Span> = s
         objIndex<u64> = 0
         base<u64> = findObject(*cur_sp,&s,&objIndex)
         if base != 0 {
-            tracef(*"find object: %p(%p) obj:%d",cur_sp,base,objIndex)
+            tracef(*"find object: %p(%p) obj:%d\n",cur_sp,base,objIndex)
             //DEBUG_SPAN(s)
             greyobject(base, s,queue,objIndex)
         }
@@ -170,13 +176,16 @@ Gc::markscan2(queue<Queue>)
 
     loop {
         obj<u64> = queue.tryGetFast()
+		debug(*"ms2: get queue:%d\n",obj)
         if obj == Null {
             obj = queue.tryGet()
+			debug(*"ms2: get queue 2:%d\n",obj)
             if obj == Null
                 break
         }
         scanobject(obj,queue) 
     }
+	tracef(*"markscan2 done\n")
 }
 Gc::marktinys(){
     for c<Core> = sched.allcores; c != Null ; c = c.link {
@@ -215,19 +224,19 @@ fn objIsUsing(p<u64>){
 fn greyobject(obj<u64> , s<Span> , queue<Queue> , objIndex<u64>)
 {
     if obj & (ptrSize - 1) != 0 {
-        dief("greyobject: obj not pointer-aligned".(i8))
+        dief("greyobject: obj not pointer-aligned\n".(i8))
     }
     if s.isFree(objIndex) == True {
-        warn(*"marking free object %p size:%d alloc:%d i:%d",obj,s.elemsize,s.allocCount,objIndex)
+        warn(*"marking free object %p size:%d alloc:%d i:%d\n",obj,s.elemsize,s.allocCount,objIndex)
         return True
     }
     mbits<MarkBits:> = null
     mbits.span_obj(s,objIndex)
     if mbits.isMarked() == True {
-        tracef(*"already marked obj:%p size:%d index:%d bitaddr:%p",obj,s.elemsize,objIndex,mbits.u8p)
+        tracef(*"already marked obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
         return True
     }
-    tracef(*"marke obj:%p size:%d index:%d bitaddr:%p",obj,s.elemsize,objIndex,mbits.u8p)
+    tracef(*"marke obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
     mbits.setMarked()
 
     pageIdx<u64> = null
@@ -241,7 +250,7 @@ fn greyobject(obj<u64> , s<Span> , queue<Queue> , objIndex<u64>)
         return True
     }
     if queue.putFast(obj) == False {
-        tracef(*"put grey queue. span:%p obj:%p",s,obj)
+        tracef(*"put grey queue. span:%p obj:%p\n",s,obj)
         queue.put(obj)
     }
 }
@@ -276,11 +285,11 @@ fn findObject(p<u64>, ss<u64*> , objIndex<u64*>)
 fn scanobject(b<u64> , queue<Queue>){
     hbits<HeapBits:> = null
     hbits.heapBitsForAddr(b)
-    tracef(*"obj:%p bitaddr:%p queue:%p",b,hbits.bitp,queue)
+    tracef(*"obj:%p bitaddr:%p queue:%p\n",b,hbits.bitp,queue)
     s<Span> = heap_.spanOf(b)
     n<u64> = s.elemsize
     if n == Null {
-        dief(*"scanobject n == 0")
+        dief(*"scanobject n == 0\n")
     }
 
     i<u64> = 0
@@ -306,23 +315,23 @@ fn scanobject(b<u64> , queue<Queue>){
             }
         }
     }    
-    tracef(*"obj:%p done",b)
+    tracef(*"obj:%p done\n",b)
     queue.used += n
 }
 
 
 
 Gc::sweep(){
-	debug(*"spans wait sweep:%d gc.forced:%d",heap_.sweepSpans[heap_.sweepgen/2%2].spineLen,this.forced)
+	debug(*"spans wait sweep:%d gc.forced:%d\n",heap_.sweepSpans[heap_.sweepgen/2%2].spineLen,this.forced)
 	if gcphase != _GCoff {
-		dief(*"sweep being done but phase is not GCoff")
+		dief(*"sweep being done but phase is not GCoff\n")
 	}
 
 	heap_.lock.lock()
 	heap_.sweepgen += 2
 	heap_.sweepdone = 0
 	if heap_.sweepSpans[heap_.sweepgen/2%2].index != 0 {
-		dief(*"non-empty swept list")
+		dief(*"non-empty swept list\n")
 	}
 	heap_.lock.unlock()
 	c_<Core> = core()
@@ -330,16 +339,17 @@ Gc::sweep(){
 		if c.cid == c_.cid continue
 		c.helpsweep = 1
 		if c.status != CoreStop
-			dief(*"thread:%d cur:%d not sleep",c.cid,core().cid)
+			dief(*"thread:%d cur:%d not sleep\n",c.cid,core().cid)
 		c.park.Wake()
 	}		
-	dgc(*"Wake all thread sweeping")
+	dgc(*"Wake all thread sweeping\n")
 	while sweepone() >= Null {}
-	if atomic.xadd(&sched.stopsweep,1.(i8)) != sched.cores {
+	dgc(*"all sweep one done\n")
+	if atomic.xadd(&sched.stopsweep,1.(i8)) != sched.cores - 1 {
 		sched.allsweepdone.Sleep()
 		sched.allsweepdone.Clear()
 	}
-	dgc(*"Wake all thread done")
+	dgc(*"Wake all thread done\n")
 	this.prepareflush()
 	while this.flush(Null) == True {}
 }
@@ -347,7 +357,7 @@ Gc::sweep(){
 fn sweepone(){
 	s<Span> = null 
 	sg<u32> = heap_.sweepgen
-	debug(*"heap_.sweepdone:%d i:%d wait:%d",heap_.sweepdone,1-sg/2%2,heap_.sweepSpans[1-sg/2%2].spineLen)
+	debug(*"heap_.sweepdone:%d i:%d wait:%d\n",heap_.sweepdone,1-sg/2%2,heap_.sweepSpans[1-sg/2%2].spineLen)
 	if heap_.sweepdone != 0 {
 		return -1.(i8)
 	}
@@ -356,7 +366,7 @@ fn sweepone(){
 	loop {
 		s = heap_.sweepSpans[1-sg/2%2].pop()
 		if s == Null {
-			debug(*"sweepdone")
+			debug(*"sweepdone\n")
 			atomic.store(&heap_.sweepdone, 1.(i8))
 			break
 		}
@@ -364,7 +374,7 @@ fn sweepone(){
 
 			if s.sweepgen == sg || s.sweepgen == sg+3 {
 			}else {
-				dief(*"non in-use span in unswept list")
+				dief(*"non in-use span in unswept list\n")
 			}
 			continue
 		}
@@ -387,14 +397,14 @@ fn sweepone(){
 
 fn bgsweep()
 {
-	debug(*"bgsweep")
+	debug(*"bgsweep\n")
 	loop { while( sweepone() >= Null ){} }
 }
 
 Gc::prepareflush() {
 	gc.spans.lock.lock()
 	if (gc.full.self != 0) {
-		dief(*"cannot free Bufs when work.full != 0")
+		dief(*"cannot free Bufs when work.full != 0\n")
 	}
 	gc.empty.self = 0
 	gc.spans.free.takeAll(&gc.spans.busy)
@@ -427,7 +437,7 @@ Span::sweep(preserve<i32>)
 	h<Heap> = &heap_
 	sweepgen<u32> = h.sweepgen
 	if this.state != mSpanInUse || this.sweepgen != sweepgen - 1  {
-		dief(*"mspan.sweep: bad span state")
+		dief(*"mspan.sweep: bad span state\n")
 	}
 
 	spc<u8> = this.sc
@@ -444,7 +454,7 @@ Span::sweep(preserve<i32>)
 	}
 	nfreed<u64> = this.allocCount - nalloc
 	if nalloc > this.allocCount {
-		dief(*"sweep increased allocation count nalloc:%d allcount:%d",nalloc,this.allocCount)
+		dief(*"sweep increased allocation count nalloc:%d allcount:%d\n",nalloc,this.allocCount)
 	}
 
 	this.allocCount = nalloc
@@ -458,11 +468,11 @@ Span::sweep(preserve<i32>)
 
 	if( freeToHeap || nfreed == 0 ){
 		if( this.state != mSpanInUse || this.sweepgen != sweepgen - 1 ){
-			dief(*"mspan.sweep: bad span state after sweep")
+			dief(*"mspan.sweep: bad span state after sweep\n")
 		}
 		atomic.store(&this.sweepgen,sweepgen)
 	}
-	tracef(*"span:%p nfreed:%d sc:%d freeToHeap:%d",this,nfreed,sizeclass(spc),freeToHeap)
+	tracef(*"span:%p nfreed:%d sc:%d freeToHeap:%d\n",this,nfreed,sizeclass(spc),freeToHeap)
 	if( nfreed > 0 && sizeclass(spc) != Null ){
 		c.local_nsmallfree[sizeclass(spc)] += nfreed
 
