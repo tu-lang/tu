@@ -122,7 +122,7 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 	if( gcBlackenEnabled != 0 ){}
 	c_<Core> = core()
 	if( c_.mallocing != 0 ){ 
-		dief("malloc deadlock".(i8))
+		dief("malloc deadlock\n".(i8))
 	}
 	c_.mallocing = 1
 	shouldgc<u8> = false

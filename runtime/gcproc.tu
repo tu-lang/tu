@@ -102,7 +102,7 @@ Gc::start(kind<i32>)
 {
 	if !gc.enablegc return Null
 	this.forced = true
-	debug(*"--------------------------start:(%d) %d --------------\n",this.cycles, this.trigger(kind))
+	debug(*"--------------------------start:(%d) %d waiting:%d--------------\n",this.cycles, this.trigger(kind),sched.gcwaiting)
 	while this.trigger(kind) == True && sweepone() >= Null {
 	}
 	this.startSema.lock()
@@ -124,6 +124,7 @@ Gc::start(kind<i32>)
 	debug(*"-----------------------------end(%d)----------------------\n",this.cycles)
 }
 Gc::gc0(){
+	dgc(*"gc0 \n")
 	for c<Core> = sched.allcores; c != Null ; c = c.link {
 		fg<u32> = atomic.load(&c.local.flushGen)
 		if fg != heap_.sweepgen {
@@ -145,6 +146,7 @@ Gc::gc0(){
 	this.markStartTime = now
     this.markscan()
     this.markdone()
+	dgc(*"gc0 done\n")
 }
 
 Gc::markdone()
@@ -225,6 +227,7 @@ Gc::setpercent(in<i32>){
 
 
 Gc::stopSTW() {
+	dgc(*"stop world \n")
     c<Core> = core()
     // debug_alllock()
     sched.lock.lock()
@@ -258,6 +261,7 @@ Gc::stopSTW() {
 }
 Gc::startSTW()
 {
+	dgc(*"start wolrd\n")
     c_<Core> = core()
     c_.status = CoreRun
     sched.gcwaiting = 0
