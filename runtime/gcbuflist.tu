@@ -26,12 +26,17 @@ Buf::checkempty(){
 		dief(*"Buf is not empty")
 	}
 }
+Buf::checknoempty(){
+	if this.nobj == 0 {
+		dief(*"Buf is empty")
+	}
+}
 fn putempty(b<Buf>){
 	b.checkempty()
 	gc.empty.push(&b.node)
 }
 fn putfull(b<Buf>){
-	b.checkempty()
+	b.checknoempty()
 	gc.full.push(&b.node)
 }
 fn getempty() {
@@ -148,7 +153,7 @@ Queue::tryGet()
 		}
 	}
 
-	buf.nobj == 1
+	buf.nobj -= 1
 	return buf.obj[buf.nobj]
 }
 

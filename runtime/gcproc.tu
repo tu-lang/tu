@@ -153,7 +153,7 @@ Gc::gc0(){
 
 Gc::markdone()
 {
-	debug(*"gcphase:%d\n",_GCmark)
+	debug(*"markdone phase:%d\n",_GCmark)
 	if( gcphase != _GCmark ){
 		return True
 	}

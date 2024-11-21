@@ -142,6 +142,7 @@ HeapBits::initSpan(s<Span>)
 		nw -= anw
 	}
 }
+
 HeapBits::forwardOrBoundary(n<u64> , nw<u64*>)
 {
 	maxn<u64> = 4 * (this.last + 1 - this.bitp)
@@ -151,6 +152,7 @@ HeapBits::forwardOrBoundary(n<u64> , nw<u64*>)
 	*nw = n
 	this.forward(n)
 }
+
 HeapBits::forward(n<u64>)
 {
 	n += this.shift / heapBitsShift
@@ -175,6 +177,7 @@ HeapBits::forward(n<u64>)
 	}
 	return 0.(i8)
 }
+
 HeapBits::heapBitsForAddr(addr<u64>){
 	arena<u32> = arenaIndex(addr)
 	arr<u64*> = heap_.arenas[arena_l1(arena)]
@@ -188,6 +191,7 @@ HeapBits::heapBitsForAddr(addr<u64>){
 	this.last = &ha.bitmap[heapArenaBitmapBytes - 1]
 	return this
 }
+
 HeapBits::empty(){
 	this.bitp = Null
 	this.shift = 0
@@ -195,6 +199,7 @@ HeapBits::empty(){
 	this.last = Null
 	return this
 }
+
 HeapBits::nextArena(){
 	this.arena += 1
     ai<u32> = arenaIndex(this.arena)
@@ -208,10 +213,28 @@ HeapBits::nextArena(){
 	this.last = &ha.bitmap[heapArenaBitmapBytes - 1]
 	return this
 }
+
+HeapBits::ispointer(){
+	bits<u32> = this.bits()
+	if bits & bitPointer != 0 {
+		return True
+	}
+	return False
+}
+
+HeapBits::morepointer(){
+	bits<u32> = this.bits()
+	if bits & bitScan != 0 {
+		return True
+	}
+	return False
+}
+
 HeapBits::bits(){
 	bitp<u32> = *this.bitp
 	return bitp >> (this.shift & 31)
 }
+
 HeapBits::next(){
 	if this.shift < 3 * heapBitsShift {
 		this.shift += heapBitsShift
@@ -223,7 +246,6 @@ HeapBits::next(){
 	}
 	return this
 }
-
 
 fn newMarkBits(nelems<u64>)
 {
@@ -263,6 +285,7 @@ fn newMarkBits(nelems<u64>)
 	gbArenas.lock.unlock()
  	return p
 }
+
 fn nextMarkBitArenaEpoch()
 {
 	gbArenas.lock.lock()
@@ -316,6 +339,7 @@ Cache::nextFree(spc<u8>,ss<u64*>,shouldgc<u8*>)
 	}
 	return v
 }
+
 Cache::refill(spc<u8>)
 {
 	s<Span> = this.alloc[spc]

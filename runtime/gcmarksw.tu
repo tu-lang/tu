@@ -182,10 +182,8 @@ Gc::markscan2(queue<Queue>)
 
     loop {
         obj<u64> = queue.tryGetFast()
-		debug(*"ms2: get queue:%d\n",obj)
         if obj == Null {
             obj = queue.tryGet()
-			debug(*"ms2: get queue 2:%d\n",obj)
             if obj == Null
                 break
         }
@@ -232,7 +230,7 @@ fn objIsUsing(p<u64>){
 fn greyobject(obj<u64> , s<Span> , queue<Queue> , objIndex<u64>)
 {
     if obj & (ptrSize - 1) != 0 {
-        dief("greyobject: obj not pointer-aligned\n".(i8))
+        dief("greyobject: obj:%p not pointer-aligned\n".(i8),obj)
     }
     if s.isFree(objIndex) == True {
         warn(*"marking free object %p size:%d alloc:%d i:%d\n",obj,s.elemsize,s.allocCount,objIndex)
@@ -244,7 +242,7 @@ fn greyobject(obj<u64> , s<Span> , queue<Queue> , objIndex<u64>)
         tracef(*"already marked obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
         return True
     }
-    tracef(*"marke obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
+    tracef(*"mark obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
     mbits.setMarked()
 
     pageIdx<u64> = null
@@ -291,9 +289,10 @@ fn findObject(p<u64>, ss<u64*> , objIndex<u64*>)
 }
 
 fn scanobject(b<u64> , queue<Queue>){
-    hbits<HeapBits:> = null
-    hbits.heapBitsForAddr(b)
-    tracef(*"obj:%p bitaddr:%p queue:%p\n",b,hbits.bitp,queue)
+	// OPTIMIE: compiler phase compute the pointer bitmap
+    // hbits<HeapBits:> = null
+	// hbits.init()
+    // hbits.heapBitsForAddr(b)
     s<Span> = heap_.spanOf(b)
     n<u64> = s.elemsize
     if n == Null {
@@ -302,24 +301,26 @@ fn scanobject(b<u64> , queue<Queue>){
 
     i<u64> = 0
     for i = 0; i < n ; i += ptrSize {
-        if i != 0  {
-            hbits.next()
-        }
-        bits<u32> = hbits.bits()
-        if i != 1 * ptrSize && ((bits & bitScan) == 0) {
-            break
-        }
-        if bits&bitPointer == 0 continue
+        // if i != 0  {
+        //     hbits.next()
+        // }
+        // bits<u32> = hbits.bits()
+        // if i != 1 * ptrSize && ((bits & bitScan) == 0) {
+		// 	tracef(*"break this: i:%d bits:%d bitscan:%d\n",i,bits,bitScan)
+        //     break
+        // }
+        // if bits&bitPointer == 0 {
+		// 	tracef(*"continue this: i:%d bits:%d bitscan:%d\n",i,bits,bitScan)
+		// 	continue
+		// }
         t_<u64*> = b + i
         obj<u64*> = *t_
-
         if obj != Null && obj - b >= n {
             s<Span> = Null
             objIndex<u64> = 0
             base<u64> = findObject(obj,&s,&objIndex)
             if base != 0 {
-                printf(*"(%p)\t",*obj)
-                greyobject(obj,s,queue,objIndex)
+                greyobject(base,s,queue,objIndex)
             }
         }
     }    
