@@ -214,6 +214,37 @@ func test_var_index(){
 	if p[a - 2] != 'a' os.die("p[0] != a")
 	fmt.println("test_var_index success")
 }
+
+mem T1 {
+    u8* p1
+    u32 m1
+    u32 m2
+    u8* p2
+}
+fn test_complex_op(){
+	fmt.println("test complex pointer op")
+
+	b<u32> = 3
+	onebit<u8> = 1
+	v3<i64>		    = 16
+	v4<i64>			= 1
+	v5<u32>		= 1
+	
+	hb<u32> = (b & 3) | v3
+
+	h<T1:> = null
+	h.p1 = &onebit
+	h.m1 = 4
+
+	*h.p1 = *h.p1 &~ (v4 | v3 | ((v4 | v3) << v5)) << h.m1
+	*h.p1 |= hb << h.m1
+
+	if onebit == 48 {} else {
+		os.die("one bit != 48")
+	}
+	fmt.println("test complex pointer op success")
+}
+
 func main(){
 	test_8()
 	test_16()
@@ -224,4 +255,6 @@ func main(){
 	test_chain_field()
 
 	test_var_index()
+
+	test_complex_op()
 }
