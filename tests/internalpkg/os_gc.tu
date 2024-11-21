@@ -59,10 +59,8 @@ func  print_pascal_triangle(level)
     }
 }
 func main(){
-	//FIXME: gc is unstable right now
-    //string_test()
-    //array_test(100)
-    // TODO: linker found something wrong
-    //print_pascal_triangle(10)
+    string_test()
+    array_test(100)
+    print_pascal_triangle(10)
     fmt.println("rt_os_gc test passed!")
 }
