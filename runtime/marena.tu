@@ -95,6 +95,14 @@ mem HeapBits {
     u8* last
 }
 
+HeapBits::init(){
+	//for stack
+	this.bitp = 0
+	this.shift = 0
+	this.arena = 0
+	this.last = 0
+}
+
 HeapBits::initSpan(s<Span>)
 {
 	size<u64>  = 0
@@ -209,6 +217,7 @@ HeapBits::next(){
 		this.shift += heapBitsShift
 	}else if(this.bitp != this.last){
 		this.bitp +=  1
+		this.shift = 0
 	}else {
 		return this.nextArena()
 	}
@@ -397,6 +406,7 @@ cachespanretry:
 			this.nonempty.remove(s)
 			this.empty.insertback(s)
 			this.lock.unlock()
+			s.sweep(True)
 			goto havespan
 		}
 		if s.sweepgen == sg - 1 {
@@ -413,6 +423,7 @@ cachespanretry:
 			this.empty.remove(s)
 			this.empty.insertback(s)
 			this.lock.unlock()
+			s.sweep(True)
 			freeIndex<u64> = s.nextFreeIndex()
 			if freeIndex != s.nelems {
 				s.freeindex = freeIndex
@@ -539,5 +550,7 @@ Central::uncacheSpan(s<Span>)
 	}
 
 	if stale {
+		s.sweep(False)
+
 	}
 }

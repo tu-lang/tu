@@ -61,6 +61,7 @@ Heap::alloc(npage<u64>, spanclass<u8> , large<u8> , needzero<u8>)
 }
 Heap::alloc_m(npage<u64>,spanc<u8>,large<u8>)
 {
+	//OPTIMIZE: free to sys
     this.lock.lock()
     s<Span> = heap_.allocSpanLocked(npage)
 	if  s != null {

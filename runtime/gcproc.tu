@@ -77,7 +77,9 @@ fn gc_malloc(nbytes<u64>)
 }
 
 //discard..
-fn GC(){}
+fn GC(){
+	gc.start(GcAlways)
+}
 fn gc_mark(){}
 fn gc_free(ptr<u64>){}
 fn gc_init(){}
