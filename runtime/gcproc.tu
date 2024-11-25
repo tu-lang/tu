@@ -14,6 +14,7 @@ sweep_min_heap_distance<i64> =  1048576
 gc<Gc:> = null
 gcphase<u32> = 0
 worldsema<Sema:> = null
+moudlestack<i64*> = 0
 
 enum {
 	GcAlways,

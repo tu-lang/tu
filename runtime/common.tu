@@ -139,6 +139,11 @@ fn debug(str<i8*>,args<i64*>...){
 		fmt.vfprintf(STDOUT,str,args)
 }
 
+fn dieinter(str<i8*>,args<i64*>...){
+	fmt.vfprintf(std.STDOUT,str,args)
+    fmt.vfprintf(std.STDOUT,*"\n")
+	std.die(-1.(i8))
+}
 
 fn dief(str<i8*>,args<i64*>...){
 	fmt.vfprintf(std.STDOUT,str,args)

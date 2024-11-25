@@ -82,7 +82,45 @@ fn gcsweephelper(){
 }
 
 Gc::markroot(){
-	tracef(*"markroot:\n")
+	printf(*"markroot:\n")
+    c<Core> = core()
+	// entry of global root stack
+	moudleptr<i64*> = moudlestack
+	moudleptrend<i64*> = *moudleptr
+	dgc(*"moudle start:%p\n",moudleptr)
+	// iter all gc moudle
+	for ptr<u64*> = moudleptr ; ptr < moudleptrend ; ptr += ptrSize {
+		msptr<u64*> = *ptr
+		dgc(*"moudle file:%p\n",msptr)
+		if msptr == null {
+			dief(*"moudle ptr is null\n")
+		}
+		msptr = *msptr
+		if msptr == null dief(*"moudle inner ptr is null\n")
+
+		while msptr != null {
+			subms<i64*> = msptr
+			subme<i64*> = *subms
+			dgc(*"moudle[%p - %p]\n",subms,subme)
+
+			//OPTIMIZE: align ptr 8 byte
+			for sptr<i64*> = subms; sptr <= (subme - 8); sptr += 1 {
+				s<Span> = null
+				objIndex<u64> = 0
+				base<u64> = findObject(*sptr,&s,&objIndex)
+				if base != Null {
+					dgc(*"root find object: %p(%p) obj:%d\n",sptr,base,objIndex)
+					greyobject(base, s,&c.queue,objIndex)
+				}
+			}
+			//next moudle
+			msptr = *subme
+		}
+	}
+}
+
+Gc::markroot2(){
+	tracef(*"markroot2:\n")
     c<Core> = core()
 	// entry of global root stack
 	moudleptr<i64*> = moudlestack

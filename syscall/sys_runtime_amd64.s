@@ -54,6 +54,11 @@ runtime_callerpc:
     mov 8(%rbp) , %rax
     ret
 
+.globl runtime_gcmentryptr
+runtime_gcmentryptr:
+    lea gc.ms.entry , %rax
+    ret
+
 .globl runtime_settls
 runtime_settls:
     add    $0x8,%rdi   

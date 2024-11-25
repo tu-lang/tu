@@ -136,8 +136,6 @@ internal_null<Value:> = new Value {
 	type : 0, //Null
 	data : 0
 }
-// Set by Compiler
-moudlestack<i64> = 0
 
 mem Value  { 
 	i64 type,data 
