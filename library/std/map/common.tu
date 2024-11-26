@@ -19,6 +19,7 @@ func map_create(insertfn<u64>){
 		root : sentinel,
 		sentinel : sentinel,
 		insert: insertfn,
+        count: 0,
 	}
 }
 

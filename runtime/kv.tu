@@ -74,7 +74,10 @@ fn len(v<Value>){
             s<string.Str> = v.data
             return int(s.len())
         }
-		Map   : dief(*"unsupport len(map)\n")
+		Map   : {
+            m<map.Rbtree> = v.data
+			return int(m.count)
+		}
 		_     : {
 			dief(*"[warn] len(unknow type:%s)\n",type_string(v))
 		}

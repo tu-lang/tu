@@ -48,6 +48,7 @@ func map_new(hashfn<u64>,insertfn<u64>){
 		root : sentinel,
 		sentinel : sentinel,
 		insert: insertfn,
+        count: 0,
 	}
 	return new Map {
 		rb : rb,

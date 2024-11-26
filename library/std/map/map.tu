@@ -14,6 +14,7 @@ mem Rbtree {
     RbtreeNode* root
     RbtreeNode* sentinel
 	u64         insert
+    u64         count
 }
 
 Rbtree::next(node<RbtreeNode>){
@@ -137,6 +138,7 @@ Rbtree::insert(node<RbtreeNode>)
         node.right = sentinel
         node.black()
         *root = node
+        this.count += 1
         return Null
     }
 
@@ -146,6 +148,7 @@ Rbtree::insert(node<RbtreeNode>)
         //update value do nothing here
         return Null
     }
+    this.count += 1
 
     // re-balance tree 
     while node != *root && node.parent.color == 1 {
