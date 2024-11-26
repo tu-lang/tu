@@ -192,7 +192,7 @@ BinaryExpr::getType(ctx){
 	return utils.max(l,r)
 }
 FunCallExpr::getType(ctx){
-	return ast.U64
+	return ast.I64
 }
 AssignExpr::getType(ctx){
 	return this.lhs.getType(ctx)

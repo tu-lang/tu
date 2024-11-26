@@ -411,7 +411,7 @@ OperatorHelper::genRight(isleft,expr)
 				size = parser.typesize[int(this.ltoken)]
 				this.initcond(isleft,size,this.ltoken,false)
 			}else{
-				this.initcond(isleft,8,ast.U64,false)
+				this.initcond(isleft,8,expr.getType(this.ctx),false)
 			}
 			return ret
 		}
