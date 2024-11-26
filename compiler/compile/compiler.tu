@@ -33,6 +33,19 @@ func compile(){
             )        
         }
     }
+    //gc moudle list ptr
+    prev = null
+    for pkg : package.packages {
+        for p : pkg.parsers {
+            if prev == null {
+                fparser = p
+            }else{
+                prev.next = p
+            }
+            prev = p
+        }
+    }
+    lparser = prev
 
     //register package
     for(p : package.packages){

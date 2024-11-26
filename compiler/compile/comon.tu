@@ -5,10 +5,13 @@ use compiler.parser
 use compiler.parser.package
 
 
-out    = null # current file fd
-currentParser = null # current parser
+out    = null // current file fd
+currentParser = null // current parser
 currentFunc = null # the func that is generating
 fileno = 1
+
+fparser = null  //gcmoudle range
+lparser = null
 
 debug  = false
 sdebug = false

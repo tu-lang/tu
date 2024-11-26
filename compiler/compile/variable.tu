@@ -15,6 +15,11 @@ func registerVars(){
     writeln("%s:", currentParser.filenameid)
     writeln("    .string \"%s\"",currentParser.filepath)
 
+    //moudle start
+    writeln("    .globl %s", currentParser.gstartvar())
+    writeln("%s:", currentParser.gstartvar())
+    writeln("    .quad %s",currentParser.gendvar())
+
     for(name,v : currentParser.gvars){
         gname = currentParser.getpkgname() + "_" + name
         writeln("    .global %s",gname)
@@ -23,6 +28,12 @@ func registerVars(){
             writeln("    .quad   8")
             continue
         }
+        //set entry
+        if currentParser.pkg.package == "runtime" && v.varname == "moudlestack" {
+            writeln("   .quad   %s",fparser.gstartvar())
+            continue
+        }
+
         mt = ast.typesizestring(v.type)
         value = "0"
         if !std.empty(v.ivalue) value = v.ivalue
@@ -78,6 +89,15 @@ func registerVars(){
             }
         }else
             writeln("    .%s   %s",mt,value)
+    }
+
+    //entry end
+    writeln("    .globl %s", currentParser.gendvar())
+    writeln("%s:", currentParser.gendvar())
+    if currentParser.next != null {
+        writeln("    .quad %s", currentParser.next.gstartvar())
+    }else{
+        writeln("    .quad 0")
     }
 }
 func CreateGlobalString(var){

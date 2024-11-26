@@ -51,6 +51,10 @@ class Parser {
     ismultiassign = false
 
     cfgs          = new ast.ConfigOpts()
+
+    //gc moudle
+    next          = null
+    gvid          = 0
 }
 
 Parser::init(filepath,pkg) {
@@ -302,4 +306,16 @@ Parser::getStruct(pkg,name) {
     }
     pkg2 = package.packages[pkgname]
     return pkg2.getStruct(name)
+}
+
+Parser::gstartvar() {
+    if this.gvid == 0
+        this.gvid = ast.incr_labelid()
+    return this.filename + "_gs_" + this.gvid
+}
+
+Parser::gendvar() {
+    if this.gvid == 0
+        this.gvid = ast.incr_labelid()
+    return this.filename + "_ge_" + this.gvid
 }
