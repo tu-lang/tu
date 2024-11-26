@@ -89,7 +89,7 @@ Gc::markroot(){
 	moudleptrend<i64*> = *moudleptr
 	dgc(*"moudle start:%p\n",moudleptr)
 	// iter all gc moudle
-	for ptr<u64*> = moudleptr ; ptr < moudleptrend ; ptr += ptrSize {
+	for ptr<u64*> = moudleptr + ptrSize; ptr < moudleptrend ; ptr += ptrSize {
 		msptr<u64*> = *ptr
 		dgc(*"moudle file:%p\n",msptr)
 		if msptr == null {
