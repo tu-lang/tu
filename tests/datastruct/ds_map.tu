@@ -100,8 +100,25 @@ func test_map_add(){
     fmt.println("map_add success",a[0],a["---"],a["999"])
 }
 
+func test_map_count(){
+    fmt.println("map count tests")
+    a = {}
+    if std.len(a) == 0 {} else os.die("should be 0")
+    a[0] = 1
+    a[1] = 2
+    if std.len(a) == 2 {} else os.die("should be 2")
+    a[1] = 3
+    if std.len(a) == 2 {} else os.die("should be 2")
+
+    a["a"] = 3
+    a["sdfsd"] = 4
+    if std.len(a) == 4 {} else os.die("should be 4")
+    fmt.println("map count tests success")
+}
+
 func main(){
     test_map_index()
     test_map_update()
     test_map_add()
+    test_map_count()
 }
