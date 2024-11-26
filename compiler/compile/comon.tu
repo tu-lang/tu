@@ -7,11 +7,9 @@ use compiler.parser.package
 
 out    = null // current file fd
 currentParser = null // current parser
-currentFunc = null # the func that is generating
+currentFunc = null // the func that is generating
 fileno = 1
-
-fparser = null  //gcmoudle range
-lparser = null
+main_parser = null //gcmoudle range
 
 debug  = false
 sdebug = false
@@ -22,11 +20,11 @@ func genast(filename)
 {
     utils.debugf("compile.genast filename:%s",filename)
     mpkg = new package.Package("main","main",false)
-    mparser = new parser.Parser(filename,mpkg)
+    main_parser = new parser.Parser(filename,mpkg)
 
-    mparser.fileno = fileno
-    mpkg.parsers[filename] = mparser
-    mparser.parse()    # token parsering
+    main_parser.fileno = fileno
+    mpkg.parsers[filename] = main_parser
+    main_parser.parse()    // token parsering
     package.packages["main"] = mpkg
     //check runtime has been parsered
     if package.packages["runtime"] == null {

@@ -311,11 +311,11 @@ Parser::getStruct(pkg,name) {
 Parser::gstartvar() {
     if this.gvid == 0
         this.gvid = ast.incr_labelid()
-    return "gs_" + this.gvid
+    return "gs.ms." + this.pkg.full_package + "." + this.gvid
 }
 
 Parser::gendvar() {
     if this.gvid == 0
         this.gvid = ast.incr_labelid()
-    return "ge_" + this.gvid
+    return "gs.me." + this.pkg.full_package + "." + this.gvid
 }

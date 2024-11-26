@@ -4,16 +4,52 @@ use compiler.parser.package
 use compiler.utils
 use fmt
 
-func registerStrings(){
+fn registerStrings(){
     for(var : currentParser.strs){
         CreateGlobalString(var)
     }
 }
+
+fn registerGcMList()
+{
+    writeln("    .globl gc.ms.entry")
+    writeln("gc.ms.entry:")
+    writeln("   .quad gc.ms.end")
+
+
+    //append other package moudle
+    for pkg : package.packages {
+        if !pkg.hasGcMoudle() {
+            continue
+        }
+        writeln("   .quad %s",pkg.gc_moudles)
+    }
+
+    writeln("    .globl gc.ms.end")
+    writeln("gc.ms.end:")
+    writeln("   .quad 0")
+}
+
 func registerVars(){
     utils.debug("compile.registerVars()")
     writeln("    .globl %s", currentParser.filenameid)
     writeln("%s:", currentParser.filenameid)
     writeln("    .string \"%s\"",currentParser.filepath)
+
+    if currentParser == main_parser {
+        registerGcMList()
+    }
+    pkg = currentParser.pkg
+    //skip no gvars parser
+    if std.len(currentParser.gvars) == 0 {
+        return true
+    }
+
+    if pkg.fparser == currentParser {
+        writeln("    .globl %s", pkg.gc_moudles)
+        writeln("%s:", pkg.gc_moudles)
+        writeln("    .quad %s",currentParser.gstartvar())
+    }
 
     //moudle start
     writeln("    .globl %s", currentParser.gstartvar())
@@ -26,11 +62,6 @@ func registerVars(){
         writeln("%s:",gname)
         if !v.structtype {
             writeln("    .quad   8")
-            continue
-        }
-        //set entry
-        if currentParser.pkg.package == "runtime" && v.varname == "moudlestack" {
-            writeln("   .quad   %s",fparser.gstartvar())
             continue
         }
 
@@ -221,3 +252,4 @@ fn registerFutures(){
         writeln("   .quad 0")
     }
 }
+

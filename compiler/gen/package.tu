@@ -99,6 +99,20 @@ package.Package::classinit(){
 package.Package::compile(){
     utils.debugf("gen.Package::compile()")
 
+	//gc moudle list ptr
+    prev = null
+    for p : this.parsers {
+		if std.len(p.gvars) == 0	
+			continue
+
+		if prev == null {
+			this.fparser = p
+		}else{
+			prev.next = p
+		}
+		prev = p
+    }
+
 	for(p : this.parsers){
 		p.compile()
 	}
@@ -127,4 +141,13 @@ fn getGLobalFunc(pkgname ,name){
 		return null
     }
 	return pkg.getFunc(name,false)
+}
+
+package.Package::hasGcMoudle() {
+	for p : this.parsers {
+		if std.len(p.gvars) > 0 {
+			return true
+		}
+	}
+	return false
 }

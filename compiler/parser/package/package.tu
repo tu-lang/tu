@@ -10,6 +10,8 @@ class Package {
     package = name
     path    = path
     full_package = path
+    fparser    = null
+    gc_moudles = ""
 
     inits = []   // string,func
     initid = 0
@@ -30,6 +32,10 @@ Package::init(name , path , multi) {
     if multi {
         this.path = regex.replace(path,"_","/")
     }
+
+    this.gc_moudles = "gc." + this.full_package + ".ms"
+    this.fparser = null
+
 }
 Package::parse()
 {
