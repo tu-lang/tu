@@ -84,7 +84,10 @@ fn gcsweephelper(){
 Gc::markroot(){
     c<Core> = core()
 	// entry of global root stack
-	moudleptr<i64*> = moudlestack
+	moudleptr<u64*> = gcmentryptr()
+	if moudleptr == null dief(*"gc ms entry ptr is null")
+	if *moudleptr == null dief(*"gc me entry ptr is null")
+
 	moudleptrend<i64*> = *moudleptr
 	dgc(*"moudle start:%p\n",moudleptr)
 	// iter all gc moudle

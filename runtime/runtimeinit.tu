@@ -39,10 +39,6 @@ fn osinit(){
 	sched.cid       = 0
 	sched.debug   	= null
 	//gc init
-	mstackptr<u64*> = gcmentryptr()
-	if mstackptr == null dieinter(*"gc ms entry ptr is null")
-	if *mstackptr == null dieinter(*"gc me entry ptr is null")
-	moudlestack = mstackptr
 	gc.startSema.sema = 1
 	worldsema.sema = 1
 	gc.enablegc = true
