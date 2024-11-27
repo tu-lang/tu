@@ -82,7 +82,6 @@ fn gcsweephelper(){
 }
 
 Gc::markroot(){
-	printf(*"markroot:\n")
     c<Core> = core()
 	// entry of global root stack
 	moudleptr<i64*> = moudlestack

@@ -276,7 +276,8 @@ fn value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
     result.type = Bool
     result.data = 0
     if lhs.type == Object {
-        result.data = lhs == rhs
+	    if equal result.data = lhs == rhs
+	    else result.data = lhs != rhs
     }else if lhs.type == String || rhs.type == String {
         result.data = value_string_equal(lhs,rhs,equal)
         return result
