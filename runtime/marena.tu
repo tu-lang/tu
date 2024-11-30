@@ -1,4 +1,5 @@
 use std
+use std.atomic
 use os
 
 mem ArenaHint {
@@ -479,10 +480,8 @@ havespan:
 	}
 	atomic.xadd64(&this.nmalloc, n)
 	usedBytes<u64> = s.allocCount * s.elemsize
-	if gcBlackenEnabled != 0 {
-		// heap_live changed.
-		//		gcController.revise()
-	}
+	atomic.xadd64(&gc.heaplives, spanBytes - usedBytes)
+
 	_t<i64> = 63
 	freeByteBase<u64> = s.freeindex &~ _t
 	whichByte<u64>    = freeByteBase / 8
@@ -569,6 +568,9 @@ Central::uncacheSpan(s<Span>)
 		this.empty.remove(s)
 		this.nonempty.insert(s)
 		if  !stale {
+			sub<i64> = 0 - n * s.elemsize
+			atomic.xadd64(&gc.heaplives, sub)
+
 		}
 		this.lock.unlock()
 	}
