@@ -97,6 +97,8 @@ Heap::alloc_m(npage<u64>,spanc<u8>,large<u8>)
 		if large {
 		    this.largealloc  += s.elemsize
 		    this.nlargealloc += 1
+
+			atomic.xadd64(&gc.heaplives, npage << pageShift )
 		}
 	}
     this.lock.unlock()
@@ -154,7 +156,7 @@ haveSpan:
     }
     s.unusedsince = 0
 
-    heap_.setSpan(s.startaddr,s)
+    heap_.setSpans(s.startaddr,npage,s)
 
     if (s.list != null)
         dief("still in list".(i8))
@@ -389,8 +391,8 @@ Heap::setSpans(base<u64>,npage<u64>,s<Span> )
             arr = this.arenas[arena_l1(ai)]
             ha  = arr[arena_l2(ai)]
         }
+
 		ha.spans[i] = s
-        // (*ha).spans[i] = s
     }
 }
 Heap::scavengeLargest(nu8s<u64>){return 0.(i8)}
