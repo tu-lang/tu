@@ -122,7 +122,7 @@ Gc::markroot(){
 }
 
 Gc::markroot2(){
-	tracef(*"markroot2:\n")
+	dgc(*"markroot2:\n")
     c<Core> = core()
 	// entry of global root stack
 	moudleptr<i64*> = moudlestack
@@ -137,7 +137,7 @@ Gc::markroot2(){
 			objIndex<u64> = 0
 			base<u64> = findObject(*ptr,&s,&objIndex)
 			if base != Null {
-				tracef(*"root find object: %p(%p) obj:%d\n",ptr,base,objIndex)
+				dgc(*"root find object: %p(%p) obj:%d\n",ptr,base,objIndex)
 				greyobject(base, s,&c.queue,objIndex)
 			}
 		}
@@ -202,20 +202,19 @@ Gc::markscan2(queue<Queue>)
 	dgc(*"mark scan 2\n")
     c<Core> = core()
     stk_end<u64> = get_sp()
-    debug(*"scan stack range[%p - %p] == %d\n",stk_end,c.stktop,c.stktop - stk_end)
+    dgc(*"scan stack range[%p - %p] == %d\n",stk_end,c.stktop,c.stktop - stk_end)
 
     cur_sp<u64*> = stk_end
     if c.stktop <= stk_end {
         dief(*"stack error!\n")
     }
-    tracef(*"find object: %p -  %p\n",cur_sp,c.stktop)
-    for cur_sp = stk_end ; cur_sp <= c.stktop ; cur_sp += ptrSize {
+    dgc(*"find object: %p -  %p\n",cur_sp,c.stktop)
+    for cur_sp = stk_end ; cur_sp <= c.stktop + 100 ; cur_sp += 1 {
         s<Span> = s
         objIndex<u64> = 0
         base<u64> = findObject(*cur_sp,&s,&objIndex)
         if base != 0 {
-            tracef(*"find object: %p(%p) obj:%d\n",cur_sp,base,objIndex)
-            //DEBUG_SPAN(s)
+            dgc(*"find object: %p(%p) obj:%d\n",cur_sp,base,objIndex)
             greyobject(base, s,queue,objIndex)
         }
     }
@@ -273,16 +272,17 @@ fn greyobject(obj<u64> , s<Span> , queue<Queue> , objIndex<u64>)
         dief("greyobject: obj:%p not pointer-aligned\n".(i8),obj)
     }
     if s.isFree(objIndex) == True {
-        warn(*"marking free object %p size:%d alloc:%d i:%d\n",obj,s.elemsize,s.allocCount,objIndex)
+		s.debug()
+        dief(*"marking free object %p size:%d alloc:%d i:%d\n",obj,s.elemsize,s.allocCount,objIndex)
         return True
     }
     mbits<MarkBits:> = null
     mbits.span_obj(s,objIndex)
     if mbits.isMarked() == True {
-        tracef(*"already marked obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
+        dgc(*"already marked obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
         return True
     }
-    tracef(*"mark obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
+    dgc(*"mark obj:%p size:%d index:%d bitaddr:%p\n",obj,s.elemsize,objIndex,mbits.u8p)
     mbits.setMarked()
 
     pageIdx<u64> = null
@@ -296,7 +296,7 @@ fn greyobject(obj<u64> , s<Span> , queue<Queue> , objIndex<u64>)
         return True
     }
     if queue.putFast(obj) == False {
-        tracef(*"put grey queue. span:%p obj:%p\n",s,obj)
+        dgc(*"put grey queue. span:%p obj:%p\n",s,obj)
         queue.put(obj)
     }
 }
@@ -307,7 +307,22 @@ fn findObject(p<u64>, ss<u64*> , objIndex<u64*>)
     s<Span> = heap_.spanOf(p)
     *ss     = s
     base<u64> = 0
-    if  s == Null || p < s.startaddr || p >= s.limit || s.state != mSpanInUse  {
+    if  s == Null {
+		return Null
+	} 
+	if p < s.startaddr {
+		printf(*"[warning] %p < %p\n",p,s.startaddr)
+		// s.debug()
+		return Null
+	} 
+	if p >= s.limit {
+		printf(*"[warning] %p >= %p\n",p,s.limit)
+		// s.debug()
+		return Null
+	} 
+	if s.state != mSpanInUse  {
+		// printf(*"%d\n",s.state)
+		// s.debug()
         return Null
     }
     if  s.basemask != 0  {
@@ -338,6 +353,7 @@ fn scanobject(b<u64> , queue<Queue>){
     if n == Null {
         dief(*"scanobject n == 0\n")
     }
+	dgc(*"scanobject ptr:%p size:%d",b,n)
 
     i<u64> = 0
     for i = 0; i < n ; i += ptrSize {
@@ -355,16 +371,19 @@ fn scanobject(b<u64> , queue<Queue>){
 		// }
         t_<u64*> = b + i
         obj<u64*> = *t_
-        if obj != Null && obj - b >= n {
+        // if obj != Null && obj - b >= n {
+		dgc(*"scanobj: p:%p child:%p\n",t_,obj)
+        if obj != Null {
             s<Span> = Null
             objIndex<u64> = 0
             base<u64> = findObject(obj,&s,&objIndex)
             if base != 0 {
+				dgc(*"find object ptr:%p - %p base:%p\n",t_,obj,base)
                 greyobject(base,s,queue,objIndex)
             }
         }
     }    
-    tracef(*"obj:%p done\n",b)
+    dgc(*"obj:%p done\n",b)
     queue.used += n
 }
 

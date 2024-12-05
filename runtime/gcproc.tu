@@ -104,7 +104,7 @@ Gc::start(kind<i32>)
 {
 	if !gc.enablegc return Null
 	this.forced = true
-	debug(*"--------------------------start:(%d) %d waiting:%d--------------\n",this.cycles, this.trigger(kind),sched.gcwaiting)
+	dgc(*"--------------------------start:(%d) %d waiting:%d--------------\n",this.cycles, this.trigger(kind),sched.gcwaiting)
 	while this.trigger(kind) == True && sweepone() >= Null {
 	}
 	this.startSema.lock()
@@ -115,6 +115,7 @@ Gc::start(kind<i32>)
 	}
 	// debugcachegen()
 	this.worldSeam.lock()
+	dgc(*"trigger h:%d t:%d\n",gc.heaplives,gc.gc_trigger)
 	dgc(*"Got GC lock %d---\n",this.cycles)
 	this.stopSTW()
 
@@ -123,6 +124,7 @@ Gc::start(kind<i32>)
 	dgc(*"Free GC lock %d---\n",this.cycles)
 	this.worldSeam.unlock()
 	this.startSema.unlock()
+	dgc(*"trigger end h:%d t:%d\n",gc.heaplives,gc.gc_trigger)
 	debug(*"-----------------------------end(%d)----------------------\n",this.cycles)
 }
 Gc::gc0(){

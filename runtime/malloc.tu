@@ -131,37 +131,37 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 	c<Cache> = c_.local
 	x<u64*> = null
 	if( size <= maxSmallSize ){ 
-		if( noscan && size < maxTinySize ){
-			off<u64> = c.tinyoffset
-			if( size&7 == 0 ) {
-				off = round(off, 8.(i8))
-			} else if( size&3 == 0 ){
-				off = round(off, 4.(i8))
-			} else if( size&1 == 0 ){
-				off = round(off, 2.(i8))
-			}
-			if( off+size <= maxTinySize && c.tiny != 0 ){
-				x = (c.tiny + off)
-				c.tinyoffset = off + size
-				c.local_tinyallocs += 1
-				c_.mallocing = 0
-				return x
-			}
-			s<Span> = c.alloc[tinySpanClass]
-			v<u64> = s.nextFreeFast()
-			if( v == 0 ) {
-				v = c.nextFree(tinySpanClass,&s,&shouldgc)
-			}
-			x = v
-			//clear 16 bits
-			x[0] = 0
-			x[1] = 0
-			if( size < c.tinyoffset || c.tiny == 0 ){
-				c.tiny = x
-				c.tinyoffset = size
-			}
-			size = maxTinySize
-		} else {
+		// if( noscan && size < maxTinySize ){
+		// 	off<u64> = c.tinyoffset
+		// 	if( size&7 == 0 ) {
+		// 		off = round(off, 8.(i8))
+		// 	} else if( size&3 == 0 ){
+		// 		off = round(off, 4.(i8))
+		// 	} else if( size&1 == 0 ){
+		// 		off = round(off, 2.(i8))
+		// 	}
+		// 	if( off+size <= maxTinySize && c.tiny != 0 ){
+		// 		x = (c.tiny + off)
+		// 		c.tinyoffset = off + size
+		// 		c.local_tinyallocs += 1
+		// 		c_.mallocing = 0
+		// 		return x
+		// 	}
+		// 	s<Span> = c.alloc[tinySpanClass]
+		// 	v<u64> = s.nextFreeFast()
+		// 	if( v == 0 ) {
+		// 		v = c.nextFree(tinySpanClass,&s,&shouldgc)
+		// 	}
+		// 	x = v
+		// 	//clear 16 bits
+		// 	x[0] = 0
+		// 	x[1] = 0
+		// 	if( size < c.tinyoffset || c.tiny == 0 ){
+		// 		c.tiny = x
+		// 		c.tinyoffset = size
+		// 	}
+		// 	size = maxTinySize
+		// } else {
 			sz<u8> = 0
 			if( size <= smallSizeMax - 8 ){
 				sz = size_to_class8[(size+smallSizeDiv - 1)/smallSizeDiv]
@@ -179,7 +179,7 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 			if( needzero && s.needzero != 0 ){
 				std.memset(v,0.(i8),size)
 			}
-		}
+		// }
 	} else {
 		s<Span> = null
 		shouldgc = true
@@ -230,6 +230,15 @@ mem Span {
     u8*    gcmarkBits
     u64    allocCache
 }
+
+Span::debug() {
+	printf(*"span debug\n")
+	printf(*"this:%p add:%p lim:%p\n",this,this.startaddr,this.limit)
+	printf(*"page:%d state:%d alloc:%d\n",this.npages,this.state,this.allocCount)
+	printf(*"sc:%d elemsize:%d freeindex:%d\n",this.sc,this.elemsize,this.freeindex)
+	printf(*"nlemes:%d allocb:%p gcb:%p alloc:%p\n",this.nelems,this.allocBits,this.gcmarkBits,this.allocCache)
+}
+
 
 mem DivMagic{
     u8   shift , shift2
