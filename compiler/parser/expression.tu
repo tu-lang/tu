@@ -170,8 +170,8 @@ Parser::parseUnaryExpr()
 
 Parser::parsePrimaryExpr()
 {
-    utils.debug("parser.Parser::parsePrimaryExpr()")
     reader<scanner.ScannerStatic> = this.scanner
+    utils.debugf("parser.Parser::parsePrimaryExpr() line:%d",int(reader.line))
     tk   = reader.curToken
     prev = reader.prevToken
     

@@ -136,6 +136,9 @@ Parser::parseFuncDef(ft, pdefine , node)
         if compile.phase == compile.GlobalPhase && this.hasFunc(cl,false)
             this.check(false,"SyntaxError: already define function :" + cl)
         node.name = cl
+    	utils.debugf(
+        	"parser.Parser::parseFuncDef() found function: %s",cl
+    	)
         
         reader.scan()
     }
