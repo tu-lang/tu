@@ -82,6 +82,7 @@ fn gcsweephelper(){
 }
 
 Gc::markroot(){
+	dgc(*"mark root\n")
     c<Core> = core()
 	// entry of global root stack
 	moudleptr<u64*> = gcmentryptr()
@@ -121,11 +122,11 @@ Gc::markroot(){
 	}
 }
 
-Gc::markroot2(){
-	dgc(*"markroot2:\n")
+Gc::markroot1(){
+	dgc(*"markroot1:\n")
     c<Core> = core()
 	// entry of global root stack
-	moudleptr<i64*> = moudlestack
+	moudleptr<i64*> = gcmentryptr()
 	while moudleptr != null {
 		subms<i64*> = moudleptr
 		subme<i64*> = *subms
@@ -209,7 +210,7 @@ Gc::markscan2(queue<Queue>)
         dief(*"stack error!\n")
     }
     dgc(*"find object: %p -  %p\n",cur_sp,c.stktop)
-    for cur_sp = stk_end ; cur_sp <= c.stktop + 100 ; cur_sp += 1 {
+    for cur_sp = stk_end ; cur_sp <= c.stktop ; cur_sp += 1 {
         s<Span> = s
         objIndex<u64> = 0
         base<u64> = findObject(*cur_sp,&s,&objIndex)
@@ -272,8 +273,8 @@ fn greyobject(obj<u64> , s<Span> , queue<Queue> , objIndex<u64>)
         dief("greyobject: obj:%p not pointer-aligned\n".(i8),obj)
     }
     if s.isFree(objIndex) == True {
-		s.debug()
-        dief(*"marking free object %p size:%d alloc:%d i:%d\n",obj,s.elemsize,s.allocCount,objIndex)
+		// s.debug()
+        // dief(*"marking free object %p size:%d alloc:%d i:%d\n",obj,s.elemsize,s.allocCount,objIndex)
         return True
     }
     mbits<MarkBits:> = null
