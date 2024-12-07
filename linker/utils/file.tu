@@ -24,6 +24,10 @@ func fopen(filename,mode){
 		fmt.print("fopen failed\n")
 		return false
 	}
+	if ret < 0 {
+		fmt.println("fopen failed ",filename," ret:",int(ret))
+		return false
+	}
 	utils.debug("fopen file:",int(ret))
 	return ret
 }

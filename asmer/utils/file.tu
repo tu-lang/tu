@@ -13,7 +13,7 @@ func fwrite(fd<i64>,buffer<u64>,size<u64>){
 	return true
 }
 
-#func fopen(filename,mode)
+//fn fopen(filename,mode)
 func fopen(filename,mode){
 	utils.debug("linker.io:fopen %s %s".(i8),*filename,*mode)
 	if filename == "" {
@@ -23,6 +23,10 @@ func fopen(filename,mode){
 	ret<i32> = std.fopen(*filename,*mode)
 	if ret == null {
 		fmt.print("fopen failed\n")
+		return false
+	}
+	if ret < 0 {
+		fmt.println("fopen failed ",filename," ret:",int(ret))
 		return false
 	}
 	utils.debug("fopen file: %d".(i8),ret)
