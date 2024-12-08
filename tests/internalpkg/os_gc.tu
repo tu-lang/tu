@@ -2,6 +2,10 @@
 use os
 use fmt
 
+fn init(){
+    os.enablegc()
+}
+
 func string_test(){
     fmt.println("[gc] string_test")
     a = "test"
@@ -14,7 +18,8 @@ func string_test(){
     fmt.println("[gc] string_test success")
 
 }
-func array_test(top){
+func array_test(){
+    top = 1000000
     fmt.println("[gc] array_test")
     arr = []
     i   = 0
@@ -25,7 +30,9 @@ func array_test(top){
     os.gc()
     i  = 0
     while i < top {
-        os.gc()
+        if i % 100000 == 0 {
+            os.gc()
+        }
         if  arr[i] != i {
             fmt.println("[gc] arr[%d] != %d\n",arr[i],i)
             os.die("")
@@ -58,9 +65,10 @@ func  print_pascal_triangle(level)
         i   += 1
     }
 }
+
 func main(){
     string_test()
-    array_test(100)
+    array_test()
     print_pascal_triangle(10)
     fmt.println("rt_os_gc test passed!")
 }
