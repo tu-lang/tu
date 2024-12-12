@@ -176,9 +176,10 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 				v = c.nextFree(spc,&s,&shouldgc)
 			}
 			x = v
-			if( needzero && s.needzero != 0 ){
+			// if( needzero && s.needzero != 0 ){
+			if needzero
 				std.memset(v,0.(i8),size)
-			}
+			// }
 		// }
 	} else {
 		s<Span> = null
