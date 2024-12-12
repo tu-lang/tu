@@ -7,10 +7,10 @@ addrBits<i64> 	 = 48
 cntBits<i64>     = 19
 BufAlloc<i64>    = 32768
 enable_runtimemalloc<i64> = 1
-heapmin<u64> = 4194304
+heapmin<u64> = 41943040
 gcpercent<i64> = 0
-default_heap_min<i64> = 4194304
-sweep_min_heap_distance<i64> =  1048576
+default_heap_min<i64> = 41943040
+sweep_min_heap_distance<i64> =  10485760
 gc<Gc:> = null
 gcphase<u32> = 0
 worldsema<Sema:> = null
@@ -103,10 +103,14 @@ fn gc_realloc(p<u64*>, pbytes<u64> , nbytes<u64>){
 Gc::start(kind<i32>)
 {
 	if !gc.enablegc return Null
-	this.forced = true
-	dgc(*"--------------------------start:(%d) %d waiting:%d--------------\n",this.cycles, this.trigger(kind),sched.gcwaiting)
-	while this.trigger(kind) == True && sweepone() >= Null {
+	// this.forced = true
+	if this.trigger(kind) != True {
+		return True
 	}
+	dgc(*"--------------------------start:(%d) %d waiting:%d--------------\n",this.cycles, this.trigger(kind),sched.gcwaiting)
+
+	// while this.trigger(kind) == True && sweepone() >= Null {
+	// }
 	this.startSema.lock()
 	if this.trigger(kind) != True {
 		debug(*"start got start sema unlock %d\n",std.gettid())
