@@ -41,7 +41,6 @@ fn osinit(){
 	//gc init
 	gc.startSema.sema = 1
 	worldsema.sema = 1
-	gc.enablegc = true
 	heap_.sweepdone = 1
 	gc.heapmarked = heapmin / 2
 	gc.setpercent(100.(i8))
@@ -51,6 +50,8 @@ fn osinit(){
 	core0.init()
     core0.status = CoreRun
     sched.addcore(&core0)
+	// gc enable
+	gc.enablegc = true
 }
 
 fn mallocinit() {
