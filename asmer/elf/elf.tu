@@ -137,8 +137,8 @@ ElfFile::addSym2(st_name<string.String>,s<Elf64_Sym>)
 ElfFile::sortGlobal()
 {
 	utils.debug("ElfFile::sortGlobal()".(i8))
-	global<std.Array> = std.array_create()
-	local<std.Array>  = std.array_create()
+	global<std.Array> = std.NewArray()
+	local<std.Array>  = std.NewArray()
 	for(i<i32> = 0 ; i < this.symNames.len() ; i += 1){
 		str<string.String> = this.symNames.addr[i]
 		sym<Elf64_Sym> = this.symTab.find(str)
@@ -149,7 +149,7 @@ ElfFile::sortGlobal()
 		}
 	}
 	//clear
-	this.symNames = std.array_create()
+	this.symNames = std.NewArray()
 	for(i<i32> = 0 ; i < local.len() ; i += 1)
 		this.symNames.push(local.addr[i])
 	//first index

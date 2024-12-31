@@ -10,7 +10,7 @@ mem Function {
 }
 Function::init(name){
     this.labelname = name
-    this.instructs = std.array_create()
+    this.instructs = std.NewArray()
 }
 
 mem ByteBlock {
@@ -40,7 +40,7 @@ func newSym(name<string.String>, externed<i32>)
         segName : string.S(".text".(i8)),
         name : name,
         addr : 0,
-        datas : std.array_create(),
+        datas : std.NewArray(),
         externed : externed,
         isstr : false,
         isrel : false
@@ -57,7 +57,7 @@ func newStringSym(name<string.String>, str<string.String>,pos<i32>)
         segName : string.S(".data".(i8)),
         name : name,
         addr : pos,
-        datas : std.array_create(),
+        datas : std.NewArray(),
         externed : false,
         isstr : true,
         isrel : false,
@@ -76,7 +76,7 @@ func newDataSym(name<string.String>,pos<i32>)
         isrel : false,
         segName : string.S(".data".(i8)),
         externed : false,
-        datas : std.array_create(),
+        datas : std.NewArray(),
     }
 }
 Sym::addBlock(b<ByteBlock>){

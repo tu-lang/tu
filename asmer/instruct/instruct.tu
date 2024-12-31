@@ -68,7 +68,7 @@ Instruct::init(type<i32>,p<parser.Parser>)
 {
     this.str        = string.emptyS()
     this.name       = string.emptyS()
-    this.tks        = std.array_create()
+    this.tks        = std.NewArray()
     this.is_rel     = false
     this.is_func    = false
     this.type       = type

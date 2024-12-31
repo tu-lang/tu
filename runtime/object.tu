@@ -68,7 +68,7 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
         Array:  {
             return new Value {
                 type : Array,
-                data : std.array_create(std.ARRAY_SIZE, PointerSize)
+                data : std.NewArray(std.ARRAY_SIZE, PointerSize)
             }
         }
         Map:    {

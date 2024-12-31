@@ -43,7 +43,7 @@ func string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.Rbtre
 
 func pools_init(){
 	//init array
-	chars = std.array_create(256.(i8),8.(i8))
+	chars = std.NewArray(256.(i8),8.(i8))
 	for i<i32> = 0 ; i < 256 ; i += 1 {
 		c<Value> = new Value {
 			type : Char,

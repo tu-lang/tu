@@ -42,8 +42,8 @@ func debug_init(){
 			len: seclines.sh_size,
 			offset: 0
 		},
-		files: std.array_create(),
-		rows: std.array_create()
+		files: std.NewArray(),
+		rows: std.NewArray()
 	}
 	lines.parse()
 	}

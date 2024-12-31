@@ -27,7 +27,7 @@ mem Parser {
 Parser::init(filepath,elf<elf.ElfFile>)
 {
     utils.debug("Parser::init() filepath:%s".(i8),*filepath)
-    this.funcs = std.array_create()
+    this.funcs = std.NewArray()
     this.elf = elf
     this.data_size = 0
     this.text_size = 0

@@ -12,7 +12,7 @@ func mapstringhashkey(k<string.String>){
 }
 SymTable::init(){
     this.symbols = map.map_new(mapstringhashkey.(u64),0.(i8))
-    this.data_symbol = std.array_create()
+    this.data_symbol = std.NewArray()
 }
 
 SymTable::hasName(name) {

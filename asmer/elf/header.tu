@@ -50,11 +50,11 @@ ElfFile::init(ac<asm.Asmer>){
 	this.shdrTab  =  map.map_new(mapstringhashkey.(u64),0.(i8))
 	this.strIndex =  map.map_new(mapstringhashkey.(u64),0.(i8))
 	this.symTab   =  map.map_new(mapstringhashkey.(u64),0.(i8))
-	this.shdrNames = std.array_create()
-	this.symNames  = std.array_create()
-	this.relTab	   = std.array_create()
-	this.relTextTab = std.array_create()
-	this.relDataTab = std.array_create()
+	this.shdrNames = std.NewArray()
+	this.symNames  = std.NewArray()
+	this.relTab	   = std.NewArray()
+	this.relTextTab = std.NewArray()
+	this.relDataTab = std.NewArray()
 	//default section
 	this.addShdr(
 		string.emptyS(),

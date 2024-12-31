@@ -107,7 +107,7 @@ func test_arr_multi(){
 }
 func test_chain(){
 	fmt.println("test arr chain")
-	arr<std.Array> = std.array_create() 
+	arr<std.Array> = std.NewArray() 
 	s1<string.String> = string.S(*"test1dsf")
 	s2<string.String> = string.S(*"3333333-ssdfsdf")
 	arr.push(s1)

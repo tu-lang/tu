@@ -14,7 +14,7 @@ mem Array_iter {
 	u64* addr
 	u64* cur
 }
-func array_create(n<u32>,size<u64>){
+func NewArray(n<u32>,size<u64>){
     if n == 0 n = ARRAY_SIZE
     if size == 0 size = runtime.PointerSize
 

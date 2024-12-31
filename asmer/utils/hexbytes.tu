@@ -50,7 +50,7 @@ ParseHexBytes::isvalid(cn<i8>){
 }
 
 ParseHexBytes::init(filepath){
-    this.vs = std.array_create(0.(i8),1.(i8)) //1 byte
+    this.vs = std.NewArray(0.(i8),1.(i8)) //1 byte
     printf("ParseHexBytes::init() %s\n".(i8),*filepath)
     this.pos      = 0
     fs = new std.File(filepath)
