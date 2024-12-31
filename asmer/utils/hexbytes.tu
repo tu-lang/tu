@@ -81,8 +81,7 @@ ParseHexBytes::parse(){
                     dd<i8> = a.tonumber()
                     cn = this.next()
                     if(this.peek() != Lower){
-                        e<i8*> = this.vs.push()
-                        *e = dd
+                        this.vs.push(dd)
                     }
                 }else{
                     cn = this.next()

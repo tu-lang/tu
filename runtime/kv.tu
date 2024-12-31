@@ -145,8 +145,7 @@ fn arr_pushone(var<Value>,varr<Value>){
         // return Null
     }
     arr<std.Array> = varr.data
-    insert<u64*> = arr.push()
-    *insert    = var
+    insert<u64*> = arr.push(var)
 }
 fn arr_updateone(var<Value>,index<Value>,varr<Value>){
     if  varr == null || varr.data == null || index == null || var == null {

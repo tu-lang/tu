@@ -45,6 +45,31 @@ Array::init(n<u32>,size<u64>){
 Array::array_destroy(){
     runtime.gc_free(this)
 }
+
+Array::get(i<i64>) {
+    if i >= this.used {
+        return Null
+    }
+    match this.size {
+        1 : {
+            addr<u8*> = this.addr 
+            return addr[i]
+        }
+        2 : {
+            addr<u16*> = this.addr 
+            return addr[i]
+        }
+        4 : {
+            addr<u32*> = this.addr 
+            return addr[i]
+        }
+        8 : {
+            addr<u64*> = this.addr 
+            return addr[i]
+        }
+        _ : dief(*"Array::get size not allowed:%d\n",this.size)
+    }
+}
 Array::tail(){
     if  this == null os.die("[arr_tail] not array_type")
     if this.used <= 0 {
@@ -52,7 +77,7 @@ Array::tail(){
         // fmt.println("[warn] array_tail for empty array")
         // return runtime.newobject(Null,Null)
     }
-    return this.addr[this.used - 1]
+    return this.get(this.used - 1)
 }
 Array::head(){
     if  this == null os.die("[arr_head] not array_type")
@@ -60,7 +85,7 @@ Array::head(){
         fmt.println("[warn] array_head for empty array")
         return Null
     }
-    return this.addr[0]
+    return this.get(0.(i8))
 }
 
 Array::pop(){
@@ -71,33 +96,57 @@ Array::pop(){
         return runtime.newobject(Null,Null)
     }
 
+    data<u64> = this.get(this.used - 1)
     //pop one 
     this.used -= 1
-
-    return this.addr[this.used]
+    return data
 }
-//NOTICE: ele only for 8 bytes pointer
-Array::push(ele<u64>){
-    size<u64> =  0
-    newp<u64*> = null
-    elt<u64*> = null
-    if  this.used == this.total {
-        size = this.size * this.total
-        newp = runtime.gc_malloc(size * 2)
-        if  newp == null {
-            fmt.println("[arr_pushn] failed to expand memeory")
-            return Null
-        }
-        memcpy(newp,this.addr,size)
-        runtime.gc_free(this.addr)
-        this.addr = newp
-        this.total *= 2
+
+Array::expand(){
+    // if  this.used != this.total {
+        // return True
+    // }
+    size<u64> = this.size * this.total
+    newp<u64*> = runtime.gc_malloc(size * 2)
+    if  newp == null {
+        fmt.println("[arr_expand] failed to expand memeory")
+        return Null
     }
-    elt = this.addr + this.size * this.used
+    memcpy(newp,this.addr,size)
+    runtime.gc_free(this.addr)
+    this.addr = newp
+    this.total *= 2
+}
+
+Array::push(ele<u64>){
+    if this.used == this.total {
+        this.expand()
+    }
+    match this.size {
+        1 : {
+            insrt<u8> = ele
+            addr<u8*> = this.addr 
+            addr[this.used] = insrt
+        }
+        2 : {
+            insrt<u16> = ele
+            addr<u16*> = this.addr 
+            addr[this.used] = insrt
+        }
+        4 : {
+            insrt<u32> = ele
+            addr<u32*> = this.addr 
+            addr[this.used] = insrt
+        }
+        8 : {
+            insrt<u64> = ele
+            addr<u64*> = this.addr 
+            addr[this.used] = insrt
+        }
+        _ : dief(*"Array::push size not allowed:%d\n",this.size)
+    }
     this.used += 1
-    //insert one ,only for 8 bytes pointer
-    if ele != null *elt = ele
-    return elt
+    return ele
 }
 
 Array::merge(v2<Array>){
