@@ -53,15 +53,28 @@ ChainExpr::getType(ctx){
 	}else if type(this.first) == type(IndexExpr) {
 		i = this.first
 		var = new VarExpr(i.varname,i.line,i.column)
-        var.package = i.package
-
+        	var.package = i.package
+		
 		realvar = var.getVar(ctx,i)
 		this.check(realvar != null,"get var from indexexpr failed")
-		sm = new StructMemberExpr(i.package,this.line,this.column)
-		sm.member = i.varname
-		sm.var = realvar
-		member = sm.getMember()
-		this.check(member != null," indexexpr get member failed")
+		
+		if i.package == "" && realvar.stack && realvar.structname != "" {
+			ele = package.getStruct(realvar.structpkg , realvar.structname)	
+			this.check(ele.size > 0  , "check ele size")	
+			
+			member = new ast.Member()	
+			member.structname = realvar.structname
+			member.structpkg = realvar.structpkg
+			member.isstruct = true
+			member.pointer = false
+			member.structref = ele	
+		}else {
+			sm = new StructMemberExpr(i.package,this.line,this.column)
+			sm.member = i.varname
+			sm.var = realvar
+			member = sm.getMember()
+			this.check(member != null," indexexpr get member failed")
+		}
 	}
 
 	for(j = 0 ; j < std.len(this.fields) ; j += 1){

@@ -69,10 +69,27 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 if !var.ret.stack
 			 	compile.Load()
 			 compile.Push()
-			 this.compileStaticIndex(ctx,var.ret.size)
+			
+			 elsize = var.ret.size
+            		 if var.ret.stack && var.ret.structname != "" {
+                		ele = package.getStruct(var.ret.structpkg,var.ret.structname)
+                	 	this.check(ele.size > 0,"check ele size")
+                		elsize = ele.size
+
+                		member = new ast.Member()
+                		member.structname = var.ret.structname
+                		member.structpkg = var.ret.structpkg
+                		member.isstruct = true
+                		member.pointer = false
+                		member.structref = ele
+                		this.ret = member
+            		 }
+			 this.compileStaticIndex(ctx , elsize)
 			 compile.writeln("\tadd %%rdi , (%%rsp)") 
 			 compile.Pop("%rax")
-			 compile.LoadSize(var.ret.size,var.ret.isunsigned)
+			 if var.ret.stack && var.ret.structname != ""{} else {
+			 	compile.LoadSize(var.ret.size,var.ret.isunsigned)
+			 }
 			 return var.ret
 		 }
 		 ast.Var_Global_Local_Static_Field | ast.Var_Local_Static_Field:{ 

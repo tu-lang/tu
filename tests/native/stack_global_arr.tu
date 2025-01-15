@@ -80,9 +80,38 @@ func test2(){
 	fmt.println("test2 success")
 }
 
+mem G1 {
+	i32 a,b,c
+}
+g1<G1:> = [
+	{
+		1,2,3
+	},
+	{
+		4,5,6
+	}
+]
+g2<i32:> = [7,8,9]
+
+fn test_global_arr(){
+	fmt.println("test global arr ")
+	if g1[0].a == 1 {} else os.die("g1[0].a != 1")
+	if g1[0].b == 2 {} else os.die("g1[0].b != 2")
+	if g1[0].c == 3 {} else os.die("g1[0].c != 3")
+	if g1[1].a == 4 {} else os.die("g1[1].a != 4")
+	if g1[1].b == 5 {} else os.die("g1[1].b != 5")
+	if g1[1].c == 6 {} else os.die("g1[1].c != 6")
+
+	if g2[0] == 7 {} else os.die("g2[0] != 7")
+	if g2[1] == 8 {} else os.die("g2[0] != 8")
+	if g2[2] == 9 {} else os.die("g2[0] != 9")
+	fmt.println("test global arr success")
+}
+
 func main(){
 	test_var()
 	test_var_ref(&ga)
 	test_extern_global()
 	test2()
+	test_global_arr()
 }

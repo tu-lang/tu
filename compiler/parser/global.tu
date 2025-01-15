@@ -214,6 +214,7 @@ Parser::parseGlobalAssign()
                 type(gen.ArrayExpr) : {
                     if var.structtype && var.stack {
                         arr = ae.rhs.lit
+			            if var.stacksize == 1 var.stacksize = std.len(arr)
                         if std.len(arr) != var.stacksize {
                             this.check(false,
                                 fmt.sprintf("arr.size:%d != stacksize:%d",
