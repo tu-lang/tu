@@ -49,22 +49,22 @@ func u8_test(){
 	//FIXME: segfault
 	member = func(p<Testu8>){
 		fmt.println("test member pointer")
-		pp<Pu8> = new Pu8
-		pp.p = p
+		pp1<Pu8> = new Pu8
+		pp1.p = p
 		for(i = 220 ; i <= 228 ; i += 1 ){
-			fmt.assert(int(*pp.p),i)
-			pp.p = pp.p + 1
+			fmt.assert(int(*pp1.p),i)
+			pp1.p = pp1.p + 1
 		}
 		fmt.println("test member pointer + success")
 	}
 	// 测试 变量指针 +
 	var = func(p<Testu8>){
-		pp<u8*> = p
+		pp1<u8*> = p
 		for(i = 220 ; i < 228 ; i += 1 ){
 			//FIXME: gc bug
 			//b = int(*i)
-			fmt.assert(int(*pp),i)
-			pp += 1
+			fmt.assert(int(*pp1),i)
+			pp1 += 1
 		}
 		fmt.println("test var pointer + success")
 	}
