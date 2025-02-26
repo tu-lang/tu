@@ -9,7 +9,7 @@ mem VObjFunc {
     i64 isvarf , argstack
     i64 retsize, retstack
 	i32 argsize, asyncsize
-	u64 asyncargs 
+	u64 asyncargs, capture  
 }
 mem VObjMem {
     u64 nid
@@ -89,16 +89,32 @@ fn objfuncofs(hdr<VObjHeader>, hid<u64>){
     return Null
 }
 
-func newfuncobject(entry<u64>,as<i32>,isvarf<i32>,retsize<i32>){
+func newfuncobject(entry<u64>,as<i32>,isvarf<i32>,retsize<i32>,capture<i32>){
+    hid<i64> = 0 
+    //need capture
+    if capture {
+        captr<i64*> = &capture
+        carg<i64>   = captr[1]
+        // capture vars
+        if carg > 0 {
+            carg *= 8
+            //capture stacks vars
+            hid = new carg
+            std.memcpy(hid,captr + 16 , carg)
+        }
+    }
+
     return new FuncObject {
         type : Func,
         hdr : VObjFunc {
+            hid    : hid,
             isvarf : isvarf,
             argstack: as * 8,
             argsize : as,
             retsize: retsize,
             retstack: (retsize - 1) * 8,
-            entry: entry
+            entry: entry,
+            capture: capture,
         }
     } 
 }
@@ -280,7 +296,7 @@ fn get_func_value(obj<FuncObject>){
 
 // internal call
 // @ban usercall
-fn dynarg_pass(fc<VObjFunc>...){ 
+fn dynarg_pass(typ<i64>, fc<VObjFunc>...){ 
     passstack<u64*> = &fc  
     passstack += ptrSize  //typeinfo         
 
@@ -323,6 +339,9 @@ fn dynarg_pass(fc<VObjFunc>...){
     //normal pass args
     copy<i32> = fc.argsize 
     j<i32> = 0
+    if typ == 3 && fc.capture == 0 {
+        j = 1 //eat vptr
+    }
     for i<i32> = 0 ; i < copy ; i += 1 {
         if j + 1 > count { 
             passstack[i] = &internal_null
