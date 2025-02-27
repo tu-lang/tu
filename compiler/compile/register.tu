@@ -12,6 +12,7 @@ func GenAddr(var){
             offset = ast.GF().captures[var.varname]
             writeln("   mov %d(%%rbp), %%rax",16)
             writeln("   add $%d , %%rax", offset * 8)
+            return var
         }
     }
     if var.is_local {
