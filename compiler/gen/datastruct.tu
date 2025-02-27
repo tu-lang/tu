@@ -6,6 +6,23 @@ use compiler.compile
 use os
 use compiler.utils
 
+class ClosPosExpr : ast.Ast {
+    pos = pos
+    func init(pos,line,column){super.init(line,column)}
+    func toString(){ return "ClosPosExpr"}
+}
+
+ClosPosExpr::compile(ctx,load){
+    this.record()
+    //push this.obj
+    //push this.obj.func
+    //push arg1
+    //puish arg2
+
+    compile.writeln("   mov %d(%%rsp) , %%rax",this.pos * 8)
+    compile.writeln("   mov (%%rax) , %%rax")
+    return null 
+}
 
 class  ArgsPosExpr : ast.Ast {
     pos = pos
