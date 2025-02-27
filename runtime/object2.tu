@@ -339,7 +339,7 @@ fn dynarg_pass(typ<i64>, fc<VObjFunc>...){
     //normal pass args
     copy<i32> = fc.argsize 
     j<i32> = 0
-    if typ == 3 && fc.capture == 0 {
+    if typ == 4 && fc.capture == 0 {
         j = 1 //eat vptr
     }
     for i<i32> = 0 ; i < copy ; i += 1 {
