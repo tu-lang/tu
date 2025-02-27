@@ -196,7 +196,7 @@ VarExpr::compile(ctx,load){
             utils.debug("found function pointer:%s",fcname)
             compile.writeln("    lea %s(%%rip), %%rax", fcname)
             if this.tyassert == null
-                internal.newfuncobject(this.funcargs,fc.is_variadic,fc.mcount,false)
+                internal.newfuncobject(this.funcargs,fc.is_variadic,fc.mcount,false,fcname)
         }
         _ : this.check(false,"unkonwn var type")
     }

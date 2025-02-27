@@ -37,6 +37,12 @@ Context::getLocalVar(varname)
     var = GP().getGlobalVar("",varname)
     if var != null return var
 
+    if GF().fntype == ClosureFunc && GF().parent != null {
+        var = GF().parent.FindLocalVar(varname)
+        if var != null
+            return var
+    }
+
     utils.debug(
         "variable:%s not define in local or params or global filename:%s"
         ,varname,GF().parser.filename

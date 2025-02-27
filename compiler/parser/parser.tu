@@ -260,8 +260,18 @@ Parser::getvar(varname){
     }
 
     varexpr = this.ctx.getVar(this.currentFunc,varname)
-
 	if varexpr != null return varexpr
+
+    cf = this.currentFunc
+    if cf.fntype == ast.ClosureFunc && cf.parent != null {
+        pctx = cf.parctx
+        varexpr = pctx.getVar(cf.parent , varname)
+        if varexpr != null {
+            cf.createParentCapture(varexpr)
+            return varexpr
+        }
+    }
+
 
 	return this.getGlobalVar("",varname)
 }
