@@ -53,6 +53,9 @@ class Function {
     endstates = []
     returns   = []
     iterid    = 0
+    //clousure
+    parent
+    parctx
 
     fn isasync(){
         if this.asyncst != null
