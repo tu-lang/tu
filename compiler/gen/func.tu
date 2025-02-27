@@ -21,7 +21,8 @@ ClosureExpr::compile(ctx,load){
 	internal.newfuncobject(
 		std.len(this.def.params_order_var),
 		this.def.is_variadic,
-		this.def.mcount
+		this.def.mcount,
+		true
 	)
 	return null
 }
@@ -158,6 +159,7 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 	match ty {
     	ast.ChainCall: {
             internal.get_func_value()
+			ty = ast.ClosureCall
     	}
     	ast.MemberCall: {
 			internal.object_func_addr2(this,this.funcname)
@@ -182,6 +184,10 @@ FunCallExpr::compile2(ctx, load, ty, obj){
     	_: this.check(false,"unknown dyn compile")
     }
 
+	if ty == ast.ClosureCall {
+		this.handleclosure()
+	}
+	
 	vlid = ast.incr_labelid()
 	mretnull_label   = cfunc.fullname() + "_mrnull_" + vlid
 	mretdone_label   = cfunc.fullname() + "_mrdone_" + vlid
@@ -346,4 +352,14 @@ FunCallExpr::gennewawait(){
 	}
 
     return newsvar
+}
+
+FunCallExpr::handleclosure() {
+	params = this.args
+	pos = new ClosPosExpr(std.len(params) + 1,this.line,this.column)
+	//find params count
+	this.args = []
+
+	this.args[] = pos
+	std.merge(this.args,params)
 }

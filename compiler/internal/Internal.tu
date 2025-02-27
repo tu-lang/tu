@@ -66,7 +66,11 @@ fn newclsobject(vid,objsize){
 
     call("runtime_newclsobject")
 }
-fn newfuncobject(funcargs,isvarf,retsize){
+
+fn newfuncobject(funcargs,isvarf,retsize , capture){
+    if capture compile.writeln("    push $1")
+    else       compile.writeln("    push $0")
+    
     compile.writeln("   push $%d",retsize)
     compile.writeln("   push $%d", isvarf)
     compile.writeln("   push $%d",funcargs)

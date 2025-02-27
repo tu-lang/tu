@@ -2,6 +2,9 @@ use compiler.ast
 use compiler.utils 
 use std
 
+ClosPosExpr::getType(ctx){
+	this.panic("getType: unsupport closposexpr")
+}
 ArgsPosExpr::getType(ctx){
 	this.panic("getType: unsupport argsposexpr")
 }

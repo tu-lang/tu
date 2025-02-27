@@ -11,6 +11,7 @@ class TypeAssertExpr : ast.Ast {
 	pkgname = ""
 	name    = ""
 }
+
 TypeAssertExpr::toString() { 
 	return fmt.sprintf("TypeAssertExpr(%s.%s)"
 		this.pkgname,this.name
@@ -21,6 +22,7 @@ TypeAssertExpr::compile(ctx,load){
     return null
 
 }
+
 TypeAssertExpr::getStruct(){
 	name = this.name
     utils.debugf("gen.TypeAssertExpr::getStruct() pkgname:%s name:%s\n",this.pkgname,name)

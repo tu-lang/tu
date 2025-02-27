@@ -212,6 +212,7 @@ fn registerObjects(){
             else
                 writeln("   .long 0")
             writeln("   .quad %d" , fc.argsmem())
+            writeln("   .quad 0")
         }
 
         offset = 0

@@ -53,6 +53,7 @@ FunCallExpr::dynstackcall(ctx, ty, free){
 	compile.writeln("	 sub 24(%%rax) , %%rsp")
     compile.writeln("    sub $8 , %%rsp") //padding for retstack
 	compile.Push()
+    compile.writeln("    push $%d", ty)
 	internal.dynarg_pass() 
 
     compile.writeln("    call *%%rax")

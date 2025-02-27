@@ -125,6 +125,14 @@ Parser::parseFuncDef(ft, pdefine , node)
             node.asyncst = st
             node.asyncst.asyncfn = node
         }
+        ast.ClosureFunc: {
+            var = new gen.VarExpr("_inner.scope", this.line,this.column)
+            var.type = ast.U64
+            var.size = 8
+            var.isunsigned = true
+            node.params_var[var.varname] = var
+            node.params_order_var[] = var
+        }
     }    
 
     node.parser = this
