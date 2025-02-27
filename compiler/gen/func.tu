@@ -23,6 +23,9 @@ ClosureExpr::compile(ctx,load){
         
         for i = std.len(cf.caporders) - 1; i >= 0; i -= 1 {
 			arg = cf.caporders[i]
+			if arg.stack {
+				this.check(false," stack var can't capture :" + arg.varname)
+			}
 			ret = arg.compile(ctx,true)
             stack += 1
             if ret != null {
