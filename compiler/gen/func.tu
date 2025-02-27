@@ -17,13 +17,35 @@ class ClosureExpr : ast.Ast {
 }
 
 ClosureExpr::compile(ctx,load){
-	compile.writeln("    lea %s(%%rip), %%rax", this.varname)
+	cf = this.def
+	stack = 1
+    if cf.parent != null && std.len(cf.caporders) != 0 {
+        
+        for i = std.len(cf.caporders) - 1; i >= 0; i -= 1 {
+			arg = cf.caporders[i]
+			ret = arg.compile(ctx,true)
+            stack += 1
+            if ret != null {
+				ty<i32> = ret.getType(ctx)
+                if ast.isfloattk(ty) 
+                    compile.Pushf(ty)
+                else
+                    compile.Push()
+            }else   compile.Push() 
+        }
+    }
+    compile.writeln("    push $%d",std.len(cf.caporders))
+
+	// compile.writeln("    lea %s(%%rip), %%rax", this.varname)
 	internal.newfuncobject(
 		std.len(this.def.params_order_var),
 		this.def.is_variadic,
 		this.def.mcount,
-		true
+		true,
+		this.varname
 	)
+    compile.writeln("    add $%d , %%rsp",stack * 8)
+
 	return null
 }
 
@@ -187,7 +209,7 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 	if ty == ast.ClosureCall {
 		this.handleclosure()
 	}
-	
+
 	vlid = ast.incr_labelid()
 	mretnull_label   = cfunc.fullname() + "_mrnull_" + vlid
 	mretdone_label   = cfunc.fullname() + "_mrdone_" + vlid

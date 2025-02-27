@@ -54,8 +54,11 @@ class Function {
     returns   = []
     iterid    = 0
     //clousure
-    parent
-    parctx
+    parent parctx
+    captures  = {}
+    capid     = 0
+    caporders = []
+
 
     fn isasync(){
         if this.asyncst != null
@@ -236,4 +239,14 @@ Function::getMatchcondVar(){
     var = new gen.VarExpr(varname,0,0)
     var.size = 8
     return  var
+}
+
+Function::createParentCapture(var){
+    if this.captures[var.varname] != null {
+        return true
+    }
+
+    this.captures[var.varname] = this.capid
+    this.capid += 1
+    this.caporders[] = var
 }

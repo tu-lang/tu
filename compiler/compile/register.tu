@@ -7,6 +7,13 @@ use compiler.gen
 use compiler.utils
 
 func GenAddr(var){
+    if ast.GF().fntype == ast.ClosureFunc {
+        if ast.GF().captures[var.varname] != null {
+            offset = ast.GF().captures[var.varname]
+            writeln("   mov %d(%%rbp), %%rax",16)
+            writeln("   add $%d , %%rax", offset * 8)
+        }
+    }
     if var.is_local {
         if ast.GF().isasync() {
             if var.isparam && !var.onmem {
