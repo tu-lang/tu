@@ -8,7 +8,7 @@ use compiler.utils
 
 func GenAddr(var){
     if ast.GF().fntype == ast.ClosureFunc {
-        if ast.GF().captures[var.varname] != null {
+        if std.exist(var.varname,ast.GF().captures){
             offset = ast.GF().captures[var.varname]
             writeln("   mov %d(%%rbp), %%rax",16)
             writeln("   add $%d , %%rax", offset * 8)
