@@ -157,7 +157,7 @@ Rbtree::find(hk<u64>){
 fn main(){}
 ```
 ### @特性相关
-async
+async(无栈协程) 
 ```
 use fmt
 use runtime
