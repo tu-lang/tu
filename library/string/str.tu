@@ -164,7 +164,7 @@ Str::tolower() {
     len<u64> = this.len()
     j<u64>   = 0
 
-    for (j<u64> = 0 ; j < len ; j += 1) {
+    for (j = 0 ; j < len ; j += 1) {
         s[j] = std.tolower(*s)
     }
 }
@@ -174,7 +174,7 @@ Str::toupper() {
     len<u64> = this.len()
     j<u64> = 0
 
-    for (j<u64> = 0; j < len ; j += 1) {
+    for (j = 0; j < len ; j += 1) {
         s[j] = std.toupper(s[j])
     }
 }
