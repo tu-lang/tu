@@ -70,7 +70,7 @@ fn get_bx()
 
 fn gc_malloc(nbytes<u64>)
 {
-	if enable_runtimemalloc<i64> {
+	if enable_runtimemalloc {
 		return malloc(nbytes,0.(i8),1.(i8))
 	}
 	return std.malloc(nbytes)

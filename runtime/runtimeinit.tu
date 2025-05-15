@@ -148,7 +148,7 @@ fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	//stack backtrace 
 	loop {
 		pc<u64*> = bp + 8
-		rip<u64> = *pc
+		rip = *pc
 		if rip == null break
 		if debug.enabled == 1 {
 			fmt.println(i + ": " + debug.findpc(rip))

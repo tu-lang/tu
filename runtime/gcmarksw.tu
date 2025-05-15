@@ -375,7 +375,7 @@ fn scanobject(b<u64> , queue<Queue>){
         // if obj != Null && obj - b >= n {
 		dgc(*"scanobj: p:%p child:%p\n",t_,obj)
         if obj != Null {
-            s<Span> = Null
+            s = Null
             objIndex<u64> = 0
             base<u64> = findObject(obj,&s,&objIndex)
             if base != 0 {

@@ -437,8 +437,8 @@ Heap::sysAlloc(n<u64> , ssize<u64*>)
 	}
 
 	if size == 0 {
-		v<u64*> = 0
-		size<u64> = n
+		v = 0
+		size = n
 
 		v = reserveAligned(0.(i8),&size,heapArenaBytes)
 		if( v == null ){
