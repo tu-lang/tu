@@ -537,12 +537,12 @@ fn test_argsv(){
     tav2_eq(1.(i32),2.(i32))
 
     //over
-    v1<i32>,v2<i32> = tav2_over(1.(i32),2.(i32),3.(i32))
+    v1,v2 = tav2_over(1.(i32),2.(i32),3.(i32))
     if v1 != 11 os.die("v1 != 11")
     if v2 != 22 os.die("v2 != 22")
     tav2_over(1.(i32),2.(i32),3.(i32))
     //miss
-    v1<i32>,v2<i32> = tav2_miss(1.(i32))
+    v1,v2 = tav2_miss(1.(i32))
     if v1 != 11 os.die("v1 != 11")
     if v2 != 22 os.die("v2 != 22")
     tav2_miss(1.(i32))

@@ -52,7 +52,7 @@ fn test_base2(){//test conversion
     }
 	//pointer
 	vf3<f64> = *tb_v2p
-	s<string.String> = string.f64tostring(vf3,2.(i8))
+	s = string.f64tostring(vf3,2.(i8))
 	fmt.println(s.dyn())
 	if s.dyn() == "1234567.87" {} else {
 		os.dief("%s != 1234567.87",s.dyn())
@@ -62,8 +62,8 @@ fn test_base2(){//test conversion
 	l_v1p<i64*> = &l_v1
 	l_v2<i64> = *l_v1p
 	l_v2p<f64*> = &l_v2
-	vf3<f64> = *l_v2p
-	s<string.String> = string.f64tostring(vf3,4.(i8))
+	vf3 = *l_v2p
+	s = string.f64tostring(vf3,4.(i8))
 	fmt.println(s.dyn())
 	if s.dyn() == "87654321.1234" {} else {
 		os.dief("%s != 87654321.1234",s.dyn())
@@ -111,134 +111,134 @@ fn test_add(){
 	if rs.dyn() == "-2004096896.0000" {} else {
 		os.dief("%s != -2004096896.000",rs.dyn())
 	}
-	r<f64> = vi32 + vf32
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vi32 + vf32
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "-2004096896.0000" {} else {
 		os.dief("%s != -2004096896.0000",rs.dyn())
 	}
 	//f32 u32
-	r<f64> = vf32 + vu32
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf32 + vu32
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "2004539264.0000" {} else {
 		os.dief("%s != 2004539264.0000",rs.dyn())
 	}
-	r<f64> = vu32 + vf32 
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vu32 + vf32 
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "2004539264.0000" {} else {
 		os.dief("%s != 2004539264.0000",rs.dyn())
 	}
 	//f32 i64
-	r<f64> = vf32 + vi64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf32 + vi64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "-9223372036854775808.0000" {} else {
 		os.dief("%s != -9223372036854775808.0000",rs.dyn())
 	}
-	r<f64> = vi64 + vf32
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vi64 + vf32
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "-9223372036854775808.0000" {} else {
 		os.dief("%s != -9223372036854775808.0000",rs.dyn())
 	}
 	//f32 u64
-	r<f64> = vf32 + vu64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf32 + vu64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "38430718824546304.0000" {} else {
 		os.dief("%s != 38430718824546304.0000",rs.dyn())
 	}
-	r<f64> = vu64 + vf32 
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vu64 + vf32 
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "38430718824546304.0000" {} else {
 		os.dief("%s != 38430718824546304.0000",rs.dyn())
 	}
 	//f64 i32
-	r<f64> = vf64 + vi32
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf64 + vi32
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "86884570817.3333" {} else {
 		os.dief("%s != 86884570817.3333",rs.dyn())
 	}
-	r<f64> = vi32 + vf64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vi32 + vf64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "86884570817.3333" {} else {
 		os.dief("%s != 86884570817.3333",rs.dyn())
 	}
 	//f64 u32
-	r<f64> = vf64 + vu32
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf64 + vu32
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "90893206959.3333" {} else {
 		os.dief("%s != 90893206959.3333",rs.dyn())
 	}
-	r<f64> = vu32 + vf64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vu32 + vf64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "90893206959.3333" {} else {
 		os.dief("%s != 90893206959.3333",rs.dyn())
 	}
 	//f64 i64
-	r<f64> = vf64 + vi64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf64 + vi64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "-9223371947965886464.0000" {} else {
 		os.dief("%s != -9223371947965886464.0000",rs.dyn())
 	}
-	r<f64> = vi64 + vf64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vi64 + vf64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "-9223371947965886464.0000" {} else {
 		os.dief("%s != -9223371947965886464.0000",rs.dyn())
 	}
 	//f64 u64
-	r<f64> = vf64 + vu64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf64 + vu64
+	rs= string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "38430805709117120.0000" {} else {
 		os.dief("%s != 38430805709117120.0000",rs.dyn())
 	}
-	r<f64> = vu64 + vf64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vu64 + vf64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "38430805709117120.0000" {} else {
 		os.dief("%s != 38430805709117120.0000",rs.dyn())
 	}
 	//f32 f32
-	r<f64> = vf32 + vf32
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf32 + vf32
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "442442.4375" {} else {
 		os.dief("%s != 442442.4375",rs.dyn())
 	}
 	//f32 f64
-	r<f64> = vf32 + vf64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf32 + vf64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "88889110109.5520" {} else {
 		os.dief("%s != 88889110109.5520",rs.dyn())
 	}
-	r<f64> = vf64 + vf32
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf64 + vf32
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "88889110109.5520" {} else {
 		os.dief("%s != 88889110109.5520",rs.dyn())
 	}
 	//f64 f64
-	r<f64> = vf64 + vf64
-	rs<string.String> = string.f64tostring(r,4.(i8))
+	r = vf64 + vf64
+	rs = string.f64tostring(r,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "177777777776.6666" {} else {
 		os.dief("%s != 177777777776.6666",rs.dyn())
 	}
 
 	//f32 = f32 i64
-	r<f32> = vf32 + vi64
-	r2<f64> = r
+	r_<f32> = vf32 + vi64
+	r2<f64> = r_
 	rs<string.String> = string.f64tostring(r2,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "-9223372036854775808.0000" {} else {
@@ -389,8 +389,8 @@ fn test_sub(){
 	}
 
 	//f32 = f32 i64
-	r<f32> = vf32 - vi64
-	r2<f64> = r
+	r_<f32> = vf32 - vi64
+	r2<f64> = r_
 	rs<string.String> = string.f64tostring(r2,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "9223372036854775808.0000" {} else {
@@ -542,8 +542,8 @@ fn test_mul(){
 	}
 
 	//f32 = f32 i64
-	r<f32> = vf32 * vi64
-	r2<f64> = r
+	r_<f32> = vf32 * vi64
+	r2<f64> = r_
 	rs<string.String> = string.f64tostring(r2,4.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "-49266006727312325738496.0000" {} else {
@@ -705,8 +705,8 @@ fn test_div(){
 	}
 
 	//f32 = f32 i64
-	r<f32> = vf32 / vi64
-	r2<f64> = r
+	r_<f32> = vf32 / vi64
+	r2<f64> = r_
 	rs<string.String> = string.f64tostring(r2,40.(i8))
 	fmt.println(rs.dyn())
 	if rs.dyn() == "-0.0000000000000922649543572129360313738288" {} else {

@@ -32,10 +32,10 @@ func i16_u16()
 {
 	fmt.println("test I16 - U16 max&min ")
 	a<i16> = *I16_MAX	fmt.assert(int(a),I16_MAX)
-	a<i16> = *I16_MIN	fmt.assert(int(a),I16_MIN)
+	a = *I16_MIN	fmt.assert(int(a),I16_MIN)
 
 	a2<u16> = *U16_MAX	fmt.assert(int(a2),U16_MAX)
-	a2<u16> = *U16_MIN	fmt.assert(int(a2),U16_MIN)
+	a2 = *U16_MIN	fmt.assert(int(a2),U16_MIN)
 	fmt.println("test I16 - U16 max&min success")
 
 }
@@ -43,17 +43,17 @@ func i32_u32()
 {
 	fmt.println("test I32 - U32 max&min")
 	a<i32> = *I32_MAX	fmt.assert(int(a),I32_MAX)
-	a<i32> = *I32_MIN	fmt.assert(int(a),I32_MIN)
+	a = *I32_MIN	fmt.assert(int(a),I32_MIN)
 
 	a2<u32> = *U32_MAX	fmt.assert(int(a2),U32_MAX)
-	a2<u32> = *U32_MIN	fmt.assert(int(a2),U32_MIN)
+	a2 = *U32_MIN	fmt.assert(int(a2),U32_MIN)
 	fmt.println("test I32 - U32 max&min success")
 }
 func i64_u64()
 {
 	fmt.println("test I64 - U64 max&min")
 	a<i64> = *I64_MAX	fmt.assert(int(a),I64_MAX)
-	a<i64> = *I64_MIN	fmt.assert(int(a),I64_MIN)
+	a = *I64_MIN	fmt.assert(int(a),I64_MIN)
 
 	//todo: a<u64> = *U64_MAX	fmt.assert(int(a),U64_MAX)
 	//a<u64> = *U64_MIN	fmt.assert(int(a),U64_MIN)

@@ -104,7 +104,7 @@ tf4:
 }
 func test_if(){
 	fmt.println("test if")
-	i = 10
+	i<i32> = 10
 	if(i == 10){
 		j = 100
 		if false {

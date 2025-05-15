@@ -57,7 +57,7 @@ async TestCase::tc(){
     }
     // set block
     fut.pending()
-    count<i32> = fut.await //block 1  count 2
+    count = fut.await //block 1  count 2
     if count != 5 {
         os.dief("poll should be 5 times, now:%d",int(count))
     }
@@ -617,7 +617,7 @@ async TestCase::tc2(){
     }
     // set block
     fut.pending()
-    count<i32> = fut.await //block 1  count 2
+    count = fut.await //block 1  count 2
     if count != 5 {
         os.dief("poll should be 5 times, now:%d",int(count))
     }
