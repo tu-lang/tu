@@ -6,6 +6,27 @@ use compiler.compile
 use os
 use compiler.utils
 
+class FuncRTExpr : ast.Ast {
+    type = 1
+    base
+    pkg = ""
+    name = ""
+    fn init(line,column){super.init(line,column)}
+    fn setMemType() { this.type = 2}
+    fn baseType() { return this.type == 1}
+    fn memType() { return this.type == 2}
+    fn toString() { 
+        if this.baseType() {
+            return this.s + ast.getTokenString(this.base)
+        }
+        return this.s + this.pkg + "." + this.name
+    }
+    fn compile(ctx,load){
+        this.record()
+        this.check(false,"func return type can't be compile")
+    }
+}
+
 class ClosPosExpr : ast.Ast {
     pos = pos
     func init(pos,line,column){super.init(line,column)}

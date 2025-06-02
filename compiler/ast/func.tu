@@ -52,6 +52,7 @@ class Function {
     //async future
     endstates = []
     returns   = []
+    returnTypes = []
     iterid    = 0
     //clousure
     parent parctx

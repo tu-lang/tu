@@ -247,3 +247,6 @@ LabelExpr::getType(ctx){
 TypeAssertExpr::getType(ctx){
 	this.panic("getType: unsupport TypeAssertExpr\n")
 }
+FuncRTExpr::getType(ctx){
+	this.panic("getType: unsupport FuncRTExpr")
+}

@@ -158,3 +158,11 @@ func type_isunsigned(ty<i64>){
         _ : return false
     }
 }
+
+fn isFuncRetType(tk<i64>){
+    if tk >= I8 && tk <= F64
+        return true
+    if tk == VAR
+        return true
+    return false
+}

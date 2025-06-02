@@ -179,6 +179,69 @@ Parser::parseFuncDef(ft, pdefine , node)
         this.ctx.createVar(it.varname,it)
     }
     node.block = null
+
+    hasFuncRetDef = false
+    if  ast.isFuncRetType(reader.curToken) {
+        tx = reader.transaction()
+        maxrts = 0
+        hasFuncRetDef = true
+
+        while ast.isFuncRetType(reader.curToken) {
+            maxrts += 1
+            if maxrts > 100
+                this.check(false,"too much return type defines")
+
+            typeDefine = new gen.FuncRTExpr(this.line,this.column)
+            if reader.curToken >= ast.I8 && reader.curToken <= ast.F64 
+                typeDefine.base = reader.curToken
+            else {
+                typeDefine.setMemType()
+                typeDefine.name = reader.curLex.dyn()
+            }
+
+            reader.scan()
+            //take package
+            if reader.curToken == ast.DOT {
+                //eat 
+                reader.scan()
+                if reader.curToken != ast.VAR {
+                    break
+                }
+                typeDefine.pkg = typeDefine.name
+                typeDefine.name = reader.curLex.dyn()
+
+                //eat
+                reader.scan()
+            }
+
+            // multi return
+            if reader.curToken == ast.COMMA 
+                reader.scan()
+            else if reader.curToken != ast.LBRACE
+                break
+            
+            node.returnTypes[] = typeDefine
+        }
+
+        // should rollback
+        if reader.curToken != ast.LBRACE {
+            hasFuncRetDef = false
+            node.returnTypes = []
+            reader.rollback(tx)
+        }
+
+        //check struct exist in function phase
+        if compile.phase == compile.FunctionPhase && hasFuncRetDef {
+            for it : node.returnTypes {
+                if it.memType() {
+                    if package.getStruct(it.pkg,it.name) == null {
+                        it.check(false,"not define struct :" + it.pkg + "." + it.name)
+                    }
+                }
+            }
+        }
+
+    }
     if (reader.curToken == ast.LBRACE){
         insertsuper = false
         if ft == ast.ClassFunc && pdefine.father != null {
