@@ -14,11 +14,20 @@ func test_equal(){
 }
 func test_unique(){
 	fmt.println("test char unique")
+
+	str2<i8*> = "\n\t\'\"\\"
+	if str2[0] == '\n' {} else os.die("1") 
+	if str2[1] == '\t' {} else os.die("2")
+	if str2[2] == '\'' {} else os.die("3")
+	if str2[3] == '\"' {} else os.die("4")	
+
+	str = "\n\t\'\"\\"
+	if str[0] == '\n' {} else os.die("1") 
+	if str[1] == '\t' {} else os.die("2")
+	if str[2] == '\'' {} else os.die("3")
+	if str[3] == '\"' {} else os.die("4")	
 	
 	str = "a"
-	//TODO:
-	//str = "\n\t\'\"\\"
-	//str[0] == '\n' str[1] == '\t' str[2] == '\'' str[3] == '\"'..
 	if str[1] != '\0' os.die("str[1] should be \0")
 	if '\n' != 10 os.die(" should be 10") 
 	if '\t' != 9  os.die(" should be 9")

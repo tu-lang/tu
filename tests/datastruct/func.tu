@@ -3,10 +3,10 @@ use fmt
 use pkg1
 use os
 
-func func_noargs() {
+fn func_noargs() {
     fmt.println("no args test")
 }
-func func_withargs(a,b,c) {
+fn func_withargs(a,b,c) {
     if  a != 1 {
         fmt.print("[failed] func_withargs a != 1 :",a,"\n")
         os.exit(1)
@@ -22,7 +22,12 @@ func func_withargs(a,b,c) {
     fmt.println(a,b,c)
     fmt.println("has args test")
 }
-func main(){
+
+fn test_passfn(fc){
+    arr = ["c[0]"]
+    fc(1,"iamb",arr)
+}
+fn main(){
     fc = func_noargs
     fc(1)
     fwn = func_withargs
@@ -32,5 +37,6 @@ func main(){
     p1()
     p2 = pkg1.test2
     p2()
-    //TODO: support func pointer pass
+
+    test_passfn(fwn)
 }
