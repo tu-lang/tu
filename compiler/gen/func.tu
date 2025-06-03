@@ -7,6 +7,8 @@ use compiler.parser.package
 use std
 use compiler.utils
 
+defaultfunc = new ast.Function()
+
 class ClosureExpr : ast.Ast { 
 	varname = varname
 	def
@@ -67,6 +69,10 @@ class FunCallExpr : ast.Ast {
 	fcs    = null
 	tyassert
 	p  	   = null 
+
+	gen    = false
+	dt
+	var    = null
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -92,10 +98,13 @@ FunCallExpr::checkFirstThis(ctx,var){
 
     return null
 }
-FunCallExpr::compile(ctx,load)
+FunCallExpr::geninit(ctx)
 {
+	if this.gen return null
+	this.gen = true
+
 	this.record()
-	utils.debugf("FunCallExpr:  package:%s func:%s free:%d",this.package,this.funcname,load)
+	utils.debugf("FunCallExpr::geninit:  package:%s func:%s",this.package,this.funcname)
 	cfunc = compile.currentFunc
 	packagename = this.package
 	fc = null
@@ -118,11 +127,15 @@ FunCallExpr::compile(ctx,load)
 		OBJECT_MEMBER_CALL:
 		if var.structname == "Future" && this.funcname == "poll" {
 			if var.structpkg == "runtime" {
-				this.compile2(ctx,load,ast.FutureCall,var)
+				this.fcs = defaultfunc
+				this.var = var
+				this.dt  = ast.FutureCall
 				return this
 			}	
 			if var.structpkg == "" && GP().getpkgname() == "runtime" {
-				this.compile2(ctx,load,ast.FutureCall,var)
+				this.fcs = defaultfunc
+				this.var = var
+				this.dt  = ast.FutureCall
 				return this
 			}
 		}
@@ -133,7 +146,8 @@ FunCallExpr::compile(ctx,load)
 			fc = s.getFunc(this.funcname)
 			if(fc == null) this.panic("func not exist in funccall expr compile")
 			this.checkFirstThis(ctx,var)
-			this.call(ctx,fc,load)
+			this.dt = ast.StaticCall
+			this.fcs = fc
 			return this
 		}else if this.tyassert != null {
 			s = compile.currentParser.pkg
@@ -141,18 +155,24 @@ FunCallExpr::compile(ctx,load)
 					.getStruct(this.tyassert.name)
 			fc = s.getFunc(this.funcname)
 			this.checkFirstThis(ctx,var)
-			this.call(ctx,fc,load)
+			this.dt = ast.StaticCall
+			this.fcs = fc
 			return this
 		}
-		this.checkobjcall(var)
-		return this.compile2(ctx,load,ast.ObjCall,var)
+		this.dt = ast.ObjCall
+		this.var = var
+		this.fcs = defaultfunc
+		return null
 	}else if this.package == "" && ctx.getLocalVar(this.funcname) != null {
 		var = ctx.getLocalVar(this.funcname)
-
+		this.var = var
+		this.fcs = defaultfunc
 		if var.structtype {
-			return this.closcall(ctx,var,load)
+			this.dt = ast.ClosureCall2
+			return null
 		}
-		return this.compile2(ctx,load,ast.ClosureCall,var)
+		this.dt = ast.ClosureCall
+		return null
 	}else{
 		pkg  = package.packages[packagename]
 		if !pkg {
@@ -175,7 +195,29 @@ FunCallExpr::compile(ctx,load)
 		)
 	}
 
-	this.call(ctx,fc,load)
+	this.dt = ast.StaticCall
+	this.fcs = fc
+	return this
+}
+
+FunCallExpr::compile(ctx , load){
+	this.record()
+	utils.debugf("FunCallExpr:  package:%s func:%s free:%d",this.package,this.funcname,load)
+
+	this.geninit(ctx)
+	cfunc = compile.currentFunc
+
+	match this.dt {
+		ast.ClosureCall : this.compile2(ctx,load,ast.ClosureCall,this.var)
+		ast.ClosureCall2: this.closcall(ctx,this.var,load)
+		ast.ObjCall:	  this.compile2(ctx,load,ast.ObjCall,this.var)
+		ast.FutureCall:	  this.compile2(ctx,load,ast.FutureCall,this.var)
+		ast.StaticCall:	  this.call(ctx,this.fcs,load)
+
+		_: {
+			this.check(false,"compile unknown funcall type")
+		}
+	}
 	return this
 }
 
@@ -183,13 +225,16 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 	cfunc = compile.currentFunc
 	match ty {
     	ast.ChainCall: {
+			this.fcs = defaultfunc
             internal.get_func_value()
 			ty = ast.ClosureCall
     	}
     	ast.MemberCall: {
+			this.fcs = defaultfunc
 			internal.object_func_addr2(this,this.funcname)
     	}
     	ast.ObjCall: {
+			this.fcs = defaultfunc
 			compile.GenAddr(obj)
         	compile.Load()
         	compile.Push()
@@ -197,11 +242,16 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 			internal.object_func_addr2(this,this.funcname)
 		}
     	ast.ClosureCall: {
+			this.fcs = defaultfunc
 			compile.GenAddr(obj)
         	compile.Load()
 			internal.get_func_value()
 		}
 		ast.FutureCall: {
+			s = package.getStruct("runtime","Future")
+			this.check(s != null,"Future::poll() not found")
+			this.fcs = s.getFunc("poll")
+			this.check(this.fcs != null," Future::poll() not found")
 			compile.GenAddr(obj)
 			compile.Load()
 			internal.get_future_poll()

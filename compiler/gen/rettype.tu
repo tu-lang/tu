@@ -208,6 +208,14 @@ BinaryExpr::getType(ctx){
 	return utils.max(l,r)
 }
 FunCallExpr::getType(ctx){
+	this.geninit(ctx)
+	this.check(this.fcs != null,"must compile first")
+	if std.len(this.fcs.returnTypes) != 0 {
+		dr = this.fcs.returnTypes[0]
+		if dr.baseType() {
+			return dr.base
+		}
+	}
 	return ast.I64
 }
 AssignExpr::getType(ctx){

@@ -8,6 +8,8 @@ MemberCall  = 2
 ObjCall     = 3
 ClosureCall = 4
 FutureCall  = 5
+StaticCall  = 6
+ClosureCall2 = 7
 
 ClassFunc   = 1
 AsyncFunc   = 2

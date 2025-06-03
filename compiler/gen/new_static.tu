@@ -106,8 +106,8 @@ StructInitExpr::compile_field(ctx,load,s,value,field){
 		this.arrinit(ctx,field,ie)
 		return rtok
 	}else{
-		rtok = value.getType(ctx)
 		value.compile(ctx,true)
+		rtok = value.getType(ctx)
 	}
 	return rtok
 }

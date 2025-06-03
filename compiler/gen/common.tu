@@ -42,6 +42,14 @@ func exprIsMtype(cond,ctx){
             }
         }
         type(MemberExpr) : ismtype = cond.ismem(ctx)
+        type(FunCallExpr): {
+            i = cond
+            i.geninit(ctx)
+            i.check(i.fcs != null," memtype check")
+            if std.len(i.fcs.returnTypes) > 0 {
+                ismtype = true
+            }
+        }
     }
     return ismtype
 }
