@@ -222,6 +222,7 @@ FunCallExpr::compile(ctx , load){
 }
 
 FunCallExpr::compile2(ctx, load, ty, obj){
+	this.gen = true
 	cfunc = compile.currentFunc
 	match ty {
     	ast.ChainCall: {

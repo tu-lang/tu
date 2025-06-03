@@ -202,7 +202,8 @@ class MemberCallExpr : ast.Ast {
     membername = ""
 
 	tyassert
-	call      # funcallexpr
+	call      // funcallexpr
+    obj = null
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -250,6 +251,13 @@ MemberCallExpr::compile(ctx,load)
 	utils.debug("gen.MemberCallExpr::compile")
     if this.varname != "" {
         this.panic("varname should be null")
+    }
+
+    if this.obj != null {
+        this.obj.check(this.obj.structname != "", "must be mem type in membercall")
+        this.obj.compile(ctx,load)
+        s = package.getStruct(this.obj.structpkg , this.obj.structname)
+        return this.static_compile(ctx,s)
     }
     if this.tyassert != null {
         compile.Pop("%rax")

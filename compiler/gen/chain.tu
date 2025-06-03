@@ -50,61 +50,9 @@ ChainExpr::compile(ctx,load)
 {
 	utils.debug("gen.ChainExpr::compile() ")
 	this.record()
-    if type(this.first) == type(StructMemberExpr) return this.memgen(ctx,load)
-	if(type(this.first) == type(IndexExpr)){
-		if(exprIsMtype(this.first,ctx)) 
-			return this.memgen(ctx,load)
-	}
-
-	if type(this.first) == type(VarExpr) {
-		varexpr = this.first
-		realVar = varexpr.getVar(ctx,this)
-		if (varexpr.getVarType(ctx,this) == ast.Var_Global_Extern_Static){
-		   if std.len(this.fields) > 0 {
-			   mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
-			   mexpr.var = realVar
-			   mexpr.member = this.fields[0].membername
-			   std.pop_head(this.fields)
-			   this.first = mexpr
-			   return this.memgen(ctx,load)
-		   }else{
-			   if(type(this.last) == type(MemberCallExpr)){
-				   fc = new FunCallExpr(realVar.line,realVar.column)
-				   realVar.compile(ctx,true)
-				   s = package.getStruct(realVar.package,realVar.structname)
-				   return this.last.static_compile(ctx,s)
-			   }else{
-				   mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
-				   mexpr.var = realVar
-				   mexpr.member = this.last.membername
-				   return mexpr.compile(ctx,load)
-			   }
-		   }
-		}
-
-		if realVar && !realVar.is_local && realVar.structtype {
-			mexpr = new StructMemberExpr(realVar.varname,this.first.line,this.first.column)
-			mexpr.var = realVar
-			mexpr.member = varexpr.varname
-			this.first = mexpr
-			return this.memgen(ctx,load)
-		}
-	}else if type(this.first) == type(MemberExpr) {
-		me = this.first
-		if me.ismem(ctx) {
-			mexpr = new StructMemberExpr(me.varname,this.line,this.column)
-			mexpr.var = me.ret
-			if me.tyassert != null {
-				v = me.ret.clone()
-				v.structpkg  = me.tyassert.pkgname
-				v.structname = me.tyassert.name
-				mexpr.var = v
-			}
-			mexpr.member = me.membername
-			this.first = mexpr
-			return this.memgen(ctx,load)
-		}
-	}	
+	
+	if exprIsMtype(this.first,ctx)
+		return this.memgen(ctx,load)
 
 	return this.objgen(ctx,load)
 }
@@ -125,7 +73,7 @@ ChainExpr::memgen(ctx,load)
 		ie.compile_static(ctx)
 		member = ie.ret
 	}else{
-		this.check("unsuport first type in chain")
+		this.check(false,"unsuport first type in chain")
 	}
 	need_check = true
 	lastn = this.last

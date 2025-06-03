@@ -56,9 +56,16 @@ Parser::parseChainExpr(first){
                 reader.scan()
                 if reader.curToken == ast.LPAREN {
                     mc = new gen.MemberCallExpr(this.line,this.column)
-                    mc.tyassert = ta
                     mc.membername = membername 
                     mc.call = this.parseFuncallExpr("")
+                    mc.tyassert = ta
+                    if is_gmvar {
+                        is_gmvar = false
+                        mc.obj   = var
+                        chainExpr.first = mc
+                    }else{
+                        chainExpr.fields[] = mc
+                    }
                     chainExpr.fields[] = mc
                 }else{
                     if(is_gmvar){
@@ -629,6 +636,8 @@ Parser::parseVarExpr(var)
                     expr.structpkg = sname
                     expr.structname = reader.curLex.dyn()
                     reader.scan()
+                }else {
+                    expr.structpkg = this.pkg.package
                 }
                 if ( reader.curToken ==  ast.COLON){
                     this.parseVarStack(expr)

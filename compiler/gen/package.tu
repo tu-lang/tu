@@ -136,10 +136,13 @@ fn getGLobalFunc(pkgname ,name){
 	if pkgname == "" {
 		pkgname  = compile.currentFunc.parser.getpkgname()
 	}
-	pkg  = package.packages[pkgname]
-    if !pkg {
-		return null
+
+	if package.packages[pkgname] == null {
+		pkgname = ast.GP().getImport(pkgname)
+		if package.packages[pkgname] == null 
+			return null
     }
+	pkg = package.packages[pkgname]
 	return pkg.getFunc(name,false)
 }
 
