@@ -258,6 +258,10 @@ Parser::parseFuncDef(ft, pdefine , node)
     this.currentFunc = null
     compile.currentFunc = null
     this.ctx.destroy()
+
+    if compile.phase == compile.FunctionPhase && hasFuncRetDef && std.len(node.returnTypes) != node.mcount {
+        this.check(false,"return count size not match func defines")
+    }
     return node
 }
 
