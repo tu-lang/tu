@@ -26,6 +26,11 @@ class FuncRTExpr : ast.Ast {
         this.record()
         this.check(false,"func return type can't be compile")
     }
+    fn dstCastType() {
+        if this.memType() return ast.I64
+        if this.pointer return ast.I64
+        return this.base
+    }
 }
 
 class ClosPosExpr : ast.Ast {

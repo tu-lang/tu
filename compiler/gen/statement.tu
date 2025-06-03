@@ -45,7 +45,7 @@ ReturnStmt::exprCast(ctx , expr, i){
         if !op.isbase && !defineType.pointer && defineType.base != ast.I64 && defineType.base != ast.U64 {
             expr.check(false,"cast may loss data")
         }
-        compile.Cast(op.ltoken,defineType.base)
+        compile.Cast(op.ltoken,defineType.dstCastType())
         return defineType
     }
     expr.compile(ctx,true)
