@@ -247,6 +247,9 @@ Parser::parseFuncDef(ft, pdefine , node)
         }
 
     }
+    if compile.phase == compile.FunctionPhase && hasFuncRetDef && ft == ast.ClassFunc {
+        this.check(false,"class function can't declare return types")
+    }
     if (reader.curToken == ast.LBRACE){
         insertsuper = false
         if ft == ast.ClassFunc && pdefine.father != null {
