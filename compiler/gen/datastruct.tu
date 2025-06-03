@@ -6,7 +6,7 @@ use compiler.compile
 use os
 use compiler.utils
 
-class FuncRTExpr : ast.Ast {
+class TypeInfoExpr : ast.Ast {
     type    = 1
     base
     pkg     = ""
