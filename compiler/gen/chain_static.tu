@@ -52,7 +52,6 @@ ChainExpr::indexgen(ctx,load)
 
 	index = this.last
 	index.compile_chain_static(ctx,member.size)
-	this.ret = member
 
 	if load {
 		compile.LoadSize(member.size,member.isunsigned)
