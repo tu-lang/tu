@@ -30,66 +30,51 @@ ReturnStmt::compile(ctx)
     }else {
         this.compilemulti(ctx)
     }
-    for(i = std.len(ctx.ctxs) - 1 ; i >= 0 ; i -= 1){
-        p = ctx.ctxs[i]
-        funcName = p.cur_funcname
-        if funcName != "" {
-            compile.writeln("    jmp %s.L.return.%s",compile.currentParser.label(),funcName)
-            return null
-        } 
-    }
+    ctx.jmpReturn()
     return null
 }
 ReturnStmt::compilemulti(ctx){
     fc = ast.GF()
-    if fc.mcount == 1 {
-        if std.len(this.ret) == 0{
-            if ast.cfg_static()
-                compile.writeln(" mov $0 , %%rax")
-            else compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
-        }else if std.len(this.ret) == 1 {
-            this.ret[0].compile(ctx,true)
-        }else{
-            this.ret[0].check(false,"should not be here")
-        }
-    }else{ //>=2
-        stackpointer = fc.ret_stack
-        this.check(stackpointer > 0)
-        for i = fc.mcount; i >= 0 ; i -= 1 {
-            cur = i - 1 - 1
-            if i == 1 { 
-                if std.len(this.ret) > 0 {
-                    this.ret[0].compile(ctx,true)
-                }else{
-                    if ast.cfg_static()
-                         compile.writeln(" mov $0 , %%rax")
-                    else compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
-                }
-                break
-            }
-            if i > std.len(this.ret) {
-                compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
-                if ast.cfg_static() {
-                    compile.writeln(" mov $0 , %d(%%rdi)",cur)
-                }else{
-                    compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
-                    compile.writeln(" mov %%rax , %d(%%rdi)",cur)
-                }
-            }else{ 
-                expr = this.ret[i - 1]
-                expr.compile(ctx,true)
-                ty = expr.getType(ctx)
-                compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
 
-                if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
-                    compile.PushfDst(ty,"%rdi",cur * 8)
-                }else {
-                    compile.writeln("   mov %%rax , %d(%%rdi)", cur * 8)
-                }
-            }
+    stackpointer = fc.ret_stack
+    this.check(stackpointer> 0)
 
+    for i = fc.mcount - 1 ; i >= 0 ;i -= 1 {
+        cur = i - 1
+
+        if i == 0 {
+            if std.len(this.ret) > 0 
+                this.ret[i].compile(ctx,true)
+            else 
+                if ast.cfg_static() 
+                    compile.writeln(" mov $0 , %%rax")
+                else compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+            break
         }
-    }    
+
+        // missing
+        if (i + 1) > std.len(this.ret) {
+            compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
+            if ast.cfg_static() {
+                compile.writeln(" mov $0 , %d(%%rdi)",cur)
+            }else{
+                compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+                compile.writeln(" mov %%rax , %d(%%rdi)",cur)
+            }
+        }else {
+            expr = this.ret[i]
+            expr.compile(ctx,true)
+            ty = expr.getType(ctx)
+            compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
+
+            if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
+                compile.PushfDst(ty,"%rdi",cur * 8)
+            }else {
+                compile.writeln("   mov %%rax , %d(%%rdi)", cur * 8)
+            }
+        }
+    }
+    return null
 }
 
 class BreakStmt      : ast.Ast {

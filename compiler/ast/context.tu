@@ -49,3 +49,14 @@ Context::getLocalVar(varname)
     )
     return null
 }
+
+Context::jmpReturn(){
+    for i = std.len(this.ctxs) - 1 ; i >= 0 ; i -= 1 {
+        p = this.ctxs[i]
+        funcName = p.cur_funcname
+        if funcName != "" {
+            compile.writeln("    jmp %s.L.return.%s",compile.currentParser.label(),funcName)
+            return null
+        } 
+    }
+}
