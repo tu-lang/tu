@@ -97,6 +97,7 @@ func newint(typ, data)
 
 func newfloat()
 {
+    compile.writeln("   push $0")
     compile.Pushf(ast.F64)
     compile.writeln("    push $%d", ast.Double)
     call("runtime_newobject")
