@@ -6,14 +6,16 @@ use compiler.compile
 use os
 use compiler.utils
 
-class TypeInfoExpr : ast.Ast {
+class TypeInfo  {
     type    = 1
     base
     pkg     = ""
     name    = ""
     pointer = false
     st      = null
-    fn init(line,column){super.init(line,column)}
+    line    = line
+    column  = column
+    fn init(line,column){}
     fn setMemType() { this.type = 2}
     fn baseType() { return this.type == 1}
     fn memType() { return this.type == 2}
@@ -22,10 +24,6 @@ class TypeInfoExpr : ast.Ast {
             return this.s + ast.getTokenString(this.base)
         }
         return this.s + this.pkg + "." + this.name
-    }
-    fn compile(ctx,load){
-        this.record()
-        this.check(false,"func return type can't be compile")
     }
     fn dstCastType() {
         if this.memType() return ast.I64
@@ -205,7 +203,6 @@ class BoolExpr   : ast.Ast {
 }
 class CharExpr    : ast.Ast { 
     lit = ""
-    tyassert
     func init(line,column){
         super.init(line,column)
     }
@@ -225,7 +222,6 @@ class CharExpr    : ast.Ast {
 }
 class IntExpr     : ast.Ast { 
     lit = ""
-    tyassert
     func init(line,column){
         super.init(line,column)
     }
@@ -272,7 +268,6 @@ class StringExpr  : ast.Ast {
     lit = "" 
     name = "" 
     offset 
-    tyassert
     func init(line,column){
         super.init(line,column)
     }

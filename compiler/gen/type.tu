@@ -4,36 +4,13 @@ use std
 use fmt
 use compiler.parser.package
 
-class TypeAssertExpr : ast.Ast {
-	func init(line,column){
-		super.init(line,column)
-	}
-	pkgname = ""
-	name    = ""
-}
-
-TypeAssertExpr::toString() { 
-	return fmt.sprintf("TypeAssertExpr(%s.%s)"
-		this.pkgname,this.name
-	)
-}
-
-TypeAssertExpr::compile(ctx,load){
-    return null
-
-}
-
-TypeAssertExpr::getStruct(){
-	name = this.name
-    utils.debugf("gen.TypeAssertExpr::getStruct() pkgname:%s name:%s\n",this.pkgname,name)
+TypeInfo::getStruct(){
 	s = null
-	pkg = GP().pkg.getPackage(this.pkgname)
-	if pkg == null {
-		this.check(false,"type assert: mem package not exist:" + this.pkgname)
+	if !this.memType() {
+		utils.error("must be mem type in get struct for typeinfo")
 	}
-	s = pkg.getStruct(name)
-	if s == null {
-        this.check(false,"mem type not exist :" + name)
+	if this.st == null {
+		utils.error("st is null in typeinfo")
 	}
-	return s
+	return this.st
 }

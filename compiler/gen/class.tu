@@ -112,7 +112,6 @@ class MemberExpr : ast.Ast {
     membername = ""
 
 	ret //var*
-	tyassert
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -147,7 +146,7 @@ MemberExpr::compile(ctx,load)
 	}else if this.tyassert != null { 
 		mexpr = new StructMemberExpr(this.varname,this.line,this.column)
         vv = var.clone()
-        vv.structpkg = this.tyassert.pkgname
+        vv.structpkg = this.tyassert.pkg
         vv.structname = this.tyassert.name
         mexpr.var = vv
         mexpr.member = this.membername
@@ -169,7 +168,7 @@ MemberExpr::assign(ctx, opt ,rhs)
         mexpr.var = this.ret
         if this.tyassert != null {
 			v = this.ret.clone()
-            v.structpkg  = this.tyassert.pkgname
+            v.structpkg  = this.tyassert.pkg
             v.structname = this.tyassert.name
             mexpr.var = v
         }
@@ -201,7 +200,6 @@ class MemberCallExpr : ast.Ast {
     varname = ""
     membername = ""
 
-	tyassert
 	call      // funcallexpr
     obj = null
 	func init(line,column){

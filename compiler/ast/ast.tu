@@ -7,6 +7,7 @@ use runtime
 class Ast {
     line     = line
     column   = column
+    tyassert = null
     hasctx   = false
     hasawait = false
     func init(line,column) {}

@@ -43,16 +43,11 @@ KVExpr::getType(ctx){
 ChainExpr::getType(ctx){
 	if !this.ismem(ctx) return ast.U8
 
-	member = null
+	member    = null
+	preStruct = null
 	if type(this.first) == type(StructMemberExpr) {
 		member = this.first.getMember()
-	}else if type(this.first) == type(MemberExpr) {
-		s = this.first
-		member = s.getMember(ctx)
-		if s.tyassert != null {
-			member.isstruct = true
-			member.structref = s.tyassert.getStruct()
-		}
+		preStruct = member.parent
 	}else if type(this.first) == type(IndexExpr) {
 		i = this.first
 		var = new VarExpr(i.varname,i.line,i.column)
@@ -251,10 +246,4 @@ IfCaseExpr::getType(ctx){
 }
 LabelExpr::getType(ctx){
 	this.panic("getType: unsupport LabelExpr\n")
-}
-TypeAssertExpr::getType(ctx){
-	this.panic("getType: unsupport TypeAssertExpr\n")
-}
-TypeInfoExpr::getType(ctx){
-	this.panic("getType: unsupport TypeInfoExpr")
 }

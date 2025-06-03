@@ -128,7 +128,8 @@ AsyncBlock::dynawait(fc , recvs){
     hk = utils.hash(callname)
     fsig.lit = fmt.sprintf("%d",hk)
 
-    fsig.tyassert = new gen.TypeAssertExpr(0,0)
+    fsig.tyassert = new gen.TypeInfo(0,0)
+    fsig.tyassert.base = ast.U64
     newargs[] = fsig
     //merge
     std.merge(newargs,oldargs)

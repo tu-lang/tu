@@ -38,7 +38,6 @@ class IndexExpr : ast.Ast {
     index
     is_pkgcall
     package = ""
-    tyassert
     
     ret
     func init(line,column){
@@ -65,11 +64,11 @@ IndexExpr::compile(ctx,load) {
     match var.getVarType(ctx,this) {
         ast.Var_Obj_Member : { 
             if this.tyassert != null {
-                sm = new StructMemberExpr(this.tyassert.pkgname,
+                sm = new StructMemberExpr(this.tyassert.pkg,
                     this.line,this.column
                 )
                 vv = var.ret
-                vv.structpkg = this.tyassert.pkgname
+                vv.structpkg = this.tyassert.pkg
                 vv.structname = this.tyassert.name
                 sm.member = this.varname
                 sm.var    = vv
@@ -129,7 +128,7 @@ IndexExpr::assign( ctx , opt ,rhs) {
                 sm = new StructMemberExpr(var.package,this.line,this.column)
                 sm.member = var.varname
                 vv = var.ret
-                vv.structpkg = this.tyassert.pkgname
+                vv.structpkg = this.tyassert.pkg
                 vv.structname = this.tyassert.name
                 sm.var    = vv
                 sm.compile(ctx,false)

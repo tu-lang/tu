@@ -67,7 +67,6 @@ class FunCallExpr : ast.Ast {
 
 	is_dyn = false
 	fcs    = null
-	tyassert
 	p  	   = null 
 
 	gen    = false
@@ -151,7 +150,7 @@ FunCallExpr::geninit(ctx)
 			return this
 		}else if this.tyassert != null {
 			s = compile.currentParser.pkg
-					.getPackage(this.tyassert.pkgname)
+					.getPackage(this.tyassert.pkg)
 					.getStruct(this.tyassert.name)
 			fc = s.getFunc(this.funcname)
 			this.checkFirstThis(ctx,var)

@@ -41,7 +41,6 @@ class StructMemberExpr : ast.Ast {
 	s = null
 	m = null
 
-	tyassert
 	func init(varname,line,column){
 		super.init(line,column)
 	}
@@ -74,7 +73,7 @@ StructMemberExpr::getStruct()
 	sname = this.var.structname
     utils.debugf("gen.StructMemberExpr::getStruct() pkgname:%s name:%s\n",packagename,sname)
 	if this.tyassert != null {
-		packagename = this.tyassert.pkgname
+		packagename = this.tyassert.pkg
 		sname  = this.tyassert.name
 	}	
 	if packagename == "" || packagename == null{

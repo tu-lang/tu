@@ -39,7 +39,6 @@ class VarExpr : ast.Ast {
 
     isparam = false
     onmem   = false
-    tyassert
     func init(varname,line,column){
         super.init(line,column)
     }

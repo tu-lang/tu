@@ -191,7 +191,7 @@ Parser::parseFuncDef(ft, pdefine , node)
             if maxrts > 100
                 this.check(false,"too much return type defines")
 
-            typeDefine = new gen.TypeInfoExpr(this.line,this.column)
+            typeDefine = new gen.TypeInfo(this.line,this.column)
             if reader.curToken >= ast.I8 && reader.curToken <= ast.F64 
                 typeDefine.base = reader.curToken
             else {
