@@ -7,10 +7,11 @@ use os
 use compiler.utils
 
 class FuncRTExpr : ast.Ast {
-    type = 1
+    type    = 1
     base
-    pkg = ""
-    name = ""
+    pkg     = ""
+    name    = ""
+    pointer = false
     fn init(line,column){super.init(line,column)}
     fn setMemType() { this.type = 2}
     fn baseType() { return this.type == 1}

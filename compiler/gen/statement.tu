@@ -24,9 +24,7 @@ ReturnStmt::compile(ctx)
     
     fc = ast.GF()
     if fc.mcount == 0 {
-        if ast.cfg_static()
-             compile.writeln("   mov $0 , %%rax")
-        else compile.writeln("   lea runtime_internal_null(%%rip) , %%rax")
+        this.genDefault(ctx,0)
     }else {
         this.compilemulti(ctx)
     }
@@ -34,9 +32,29 @@ ReturnStmt::compile(ctx)
     return null
 }
 
+ReturnStmt::exprCast(ctx , expr, i){
+    fc = ast.GF()
+    defineType = null
+    if std.len(fc.returnTypes) >= (i + 1) {
+        defineType = fc.returnTypes[i]
+    }
+    if defineType != null && defineType.baseType() {
+        op = new OperatorHelper()
+        op.staticCompile(expr)
+
+        if !op.isbase && !defineType.pointer && defineType.base != ast.I64 && defineType.base != ast.U64 {
+            expr.check(false,"cast may loss data")
+        }
+        compile.Cast(op.ltoken,defineType.base)
+        return defineType
+    }
+    expr.compile(ctx,true)
+    return null
+}
+
 ReturnStmt::genExpr(ctx , i){
     expr = this.ret[i]
-    expr.compile(ctx,true)
+    fType = this.exprCast(ctx,expr,i)
     if i == 0 {
         return null
     }
@@ -46,7 +64,9 @@ ReturnStmt::genExpr(ctx , i){
 
     ty = expr.getType(ctx)
     compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
-    if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
+    if fType != null && ( fType.base == ast.F32 || fType.base == ast.F64){
+        compile.PushfDst(ty,"%rdi", cur * 8)
+    }else if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
         compile.PushfDst(ty,"%rdi",cur * 8)
     }else{
         compile.writeln(" mov %%rax , %d(%%rdi)",cur * 8)
@@ -54,20 +74,39 @@ ReturnStmt::genExpr(ctx , i){
 }
 
 ReturnStmt::genDefault(ctx , i){
+    fc = ast.GF()
+    defineType = null
+    if std.len(fc.returnTypes) > ( i + 1) {
+        defineType = fc.returnTypes[i]
+    }
 
     if i == 0 {
-        if ast.cfg_static()
+        if defineType != null{
+            compile.writeln(" mov $0 , %%rax")
+            if defineType.baseType() {
+                compile.Cast(ast.I64,defineType.base)
+            }
+        }else if ast.cfg_static()
                 compile.writeln(" mov $0 , %%rax")
         else compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
         return null
     }
 
-    fc = ast.GF()
     cur = i - 1
     stackpointer = fc.ret_stack
     compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
-
-    if ast.cfg_static() {
+    if defineType != null {
+        compile.writeln(" mov $0 , %%rax")
+        if defineType.baseType() {
+            compile.Cast(ast.I64,defineType.base)
+            if ast.isfloattk(defineType.base)
+                compile.PushfDst(defineType.base,"%rdi",cur)
+            else 
+                compile.writeln(" mov $0 , %d(%%rdi)",cur)
+        }else{
+            compile.writeln(" mov $0 , %d(%%rdi)",cur)
+        }
+    }else if ast.cfg_static() {
         compile.writeln(" mov $0 , %d(%%rdi)",cur)
     }else{
         compile.writeln("    lea runtime_internal_null(%%rip), %%rax")

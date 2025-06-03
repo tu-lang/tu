@@ -214,6 +214,11 @@ Parser::parseFuncDef(ft, pdefine , node)
                 reader.scan()
             }
 
+            if reader.curToken == ast.MUL {
+                typeDefine.pointer = true
+                reader.scan()
+            }
+
             // multi return
             if reader.curToken == ast.COMMA 
                 reader.scan()

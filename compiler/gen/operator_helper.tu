@@ -5,7 +5,7 @@ use compiler.parser
 use compiler.internal
 
 class OperatorHelper {
-	ctx # [Context]
+	ctx // [Context]
 	lhs rhs # lhs rhs
 	opt
 
@@ -30,7 +30,9 @@ class OperatorHelper {
 	di = "%rdi"
 	dx = "%rdx"
 	needassign = false
+	isbase = false
 }
+
 OperatorHelper::init(ctx,lhs,rhs,opt) {
 	this.ctx = ctx
 	this.lhs = lhs
@@ -552,4 +554,124 @@ OperatorHelper::astcheck(){
 			this.rhs = toBinExpr(this.rhs)
 		}
 	}
+}
+
+
+OperatorHelper::staticCompile(expr)
+{
+    utils.debugf("gen.OpHelper::staticCompile()")
+	isleft = true
+	match type(expr) {
+		type(IntExpr) : {
+			ie = expr	
+			compile.writeln("	mov $%s,%%rax",ie.lit)
+			this.initcond(isleft,8,ast.I64,false)
+			return ie
+		}
+		// type(StackPosExpr): {
+		// 	expr.ismem = true
+		// 	expr.pos = 1
+		// 	expr.compile(this.ctx,true)
+		// 	if ast.isfloattk(this.ltoken) {
+		// 		this.initcond(isleft,this.lvarsize,this.ltoken,false)
+		// 	}else{
+		// 		this.initcond(isleft,8,ast.I64,false)
+		// 	}
+		// 	return expr
+		// }
+		type(FloatExpr) : {
+			compile.writeln("	mov $%d,%%rax",expr.lit)
+			compile.writeln("	movq %%rax , %%xmm0")
+			this.initcond(isleft,8,ast.F64,false)
+			return expr
+		}
+		type(StringExpr): {
+			ie = expr
+			real = GP().pkg.get_string(ie)
+			compile.writeln("	lea %s(%%rip), %%rax",real.name)
+			this.initcond(isleft,8,ast.U64,true)
+			return ie
+		}
+		type(CharExpr):{
+			ie = expr
+			compile.writeln("	mov $%s,%%rax",ie.lit)
+			this.initcond(isleft,8,ast.I64,false)
+			return ie
+		}
+		type(BoolExpr):{
+			ie = expr
+			compile.writeln("	mov $%d,%%rax",ie.lit)
+			this.initcond(isleft,8,ast.I64,false)
+			return ie
+		}
+		type(NullExpr) : {
+			compile.writeln("	mov $0,%%rax")
+			this.initcond(isleft,8,ast.I64,false)
+			return null
+		}
+	}
+	
+	ret = expr.compile(this.ctx,true)
+	
+	if !exprIsMtype(expr,this.ctx) && ( this.opt == ast.LOGAND || this.opt == ast.LOGOR) {
+		internal.isTrue()
+	}
+	match type(expr) {
+		type(BinaryExpr) | type(AssignExpr) : {
+			t = expr.getType(this.ctx)
+			size = parser.typesize[int(t)]
+			this.initcond(isleft,size,t,false)
+			return ret
+		}
+		type(AddrExpr) : {
+			this.initcond(isleft,8,ast.U64,true)
+			return ret
+		}
+		type(FunCallExpr) : {
+
+			trtoken = ast.U64
+			if this.rhs != null
+				trtoken = this.rhs.getType(this.ctx)
+				
+			if isleft && ast.isfloattk(trtoken) {
+				size = parser.typesize[int(trtoken)]
+				this.initcond(isleft,size,trtoken,false)
+			}else if(!isleft && ast.isfloattk(this.ltoken)){
+				size = parser.typesize[int(this.ltoken)]
+				this.initcond(isleft,size,this.ltoken,false)
+			}else{
+				this.initcond(isleft,8,expr.getType(this.ctx),false)
+			}
+			return ret
+		}
+		type(BuiltinFuncExpr) : {
+			this.initcond(isleft,8,ast.U64,false)
+			return ret
+		}
+	}
+	
+	if ret == null{
+		this.initcond(isleft,8,ast.U64,false)
+	}else if type(ret) == type(NewExpr) || type(ret) == type(NewStructExpr) {
+		this.initcond(isleft,8,ast.U64,false)
+	}else if type(ret) == type(VarExpr) 
+	{
+		v = ret
+		if ast.isfloattk(v.type)
+			this.initcond(isleft,parser.typesize[int(ast.I64)],v.type,false)
+		else if !v.structtype
+			this.initcond(isleft,8,ast.I64,false)
+		else
+			this.initcond(isleft,v.size,v.type,v.pointer)
+	}else if type(ret) == type(StructMemberExpr) 
+	{
+		m = ret
+		v = m.getMember() 
+		this.initcond(isleft,v.size,v.type,v.pointer)
+	}else if type(ret) == type(FunCallExpr) {
+		this.initcond(isleft,8,ast.U64,false)
+	}else{
+		ret.check(false,fmt.sprintf("not allowed expression in memory operator:%s" + ret.toString()))
+	}
+	return ret
 }
