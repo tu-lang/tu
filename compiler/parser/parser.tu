@@ -244,14 +244,15 @@ Parser::isbase(){
 }
 
 Parser::tolevelvar(var){
-    if this.currentFunc == null  return true
-    if var.package != "" return true
+    if this.currentFunc == null  return null
+    if var.package != "" return null
 
     realvar = this.getvar(var.varname)
     if realvar {
         var.isdefine = false
         var.varname = realvar.varname
     }
+    return realvar
 }
 
 Parser::getvar(varname){

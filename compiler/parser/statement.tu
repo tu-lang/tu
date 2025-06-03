@@ -103,10 +103,11 @@ Parser::parseForStmt()
 
     this.ctx.top().breakto    = node
     this.ctx.top().continueto = node
-    tx = reader.transaction()
+    // tx = reader.transaction()
     // {
         key = null
         value = this.parseExpression(1)
+        node.init = value
         obj = null
         
         if type(value) == type(gen.VarExpr) && (reader.curToken == ast.COMMA || reader.curToken == ast.COLON) {
@@ -156,9 +157,9 @@ Parser::parseForStmt()
             return node
         }
         
-        reader.rollback(tx)
+        // reader.rollback(tx)
     // }
-    node.init = this.parseExpression(1)
+    // node.init = this.parseExpression(1)
     this.expect(ast.SEMICOLON)
     reader.scan()
 

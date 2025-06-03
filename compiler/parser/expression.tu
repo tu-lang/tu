@@ -267,11 +267,19 @@ Parser::parsePrimaryExpr()
     {
         var = reader.curLex.dyn()
         reader.scan()
-        expr = this.parseVarExpr(var)
-        if type(expr) == type(gen.VarExpr) {
-            this.tolevelvar(expr)
+        var0 = this.parseVarExpr(var)
+        if type(var0) == type(gen.VarExpr) {
+            ovar = this.tolevelvar(var0)
+            if !var0.isdefine && var0.structtype {
+                if var0.structname != ovar.structname && var0.structpkg != ovar.structpkg
+                    var0.check(false,"var already define,can't redefine new one1")
+                if var0.type != ovar.type
+                    var0.check(false,"var already define,can't redefine new one2")
+                if var0.pointer != ovar.pointer
+                    var0.check(false,"var already define,can't redefine new one3")
+            }
         }
-        return expr
+        return var0
     }else if tk == ast.INT
     {
         ret = new gen.IntExpr(this.line,this.column)
