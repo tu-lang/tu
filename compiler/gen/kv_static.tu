@@ -71,19 +71,20 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 compile.Push()
 			
 			 elsize = var.ret.size
-            		 if var.ret.stack && var.ret.structname != "" {
-                		ele = package.getStruct(var.ret.structpkg,var.ret.structname)
-                	 	this.check(ele.size > 0,"check ele size")
-                		elsize = ele.size
+			if var.ret.stack && var.ret.structname != "" {
+				ele = package.getStruct(var.ret.structpkg,var.ret.structname)
+				this.check(ele.size > 0,"check ele size")
+				elsize = ele.size
 
-                		member = new ast.Member()
-                		member.structname = var.ret.structname
-                		member.structpkg = var.ret.structpkg
-                		member.isstruct = true
-                		member.pointer = false
-                		member.structref = ele
-                		this.ret = member
-            		 }
+				member = new ast.Member()
+				member.structname = var.ret.structname
+				member.structpkg = var.ret.structpkg
+				member.isstruct = true
+				member.pointer = false
+				member.parent  = ele
+				member.structref = ele
+				this.ret = member
+			}
 			 this.compileStaticIndex(ctx , elsize)
 			 compile.writeln("\tadd %%rdi , (%%rsp)") 
 			 compile.Pop("%rax")

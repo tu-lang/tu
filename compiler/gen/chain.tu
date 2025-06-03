@@ -63,15 +63,28 @@ ChainExpr::memgen(ctx,load)
 	if(type(this.last) == type(IndexExpr)){
 		return this.indexgen(ctx,load)
 	}
+	curMember = null
+	preStruct = null
 	member = null
 	if(type(this.first) == type(StructMemberExpr)){
 		this.first.compile(ctx,false)
 		s = this.first
 		member = s.getMember()
+		curMember = s.getMember()
+		preStruct = curMember.parent
 	}else if(type(this.first) == type(IndexExpr)){
 		ie = this.first
 		ie.compile_static(ctx)
 		member = ie.ret
+		curMember = ie.ret
+		preStruct = curMember.parent
+	}else if type(this.first) == type(FunCallExpr){
+		ie = this.first
+		ie.compile(ctx,false)
+		ie.check(ie.fcs != null,"static funcall not found fn signature")
+		ti = ie.fcs.returnTypes[0]
+		ti.check(ti.memType(),"should be static struct in chainexpr fncall")
+		preStruct = ti.st
 	}else{
 		this.check(false,"unsuport first type in chain")
 	}

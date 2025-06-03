@@ -18,7 +18,7 @@ ChainExpr::indexgen(ctx,load)
 		ie.compile_static(ctx)
 		member = ie.ret
 	}else{
-		this.check("unsuport first type in chain")
+		this.check(false,"unsuport first type in chain in indexgen")
 	}
 	if(!member.isarr)
 		this.check(member.pointer || member.isstruct,"field " + member.name + " must be mem at chain expression in indexgen")

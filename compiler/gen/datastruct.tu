@@ -12,6 +12,7 @@ class TypeInfoExpr : ast.Ast {
     pkg     = ""
     name    = ""
     pointer = false
+    st      = null
     fn init(line,column){super.init(line,column)}
     fn setMemType() { this.type = 2}
     fn baseType() { return this.type == 1}

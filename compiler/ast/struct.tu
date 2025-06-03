@@ -17,8 +17,10 @@ class Struct {
 	parser = null
 	funcs  = {} // funcs
 }
+
 class Member
 {
+	parent = null
 	name
 	type
 	size
@@ -60,6 +62,7 @@ Struct::getMember(name)
 
 Member::clone(){
 	m = new Member()
+	m.parent = this.parent
 	m.name = this.name
 	m.type = this.type
 	m.size = this.size

@@ -213,6 +213,12 @@ Parser::parseFuncDef(ft, pdefine , node)
                 //eat
                 reader.scan()
             }
+            if typeDefine.memType() {
+                if compile.phase == compile.FunctionPhase {
+                    typeDefine.st = package.getStruct(typeDefine.pkg,typeDefine.name)
+                    this.check(typeDefine.st != null , "type info not define")
+                }
+            }
 
             if reader.curToken == ast.MUL {
                 typeDefine.pointer = true

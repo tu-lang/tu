@@ -79,6 +79,7 @@ Parser::parseStructDef()
 
 Parser::genAsyncPollMember(s , idx){
 	member = new ast.Member()
+	member.parent = s
 	tk = ast.I64
     member.line = this.line
     member.column = this.column
@@ -98,6 +99,7 @@ Parser::genAsyncPollMember(s , idx){
 
 Parser::genAsyncParamMember(s , var){
 	member = new ast.Member()
+	member.parent = s
 	tk = ast.I64
 
 	if var.structtype {
@@ -134,6 +136,7 @@ Parser::parseMembers(s ,idx ,isstruct){
 	reader<scanner.ScannerStatic> = this.scanner
 	utils.debug("Parser::parseMembers ")
 	member = new ast.Member()
+	member.parent = s
 	tk = reader.curToken
     if(isstruct){
         this.expect(ast.VAR,"expect var token in struct member define")
