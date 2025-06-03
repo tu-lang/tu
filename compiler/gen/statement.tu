@@ -33,6 +33,49 @@ ReturnStmt::compile(ctx)
     ctx.jmpReturn()
     return null
 }
+
+ReturnStmt::genExpr(ctx , i){
+    expr = this.ret[i]
+    expr.compile(ctx,true)
+    if i == 0 {
+        return null
+    }
+    fc = ast.GF()
+    cur = i - 1
+    stackpointer = fc.ret_stack
+
+    ty = expr.getType(ctx)
+    compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
+    if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
+        compile.PushfDst(ty,"%rdi",cur * 8)
+    }else{
+        compile.writeln(" mov %%rax , %d(%%rdi)",cur * 8)
+    }
+}
+
+ReturnStmt::genDefault(ctx , i){
+
+    if i == 0 {
+        if ast.cfg_static()
+                compile.writeln(" mov $0 , %%rax")
+        else compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+        return null
+    }
+
+    fc = ast.GF()
+    cur = i - 1
+    stackpointer = fc.ret_stack
+    compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
+
+    if ast.cfg_static() {
+        compile.writeln(" mov $0 , %d(%%rdi)",cur)
+    }else{
+        compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
+        compile.writeln(" mov %%rax , %d(%%rdi)",cur)
+    }
+    return null
+}
+
 ReturnStmt::compilemulti(ctx){
     fc = ast.GF()
 
@@ -41,37 +84,17 @@ ReturnStmt::compilemulti(ctx){
 
     for i = fc.mcount - 1 ; i >= 0 ;i -= 1 {
         cur = i - 1
-
         if i == 0 {
             if std.len(this.ret) > 0 
-                this.ret[i].compile(ctx,true)
-            else 
-                if ast.cfg_static() 
-                    compile.writeln(" mov $0 , %%rax")
-                else compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
-            break
+                return this.genExpr(ctx,i)
+            return this.genDefault(ctx,i)    
         }
 
         // missing
         if (i + 1) > std.len(this.ret) {
-            compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
-            if ast.cfg_static() {
-                compile.writeln(" mov $0 , %d(%%rdi)",cur)
-            }else{
-                compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
-                compile.writeln(" mov %%rax , %d(%%rdi)",cur)
-            }
+            this.genDefault(ctx,i)
         }else {
-            expr = this.ret[i]
-            expr.compile(ctx,true)
-            ty = expr.getType(ctx)
-            compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
-
-            if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
-                compile.PushfDst(ty,"%rdi",cur * 8)
-            }else {
-                compile.writeln("   mov %%rax , %d(%%rdi)", cur * 8)
-            }
+            this.genExpr(ctx,i)
         }
     }
     return null
