@@ -98,7 +98,7 @@ IndexExpr::compile(ctx,load) {
             compile.Push()
         }
         ast.Var_Global_Extern_Static | ast.Var_Local_Static | ast.Var_Local_Static_Field | ast.Var_Global_Local_Static_Field :{
-            return this.compile_static(ctx) 
+            return this.compile_static(ctx,0) 
         }
         ast.Var_Func : {
             this.panic("meme type can't used in indexpr :" + this.toString(""))

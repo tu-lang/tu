@@ -56,8 +56,10 @@ IndexExpr::compileStaticIndex(ctx,size){
 	 compile.Pop("%rax")
 	 return null
  }
- IndexExpr::compile_static( ctx){
+ IndexExpr::compile_static( ctx , tysize){
 	utils.debugf("gen.IndexExpr::compile_static()")
+	if this.varname == ""
+		return this.compile_chain_static(ctx,tysize)
 	 f = compile.currentFunc   
 	 var = new VarExpr(this.varname,this.line,this.column)
 	 var.package = this.package

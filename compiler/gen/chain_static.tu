@@ -15,7 +15,7 @@ ChainExpr::indexgen(ctx,load)
 		member = s.getMember()
 	}else if(type(this.first) == type(IndexExpr)){
 		ie = this.first
-		ie.compile_static(ctx)
+		ie.compile_static(ctx,0)
 		member = ie.ret
 	}else{
 		this.check(false,"unsuport first type in chain in indexgen")
@@ -51,7 +51,7 @@ ChainExpr::indexgen(ctx,load)
 	}
 
 	index = this.last
-	index.compile_chain_static(ctx,member.size)
+	index.compile_static(ctx,member.size)
 
 	if load {
 		compile.LoadSize(member.size,member.isunsigned)

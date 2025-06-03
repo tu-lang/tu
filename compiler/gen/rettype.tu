@@ -41,7 +41,7 @@ KVExpr::getType(ctx){
 	this.panic("getType: unsupport kv\n")
 }
 ChainExpr::getType(ctx){
-	if !this.ismem(ctx) return ast.U8
+	if !this.ismem(ctx) return ast.U64
 
 	member    = null
 	preStruct = null
