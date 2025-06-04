@@ -322,7 +322,7 @@ ChainExpr::getType(ctx){
 			me = expr
 			if preMember == null {
 				curMember = preStruct.getMember(me.membername)
-				curStruct = preMember.parent
+				curStruct = curMember.parent
 				this.check(curStruct == preStruct,"cur != pre")
 			}else {
 				if me.tyassert != null {
@@ -341,7 +341,10 @@ ChainExpr::getType(ctx){
 			if mc.tyassert != null {
 				st = mc.tyassert.getStruct() 
 			}else {
-				st = preMember.structref
+				if preMember != null
+					st = preMember.structref
+				else 
+					st = preStruct
 			}
 			mfc = st.getFunc(mc.membername)
 			mc.check(mfc.fcs != null , "static funcall not signature")

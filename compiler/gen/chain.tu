@@ -340,11 +340,16 @@ ChainExpr::memgen(ctx,load)
 		}else if type(expr) == type(MemberCallExpr) {
 			mc = expr
 			mfc = null
+			st = null
 			if mc.tyassert != null {
-				mfc = mc.static_compile(ctx,mc.tyassert.getStruct())
+				st = mc.tyassert.getStruct()
 			}else {
-				mfc = mc.static_compile(ctx,preMember.structref)
+				if preMember != null
+					st = preMember.structref
+				else 
+					st = preStruct
 			}
+			mfc = mc.static_compile(ctx,st)
 			mc.check(mfc.fcs != null , "static funcall not signature")
 			if std.len(mfc.fcs.returnTypes) > 0 {
 				ti = mfc.fcs.returnTypes[0]
