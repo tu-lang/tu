@@ -299,7 +299,7 @@ ChainExpr::memgen(ctx,load)
 				curMember = ie.ret
 				curStruct = curMember.parent
 			}
-			if !islast && ie.varname == "" {
+			if !islast && curMember.pointer && ie.varname == "" {
 				compile.LoadSize(curMember.size,curMember.isunsigned)
 			}else if(islast && load){
 				compile.LoadSize(curMember.size,curMember.isunsigned)
