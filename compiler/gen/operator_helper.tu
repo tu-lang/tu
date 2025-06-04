@@ -115,7 +115,8 @@ OperatorHelper::assign()
 		return null
 	}else if type(this.lhs) == type(ChainExpr) {
 		i = this.lhs
-		if type(i.last) == type(IndexExpr) {
+		last = std.tail(i.fields)
+		if type(last) == type(IndexExpr) {
 			compile.Cast(this.rtoken,this.ltoken)
 			compile.Store(this.lvarsize)
 			return null

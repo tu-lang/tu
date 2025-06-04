@@ -7,7 +7,7 @@ use compiler.gen
 use compiler.utils
 use compiler.parser.scanner
 
-Parser::parseChainExpr(first){
+Parser::parseChainExpr2(first){
     utils.debug("parser.Parser::parseChainExpr()")
     reader<scanner.ScannerStatic> = this.scanner
     chainExpr = new gen.ChainExpr(this.line,this.column)
@@ -97,11 +97,12 @@ Parser::parseChainExpr(first){
     return ret
 }
 
-Parser::parseChainExpr2(first){
+Parser::parseChainExpr(first){
     utils.debug("parser.Parser::parseChainExpr()")
     reader<scanner.ScannerStatic> = this.scanner
     chainExpr = new gen.ChainExpr(this.line,this.column)
     ret  = chainExpr
+    chainExpr.fields[] = first
     var = null
     is_gmvar = false
 
@@ -109,7 +110,7 @@ Parser::parseChainExpr2(first){
         dr = first
         this.check(type(dr.expr) == type(gen.StructMemberExpr))
         
-        chainExpr.fields[] = dr.expr
+        chainExpr.fields[0] = dr.expr
         dr.expr = chainExpr
         ret = dr
     }else if type(first) == type(gen.AddrExpr) {
@@ -119,7 +120,7 @@ Parser::parseChainExpr2(first){
         sm.member = ae.varname
         sm.var    = var
         
-        chainExpr.fields[] = sm
+        chainExpr.fields[0] = sm
         ae.expr = chainExpr
         ret = ae
     }else if type(first) == type(gen.VarExpr) {

@@ -40,7 +40,7 @@ MapExpr::getType(ctx){
 KVExpr::getType(ctx){
 	this.panic("getType: unsupport kv\n")
 }
-ChainExpr::getType(ctx){
+ChainExpr::getType2(ctx){
 	if !this.ismem(ctx) return ast.U64
 
 	member    = null
@@ -249,13 +249,26 @@ LabelExpr::getType(ctx){
 }
 
 
-ChainExpr::getType2(ctx){
+ChainExpr::getType(ctx){
 	preMember = null
 	preStruct = null
 
 	for i = 0 ; i < std.len(this.fields) ; i += 1 {
 		expr = this.fields[i]
 		islast = i == std.len(this.fields) - 1
+
+		mustStruct = expr.tyassert == null
+
+		if mustStruct && type(expr) == type(IndexExpr) {
+			ie = expr
+			if ie.varname == ""
+				mustStruct = false
+		}
+
+		if preMember != null && mustStruct {
+			this.check(preMember.isstruct,"field must be mem at chain expression in memgen")
+		}
+
 
 		curStruct = null
 		curMember = null
@@ -307,16 +320,16 @@ ChainExpr::getType2(ctx){
 			curMember = null
 		} else if type(expr) == type(MemberExpr){
 			me = expr
-			if curMember == null {
+			if preMember == null {
 				curMember = preStruct.getMember(me.membername)
-				curStruct = curMember.parent
+				curStruct = preMember.parent
 				this.check(curStruct == preStruct,"cur != pre")
 			}else {
 				if me.tyassert != null {
 					curStruct = me.tyassert.getStruct()
 				}else {
-					this.check(curMember.structref != null , "must be memref in chain expr")
-					curStruct = curMember.structref
+					this.check(preMember.structref != null , "must be memref in chain expr")
+					curStruct = preMember.structref
 				}
 				curMember = curStruct.getMember(me.membername)
 			}
@@ -328,7 +341,7 @@ ChainExpr::getType2(ctx){
 			if mc.tyassert != null {
 				st = mc.tyassert.getStruct() 
 			}else {
-				st = curMember.structref
+				st = preMember.structref
 			}
 			mfc = st.getFunc(mc.membername)
 			mc.check(mfc.fcs != null , "static funcall not signature")
@@ -343,11 +356,6 @@ ChainExpr::getType2(ctx){
 			}
 		}else{
 			this.check(false,"unsuport first type in chain")
-		}
-		mustStruct = expr.tyassert == null
-
-		if curMember != null && mustStruct {
-			this.check(curMember.isstruct,"field must be mem at chain expression in memgen")
 		}
 		preStruct = curStruct
 		preMember = curMember

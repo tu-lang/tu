@@ -25,6 +25,11 @@ Parser::parseStructDef()
 	s = new ast.Struct()
 	s.parser = this
 	s.name  = reader.curLex.dyn()
+	if compile.phase != compile.GlobalPhase {
+		s = this.pkg.getStruct(s.name)
+		s.member = []
+	}
+
 	this.check(utils.isUpper(s.name),"first char of class name need be Upper")
 	s.pkg   = this.pkg.package
 	reader.scan()
@@ -115,6 +120,8 @@ Parser::genAsyncParamMember(s , var){
 		member.isstruct   = true
 		member.pointer    = true
 		member.structref  = null
+		if compile.phase == compile.FunctionPhase
+			member.structref = package.getStruct(var.structpkg,var.structname)
 		tk = ast.U64
 	}
     member.line = this.line
@@ -154,6 +161,8 @@ Parser::parseMembers(s ,idx ,isstruct){
         member.structname = structname
         member.isstruct = true
         member.structref = null
+		if compile.phase == compile.FunctionPhase
+			member.structref = package.getStruct(structpkg,structname)
 
         tk = ast.U64
     }else {

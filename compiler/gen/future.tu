@@ -16,7 +16,7 @@ IfStmt::checkawait(){
     }
 }
 
-ChainExpr::checkawait(){
+ChainExpr::checkawait2(){
     if this.first != null && this.first.hasawait {
         this.hasawait = true
         return true
@@ -33,7 +33,7 @@ ChainExpr::checkawait(){
     }
 }
 
-ChainExpr::checkawait2() {
+ChainExpr::checkawait() {
     for it : this.fields {
         if it.hasawait {
             this.hasawait = true

@@ -143,7 +143,8 @@ FunCallExpr::geninit(ctx)
 				.getStruct(var.structname)
 			if s == null this.panic("static class not exist:" + var.structpkg + "." +  var.structname)
 			fc = s.getFunc(this.funcname)
-			if(fc == null) this.panic("func not exist in funccall expr compile")
+			if(fc == null) 
+				this.check(false,"func not exist in funccall expr compile")
 			this.checkFirstThis(ctx,var)
 			this.dt = ast.StaticCall
 			this.fcs = fc
