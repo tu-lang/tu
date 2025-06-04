@@ -406,10 +406,9 @@ OperatorHelper::genRight(isleft,expr)
 		}
 		type(FunCallExpr) : {
 
-			trtoken = ast.U64
-			if this.rhs != null
-				trtoken = this.rhs.getType(this.ctx)
-			
+			trtoken = expr.getType(this.ctx)
+			size = parser.typesize[int(trtoken)]
+
 			ti = null
 			fc = expr
 			if std.len(fc.fcs.returnTypes) > 0 {
@@ -419,13 +418,12 @@ OperatorHelper::genRight(isleft,expr)
 				size = parser.typesize[int(ti.base)]
 				this.initcond(isleft,size,ti.base,false)
 			}else if isleft && ast.isfloattk(trtoken) {
-				size = parser.typesize[int(trtoken)]
 				this.initcond(isleft,size,trtoken,false)
 			}else if(!isleft && ast.isfloattk(this.ltoken)){
 				size = parser.typesize[int(this.ltoken)]
 				this.initcond(isleft,size,this.ltoken,false)
 			}else{
-				this.initcond(isleft,8,expr.getType(this.ctx),false)
+				this.initcond(isleft,size,trtoken,false)
 			}
 			return ret
 		}
@@ -454,7 +452,24 @@ OperatorHelper::genRight(isleft,expr)
 		v = m.getMember() 
 		this.initcond(isleft,v.size,v.type,v.pointer)
 	}else if type(ret) == type(FunCallExpr) {
-		this.initcond(isleft,8,ast.U64,false)
+		trtoken = ret.getType(this.ctx)
+		size = parser.typesize[int(trtoken)]
+		ti = null
+		fc = expr
+		if std.len(fc.fcs.returnTypes) > 0 {
+			ti = fc.fcs.returnTypes[0]
+		}
+		if ti != null && ti.baseType(){
+			size = parser.typesize[int(ti.base)]
+			this.initcond(isleft,size,ti.base,false)
+		}else if isleft && ast.isfloattk(trtoken) {
+			this.initcond(isleft,size,trtoken,false)
+		}else if(!isleft && ast.isfloattk(this.ltoken)){
+			size = parser.typesize[int(this.ltoken)]
+			this.initcond(isleft,size,this.ltoken,false)
+		}else{
+			this.initcond(isleft,size,trtoken,false)
+		}
 	}else{
 		ret.check(false,fmt.sprintf("not allowed expression in memory operator:%s" + ret.toString()))
 	}
@@ -573,7 +588,7 @@ OperatorHelper::astcheck(){
 OperatorHelper::staticCompile(expr)
 {
     utils.debugf("gen.OpHelper::staticCompile()")
-	isleft = true
+	isleft = false
 	match type(expr) {
 		type(IntExpr) : {
 			ie = expr	
@@ -644,12 +659,22 @@ OperatorHelper::staticCompile(expr)
 		type(FunCallExpr) : {
 
 			trtoken = expr.getType(this.ctx)
-
-			if ast.isfloattk(trtoken){
-				size = parser.typesize[int(trtoken)]
+			size = parser.typesize[int(trtoken)]
+			ti = null
+			fc = expr
+			if std.len(fc.fcs.returnTypes) > 0 {
+				ti = fc.fcs.returnTypes[0]
+			}
+			if ti != null && ti.baseType(){
+				size = parser.typesize[int(ti.base)]
+				this.initcond(isleft,size,ti.base,false)
+			}else if isleft && ast.isfloattk(trtoken) {
 				this.initcond(isleft,size,trtoken,false)
+			}else if(!isleft && ast.isfloattk(this.ltoken)){
+				size = parser.typesize[int(this.ltoken)]
+				this.initcond(isleft,size,this.ltoken,false)
 			}else{
-				this.initcond(isleft,8,ast.U64,false)
+				this.initcond(isleft,size,trtoken,false)
 			}
 			return ret
 		}
@@ -678,7 +703,24 @@ OperatorHelper::staticCompile(expr)
 		v = m.getMember() 
 		this.initcond(isleft,v.size,v.type,v.pointer)
 	}else if type(ret) == type(FunCallExpr) {
-		this.initcond(isleft,8,ast.U64,false)
+		trtoken = expr.getType(this.ctx)
+		size = parser.typesize[int(trtoken)]
+		ti = null
+		fc = expr
+		if std.len(fc.fcs.returnTypes) > 0 {
+			ti = fc.fcs.returnTypes[0]
+		}
+		if ti != null && ti.baseType(){
+			size = parser.typesize[int(ti.base)]
+			this.initcond(isleft,size,ti.base,false)
+		}else if isleft && ast.isfloattk(trtoken) {
+			this.initcond(isleft,size,trtoken,false)
+		}else if(!isleft && ast.isfloattk(this.ltoken)){
+			size = parser.typesize[int(this.ltoken)]
+			this.initcond(isleft,size,this.ltoken,false)
+		}else{
+			this.initcond(isleft,size,trtoken,false)
+		}
 	}else{
 		ret.check(false,fmt.sprintf("not allowed expression in memory operator:%s" + ret.toString()))
 	}

@@ -312,6 +312,8 @@ ChainExpr::memgen(ctx,load)
 			ie.check(ti.memType(),"should be static struct in chainexpr fncall")
 			curStruct = ti.st
 			curMember = null
+			if islast
+				return expr
 		} else if type(expr) == type(MemberExpr){
 			me = expr
 			if preMember == null {
@@ -351,6 +353,8 @@ ChainExpr::memgen(ctx,load)
 			}
 			mfc = mc.static_compile(ctx,st)
 			mc.check(mfc.fcs != null , "static funcall not signature")
+			if islast
+				return mfc
 			if std.len(mfc.fcs.returnTypes) > 0 {
 				ti = mfc.fcs.returnTypes[0]
 				if !islast
@@ -370,8 +374,10 @@ ChainExpr::memgen(ctx,load)
 		preStruct = curStruct
 		preMember = curMember
 	}
-	if preMember == null
+	if preMember == null{
+		this.check(false,"not should be here")
 		return null
+	}
 
 	ret = new StructMemberExpr("",this.line,this.column)
 	ret.s = preMember.structref
