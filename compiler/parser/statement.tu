@@ -65,6 +65,7 @@ Parser::parseIfStmt()
     
     ifCase = new gen.IfCaseExpr(this.line,this.column)
     ifCase.cond = this.parseExpression(1)
+    this.check(ifCase.cond != null,"condtion is null in if statement")
     
     ifCase.block = this.parseBlock(false,false)
     node.cases[] = ifCase
