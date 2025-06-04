@@ -347,7 +347,9 @@ OperatorHelper::genRight(isleft,expr)
 			expr.ismem = true
 			expr.pos = 1
 			expr.compile(this.ctx,true)
-			if ast.isfloattk(this.ltoken) {
+			if ast.isfloattk(expr.dstType) {
+				this.initcond(isleft,8,expr.dstType,false)
+			}else if ast.isfloattk(this.ltoken) {
 				this.initcond(isleft,this.lvarsize,this.ltoken,false)
 			}else{
 				this.initcond(isleft,8,ast.I64,false)
@@ -454,6 +456,7 @@ OperatorHelper::initcond(left,varsize,type,ispointer)
 {
 	typesize = varsize
 	if ispointer typesize = 8
+	if type == ast.F32 typesize = 4
 	
 	isunsigned = ast.type_isunsigned(type)
 

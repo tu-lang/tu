@@ -63,6 +63,9 @@ ReturnStmt::genExpr(ctx , i){
     stackpointer = fc.ret_stack
 
     ty = expr.getType(ctx)
+    if fType != null && fType.baseType() {
+        ty = fType.base
+    }
     compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
     if fType != null && ( fType.base == ast.F32 || fType.base == ast.F64){
         compile.PushfDst(ty,"%rdi", cur * 8)
@@ -304,6 +307,11 @@ MultiAssignStmt::assign(ctx, fce){
     if fc.mcount != 0 {
         firstexpr = this.ls[0]
         ty = firstexpr.getType(ctx)
+        if std.len(fc.returnTypes) != 0 {
+            ti = fc.returnTypes[0]
+            if ti.baseType()
+                ty = ti.base
+        }
         if ast.isfloattk(ty) {
             compile.Pushf(ty)
         }else{
@@ -317,6 +325,15 @@ MultiAssignStmt::assign(ctx, fce){
         rexpr.total = fc.mcount
         rexpr.cur = i + 1
         rexpr.pos = -1
+
+        rexpr.dstType = lexpr.getType(ctx)
+        if std.len(fc.returnTypes) > i {
+            rt = fc.returnTypes[i]
+            if rt.baseType()
+                rexpr.dstType = rt.base
+            else
+                rexpr.dstType = ast.I64
+        }
 
         assignExpr = new AssignExpr(lexpr.line,lexpr.column)
         assignExpr.opt = this.opt

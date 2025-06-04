@@ -131,6 +131,15 @@ fn PushfDst(ty<i32>, dst,ofs){
         utils.error("unsupport ty in pushf dst")
 }
 
+fn PopfDst(ty<i32>, dst,ofs){
+    if ty == ast.F32
+        writeln("  movss %d(%s), %%xmm0",ofs,dst)
+    else if ty == ast.F64
+        writeln("  movsd %d(%s), %%xmm0",ofs,dst)
+    else
+        utils.error("unsupport ty in popf dst")
+}
+
 fn PopMRet(sz<i32>){
     for sz -= 1; sz >= 0 ; sz -= 1 {
         Pop(argm64[int(sz)])

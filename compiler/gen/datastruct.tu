@@ -73,6 +73,7 @@ class StackPosExpr : ast.Ast {
     pos = -1
 
     isdyn = false
+    dstType = ast.ILLEGAL
     fn init(line,column){ super.init(line,column) }
     fn toString(){return "StackPosExpr"}
 }
@@ -100,7 +101,10 @@ StackPosExpr::compile(ctx , load){
     count += this.cur
     count -= 1
     this.check(this.pos >= 0,"sotmehting wrong here in stack pos expr")
-    compile.writeln("    mov %d(%%rsp),%%rax",count * 8)
+    if ast.isfloattk(this.dstType)
+        compile.PopfDst(this.dstType, "%rsp", count * 8)
+    else 
+        compile.writeln("    mov %d(%%rsp),%%rax",count * 8)
     return null
 }
 
