@@ -97,6 +97,94 @@ Parser::parseChainExpr(first){
     return ret
 }
 
+Parser::parseChainExpr2(first){
+    utils.debug("parser.Parser::parseChainExpr()")
+    reader<scanner.ScannerStatic> = this.scanner
+    chainExpr = new gen.ChainExpr(this.line,this.column)
+    ret  = chainExpr
+    var = null
+    is_gmvar = false
+
+    if type(first) == type(gen.DelRefExpr) {
+        dr = first
+        this.check(type(dr.expr) == type(gen.StructMemberExpr))
+        
+        chainExpr.fields[] = dr.expr
+        dr.expr = chainExpr
+        ret = dr
+    }else if type(first) == type(gen.AddrExpr) {
+        ae = first
+        
+        sm = new gen.StructMemberExpr(ae.package,ae.line,ae.column)
+        sm.member = ae.varname
+        sm.var    = var
+        
+        chainExpr.fields[] = sm
+        ae.expr = chainExpr
+        ret = ae
+    }else if type(first) == type(gen.VarExpr) {
+        var = first
+        if var.package != "" {
+            gv = this.getGlobalVar(var.package,var.varname)
+            if (gv != null && gv.structtype){
+                var = gv
+                is_gmvar = true
+            }
+        }
+    }
+    
+    while this.ischain() { 
+        match reader.curToken {
+            ast.DOT : {
+                reader.scan() //eat.
+                ta = null
+                if reader.curToken == ast.LPAREN {
+                    ta = this.parseTypeAssert(true)
+                }
+                this.expect(ast.VAR)
+                membername = reader.curLex.dyn()
+                reader.scan()
+                if reader.curToken == ast.LPAREN {
+                    mc = new gen.MemberCallExpr(this.line,this.column)
+                    mc.membername = membername 
+                    mc.call = this.parseFuncallExpr("")
+                    mc.tyassert = ta
+                    if is_gmvar {
+                        is_gmvar = false
+                        mc.obj   = var
+                        chainExpr.fields[0] = mc
+                    }else{
+                        chainExpr.fields[] = mc
+                    }
+                    chainExpr.fields[] = mc
+                }else{
+                    if(is_gmvar){
+                        is_gmvar = false
+                        sm = new gen.StructMemberExpr(var.varname,var.line,var.column)
+                        sm.tyassert = ta
+                        sm.member = membername
+                        sm.var    = var
+                        chainExpr.fields[0] = sm
+                    }else{
+                        me = new gen.MemberExpr(this.line,this.column)
+                        me.tyassert = ta
+                        me.membername = membername
+                        chainExpr.fields[] = me
+                    }
+                }
+            }
+            ast.LPAREN :   chainExpr.fields[] = this.parseFuncallExpr("")
+            ast.LBRACKET : chainExpr.fields[] = this.parseIndexExpr("")
+            _ : break
+        }
+    }
+    if std.len(chainExpr.fields) == 1 {
+        return chainExpr.fields[0]
+    }
+    chainExpr.checkawait()
+    return ret
+}
+
 Parser::parseExpression(oldPriority)
 {
     reader<scanner.ScannerStatic> = this.scanner

@@ -239,7 +239,7 @@ ChainExpr::memgen2(ctx,load)
 
 		if(type(expr) == type(StructMemberExpr)){
 			expr.compile(ctx,false)
-			s = this.first
+			s = expr
 			curMember = s.getMember()
 			curStruct = curMember.parent
 

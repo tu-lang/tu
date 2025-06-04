@@ -33,6 +33,15 @@ ChainExpr::checkawait(){
     }
 }
 
+ChainExpr::checkawait2() {
+    for it : this.fields {
+        if it.hasawait {
+            this.hasawait = true
+            return true
+        }
+    }
+}
+
 BinaryExpr::checkawait(){
 	if this.lhs.hasawait {
 		this.hasawait = true

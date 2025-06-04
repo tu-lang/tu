@@ -247,3 +247,118 @@ IfCaseExpr::getType(ctx){
 LabelExpr::getType(ctx){
 	this.panic("getType: unsupport LabelExpr\n")
 }
+
+
+ChainExpr::getType2(ctx){
+	preMember = null
+	preStruct = null
+
+	for i = 0 ; i < std.len(this.fields) ; i += 1 {
+		expr = this.fields[i]
+		islast = i == std.len(this.fields) - 1
+
+		curStruct = null
+		curMember = null
+		if type(expr) == type(StructMemberExpr) {
+			curMember = expr.getMember()
+			curStruct = curMember.parent
+		}else if type(expr) == type(IndexExpr) {
+			i = expr
+			if i.varname == "" {
+				i.check(preMember != null, "parent member is null")
+				curMember = preMember.clone()
+				if !curMember.isarr && curMember.pointer {
+					curMember.pointer = false
+				}
+			}else {
+				var = new VarExpr(i.varname,i.line,i.column)
+				var.package = i.package
+				
+				realvar = var.getVar(ctx,i)
+				this.check(realvar != null,"get var from indexexpr failed")
+				
+				if i.package == "" && realvar.stack && realvar.structname != "" {
+					ele = package.getStruct(realvar.structpkg , realvar.structname)	
+					this.check(ele.size > 0  , "check ele size")	
+					
+					curMember = new ast.Member()	
+					curMember.structname = realvar.structname
+					curMember.structpkg = realvar.structpkg
+					curMember.isstruct = true
+					curMember.pointer = false
+					curMember.structref = ele	
+					curStruct = curMember.parent
+				}else {
+					sm = new StructMemberExpr(i.package,this.line,this.column)
+					sm.member = i.varname
+					sm.var = realvar
+					curMember = sm.getMember()
+					curStruct = curMember.parent
+					this.check(curMember != null," indexexpr get member failed")
+				}
+			}
+		}else if type(expr) == type(FunCallExpr){
+			ie = expr
+			ie.compile(ctx,false)
+			ie.check(ie.fcs != null,"static funcall not found fn signature")
+			ti = ie.fcs.returnTypes[0]
+			ie.check(ti.memType(),"should be static struct in chainexpr fncall")
+			curStruct = ti.st
+			curMember = null
+		} else if type(expr) == type(MemberExpr){
+			me = expr
+			if curMember == null {
+				curMember = preStruct.getMember(me.membername)
+				curStruct = curMember.parent
+				this.check(curStruct == preStruct,"cur != pre")
+			}else {
+				if me.tyassert != null {
+					curStruct = me.tyassert.getStruct()
+				}else {
+					this.check(curMember.structref != null , "must be memref in chain expr")
+					curStruct = curMember.structref
+				}
+				curMember = curStruct.getMember(me.membername)
+			}
+
+			this.check(curMember != null,"memgen: mem not exist field2" + me.membername)
+		}else if type(expr) == type(MemberCallExpr) {
+			mc = expr
+			st = null
+			if mc.tyassert != null {
+				st = mc.tyassert.getStruct() 
+			}else {
+				st = curMember.structref
+			}
+			mfc = st.getFunc(mc.membername)
+			mc.check(mfc.fcs != null , "static funcall not signature")
+			if std.len(mfc.fcs.returnTypes) > 0 {
+				ti = mfc.fcs.returnTypes[0]
+				mc.check(ti.memType(),"should be static struct in chainexpr fncall")
+				curStruct = ti.st
+				curMember = null
+			}else {
+				curStruct = null
+				curMember = null
+			}
+		}else{
+			this.check(false,"unsuport first type in chain")
+		}
+		mustStruct = expr.tyassert == null
+
+		if curMember != null && mustStruct {
+			this.check(curMember.isstruct,"field must be mem at chain expression in memgen")
+		}
+		preStruct = curStruct
+		preMember = curMember
+	}
+
+	if preMember == null
+		return ast.U64
+		
+	if preMember.pointer return ast.U64
+	if preMember.type >= ast.I8 && preMember.type <= ast.F64{
+		return preMember.type
+	}
+	return ast.U64
+}
