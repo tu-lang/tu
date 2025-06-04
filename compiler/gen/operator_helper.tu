@@ -409,7 +409,16 @@ OperatorHelper::genRight(isleft,expr)
 			trtoken = ast.U64
 			if this.rhs != null
 				trtoken = this.rhs.getType(this.ctx)
-			if isleft && ast.isfloattk(trtoken) {
+			
+			ti = null
+			fc = expr
+			if std.len(fc.fcs.returnTypes) > 0 {
+				ti = fc.fcs.returnTypes[0]
+			}
+			if ti != null && ti.baseType(){
+				size = parser.typesize[int(ti.base)]
+				this.initcond(isleft,size,ti.base,false)
+			}else if isleft && ast.isfloattk(trtoken) {
 				size = parser.typesize[int(trtoken)]
 				this.initcond(isleft,size,trtoken,false)
 			}else if(!isleft && ast.isfloattk(this.ltoken)){
@@ -628,23 +637,19 @@ OperatorHelper::staticCompile(expr)
 			return ret
 		}
 		type(AddrExpr) : {
+			this.isbase = true
 			this.initcond(isleft,8,ast.U64,true)
 			return ret
 		}
 		type(FunCallExpr) : {
 
-			trtoken = ast.U64
-			if this.rhs != null
-				trtoken = this.rhs.getType(this.ctx)
-				
-			if isleft && ast.isfloattk(trtoken) {
+			trtoken = expr.getType(this.ctx)
+
+			if ast.isfloattk(trtoken){
 				size = parser.typesize[int(trtoken)]
 				this.initcond(isleft,size,trtoken,false)
-			}else if(!isleft && ast.isfloattk(this.ltoken)){
-				size = parser.typesize[int(this.ltoken)]
-				this.initcond(isleft,size,this.ltoken,false)
 			}else{
-				this.initcond(isleft,8,expr.getType(this.ctx),false)
+				this.initcond(isleft,8,ast.U64,false)
 			}
 			return ret
 		}
