@@ -16,23 +16,6 @@ IfStmt::checkawait(){
     }
 }
 
-ChainExpr::checkawait2(){
-    if this.first != null && this.first.hasawait {
-        this.hasawait = true
-        return true
-    }
-    if this.last != null && this.last.hasawait {
-        this.hasawait = true
-        return true
-    }
-    for it : this.fields {
-        if it.hasawait {
-            this.hasawait = true
-            return true
-        }
-    }
-}
-
 ChainExpr::checkawait() {
     for it : this.fields {
         if it.hasawait {
