@@ -168,6 +168,10 @@ FunCallExpr::geninit(ctx)
 		this.var = var
 		this.fcs = defaultfunc
 		if var.structtype {
+			this.fcs = getGLobalFunc(
+				var.structpkg,
+				var.structname
+			)
 			this.dt = ast.ClosureCall2
 			return null
 		}

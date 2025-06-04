@@ -181,6 +181,11 @@ Parser::parseFuncDef(ft, pdefine , node)
     node.block = null
 
     hasFuncRetDef = false
+    hasFuncDefine = false
+    if reader.curToken == ast.LPAREN{
+        reader.scan()
+        hasFuncDefine = true
+    }
     if  ast.isFuncRetType(reader.curToken) {
         tx = reader.transaction()
         maxrts = 0
@@ -224,18 +229,20 @@ Parser::parseFuncDef(ft, pdefine , node)
                 typeDefine.pointer = true
                 reader.scan()
             }
-
+            node.returnTypes[] = typeDefine
             // multi return
             if reader.curToken == ast.COMMA 
                 reader.scan()
             else if reader.curToken != ast.LBRACE
                 break
             
-            node.returnTypes[] = typeDefine
         }
 
         // should rollback
-        if reader.curToken != ast.LBRACE {
+        if hasFuncDefine {
+            this.check(reader.curToken == ast.RPAREN,"should be )")
+            reader.scan()
+        }else if reader.curToken != ast.LBRACE {
             hasFuncRetDef = false
             node.returnTypes = []
             reader.rollback(tx)
@@ -273,7 +280,7 @@ Parser::parseFuncDef(ft, pdefine , node)
     compile.currentFunc = null
     this.ctx.destroy()
 
-    if compile.phase == compile.FunctionPhase && hasFuncRetDef && std.len(node.returnTypes) != node.mcount {
+    if compile.phase == compile.FunctionPhase && node.block != null && hasFuncRetDef && std.len(node.returnTypes) != node.mcount {
         this.check(false,"return count size not match func defines")
     }
     return node
