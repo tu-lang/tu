@@ -88,6 +88,12 @@ Class::checkRmSupers(){
 	}
 }
 
+Member::initStructRef() {
+	if this.structname == ""
+		utils.error("should not happend")
+	this.structref = package.getStruct(this.structpkg,this.structname)
+}
+
 Member::getarrcount(){
 	arrcount = this.arrsize
 

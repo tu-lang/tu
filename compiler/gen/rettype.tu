@@ -244,7 +244,11 @@ ChainExpr::getType(ctx){
 				if me.tyassert != null {
 					curStruct = me.tyassert.getStruct()
 				}else {
-					this.check(preMember.structref != null , "must be memref in chain expr")
+					this.check(
+						preMember.structref != null , 
+						"must be memref in chain expr"
+					)
+					preMember.initStructRef()
 					curStruct = preMember.structref
 				}
 				curMember = curStruct.getMember(me.membername)
