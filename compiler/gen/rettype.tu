@@ -59,24 +59,6 @@ AddrExpr::getType(ctx){
 	return ast.U64
 }
 DelRefExpr::getType(ctx){
-	if type(this.expr) == type(VarExpr) 
-	{
-		var = this.expr
-		var = var.getVar(ctx,this)
-		if var.pointer 
-			return ast.U64
-		
-		else if var.structtype
-			return var.type
-		else 
-			return ast.I64
-
-	}else if type(this.expr) == type(StructMemberExpr) {
-		e = this.expr
-		m = e.getMember()
-		if m.pointer return ast.U64
-		return m.type
-	}
 	return this.expr.getType(ctx)
 }
 IndexExpr::getType(ctx){
@@ -149,6 +131,22 @@ MemberExpr::getType(ctx){
 	if var == null {
 		this.panic("getTYpe: var is null")
 	}
+	if var.structtype {
+		mexpr = new StructMemberExpr(var.varname,this.line,this.column)
+		mexpr.var = var
+		mexpr.member = this.membername
+		return mexpr.getType(ctx)
+	}else if this.tyassert != null {
+
+		mexpr = new StructMemberExpr(var.varname,this.line,this.column)
+		vv = new VarExpr("",0,0)
+		vv.structpkg = this.tyassert.pkg
+		vv.structname = this.tyassert.name
+		vv.structtype = true
+		mexpr.var = vv
+		mexpr.member = this.membername
+		return mexpr.getType(ctx)
+	}
 	return var.getType(ctx)
 }
 MemberCallExpr::getType(ctx){
@@ -163,7 +161,6 @@ IfCaseExpr::getType(ctx){
 LabelExpr::getType(ctx){
 	this.panic("getType: unsupport LabelExpr\n")
 }
-
 
 ChainExpr::getType(ctx){
 	preMember = null
@@ -234,6 +231,8 @@ ChainExpr::getType(ctx){
 			ie.check(ti.memType(),"should be static struct in chainexpr fncall")
 			curStruct = ti.st
 			curMember = null
+			if islast
+				return expr.getType(ctx)
 		} else if type(expr) == type(MemberExpr){
 			me = expr
 			if preMember == null {
@@ -275,7 +274,8 @@ ChainExpr::getType(ctx){
 				if ti.memType(){
 					curStruct = ti.st
 					curMember = null
-				}
+				}else if islast
+					return ti.base
 			}else {
 				curStruct = null
 				curMember = null
