@@ -347,9 +347,12 @@ ChainExpr::getType(ctx){
 			mc.check(mfc.fcs != null , "static funcall not signature")
 			if std.len(mfc.fcs.returnTypes) > 0 {
 				ti = mfc.fcs.returnTypes[0]
-				mc.check(ti.memType(),"should be static struct in chainexpr fncall")
-				curStruct = ti.st
-				curMember = null
+				if !islast
+					mc.check(ti.memType(),"should be static struct in chainexpr fncall")
+				if ti.memType(){
+					curStruct = ti.st
+					curMember = null
+				}
 			}else {
 				curStruct = null
 				curMember = null

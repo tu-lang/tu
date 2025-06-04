@@ -299,7 +299,7 @@ ChainExpr::memgen(ctx,load)
 				curMember = ie.ret
 				curStruct = curMember.parent
 			}
-			if !islast && !curMember.isarr && ie.varname == "" {
+			if !islast && ie.varname == "" {
 				compile.LoadSize(curMember.size,curMember.isunsigned)
 			}else if(islast && load){
 				compile.LoadSize(curMember.size,curMember.isunsigned)
@@ -315,6 +315,7 @@ ChainExpr::memgen(ctx,load)
 		} else if type(expr) == type(MemberExpr){
 			me = expr
 			if preMember == null {
+				me.check(preStruct != null,"member not struct field")
 				curMember = preStruct.getMember(me.membername)
 				curStruct = curMember.parent
 				this.check(curStruct == preStruct,"cur != pre")
@@ -331,7 +332,7 @@ ChainExpr::memgen(ctx,load)
 			this.check(curMember != null,"memgen: mem not exist field2" + me.membername)
 
 			compile.writeln("	add $%d, %rax",curMember.offset)
-			if !islast && curMember.pointer {
+			if !islast && curMember.pointer && !curMember.isarr {
 				compile.LoadMember(curMember)
 			}else if islast && load 
 				compile.LoadMember(curMember)
@@ -347,9 +348,12 @@ ChainExpr::memgen(ctx,load)
 			mc.check(mfc.fcs != null , "static funcall not signature")
 			if std.len(mfc.fcs.returnTypes) > 0 {
 				ti = mfc.fcs.returnTypes[0]
-				mc.check(ti.memType(),"should be static struct in chainexpr fncall")
-				curStruct = ti.st
-				curMember = null
+				if !islast
+					mc.check(ti.memType(),"should be static struct in chainexpr fncall")
+				if ti.memType(){
+					curStruct = ti.st
+					curMember = null
+				}
 			}else {
 				curStruct = null
 				curMember = null
