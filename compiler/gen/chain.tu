@@ -227,8 +227,8 @@ ChainExpr::memgen(ctx,load)
 			}
 		}
 
-			preStruct = curStruct
-			preMember = curMember
+		preStruct = curStruct
+		preMember = curMember
 	}
 	if preMember == null{
 		this.check(false,"not should be here")

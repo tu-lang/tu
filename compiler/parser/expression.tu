@@ -67,7 +67,6 @@ Parser::parseChainExpr(first){
                     }else{
                         chainExpr.fields[] = mc
                     }
-                    chainExpr.fields[] = mc
                 }else{
                     if(is_gmvar){
                         is_gmvar = false
