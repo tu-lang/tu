@@ -455,7 +455,7 @@ OperatorHelper::genRight(isleft,expr)
 		trtoken = ret.getType(this.ctx)
 		size = parser.typesize[int(trtoken)]
 		ti = null
-		fc = expr
+		fc = ret
 		if std.len(fc.fcs.returnTypes) > 0 {
 			ti = fc.fcs.returnTypes[0]
 		}
@@ -706,7 +706,7 @@ OperatorHelper::staticCompile(expr)
 		trtoken = expr.getType(this.ctx)
 		size = parser.typesize[int(trtoken)]
 		ti = null
-		fc = expr
+		fc = ret
 		if std.len(fc.fcs.returnTypes) > 0 {
 			ti = fc.fcs.returnTypes[0]
 		}
