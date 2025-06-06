@@ -41,6 +41,7 @@ ReturnStmt::exprCast(ctx , expr, i){
     if defineType != null && defineType.baseType() {
         op = new OperatorHelper()
         op.ltoken = defineType.base
+        op.ctx    = ctx
         op.staticCompile(expr)
         // if !op.isbase && !defineType.pointer && defineType.base != ast.I64 && defineType.base != ast.U64 {
             // expr.check(false,"cast may loss data")

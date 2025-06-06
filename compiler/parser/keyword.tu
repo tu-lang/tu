@@ -141,7 +141,7 @@ Parser::parseFuncDef(ft, pdefine , node)
     compile.currentFunc = node
     if ft != ast.ClosureFunc  && ft != ast.AsyncFunc {
         cl = reader.curLex.dyn()
-        if compile.phase == compile.GlobalPhase && ft != ast.StructFunc && this.hasFunc(cl,false)
+        if compile.phase == compile.GlobalPhase && ft != ast.StructFunc && ft != ast.ClassFunc && this.hasFunc(cl,false)
             this.check(false,"SyntaxError: already define function :" + cl)
         node.name = cl
     	utils.debugf(
