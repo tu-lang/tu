@@ -14,7 +14,7 @@ class ChainExpr   : ast.Ast {
 ChainExpr::toString() {
     str = "ChainExpr("
     for(i : this.fields){
-        str += "." + i.toString()
+        str += "." + i.toString() + "\n"
     }
     str += ")"
     return str

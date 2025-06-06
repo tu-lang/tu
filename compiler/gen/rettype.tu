@@ -226,7 +226,6 @@ ChainExpr::getType(ctx){
 			}
 		}else if type(expr) == type(FunCallExpr){
 			ie = expr
-			ie.compile(ctx,false)
 			ie.check(ie.fcs != null,"static funcall not found fn signature")
 			ti = ie.fcs.returnTypes[0]
 			ie.check(ti.memType(),"should be static struct in chainexpr fncall")

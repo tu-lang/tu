@@ -275,7 +275,8 @@ class IfCaseExpr : ast.Ast {
 }
 IfCaseExpr::toString(){
     str = "cond="
-    str += this.cond.toString()
+    if this.cond != null
+        str += this.cond.toString()
     str += ",exprs=["
     if this.block {
         str += this.block.toString()
@@ -305,7 +306,8 @@ IfStmt::toString() {
     for(cs : this.cases){
         str += cs.toString()
     }
-    str += this.elseCase.toString()
+    if this.elseCase != null
+        str += this.elseCase.toString()
     return str
 }
 IfStmt::compile(ctx){
