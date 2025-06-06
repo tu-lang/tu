@@ -433,6 +433,8 @@ fn isTrue(cond<Value>){
 // @param lhs
 // @param rhs
 fn operator_switch(opt<i32>,lhs<Value>,rhs<Value>){
+    if opt != ASSIGN && lhs == null 
+        dief(*"[operator] main expression is null :%s\n",token_string(opt))
     if rhs == null {
         if opt != LOGNOT && opt != BITNOT {
             dief(*"[operator] only !,~ at unary expression,not:%d\n",opt)
