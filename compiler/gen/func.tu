@@ -102,7 +102,6 @@ FunCallExpr::geninit(ctx)
 	if this.gen return null
 	this.gen = true
 
-	this.record()
 	utils.debugf("FunCallExpr::geninit:  package:%s func:%s",this.package,this.funcname)
 	cfunc = compile.currentFunc
 	packagename = this.package

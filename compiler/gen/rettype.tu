@@ -163,6 +163,7 @@ LabelExpr::getType(ctx){
 }
 
 ChainExpr::getType(ctx){
+	if !this.ismem(ctx) return ast.U64
 	preMember = null
 	preStruct = null
 
@@ -236,6 +237,8 @@ ChainExpr::getType(ctx){
 		} else if type(expr) == type(MemberExpr){
 			me = expr
 			if preMember == null {
+				if preStruct == null
+					this.check(false,"preStruct is null")
 				curMember = preStruct.getMember(me.membername)
 				curStruct = curMember.parent
 				this.check(curStruct == preStruct,"cur != pre")
@@ -243,11 +246,11 @@ ChainExpr::getType(ctx){
 				if me.tyassert != null {
 					curStruct = me.tyassert.getStruct()
 				}else {
+					preMember.initStructRef()
 					this.check(
 						preMember.structref != null , 
 						"must be memref in chain expr"
 					)
-					preMember.initStructRef()
 					curStruct = preMember.structref
 				}
 				curMember = curStruct.getMember(me.membername)

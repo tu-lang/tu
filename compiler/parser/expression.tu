@@ -278,7 +278,8 @@ Parser::parsePrimaryExpr()
             if !var0.isdefine && var0.structtype {
                 if var0.structname != ovar.structname && var0.structpkg != ovar.structpkg
                     var0.check(false,"var already define,can't redefine new one1")
-                if var0.type != ovar.type
+                ty<i32> = var0.type
+                if ty != ovar.type
                     var0.check(false,"var already define,can't redefine new one2")
                 if var0.pointer != ovar.pointer
                     var0.check(false,"var already define,can't redefine new one3")
