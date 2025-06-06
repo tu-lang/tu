@@ -115,11 +115,11 @@ Linker::symValid()
 			if  type == "" {
 				type = "symbol"
 			}
-			utils.debug("file:%s type:%s var:%s undefine",undefine.recv.elf_dir,type,undefine.name)
+			utils.debug("file:%s type:%s var:%s undefine",undefine.recv.elfdir,type,undefine.name)
 			if  flag {
 				utils.errorf(
 					"file:%s type:%s var:%s undefine",
-					undefine.recv.elf_dir,
+					undefine.recv.elfdir,
 					type,
 					undefine.name
 				)

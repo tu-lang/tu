@@ -73,7 +73,7 @@ class StackPosExpr : ast.Ast {
     pos = -1
 
     isdyn = false
-    dstType = ast.ILLEGAL
+    dstType = ast.ILLEGAL_END
     fn init(line,column){ super.init(line,column) }
     fn toString(){return "StackPosExpr"}
 }

@@ -66,7 +66,7 @@ ReturnStmt::genExpr(ctx , i){
     if fType != null && fType.baseType() {
         ty = fType.base
     }
-    compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
+    compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
     if fType != null && ( fType.base == ast.F32 || fType.base == ast.F64){
         compile.PushfDst(ty,"%rdi", cur * 8)
     }else if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
@@ -97,7 +97,7 @@ ReturnStmt::genDefault(ctx , i){
 
     cur = i - 1
     stackpointer = fc.ret_stack
-    compile.writeln(" mov %d(%rbp) , %%rdi",stackpointer)
+    compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
     if defineType != null {
         compile.writeln(" mov $0 , %%rax")
         if defineType.baseType() {

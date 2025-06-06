@@ -187,7 +187,7 @@ ChainExpr::memgen(ctx,load)
 
 				this.check(curMember != null,"memgen: mem not exist field2" + me.membername)
 
-				compile.writeln("	add $%d, %rax",curMember.offset)
+				compile.writeln("	add $%d, %%rax",curMember.offset)
 				if !islast && curMember.pointer && !curMember.isarr {
 					compile.LoadMember(curMember)
 				}else if islast && load 
