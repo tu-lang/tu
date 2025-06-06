@@ -1233,10 +1233,27 @@ fn test_call2(a<f64> , b<f32>){
 		os.dief("%s != 123.456789.1229",rs.dyn())
 	}
 }
+fn tc1(){
+	v1<f32> = 123.456
+	v2<f64> = 456.789
+	return v1,5.(i8),v2,10.(i8)
+}
 fn test_call(){
 	fmt.println("test call")
 	b<f64> = 123456789.123
 	test_call2(b,ga1.arr2[1])
+
+	v1<f32>,n<i32>,v2<f64>,v3<i32> = tc1()
+	if v1 >= 123.4 && v1 <= 123.5 {} else 
+		os.die("v1 neq 123")
+	if v2 >= 456.7 && v2 <= 456.8 {} else {
+		os.die("v2 neq 456")
+	}
+	if n == 5 {} else 
+		os.die("neq 5")
+	if v3 == 10 {} else {
+		os.die("v3 != 10")
+	}
 	fmt.println("test call success")
 }
 
