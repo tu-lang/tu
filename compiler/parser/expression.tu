@@ -256,7 +256,7 @@ Parser::parsePrimaryExpr()
         fc.parent = prev
         fc.parctx = prev_ctx
 
-        closure = this.parseFuncDef(ast.ClosureFunc,null,fc)
+        closure = this.parseFuncDef(ast.ClosureFunc,null,fc,false)
         this.ctx = null
         prev.closures[] = closure
         
@@ -529,7 +529,10 @@ Parser::parseVarExpr(var)
             pfuncname = reader.curLex.dyn()
             
             reader.scan()
-            if  reader.curToken == ast.LPAREN
+            p<i8> = reader.peek()
+            if reader.curToken == ast.COLON && p == ':' {
+                return this.parseStaticCall(package,pfuncname)
+            }else if  reader.curToken == ast.LPAREN
             {
                 call = this.parseFuncallExpr(pfuncname)
                 call.tyassert = ta
@@ -671,7 +674,10 @@ Parser::parseVarExpr(var)
             return varexpr
         }
          ast.COLON : {
-            if reader.emptyline(){
+            p<i8> = reader.peek()
+            if p == ':'{
+                return this.parseStaticCall("",var)
+            }else if reader.emptyline(){
                 reader.scan()
                 return new gen.LabelExpr(var,this.line,this.column)
             }else{
@@ -684,6 +690,31 @@ Parser::parseVarExpr(var)
         }
     } 
 }
+
+Parser::parseStaticCall(pkg , mname){
+    utils.debugf("parser.Parser::parseStaticCall() var:%s",mname)
+    reader<scanner.ScannerStatic> = this.scanner
+    mc = new gen.MemberCallExpr(this.line, this.column)
+    if compile.phase == compile.FunctionPhase {
+        st = this.getStruct(pkg,mname)
+        mc.staticCall = st
+        this.check(st != null,"struct name define in static call")
+    }
+    //eat
+    reader.scan()
+    this.check(reader.curToken == ast.COLON,"should be : in static call")
+    //eat
+    reader.scan()
+
+    this.check(reader.curToken == ast.VAR, "should be var")
+    membername = reader.curLex.dyn()
+    reader.scan()
+
+    mc.membername = membername
+    mc.call = this.parseFuncallExpr("")
+    return mc
+}
+
 Parser::parseFuncallExpr(callname)
 {
     utils.debug("parser.Parser::parseFuncallExpr() callname:%s",callname)

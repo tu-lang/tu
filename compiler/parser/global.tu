@@ -66,7 +66,7 @@ Parser::parseFlatVar(var){
     varexpr.package  = this.pkg.package
 }
 
-Parser::parseClassFunc(var){
+Parser::parseClassFunc(var, constdef){
     utils.debugf("parser.Parser::parseClassFunc() varname:%s",var)
     reader<scanner.ScannerStatic> = this.scanner
     this.expect(  ast.COLON)
@@ -94,7 +94,7 @@ Parser::parseClassFunc(var){
         }
     }
 
-    f = this.parseFuncDef(fctype,pdefine,null)
+    f = this.parseFuncDef(fctype,pdefine,null,constdef)
     this.ctx = null
     this.check(f != null)
 
@@ -113,7 +113,7 @@ Parser::parseClassFunc(var){
     return
 }
 
-Parser::parseExternClassFunc(pkgname){
+Parser::parseExternClassFunc(pkgname , constdef){
     utils.debugf("parser.Parser::parseExternClassFunc() name:%s",pkgname)
     reader<scanner.ScannerStatic> = this.scanner
     this.expect( ast.DOT)
@@ -147,7 +147,7 @@ Parser::parseExternClassFunc(pkgname){
             pdefine = cls
         }
     }
-    f = this.parseFuncDef(fctype,pdefine,null)
+    f = this.parseFuncDef(fctype,pdefine,null, constdef)
     this.ctx = null
     this.check(f != null)
     
@@ -166,14 +166,19 @@ Parser::parseGlobalDef()
 {
     reader<scanner.ScannerStatic> = this.scanner
     utils.debugf("parser.Parser::parseGlobalDef() %s line:%d\n",reader.curLex.dyn(),this.line)
-    if reader.curToken != ast.VAR
+    if reader.curToken != ast.VAR && reader.curToken != ast.CONST
         this.check(false,"SyntaxError: global var define invalid token:" + ast.getTokenString(reader.curToken))
-    var = reader.curLex.dyn()
     tx = reader.transaction() 
+    constdef = false
+    if reader.curToken == ast.CONST {
+        constdef = true
+        reader.scan()
+    }
+    var = reader.curLex.dyn()
     reader.scan()
     match reader.curToken{
-        ast.COLON: return this.parseClassFunc(var)
-        ast.DOT:   return this.parseExternClassFunc(var)
+        ast.COLON: return this.parseClassFunc(var , constdef)
+        ast.DOT:   return this.parseExternClassFunc(var , constdef)
         // ast.LT   : return parseStructVar(var)
         // _        : return parseFlatVar(var)
         _ : {

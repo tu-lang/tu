@@ -46,7 +46,11 @@ Parser::parseClassDef()
     reader.scan()
     
     while reader.curToken != ast.RBRACE {
-        
+        constdef = false 
+        if reader.curToken == ast.CONST {
+            constdef = true
+            reader.scan()
+        }
         if reader.curToken == ast.VAR{
             member = this.parseExpression(1)
             if type(member) == type(gen.VarExpr) {
@@ -79,7 +83,7 @@ Parser::parseClassDef()
             }
         }else if reader.curToken == ast.FUNC {
             this.ctx = new ast.Context()
-            f = this.parseFuncDef(ast.ClassFunc,s,null)
+            f = this.parseFuncDef(ast.ClassFunc,s,null,constdef)
             this.ctx = null
             this.check(f != null)
 
@@ -101,7 +105,7 @@ Parser::parseClassDef()
     reader.scan()
 }
 
-Parser::parseFuncDef(ft, pdefine , node)
+Parser::parseFuncDef(ft, pdefine , node , constdef)
 {
     utils.debug(
         "parser.Parser::parseFuncDef() found function: "
@@ -153,7 +157,8 @@ Parser::parseFuncDef(ft, pdefine , node)
 
     this.expect( ast.LPAREN)
     this.ctx.create()
-    if ft == ast.ClassFunc || ft == ast.StructFunc || ft == ast.AsyncFunc {
+    node.constdef = constdef
+    if !constdef && ( ft == ast.ClassFunc || ft == ast.StructFunc || ft == ast.AsyncFunc ) {
 
         var = new gen.VarExpr("this",this.line,this.column)
         if ft == ast.StructFunc || ft == ast.AsyncFunc {
@@ -320,7 +325,7 @@ Parser::parseAsyncDef2(fcname , parethis)
         memfn.params_order_var[] = parethis
     }
 
-    f = this.parseFuncDef(ast.AsyncFunc,st,memfn)
+    f = this.parseFuncDef(ast.AsyncFunc,st,memfn,false)
     f.name = fcname
     this.ctx = null
 
