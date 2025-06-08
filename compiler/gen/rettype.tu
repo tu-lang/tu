@@ -150,7 +150,31 @@ MemberExpr::getType(ctx){
 	return var.getType(ctx)
 }
 MemberCallExpr::getType(ctx){
-	this.panic("getType: unsupport MemberCall\n")
+    if this.varname != "" {
+        this.check(false,"getType in null varname membercall")
+    }
+	fc = null
+    if this.staticCall != null {
+		fc = this.staticCall.getFunc(this.membername)
+    }else if this.obj != null {
+		s = package.getStruct(this.obj.structpkg,this.obj.structname)
+		this.check(s != null,"s == null")
+		fc = s.getFunc(this.membername)
+	}else if this.tyassert != null {
+		s = this.tyassert.getStruct()
+		this.check(s != null, "s == null")
+		fc = s.getFunc(this.membername)
+    }else{
+		return ast.U64
+	}
+	this.check(fc != null, "fc == null")
+	if std.len(fc.returnTypes) != 0 {
+		dr = fc.returnTypes[0]
+		if dr.baseType() {
+			return dr.base
+		}
+	}
+	return ast.U64
 }
 MatchCaseExpr::getType(ctx){
 	this.panic("getType: unsupport MatchCaseExpr\n")
