@@ -149,6 +149,7 @@ func getTokenString(tk) {
         U16: return "u16"
         U32: return "u32"
         U64: return "u64"
+        CONST: return "const"
         _ :	return "undefine"
     }
 }
