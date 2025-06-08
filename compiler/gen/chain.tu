@@ -38,6 +38,9 @@ ChainExpr::ismem(ctx) {
 		me = firstNode
 		return me.ismem(ctx)
 	 }
+	 if type(firstNode) == type(MemberCallExpr) {
+		return firstNode.ismem(ctx)
+	 }
 	 if type(firstNode) == type(FunCallExpr)
 	 	return exprIsMtype(firstNode,ctx)
 	 return false

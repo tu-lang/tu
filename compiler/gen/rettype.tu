@@ -283,7 +283,9 @@ ChainExpr::getType(ctx){
 		}else if type(expr) == type(MemberCallExpr) {
 			mc = expr
 			st = null
-			if mc.tyassert != null {
+			if mc.staticCall != null
+				st = mc.staticCall
+			else if mc.tyassert != null {
 				st = mc.tyassert.getStruct() 
 			}else {
 				if preMember != null
