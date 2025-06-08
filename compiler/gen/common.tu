@@ -42,6 +42,7 @@ func exprIsMtype(cond,ctx){
             }
         }
         type(MemberExpr) : ismtype = cond.ismem(ctx)
+        type(MemberCallExpr): ismtype = cond.ismem(ctx)
         type(FunCallExpr): {
             i = cond
             i.geninit(ctx)

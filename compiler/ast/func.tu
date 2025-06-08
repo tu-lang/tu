@@ -55,6 +55,7 @@ class Function {
     endstates = []
     returns   = []
     returnTypes = []
+    constdef  = false
     iterid    = 0
     //clousure
     parent parctx

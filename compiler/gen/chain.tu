@@ -197,7 +197,9 @@ ChainExpr::memgen(ctx,load)
 				mc = expr
 				mfc = null
 				st = null
-				if mc.tyassert != null {
+				if mc.staticCall != null
+					st = mc.staticCall
+				else if mc.tyassert != null {
 					st = mc.tyassert.getStruct()
 				}else {
 					if preMember != null

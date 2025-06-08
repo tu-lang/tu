@@ -202,6 +202,7 @@ class MemberCallExpr : ast.Ast {
 
 	call      // funcallexpr
     obj = null
+    staticCall = null
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -214,6 +215,7 @@ MemberCallExpr::toString() {
     str += ",args=" + this.call.toString()
     return str
 }
+
 MemberCallExpr::static_compile(ctx,s){
 	utils.debugf("gen.MemberCallExpr::static_compile()")
     this.record()
@@ -225,6 +227,13 @@ MemberCallExpr::static_compile(ctx,s){
 	call = this.call
     call.st = s
     call.funcname = this.membername
+
+    if this.staticCall != null {
+        if !fc.constdef
+            this.check(false,"function not const,can't be static call")
+        call.compile(ctx,true)
+        return call
+    }
 
 	params = call.args
 	pos = new ArgsPosExpr(0,this.line,this.column)
@@ -249,6 +258,10 @@ MemberCallExpr::compile(ctx,load)
 	utils.debug("gen.MemberCallExpr::compile")
     if this.varname != "" {
         this.panic("varname should be null")
+    }
+
+    if this.staticCall != null {
+        return this.static_compile(ctx,this.staticCall)
     }
 
     if this.obj != null {
@@ -282,6 +295,28 @@ MemberCallExpr::compile(ctx,load)
     compile.writeln("    add $8, %%rsp")
     
     return call
+}
+
+MemberCallExpr::ismem(ctx){
+    fc = null
+    if this.staticCall != null {
+		fc = this.staticCall.getFunc(this.membername)
+    }else if this.obj != null {
+        s = package.getStruct(this.obj.structpkg,this.obj.structname)
+		this.check(s != null,"s == null")
+		fc = s.getFunc(this.membername)
+	}else if this.tyassert != null {
+        s = this.tyassert.getStruct()
+		this.check(s != null, "s == null")
+		fc = s.getFunc(this.membername)
+    }else{
+		return false
+	}
+	this.check(fc != null, "fc == null")
+	if std.len(fc.returnTypes) != 0 {
+        return true
+	}
+    return false
 }
 
 MemberExpr::ismem(ctx){
