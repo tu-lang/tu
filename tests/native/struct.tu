@@ -140,10 +140,52 @@ fn test5(){
 
 	fmt.println("test 5 success")
 }
+
+mem Demo {
+	i32 a
+	f32 b
+}
+const Demo::new(a<i32>,b<f32>) Demo {
+	return new Demo {
+		a: a,
+		b: b
+	}
+}
+const Demo::new2() {
+	return "new2"
+}
+fn test6(){
+	fmt.println("test current static fn")
+	b<f32> = 22.2
+	p<Demo> = Demo::new(111.(i32),b)
+	if p.a == 111 {} else os.die("neq 111")
+	if p.b > 22.2 && p.b < 22.3 {} else os.die("neq 22.2")
+
+	if Demo::new(222.(i32),b).a == 222 {} else os.die("neq 111")
+	if Demo::new(222.(i32),b).b > 22.2 && Demo::new(222.(i32),b).b < 22.3 {} else os.die("neq 22.2")
+
+	if Demo::new2() == "new2" {} else os.die("neq new2")
+	fmt.println("test current static fn success")
+}
+use pkg
+fn test7(){
+	fmt.println("test external static fn")
+	b<f32> = 22.2
+	p<pkg.Demo> = pkg.Demo::new(111.(i32))
+	if p.a == 111 {} else os.die("neq 111")
+	if p.b > 333.2 && p.b < 333.4 {} else os.die("neq 333.3")
+
+	if pkg.Demo::new(222.(i32)).a == 222 {} else os.die("neq 111")
+	if pkg.Demo::new(222.(i32)).b > 333.2 && pkg.Demo::new(222.(i32)).b < 333.4 {} else os.die("neq 22.2")
+	if pkg.Demo::new2() == "new2" {} else os.die("neq new2")
+	fmt.println("test external static fn success")
+}
 fn main(){
 	test1()
 	test2()
 	test3()
 	test4()
 	test5()
+	test6()
+	test7()
 }

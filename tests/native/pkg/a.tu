@@ -43,3 +43,17 @@ T1::test(){
 	fmt.println("T1::test success")
 	this.d.test()
 }
+
+mem Demo {
+	i32 a
+	f32 b
+}
+const Demo::new(a<i32>) Demo {
+	return new Demo {
+		a: a,
+		b: 333.3
+	}
+}
+const Demo::new2() {
+	return "new2"
+}
