@@ -102,6 +102,51 @@ T2::test_chain(){
 	}
 	fmt.println("test chain success")
 }
+
+
+mem DemoInner: pack {
+	u32 events
+	u64 data
+} 
+mem Demo {
+	DemoInner* events // arr
+}
+fn test_memarr(){	
+	fmt.println("test struct inner pointer field op")
+	arrsize<u64*> = sizeof(DemoInner) * 3
+	ptr<u64*> = new arrsize
+	p<Demo> = new Demo {
+		events: ptr
+	}
+
+	//case1
+	if ptr == p.events {} else os.die("ptr neq p.events")
+	if ptr == &p.events[0] {} else {
+		os.die("ptr neq &p.events")
+	} 
+	if ptr == p.events[0] {} else {
+		os.die("ptr neq &p.events 2")
+	}
+	//case2
+	p2<u64*> = ptr + sizeof(DemoInner)
+	if p2 == &p.events[1] {} else {
+		os.die("p neq &p.events[0]")
+	}
+
+	//case3
+	p3<DemoInner> = p2
+	p3.events = 11
+	p3.data   = 22
+
+	if p.events[1].events == 11 {} else {
+		os.die("neq 11")
+	}
+	if p.events[1].data == 22 {} else {
+		os.die("neq 22")
+	}
+	fmt.println("test struct inner pointer field op success")
+}
+
 func main(){
 	default_test()
 	test_arr()
@@ -111,6 +156,7 @@ func main(){
 		}
 	}
 	t.test_chain()
+	test_memarr()
 	//TODO: 
 	// test_arr_multi()
 }
