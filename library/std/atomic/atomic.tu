@@ -1,3 +1,19 @@
+mem AtomicUsize {
+	u64 addr
+}
+
+AtomicUsize::fetch_add(v<i64>) u64 {
+	return xadd(&this.addr,v)
+}
+
+AtomicUsize::swap(v<i64>) u64 {
+	return xchg(&this.addr,v)
+}
+
+AtomicUsize:load() u64 {
+	return load64(&this.addr)
+}
+
 func cas(addr<i32*>, old<i32>, newv<i32>)
 func cas64(addr<i64*>, old<i64>, newv<i64>)
 func store(addr<i32*> ,old<i32>,newv<i32>)
