@@ -143,7 +143,11 @@ ChainExpr::memgen(ctx,load)
 			type(IndexExpr): {
 				ie = expr
 				if ie.varname == "" || ie.varname == null {
-					ie.compile_static(ctx,preMember.size)
+					size = preMember.size
+					if preMember.pointer && preMember.structref != null && !preMember.isarr {
+						size = preMember.structref.size
+					}
+					ie.compile_static(ctx,size)
 					curMember = preMember.clone()
 					if !curMember.isarr && curMember.pointer {
 						curMember.pointer = false

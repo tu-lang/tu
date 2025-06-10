@@ -96,18 +96,25 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 return var.ret
 		 }
 		 ast.Var_Global_Local_Static_Field | ast.Var_Local_Static_Field:{ 
-			 sm = new StructMemberExpr(var.package,this.line,this.column)
-			 sm.member = var.varname
-			 sm.var    = var.ret
-			 sm.compile(ctx,false)
-			 me = sm.ret
-			 if me.pointer && !me.isarr {
-				 compile.LoadMember(me)
-			 }
-			 compile.Push() 
-			 if !me.pointer && !me.isarr this.check(false,"must be pointer member or arr")
+			sm = new StructMemberExpr(var.package,this.line,this.column)
+			sm.member = var.varname
+			sm.var    = var.ret
+			sm.compile(ctx,false)
+			me = sm.ret
+			if me.pointer && !me.isarr {
+				compile.LoadMember(me)
+			}
+			compile.Push() 
+			if !me.pointer && !me.isarr this.check(false,"must be pointer member or arr")
+
+			memarr = false			
+			size = me.size
+			if me.pointer && me.structref != null && !me.isarr {
+				size = me.structref.size
+				memarr = true
+			}
  
-			 this.compileStaticIndex(ctx,me.size)
+			this.compileStaticIndex(ctx,size)
 			compile.writeln("\tadd %%rdi , (%%rsp)") 
 			compile.Pop("%rax")
 			ss = me.size
@@ -120,7 +127,8 @@ IndexExpr::compileStaticIndex(ctx,size){
 			}
 			if ast.isfloattk(me.type)
 			 	compile.Loadf(me.type)
-			else if !me.pointer && me.isarr && me.structname != "" {
+			else if memarr {
+			}else if !me.pointer && me.isarr && me.structname != "" {
 			}else
 			 	compile.LoadSize(ss,me.isunsigned)
 			this.ret = me
