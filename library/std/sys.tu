@@ -46,3 +46,12 @@ func munmap(addr<u64> , len<u64>)
 fn   cputicks()
 //@return u64
 fn 	 gettid()
+
+
+EPOLLIN<i64>    = 0x1
+EPOLLOUT<i64>   = 0x4
+EPOLLRDHUP<i64> = 0x2000
+EPOLLET<i64>	= 0x80000000
+EPOLL_CTL_ADD<i64> =  1
+EPOLL_CTL_DEL<i64> =  2
+EPOLL_CTL_MOD<i64> =  3

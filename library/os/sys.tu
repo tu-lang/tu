@@ -10,3 +10,5 @@ func getpid() {
 func fork(){
 	return int(_fork())
 }
+
+fn fcntl(fd<i64>,op<i64> , arg<i64>) (i32)
