@@ -2,12 +2,13 @@ use runtime
 use fmt
 
 // func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
-func dynstringfmt(_args<u64*>...){
+func dynstringfmt(_args...){
     curr<u64> = 0
 	dyncurr<runtime.Value> = null
 
-	count<i32> = *_args
-	args<u64*> = _args + 8
+    args<u64*> = _args
+	count<i32> = args[0]
+	args<u64*> = args + 8
 	dyncurr    = args[0] // get first args 'fmt'
     fmts<i8*>  = dyncurr.data
 

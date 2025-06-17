@@ -12,9 +12,10 @@ func fatal(args...){
     os.exit(-1)
 }
 //format
-func println(_args<u64*>...){
-	total<i32> = *_args
-    args<u64*> = _args + 8
+func println(_args...){
+    args<u64*> = _args
+	total<i32> = args[0]
+    args<u64*> = args + 8
 
 	var<runtime.Value> = null
 
@@ -52,10 +53,11 @@ func println(_args<u64*>...){
     vfprintf(std.STDOUT,*"\n")
 }
 func print(_args<u64*>...){
-	total<i32> = *_args
+    args<u64*> = args
+	total<i32> = args[0]
 	var<runtime.Value> = null
 
-    args<u64*> = _args + 8
+    args = args + 8
     for(i<i32> = 0;i < total ; i += 1){
 		var = args[i]
         if	!var {

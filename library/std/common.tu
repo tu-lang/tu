@@ -149,11 +149,11 @@ func ntime(){
 	return ts.sec * 1000000000 + ts.nsec
 }
 
-fn printf(str<i8*>,args<i64*>...){
+fn printf(str<i8*>,args...){
 	fmt.vfprintf(STDOUT,str,args)
 }
 
-fn dief(str<i8*>,args<i64*>...){
+fn dief(str<i8*>,args...){
 	fmt.vfprintf(std.STDOUT,str,args)
     fmt.vfprintf(std.STDOUT,*"\ndebug backtrace:\n")
 	infos = debug.stack(10.(i8))

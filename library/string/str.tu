@@ -226,8 +226,9 @@ Str::catfmt(fmt<i8*>, _args<u64*>...){
     f = fmt    
     i = initlen 
     //variadic args
-    argscount<u64> = *_args
-    args<u64*>     = _args + 8
+    args<u64*> = _args
+    argscount<u64> = args[0]
+    args     = args + 8
 
  	argi<u64> = 0
     while *f != null {
