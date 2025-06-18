@@ -4,8 +4,9 @@ use std
 use runtime
 
 // func manual(size,v1,v2,v3,v4,v5,v6,v7,v8){
-func manual(args<u64*>...)
+func manual(_args...)
 {
+	args<u64*> = _args
 	size<u32> = *args
 	args += 8
 	if size != 8 os.die("test manual.size failed")
@@ -28,7 +29,8 @@ func manual(args<u64*>...)
 	fmt.println("test manual success")
 	return 100
 }
-func auto(args<u64*>...){
+func auto(_args...){
+	args<u64*> = _args
 	count = *args
 	args += 8 // skip count
 	var<runtime.Value> = null
@@ -40,19 +42,21 @@ func auto(args<u64*>...){
 	fmt.println("test auto success")
 	return 200
 }
-func f2(args<u64*>...){
+func f2(_args...){
+	args<u64*> = _args
 	size<u32> = args[0]
 	if size != 8 os.die("f2 test failed")
-	ret1 = manual(args) // 100
-	ret2 = auto(args) // 200
+	ret1 = manual(_args) // 100
+	ret2 = auto(_args) // 200
 
 	fmt.println("test f2 success")
 	return ret1 + ret2
 }
-func f1(args<u64*>...){
+func f1(_args...){
+	args<u64*> = _args
 	size<u32> = args[0]
 	if size != 8 os.die("f1 test failed")
-	ret = f2(args)
+	ret = f2(_args)
 	var = ret + 1	
 	fmt.println("test f1 success")
 	return var
@@ -64,7 +68,8 @@ func test_wrap(){
 	fmt.println("test varidic params success")
 }
 
-func native(args<u64*>...){
+func native(_args...){
+	args<u64*> = _args
 	var = null
 	args += 8
     for (i<i32> = 0 ; i < 8 ; i += 1){
@@ -76,10 +81,11 @@ func native(args<u64*>...){
 	return "test"
 }
 // extern _ main_native()
-func f11(args<u64*>...){
+func f11(_args...){
+	args<u64*> = _args
 	size<u32> = args[0]
 	if size != 8 os.die("native f1 test failed")
-	ret = native(args)
+	ret = native(_args)
 	var = ret + "ok"	
 	fmt.println("test f1 success")
 	return var

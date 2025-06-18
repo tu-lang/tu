@@ -29,7 +29,8 @@ func println(_args...){
             runtime.Null:   vfprintf(std.STDOUT,*"null")
             runtime.Int:    vfprintf(std.STDOUT,string.fromlonglong(var.data))
             runtime.Float: {
-                s<string.String> = string.f64tostring(var.data,10.(i8))
+                fv<runtime.FloatValue> = var
+                s<string.String> = string.f64tostring(fv.data,10.(i8))
                 vfprintf(std.STDOUT,s.str())
             }
             runtime.Bool:   {
@@ -52,8 +53,8 @@ func println(_args...){
     }
     vfprintf(std.STDOUT,*"\n")
 }
-func print(_args<u64*>...){
-    args<u64*> = args
+func print(_args...){
+    args<u64*> = _args
 	total<i32> = args[0]
 	var<runtime.Value> = null
 
@@ -67,7 +68,8 @@ func print(_args<u64*>...){
         match var.type {
             runtime.Int:	vfprintf(std.STDOUT,*"%d",var.data)
             runtime.Float:	{
-                s<string.String> = string.f64tostring(var.data,10.(i8))
+                fv<runtime.FloatValue> = var
+                s<string.String> = string.f64tostring(fv.data,10.(i8))
                 vfprintf(std.STDOUT,s.str())
             }
             runtime.Char:	vfprintf(std.STDOUT,*"%d",var.data)
