@@ -48,7 +48,7 @@ labels = {
     "cvtsi2sd": ast.KW_CVTSI2SD, "cvtsi2sdq": ast.KW_CVTSI2SD,"cvtsi2ss": ast.KW_CVTSI2SS,  "cvtsi2ssq": ast.KW_CVTSI2SS, 
     "ucomisd": ast.KW_UCOMISD,   "ucomiss": ast.KW_UCOMISS,
     "cvtps2pd": ast.KW_CVTPS2PD, "cvtpd2ps": ast.KW_CVTPD2PS, "cvtss2sd": ast.KW_CVTSS2SD, "cvtsd2ss": ast.KW_CVTSD2SS,
-    "cvttss2si":ast.KW_CVTTSS2SI,"cvttss2siq": ast.KW_CVTTSS2SIQ, "cvttsd2si": ast.KW_CVTTSD2SI, "cvttsd2siq": ast.KW_CVTTSD2SIQ,
+    "cvttss2si":ast.KW_CVTTSS2SI,"cvttss2sil":ast.KW_CVTTSS2SI,"cvttss2siq": ast.KW_CVTTSS2SIQ, "cvttsd2si": ast.KW_CVTTSD2SI, "cvttsd2siq": ast.KW_CVTTSD2SIQ,
     "movsd": ast.KW_MOVSD,       "movss": ast.KW_MOVSS,
     "addsd": ast.KW_ADDSD,       "addss": ast.KW_ADDSS,      "subsd": ast.KW_SUBSD,    "subss": ast.KW_SUBSS,
     "mulsd": ast.KW_MULSD,       "mulss": ast.KW_MULSS,      "divsd": ast.KW_DIVSD,    "divss": ast.KW_DIVSS,
