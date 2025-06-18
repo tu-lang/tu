@@ -29,6 +29,10 @@ fn isfreg(tk<i32>){
     if tk >= KW_XMM0 && tk <= KW_XMM15 return true
     return false
 }
+fn isfreglow(tk<i32>){
+    if tk >= KW_XMM0 && tk < KW_XMM8 return true
+    return false
+}
 fn isfreghi(tk<i32>){
     if tk >= KW_XMM8 && tk <= KW_XMM15 return true
     return false
