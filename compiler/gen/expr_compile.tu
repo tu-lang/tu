@@ -43,3 +43,47 @@ fn toBinExpr(expr){
     be.rhs = i
     return be
 }
+
+FunCallExpr::argGen(ctx , arg, i, fc){
+	ret = this.argCast(ctx, arg, i , fc)
+	paramVar = null
+	if i < std.len(fc.params_order_var)
+		paramVar = fc.params_order_var[i]
+		
+	if paramVar != null && paramVar.structtype {
+		if ast.isfloattk(paramVar.type)
+			compile.Pushf(paramVar.type)
+		else 
+			compile.Push()
+	}else if ret != null {
+		ty = ret.getType(ctx)
+		if ast.isfloattk(ty)
+			compile.Pushf(ty)
+		else
+			compile.Push()
+	}else {
+		compile.Push()
+	}
+}
+
+FunCallExpr::argCast(ctx , arg, i,fc){
+	ret = null
+	paramVar = null
+	if i < std.len(fc.params_order_var)
+		paramVar = fc.params_order_var[i]
+
+	if paramVar != null && paramVar.structtype && std.empty(paramVar.structname) && ast.isbase(paramVar.type) {
+        op = new OperatorHelper()
+        op.ltoken = paramVar.type
+		op.opt    = ast.ILLEGAL_END
+        op.ctx    = ctx
+        op.staticCompile(arg)
+		if paramVar.pointer 
+        	compile.Cast(op.rtoken,ast.I64)
+		else 
+			compile.Cast(op.rtoken,paramVar.type)
+        return ret
+    }
+    return arg.compile(ctx,true)
+}
+

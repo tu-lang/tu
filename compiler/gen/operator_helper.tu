@@ -686,7 +686,7 @@ OperatorHelper::staticCompile(expr)
 	
 	if ret == null{
 		this.initcond(isleft,8,ast.U64,false)
-	}else if type(ret) == type(NewExpr) || type(ret) == type(NewStructExpr) {
+	}else if type(ret) == type(NewExpr) || type(ret) == type(NewStructExpr) || type(ret) == type(StringExpr) {
 		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(VarExpr) 
 	{

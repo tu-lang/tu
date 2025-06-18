@@ -136,8 +136,15 @@ FunCallExpr::PushStackArgs(ctx,fc)
                 }
                 continue
             }
-			if fc.params_order_var[paramsize - 1 - i].structtype {
-				compile.writeln("    push $0")
+			paramVar = fc.params_order_var[paramsize - 1 - i]
+			if paramVar.structtype {
+				if ast.isfloattk(paramVar.type){
+					compile.writeln("    mov $0 , %%rax")
+					compile.Cast(ast.I64, paramVar.type)
+					compile.Pushf(paramVar.type)
+				}else{
+					compile.writeln("    push $0")
+				}
 			}else{
 				compile.writeln("	lea runtime_internal_null(%%rip), %%rax")
 				compile.Push()
@@ -157,15 +164,15 @@ FunCallExpr::PushStackArgs(ctx,fc)
 			)
             continue
         }
-
-		ret = arg.compile(ctx,true)
-        if ret != null {
-			ty<i32> = ret.getType(ctx)
-            if ast.isfloattk(ty)
-                compile.Pushf(ty)
-            else
-                compile.Push()
-        }else   compile.Push()
+		this.argGen(ctx,arg,i,fc)
+		// ret = arg.compile(ctx,true)
+        // if ret != null {
+		// 	ty<i32> = ret.getType(ctx)
+        //     if ast.isfloattk(ty)
+        //         compile.Pushf(ty)
+        //     else
+        //         compile.Push()
+        // }else   compile.Push()
 	
 
 		stack += 1
