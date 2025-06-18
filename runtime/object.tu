@@ -87,6 +87,13 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
     } 
     return Null
 }
+func newfobject(data<f64>)
+{
+    return new FloatValue {
+        type : Float,
+        data : data
+    }
+}
 func newinherit_object(typeid<i32>,father<Value>){
     ret<Value> = new Value
     ret.type   = Object

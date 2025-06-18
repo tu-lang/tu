@@ -13,7 +13,7 @@ func test_int(){
     m.insert(1.(i8),11.(i8))
     m.insert(2.(i8),22.(i8))
     m.insert(3.(i8),33.(i8))
-    m.insert(4.(i8),44)
+    m.insert(4.(i8),44.(i8))
 
 	v<i32> = 33
 	if m.find(3.(i8)) == v {} else {
@@ -22,7 +22,7 @@ func test_int(){
     fmt.println(int(m.find(3.(i8))))
     m.insert(3.(i8),333.(i8))
     fmt.println(int(m.find(3.(i8))))
-    fmt.println(m.find(4.(i8)))
+    fmt.println(int(m.find(4.(i8))))
 	v = 333
 	if m.find(3.(i8)) == v {} else {
 		os.die("m[3] != 333")
@@ -32,19 +32,19 @@ func test_int(){
 func test_string(){
 	fmt.println("test string")
     m<map.Map> = map.map_new(hashkey.(u64),0.(i8))
-    m.insert(string.S(*"test1"),1)
-    m.insert(string.S(*"test2"),2)
-    m.insert(string.S(*"test3"),3)
+    m.insert(string.S(*"test1"),1.(i32))
+    m.insert(string.S(*"test2"),2.(i32))
+    m.insert(string.S(*"test3"),3.(i32))
 	if m.find(string.S(*"test3")) == 3 {} else{
 		os.die("m[test3] != 3")
 	}
-	m.insert(string.S(*"test3"),3000.(i8))
+	m.insert(string.S(*"test3"),3000.(i32))
     b<u64> = m.find(string.S(*"test3"))
 	if b == 3000 {} else {
 		os.die("m[test3] != 3000")
 	}
     fmt.println(int(b))
-    fmt.println(m.find(string.S(*"test2")))
+    fmt.println(int(m.find(string.S(*"test2"))))
 	fmt.println("test string success")
 }
 func test_iter(){

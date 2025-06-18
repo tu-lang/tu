@@ -198,7 +198,8 @@ fn arr_tostring(varr<Value>)
             	ret = ret.cat(*",")
 			}
 			Float : {
-				fstr<string.String> = string.f64tostring(v.data , 5.(i8))
+				fv<runtime.FloatValue> = v
+				fstr<string.String> = string.f64tostring(fv.data , 5.(i8))
 				ret = ret.cat(fstr.str())
             	ret = ret.cat(*",")
 			}

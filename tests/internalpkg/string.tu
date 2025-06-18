@@ -31,19 +31,21 @@ func test_split(){
 func test_trans(){
     fmt.println("test string trans")
     number = 3763
-    if string.tostring(number) != "3763" {
+    if string.tostring(number) == "3763" {} else {
         os.die("number should be string 3763")
     }
-    if string.tonumber("3763") != number {
+    if string.tonumber("3763") == number {} else {
         os.die("number should be number 3763")
     }
 
+    fmt.println(3)
     c = 'b'
     str = string.tostring(c)
     str += 'c'
     str += '1'
     str += '\t'
     str += '2'
+    fmt.println(4)
     if str != "bc1\t2"{
         os.die("char to string failed")
     }

@@ -5,34 +5,41 @@ use string
 //+ +=, - -=, * *=,/ /=
 //*pointer
 // mem op
+mem U2F64 {
+	f64 inner
+}
+fn u2f64(v<u64>) f64 {
+	p<U2F64> = &v
+	return p.inner
+}
 fn test_base1(){
 	fmt.println("test_base1 double to string")
 	//1.test 34723453.23453264 
-	s<string.String> = string.f64tostring(4719929312858361058.(u64))
+	s<string.String> = string.f64tostring(u2f64(4719929312858361058))
 	fmt.println(s.dyn())
 	if s.dyn() == "34723453" {} else {
 		os.dief("%s should be 34723453",s.dyn())
 	}
 	//2. 123457.76543210
-	s = string.f64tostring(4683220366250064589.(u64),8.(i8))
+	s = string.f64tostring(u2f64(4683220366250064589),8.(i8))
 	fmt.println(s.dyn())
 	if s.dyn() == "123457.76543210" {} else {
 		os.dief("%s should be 123457.76543210",s.dyn())
 	} 
 	//3. 0.3456789
-	s = string.f64tostring(4599898817378825292.(u64),7.(i8))
+	s = string.f64tostring(u2f64(4599898817378825292),7.(i8))
 	fmt.println(s.dyn())
 	if s.dyn() == "0.3456789" {} else {
 		os.dief("%s should be 0.3456789",s.dyn())
 	} 
 	//3. 0.000001 ~= 0.0000009999
-	s = string.f64tostring(4517329193108106637.(u64),10.(i8))
+	s = string.f64tostring(u2f64(4517329193108106637),10.(i8))
 	fmt.println(s.dyn())
 	if s.dyn() == "0.0000009999" {} else {
 		os.dief("%s should be 0.0000009999",s.dyn())
 	} 
 	//4. 1.222222  ~= 1.222221
-	s = string.f64tostring(4608183217716410934.(u64),6.(i8))
+	s = string.f64tostring(u2f64(4608183217716410934),6.(i8))
 	fmt.println(s.dyn())
 	if s.dyn() == "1.222221" {} else {
 		os.dief("%s should be 1.222221",s.dyn())

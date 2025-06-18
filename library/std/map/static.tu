@@ -99,7 +99,7 @@ Map::insert( k<u64*>,v<u64*>){
 	return True
 }
 
-Map::find(key<u64>){
+Map::find(key<u64>) u64 {
     hk<u64> = key
 	if this.hashfn != null {
 		hashfn<type_hash_key> = this.hashfn

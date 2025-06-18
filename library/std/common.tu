@@ -39,6 +39,7 @@ func empty(v<runtime.Value>){
 			ret<i8> = strlen(v.data)
 			if ret == 0 return true
 		}
+		runtime.Null: return true
 		_: {
 			os.dief("[warn] empty: unsupport type :%s\n",runtime.type_string(v))
 			// fmt.println("[warn] empty: unsuport type")

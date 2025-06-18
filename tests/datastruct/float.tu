@@ -25,8 +25,9 @@ fn test_base(){
     fmt.println(n64)
     if n64 == 56787 {} else os.dief("!= 56787")
     nf64 = string.tofloat(nstr)
-    fmt.println(nf64)
+    fmt.println("float:",nf64)
     nf64str = string.tostring(nf64)
+    fmt.println(nf64str)
     if nf64str == "56787.43200" {} else os.dief("!= 56787.43200")
 
     arr = [f1,f2,1,2,3]

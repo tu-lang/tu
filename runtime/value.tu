@@ -566,7 +566,7 @@ fn get_float_v(v<Value>){
 fn value_int_plus(lhs<Value>,rhs<Value>){
     return lhs.data + rhs.data
 }
-fn value_float_plus(lhs<Value>,rhs<Value>){
+fn value_float_plus(lhs<Value>,rhs<Value>) f64 {
     l<f64> = get_float_v(lhs)
     r<f64> = get_float_v(rhs)
     return l + r
@@ -575,7 +575,7 @@ fn value_float_plus(lhs<Value>,rhs<Value>){
 fn value_int_minus(lhs<Value>,rhs<Value>){
     return lhs.data - rhs.data
 }
-fn value_float_minus(lhs<Value>,rhs<Value>){
+fn value_float_minus(lhs<Value>,rhs<Value>) f64 {
     l<f64> = get_float_v(lhs)
     r<f64> = get_float_v(rhs)
     return l - r
@@ -584,7 +584,7 @@ fn value_float_minus(lhs<Value>,rhs<Value>){
 fn value_int_mul(lhs<Value>,rhs<Value>){
     return lhs.data * rhs.data
 }
-fn value_float_mul(lhs<Value>,rhs<Value>){
+fn value_float_mul(lhs<Value>,rhs<Value>) f64 {
     l<f64> = get_float_v(lhs)
     r<f64> = get_float_v(rhs)
     return l * r
@@ -593,7 +593,7 @@ fn value_float_mul(lhs<Value>,rhs<Value>){
 fn value_int_div(lhs<Value>,rhs<Value>){
     return lhs.data / rhs.data
 }
-fn value_float_div(lhs<Value>,rhs<Value>){
+fn value_float_div(lhs<Value>,rhs<Value>) f64 {
     l<f64> = get_float_v(lhs)
     r<f64> = get_float_v(rhs)
     return l / r
