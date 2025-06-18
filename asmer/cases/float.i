@@ -152,6 +152,11 @@ Disassembly of section .text:
    4:	f3 41 0f 2c c1       	cvttss2si %xmm9,%eax
    9:	f3 0f 2c d0          	cvttss2si %xmm0,%edx
    d:	f3 41 0f 2c d1       	cvttss2si %xmm9,%edx
+  
+   0:	f3 0f 2c c0          	cvttss2si %xmm0,%eax
+   4:	f3 41 0f 2c c1       	cvttss2si %xmm9,%eax
+   9:	f3 0f 2c d0          	cvttss2si %xmm0,%edx
+   d:	f3 41 0f 2c d1       	cvttss2si %xmm9,%edx
    
   12:	f3 48 0f 2c f8       	cvttss2si %xmm0,%rdi
   17:	f3 4c 0f 2c c8       	cvttss2si %xmm0,%r9
@@ -159,6 +164,8 @@ Disassembly of section .text:
   21:	f3 4d 0f 2c d1       	cvttss2si %xmm9,%r10
 
 0000000000000000 <cvttsd2siinst>:
+   0:	f2 0f 2c c0          	cvttsd2si %xmm0,%eax
+   4:	f2 41 0f 2c d1       	cvttsd2si %xmm9,%edx
    0:	f2 0f 2c c0          	cvttsd2si %xmm0,%eax
    4:	f2 41 0f 2c d1       	cvttsd2si %xmm9,%edx
    9:	f2 48 0f 2c c0       	cvttsd2si %xmm0,%rax
@@ -276,3 +283,12 @@ Disassembly of section .text:
   14:   44 0f 2e 4c 24 08       ucomiss 0x8(%rsp),%xmm9
   1a:   0f 2e 4d 08             ucomiss 0x8(%rbp),%xmm1
   1e:   44 0f 2e 4d 08          ucomiss 0x8(%rbp),%xmm9
+
+000000000000045e <cvtsi2ssqinst>:
+ 45e:   f3 48 0f 2a c0          cvtsi2ss %rax,%xmm0
+ 463:   f3 48 0f 2a c7          cvtsi2ss %rdi,%xmm0
+ 468:   f3 4c 0f 2a e8          cvtsi2ss %rax,%xmm13
+ 46d:   f3 4c 0f 2a ef          cvtsi2ss %rdi,%xmm13
+ 472:   f3 48 0f 2a 64 24 04    cvtsi2ssq 0x4(%rsp),%xmm4
+ 479:   f3 4c 0f 2a 4c 24 08    cvtsi2ssq 0x8(%rsp),%xmm9
+ 480:   f3 4c 0f 2a 4c 24 f0    cvtsi2ssq -0x10(%rsp),%xmm9

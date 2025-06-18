@@ -151,12 +151,18 @@ cvttss2siqinst:
 	cvttss2si	%xmm9, %eax
 	cvttss2si	%xmm0, %edx
 	cvttss2si	%xmm9, %edx
+	cvttss2sil	%xmm0, %eax
+	cvttss2sil	%xmm9, %eax
+	cvttss2sil	%xmm0, %edx
+	cvttss2sil	%xmm9, %edx
 	cvttss2siq	%xmm0, %rdi
 	cvttss2siq	%xmm0, %r9
 	cvttss2siq	%xmm9, %rdi
 	cvttss2siq	%xmm9, %r10
 
 cvttsd2siinst:
+	cvttsd2sil	%xmm0, %eax
+	cvttsd2sil	%xmm9, %edx
 	cvttsd2si	%xmm0, %eax
 	cvttsd2si	%xmm9, %edx
 	cvttsd2siq	%xmm0, %rax
@@ -253,3 +259,13 @@ ucomissinst:
     ucomiss 8(%rsp), %xmm9
     ucomiss 8(%rbp), %xmm1
     ucomiss 8(%rbp), %xmm9
+
+cvtsi2ssqinst:
+	cvtsi2ssq   %rax, %xmm0
+    cvtsi2ssq   %rdi, %xmm0
+    cvtsi2ssq   %rax, %xmm13
+    cvtsi2ssq   %rdi, %xmm13
+    cvtsi2ssq   4(%rsp) , %xmm4
+    cvtsi2ssq   8(%rsp) , %xmm9
+    cvtsi2ssq   -16(%rsp) , %xmm9
+
