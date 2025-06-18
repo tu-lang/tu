@@ -17,6 +17,7 @@ Instruct::insthead(){
                     this.append1(0x4c.(i8))
                 else
                     this.append1(0x48.(i8))
+                return true
             }else if ast.r8ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1])
                 this.append1(0x45.(i8))
             else if ast.r8ishigh(this.tks.addr[1])
