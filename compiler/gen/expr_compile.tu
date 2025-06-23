@@ -80,6 +80,7 @@ FunCallExpr::argCast(ctx , arg, i,fc){
 		if paramVar.structname != "" && paramVar.structname != null {
 			return op.apiCompile(paramVar,arg)
 		}
+		op.lstruct = null
         op.staticCompile(arg)
 		if paramVar.pointer 
         	compile.Cast(op.rtoken,ast.I64)

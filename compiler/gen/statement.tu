@@ -38,10 +38,18 @@ ReturnStmt::exprCast(ctx , expr, i){
     if std.len(fc.returnTypes) >= (i + 1) {
         defineType = fc.returnTypes[i]
     }
-    if defineType != null && defineType.baseType() {
+    if defineType != null {
         op = new OperatorHelper()
         op.ltoken = defineType.base
+        op.lstruct = null
         op.ctx    = ctx
+        if defineType.memType() {
+            var = new VarExpr(defineType.name,0,0)
+            var.structpkg = defineType.pkg
+            var.structname = defineType.name
+            op.apiCompile(var,expr)
+            return null
+        }
         op.staticCompile(expr)
         // if !op.isbase && !defineType.pointer && defineType.base != ast.I64 && defineType.base != ast.U64 {
             // expr.check(false,"cast may loss data")

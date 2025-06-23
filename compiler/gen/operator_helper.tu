@@ -661,6 +661,7 @@ OperatorHelper::staticCompile(expr)
 	if !exprIsMtype(expr,this.ctx) && ( this.opt == ast.LOGAND || this.opt == ast.LOGOR) {
 		internal.isTrue()
 	}
+	this.checkoop(ret)
 	match type(expr) {
 		type(BinaryExpr) | type(AssignExpr) : {
 			t = expr.getType(this.ctx)

@@ -130,7 +130,7 @@ Parser::parseApiImpl()
                     this.check(false,"API not impl default func, need impl it")
                 apiImpl.funcs[] = iter
                 if implDef.getFunc(iter.name) != null
-                    this.check(false,"api func conflict with struct impl:"+iter.name)
+                    this.check(false,implDef.name +":api func conflict with struct impl:"+iter.name)
                 this.pkg.addStructFunc(implName,iter.name,iter,implDef)
             }
         }
