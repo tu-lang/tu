@@ -5,6 +5,13 @@ use os
 use compiler.parser
 use compiler.parser.package
 
+fn InitApiVptr(s, apiname){
+	apiVtableptr = s.apiname(apiname)
+    compile.writeln("    lea %s(%%rip), %%rdi", apiVtableptr)
+    compile.writeln("    mov %%rdi , (%%rax)")
+}
+
+
 func InitStructVar(gvar , s , fields){
     utils.debug("compile.InitStructVar()")
 	gvar.check(s != null,"struct is null in iniststructvar")

@@ -71,6 +71,8 @@ class FunCallExpr : ast.Ast {
 
 	gen    = false
 	dt
+	apiStruct = null
+	apiName   = ""
 	var    = null
 	func init(line,column){
 		super.init(line,column)
@@ -147,7 +149,12 @@ FunCallExpr::geninit(ctx)
 			this.checkFirstThis(ctx,var)
 			this.fcs = fc
 			this.dt = ast.StaticCall
-			if s.isapi {
+			if fc.st.name != s.name {
+				this.var = var
+				this.dt  = ast.ApiCall2
+				this.apiStruct = s
+				this.apiName   = fc.st.name
+			}else if s.isapi {
 				this.var = var
 				this.dt  = ast.ApiCall
 			}
@@ -225,6 +232,14 @@ FunCallExpr::compile(ctx , load){
 		ast.FutureCall:	  this.compile2(ctx,load,ast.FutureCall,this.var)
 		ast.StaticCall:	  this.call(ctx,this.fcs,load,false)
 		ast.ApiCall: 	  this.call(ctx,this.fcs,load,true)
+		ast.ApiCall2: {
+			compile.GenAddr(this.var)
+			if !this.var.stack {
+				compile.Load()
+			}
+			compile.InitApiVptr(this.apiStruct,this.apiName)
+			this.call(ctx,this.fcs,load,false)
+		}
 
 		_: {
 			this.check(false,"compile unknown funcall type")

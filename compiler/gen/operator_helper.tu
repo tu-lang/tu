@@ -448,12 +448,8 @@ OperatorHelper::genRight(isleft,expr)
 		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(NewStructExpr){
 		ns = ret
-		if this.lstruct != null {
-			st = ns.getStruct()
-			apiVtableptr = st.apiname(this.lstruct.name)
-		    compile.writeln("    lea %s(%%rip), %%rdi", apiVtableptr)
-			compile.writeln("    mov %%rdi , (%%rax)")
-		}
+		if this.lstruct != null 
+			compile.InitApiVptr(ns.getStruct(), this.lstruct.name)
 		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(VarExpr) 
 	{
