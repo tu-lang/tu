@@ -335,6 +335,11 @@ OperatorHelper::genLeft()
 		}
 		type(StructMemberExpr) : {
 			m = ret.getMember()
+			if m.isstruct {
+				st = m.structref
+				if st.isapi
+					this.lstruct = st
+			}
 			this.lmember = m
 			this.initcond(true,m.size,m.type,m.pointer)
 			return ret
