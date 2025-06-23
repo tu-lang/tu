@@ -10,6 +10,7 @@ ClosureCall = 4
 FutureCall  = 5
 StaticCall  = 6
 ClosureCall2 = 7
+ApiCall     = 8
 
 ClassFunc   = 1
 AsyncFunc   = 2

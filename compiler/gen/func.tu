@@ -145,8 +145,12 @@ FunCallExpr::geninit(ctx)
 			if(fc == null) 
 				this.check(false,"func not exist in funccall expr compile")
 			this.checkFirstThis(ctx,var)
-			this.dt = ast.StaticCall
 			this.fcs = fc
+			this.dt = ast.StaticCall
+			if s.isapi {
+				this.var = var
+				this.dt  = ast.ApiCall
+			}
 			return this
 		}else if this.tyassert != null {
 			s = compile.currentParser.pkg
@@ -155,6 +159,10 @@ FunCallExpr::geninit(ctx)
 			fc = s.getFunc(this.funcname)
 			this.checkFirstThis(ctx,var)
 			this.dt = ast.StaticCall
+			if s.isapi {
+				this.var = var
+				this.dt  = ast.ApiCall
+			}
 			this.fcs = fc
 			return this
 		}
@@ -215,7 +223,8 @@ FunCallExpr::compile(ctx , load){
 		ast.ClosureCall2: this.closcall(ctx,this.var,load)
 		ast.ObjCall:	  this.compile2(ctx,load,ast.ObjCall,this.var)
 		ast.FutureCall:	  this.compile2(ctx,load,ast.FutureCall,this.var)
-		ast.StaticCall:	  this.call(ctx,this.fcs,load)
+		ast.StaticCall:	  this.call(ctx,this.fcs,load,false)
+		ast.ApiCall: 	  this.call(ctx,this.fcs,load,true)
 
 		_: {
 			this.check(false,"compile unknown funcall type")

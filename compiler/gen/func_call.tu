@@ -8,7 +8,7 @@ use std
 use compiler.utils
 
 
-FunCallExpr::call(ctx,fc,free)
+FunCallExpr::call(ctx,fc,free,apicall)
 {
 
 	if !this.asyncgen &&  fc.isasync() {
@@ -24,10 +24,10 @@ FunCallExpr::call(ctx,fc,free)
 		compile.writeln("#    register %s",compile.currentFunc.fullname())
 		return this.registercall(ctx,fc)
 	}
-	return this.stackcall(ctx,fc,free)
+	return this.stackcall(ctx,fc,free,apicall)
 }
 
-FunCallExpr::stackcall(ctx,fc,free)
+FunCallExpr::stackcall(ctx,fc,free,apicall)
 {
 	args = this.args
 	callname = this.funcname
@@ -42,7 +42,17 @@ FunCallExpr::stackcall(ctx,fc,free)
 	if fc.fntype != ast.ExternFunc {
 		callname = fc.fullname()
 	}
-	compile.writeln("    call %s",callname)
+	if apicall {
+		compile.GenAddr(this.var)
+		compile.Load()
+		if fc.vid != 0 
+			compile.writeln("	add $%d , %%rax",fc.vid * 8)
+		compile.Load()
+		compile.writeln("	call *%%rax")
+
+	}else{
+		compile.writeln("    call %s",callname)
+	}
 
     if stack_args > paramsize {
 		delta = stack_args - paramsize
