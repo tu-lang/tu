@@ -13,7 +13,7 @@ keywords = {
 	"use"   : ast.USE, 	   "extern": ast.EXTERN, "class"   : ast.CLASS,
 	"new"   : ast.NEW,     "co"    : ast.CO,     "mem" 	   : ast.MEM, 		"await": ast.AWAIT, "async": ast.ASYNC,
 	"match" : ast.MATCH ,  "enum"  : ast.ENUM,   "goto"    : ast.GOTO,		"cfg"  : ast.CFG,
-	"const" : ast.CONST,
+	"const" : ast.CONST,   "api": ast.API,
 }
 builtins = {
     "int" : true , "sizeof" : true , "type" : true, "float" : true,

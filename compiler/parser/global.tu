@@ -86,6 +86,7 @@ Parser::parseClassFunc(var, constdef){
         if st != null {
             fctype = ast.StructFunc
             pdefine = st
+            this.check(!st.isapi,"interface functions can't external define")
         }else{
             cls = package.getClass("",var)
             this.check(cls != null , "class not define")

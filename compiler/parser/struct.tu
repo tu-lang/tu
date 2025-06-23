@@ -6,6 +6,60 @@ use compiler.utils
 use compiler.gen
 use compiler.compile
 
+Parser::parseApiDef()
+{
+    // api header {
+    // fn test() (i32)
+    // fn test2() {
+    // }
+    // }
+    utils.debug("found api start parser..")
+	reader<scanner.ScannerStatic> = this.scanner
+    this.check(reader.curToken == ast.API,"parse api define, tok not mem")
+    reader.scan()
+    //must VAR
+    this.check(reader.curToken == ast.VAR,"parse api define,tok not var")
+	s = new ast.Struct()
+    s.isapi = true
+    s.parser = this
+    s.name  = reader.curLex.dyn()
+
+    // s.compute()
+    if compile.phase == compile.GlobalPhase && std.exist(s.name,this.pkg.structs){
+        this.check(false,"already define " + s.name)
+    }
+
+    if compile.phase != compile.GlobalPhase {
+        s = this.pkg.getStruct(s.name)
+		s.member = []
+    }
+    this.check(utils.isUpper(s.name),"first char of class name need be Upper")
+    s.pkg   = this.pkg.package
+    reader.scan()
+    this.check(reader.curToken == ast.LBRACE,"api can't define struct propertiy")
+    reader.scan()
+    //end for }
+	idx = 0
+    while reader.curToken != ast.RBRACE {
+        this.ctx = new ast.Context()
+		fc = this.parseFuncDef(ast.StructFunc,s,null,false)
+        this.ctx = null
+
+        this.check(fc != null)
+        this.pkg.addStructFunc(s.name,fc.name,fc,s)
+        this.addFunc(s.name + fc.name,fc)
+    }
+
+    //RFC021:
+    if compile.phase == compile.GlobalPhase {
+        this.pkg.addStruct(s.name,s)
+        this.structs[s.name] = s
+    }
+    //eat }
+    reader.scan()
+}
+
+
 Parser::parseStructDef()
 {
 	// struct header

@@ -2,6 +2,7 @@ use compiler.parser.package
 use compiler.utils
 
 class Struct {
+	isapi  = false
 	pkg    = ""
 	name   = ""
 	size   = 0
