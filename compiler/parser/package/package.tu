@@ -18,6 +18,7 @@ class Package {
     initvars 
     classes = {} // map{string : Class  }
     structs = {} // map{string : Struct }
+    impls   = {}
     imports = {} // map[string: string}
     gstrs = {}
 

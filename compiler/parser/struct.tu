@@ -93,6 +93,7 @@ Parser::parseApiImpl()
 
 	apiDef = null
 	implDef = null
+    this.pkg.impls[implName] = true
 
 	fctype = ast.ClassFunc
     if compile.phase != compile.GlobalPhase {
@@ -189,7 +190,7 @@ Parser::parseStructDef()
 	reader.scan()
 	//end for }
 	idx = 0
-	if s.isasync {
+	if s.isasync || std.exist(s.name,this.pkg.impls) {
 		this.genAsyncPollMember(s,idx)
 	}
 	while(reader.curToken != ast.RBRACE)
