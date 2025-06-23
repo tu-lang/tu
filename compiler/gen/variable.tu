@@ -300,6 +300,8 @@ VarExpr::getStackSize(p){
                     fmt.sprintf("static var not exist pkg:%s,name:%s",acualPkg,this.structname)
                 )
             }
+            if s.isapi
+                this.check(false,"can't define stack api obj")
             if(s.size == 0) {
                 if !s.iscomputed
                     s.parser.pkg.

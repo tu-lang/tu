@@ -297,8 +297,11 @@ Parser::parseMembers(s ,idx ,isstruct){
         member.structname = structname
         member.isstruct = true
         member.structref = null
-		if compile.phase == compile.FunctionPhase
-			member.structref = package.getStruct(structpkg,structname)
+		if compile.phase == compile.FunctionPhase{
+            memberStruct = package.getStruct(structpkg,structname)
+            this.check(memberStruct != null,"struct not exist")
+			member.structref = memberStruct
+        }
 
         tk = ast.U64
     }else {
@@ -309,6 +312,13 @@ Parser::parseMembers(s ,idx ,isstruct){
         member.align = 8
         member.pointer = true
         reader.scan()
+    }else {
+        if compile.phase == compile.FunctionPhase && isstruct {
+            memberStruct = member.structref
+            if memberStruct.isapi && !member.pointer {
+                this.check(false,"api member must be pointer")
+            }
+        }
     }
     this.check(tk >= ast.I8 && tk <= ast.F64,"member type only support i8 - u64")
     member.line = this.line
