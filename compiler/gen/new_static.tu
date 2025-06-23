@@ -159,13 +159,21 @@ StructInitExpr::compile(ctx,load){
 }
 NewStructExpr::compile(ctx,load){
 	if this.init == null this.check(false,"new struct is null")
-	fullpackage = GP().getImport(this.init.pkgname)
-	s = package.getStruct(fullpackage,this.init.name)
-	if s == null this.check(false,"struct not exist when new struct")
 
+	s = this.getStruct()
 	if s.isapi 
 		this.check(false,"interface can't be new")
 	internal.gc_malloc(s.size)
 	this.init.compile(ctx,true)
 	return this
+}
+
+NewStructExpr::getStruct(){
+	if this.st != null
+		return this.st
+	fullpackage = GP().getImport(this.init.pkgname)
+	s = package.getStruct(fullpackage,this.init.name)
+	if s == null this.check(false,"struct not exist when new struct")
+	this.st = s
+	return s
 }

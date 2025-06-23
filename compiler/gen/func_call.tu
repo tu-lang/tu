@@ -45,6 +45,7 @@ FunCallExpr::stackcall(ctx,fc,free,apicall)
 	if apicall {
 		compile.GenAddr(this.var)
 		compile.Load()
+		compile.Load()
 		if fc.vid != 0 
 			compile.writeln("	add $%d , %%rax",fc.vid * 8)
 		compile.Load()

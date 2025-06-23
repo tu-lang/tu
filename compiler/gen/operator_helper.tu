@@ -31,6 +31,10 @@ class OperatorHelper {
 	dx = "%rdx"
 	needassign = false
 	isbase = false
+
+	//RFC105:
+	lstruct = null
+	rstruct = null
 }
 
 OperatorHelper::init(ctx,lhs,rhs,opt) {
@@ -322,6 +326,11 @@ OperatorHelper::genLeft()
 				)
 			}
 			this.initcond(true,var.size,var.type,var.pointer)
+			if var.structname != "" && var.structname != null{
+				st = package.getStruct(var.structpkg,var.structname)
+				if st != null && st.isapi
+					this.lstruct = st
+			}
 			return var
 		}
 		type(StructMemberExpr) : {
@@ -435,7 +444,16 @@ OperatorHelper::genRight(isleft,expr)
 	
 	if ret == null{
 		this.initcond(isleft,8,ast.U64,false)
-	}else if type(ret) == type(NewExpr) || type(ret) == type(NewStructExpr) {
+	}else if type(ret) == type(NewExpr) {
+		this.initcond(isleft,8,ast.U64,false)
+	}else if type(ret) == type(NewStructExpr){
+		ns = ret
+		if this.lstruct != null {
+			st = ns.getStruct()
+			apiVtableptr = st.apiname(this.lstruct.name)
+		    compile.writeln("    lea %s(%%rip), %%rdi", apiVtableptr)
+			compile.writeln("    mov %%rdi , (%%rax)")
+		}
 		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(VarExpr) 
 	{

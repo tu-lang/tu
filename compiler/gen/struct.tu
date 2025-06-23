@@ -23,6 +23,7 @@ class NewStructExpr : ast.Ast {
 		super.init(line,column)
 	}
 	init //struct init expr
+	st = null
 }
 NewStructExpr::toString(){
 	return fmt.sprintf(
