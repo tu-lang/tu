@@ -14,6 +14,9 @@ class Struct {
 	isasync  = false
 	asyncobj = false
 	asyncfn  = null
+
+	member   = []
+	apis     = {}
 	
 	parser = null
 	funcs  = {} // funcs

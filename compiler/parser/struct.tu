@@ -59,6 +59,70 @@ Parser::parseApiDef()
     reader.scan()
 }
 
+Parser::parseApiImpl()
+{
+    utils.debug("found api impl start parser..")
+	reader<scanner.ScannerStatic> = this.scanner
+    this.check(reader.curToken == ast.IMPL,"parse api impl, tok not mem")
+    reader.scan()
+    //must VAR
+    this.check(reader.curToken == ast.VAR,"parse api impl,tok not var")
+	apiPkg  = ""
+	apiName = reader.curLex.dyn()
+    //eat
+    reader.scan()
+    if reader.curToken == ast.DOT {
+        reader.scan()
+        this.check(reader.curToken == ast.VAR,"should be impl name")
+        apiPkg = apiName
+        apiName = reader.curLex.dyn()
+        //eat
+        reader.scan()
+    }
+    this.check(reader.curToken == ast.FOR, "should be for in impl statement")
+    reader.scan()
+    this.check(reader.curToken == ast.VAR)
+    //eat
+    implName = reader.curLex.dyn()
+    reader.scan()
+    this.check(reader.curToken == ast.LBRACE,"neq {")
+    //eat {
+    reader.scan()
+
+	apiDef = null
+	implDef = null
+
+	fctype = ast.ClassFunc
+    if compile.phase != compile.GlobalPhase {
+        apiDef = package.getStruct(apiPkg,apiName)
+        this.check(apiDef != null,"api not define")
+        implDef = package.getStruct("",implName)
+        this.check(implDef != null,"impl struct not define")
+        fctype = ast.StructFunc
+    }
+    //end for }
+	idx = 0
+	impls = []
+    while reader.curToken != ast.RBRACE {
+        this.ctx = new ast.Context()
+		fc = this.parseFuncDef(fctype, implDef, null, false)
+        this.ctx = null
+
+        this.check(fc != null)
+        if fctype == ast.StructFunc
+            this.pkg.addStructFunc(implName,fc.name,fc,implDef)
+        impls[] = fc
+        this.addFunc(implName + fc.name,fc)
+    }
+
+    if compile.phase == compile.FunctionPhase {
+        implDef.apis[apiName] = impls
+    }
+    //eat }
+    reader.scan()
+}
+
+
 
 Parser::parseStructDef()
 {
