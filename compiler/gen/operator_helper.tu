@@ -368,6 +368,7 @@ OperatorHelper::genRight(isleft,expr)
 			}else{
 				this.initcond(isleft,8,ast.I64,false)
 			}
+			this.checkoop(expr)
 			return expr
 		}
 		type(FloatExpr) : {
@@ -791,6 +792,37 @@ OperatorHelper::checkoop(expr){
 			if member.isstruct {
 				st = member.structref
 				compile.InitApiVptr(st,this.lstruct.name,expr)
+			}
+		}
+		type(StackPosExpr): {
+			sp = expr
+			if sp.st != null {
+				compile.InitApiVptr(sp.st,this.lstruct.name,expr)
+			}
+		}
+	}
+}
+
+OperatorHelper::checkapi(expr){
+	if expr == null
+		return true
+	
+	match type(expr) {
+		type(VarExpr): {
+			v = expr
+			if v.structtype && v.structname != "" && v.structname != null {
+				s = package.getStruct(v.structpkg,v.structname)
+				if s != null
+					this.lstruct = s
+			}
+		}
+		type(StructMemberExpr): {
+			sm = expr
+			member = sm.getMember()
+			if member.isstruct {
+				st = member.structref
+				if st.isapi
+					this.lstruct = st
 			}
 		}
 	}

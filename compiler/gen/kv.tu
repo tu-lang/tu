@@ -141,6 +141,7 @@ IndexExpr::assign( ctx , opt ,rhs) {
                 this.compileStaticIndex(ctx,me.size)
                 compile.writeln("\tadd %%rdi , (%%rsp)")
                 oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
+                oh.checkapi(sm)
                 oh.genRight(false,rhs)
                 compile.Cast(rhs.getType(ctx),me.type)
                 compile.Store(me.size)

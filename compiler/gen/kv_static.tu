@@ -155,6 +155,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 compile.writeln("\tadd %%rdi , (%%rsp)") 
 			 if(opt == ast.ASSIGN){
 				oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
+				oh.checkapi(var.ret)
 			    oh.genRight(false,rhs)
 			    compile.Cast(rhs.getType(ctx),var.ret.type)
 			    compile.Store(var.ret.size)
@@ -166,6 +167,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 
 			 oh = new OperatorHelper(ctx,this,rhs,opt)
 			 oh.initcond(true,var.ret.size,var.ret.type,var.ret.pointer)
+			 oh.checkapi(var.ret)
 			 oh.genRight(false,rhs)
 			 oh.assign()
 		 }
@@ -185,6 +187,7 @@ IndexExpr::compileStaticIndex(ctx,size){
 			 compile.writeln("\tadd %%rdi , (%%rsp)") 
 			 if(opt == ast.ASSIGN){
 				oh = new OperatorHelper(ctx,null,null,ast.ASSIGN)
+				oh.checkapi(sm)
                 oh.genRight(false,rhs)
                 compile.Cast(rhs.getType(ctx),me.type)
                 compile.Store(me.size)
@@ -194,11 +197,11 @@ IndexExpr::compileStaticIndex(ctx,size){
 			compile.LoadSize(me.size,me.isunsigned)
             compile.Push()
 
-			 oh = new OperatorHelper(ctx,this,rhs,opt)
-			 oh.initcond(true,me.size,me.type,me.pointer)
-
-			 oh.genRight(false,rhs)
-			 oh.assign()
+			oh = new OperatorHelper(ctx,this,rhs,opt)
+			oh.initcond(true,me.size,me.type,me.pointer)
+			oh.checkapi(sm)
+			oh.genRight(false,rhs)
+			oh.assign()
 			 return sm
 		 }
 		 _ : this.check(false,"array_static inex: unuspport dynamic var")

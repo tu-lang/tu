@@ -340,8 +340,10 @@ MultiAssignStmt::assign(ctx, fce){
             rt = fc.returnTypes[i]
             if rt.baseType()
                 rexpr.dstType = rt.base
-            else
+            else{
                 rexpr.dstType = ast.I64
+                rexpr.st = package.getStruct(rt.pkg,rt.name)
+            }
         }
 
         assignExpr = new AssignExpr(lexpr.line,lexpr.column)
