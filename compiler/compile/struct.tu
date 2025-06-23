@@ -23,8 +23,13 @@ fn InitApiVptr(s, apiname,expr){
 		}
 	}
 	apiVtableptr = s.apiname(apiname)
-    compile.writeln("    lea %s(%%rip), %%rdi", apiVtableptr)
-    compile.writeln("    mov %%rdi , (%%rax)")
+	ooplabel     = "oop." + ast.incr_labelid()
+	
+	writeln("	 cmpq $0 , %%rax")
+	writeln("	 je %s",ooplabel)
+	writeln("    lea %s(%%rip), %%rdi", apiVtableptr)
+	writeln("    mov %%rdi , (%%rax)")
+	writeln("%s:",ooplabel)
 }
 
 

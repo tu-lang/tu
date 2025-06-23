@@ -4,9 +4,9 @@ class ConfigOpts {
    base_static = false
 }
 
-# auto increment closure id
+// auto increment closure id
 closureidx = 0
-# auto increment count
+// auto increment count
 labelidx   = 0
 
 enum {
