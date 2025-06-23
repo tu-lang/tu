@@ -237,7 +237,7 @@ FunCallExpr::compile(ctx , load){
 			if !this.var.stack {
 				compile.Load()
 			}
-			compile.InitApiVptr(this.apiStruct,this.apiName)
+			compile.InitApiVptr(this.apiStruct,this.apiName,this.var)
 			this.call(ctx,this.fcs,load,false)
 		}
 

@@ -449,11 +449,18 @@ OperatorHelper::genRight(isleft,expr)
 	}else if type(ret) == type(NewStructExpr){
 		ns = ret
 		if this.lstruct != null 
-			compile.InitApiVptr(ns.getStruct(), this.lstruct.name)
+			compile.InitApiVptr(ns.getStruct(), this.lstruct.name,ret)
 		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(VarExpr) 
 	{
 		v = ret
+		if this.lstruct != null {
+			if v.structtype && v.structname != "" && v.structname != null {
+				s = package.getStruct(v.structpkg,v.structname)
+				if s != null 
+					compile.InitApiVptr(s,this.lstruct.name,v)
+			}
+		}
 		if ast.isfloattk(v.type)
 			this.initcond(isleft,parser.typesize[int(ast.I64)],v.type,false)
 		else if !v.structtype

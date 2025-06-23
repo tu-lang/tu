@@ -5,7 +5,21 @@ use os
 use compiler.parser
 use compiler.parser.package
 
-fn InitApiVptr(s, apiname){
+fn InitApiVptr(s, apiname,expr){
+	exist = false
+	for it : s.apis {
+		if it.name == apiname {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		if expr != null {
+			expr.check(false,"not impl api:" + apiname)
+		}else {
+			utils.errorf("struct:%s not impl api:%s\n",s.name,apiname)
+		}
+	}
 	apiVtableptr = s.apiname(apiname)
     compile.writeln("    lea %s(%%rip), %%rdi", apiVtableptr)
     compile.writeln("    mov %%rdi , (%%rax)")
