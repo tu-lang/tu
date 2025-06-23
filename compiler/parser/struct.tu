@@ -118,20 +118,21 @@ Parser::parseApiImpl()
     }
 
     if compile.phase == compile.FunctionPhase {
-        order_impls = []
+        apiImpl = new ast.ApiImpl()
+        apiImpl.name = apiName
         for iter : apiDef.order_funcs {
             if std.exist(iter.name ,impls) {
-                order_impls.push_back(impls[iter.name])
+                apiImpl.funcs[] = impls[iter.name]
             }else{
                 if !iter.hasBlock
                     this.check(false,"API not impl default func, need impl it")
-                order_impls[] = iter
+                apiImpl.funcs[] = iter
                 if implDef.getFunc(iter.name) != null
                     this.check(false,"api func conflict with struct impl:"+iter.name)
                 this.pkg.addStructFunc(implName,iter.name,iter,implDef)
             }
         }
-        implDef.apis[apiName] = order_impls
+        implDef.apis[] = apiImpl
     }
     //eat }
     reader.scan()

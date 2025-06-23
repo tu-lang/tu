@@ -45,6 +45,7 @@ parser.Parser::compile()
     compile.registerVars()
     compile.registerStrings()
     compile.registerObjects()
+    compile.registerApiTable()
     compile.registerFutures()
     this.registeDefault()
 

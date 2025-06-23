@@ -224,6 +224,25 @@ fn registerObjects(){
     }
 }
 
+fn registerApiTable(){
+    for st : currentParser.structs {
+        if st.isasync continue
+        if st.asyncobj continue
+        if std.len(st.apis) == 0
+            continue
+        
+        for it : st.apis {
+            tbptr = st.apiname(it.name)
+            writeln("    .global %s",tbptr)
+            writeln("%s:",tbptr)
+            for fc : it.funcs {
+                writeln("   .quad %s",fc.fullname())
+            }
+        }
+    }
+
+}
+
 fn registerFutures(){
     for st : currentParser.structs {
         if !st.isasync continue

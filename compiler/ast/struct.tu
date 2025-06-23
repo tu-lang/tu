@@ -1,6 +1,11 @@
 use compiler.parser.package
 use compiler.utils
 
+class ApiImpl {
+	name  = ""
+	funcs = []
+}
+
 class Struct {
 	isapi  = false
 	pkg    = ""
@@ -16,7 +21,7 @@ class Struct {
 	asyncfn  = null
 
 	member   = []
-	apis     = {}
+	apis     = []
 	
 	parser = null
 	funcs  		= {} // funcs
@@ -118,5 +123,15 @@ Struct::futurepollname(){
 	name += "_"
 	name += this.name
 	name += "poll"
+	return name
+}
+
+Struct::apiname(apiname){
+	p = this.parser
+	name = "apitl_" + p.getpkgname()
+	name += "_"
+	name += this.name
+	name += "_"
+	name += apiname
 	return name
 }
