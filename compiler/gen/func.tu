@@ -149,7 +149,7 @@ FunCallExpr::geninit(ctx)
 			this.checkFirstThis(ctx,var)
 			this.fcs = fc
 			this.dt = ast.StaticCall
-			if fc.st.name != s.name {
+			if !fc.st.isasync && fc.st.name != s.name {
 				this.var = var
 				this.dt  = ast.ApiCall2
 				this.apiStruct = s

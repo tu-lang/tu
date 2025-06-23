@@ -402,6 +402,7 @@ OperatorHelper::genRight(isleft,expr)
 	if !exprIsMtype(expr,this.ctx) && ( this.opt == ast.LOGAND || this.opt == ast.LOGOR) {
 		internal.isTrue()
 	}
+	this.checkoop(ret)
 	match type(expr) {
 		type(BinaryExpr) | type(AssignExpr) : {
 			t = expr.getType(this.ctx)
@@ -447,20 +448,10 @@ OperatorHelper::genRight(isleft,expr)
 	}else if type(ret) == type(NewExpr) {
 		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(NewStructExpr){
-		ns = ret
-		if this.lstruct != null 
-			compile.InitApiVptr(ns.getStruct(), this.lstruct.name,ret)
 		this.initcond(isleft,8,ast.U64,false)
 	}else if type(ret) == type(VarExpr) 
 	{
 		v = ret
-		if this.lstruct != null {
-			if v.structtype && v.structname != "" && v.structname != null {
-				s = package.getStruct(v.structpkg,v.structname)
-				if s != null 
-					compile.InitApiVptr(s,this.lstruct.name,v)
-			}
-		}
 		if ast.isfloattk(v.type)
 			this.initcond(isleft,parser.typesize[int(ast.I64)],v.type,false)
 		else if !v.structtype
@@ -746,4 +737,20 @@ OperatorHelper::staticCompile(expr)
 		ret.check(false,fmt.sprintf("not allowed expression in memory operator:%s" + ret.toString()))
 	}
 	return ret
+}
+
+OperatorHelper::checkoop(expr){
+	if this.lstruct == null
+		return true
+	if type(expr) == type(NewStructExpr) {
+		ns = expr
+		compile.InitApiVptr(ns.getStruct(),this.lstruct.name,expr)
+	}else if type(expr) == type(VarExpr) {
+		v = expr
+		if v.structtype && v.structname != "" && v.structname != null {
+			s = package.getStruct(v.structpkg, v.structname)
+			if s != null
+				compile.InitApiVptr(s, this.lstruct.name,v)
+		}
+	}
 }

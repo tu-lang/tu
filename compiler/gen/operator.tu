@@ -125,9 +125,7 @@ AddrExpr::compile(ctx,load){
         if !ce.ismem(ctx){
             this.panic("only support & struct.menber " + this.expr.toString())
         }
-        ce.compile(ctx,false)
-        
-        return ce
+        return ce.compile(ctx,false)
     }
     if this.package != ""{
         
@@ -157,7 +155,7 @@ AddrExpr::compile(ctx,load){
                         )
                     )
                 }
-                return this
+                return var
             }
         }
         

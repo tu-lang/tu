@@ -126,6 +126,7 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
         ast.StructFunc : node.st = st
         ast.ClassFunc :  node.cls = cls
         ast.AsyncFunc : {
+            node.st      = st
             node.asyncst = st
             node.asyncst.asyncfn = node
         }
