@@ -19,7 +19,8 @@ class Struct {
 	apis     = {}
 	
 	parser = null
-	funcs  = {} // funcs
+	funcs  		= {} // funcs
+	order_funcs = [] // funcs
 }
 
 class Member

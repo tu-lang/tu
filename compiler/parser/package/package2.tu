@@ -11,6 +11,8 @@ Package::parse2()
 
     for st : this.structs {
         st.funcs = {}
+        st.order_funcs = []
+        st.apis        = {}
     }
 
     this.initid = 0

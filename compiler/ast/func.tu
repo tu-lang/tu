@@ -49,6 +49,7 @@ class Function {
     closureidx 
     receiver    // ClosureExpr* for reciever point
     block       // BlockStmt*
+    hasBlock  = false
     funcnameid
     mcount = 0
     //async future
@@ -62,6 +63,8 @@ class Function {
     captures  = {}
     capid     = 0
     caporders = []
+    //RFC105:
+    vid       = 0
 
 
     fn isasync(){

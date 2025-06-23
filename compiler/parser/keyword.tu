@@ -269,6 +269,7 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
         this.check(false,"class function can't declare return types")
     }
     if (reader.curToken == ast.LBRACE){
+        node.hasBlock = true
         insertsuper = false
         if ft == ast.ClassFunc && pdefine.father != null {
             insertsuper = true

@@ -43,6 +43,8 @@ Parser::parseApiDef()
     while reader.curToken != ast.RBRACE {
         this.ctx = new ast.Context()
 		fc = this.parseFuncDef(ast.StructFunc,s,null,false)
+        fc.vid = idx
+        idx   += 1
         this.ctx = null
 
         this.check(fc != null)
@@ -102,7 +104,7 @@ Parser::parseApiImpl()
     }
     //end for }
 	idx = 0
-	impls = []
+	impls = {}
     while reader.curToken != ast.RBRACE {
         this.ctx = new ast.Context()
 		fc = this.parseFuncDef(fctype, implDef, null, false)
@@ -111,12 +113,25 @@ Parser::parseApiImpl()
         this.check(fc != null)
         if fctype == ast.StructFunc
             this.pkg.addStructFunc(implName,fc.name,fc,implDef)
-        impls[] = fc
+        impls[fc.name] = fc
         this.addFunc(implName + fc.name,fc)
     }
 
     if compile.phase == compile.FunctionPhase {
-        implDef.apis[apiName] = impls
+        order_impls = []
+        for iter : apiDef.order_funcs {
+            if std.exist(iter.name ,impls) {
+                order_impls.push_back(impls[iter.name])
+            }else{
+                if !iter.hasBlock
+                    this.check(false,"API not impl default func, need impl it")
+                order_impls[] = iter
+                if implDef.getFunc(iter.name) != null
+                    this.check(false,"api func conflict with struct impl:"+iter.name)
+                this.pkg.addStructFunc(implName,iter.name,iter,implDef)
+            }
+        }
+        implDef.apis[apiName] = order_impls
     }
     //eat }
     reader.scan()

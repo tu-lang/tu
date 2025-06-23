@@ -134,10 +134,12 @@ Package::addStructFunc(name , fcname , f, s)
 {
     if std.exist(name,this.structs) {
         this.structs[name].funcs[fcname] = f
+        this.structs[name].order_funcs[] = f
         return null
     }
     this.structs[name] = s
     s.funcs[fcname] = f
+    s.order_funcs[] = f
 }
 Package::addClassFunc(name,f,p)
 {
