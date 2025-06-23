@@ -6,6 +6,8 @@ use compiler.parser
 use compiler.parser.package
 
 fn InitApiVptr(s, apiname,expr){
+	if s.isapi
+		return true
 	exist = false
 	for it : s.apis {
 		if it.name == apiname {

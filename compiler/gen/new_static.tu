@@ -21,6 +21,7 @@ StructInitExpr::arrinit(ctx , field , arr){
 	}
 	compile.Push()
 	for i : arr.lit {
+		ret = null
 		if type(i) == type(IntExpr) {
 			compile.writeln("	mov $%s,%%rax",i.lit)
 		}else if type(i) == type(StringExpr) {
@@ -30,8 +31,10 @@ StructInitExpr::arrinit(ctx , field , arr){
 			compile.writeln("	mov $%d , %%rax",i.lit)
 			compile.writeln("	movq %%rax , %%xmm0")
 		}else{
-			i.compile(ctx,true)
+			ret = i.compile(ctx,true)
 		}
+		//RFC105:
+		this.checkoop(ret,field)
 		compile.writeln(" mov (%%rsp) , %%rdi")
 
 		itype = i.getType(ctx)
@@ -45,6 +48,17 @@ StructInitExpr::arrinit(ctx , field , arr){
 	}
 	compile.Pop("%rax")
 	return this
+}
+
+StructInitExpr::checkoop(expr , field){
+	if expr != null & field.isstruct && field.structname != "" && field.structname != null {
+		ls = field.structref
+		if ls.isapi {
+			op = new OperatorHelper()
+			op.lstruct = ls
+			op.checkoop(expr)
+		}
+	}
 }
 
 StructInitExpr::compile_field(ctx,load,s,value,field){
@@ -64,6 +78,8 @@ StructInitExpr::compile_field(ctx,load,s,value,field){
 		value.compile(ctx,true)
 		return rtok
 	}
+
+	ret = null
 
 	if type(value) == type(BoolExpr) {
 		rtok = value.getType(ctx)
@@ -95,8 +111,7 @@ StructInitExpr::compile_field(ctx,load,s,value,field){
 		if field.structname != ie.name this.panic("type sould be same")
 		compile.writeln("	mov (%%rsp) , %%rax")
 		compile.writeln("	add $%d , %%rax",field.offset)
-		ie.compile(ctx,true)
-		return rtok
+		ret = ie.compile(ctx,true)
 	}else if type(value) == type(ArrayExpr) {
 		ie = value
 		if !field.isarr 
@@ -106,9 +121,10 @@ StructInitExpr::compile_field(ctx,load,s,value,field){
 		this.arrinit(ctx,field,ie)
 		return rtok
 	}else{
-		value.compile(ctx,true)
+		ret = value.compile(ctx,true)
 		rtok = value.getType(ctx)
 	}
+	this.checkoop(ret,field)
 	return rtok
 }
 
