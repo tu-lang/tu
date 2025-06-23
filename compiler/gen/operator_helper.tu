@@ -742,15 +742,36 @@ OperatorHelper::staticCompile(expr)
 OperatorHelper::checkoop(expr){
 	if this.lstruct == null
 		return true
-	if type(expr) == type(NewStructExpr) {
-		ns = expr
-		compile.InitApiVptr(ns.getStruct(),this.lstruct.name,expr)
-	}else if type(expr) == type(VarExpr) {
-		v = expr
-		if v.structtype && v.structname != "" && v.structname != null {
-			s = package.getStruct(v.structpkg, v.structname)
-			if s != null
-				compile.InitApiVptr(s, this.lstruct.name,v)
+	match type(expr) {
+		type(NewStructExpr) : {
+			ns = expr
+			compile.InitApiVptr(ns.getStruct(),this.lstruct.name,expr)
+		}
+		type(VarExpr): {
+			v = expr
+			if v.structtype && v.structname != "" && v.structname != null {
+				s = package.getStruct(v.structpkg, v.structname)
+				if s != null
+					compile.InitApiVptr(s, this.lstruct.name,v)
+			}
+		}
+		type(FunCallExpr): {
+			fc = expr
+			if std.len(fc.fcs.returnTypes) > 0 {
+				ti = fc.fcs.returnTypes[0]
+				if ti.memType() {
+					st = ti.getStruct()
+					compile.InitApiVptr(st,this.lstruct.name,expr)
+				}
+			}
+		}
+		type(StructMemberExpr): {
+			sm = expr
+			member = sm.getMember()
+			if member.isstruct {
+				st = member.structref
+				compile.InitApiVptr(st,this.lstruct.name,expr)
+			}
 		}
 	}
 }

@@ -155,7 +155,7 @@ AddrExpr::compile(ctx,load){
                         )
                     )
                 }
-                return var
+                return sm
             }
         }
         
