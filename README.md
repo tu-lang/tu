@@ -52,7 +52,7 @@ $ make tests
 - [x] func,goto,class,mem
 - [x] return,type,use,if,continue,break
 - [x] while,for|range for,loop,match
-- [x] async await
+- [x] async await api impl
 
 ### @动态写法
 更多用例请看`/tests`
@@ -192,6 +192,52 @@ fn main(){
     body = runtime.block(read())
     fmt.println(body)
 }
+```
+
+- api + mem 实现多态动态分发
+```
+api Animal {
+    fn name()
+    fn do(){
+        fmt.printf(
+            "%s can %s\n",
+            this.name(),
+            this.talk()
+        )
+    }
+    fn talk()
+} 
+
+mem Dog {}
+
+impl Animal for Dog {
+    fn name(){
+        return "dog"
+    }
+    fn talk() {
+        return "wowo!"
+    }
+}
+
+mem Cat {}
+
+impl Animal for Cat {
+    fn name(){
+        return "cat"
+    }
+    fn talk() {
+        return "miao!"
+    }
+}
+fn main(){
+    ani<Animal> = new Cat{}
+    ani.do()
+
+    ani = new Dog{}
+    ani.do()
+}
+
+
 ```
 ## License
 Copyright @2016-2024 The tu-lang author. All rights reserved.
