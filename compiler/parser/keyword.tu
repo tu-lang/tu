@@ -270,15 +270,16 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
     }
     if (reader.curToken == ast.LBRACE){
         node.hasBlock = true
-        insertsuper = false
-        if ft == ast.ClassFunc && pdefine.father != null {
-            insertsuper = true
-        }
         if compile.phase == compile.GlobalPhase {
             reader.skipblock() 
             node.block = null
-        }else 
+        }else{ 
+            insertsuper = false
+            if ft == ast.ClassFunc && pdefine.father != null {
+                insertsuper = true
+            }
             node.block = this.parseBlock(insertsuper,true)
+        }
 
     }
     
