@@ -744,7 +744,21 @@ OperatorHelper::staticCompile(expr)
 	return ret
 }
 
+OperatorHelper::apiCompile(paramType, expr)
+{
+	st = package.getStruct(paramType.structpkg,paramType.structname)
+	this.lstruct = null
+	if st != null && st.isapi {
+		this.lstruct = st
+	}
+	ret = expr.compile(this.ctx,true)
+	this.checkoop(ret)
+	return ret
+}
+
 OperatorHelper::checkoop(expr){
+	if expr == null
+		return true
 	if this.lstruct == null
 		return true
 	match type(expr) {

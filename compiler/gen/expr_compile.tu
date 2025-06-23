@@ -72,11 +72,14 @@ FunCallExpr::argCast(ctx , arg, i,fc){
 	if i < std.len(fc.params_order_var)
 		paramVar = fc.params_order_var[i]
 
-	if paramVar != null && paramVar.structtype && std.empty(paramVar.structname) && ast.isbase(paramVar.type) {
+	if paramVar != null && paramVar.structtype && ast.isbase(paramVar.type) {
         op = new OperatorHelper()
         op.ltoken = paramVar.type
 		op.opt    = ast.ILLEGAL_END
         op.ctx    = ctx
+		if paramVar.structname != "" && paramVar.structname != null {
+			return op.apiCompile(paramVar,arg)
+		}
         op.staticCompile(arg)
 		if paramVar.pointer 
         	compile.Cast(op.rtoken,ast.I64)
