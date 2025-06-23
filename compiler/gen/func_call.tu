@@ -20,7 +20,7 @@ FunCallExpr::call(ctx,fc,free,apicall)
 
 	this.is_dyn = false
 	this.fcs = fc
-	if fc.block == null {
+	if !apicall && fc.block == null {
 		compile.writeln("#    register %s",compile.currentFunc.fullname())
 		return this.registercall(ctx,fc)
 	}
