@@ -161,7 +161,10 @@ ChainExpr::memgen(ctx,load)
 				if !islast && curMember.pointer && ie.varname == "" {
 					compile.LoadSize(curMember.size,curMember.isunsigned)
 				}else if(islast && load){
-					compile.LoadSize(curMember.size,curMember.isunsigned)
+					if curMember.isstruct && !curMember.pointer {
+					}else{
+						compile.LoadSize(curMember.size,curMember.isunsigned)
+					}
 				}
 			}
 			type(FunCallExpr): {
