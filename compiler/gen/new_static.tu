@@ -51,7 +51,7 @@ StructInitExpr::arrinit(ctx , field , arr){
 }
 
 StructInitExpr::checkoop(expr , field){
-	if expr != null & field.isstruct && field.structname != "" && field.structname != null {
+	if expr != null && field.isstruct && field.structname != "" && field.structname != null {
 		ls = field.structref
 		if ls.isapi {
 			op = new OperatorHelper()
