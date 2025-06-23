@@ -30,7 +30,7 @@ func strcopy(dst<i8*>,src<i8*>){
 	return ret
 }
 
-func strcmp(p1<i8*>, p2<i8*>) {
+func strcmp(p1<i8*>, p2<i8*>) i32 {
 	s1<i8*> = p1
 	s2<i8*> = p2
 	c1<i8>  = 0
@@ -51,8 +51,8 @@ func strcat(dest<i8*> , src<i8*>){
 	strcopy(dest + strlen(dest) , src)
 	return dest
 }
-func memcmp(vl<u64> , vr<u64>, n<u64>)
-{
+
+func memcmp(vl<u64> , vr<u64>, n<u64>) i32 {
 	l<u8*> = vl
 	r<u8*> = vr
 	while n  && *l == *r {
@@ -63,7 +63,7 @@ func memcmp(vl<u64> , vr<u64>, n<u64>)
 	if n > 0  {
 		return *l - *r	
 	}
-	return runtime.Zero
+	return 0
 }
 func memset(s<u64> , c<i32> , n<u64>)
 {
