@@ -99,6 +99,7 @@ Parser::parseApiImpl()
     if compile.phase != compile.GlobalPhase {
         apiDef = package.getStruct(apiPkg,apiName)
         this.check(apiDef != null,"api not define")
+        this.check(apiDef.isapi,"must be api:" + apiDef.name)
         implDef = package.getStruct("",implName)
         this.check(implDef != null,"impl struct not define")
         fctype = ast.StructFunc
