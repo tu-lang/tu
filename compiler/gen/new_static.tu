@@ -162,6 +162,9 @@ NewStructExpr::compile(ctx,load){
 	fullpackage = GP().getImport(this.init.pkgname)
 	s = package.getStruct(fullpackage,this.init.name)
 	if s == null this.check(false,"struct not exist when new struct")
+
+	if s.isapi 
+		this.check(false,"interface can't be new")
 	internal.gc_malloc(s.size)
 	this.init.compile(ctx,true)
 	return this
