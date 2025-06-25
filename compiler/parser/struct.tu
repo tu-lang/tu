@@ -124,7 +124,9 @@ Parser::parseApiImpl()
         apiImpl.name = apiName
         for iter : apiDef.order_funcs {
             if std.exist(iter.name ,impls) {
-                apiImpl.funcs[] = impls[iter.name]
+                implFunc = impls[iter.name]
+                this.checkImplSig(iter,implFunc)
+                apiImpl.funcs[] = implFunc
             }else{
                 if !iter.hasBlock
                     this.check(false,"API not impl default func, need impl it")
@@ -140,7 +142,26 @@ Parser::parseApiImpl()
     reader.scan()
 }
 
+Parser::checkImplSig(dFunc , iFunc){
+    if std.len(dFunc.params_order_var) != std.len(iFunc.params_order_var) {
+        this.check(false,"impl functions params not consistent")
+    }
 
+    for i  = 1 ; i < std.len(dFunc.params_order_var) ; i += 1 {
+        dVar = dFunc.params_order_var[i]
+        iVar = iFunc.params_order_var[i]
+        if dVar.structtype {
+            if dVar.structname != "" && dVar.structname != null {
+                if dVar.structname != iVar.structname
+                    iVar.check(false,"var type should eq with api param")
+            }else{
+                if dVar.type != iVar.type
+                    iVar.check(false,"var type should eq with api param")
+            }
+        }
+
+    }
+}
 
 Parser::parseStructDef()
 {
