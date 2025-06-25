@@ -102,6 +102,9 @@ Parser::parseApiImpl()
         this.check(apiDef.isapi,"must be api:" + apiDef.name)
         implDef = package.getStruct("",implName)
         this.check(implDef != null,"impl struct not define")
+        //RFC105:
+        if implDef.isasync 
+            this.check(false,"async struct can't impl api Temporarily")
         fctype = ast.StructFunc
     }
     //end for }
@@ -155,7 +158,8 @@ Parser::checkImplSig(dFunc , iFunc){
                 if dVar.structname != iVar.structname
                     iVar.check(false,"var type should eq with api param")
             }else{
-                if dVar.type != iVar.type
+                dty<i32> = dVar.type
+                if dty != iVar.type
                     iVar.check(false,"var type should eq with api param")
             }
         }
