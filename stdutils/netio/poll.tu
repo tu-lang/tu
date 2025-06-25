@@ -1,4 +1,5 @@
 use netio.sys.unix.selector
+use netio.event
 
 mem Poll {
     Registry* registry
@@ -30,8 +31,7 @@ Poll::as_raw_fd() -> RawFd {
     this.registry.as_raw_fd()
 }
 
-//TODO: source type unknown
-Registry::register(source<IoSource>, token<i32>, interests<Interest>) i32 {
+Registry::register(source<event.Source>, token<i32>, interests<Interest>) i32 {
     runtime.tracef(
         *"registering event source with poller: token=%d, interests=%d",
         token,
@@ -39,8 +39,7 @@ Registry::register(source<IoSource>, token<i32>, interests<Interest>) i32 {
     )
     return source.register(this, token, interests)
 }
-//TODO: source type unknown
-Registry::reregister(source<IoSource>, token<i32>, interests< Interest>) i32 {
+Registry::reregister(source<event.Source>, token<i32>, interests< Interest>) i32 {
     trace(
         *"reregistering event source with poller: token=%d, interests=%d",
         token,
@@ -49,7 +48,7 @@ Registry::reregister(source<IoSource>, token<i32>, interests< Interest>) i32 {
     return source.reregister(this, token, interests)
 }
 
-Registry::deregister(source<IoSource>) i32 {
+Registry::deregister(source<event.Source>) i32 {
 {
     runtime.trace(*"deregistering event source from poller")
     return source.deregister(this)
