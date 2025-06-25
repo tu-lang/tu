@@ -28,7 +28,7 @@ IoSource::into_inner() {
     return this.inner
 }
 
-IoSource::register(registry<Registry>, token<i32>, interests<Interest>) i64 {
+IoSource::register(registry<Registry>, token<u64>, interests<Interest>) i64 {
     if this.selector_id.associate(registry) != true {
         return false
     }
@@ -39,7 +39,7 @@ IoSource::register(registry<Registry>, token<i32>, interests<Interest>) i64 {
 
 IoSource::reregister(
     registry<Registry>,
-    token<i32>,
+    token<u64>,
     interests<Interest>
 ) i64 {
     if this.selector_id.check_association(registry) == false {

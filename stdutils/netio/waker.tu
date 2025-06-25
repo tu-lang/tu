@@ -5,7 +5,7 @@ mem Waker {
     unix.Waker* inner
 }
 
-const Waker::new(registry<netio.Registry>, token<i32>) Waker {
+const Waker::new(registry<netio.Registry>, token<u64>) Waker {
     registry.register_waker()
     return new Waker{
         inner: unix.Waker::new(

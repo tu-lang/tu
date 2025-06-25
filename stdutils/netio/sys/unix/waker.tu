@@ -8,7 +8,7 @@ mem Waker {
 	fd: i32,
 }
 
-const Waker::new(selector<selector.Selector>, token<i32>) Waker {
+const Waker::new(selector<selector.Selector>, token<u64>) Waker {
 	//TODO:
 	fd<i32> = os.eventfd(0, EFD_CLOEXEC, EFD_NONBLOCK)	
 	if fd < 0 {

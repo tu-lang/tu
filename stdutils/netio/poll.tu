@@ -31,7 +31,7 @@ Poll::as_raw_fd() -> RawFd {
     this.registry.as_raw_fd()
 }
 
-Registry::register(source<event.Source>, token<i32>, interests<Interest>) i32 {
+Registry::register(source<event.Source>, token<u64>, interests<Interest>) i32 {
     runtime.tracef(
         *"registering event source with poller: token=%d, interests=%d",
         token,
@@ -39,7 +39,7 @@ Registry::register(source<event.Source>, token<i32>, interests<Interest>) i32 {
     )
     return source.register(this, token, interests)
 }
-Registry::reregister(source<event.Source>, token<i32>, interests< Interest>) i32 {
+Registry::reregister(source<event.Source>, token<u64>, interests< Interest>) i32 {
     trace(
         *"reregistering event source with poller: token=%d, interests=%d",
         token,
