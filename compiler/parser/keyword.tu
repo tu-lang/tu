@@ -534,6 +534,15 @@ Parser::parseImportDef()
         reader.scan()
     }
     utils.notice("import package :%s",path)
+    asname = ""
+    if reader.curToken == ast.AS {
+        //eta
+        reader.scan()
+        this.check(reader.curToken == ast.VAR," import package rename should be var")
+        asname = reader.curLex.dyn()
+        //eta
+        reader.scan()
+    }
     
     if !std.exist(path,package.packages) {
         pkg = new package.Package(package,path,multi)
