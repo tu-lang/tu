@@ -89,7 +89,7 @@ fn objfuncofs(hdr<VObjHeader>, hid<u64>){
     return Null
 }
 
-func newfuncobject(entry<u64>,as<i32>,isvarf<i32>,retsize<i32>,capture<i32>){
+func newfuncobject(entry<u64>,asize<i32>,isvarf<i32>,retsize<i32>,capture<i32>){
     hid<i64> = 0 
     //need capture
     if capture {
@@ -109,8 +109,8 @@ func newfuncobject(entry<u64>,as<i32>,isvarf<i32>,retsize<i32>,capture<i32>){
         hdr : VObjFunc {
             hid    : hid,
             isvarf : isvarf,
-            argstack: as * 8,
-            argsize : as,
+            argstack: asize * 8,
+            argsize : asize,
             retsize: retsize,
             retstack: (retsize - 1) * 8,
             entry: entry,
