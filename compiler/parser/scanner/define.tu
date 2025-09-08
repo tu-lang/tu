@@ -14,6 +14,7 @@ keywords = {
 	"new"   : ast.NEW,     "co"    : ast.CO,     "mem" 	   : ast.MEM, 		"await": ast.AWAIT, "async": ast.ASYNC,
 	"match" : ast.MATCH ,  "enum"  : ast.ENUM,   "goto"    : ast.GOTO,		"cfg"  : ast.CFG,
 	"const" : ast.CONST,   "api": ast.API,		 "impl"	   : ast.IMPL,
+	"as"    : ast.AS,
 }
 builtins = {
     "int" : true , "sizeof" : true , "type" : true, "float" : true,
