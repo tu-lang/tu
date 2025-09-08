@@ -555,7 +555,17 @@ Parser::parseImportDef()
     }
     utils.notice("import package :%s done",path)
     
-    this.pkg.imports[package] = path
+    // package map
+    importName = package
+    if asname != "" 
+        importName = asname
+    
+    //check conflict
+    if std.exist(importName,this.pkg.imports) {
+        path1 = this.pkg.imports[importName]
+        this.check(path1 == path,"SynatxError: repeat import conflict :" + importName)
+    }
+    this.pkg.imports[importName] = path
 
 }
 Parser::genClassInitFunc(clsname)
