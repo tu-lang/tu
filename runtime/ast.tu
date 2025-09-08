@@ -99,7 +99,9 @@ enum
     VAR			IF			ELSE		BOOL		WHILE			LOOP        FOR			
 	EMPTY		FUNC		RETURN		BREAK		CONTINUE		NEW
     EXTERN		USE		    CO			CLASS		DELREF		
-	EXTRA		MEM			MATCH		ENUM		BUILTIN         GOTO        LEN
+	EXTRA		MEM			MATCH		ENUM		BUILTIN         GOTO        CFG
+    ASYNC       AWAIT       CONST       API         IMPL            AS
+
 }
 
 enum 
