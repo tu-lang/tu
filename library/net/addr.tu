@@ -19,7 +19,7 @@ fn sockaddr_un(path<string.String>) i32, sys.SockaddrUn*,u32 {
     addr.sun_family = sys.AF_UNIX
 
     if bytes_contain_zero(path) {
-        return io::InvalidInputPathContainInteriorNullByte
+        return io.InvalidInputPathContainInteriorNullByte
     }
 
     if path.len() >= sys.SUN_PATH_LEN {
