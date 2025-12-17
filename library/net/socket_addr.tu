@@ -107,15 +107,17 @@ SocketAddrV6::scope_id() u32 {
 }
 
 SocketAddrV6::into_inner() sys.SockaddrIn6 {
-    return new sys.SockaddrIn6 {
+    addr<sys.SockaddrIn6> = new sys.SockaddrIn6 {
         sin6_family: sys.AF_INET6,
         sin6_port: this.port(),
-        sin6_addr: sys.In6Addr {
-            s6_addr: this.ip().into_inner()
-        },
         sin6_flowinfo: this.flowinfo(),
         sin6_scope_id: this.scope_id(),
     }
+    oct<u64*> = this.ip().into_inner()
+    p<u64*> = &addr.sin6_addr.s6_addr
+    p[0] = oct[0]
+    p[1] = oct[1]
+    return addr
 }
 
 

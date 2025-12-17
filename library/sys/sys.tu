@@ -30,9 +30,9 @@ mem In6Addr {
 }
 
 mem SockaddrIn6 {
-    u16     sin6_family
-    u16     sin6_port
-    u32     sin6_flowinfo
-    In6Addr sin6_addr
-    u32     sin6_scope_id
+    u16      sin6_family
+    u16      sin6_port
+    u32      sin6_flowinfo
+    In6Addr  sin6_addr
+    u32      sin6_scope_id
 }
