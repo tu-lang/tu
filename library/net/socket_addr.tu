@@ -27,6 +27,24 @@ api SocketAddr {
             return addr.set_port(new_port)
         }
     }
+    fn into_inner() sys::SocketAddrCRepr, u32 {
+        match this.v4() {
+            true : {
+                addr<SocketAddrV4> = this
+                sockaddr<i64*> = new sys.SocketAddrCRepr { 
+                    v4: addr.into_inner() 
+                }
+                return sockaddr, sizeof(sys.SockaddrIn)
+            }
+            false: {
+                addr<SocketAddrV6> = this
+                sockaddr<i64*> = new sys.SocketAddrCRepr { 
+                    v6: addr.into_inner() 
+                }
+                return sockaddr, sizeof(sys.SockaddrIn6)
+            }
+        }
+    }
 }
 
 mem SocketAddrV4 {
