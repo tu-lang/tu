@@ -57,9 +57,12 @@ BROADCAST<Ipv4Addr:> = new Ipv4Addr {
     octets: [255,255,255,255]
 }
 
-Ipv4Addr::octets()  u32 {
-    oc<u32*> = &this.octets
-    return *oc
+Ipv4Addr::octets()  u8,u8,u8,u8 {
+    
+    return this.octets[0],
+           this.octets[1],
+           this.octets[2],
+           this.octets[3]
 }
 
 Ipv4Addr::into_inner() u32 {
@@ -78,8 +81,7 @@ Ipv4Addr::string() string.String {
     return string.S(strl)
 }
 
-const Ipv4Addr::from(octets<u32>)  Ipv4Addr {
-    octet<u8*> = &octets
+const Ipv4Addr::from(octet<u8*>)  Ipv4Addr {
     return new Ipv4Addr {
         octets: [
             octet[0],
