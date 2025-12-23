@@ -57,4 +57,6 @@ pub fn errormsg(code<i32>)  {
 
 
 // paths must not contain interior null bytes
-InvalidInputPathContainInteriorNullByte<i32> = 16908341
+InvalidInputPathContainInteriorNullByte<i32> = -16908341
+// parse error
+OtherParse<i32> = -16908354
