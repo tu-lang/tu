@@ -261,7 +261,7 @@ Parser::read_scope_id() i32,u32 {
 
 /// Read an IPv4 address with a port.
 Parser::read_socket_addr_v4() i32 , SocketAddrV4 {
-    ok<i32> , ret<SocketAddrV4> = self.read_sock_atomically(fn(p<Parser>) {
+    ok<i32> , ret<SocketAddrV4> = this.read_sock_atomically(fn(p<Parser>) {
         has<i32> ,ip<Ipv4Addr> = p.read_ipv4_addr()
         if has != Ok return has
 
@@ -305,7 +305,7 @@ Parser::read_socket_addr() i32 , SocketAddr {
         return ok,addr
     }
 
-    ok, addr_v6<SocketAddrV6> = self.read_socket_addr_v6()
+    ok, addr_v6<SocketAddrV6> = this.read_socket_addr_v6()
     if ok {
         return ok,addr_v6
     }
