@@ -1,3 +1,6 @@
+Ok<i32> = 1
+Err<i32> = -1
+// inet
 AF_UNIX<i32> = 1
 AF_INET<i32> = 2
 AF_INET6<i32> = 10

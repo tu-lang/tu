@@ -61,6 +61,11 @@ Buffer::empty(){
 Buffer::putc(c<i8>){
 	this.inner = this.inner.(Str).putc(c)
 }
+
 Buffer::len(){
 	return this.inner.(Str).len()
+}
+
+Buffer::ptr() i8* {
+	return this.inner
 }
