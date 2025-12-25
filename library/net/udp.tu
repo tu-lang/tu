@@ -16,7 +16,7 @@ UdpSocket::send_to(buf<io.Buffer> , addr<SocketAddr>) i32,u64 {
     err<i32> , size<u64> = this.inner.send_to(buf, addr)
     return err,size
 }
-UdpSocket::fromrawfd(fd<sys.RawFd>)  UdpSocket {
+UdpSocket::fromrawfd(fd<i32>)  UdpSocket {
     socket<sys.Socket> = new sys.Socket {
         fd: sys.FileDesc::from_raw_fd(fd)
     }

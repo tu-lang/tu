@@ -10,7 +10,7 @@ mem TcpListener {
     sys.TcpListener inner
 }
 
-TcpListener::fromrawfd(fd<sys.RawFd>)  TcpListener {
+TcpListener::fromrawfd(fd<i32>)  TcpListener {
     socket<sys.Socket> = new sys.Socket{
         fd: sys.FileDesc::from_raw_fd(fd)
     }
@@ -22,7 +22,7 @@ TcpListener::fromrawfd(fd<sys.RawFd>)  TcpListener {
     return new TcpListener{inner: inner}
 }
 
-TcpListener::as_raw_fd()  sys.RawFd {
+TcpListener::as_raw_fd()  i32 {
     return this.inner.socket().fd.as_raw_fd()
 }
 
@@ -39,7 +39,7 @@ TcpListener::take_error() i32,i32,i32 {
 TcpListener::asinner() sys.TcpStream {
     return this.inner
 }
-TcpListener::fromrawfd(fd<sys.RawFd>) TcpStream {
+TcpListener::fromrawfd(fd<i32>) TcpStream {
     
     socket<sys.Socket> = new sys.Socket {
         fd: sys.FileDesc::from_raw_fd(fd)

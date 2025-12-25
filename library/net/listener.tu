@@ -6,12 +6,12 @@ mem UnixListener {
 
 impl sys.AsRawFd for UnixListener {
     
-    fn as_raw_fd() sys.RawFd {
+    fn as_raw_fd() i32 {
         return this.inner.fd.as_raw_fd()
     }
 }
 
-UnixListener::fromrawfd(fd: sys.RawFd)  UnixListener {
+UnixListener::fromrawfd(fd<i32>)  UnixListener {
     return new UnixListener {
         inner: new sys.Socket {
             fd: sys.FileDesc::from_raw_fd(fd)

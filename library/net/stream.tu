@@ -24,7 +24,7 @@ UnixStream::take_error() i32, i32 , i32 {
 UnixStream::shutdown(how<i32>) i32 {    
     return this.inner.shutdown(how)
 }
-UnixStream::fromrawfd(fd<sys.RawFd>) UnixStream {
+UnixStream::fromrawfd(fd<i32>) UnixStream {
     return new UnixStream{
         inner: new sys.Socket{
             fd: sys.FileDesc::from_raw_fd(fd)
@@ -48,7 +48,7 @@ impl io.Write for UnixStream {
 }
 
 impl sys.AsRawFd for UnixStream {
-    fn as_raw_fd()  sys.RawFd {
+    fn as_raw_fd()  i32 {
         return this.inner.as_raw()
     }
 }

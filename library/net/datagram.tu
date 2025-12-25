@@ -32,7 +32,7 @@ UnixDatagram::send_to(buf<string.String>, path<string.String>) i32,u64 {
     return Ok,count
 }
 
-const UnixDatagram::fromrawfd(fd<sys.RawFd>)  UnixDatagram {
+const UnixDatagram::fromrawfd(fd<i32>)  UnixDatagram {
     return new UnixDatagram {
         inner: sys.Socket::fromfd(sys.FileDesc::from_raw_fd(fd))
     }
@@ -40,7 +40,7 @@ const UnixDatagram::fromrawfd(fd<sys.RawFd>)  UnixDatagram {
 
 impl sys.AsRawFd for UnixDatagram {
     
-    fn as_raw_fd()  sys.RawFd {
+    fn as_raw_fd()  i32 {
         return this.inner.fd.as_raw_fd()
     }
 }

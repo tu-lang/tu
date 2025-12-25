@@ -26,7 +26,7 @@ Parser::read_atomically(inner) bool,SocketAddrV4 {
 
 /// Run a parser, but fail if the entire input wasn't consumed.
 /// Doesn't run atomically.
-Parser::parse_with(inner, kind<i32>) -> i32,SocketAddr {
+Parser::parse_with(inner, kind<i32>) i32,SocketAddr {
     result<u64> = inner(this)
     if this.len == 0 {
         return Ok,result 
