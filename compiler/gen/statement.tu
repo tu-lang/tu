@@ -114,12 +114,12 @@ ReturnStmt::genDefault(ctx , i){
             if ast.isfloattk(defineType.base)
                 compile.PushfDst(defineType.base,"%rdi",cur)
             else 
-                compile.writeln(" mov $0 , %d(%%rdi)",cur)
+                compile.writeln(" movq $0 , %d(%%rdi)",cur)
         }else{
-            compile.writeln(" mov $0 , %d(%%rdi)",cur)
+            compile.writeln(" movq $0 , %d(%%rdi)",cur)
         }
     }else if ast.cfg_static() {
-        compile.writeln(" mov $0 , %d(%%rdi)",cur)
+        compile.writeln(" movq $0 , %d(%%rdi)",cur)
     }else{
         compile.writeln("    lea runtime_internal_null(%%rip), %%rax")
         compile.writeln(" mov %%rax , %d(%%rdi)",cur)

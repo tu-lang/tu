@@ -107,7 +107,7 @@ String::len() i32 {
 	return this.inner.(Str).len()
 }
 
-String::lastStrIndex(sep<String>) i32 {
+String::lastStringIndex(sep<String>) i32,i32 {
 	if sep.empty() {
 		return this.len()
 	}
@@ -125,8 +125,18 @@ String::lastStrIndex(sep<String>) i32 {
 			}
 		}
 		if mat {
-			return i
+			return true,i
 		}
 	}
 	return -1
+}
+
+String::rSplitOnce(sep<string.String>) i32,String,String {
+	i<i32>,pos<i32> = this.lastStringIndex(sep)
+	if i < 0 {
+		return i
+	}
+	secondS<i32> = pos + sep.len()
+	secondE<i32> = this.len() - secondS
+	return true, this.sub(0,pos), this.sub(secondS,secondE)
 }
