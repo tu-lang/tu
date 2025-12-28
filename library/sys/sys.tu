@@ -1,13 +1,3 @@
-Ok<i32> = 1
-Err<i32> = -1
-// inet
-AF_UNIX<i32> = 1
-AF_INET<i32> = 2
-AF_INET6<i32> = 10
-
-MSG_NOSIGNAL<i32> = 0x4000
-
-
 SUN_PATH_LEN<i32> = 108
 
 mem SockaddrUn {
@@ -40,6 +30,29 @@ mem SockaddrIn6 {
     u32      sin6_flowinfo
     In6Addr  sin6_addr
     u32      sin6_scope_id
+}
+
+mem SockaddrStorage {
+    u16 ss_family          // 2 bytes
+    u8  __ss_pad2[118]     // 118 bytes
+    u16 __ss_align         // 8 bytes
+}
+
+mem SockAddr {
+    u16 sa_family
+    i8 sa_data[14]
+}
+
+mem AddrInfo {
+    i32 ai_flags
+    i32 ai_family
+    i32 ai_socktype
+    i32 ai_protocol
+    u32 ai_addrlen
+    SockAddr* ai_addr
+
+    i8* ai_canonname
+    AddrInfo* next
 }
 
 
