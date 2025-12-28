@@ -135,6 +135,9 @@ Parser::parseExpression(oldPriority)
         tmp.opt = reader.curToken
         reader.scan()
         tmp.rhs = this.parseExpression(currentPriority + 1)
+        if tmp.lhs == null{
+            this.check(false,"binary express parse error")
+        }
         tmp.checkawait()
         p = tmp
     }

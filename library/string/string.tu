@@ -82,23 +82,51 @@ String::tolower() {
 String::toupper() {
 	this.inner.(Str).toupper()
 }
-String::cmp(s2<String>) {
+
+String::cmp(s2<String>) i32 {
 	return this.inner.(Str).cmp(s2.inner)
 }
-String::cmpstr(s2<i8*>){
+
+String::cmpstr(s2<i8*>) i32 {
 	if ( ret<i8> = std.strcmp(this.inner,s2)) != runtime.Zero {
 		return 1.(i8)
 	}
 	return 0.(i8)
 }
-String::empty(){
+String::empty() i32 {
 	if this.cmpstr("".(i8)) == Null 
 		return True
 	return False
 }
+
 String::putc(c<i8>){
 	this.inner = this.inner.(Str).putc(c)
 }
-String::len(){
+
+String::len() i32 {
 	return this.inner.(Str).len()
+}
+
+String::lastStrIndex(sep<String>) i32 {
+	if sep.empty() {
+		return this.len()
+	}
+	if sep.len() > this.len() {
+		return -1
+	}
+	s1<i8*> = this.str()
+	s2<i8*> = sep.str()
+	for i<i32> = this.len() - sep.len(); i >= 0; i -= 1 {
+		mat<i32> = true
+		for j<i32> = 0; j < sep.len(); j += 1 {
+			if s1[i+j] != s2[j] {
+				mat = false
+				break
+			}
+		}
+		if mat {
+			return i
+		}
+	}
+	return -1
 }
