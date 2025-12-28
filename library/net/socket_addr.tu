@@ -27,7 +27,7 @@ api SocketAddr {
             return addr.set_port(new_port)
         }
     }
-    fn into_inner() sys::SocketAddrCRepr, u32 {
+    fn into_inner() sys.SocketAddrCRepr, u32 {
         match this.v4() {
             true : {
                 addr<SocketAddrV4> = this
