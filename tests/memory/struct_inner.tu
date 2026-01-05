@@ -71,6 +71,7 @@ func main(){
 	test_inner_pointer()
 	test_extern_direct()
 	test_extern_pointer()
+	test_static_inner()
 }
 
 // 3.结构体嵌套
@@ -128,4 +129,28 @@ func test_extern_pointer(){
 		os.exit(-1)
 	}
 	fmt.println("test_extern_pointer success")
+}
+
+mem Si1 {
+	i32 a
+	Si2 b
+}
+mem Si2 {
+	i32 inner
+}
+Si2::test(dst<i32>){
+	if this.inner != dst {
+		fmt.println("test static_inner failed")
+		os.exit(-1)
+	}
+}
+
+func test_static_inner(){
+	fmt.println("test_static_inner")
+	p<Si1> = new Si1 {
+		a : 100,
+		b : 200 // test for this
+	}
+	p.b.test(200)
+	fmt.println("test_static_inner success")
 }
