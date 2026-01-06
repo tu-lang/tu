@@ -7,12 +7,12 @@ mem UdpSocket {
 }
 
   
-UdpSocket::recv_from(buf<io.Buffer>) i32,u64,SocketAddr {
+UdpSocket::recv_from(buf<io.Buf>) i32,u64,SocketAddr {
     err<i32> , size<u64> , addr<SocketAddr> = this.inner.recv_from(buf)
     return err,size,addr
 }
 
-UdpSocket::send_to(buf<io.Buffer> , addr<SocketAddr>) i32,u64 {
+UdpSocket::send_to(buf<io.Buf> , addr<SocketAddr>) i32,u64 {
     err<i32> , size<u64> = this.inner.send_to(buf, addr)
     return err,size
 }

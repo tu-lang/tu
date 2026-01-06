@@ -34,14 +34,14 @@ UnixStream::fromrawfd(fd<i32>) UnixStream {
 
 
 impl io.Read for UnixStream {
-    fn read(buf<io.Buffer>) i32,u64 {
+    fn read(buf<io.Buf>) i32,u64 {
         err<i32>,size<u64> = this.inner.read(buf)
         return err,size
     }
 }
 
 impl io.Write for UnixStream {
-    fn write(buf<io.Buffer>) i32,u64 {
+    fn write(buf<io.Buf>) i32,u64 {
         err<i32>, size<u64> = this.inner.write(buf)
         return err,size
     }

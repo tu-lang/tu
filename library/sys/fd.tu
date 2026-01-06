@@ -41,7 +41,7 @@ FileDesc::from_raw_fd(fd<i32> ) FileDesc {
     }
 }
 
-FileDesc::read(buf<io.Buffer>) i32,u64 {
+FileDesc::read(buf<io.Buf>) i32,u64 {
     err<i32>,  ret<i64> = cvt(
         //TODO:
         sys_read(
@@ -53,7 +53,7 @@ FileDesc::read(buf<io.Buffer>) i32,u64 {
     return err,ret
 }
 
-FileDesc::write(buf<io.Buffer>) i32, u64 {
+FileDesc::write(buf<io.Buf>) i32, u64 {
     err<i32> , ret<u64> = cvt(
         //TODO
         sys_write(

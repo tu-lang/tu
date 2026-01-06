@@ -70,8 +70,8 @@ Socket::recv_with_flags(buf<io.ReadBufCursor> , flags<i32> ) i32 {
     return Ok
 }
 
-Socket::read(buf<io.Buffer>) i32 , u64 {
-    buf<io.ReadBuffer> = io.ReadBuffer::from(buf)
+Socket::read(buf<io.Buf>) i32 , u64 {
+    buf<io.ReadBuf> = io.ReadBuf::from(buf)
     err<i32> = this.recv_with_flags(buf.unfilled(), 0)
     if err != Ok return err
 
@@ -83,7 +83,7 @@ Socket::read_buf(buf<io.ReadBufCursor>) i32 {
 }
 
 Socket::recv_from_with_flags(
-    buf<io.Buffer>,
+    buf<io.Buf>,
     flags<i32>,
 ) i32,u64,net.SocketAddr {
 
@@ -109,12 +109,12 @@ Socket::recv_from_with_flags(
     return Ok , n , skt
 }
 
-Socket::recv_from(buf<io.Buffer>) i32 , u64 , net.SocketAddr {
+Socket::recv_from(buf<io.Buf>) i32 , u64 , net.SocketAddr {
     err<i32> , size<u64> , addr<net.SocketAddr> = this.recv_from_with_flags(buf, 0)
     return err,size,addr
 }
 
-Socket::write(buf<io.Buffer>) i32 , u64 {
+Socket::write(buf<io.Buf>) i32 , u64 {
     err<i32> , size<u64> = this.fd.write(buf)
     return err , size
 }
@@ -280,7 +280,7 @@ mem TcpStream {
 TcpStream::socket() Socket {
     return this.inner
 }
-TcpStream::read(buf<io.Buffer>) i32, u64 {
+TcpStream::read(buf<io.Buf>) i32, u64 {
     ret<i32> , size<u64> = this.inner.read(buf)
     return ret,size
 }
@@ -289,7 +289,7 @@ TcpStream::read_buf(buf<io.BufferCursor>) i32 {
     return this.inner.read_buf(buf)
 }
 
-TcpStream::write(buf<io.Buffer>) i32, u64 {
+TcpStream::write(buf<io.Buf>) i32, u64 {
     len<i32> = runtime.U16_MAX
     if buf.len() < len {
         len = buf.len()
@@ -343,12 +343,12 @@ UdpSocket::socket() Socket {
     return this.inner
 }
 
-UdpSocket::recv_from(buf<io.Buffer>) i32, u64, net.SocketAddr {
+UdpSocket::recv_from(buf<io.Buf>) i32, u64, net.SocketAddr {
     ret<i32> , size<u64> , addr<net.SocketAddr> = this.inner.recv_from(buf)
     return ret,size,addr
 }
 
-UdpSocket::send_to(buf<io.Buffer> , dst<net.SocketAddr>) i32, u64 {
+UdpSocket::send_to(buf<io.Buf> , dst<net.SocketAddr>) i32, u64 {
     len<i32> = runtime.U16_MAX
     if buf.len() < len {
         len = buf.len()
