@@ -34,6 +34,34 @@ Buf::ptr() i8* {
 	return this.inner
 }
 
+Buf::split_at(mid<u64>) Buf, Buf {
+    if mid > this.len() {
+        runtime.dief("Buf:: mid <= this.len() assert failed")
+    }
+    // SAFETY: `[ptr; mid]` and `[mid; len]` are inside `self`, which
+    // fulfills the requirements of `split_at_unchecked`.
+    len<i32> = this.len()
+    ptr<u8*> = this.ptr()
+    return new Buf {
+        inner: ptr,
+        len: mid
+    },     new Buf {
+        inner: ptr + mid,
+        len: len - mid
+    }
+}
+Buf::copy_at(pos<i32> , buf<Buf>) {
+    if pos > this.len 
+        runtime.dief("Buf::copy_at pos over len")
+    least<i32> = this.len - pos
+
+    if buf.len() > least 
+        runtime.dief("Buf::copy_at buf over the capacity")
+    
+    ptr<u8*> = this.inner + pos
+    std.memcpy(ptr,buf.inner,buf.len())
+}
+
 mem Buffer {
     Buf* buf
     u64 filled
