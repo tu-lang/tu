@@ -1,21 +1,18 @@
-use netio.event.events
-use netio.event.source
-use netio.interest
+use netio.event
 use io
-use netio.sys.epoll
+use netio.sys
 use sys
-use netio
 
 mem Poll {
 	Registry* registry
 }
 
 mem Registry {
-	epoll.Selector* selector
+	sys.Selector* selector
 }
 
 const Poll::new() i32, Poll {
-	err<i32>, selector<epoll.Selector> = epoll.Selector::new()
+	err<i32>, selector<sys.Selector> = sys.Selector::new()
 	if err != Ok
 		return err, null
 	return Ok, new Poll {
@@ -27,24 +24,24 @@ Poll::registry() Registry {
 	return this.registry
 }
 
-Poll::poll(events<events.Events>, timeout<sys.Duration>) i32 {
+Poll::poll(events<event.Events>, timeout<sys.Duration>) i32 {
 	return this.registry.selector.select(events.sys(), timeout)
 }
 
-Registry::register(source_obj<source.Source>, t<netio.Token>, interests<interest.Interest>) i32 {
+Registry::register(source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
 	return source_obj.register(this, t, interests)
 }
 
-Registry::reregister(source_obj<source.Source>, t<netio.Token>, interests<interest.Interest>) i32 {
+Registry::reregister(source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
 	return source_obj.reregister(this, t, interests)
 }
 
-Registry::deregister(source_obj<source.Source>) i32 {
+Registry::deregister(source_obj<event.Source>) i32 {
 	return source_obj.deregister(this)
 }
 
 Registry::try_clone() i32, Registry {
-	err<i32>, selector<epoll.Selector> = this.selector.try_clone()
+	err<i32>, selector<sys.Selector> = this.selector.try_clone()
 	if err != Ok
 		return err, null
 	return Ok, new Registry { selector: selector }
@@ -56,6 +53,6 @@ Registry::register_waker() i32 {
 	return Ok
 }
 
-Registry::selector() epoll.Selector {
+Registry::selector() sys.Selector {
 	return this.selector
 }

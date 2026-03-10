@@ -1,9 +1,8 @@
-use netio.event.event
 use io
-use netio.sys.epoll
+use netio.sys
 
 mem Events {
-	epoll.Events* inner
+	sys.Events* inner
 }
 
 mem Iter {
@@ -13,7 +12,7 @@ mem Iter {
 
 const Events::with_capacity(capacity<u64>) Events {
 	return new Events {
-		inner: epoll.Events::with_capacity(capacity)
+		inner: sys.Events::with_capacity(capacity)
 	}
 }
 
@@ -24,16 +23,16 @@ Events::iter() Iter {
 	}
 }
 
-Events::sys() epoll.Events {
+Events::sys() sys.Events {
 	return this.inner
 }
 
-Iter::next() i32, event.Event {
-	sys_event<epoll.Event> = this.inner.inner.get(this.pos)
+Iter::next() i32, Event {
+	sys_event<sys.Event> = this.inner.inner.get(this.pos)
 	this.pos += 1
 	if sys_event == null
 		return io.NotFound, null
-	return Ok, event.Event::from_sys_event_ref(sys_event)
+	return Ok, Event::from_sys_event_ref(sys_event)
 }
 
 Iter::count() u64 {
