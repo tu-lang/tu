@@ -2,13 +2,14 @@ use netio
 use io
 use netio.event
 use netio.sys
+use net
 
 mem UdpSocket {
 	netio.IoSource* inner
 }
 
 const UdpSocket::bind(addr<net.SocketAddr>) i32, UdpSocket {
-	err<i32>, socket<net.UdpSocket> = sys.udp.bind(addr)
+	err<i32>, socket<net.UdpSocket> = sys.bind(addr)
 	if err != Ok
 		return err, null
 	return Ok, new UdpSocket {
