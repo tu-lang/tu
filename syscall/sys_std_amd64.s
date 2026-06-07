@@ -146,3 +146,17 @@ std_gettid:
     syscall
     retq
 
+
+.globl std_signalfd4
+std_signalfd4:
+     mov %rcx, %r10
+     mov $289 , %rax
+     syscall
+     retq
+
+.globl std_rt_sigprocmask
+std_rt_sigprocmask:
+     mov %rcx, %r10
+     mov $14 , %rax
+     syscall
+     retq

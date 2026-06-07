@@ -46,3 +46,18 @@ func munmap(addr<u64> , len<u64>)
 fn   cputicks()
 //@return u64
 fn 	 gettid()
+
+//signalfd4 ; implement by asm
+//@param fd        i32 %rdi   -1 表示新建 signalfd
+//@param mask      u64 %rsi   指向 sigset_t 的指针
+//@param sizemask  u64 %rdx   sigset_t 大小（一般为 8）
+//@param flags     i32 %r10   SFD_CLOEXEC | SFD_NONBLOCK
+//@return new signalfd fd or negative errno
+func signalfd4(fd<i32>, mask<u64>, sizemask<u64>, flags<i32>)
+
+//rt_sigprocmask ; implement by asm
+//@param how       i32 %rdi   SIG_BLOCK / SIG_UNBLOCK / SIG_SETMASK
+//@param set       u64 %rsi   新 mask 指针；NULL 时仅查询
+//@param oldset    u64 %rdx   旧 mask 输出指针；NULL 表示不需要
+//@param sigsetsize u64 %r10  sigset_t 大小（一般为 8）
+func rt_sigprocmask(how<i32>, set<u64>, oldset<u64>, sigsetsize<u64>)
