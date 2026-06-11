@@ -1,8 +1,4 @@
-// asyncio error code segment (0x03_02_xxxx)
-// Related: packages-asyncio-runtime task 20.1, R3.1, R3.2
-//
-// asyncio reuses the io error segment (0x01_02_xxxx) for IO-flavoured errors.
-// Codes here cover task lifecycle, channel closure, signals, timers, etc.
+// asyncio error code segment 0x03_02_xxxx (io reuses 0x01_02 segment for IO codes).
 
 Cancelled<i32>           = 0x03020001
 Closed<i32>              = 0x03020002

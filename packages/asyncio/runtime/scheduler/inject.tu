@@ -1,16 +1,6 @@
-// Inject queue: globally-shared FIFO of Notified tasks
-// Related: packages-asyncio-runtime task 4.1 / 4.2 / 4.3 / 4.4, R10.1 - R10.9
-// Design: design §11
-//
-// Both current_thread and multi_thread schedulers share this implementation:
-// the only structural difference is that multi_thread also exposes a batched
-// pop_n_into_local (task 9.15).  Layout:
-//   - shared.len    : atomic u32, push/pop adjust it; readers like worker
-//                     `is_empty()` may load it without taking the lock
-//   - synced.head/tail/is_closed : protected by `lock`
-//
-// FIFO order is preserved through close() so a shutdown drainer still pulls
-// every queued task out in original order before observing the empty state.
+// Globally shared FIFO of Notified tasks (used by both schedulers).
+// `len` is atomic so cheap is_empty checks skip the lock; head/tail mutate
+// only under `lock`. close() blocks future pushes but pop() still drains.
 
 use runtime
 use std.atomic
@@ -18,23 +8,26 @@ use io
 use asyncio.error as aerr
 use asyncio.task
 
+// Atomic depth counter; readers may load it without holding `lock`.
 mem InjectShared {
     u32 len
 }
 
+// Lock-protected list head/tail and close flag.
 mem InjectSynced {
     i32 is_closed
-    head      // RawTask*
-    tail      // RawTask*
+    head      // RawTask*, null when empty
+    tail      // RawTask*, null when empty
 }
 
+// Public queue handle bundling shared atomic state, lock, and synced fields.
 mem Inject {
     shared    // InjectShared*
     lock      // runtime.MutexInter
     synced    // InjectSynced*
 }
 
-// new(): build an empty Inject queue.
+// Build an empty, open queue.
 const Inject::new() Inject {
     sh<InjectShared> = new InjectShared
     sh.len = 0
@@ -51,9 +44,7 @@ const Inject::new() Inject {
     return inj
 }
 
-// is_closed(): atomic-style snapshot of synced.is_closed.
-//   Read under lock to avoid torn updates; cheap because callers only consult
-//   it on slow paths.
+// Snapshot of synced.is_closed; reads under lock to avoid torn updates.
 Inject::is_closed() bool {
     m<runtime.MutexInter> = this.lock
     m.lock()
@@ -64,25 +55,21 @@ Inject::is_closed() bool {
     return closed
 }
 
-// is_empty(): non-locking snapshot via the atomic length counter.
-//   May briefly observe `false` when a concurrent push has bumped len before
-//   linking the tail; callers must not rely on it for correctness.
+// Lock-free snapshot via atomic len. May briefly observe false while a
+// concurrent push is linking the tail; not for correctness decisions.
 Inject::is_empty() bool {
     sh<InjectShared> = this.shared
     if atomic.load(&sh.len) == 0 return true
     return false
 }
 
-// len(): current queue depth = total pushes - total pops.
+// Atomic load of the depth counter.
 Inject::len() u32 {
     sh<InjectShared> = this.shared
     return atomic.load(&sh.len)
 }
 
-// push(t): enqueue Notified `t` at the tail.
-//   Returns 0 on success, asyncio.error.Closed when the queue has been
-//   marked closed (drainers must be drained before further pushes are
-//   rejected).
+// Enqueue at the tail. Returns 0 on success, asyncio.error.Closed when shut.
 Inject::push(t) i32 {
     raw = t.raw
     m<runtime.MutexInter> = this.lock
@@ -99,8 +86,7 @@ Inject::push(t) i32 {
     return 0
 }
 
-// close(): mark the queue as closed.  Returns true on the first call only.
-//   Existing entries remain readable via pop().
+// Mark the queue closed; idempotent. Returns true only on the first call.
 Inject::close() bool {
     m<runtime.MutexInter> = this.lock
     m.lock()
@@ -114,10 +100,8 @@ Inject::close() bool {
     return first
 }
 
-// pop(): dequeue the head Notified.
-//   Returns (0, Notified) on success or (io.NotFound, Notified{raw:null})
-//   when the queue is empty.  Both push and pop are O(1) under the lock.
-//   `is_closed` does NOT block pop() — it just blocks future pushes (R10.7).
+// Dequeue the head. Returns (0, Notified) or (io.NotFound, empty) when drained.
+// Closed queues still drain successfully (close blocks push only).
 Inject::pop() (i32, task.Notified) {
     m<runtime.MutexInter> = this.lock
     m.lock()

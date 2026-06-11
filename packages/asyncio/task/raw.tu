@@ -1,46 +1,28 @@
-// RawTask: vtable view over (Header, Cell, Future)
-// Related: packages-asyncio-runtime task 3.17 / 3.18, R5.4, R5.5
-// Design: design §10.4
-//
-// The harness and schedulers only see RawTask; they never touch the inner
-// Cell or Future directly.  RawVTable holds the five function pointers that
-// drive the task lifecycle:
-//   poll                  : run one polling round (called by harness)
-//   dealloc               : free the task allocation when ref count hits 0
-//   try_read_output       : read the cached output, used by JoinHandle
-//   drop_join_handle_slow : slow path when JoinHandle is dropped before take
-//   shutdown              : cancel + cleanup on runtime shutdown
-//
-// All five are stored as u64 raw addresses; concrete implementations live in
-// task.harness (default vtable) and may be overridden by specialised paths.
+// (Header, Cell, Future) view exposed to schedulers via a 5-slot vtable.
+// All polymorphism lives in Cell (type assertions), so a single shared
+// default vtable suffices.
 
+// Function-pointer table. Slots are u64 raw addresses populated by task.harness.
 mem RawVTable {
-    u64 poll
-    u64 dealloc
-    u64 try_read_output
-    u64 drop_join_handle_slow
-    u64 shutdown
+    u64 poll                    // (raw, ctx)
+    u64 dealloc                 // (raw)
+    u64 try_read_output         // (raw) -> (i32, i64)
+    u64 drop_join_handle_slow   // (raw)
+    u64 shutdown                // (raw)
 }
 
+// Aggregate view used by every scheduler / harness call site.
 mem RawTask {
     hdr        // Header*
     fut        // runtime.Future*
     cell       // Cell*
-    vtable     // RawVTable*
+    vtable     // RawVTable*, points at the shared default vtable
 }
 
-// Module-level default vtable singleton; populated lazily in raw_vtable_default()
-// once the harness module fills in the function pointers.
-//
-// The default vtable is a single shared instance because all polymorphic
-// behaviour lives inside Cell / Header (handled by type assertions), so every
-// task can share the same five entry points (R5.4 — task harness §10.5).
+// Module-level singleton; lazily allocated so package init can populate it.
 default_vtable<RawVTable*> = null
 
-// raw_vtable_default(): return the shared default vtable singleton.
-//   The five fields stay 0 until task.harness wires them up via
-//   `raw_vtable_install(...)`.  Callers always read through this getter so
-//   later calls see the wired vtable atomically.
+// Return the shared default vtable singleton, allocating on first call.
 fn raw_vtable_default() RawVTable* {
     if default_vtable == null {
         v<RawVTable> = new RawVTable
@@ -54,10 +36,8 @@ fn raw_vtable_default() RawVTable* {
     return default_vtable
 }
 
-// raw_vtable_install(poll, dealloc, try_read_output, drop_join_handle_slow, shutdown):
-//   Called once by task.harness during package init to populate the default
-//   vtable with concrete function addresses.  Re-installation overwrites the
-//   slots; specialised tasks can build their own RawVTable instead.
+// Wire concrete function addresses into the default vtable; called once by
+// task.harness's `init()`.
 fn raw_vtable_install(
     poll<u64>,
     dealloc<u64>,
@@ -73,10 +53,9 @@ fn raw_vtable_install(
     v.shutdown              = shutdown
 }
 
-// raw_new(fut, scheduler, task_id): build a fresh RawTask wired to the
-// default vtable.
-//   Allocates a State + Header + Cell, sets State to INITIAL_STATE (refcount
-//   == 3, JOIN_INTEREST, NOTIFIED), and caches the future's poll vtable.
+// Allocate State + Header + Cell + RawTask wired to the default vtable.
+// State starts at INITIAL_STATE (refcount=3, JOIN_INTEREST, NOTIFIED) and
+// Cell starts at IDLE.
 fn raw_new(fut, scheduler, task_id<u64>) RawTask {
     st<State> = State::new()
     hdr<Header> = header_new(&st, scheduler, fut, task_id)

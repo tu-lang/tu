@@ -1,26 +1,20 @@
-// OwnedTasks: tracks every Task owned by a particular scheduler
-// Related: packages-asyncio-runtime task 3.25 / 3.26, R8.1, R8.2, R8.3
-// Design: design §10.6
-//
-// Tasks are linked through Header.queue_next (single-linked, intrusive).
-// `closed=1` means new bind() calls fail with RuntimeShutdown so shutdown
-// drainers can finish without races.
-// `active` is the live count of bound RawTasks; updated under lock.
-//
-// First-pass implementation uses a single Mutex; the design allows sharding
-// later for reduced contention.
+// Tracks every Task owned by a scheduler. closed=1 makes bind() reject with
+// RuntimeShutdown so shutdown drainers can finish without races.
+// First-pass uses a single Mutex; sharded variant is future work.
 
 use runtime
 use asyncio.error as aerr
 
+// Single-linked list of Headers under one mutex.
 class OwnedTasks {
     lock      // runtime.MutexInter
-    head      // Header*
-    tail      // Header*
-    closed    // i32
-    active    // u32
+    head      // Header*, null when empty
+    tail      // Header*, null when empty
+    closed    // i32 0/1
+    active    // u32 live count, mutated under lock
 }
 
+// Initialise to an empty, open list.
 OwnedTasks::init(){
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
@@ -31,9 +25,8 @@ OwnedTasks::init(){
     this.active = 0
 }
 
-// bind(raw): register `raw` as owned.
-//   Returns 0 on success, asyncio.error.RuntimeShutdown when closed.
-//   On the closed path the task is NOT linked, the caller must dealloc.
+// Register raw as owned. Returns 0 on success, RuntimeShutdown when closed
+// (closed-path leaves the task unlinked; caller must dealloc).
 OwnedTasks::bind(raw) i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
@@ -47,10 +40,8 @@ OwnedTasks::bind(raw) i32 {
     return 0
 }
 
-// remove(raw): unlink `raw`.  Caller must guarantee `raw` is in this list.
-//   Implementation walks the singly-linked list O(n) since OwnedTasks does
-//   not store back pointers; design notes mark this as acceptable for the
-//   first-pass impl (sharded variant comes later).
+// Unlink raw. O(n) walk because the list has no back pointers (acceptable
+// for the first-pass impl). Caller must guarantee raw lives on this list.
 OwnedTasks::remove(raw){
     m<runtime.MutexInter> = this.lock
     m.lock()
@@ -79,21 +70,21 @@ OwnedTasks::remove(raw){
     m.unlock()
 }
 
-// close(): mark this set as closed so further bind() calls fail.
-//   Returns true on the first call, false on every subsequent call.
+// Mark closed. Idempotent — returns true only on the first call.
 OwnedTasks::close() bool {
     m<runtime.MutexInter> = this.lock
     m.lock()
-    if this.closed == 1 {
-        m.unlock()
-        return false
+    s<i32> = this.closed
+    first<bool> = false
+    if s == 0 {
+        this.closed = 1
+        first = true
     }
-    this.closed = 1
     m.unlock()
-    return true
+    return first
 }
 
-// is_empty(): no tasks currently linked.  Atomic snapshot under lock.
+// Atomic-ish snapshot: read head under lock to avoid torn updates.
 OwnedTasks::is_empty() bool {
     m<runtime.MutexInter> = this.lock
     m.lock()
@@ -103,7 +94,7 @@ OwnedTasks::is_empty() bool {
     return empty
 }
 
-// active_count(): expose the live counter.  Read under lock for consistency.
+// Live task count; read under lock for consistency.
 OwnedTasks::active_count() u32 {
     m<runtime.MutexInter> = this.lock
     m.lock()

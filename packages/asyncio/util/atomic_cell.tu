@@ -1,29 +1,18 @@
-// AtomicCell: single-slot atomic container
-// Related: packages-asyncio-runtime task 2.4 / 2.5, R19.6
-// Design: design §25.2
-//
-// AtomicCell is the slot used to hand off the core of a multi_thread MtWorker:
-// when a worker shuts down it needs to return the core to shutdown_cores, and
-// when a different worker steals work it grabs the core via take(). Semantics
-// follow Rust crossbeam_utils::atomic::AtomicCell<u64>, but only set / take /
-// cas are exposed.
+// Single-slot u64 atomic container; used to hand off a worker's core slot.
 
 use std.atomic
 
+// Atomic u64 storage; semantics align with crossbeam's AtomicCell<u64>.
 mem AtomicCell {
     u64 slot
 }
 
-// Build an AtomicCell pre-populated with v.
-// Construction races never overlap with concurrent access, so a plain assign
-// is sufficient.
+// Construct a cell pre-populated with v (caller is the sole owner here).
 const AtomicCell::new(v<u64>) AtomicCell {
     return new AtomicCell { slot: v }
 }
 
-// set(v): unconditionally store v into the slot.
-//   The atomic package does not currently expose xchg64, so we emulate it via a
-//   cas64 retry loop. The previous value is discarded.
+// Unconditionally store v. Emulates xchg64 via a cas64 retry loop.
 AtomicCell::set(v<u64>){
     loop {
         old<u64> = atomic.load64(&this.slot)
@@ -31,9 +20,7 @@ AtomicCell::set(v<u64>){
     }
 }
 
-// take(): atomically zero the slot and return the original value.
-//   Equivalent to std::mem::replace(&cell, 0); used when a worker shuts down
-//   and hands its core back.
+// Atomically swap to 0 and return the previous value.
 AtomicCell::take() u64 {
     loop {
         old<u64> = atomic.load64(&this.slot)
@@ -42,8 +29,7 @@ AtomicCell::take() u64 {
     return 0
 }
 
-// cas(old, newv): store newv only if the current value equals old; returns
-// true on success, false on failure.
+// Compare-and-swap. Returns true on success.
 AtomicCell::cas(old<u64>, newv<u64>) bool {
     if atomic.cas64(&this.slot, old, newv) != 0 return true
     return false

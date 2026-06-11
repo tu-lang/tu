@@ -1,23 +1,20 @@
-// AbortHandle: cancel a spawned task without waiting on it
-// Related: packages-asyncio-runtime task 3.29, R8.4, R9.5
-//
-// abort() is idempotent.  The first call sets the CANCELLED bit on the
-// task's State and tries to flip NOTIFIED so the scheduler picks the task
-// up and runs the harness cancel path.  Subsequent calls just no-op (the
-// CANCELLED bit is monotonic).
+// Idempotent task cancellation handle. Multiple abort() calls are safe; only
+// the first one actually pokes the scheduler.
 
+// Wraps a RawTask* so user code can cancel without holding the JoinHandle.
 mem AbortHandle {
-    raw   // RawTask*
+    raw   // RawTask*, may be null after the task has been released
 }
 
+// Build a handle for raw.
 const AbortHandle::new(raw) AbortHandle {
     h<AbortHandle> = new AbortHandle
     h.raw = raw
     return h
 }
 
-// abort(): mark the task as cancelled and ensure exactly one schedule kick
-// fires through the scheduler.
+// Set CANCELLED (monotonic) and ensure exactly one schedule kick fires.
+// by_ref does not consume a refcount; the existing run-queue ref handles it.
 AbortHandle::abort(){
     raw = this.raw
     if raw == null return
@@ -25,10 +22,6 @@ AbortHandle::abort(){
     st<State> = h.state
     st.set_cancelled()
 
-    // Try to flip the task into NOTIFIED so the scheduler reruns the harness.
-    // by_ref does NOT consume a refcount; it relies on the scheduler queue's
-    // own strong ref.  We only need to schedule on the Submit branch, the
-    // existing run-queue entry already covers DoNothing.
     code<i32> = st.transition_to_notified_by_ref()
     if code == TN_Submit {
         sched = h.scheduler

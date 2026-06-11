@@ -1,29 +1,21 @@
-// OnceCell: single-threaded one-time-init container
-// Related: packages-asyncio-runtime task 2.16, R32.1
-// Design: design §25.7
-//
-// Reserved for the runtime build path: the Builder constructs the unique
-// BlockingPool / Driver / Notify singletons here.
-// Distinct from sync.OnceCell:
-//   - sync.OnceCell uses a multi-threaded Notify protocol;
-//   - util.OnceCell assumes every access happens on the builder thread, with
-//     no atomics and no waker.
+// Single-threaded one-time-init container; runtime build path only.
+// Distinct from sync.OnceCell which uses a cross-thread Notify protocol.
 
 use os
 
+// One-shot value with an init flag.
 class OnceCell {
-    inited   // i32 0=not initialised, 1=initialised
-    value    // arbitrary pointer / dynamic value
+    inited   // i32 0/1
+    value
 }
 
+// Reset to the uninitialised state.
 OnceCell::init(){
     this.inited = 0
     this.value = null
 }
 
-// get_or_init(closure): return value when initialised, otherwise call
-// closure() to produce a value, store it, and mark inited.
-//   closure must be a no-arg callable (fn(){...} or func(){...}).
+// Return value when initialised; otherwise call closure() once, store, mark inited.
 OnceCell::get_or_init(closure){
     if this.inited == 1 return this.value
     v = closure()
@@ -32,13 +24,12 @@ OnceCell::get_or_init(closure){
     return v
 }
 
-// get(): return value; panics if the cell is not initialised
+// Read value; panics when not yet initialised.
 OnceCell::get(){
     if this.inited == 0 os.die("OnceCell::get on uninitialized cell")
     return this.value
 }
 
-// is_initialized(): whether init has run
 OnceCell::is_initialized() bool {
     if this.inited == 1 return true
     return false

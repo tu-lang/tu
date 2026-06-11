@@ -1,30 +1,27 @@
-// Lock: thin wrapper over runtime.MutexInter with the scheduler's vocabulary
-// Related: packages-asyncio-runtime task 4.9, R12.1, R12.2, R12.3
-// Design: design §12
-//
-// The wrapper exposes only lock() / unlock(); try_lock and re-entrancy are
-// intentionally absent.  Schedulers always call into Lock through these two
-// methods so future replacements (e.g. ticket / RW) are isolated.
+// Thin wrapper over runtime.MutexInter with the scheduler's vocabulary.
+// Only lock/unlock; no try_lock and not re-entrant.
 
 use runtime
 
+// Wraps a single MutexInter so future replacements (ticket / RW) stay isolated.
 class Lock {
     inner   // runtime.MutexInter
 }
 
+// Create the underlying mutex.
 Lock::init(){
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
     this.inner = m
 }
 
-// lock(): block until the lock is acquired.  Not re-entrant.
+// Block until the lock is acquired. Not re-entrant.
 Lock::lock(){
     m<runtime.MutexInter> = this.inner
     m.lock()
 }
 
-// unlock(): release the lock.  Caller must currently hold it.
+// Release the lock; caller must currently hold it.
 Lock::unlock(){
     m<runtime.MutexInter> = this.inner
     m.unlock()
