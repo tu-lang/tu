@@ -8,16 +8,16 @@ use runtime
 use asyncio.error as aerr
 
 // Signature aliases used to cast the u64 vtable slots back to callables.
-fn vtable_poll(raw, ctx<u64>)
-fn vtable_dealloc(raw)
-fn vtable_try_read_output_h(raw) i32, i64
-fn vtable_drop_join_handle_slow(raw)
-fn vtable_shutdown(raw)
+fn vtable_poll(raw<RawTask>, ctx<u64>)
+fn vtable_dealloc(raw<RawTask>)
+fn vtable_try_read_output_h(raw<RawTask>) i32, i64
+fn vtable_drop_join_handle_slow(raw<RawTask>)
+fn vtable_shutdown(raw<RawTask>)
 fn future_poll(fut, ctx<u64>) i64, i64
 
 // Run one polling round on raw. ctx packs (scheduler_handle, task_id);
 // harness does not interpret it but threads it through to the future.
-fn harness_poll(raw, ctx<u64>){
+fn harness_poll(raw<RawTask>, ctx<u64>){
     h<Header> = raw.hdr
     st<State> = h.state
     snap<i32> = st.transition_to_running()
@@ -76,7 +76,7 @@ fn harness_poll(raw, ctx<u64>){
 // Finalise the task: write output, flip COMPLETE, wake the join waker, drop
 // the task's own ref. err != 0 overwrites output_slot with the err code as
 // a side channel JoinHandle picks up.
-fn harness_complete(raw, err<i32>, output<i64>){
+fn harness_complete(raw<RawTask>, err<i32>, output<i64>){
     cell<Cell> = raw.cell
     h<Header> = raw.hdr
     st<State> = h.state
@@ -99,7 +99,7 @@ fn harness_complete(raw, err<i32>, output<i64>){
 
 // Idempotent join-waker kick: JOIN_WAKER is cleared on the first wake so a
 // second completion path no-ops. Re-enqueue the task as the wake hook.
-fn wake_join_waker(raw){
+fn wake_join_waker(raw<RawTask>){
     h<Header> = raw.hdr
     st<State> = h.state
     snap<i32> = st.load()
@@ -118,7 +118,7 @@ fn wake_join_waker(raw){
 
 // Default vtable.dealloc: null out cross references so future use surfaces
 // as a clear crash. Real GC integration is follow-up work.
-fn harness_dealloc_default(raw){
+fn harness_dealloc_default(raw<RawTask>){
     raw.hdr     = null
     raw.fut     = null
     raw.cell    = null
@@ -126,14 +126,14 @@ fn harness_dealloc_default(raw){
 }
 
 // Default vtable.try_read_output: bridges Cell::take_output.
-fn harness_try_read_output_default(raw) i32, i64 {
+fn harness_try_read_output_default(raw<RawTask>) i32, i64 {
     cell<Cell> = raw.cell
     err<i32>, val<i64> = cell.take_output()
     return err, val
 }
 
 // Default vtable.drop_join_handle_slow: drop one ref; dealloc on zero.
-fn harness_drop_join_handle_slow_default(raw){
+fn harness_drop_join_handle_slow_default(raw<RawTask>){
     h<Header> = raw.hdr
     st<State> = h.state
     if st.ref_dec() != 0 {
@@ -144,7 +144,7 @@ fn harness_drop_join_handle_slow_default(raw){
 }
 
 // Default vtable.shutdown: set CANCELLED and ensure one schedule kick fires.
-fn harness_shutdown_default(raw){
+fn harness_shutdown_default(raw<RawTask>){
     h<Header> = raw.hdr
     st<State> = h.state
     st.set_cancelled()
@@ -168,3 +168,4 @@ func init(){
         harness_shutdown_default.(u64)
     )
 }
+

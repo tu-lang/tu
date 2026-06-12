@@ -4,10 +4,10 @@ use runtime
 
 // Schedulers and the harness only access tasks through Header.
 mem Header {
-    state          // State*
-    scheduler      // api Schedule (typed dynamically until task 3.35 lands)
-    poll_vtable    // VObjFunc* cached from the future header
-    queue_next     // Header*, intrusive next pointer for inject / local queues
+    State* state
+    scheduler                      // TEMP: dynamic api Schedule, will be typed as `api Schedule` in task 3.35
+    runtime.VObjFunc* poll_vtable  // cached from the future header
+    RawTask* queue_next            // intrusive next pointer for inject / local queues
     u64 task_id
 }
 
@@ -23,3 +23,4 @@ fn header_new(state, scheduler, fut, task_id<u64>) Header {
     h.task_id     = task_id
     return h
 }
+

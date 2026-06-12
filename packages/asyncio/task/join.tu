@@ -6,19 +6,19 @@ use asyncio.error as aerr
 
 // Async leaf future; State.JOIN_WAKER + Cell.join_ctx_packed track the waker.
 mem JoinHandle: async {
-    raw           // RawTask*, may be null when the task has been released
-    i32 consumed  // monotonic 0->1 once the value is taken
+    RawTask* raw    // null when the task has been released
+    i32 consumed    // monotonic 0->1 once the value is taken
 }
 
 // Initialise a JoinHandle around raw.
-JoinHandle::init(raw){
+JoinHandle::init(raw<RawTask>){
     this.raw = raw
     this.consumed = 0
 }
 
 // Stash ctx in the cell slot before flagging JOIN_WAKER on State; returns
 // 0 on first arm, AlreadyConsumed when JOIN_WAKER was already set.
-fn register_join_waker(raw, ctx<u64>) i32 {
+fn register_join_waker(raw<RawTask>, ctx<u64>) i32 {
     cell<Cell> = raw.cell
     cell.join_ctx_packed = ctx
     h<Header> = raw.hdr
@@ -38,7 +38,7 @@ JoinHandle::poll(ctx){
     if this.consumed == 1 {
         return runtime.PollReady, aerr.AlreadyConsumed
     }
-    raw = this.raw
+    raw<RawTask> = this.raw
     h<Header> = raw.hdr
     st<State> = h.state
     snap<i32> = st.load()
@@ -60,3 +60,4 @@ JoinHandle::poll(ctx){
 
 // Signature alias for casting RawVTable.try_read_output back to a callable.
 fn vtable_try_read_output(raw) i32, i64
+
