@@ -14,15 +14,17 @@ api Link {
 }
 
 // Head + tail of an intrusive list. Both null when empty.
-class LinkedList {
-    head    // Pointers*
-    tail    // Pointers*
+mem LinkedList {
+    Pointers* head
+    Pointers* tail
 }
 
-// Reset to empty state.
-LinkedList::init(){
-    this.head = null
-    this.tail = null
+// Build an empty list.
+const LinkedList::new() LinkedList* {
+    l<LinkedList> = new LinkedList
+    l.head = null
+    l.tail = null
+    return l
 }
 
 LinkedList::is_empty() bool {
@@ -99,3 +101,4 @@ LinkedList::remove(node<Pointers*>){
     node.prev = null
     node.next = null
 }
+
