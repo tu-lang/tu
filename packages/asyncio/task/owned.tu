@@ -5,29 +5,33 @@
 use runtime
 use asyncio.error as aerr
 
-// Single-linked list of Headers under one mutex.
-class OwnedTasks {
-    lock      // runtime.MutexInter
-    head      // Header*, null when empty
-    tail      // Header*, null when empty
-    closed    // i32 0/1
-    active    // u32 live count, mutated under lock
+// Single-linked list of RawTasks under one mutex; chained via Header.queue_next.
+// head/tail hold raw bits of RawTask* so &this.head matches the u64* signature
+// of task_list_*; readers cast via bits.(RawTask).
+mem OwnedTasks {
+    runtime.MutexInter* lock
+    u64 head            // 0 when empty; else raw bits of RawTask*
+    u64 tail            // 0 when empty; else raw bits of RawTask*
+    i32 closed          // 0/1 monotonic
+    i32 active          // live count, mutated under lock
 }
 
-// Initialise to an empty, open list.
-OwnedTasks::init(){
+// Build an empty, open list.
+const OwnedTasks::new() OwnedTasks* {
+    o<OwnedTasks> = new OwnedTasks
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
-    this.lock   = m
-    this.head   = null
-    this.tail   = null
-    this.closed = 0
-    this.active = 0
+    o.lock   = &m
+    o.head   = 0
+    o.tail   = 0
+    o.closed = 0
+    o.active = 0
+    return o
 }
 
 // Register raw as owned. Returns 0 on success, RuntimeShutdown when closed
 // (closed-path leaves the task unlinked; caller must dealloc).
-OwnedTasks::bind(raw) i32 {
+OwnedTasks::bind(raw<RawTask>) i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
     if this.closed == 1 {
@@ -42,23 +46,22 @@ OwnedTasks::bind(raw) i32 {
 
 // Unlink raw. O(n) walk because the list has no back pointers (acceptable
 // for the first-pass impl). Caller must guarantee raw lives on this list.
-OwnedTasks::remove(raw){
+OwnedTasks::remove(raw<RawTask>){
     m<runtime.MutexInter> = this.lock
     m.lock()
-    h<Header> = raw.hdr
-    cur = this.head
-    prev = null
+    cur<RawTask> = this.head.(RawTask)
+    prev<RawTask> = null
     while cur != null {
         if cur == raw {
             ch<Header> = cur.hdr
-            nxt = ch.queue_next
+            nxt<RawTask> = ch.queue_next
             if prev == null {
-                this.head = nxt
+                this.head = nxt.(u64)
             } else {
                 ph<Header> = prev.hdr
                 ph.queue_next = nxt
             }
-            if nxt == null this.tail = prev
+            if nxt == null this.tail = prev.(u64)
             ch.queue_next = null
             this.active -= 1
             break
@@ -74,9 +77,8 @@ OwnedTasks::remove(raw){
 OwnedTasks::close() bool {
     m<runtime.MutexInter> = this.lock
     m.lock()
-    s<i32> = this.closed
     first<bool> = false
-    if s == 0 {
+    if this.closed == 0 {
         this.closed = 1
         first = true
     }
@@ -89,16 +91,17 @@ OwnedTasks::is_empty() bool {
     m<runtime.MutexInter> = this.lock
     m.lock()
     empty<bool> = false
-    if this.head == null empty = true
+    if this.head == 0 empty = true
     m.unlock()
     return empty
 }
 
 // Live task count; read under lock for consistency.
-OwnedTasks::active_count() u32 {
+OwnedTasks::active_count() i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
-    n<u32> = this.active
+    n<i32> = this.active
     m.unlock()
     return n
 }
+

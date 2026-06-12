@@ -2,6 +2,8 @@
 // All polymorphism lives in Cell (type assertions), so a single shared
 // default vtable suffices.
 
+use runtime
+
 // Function-pointer table. Slots are u64 raw addresses populated by task.harness.
 mem RawVTable {
     u64 poll                    // (raw, ctx)
@@ -13,10 +15,10 @@ mem RawVTable {
 
 // Aggregate view used by every scheduler / harness call site.
 mem RawTask {
-    hdr        // Header*
-    fut        // runtime.Future*
-    cell       // Cell*
-    vtable     // RawVTable*, points at the shared default vtable
+    Header* hdr
+    runtime.Future* fut
+    Cell* cell
+    RawVTable* vtable           // points at the shared default vtable
 }
 
 // Module-level singleton; lazily allocated so package init can populate it.
@@ -68,3 +70,4 @@ fn raw_new(fut, scheduler, task_id<u64>) RawTask {
     raw.vtable = raw_vtable_default()
     return raw
 }
+
