@@ -4,15 +4,17 @@
 use runtime
 
 // Wraps a single MutexInter so future replacements (ticket / RW) stay isolated.
-class Lock {
-    inner   // runtime.MutexInter
+mem Lock {
+    runtime.MutexInter* inner
 }
 
-// Create the underlying mutex.
-Lock::init(){
+// Build the wrapper with a fresh underlying mutex.
+const Lock::new() Lock* {
+    l<Lock> = new Lock
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
-    this.inner = m
+    l.inner = &m
+    return l
 }
 
 // Block until the lock is acquired. Not re-entrant.
@@ -26,3 +28,4 @@ Lock::unlock(){
     m<runtime.MutexInter> = this.inner
     m.unlock()
 }
+

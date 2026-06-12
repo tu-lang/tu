@@ -13,18 +13,19 @@ mem InjectShared {
     u32 len
 }
 
-// Lock-protected list head/tail and close flag.
+// Lock-protected list head/tail and close flag. head/tail hold raw bits of
+// RawTask* so &s.head matches task_list_*'s u64* signature.
 mem InjectSynced {
     i32 is_closed
-    head      // RawTask*, null when empty
-    tail      // RawTask*, null when empty
+    u64 head        // 0 when empty; else raw bits of RawTask*
+    u64 tail        // 0 when empty; else raw bits of RawTask*
 }
 
 // Public queue handle bundling shared atomic state, lock, and synced fields.
 mem Inject {
-    shared    // InjectShared*
-    lock      // runtime.MutexInter
-    synced    // InjectSynced*
+    InjectShared* shared
+    runtime.MutexInter* lock
+    InjectSynced* synced
 }
 
 // Build an empty, open queue.
@@ -33,13 +34,13 @@ const Inject::new() Inject {
     sh.len = 0
     sn<InjectSynced> = new InjectSynced
     sn.is_closed = 0
-    sn.head = null
-    sn.tail = null
+    sn.head = 0
+    sn.tail = 0
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
     inj<Inject> = new Inject
     inj.shared = &sh
-    inj.lock   = m
+    inj.lock   = &m
     inj.synced = &sn
     return inj
 }
@@ -71,7 +72,7 @@ Inject::len() u32 {
 
 // Enqueue at the tail. Returns 0 on success, asyncio.error.Closed when shut.
 Inject::push(t) i32 {
-    raw = t.raw
+    raw<task.RawTask> = t.raw
     m<runtime.MutexInter> = this.lock
     m.lock()
     s<InjectSynced> = this.synced
@@ -106,7 +107,7 @@ Inject::pop() (i32, task.Notified) {
     m<runtime.MutexInter> = this.lock
     m.lock()
     s<InjectSynced> = this.synced
-    raw = task.task_list_pop_front(&s.head, &s.tail)
+    raw<task.RawTask> = task.task_list_pop_front(&s.head, &s.tail)
     if raw == null {
         m.unlock()
         empty<task.Notified> = task.notified_from_raw(null)
@@ -118,3 +119,4 @@ Inject::pop() (i32, task.Notified) {
     n<task.Notified> = task.notified_from_raw(raw)
     return 0, n
 }
+
