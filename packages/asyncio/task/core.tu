@@ -2,6 +2,7 @@
 //   IDLE -> RUNNING -> FINISHED -> CONSUMED
 // All moves go through std.atomic.cas.
 
+use runtime
 use std.atomic
 use asyncio.error as aerr
 
@@ -13,9 +14,9 @@ CONSUMED<i32>  = 3
 // Cell holds the future, the future's eventual output, the join-waker ctx
 // slot, and the atomic stage word.
 mem Cell {
-    hdr                     // Header*
-    fut                     // runtime.Future*
-    i64 output_slot         // i64 raw bits; caller re-casts via obj.(Type)
+    Header* hdr
+    runtime.Future* fut
+    i64 output_slot         // raw bits; caller re-casts via obj.(Type)
     u64 join_ctx_packed     // ctx written by JoinHandle::poll
     i32 stage               // atomic; one of IDLE/RUNNING/FINISHED/CONSUMED
 }
@@ -61,3 +62,4 @@ Cell::take_output() (i32, i64) {
     }
     return aerr.AlreadyConsumed, 0
 }
+

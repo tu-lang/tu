@@ -3,11 +3,11 @@
 
 // Wraps a RawTask* so user code can cancel without holding the JoinHandle.
 mem AbortHandle {
-    raw   // RawTask*, may be null after the task has been released
+    RawTask* raw    // null after the task has been released
 }
 
 // Build a handle for raw.
-const AbortHandle::new(raw) AbortHandle {
+const AbortHandle::new(raw<RawTask>) AbortHandle {
     h<AbortHandle> = new AbortHandle
     h.raw = raw
     return h
@@ -16,7 +16,7 @@ const AbortHandle::new(raw) AbortHandle {
 // Set CANCELLED (monotonic) and ensure exactly one schedule kick fires.
 // by_ref does not consume a refcount; the existing run-queue ref handles it.
 AbortHandle::abort(){
-    raw = this.raw
+    raw<RawTask> = this.raw
     if raw == null return
     h<Header> = raw.hdr
     st<State> = h.state
@@ -31,3 +31,4 @@ AbortHandle::abort(){
         }
     }
 }
+
