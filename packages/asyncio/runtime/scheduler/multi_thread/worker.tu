@@ -30,7 +30,7 @@ fn mt_steal_work(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (start + i) % n
         if idx == w.index continue
-        r<Remote> = shared.remotes[idx]
+        r<Remote> = shared.remotes[idx].(Remote)
         err<i32>, t<task.Notified> = r.steal.steal_into(core.run_queue)
         if err == 0 return 0, t
     }
@@ -47,7 +47,7 @@ fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
             sn<MtSynced> = w.handle.shared.synced
             found<i32>, idx<u32> = w.handle.shared.idle.notify_one(sn.idle_synced, w.handle.shared.synced_lock)
             if found == 1 && idx < w.handle.shared.num_workers {
-                r<Remote> = w.handle.shared.remotes[idx]
+                r<Remote> = w.handle.shared.remotes[idx].(Remote)
                 if r.unparker != null r.unparker.unpark()
             }
         }
@@ -162,7 +162,7 @@ fn worker_run(w<MtWorker>){
 
 // runtime.newcore entry-point. ACTIVE_WORKER is set by Builder before
 // spawning the new core; the worker reads it on entry.
-ACTIVE_WORKER<MtWorker*> = null
+ACTIVE_WORKER<MtWorker> = null
 
 fn worker_entry(){
     w<MtWorker> = ACTIVE_WORKER

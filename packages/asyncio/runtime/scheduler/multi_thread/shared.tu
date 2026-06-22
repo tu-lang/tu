@@ -19,7 +19,7 @@ mem MtSynced {
 
 // Cross-worker shared state.
 mem MtShared {
-    Remote*           remotes              // length num_workers
+    u64*              remotes              // raw bits of Remote*; length num_workers
     u32               num_workers
     Inject*           inject
     Idle*             idle
@@ -33,9 +33,9 @@ mem MtShared {
 
 // Allocate empty MtShared sized for num_workers. remotes are filled in
 // later when each worker's queue is created.
-const MtShared::new(num_workers<u32>) MtShared* {
+const MtShared::new(num_workers<u32>) MtShared {
     s<MtShared> = new MtShared
-    s.remotes     = std.malloc(sizeof(Remote) * num_workers.(u64))
+    s.remotes     = std.malloc(sizeof(u64) * num_workers.(u64))
     s.num_workers = num_workers
     s.inject      = Inject::new()
     idle_pair_a<Idle>, idle_pair_b<IdleSynced> = idle_new(num_workers)
@@ -44,10 +44,10 @@ const MtShared::new(num_workers<u32>) MtShared* {
     s.synced_lock.init()
     sn<MtSynced> = new MtSynced
     sn.idle_synced = idle_pair_b
-    s.synced      = &sn
+    s.synced      = sn
     s.shutdown_cores_lock.init()
     s.shutdown_cores     = std.malloc(sizeof(u64) * num_workers.(u64))
     s.shutdown_cores_len = 0
-    return &s
+    return s
 }
 

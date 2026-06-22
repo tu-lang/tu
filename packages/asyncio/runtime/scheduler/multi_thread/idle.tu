@@ -25,7 +25,7 @@ mem IdleSynced {
 }
 
 // Build paired (Idle, IdleSynced) for a runtime with `num` workers.
-const idle_new(num<u32>) (Idle*, IdleSynced*) {
+const idle_new(num<u32>) (Idle, IdleSynced) {
     i<Idle> = new Idle
     i.state       = num << UNPARK_SHIFT       // all unparked, none searching
     i.num_workers = num
@@ -34,7 +34,7 @@ const idle_new(num<u32>) (Idle*, IdleSynced*) {
     s.sleepers     = std.malloc(sizeof(u32) * num.(u64))
     s.sleepers_len = 0
     s.sleepers_cap = num
-    return &i, &s
+    return i, s
 }
 
 // Helpers over the packed state.

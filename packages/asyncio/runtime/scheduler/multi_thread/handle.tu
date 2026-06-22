@@ -14,13 +14,13 @@ mem MtHandle {
 }
 
 // Build a handle around shared.
-const MtHandle::new(shared<MtShared>) MtHandle* {
+const MtHandle::new(shared<MtShared>) MtHandle {
     h<MtHandle> = new MtHandle
     h.shared           = shared
     h.driver_handle    = 0
     h.blocking_spawner = 0
     h.config           = 0
-    return &h
+    return h
 }
 
 // Schedule a Notified task. If the calling thread is a worker we push to
@@ -36,7 +36,7 @@ impl task.Schedule for MtHandle {
         sn<MtSynced> = this.shared.synced
         found<i32>, idx<u32> = this.shared.idle.notify_one(sn.idle_synced, this.shared.synced_lock)
         if found == 1 && idx < this.shared.num_workers {
-            r<Remote> = this.shared.remotes[idx]
+            r<Remote> = this.shared.remotes[idx].(Remote)
             if r.unparker != null r.unparker.unpark()
         }
     }
@@ -46,22 +46,22 @@ impl task.Schedule for MtHandle {
     }
 }
 
-// Spawn a future. Returns a JoinHandle*; the first Notified is enqueued
-// via schedule().
-MtHandle::spawn(fut) JoinHandle* {
+// Spawn a future. Returns a JoinHandle; the first Notified is enqueued
+// via schedule(). raw_new returns a heap RawTask; pass it through.
+MtHandle::spawn(fut) JoinHandle {
     tid<task.TaskId> = task.alloc_id()
     raw<task.RawTask> = task.raw_new(fut, this, tid.v)
-    err<i32> = this.shared.owned.bind(&raw)
+    err<i32> = this.shared.owned.bind(raw)
     if err != 0 {
         jh<JoinHandle> = new JoinHandle
         jh.init(null)
-        return &jh
+        return jh
     }
-    notif<task.Notified> = task.notified_from_raw(&raw)
+    notif<task.Notified> = task.notified_from_raw(raw)
     this.schedule(notif)
 
     jh<JoinHandle> = new JoinHandle
-    jh.init(&raw)
-    return &jh
+    jh.init(raw)
+    return jh
 }
 

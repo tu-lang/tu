@@ -18,7 +18,7 @@ mem CtShared {
 }
 
 // Build empty shared state (no driver / blocking spawner wired yet).
-const CtShared::new() CtShared* {
+const CtShared::new() CtShared {
     s<CtShared> = new CtShared
     s.inject           = Inject::new()
     s.owned            = task.OwnedTasks::new()
@@ -26,6 +26,6 @@ const CtShared::new() CtShared* {
     s.driver_handle    = 0
     s.blocking_spawner = 0
     s.config           = 0
-    return &s
+    return s
 }
 

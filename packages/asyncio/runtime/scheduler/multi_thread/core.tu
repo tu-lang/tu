@@ -20,7 +20,7 @@ mem WorkerCore {
 }
 
 // Build a WorkerCore wired to run_queue + park.
-const WorkerCore::new(run_queue<Local>, park<Parker>, rand<FastRand>, global_interval<u32>) WorkerCore* {
+const WorkerCore::new(run_queue<Local>, park<Parker>, rand<FastRand>, global_interval<u32>) WorkerCore {
     c<WorkerCore> = new WorkerCore
     c.tick                  = 0
     c.lifo_slot             = 0
@@ -31,7 +31,7 @@ const WorkerCore::new(run_queue<Local>, park<Parker>, rand<FastRand>, global_int
     c.park                  = park
     c.rand                  = rand
     c.global_queue_interval = global_interval
-    return &c
+    return c
 }
 
 // MtWorker sits on a worker thread's stack-equivalent and owns the
@@ -43,11 +43,11 @@ mem MtWorker {
 }
 
 // Build a worker for the given index.
-const MtWorker::new(handle<MtHandle>, index<u32>, core<WorkerCore>) MtWorker* {
+const MtWorker::new(handle<MtHandle>, index<u32>, core<WorkerCore>) MtWorker {
     w<MtWorker> = new MtWorker
     w.handle = handle
     w.index  = index
     w.core   = AtomicCell::new(core.(u64))
-    return &w
+    return w
 }
 

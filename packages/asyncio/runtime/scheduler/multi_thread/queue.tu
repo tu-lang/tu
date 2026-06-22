@@ -37,12 +37,12 @@ mem QueueInner {
 }
 
 // Build an empty QueueInner.
-const QueueInner::new() QueueInner* {
+const QueueInner::new() QueueInner {
     q<QueueInner> = new QueueInner
     q.head   = 0
     q.tail   = 0
     q.buffer = std.malloc(sizeof(u64) * LOCAL_QUEUE_CAPACITY.(u64))
-    return &q
+    return q
 }
 
 // Producer side; only the owning worker writes.
@@ -56,10 +56,11 @@ mem Steal {
 }
 
 // Build a paired (Steal, Local). The two endpoints share one QueueInner.
+// QueueInner::new returns the heap pointer; both endpoints store it raw.
 const queue_local() (Steal, Local) {
     inner<QueueInner> = QueueInner::new()
-    s<Steal>          = new Steal { inner: &inner }
-    l<Local>          = new Local { inner: &inner }
+    s<Steal>          = new Steal { inner: inner }
+    l<Local>          = new Local { inner: inner }
     return s, l
 }
 

@@ -23,19 +23,19 @@ mem Unparker {
 }
 
 // Build a Parker that delegates to the supplied driver pointer (may be 0).
-const Parker::new(driver_ptr<u64>) Parker* {
+const Parker::new(driver_ptr<u64>) Parker {
     p<Parker> = new Parker
     p.state = EMPTY
     p.note.Clear()
     p.driver_slot = driver_ptr
-    return &p
+    return p
 }
 
 // Build an Unparker pointing at p.
-const Unparker::new(p<Parker>) Unparker* {
+const Unparker::new(p<Parker>) Unparker {
     u<Unparker> = new Unparker
     u.p = p
-    return &u
+    return u
 }
 
 // Park indefinitely. Returns 0 on a normal wake, surfaces driver errors

@@ -22,7 +22,9 @@ mem SignalDriver {
 
 // Initialise globals + open the signalfd with an empty mask. Returns
 // (err, driver, handle); err != 0 means the signalfd syscall failed.
-const SignalDriver::new(io_handle_ptr<u64>) (i32, SignalDriver*, SignalDriverHandle*) {
+// `&drv.lock.(u64)` takes the address of the embedded MutexInter field
+// inside the heap-allocated SignalDriver — that is a stable heap address.
+const SignalDriver::new(io_handle_ptr<u64>) (i32, SignalDriver, SignalDriverHandle) {
     err<i32>, g<SignalGlobals> = signal_globals_get_or_init()
     if err != 0 return err, null, null
 
@@ -43,7 +45,7 @@ const SignalDriver::new(io_handle_ptr<u64>) (i32, SignalDriver*, SignalDriverHan
     h.globals = g
     h.lock_addr = &drv.lock.(u64)
 
-    return 0, &drv, &h
+    return 0, drv, h
 }
 
 // Drain the signalfd. Called by the runtime after IoDriver::turn flagged
