@@ -35,7 +35,9 @@ mem IoHandle {
 
 // Build (driver, handle) wired together. Allocates the netio.Poll and the
 // wakeup eventfd; subsequent registrations route through handle.
-const IoDriver::new() (i32, IoDriver*, IoHandle*) {
+// `netio.Poll::new` / `netio.Waker::new` already return heap pointers,
+// so assign them through directly.
+const IoDriver::new() (i32, IoDriver, IoHandle) {
     err<i32>, p<netio.Poll> = netio.Poll::new()
     if err != 0 {
         return err, null, null
@@ -45,8 +47,8 @@ const IoDriver::new() (i32, IoDriver*, IoHandle*) {
 
     drv<IoDriver> = new IoDriver
     drv.signal_ready = 0
-    drv.events       = &events_buf
-    drv.poll         = &p
+    drv.events       = events_buf
+    drv.poll         = p
 
     h<IoHandle> = new IoHandle
     h.registry     = p.registry()
@@ -58,14 +60,14 @@ const IoDriver::new() (i32, IoDriver*, IoHandle*) {
     if werr != 0 {
         return werr, null, null
     }
-    h.waker = &wk
+    h.waker = wk
 
-    return 0, &drv, &h
+    return 0, drv, h
 }
 
 // Register a source. Token is the new ScheduledIo* cast to u64; later
 // turn() reverses the cast to dispatch the event back.
-IoHandle::add_source(io_obj<netio.event.Source>, interest<netio.Interest>) (i32, ScheduledIo*) {
+IoHandle::add_source(io_obj<netio.event.Source>, interest<netio.Interest>) (i32, ScheduledIo) {
     err<i32>, sio<ScheduledIo> = this.registrations.allocate(interest)
     if err != 0 {
         return err, null

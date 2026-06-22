@@ -18,21 +18,21 @@ mem RegistrationSet {
 }
 
 // Build an empty set.
-const RegistrationSet::new() RegistrationSet* {
+const RegistrationSet::new() RegistrationSet {
     s<RegistrationSetSynced> = new RegistrationSetSynced
     s.head = null
     s.tail = null
     s.num  = 0
     rs<RegistrationSet> = new RegistrationSet
     rs.lock.init()
-    rs.synced = &s
-    return &rs
+    rs.synced = s
+    return rs
 }
 
 // Allocate a ScheduledIo and link it at the tail. Returns the shared shadow
 // the IO driver hands back to Registration.
-RegistrationSet::allocate(interest<netio.Interest>) (i32, ScheduledIo*) {
-    sio<ScheduledIo*> = ScheduledIo::new()
+RegistrationSet::allocate(interest<netio.Interest>) (i32, ScheduledIo) {
+    sio<ScheduledIo> = ScheduledIo::new()
     this.lock.lock()
     s<RegistrationSetSynced> = this.synced
     if s.tail != null {
@@ -54,7 +54,7 @@ RegistrationSet::release(sio<ScheduledIo>){
     s<RegistrationSetSynced> = this.synced
     p<Pointers> = sio.linked_list_pointers
     if p.prev != null {
-        prev_node<Pointers*> = p.prev
+        prev_node<Pointers> = p.prev
         prev_node.next = p.next
     } else {
         if p.next == null {
@@ -65,7 +65,7 @@ RegistrationSet::release(sio<ScheduledIo>){
         }
     }
     if p.next != null {
-        next_node<Pointers*> = p.next
+        next_node<Pointers> = p.next
         next_node.prev = p.prev
     } else {
         if p.prev == null {

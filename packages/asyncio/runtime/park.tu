@@ -17,11 +17,11 @@ mem CachedParkThread {
 }
 
 // Build a CachedParkThread.
-const CachedParkThread::new() CachedParkThread* {
+const CachedParkThread::new() CachedParkThread {
     p<CachedParkThread> = new CachedParkThread
     p.state = EMPTY_PARK
     p.note.Clear()
-    return &p
+    return p
 }
 
 // Block until somebody calls unpark.

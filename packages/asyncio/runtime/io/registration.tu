@@ -33,14 +33,14 @@ const Registration::new_with_interest_and_handle(
     interest<netio.Interest>,
     handle<u64>,
     io_handle<IoHandle>
-) (i32, Registration*) {
+) (i32, Registration) {
     err<i32>, sio<ScheduledIo> = io_handle.add_source(io_obj, interest)
     if err != 0 return err, null
     r<Registration> = new Registration
     r.sched_handle = handle
     r.io_handle    = io_handle
     r.shared       = sio
-    return 0, &r
+    return 0, r
 }
 
 // Detach the source from netio and drop it from RegistrationSet. The

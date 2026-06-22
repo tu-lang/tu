@@ -29,7 +29,7 @@ const Runtime::compose(
     sp<Spawner>,
     pool<BlockingPool>,
     sched<u64>
-) Runtime* {
+) Runtime {
     r<Runtime> = new Runtime
     r.kind             = kind
     r.weak_handle      = weak
@@ -39,11 +39,11 @@ const Runtime::compose(
     r.blocking_pool    = pool
     r.scheduler_handle = sched
     r.shutdown_state   = 0
-    return &r
+    return r
 }
 
 // Cheap weak handle clone.
-Runtime::handle() Handle* {
+Runtime::handle() Handle {
     return this.weak_handle
 }
 
@@ -58,12 +58,12 @@ Runtime::block_on(fut) (i32, i64) {
 }
 
 // Spawn a future via the active scheduler.
-Runtime::spawn(fut) JoinHandle* {
+Runtime::spawn(fut) JoinHandle {
     return this.weak_handle.spawn(fut)
 }
 
 // Spawn a blocking closure.
-Runtime::spawn_blocking(op<fc<blocking_op>>) JoinHandle* {
+Runtime::spawn_blocking(op<fc<blocking_op>>) JoinHandle {
     return this.weak_handle.spawn_blocking(op)
 }
 

@@ -56,7 +56,7 @@ fn rt_exit(saved<RtSavedSlot>){
 }
 
 // Currently active context; null outside a runtime.
-fn current_context() RuntimeContext* {
+fn current_context() RuntimeContext {
     return ACTIVE_RT
 }
 

@@ -97,8 +97,8 @@ const Spawner::new(pool<BlockingPool>) Spawner {
 }
 
 // Module-level worker entry. runtime.newcore expects an (u64) entrypoint;
-// we encode the BlockingPool* in that slot and dispatch from here.
-ACTIVE_POOL<BlockingPool*> = null
+// the BlockingPool reference is encoded in that slot and dispatched from here.
+ACTIVE_POOL<BlockingPool> = null
 
 fn blocking_worker_run(){
     p<BlockingPool> = ACTIVE_POOL

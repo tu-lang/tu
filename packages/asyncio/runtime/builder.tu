@@ -164,7 +164,7 @@ fn build_multi_thread(b<Builder>) (i32, Runtime) {
         r<Remote> = new Remote
         r.steal    = steal_a
         r.unparker = unparker
-        shared.remotes[i] = r
+        shared.remotes[i] = r.(u64)
 
         ACTIVE_WORKER = worker
         runtime.newcore(worker_entry.(u64))

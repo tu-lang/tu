@@ -16,18 +16,18 @@ mem Handle {
 }
 
 // Build a fresh weak handle.
-const Handle::new(sched<u64>, kind<i32>, driver<DriverHandle>, blocking<u64>) Handle* {
+const Handle::new(sched<u64>, kind<i32>, driver<DriverHandle>, blocking<u64>) Handle {
     h<Handle> = new Handle
     h.sched_handle     = sched
     h.sched_kind       = kind
     h.driver           = driver
     h.blocking_spawner = blocking
-    return &h
+    return h
 }
 
 // Look up the active Handle. Returns (OtherRuntime1XNotFound, null)
 // outside any runtime context.
-const Handle::current() (i32, Handle*) {
+const Handle::current() (i32, Handle) {
     rc<RuntimeContext> = current_context()
     if rc == null return io.OtherRuntime1XNotFound, null
 
@@ -38,7 +38,7 @@ const Handle::current() (i32, Handle*) {
 }
 
 // Spawn a future via the active scheduler. Routes by sched_kind.
-Handle::spawn(fut) JoinHandle* {
+Handle::spawn(fut) JoinHandle {
     if this.sched_kind == 1 {
         mh<MtHandle> = this.sched_handle.(MtHandle)
         return mh.spawn(fut)
@@ -49,19 +49,18 @@ Handle::spawn(fut) JoinHandle* {
 
 // Spawn a sync closure on the blocking pool. Returns a JoinHandle the
 // caller can await for the u64 result.
-Handle::spawn_blocking(op<fc<blocking_op>>) JoinHandle* {
+// First-pass surfaces an empty JoinHandle; the real wiring lands in
+// task 8.3 / 8.6 follow-ups.
+Handle::spawn_blocking(op<fc<blocking_op>>) JoinHandle {
     sp<Spawner> = this.blocking_spawner.(Spawner)
     if sp == null {
         jh<JoinHandle> = new JoinHandle
         jh.init(null)
-        return &jh
+        return jh
     }
-    // For the first-pass impl we synthesise a minimal RawTask wired to
-    // a BlockingSchedule so JoinHandle observes the result. Wiring the
-    // result through a real cell happens in task 8.3 / 8.6 follow-ups.
     jh<JoinHandle> = new JoinHandle
     jh.init(null)
-    return &jh
+    return jh
 }
 
 // Run fut to completion via the active scheduler's block_on.

@@ -20,14 +20,15 @@ mem ShutdownReceiver {
     ShutdownInner* inner
 }
 
-// Build a fresh (Sender, Receiver) pair sharing one Inner.
+// Build a fresh (Sender, Receiver) pair sharing one Inner. `new
+// ShutdownInner` already returns the heap pointer, so pass it through.
 const shutdown_channel() (ShutdownSender, ShutdownReceiver) {
     inner<ShutdownInner> = new ShutdownInner
     inner.done = 0
     inner.lock.init()
     inner.notify.Clear()
-    s<ShutdownSender>   = new ShutdownSender   { inner: &inner }
-    r<ShutdownReceiver> = new ShutdownReceiver { inner: &inner }
+    s<ShutdownSender>   = new ShutdownSender   { inner: inner }
+    r<ShutdownReceiver> = new ShutdownReceiver { inner: inner }
     return s, r
 }
 

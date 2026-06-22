@@ -22,7 +22,7 @@ mem DriverHandle {
 
 // Build a Driver pair. Caller passes already-created subsystems (or
 // null) so feature flags compose cleanly.
-const Driver::compose(io<IoDriver>, ioh<IoHandle>, time<TimeDriver>, timeh<TimeHandle>, sig<SignalDriver>, sigh<SignalDriverHandle>) (Driver*, DriverHandle*) {
+const Driver::compose(io<IoDriver>, ioh<IoHandle>, time<TimeDriver>, timeh<TimeHandle>, sig<SignalDriver>, sigh<SignalDriverHandle>) (Driver, DriverHandle) {
     d<Driver> = new Driver
     d.io     = io
     d.time   = time
@@ -32,7 +32,7 @@ const Driver::compose(io<IoDriver>, ioh<IoHandle>, time<TimeDriver>, timeh<TimeH
     h.io_handle     = ioh
     h.time_handle   = timeh
     h.signal_handle = sigh
-    return &d, &h
+    return d, h
 }
 
 // Park indefinitely. Time-aware: if the wheel has a near deadline we
@@ -66,7 +66,7 @@ Driver::shutdown(handle<DriverHandle>){
 // Time-aware deadline hint. Returns -1 when there's nothing scheduled.
 DriverHandle::next_wake_ms() i32 {
     if this.time_handle == null return -1
-    found<i32>, _<u64> = this.time_handle.wheel.poll_at()
+    found<i32>, deadline<u64> = this.time_handle.wheel.poll_at()
     if found != EXPIR_FOUND return -1
     return 0   // For now we just signal "something pending"; the actual
                // ms math lives in TimeDriver::park_internal.
