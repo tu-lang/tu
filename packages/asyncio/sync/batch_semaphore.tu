@@ -23,14 +23,14 @@ mem SemWaiter {
 }
 
 // Build a fresh waiter that needs n permits.
-const SemWaiter::new(n<u32>, ctx<u64>) SemWaiter* {
+const SemWaiter::new(n<u32>, ctx<u64>) SemWaiter {
     w<SemWaiter> = new SemWaiter
     w.node.prev   = null
     w.node.next   = null
     w.remaining_permits = n
     w.ctx_packed  = ctx
     w.queued      = 0
-    return &w
+    return w
 }
 
 // Counting semaphore with FIFO fairness.
@@ -42,13 +42,13 @@ mem BatchSemaphore {
 }
 
 // Build with `n` initial permits. n must be <= MAX_PERMITS.
-const BatchSemaphore::new(n<u32>) BatchSemaphore* {
+const BatchSemaphore::new(n<u32>) BatchSemaphore {
     s<BatchSemaphore> = new BatchSemaphore
     s.permits = n
     s.lock.init()
     s.waiters = LinkedList::new()
     s.closed  = 0
-    return &s
+    return s
 }
 
 // Non-blocking acquire. Returns 0 on success, asyncio.error.SendFull when

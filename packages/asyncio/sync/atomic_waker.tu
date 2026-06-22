@@ -19,11 +19,12 @@ mem AtomicWaker {
 }
 
 // Build an empty waker (state=WAITING, ctx=0).
-const AtomicWaker::new() AtomicWaker* {
+// `new AtomicWaker` already returns the heap pointer; pass it through.
+const AtomicWaker::new() AtomicWaker {
     a<AtomicWaker> = new AtomicWaker
     a.state       = WAITING
     a.ctx_packed  = 0
-    return &a
+    return a
 }
 
 // Install ctx as the pending waker. Concurrent wake() during the

@@ -19,14 +19,14 @@ mem Broadcast {
 }
 
 // Build a Broadcast with capacity cap (must be > 0).
-const Broadcast::new(cap<u64>) Broadcast* {
+const Broadcast::new(cap<u64>) Broadcast {
     b<Broadcast> = new Broadcast
     b.ring    = std.malloc(sizeof(i64) * cap)
     b.cap     = cap
     b.tail    = 0
     b.lapped  = 0
     b.changed = sync.Notify::new()
-    return &b
+    return b
 }
 
 // Atomic publish: write into the next slot, bump tail, wake every
@@ -54,10 +54,11 @@ mem BroadcastReceiver {
 }
 
 // Build a (Sender, Receiver) pair sharing one ring.
+// Broadcast::new() already returns the heap pointer; pass it through.
 const broadcast_channel(cap<u64>) (BroadcastSender, BroadcastReceiver) {
     b<Broadcast> = Broadcast::new(cap)
-    s<BroadcastSender>   = new BroadcastSender   { inner: &b }
-    r<BroadcastReceiver> = new BroadcastReceiver { inner: &b, last_seen: 0 }
+    s<BroadcastSender>   = new BroadcastSender   { inner: b }
+    r<BroadcastReceiver> = new BroadcastReceiver { inner: b, last_seen: 0 }
     return s, r
 }
 

@@ -15,14 +15,14 @@ mem Barrier {
 }
 
 // Build a Barrier expecting n participants per round.
-const Barrier::new(n<i32>) Barrier* {
+const Barrier::new(n<i32>) Barrier {
     b<Barrier> = new Barrier
     b.lock.init()
     b.n          = n
     b.arrived    = 0
     b.generation = 0
     b.notify     = Notify::new()
-    return &b
+    return b
 }
 
 // Wait for the round to complete. Returns (0, is_leader) where is_leader
