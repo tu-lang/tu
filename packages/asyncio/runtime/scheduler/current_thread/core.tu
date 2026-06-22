@@ -20,7 +20,7 @@ mem Core {
 }
 
 // Build an empty core with capacity n. n must be a power of two.
-const Core::new(driver_ptr<u64>, global_interval<u32>) Core* {
+const Core::new(driver_ptr<u64>, global_interval<u32>) Core {
     c<Core> = new Core
     c.tasks_cap = INITIAL_CAPACITY
     c.tasks     = std.malloc(sizeof(u64) * c.tasks_cap.(u64))
@@ -30,7 +30,7 @@ const Core::new(driver_ptr<u64>, global_interval<u32>) Core* {
     c.driver     = driver_ptr
     c.global_queue_interval = global_interval
     c.unhandled_panic = 0
-    return &c
+    return c
 }
 
 // True when the local ring is non-empty.
@@ -66,7 +66,7 @@ Core::push_local(t<task.RawTask>){
 }
 
 // Pop head; returns (NotFound, null) when empty.
-Core::pop_local() (i32, task.RawTask*) {
+Core::pop_local() (i32, task.RawTask) {
     if this.tasks_head == this.tasks_tail {
         return io.NotFound, null
     }

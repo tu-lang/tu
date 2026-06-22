@@ -28,7 +28,9 @@ mem Inject {
     InjectSynced* synced
 }
 
-// Build an empty, open queue.
+// Build an empty, open queue. The inj.lock / inj.synced fields are
+// pointer-typed; assign the heap pointers from MutexInter / Synced
+// directly (no `&m` / `&sn` — those are stack-slot addresses).
 const Inject::new() Inject {
     sh<InjectShared> = new InjectShared
     sh.len = 0
@@ -39,9 +41,9 @@ const Inject::new() Inject {
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
     inj<Inject> = new Inject
-    inj.shared = &sh
-    inj.lock   = &m
-    inj.synced = &sn
+    inj.shared = sh
+    inj.lock   = m
+    inj.synced = sn
     return inj
 }
 

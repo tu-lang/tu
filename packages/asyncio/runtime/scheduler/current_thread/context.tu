@@ -4,7 +4,7 @@
 // is_current_handle compares pointer identity against the active context.
 
 // Context active on the block_on thread; null outside block_on.
-ACTIVE_CT<CtContext*> = null
+ACTIVE_CT<CtContext> = null
 
 // Per-thread context combining handle + core + defer.
 mem CtContext {
@@ -14,12 +14,12 @@ mem CtContext {
 }
 
 // Build a context bundling handle / core / defer.
-const CtContext::new(handle<CtHandle>, core<Core>, defer<Defer>) CtContext* {
+const CtContext::new(handle<CtHandle>, core<Core>, defer<Defer>) CtContext {
     c<CtContext> = new CtContext
     c.handle = handle
     c.core   = core
     c.defer  = defer
-    return &c
+    return c
 }
 
 // Snapshot saved by ct_enter so nested enter/exit pairs unwind correctly.
@@ -41,7 +41,7 @@ fn ct_exit(saved<CtSavedSlot>){
 }
 
 // Currently active context; null outside block_on.
-fn current_ct() CtContext* {
+fn current_ct() CtContext {
     return ACTIVE_CT
 }
 

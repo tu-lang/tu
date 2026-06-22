@@ -10,10 +10,10 @@ mem CtHandle {
 }
 
 // Build a handle around shared.
-const CtHandle::new(shared<CtShared>) CtHandle* {
+const CtHandle::new(shared<CtShared>) CtHandle {
     h<CtHandle> = new CtHandle
     h.shared = shared
-    return &h
+    return h
 }
 
 // Schedule a task. Main-thread caller pushes to Core.tasks via the active
@@ -41,22 +41,24 @@ impl task.Schedule for CtHandle {
 
 // Spawn a future as a new task. Wires it into OwnedTasks and schedules
 // the first poll. Returns a JoinHandle the caller can await.
-CtHandle::spawn(fut) JoinHandle* {
+// task.raw_new returns a heap RawTask; bind / notified_from_raw take it
+// directly (no `&raw` — that would be a stack slot address).
+CtHandle::spawn(fut) JoinHandle {
     tid<task.TaskId> = task.alloc_id()
     raw<task.RawTask> = task.raw_new(fut, this, tid.v)
-    err<i32> = this.shared.owned.bind(&raw)
+    err<i32> = this.shared.owned.bind(raw)
     if err != 0 {
         // OwnedTasks::bind already rejects with RuntimeShutdown; surface
         // a JoinHandle whose first poll observes the empty raw slot.
         jh<JoinHandle> = new JoinHandle
         jh.init(null)
-        return &jh
+        return jh
     }
-    notif<task.Notified> = task.notified_from_raw(&raw)
+    notif<task.Notified> = task.notified_from_raw(raw)
     this.schedule(notif)
 
     jh<JoinHandle> = new JoinHandle
-    jh.init(&raw)
-    return &jh
+    jh.init(raw)
+    return jh
 }
 

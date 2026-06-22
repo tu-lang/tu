@@ -9,11 +9,11 @@ mem Lock {
 }
 
 // Build the wrapper with a fresh underlying mutex.
-const Lock::new() Lock* {
+const Lock::new() Lock {
     l<Lock> = new Lock
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
-    l.inner = &m
+    l.inner = m
     return l
 }
 

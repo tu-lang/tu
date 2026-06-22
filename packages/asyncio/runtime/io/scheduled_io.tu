@@ -24,18 +24,20 @@ TICK_INC<i32> = 1
 
 // Pre-built bit packs over the readiness u64. Built lazily in package
 // init() since module-level expressions are not a Tu convention.
-ready_pack<Pack*>    = null
-tick_pack<Pack*>     = null
-shutdown_pack<Pack*> = null
+ready_pack<Pack>    = null
+tick_pack<Pack>     = null
+shutdown_pack<Pack> = null
 
 // Wire the bit-pack singletons. Called once on package load.
+// Pack::least_significant / Pack::then return heap pointers; assign them
+// directly to the module slots (no `&r` — that would be a stack address).
 func init(){
     r<Pack> = Pack::least_significant(READINESS_BITS)
     t<Pack> = r.then(TICK_BITS)
     s<Pack> = t.then(SHUTDOWN_BITS)
-    ready_pack    = &r
-    tick_pack     = &t
-    shutdown_pack = &s
+    ready_pack    = r
+    tick_pack     = t
+    shutdown_pack = s
 }
 
 // One queued waiter on a ScheduledIo. Embedded via Pointers at offset 0.
@@ -70,7 +72,7 @@ mem ScheduledIo {
 }
 
 // Build an empty ScheduledIo: no readiness, no waiters, no shutdown.
-const ScheduledIo::new() ScheduledIo* {
+const ScheduledIo::new() ScheduledIo {
     s<ScheduledIo> = new ScheduledIo
     s.linked_list_pointers.prev = null
     s.linked_list_pointers.next = null
@@ -171,9 +173,9 @@ ScheduledIo::wake(ready<Ready>) WakeList {
 
     // Walk the waiter list FIFO; matched waiters are removed and queued for
     // schedule. Waiters whose interest does not overlap stay in place.
-    cur<Pointers*> = this.waiters.head
+    cur<Pointers> = this.waiters.head
     while cur != null {
-        nxt<Pointers*> = cur.next
+        nxt<Pointers> = cur.next
         w<Waiter> = cur.(Waiter)
         match_mask<i32> = interest_to_ready_mask(w.interest)
         if (ready.bits & match_mask) != 0 {
@@ -253,9 +255,9 @@ ScheduledIo::shutdown() WakeList {
         this.writer_ctx = 0
     }
 
-    cur_node<Pointers*> = this.waiters.head
+    cur_node<Pointers> = this.waiters.head
     while cur_node != null {
-        nxt<Pointers*> = cur_node.next
+        nxt<Pointers> = cur_node.next
         w<Waiter> = cur_node.(Waiter)
         this.waiters.remove(cur_node)
         w.is_ready = 1
@@ -304,7 +306,7 @@ Readiness::poll(ctx){
     // refresh ctx so the latest waker wins.
     if this.registered == 0 {
         w<Waiter> = Waiter::new(ctx.(u64), this.interest)
-        this.node = &w
+        this.node = w
         this.registered = 1
         sio.waiters_lock.lock()
         sio.waiters.push_back(&w.node)
