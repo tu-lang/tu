@@ -22,7 +22,7 @@ mem SignalDriverHandle {
 //   0           — registered successfully; *out is filled with EventInfo*
 //   SignalNotRegistered — signum out of range or unsupported
 //   Other       — sigprocmask / signalfd4 syscall failure
-SignalDriverHandle::register(signum<i32>) (i32, EventInfo*) {
+SignalDriverHandle::register(signum<i32>) (i32, EventInfo) {
     if signum < 1 return aerr.SignalNotRegistered, null
     if signum >= NUM_SIGNALS return aerr.SignalNotRegistered, null
     if signum == SIGKILL_SIGNUM return aerr.SignalNotRegistered, null

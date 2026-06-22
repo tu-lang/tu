@@ -74,7 +74,7 @@ BatchSemaphore::release(n<u32>){
     this.lock.lock()
     pool<u32> = this.permits + n
     loop {
-        h<Pointers*> = this.waiters.head
+        h<Pointers> = this.waiters.head
         if h == null break
         w<SemWaiter> = h.(SemWaiter)
         if w.remaining_permits > pool break
@@ -96,7 +96,7 @@ BatchSemaphore::close(){
     this.lock.lock()
     this.closed = CLOSED_FLAG
     loop {
-        h<Pointers*> = this.waiters.head
+        h<Pointers> = this.waiters.head
         if h == null break
         w<SemWaiter> = h.(SemWaiter)
         this.waiters.remove(h)

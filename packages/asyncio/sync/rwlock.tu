@@ -11,11 +11,11 @@ mem RwLock {
 }
 
 // Build a fresh lock with `value` bits (0 = uninitialised).
-const RwLock::new(value<u64>) RwLock* {
+const RwLock::new(value<u64>) RwLock {
     l<RwLock> = new RwLock
     l.sem  = BatchSemaphore::new(MAX_READERS)
     l.slot = value
-    return &l
+    return l
 }
 
 // Read guard; releases one permit.

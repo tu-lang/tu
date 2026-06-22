@@ -24,7 +24,7 @@ mem TimeHandle {
 }
 
 // Build a paired (driver, handle).
-const TimeDriver::new(io_park<IoDriver>) (TimeDriver*, TimeHandle*) {
+const TimeDriver::new(io_park<IoDriver>) (TimeDriver, TimeHandle) {
     src<TimeSource> = TimeSource::new()
     w<Wheel>        = Wheel::new()
     c<Clock>        = Clock::new(src)
@@ -41,7 +41,7 @@ const TimeDriver::new(io_park<IoDriver>) (TimeDriver*, TimeHandle*) {
     h.wheel = w
     h.clock = c
 
-    return &drv, &h
+    return drv, h
 }
 
 // Compute the effective max-wait for the IO driver: min(limit, time to
@@ -109,14 +109,14 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>) i32 {
 // Helper: surface whatever IoHandle the io_park driver is paired with.
 // First-pass returns null because the runtime root has not wired the
 // pair through yet; build_*_thread (Phase 10) will replace this.
-TimeDriver::io_park_handle_for(handle<TimeHandle>) IoHandle* {
+TimeDriver::io_park_handle_for(handle<TimeHandle>) IoHandle {
     return null
 }
 
 // Schedule an entry. Returns INSERT_* from Wheel::insert.
 TimeHandle::register(entry<TimerEntry>) i32 {
     this.lock.lock()
-    err<i32>, _<u64> = this.wheel.insert(entry.shared, entry.deadline_ms)
+    err<i32>, deadline<u64> = this.wheel.insert(entry.shared, entry.deadline_ms)
     if err == 0 entry.registered = 1
     this.lock.unlock()
     return err

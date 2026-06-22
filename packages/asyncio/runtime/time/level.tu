@@ -12,11 +12,11 @@ mem EntryList {
 }
 
 // Build an empty list.
-const EntryList::new() EntryList* {
+const EntryList::new() EntryList {
     l<EntryList> = new EntryList
     l.head = null
     l.tail = null
-    return &l
+    return l
 }
 
 // True when no entries are linked.
@@ -40,7 +40,7 @@ EntryList::push_back(entry<TimerShared>){
 }
 
 // Detach the head and return it; null when empty.
-EntryList::pop_front() TimerShared* {
+EntryList::pop_front() TimerShared {
     e<TimerShared> = this.head
     if e == null return null
     nxt_node<Pointers> = e.pointers.next
@@ -60,27 +60,28 @@ EntryList::pop_front() TimerShared* {
 // One level of the hashed wheel. occupied bit i toggles when slots[i]
 // transitions empty<->non-empty.
 mem Level {
-    u32          level
-    u64          occupied
-    EntryList**  slots         // length LEVEL_SLOTS
+    u32   level
+    u64   occupied
+    u64*  slots         // raw bits of EntryList*; length LEVEL_SLOTS, reader casts via slot.(EntryList)
 }
 
 // Build an empty Level.
-const Level::new(level<u32>) Level* {
+const Level::new(level<u32>) Level {
     lv<Level> = new Level
     lv.level    = level
     lv.occupied = 0
-    arr<EntryList**> = std.malloc(sizeof(EntryList*) * LEVEL_SLOTS.(u64))
+    arr<u64*> = std.malloc(sizeof(u64) * LEVEL_SLOTS.(u64))
     for i<i32> = 0 ; i < LEVEL_SLOTS ; i += 1 {
-        arr[i] = EntryList::new()
+        el<EntryList> = EntryList::new()
+        arr[i] = el.(u64)
     }
     lv.slots = arr
-    return &lv
+    return lv
 }
 
 // Append entry to the slot. occupied bit is set on the empty -> non-empty edge.
 Level::add_entry(slot<i32>, entry<TimerShared>){
-    s<EntryList> = this.slots[slot]
+    s<EntryList> = this.slots[slot].(EntryList)
     was_empty<bool> = s.is_empty()
     s.push_back(entry)
     if was_empty {
@@ -90,10 +91,10 @@ Level::add_entry(slot<i32>, entry<TimerShared>){
 
 // Detach entry from slot. Caller must guarantee entry currently lives there.
 Level::remove_entry(slot<i32>, entry<TimerShared>){
-    s<EntryList> = this.slots[slot]
+    s<EntryList> = this.slots[slot].(EntryList)
     p<Pointers> = entry.pointers
     if p.prev != null {
-        prev_node<Pointers*> = p.prev
+        prev_node<Pointers> = p.prev
         prev_node.next = p.next
     } else {
         if p.next == null {
@@ -105,7 +106,7 @@ Level::remove_entry(slot<i32>, entry<TimerShared>){
         }
     }
     if p.next != null {
-        next_node<Pointers*> = p.next
+        next_node<Pointers> = p.next
         next_node.prev = p.prev
     } else {
         if p.prev == null {
@@ -124,15 +125,15 @@ Level::remove_entry(slot<i32>, entry<TimerShared>){
 }
 
 // Take ownership of an entire slot's list, leaving the slot empty.
-Level::take_slot(slot<i32>) EntryList* {
-    src<EntryList> = this.slots[slot]
+Level::take_slot(slot<i32>) EntryList {
+    src<EntryList> = this.slots[slot].(EntryList)
     out<EntryList> = EntryList::new()
     out.head = src.head
     out.tail = src.tail
     src.head = null
     src.tail = null
     this.occupied = this.occupied & (~(1.(u64) << slot.(u64)))
-    return &out
+    return out
 }
 
 // Trailing-zero scan over occupied; returns -1 when no slot is set.

@@ -53,21 +53,22 @@ fn slot_for(level<i32>, elapsed<u64>, deadline_ms<u64>) i32 {
 // Hashed timer wheel.
 mem Wheel {
     u64         elapsed       // monotonic ms already poll()ed past
-    Level**     levels        // length NUM_LEVELS
+    u64*        levels        // raw bits of Level*; length NUM_LEVELS
     EntryList*  pending       // entries already fired but not yet drained
 }
 
 // Build an empty wheel anchored at elapsed=0.
-const Wheel::new() Wheel* {
+const Wheel::new() Wheel {
     w<Wheel> = new Wheel
     w.elapsed = 0
-    arr<Level**> = std.malloc(sizeof(Level*) * NUM_LEVELS.(u64))
+    arr<u64*> = std.malloc(sizeof(u64) * NUM_LEVELS.(u64))
     for i<i32> = 0 ; i < NUM_LEVELS ; i += 1 {
-        arr[i] = Level::new(i.(u32))
+        lv<Level> = Level::new(i.(u32))
+        arr[i] = lv.(u64)
     }
     w.levels  = arr
     w.pending = EntryList::new()
-    return &w
+    return w
 }
 
 // Insert entry. Returns (INSERT_OK, deadline_ms) on success. INSERT_ELAPSED
@@ -82,7 +83,7 @@ Wheel::insert(item<TimerShared>, deadline_ms<u64>) (i32, u64) {
     sl<i32> = slot_for(lv, this.elapsed, deadline_ms)
     item.cached_when = deadline_ms
 
-    layer<Level> = this.levels[lv]
+    layer<Level> = this.levels[lv].(Level)
     layer.add_entry(sl, item)
     return INSERT_OK, deadline_ms
 }
@@ -96,7 +97,7 @@ Wheel::remove(item<TimerShared>) i32 {
     rel<u64> = cw - this.elapsed
     lv<i32> = level_for(rel)
     sl<i32> = slot_for(lv, this.elapsed, cw)
-    layer<Level> = this.levels[lv]
+    layer<Level> = this.levels[lv].(Level)
     layer.remove_entry(sl, item)
     item.cached_when = STATE_DEREGISTERED
     return 0
@@ -106,7 +107,7 @@ Wheel::remove(item<TimerShared>) i32 {
 // (EXPIR_NONE, 0).
 Wheel::poll_at() (i32, u64) {
     for lv<i32> = 0 ; lv < NUM_LEVELS ; lv += 1 {
-        layer<Level> = this.levels[lv]
+        layer<Level> = this.levels[lv].(Level)
         sl<i32> = layer.next_occupied_slot(0)
         if sl >= 0 {
             sr<u64> = slot_range(lv)
@@ -144,7 +145,7 @@ Wheel::cascade_level(list<EntryList>){
         rel<u64> = e.cached_when - this.elapsed
         lv<i32> = level_for(rel)
         sl<i32> = slot_for(lv, this.elapsed, e.cached_when)
-        layer<Level> = this.levels[lv]
+        layer<Level> = this.levels[lv].(Level)
         layer.add_entry(sl, e)
     }
 }
@@ -163,7 +164,7 @@ Wheel::poll(now<u64>) u64 {
         // target. Cascade from there until elapsed catches up.
         moved<i32> = 0
         for lv<i32> = 0 ; lv < NUM_LEVELS ; lv += 1 {
-            layer<Level> = this.levels[lv]
+            layer<Level> = this.levels[lv].(Level)
             sr<u64> = slot_range(lv)
             cur_slot<i32> = ((this.elapsed / sr) & LEVEL_MASK).(i32)
             target_slot<i32> = ((target / sr) & LEVEL_MASK).(i32)
@@ -195,12 +196,12 @@ Wheel::poll(now<u64>) u64 {
 
 // Drain every fired entry as a list. Caller is responsible for actually
 // invoking the wakers; the wheel keeps no further references afterwards.
-Wheel::take_pending() EntryList* {
+Wheel::take_pending() EntryList {
     out<EntryList> = EntryList::new()
     out.head = this.pending.head
     out.tail = this.pending.tail
     this.pending.head = null
     this.pending.tail = null
-    return &out
+    return out
 }
 

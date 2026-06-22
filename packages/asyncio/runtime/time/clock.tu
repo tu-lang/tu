@@ -14,13 +14,13 @@ mem Clock {
 }
 
 // Build a Clock that follows src directly.
-const Clock::new(src<TimeSource>) Clock* {
+const Clock::new(src<TimeSource>) Clock {
     c<Clock> = new Clock
     c.src           = src
     c.paused        = 0
     c.frozen_ms     = 0
     c.advanced_ms   = 0
-    return &c
+    return c
 }
 
 // Freeze time at the current ms reading; subsequent now_ms calls observe

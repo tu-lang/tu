@@ -8,10 +8,10 @@ mem TimeSource {
 }
 
 // Anchor TimeSource at the current monotonic instant.
-const TimeSource::new() TimeSource* {
+const TimeSource::new() TimeSource {
     s<TimeSource> = new TimeSource
     s.origin = Instant::now()
-    return &s
+    return s
 }
 
 // Milliseconds since origin.

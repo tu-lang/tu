@@ -29,13 +29,13 @@ mem StateCell {
 }
 
 // Build a StateCell owning a fresh AtomicWaker.
-const StateCell::new() StateCell* {
+const StateCell::new() StateCell {
     s<StateCell> = new StateCell
     s.state  = STATE_DEREGISTERED
     s.result = RESULT_OK
     s.waker_lock.init()
     s.waker  = sync.AtomicWaker::new()
-    return &s
+    return s
 }
 
 // Atomic snapshot of the deadline word.
@@ -126,13 +126,13 @@ mem TimerShared {
 }
 
 // Build a wheel-side handle for cell.
-const TimerShared::new(cell<StateCell>) TimerShared* {
+const TimerShared::new(cell<StateCell>) TimerShared {
     s<TimerShared> = new TimerShared
     s.state              = cell
     s.pointers.prev      = null
     s.pointers.next      = null
     s.cached_when        = STATE_DEREGISTERED
-    return &s
+    return s
 }
 
 // Sleep-side counterpart. Sleep::poll funnels into TimerEntry::poll_elapsed.
@@ -143,13 +143,13 @@ mem TimerEntry {
 }
 
 // Allocate a TimerEntry with the supplied deadline (not yet linked).
-const TimerEntry::new(deadline_ms<u64>) TimerEntry* {
+const TimerEntry::new(deadline_ms<u64>) TimerEntry {
     e<TimerEntry> = new TimerEntry
     cell<StateCell> = StateCell::new()
     e.shared      = TimerShared::new(cell)
     e.deadline_ms = deadline_ms
     e.registered  = 0
-    return &e
+    return e
 }
 
 // Mark deregistered so the wheel does not fire after Drop.

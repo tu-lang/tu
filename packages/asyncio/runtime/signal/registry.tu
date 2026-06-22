@@ -18,12 +18,12 @@ mem EventInfo {
 }
 
 // Build a fresh EventInfo for signum.
-const EventInfo::new(signum<i32>) EventInfo* {
+const EventInfo::new(signum<i32>) EventInfo {
     e<EventInfo> = new EventInfo
     e.signum      = signum
     e.notify      = sync.Notify::new()
     e.fired_count = 0
-    return &e
+    return e
 }
 
 // Process-global registry. events[i] is null until something registers
@@ -34,11 +34,11 @@ mem SignalGlobals {
 }
 
 // Lazy singleton. Module-level pointer + Once-style guard.
-G_SIGNAL_GLOBALS<SignalGlobals*> = null
-G_SIGNAL_INIT<util.OnceCell*>    = null
+G_SIGNAL_GLOBALS<SignalGlobals> = null
+G_SIGNAL_INIT<util.OnceCell>    = null
 
 // Build the singleton if missing and return it. Idempotent.
-fn signal_globals_get_or_init() (i32, SignalGlobals*) {
+fn signal_globals_get_or_init() (i32, SignalGlobals) {
     if G_SIGNAL_GLOBALS != null return 0, G_SIGNAL_GLOBALS
 
     g<SignalGlobals> = new SignalGlobals
@@ -47,19 +47,19 @@ fn signal_globals_get_or_init() (i32, SignalGlobals*) {
     for i<i32> = 0 ; i < NUM_SIGNALS ; i += 1 {
         g.events[i] = 0
     }
-    G_SIGNAL_GLOBALS = &g
-    return 0, &g
+    G_SIGNAL_GLOBALS = g
+    return 0, g
 }
 
 // Look up (or allocate) the EventInfo for signum.
-fn signal_globals_event(g<SignalGlobals>, signum<i32>) EventInfo* {
+fn signal_globals_event(g<SignalGlobals>, signum<i32>) EventInfo {
     if signum < 1 return null
     if signum >= NUM_SIGNALS return null
     bits<u64> = g.events[signum]
     if bits != 0 return bits.(EventInfo)
     e<EventInfo> = EventInfo::new(signum)
     g.events[signum] = e.(u64)
-    return &e
+    return e
 }
 
 // Snapshot fired_count without taking the Notify lock.

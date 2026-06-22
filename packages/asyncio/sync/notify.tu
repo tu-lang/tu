@@ -58,7 +58,7 @@ const Notify::new() Notify {
 // was woken (the wake itself happens after the lock drops).
 Notify::notify_one() i32 {
     this.lock.lock()
-    head_node<Pointers*> = this.waiters.head
+    head_node<Pointers> = this.waiters.head
     if head_node == null {
         if this.state == NOTIFY_NONE this.state = NOTIFY_ONE
         this.lock.unlock()
@@ -79,7 +79,7 @@ Notify::notify_one() i32 {
 Notify::notify_waiters(){
     this.lock.lock()
     loop {
-        h<Pointers*> = this.waiters.head
+        h<Pointers> = this.waiters.head
         if h == null break
         this.waiters.remove(h)
         w<NotifyWaiter> = h.(NotifyWaiter)
