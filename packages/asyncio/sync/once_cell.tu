@@ -21,12 +21,12 @@ mem OnceCell {
 }
 
 // Build an empty cell.
-const OnceCell::new() OnceCell* {
+const OnceCell::new() OnceCell {
     c<OnceCell> = new OnceCell
     c.state = UNINIT
     c.value = 0
     c.ready = Notify::new()
-    return &c
+    return c
 }
 
 // Returns true once initialised.

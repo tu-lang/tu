@@ -9,11 +9,11 @@ mem Mutex {
 }
 
 // Build a Mutex pre-filled with `value` bits (0 = uninitialised).
-const Mutex::new(value<u64>) Mutex* {
+const Mutex::new(value<u64>) Mutex {
     m<Mutex> = new Mutex
     m.sem  = BatchSemaphore::new(1)
     m.slot = value
-    return &m
+    return m
 }
 
 // Guard handed back by lock(). MutexGuard::release re-permits the mutex.

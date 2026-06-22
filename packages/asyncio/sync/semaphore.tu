@@ -8,10 +8,10 @@ mem Semaphore {
 }
 
 // Build a Semaphore with n permits.
-const Semaphore::new(n<u32>) Semaphore* {
+const Semaphore::new(n<u32>) Semaphore {
     s<Semaphore> = new Semaphore
     s.sem = BatchSemaphore::new(n)
-    return &s
+    return s
 }
 
 // Permit handed back by acquire(); release() returns the permit, forget()

@@ -21,13 +21,13 @@ mem OneshotInner {
 }
 
 // Build an empty inner shell.
-const OneshotInner::new() OneshotInner* {
+const OneshotInner::new() OneshotInner {
     s<OneshotInner> = new OneshotInner
     s.state      = 0
     s.value_slot = 0
     s.tx_waker   = AtomicWaker::new()
     s.rx_waker   = AtomicWaker::new()
-    return &s
+    return s
 }
 
 // Sender side. Drop the sender once you no longer plan to send.

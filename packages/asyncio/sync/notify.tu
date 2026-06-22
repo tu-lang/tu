@@ -25,14 +25,15 @@ mem NotifyWaiter {
     i32      notified       // monotonic 0 -> 1 once dequeued by a wake
 }
 
-// Build a fresh waiter ready to be linked.
-const NotifyWaiter::new(ctx<u64>) NotifyWaiter* {
+// Build a fresh waiter ready to be linked. `new NotifyWaiter` returns the
+// heap pointer; pass it through (no `&`).
+const NotifyWaiter::new(ctx<u64>) NotifyWaiter {
     w<NotifyWaiter> = new NotifyWaiter
     w.node.prev   = null
     w.node.next   = null
     w.ctx_packed  = ctx
     w.notified    = 0
-    return &w
+    return w
 }
 
 // Notify itself. waiters is the queue of pending Notified futures; state
@@ -44,12 +45,12 @@ mem Notify {
 }
 
 // Build an empty Notify in the NOTIFY_NONE state.
-const Notify::new() Notify* {
+const Notify::new() Notify {
     n<Notify> = new Notify
     n.lock.init()
     n.state   = NOTIFY_NONE
     n.waiters = LinkedList::new()
-    return &n
+    return n
 }
 
 // Hand off to one waiter, or stash a single permit when none are queued.
