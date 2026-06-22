@@ -19,23 +19,24 @@ mem ListRx {
     u64    head_index      // consumer cursor in global slot space
 }
 
-// Build (tx, rx) pair sharing one Block to start with.
+// Build (tx, rx) pair sharing one Block to start with. Block::new
+// returns a heap pointer; pass it through to both endpoints.
 const list_new() (ListTx, ListRx) {
     blk<Block> = Block::new(0)
-    tx<ListTx> = new ListTx { head_block: &blk, tail_index: 0 }
-    rx<ListRx> = new ListRx { head_block: &blk, head_index: 0 }
+    tx<ListTx> = new ListTx { head_block: blk, tail_index: 0 }
+    rx<ListRx> = new ListRx { head_block: blk, head_index: 0 }
     return tx, rx
 }
 
 // Locate the block holding global index `idx`, allocating new blocks at
 // the tail when needed. Caller must guarantee `start` covers `idx`.
-fn list_block_for(start<Block>, idx<u32>) Block* {
+fn list_block_for(start<Block>, idx<u32>) Block {
     cur<Block> = start
     loop {
-        if idx >= cur.start_index && idx < cur.start_index + BLOCK_CAP return &cur
+        if idx >= cur.start_index && idx < cur.start_index + BLOCK_CAP return cur
         if cur.next == null {
             nxt<Block> = Block::new(cur.start_index + BLOCK_CAP)
-            cur.next = &nxt
+            cur.next = nxt
         }
         cur = cur.next
     }
