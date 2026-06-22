@@ -22,7 +22,7 @@ mem Shared {
 }
 
 // Build empty Shared with the given capacity.
-const Shared::new(queue_cap<u32>) Shared* {
+const Shared::new(queue_cap<u32>) Shared {
     s<Shared> = new Shared
     s.queue       = std.malloc(sizeof(u64) * queue_cap.(u64))
     s.queue_head  = 0
@@ -31,7 +31,7 @@ const Shared::new(queue_cap<u32>) Shared* {
     s.num_notify  = 0
     s.shutdown    = 0
     s.condvar.Clear()
-    return &s
+    return s
 }
 
 // True when no items are queued.
@@ -72,7 +72,7 @@ mem BlockingPool {
 }
 
 // Build a pool with default capacities.
-const BlockingPool::new(thread_cap<u32>) BlockingPool* {
+const BlockingPool::new(thread_cap<u32>) BlockingPool {
     p<BlockingPool> = new BlockingPool
     p.shared_lock.init()
     p.shared           = Shared::new(DEFAULT_QUEUE_DEPTH)
@@ -81,7 +81,7 @@ const BlockingPool::new(thread_cap<u32>) BlockingPool* {
     p.num_threads      = 0
     p.num_idle_threads = 0
     p.queue_depth      = DEFAULT_QUEUE_DEPTH
-    return &p
+    return p
 }
 
 // Spawner is a thin handle over the pool, mirroring the runtime layout.
@@ -90,10 +90,10 @@ mem Spawner {
 }
 
 // Build a Spawner around pool.
-const Spawner::new(pool<BlockingPool>) Spawner* {
+const Spawner::new(pool<BlockingPool>) Spawner {
     s<Spawner> = new Spawner
     s.inner = pool
-    return &s
+    return s
 }
 
 // Module-level worker entry. runtime.newcore expects an (u64) entrypoint;

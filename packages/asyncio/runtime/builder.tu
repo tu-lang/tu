@@ -23,7 +23,7 @@ mem Builder {
 }
 
 // Build a current_thread builder with sane defaults.
-const Builder::new_current_thread() Builder* {
+const Builder::new_current_thread() Builder {
     b<Builder> = new Builder
     b.kind                  = KIND_CURRENT_THREAD
     b.enable_io             = 0
@@ -35,65 +35,65 @@ const Builder::new_current_thread() Builder* {
     b.global_queue_interval = DEFAULT_GLOBAL_QUEUE_INTERVAL
     b.disable_lifo_slot     = 0
     b.clock                 = null
-    return &b
+    return b
 }
 
 // Build a multi_thread builder. worker_threads defaults to 1; user
 // should call worker_threads(n) before build.
-const Builder::new_multi_thread() Builder* {
+const Builder::new_multi_thread() Builder {
     b<Builder> = Builder::new_current_thread()
     b.kind = KIND_MULTI_THREAD
     return b
 }
 
-// Setters return Builder* so calls chain.
-Builder::worker_threads(n<u32>) Builder* {
+// Setters return Builder so calls chain.
+Builder::worker_threads(n<u32>) Builder {
     this.worker_threads = n
     return this
 }
-Builder::max_blocking_threads(n<u32>) Builder* {
+Builder::max_blocking_threads(n<u32>) Builder {
     this.max_blocking_threads = n
     return this
 }
-Builder::thread_stack_size(n<u64>) Builder* {
+Builder::thread_stack_size(n<u64>) Builder {
     this.thread_stack_size = n
     return this
 }
-Builder::enable_io() Builder* {
+Builder::enable_io() Builder {
     this.enable_io = 1
     return this
 }
-Builder::enable_time() Builder* {
+Builder::enable_time() Builder {
     this.enable_time = 1
     return this
 }
-Builder::enable_all() Builder* {
+Builder::enable_all() Builder {
     this.enable_io = 1
     this.enable_time = 1
     return this
 }
-Builder::event_interval(n<u32>) Builder* {
+Builder::event_interval(n<u32>) Builder {
     this.event_interval = n
     return this
 }
-Builder::global_queue_interval(n<u32>) Builder* {
+Builder::global_queue_interval(n<u32>) Builder {
     this.global_queue_interval = n
     return this
 }
-Builder::disable_lifo_slot_set() Builder* {
+Builder::disable_lifo_slot_set() Builder {
     this.disable_lifo_slot = 1
     return this
 }
 
 // Compose IO + time + signal drivers based on enable_* flags. Returns
 // a (Driver, DriverHandle) pair plus an optional error code.
-fn build_drivers(b<Builder>) (i32, Driver*, DriverHandle*) {
-    io_drv<IoDriver*>    = null
-    io_h<IoHandle*>      = null
-    time_drv<TimeDriver*> = null
-    time_h<TimeHandle*>   = null
-    sig_drv<SignalDriver*> = null
-    sig_h<SignalDriverHandle*> = null
+fn build_drivers(b<Builder>) (i32, Driver, DriverHandle) {
+    io_drv<IoDriver>    = null
+    io_h<IoHandle>      = null
+    time_drv<TimeDriver> = null
+    time_h<TimeHandle>   = null
+    sig_drv<SignalDriver> = null
+    sig_h<SignalDriverHandle> = null
 
     if b.enable_io == 1 {
         ierr<i32>, iod<IoDriver>, ioh<IoHandle> = IoDriver::new()
@@ -121,7 +121,7 @@ fn build_drivers(b<Builder>) (i32, Driver*, DriverHandle*) {
 
 // Build a current_thread runtime: shared scheduler + blocking pool +
 // optional drivers + a Handle wired to all of the above.
-fn build_current_thread(b<Builder>) (i32, Runtime*) {
+fn build_current_thread(b<Builder>) (i32, Runtime) {
     err<i32>, drv<Driver>, drv_h<DriverHandle> = build_drivers(b)
     if err != 0 return err, null
 
@@ -139,7 +139,9 @@ fn build_current_thread(b<Builder>) (i32, Runtime*) {
 
 // Build a multi_thread runtime: shared MtShared + N workers spawned via
 // runtime.newcore(worker_entry).
-fn build_multi_thread(b<Builder>) (i32, Runtime*) {
+// queue_local() / Steal / Local return heap pointers; assign through
+// without wrapping with `&`.
+fn build_multi_thread(b<Builder>) (i32, Runtime) {
     err<i32>, drv<Driver>, drv_h<DriverHandle> = build_drivers(b)
     if err != 0 return err, null
 
@@ -151,8 +153,6 @@ fn build_multi_thread(b<Builder>) (i32, Runtime*) {
     handle.driver_handle    = drv_h.(u64)
     handle.blocking_spawner = spawner.(u64)
 
-    // Spawn workers. Each worker pulls its MtWorker* via ACTIVE_WORKER
-    // before runtime.newcore returns control to it.
     for i<u32> = 0 ; i < b.worker_threads ; i += 1 {
         steal_a<Steal>, local_b<Local> = queue_local()
         rng<FastRand>     = FastRand::new(0xdeadbeef + i.(u64))
@@ -162,7 +162,7 @@ fn build_multi_thread(b<Builder>) (i32, Runtime*) {
         worker<MtWorker>  = MtWorker::new(handle, i, core)
 
         r<Remote> = new Remote
-        r.steal    = &steal_a
+        r.steal    = steal_a
         r.unparker = unparker
         shared.remotes[i] = r
 
@@ -175,7 +175,7 @@ fn build_multi_thread(b<Builder>) (i32, Runtime*) {
 }
 
 // Top-level entry: validates kind and dispatches.
-Builder::build() (i32, Runtime*) {
+Builder::build() (i32, Runtime) {
     if this.kind == KIND_MULTI_THREAD return build_multi_thread(this)
     return build_current_thread(this)
 }

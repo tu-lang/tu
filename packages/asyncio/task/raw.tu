@@ -22,10 +22,10 @@ mem RawTask {
 }
 
 // Module-level singleton; lazily allocated so package init can populate it.
-default_vtable<RawVTable*> = null
+default_vtable<RawVTable> = null
 
 // Return the shared default vtable singleton, allocating on first call.
-fn raw_vtable_default() RawVTable* {
+fn raw_vtable_default() RawVTable {
     if default_vtable == null {
         v<RawVTable> = new RawVTable
         v.poll                  = 0
@@ -58,15 +58,17 @@ fn raw_vtable_install(
 // Allocate State + Header + Cell + RawTask wired to the default vtable.
 // State starts at INITIAL_STATE (refcount=3, JOIN_INTEREST, NOTIFIED) and
 // Cell starts at IDLE.
+// Each ::new() already returns a heap pointer, so pass them through
+// (no `&st` / `&hdr` — those would be stack-slot addresses).
 fn raw_new(fut, scheduler, task_id<u64>) RawTask {
     st<State> = State::new()
-    hdr<Header> = header_new(&st, scheduler, fut, task_id)
-    cell<Cell> = Cell::new(&hdr, fut)
+    hdr<Header> = header_new(st, scheduler, fut, task_id)
+    cell<Cell> = Cell::new(hdr, fut)
 
     raw<RawTask> = new RawTask
-    raw.hdr    = &hdr
+    raw.hdr    = hdr
     raw.fut    = fut
-    raw.cell   = &cell
+    raw.cell   = cell
     raw.vtable = raw_vtable_default()
     return raw
 }

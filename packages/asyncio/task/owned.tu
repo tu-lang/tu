@@ -16,12 +16,13 @@ mem OwnedTasks {
     i32 active          // live count, mutated under lock
 }
 
-// Build an empty, open list.
-const OwnedTasks::new() OwnedTasks* {
+// Build an empty, open list. MutexInter::new returns the heap pointer
+// directly; no `&m`.
+const OwnedTasks::new() OwnedTasks {
     o<OwnedTasks> = new OwnedTasks
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
-    o.lock   = &m
+    o.lock   = m
     o.head   = 0
     o.tail   = 0
     o.closed = 0

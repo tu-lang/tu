@@ -10,10 +10,10 @@ mem BlockingSchedule {
 }
 
 // Build a BlockingSchedule pointing at runtime_inject.
-const BlockingSchedule::new(runtime_inject<Inject>) BlockingSchedule* {
+const BlockingSchedule::new(runtime_inject<Inject>) BlockingSchedule {
     s<BlockingSchedule> = new BlockingSchedule
     s.runtime_inject = runtime_inject
-    return &s
+    return s
 }
 
 // Implement the Schedule contract: forward Notified into the runtime's

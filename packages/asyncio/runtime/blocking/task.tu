@@ -14,11 +14,11 @@ mem BlockingTask {
 }
 
 // Build a task that, when run, executes op and stores the u64 result.
-const BlockingTask::new(op<fc<blocking_op>>, raw<task.RawTask>) BlockingTask* {
+const BlockingTask::new(op<fc<blocking_op>>, raw<task.RawTask>) BlockingTask {
     t<BlockingTask> = new BlockingTask
     t.op  = op
     t.raw = raw
-    return &t
+    return t
 }
 
 // Item enqueued on the pool. mandatory tasks survive shutdown so fs /
@@ -29,11 +29,11 @@ mem BlockingTaskItem {
 }
 
 // Build an item wrapping task with the given priority.
-const BlockingTaskItem::new(task<BlockingTask>, mandatory<i32>) BlockingTaskItem* {
+const BlockingTaskItem::new(task<BlockingTask>, mandatory<i32>) BlockingTaskItem {
     it<BlockingTaskItem> = new BlockingTaskItem
     it.task      = task
     it.mandatory = mandatory
-    return &it
+    return it
 }
 
 // Run the closure, publish the result, and drop the run-queue ref.

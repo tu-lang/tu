@@ -12,7 +12,7 @@ ENTER_BLOCK_ON<i32> = 1
 ENTER_BLOCKING<i32> = 2
 
 // Active context for the current OS thread; null when nothing is running.
-ACTIVE_RT<RuntimeContext*> = null
+ACTIVE_RT<RuntimeContext> = null
 
 // Combined view used by hot-path helpers (coop, signal handlers).
 mem RuntimeContext {
@@ -26,14 +26,14 @@ mem RuntimeContext {
 // Build a context for a given enter point. coop_budget defaults to 128
 // (matches DEFAULT_BUDGET in coop.tu but kept duplicated to avoid the
 // circular import).
-const RuntimeContext::new(sched_ptr<u64>, driver_ptr<u64>, rng<FastRand>, kind<i32>) RuntimeContext* {
+const RuntimeContext::new(sched_ptr<u64>, driver_ptr<u64>, rng<FastRand>, kind<i32>) RuntimeContext {
     c<RuntimeContext> = new RuntimeContext
     c.sched       = sched_ptr
     c.driver      = driver_ptr
     c.rng         = rng
     c.coop_budget = 128
     c.enter_kind  = kind
-    return &c
+    return c
 }
 
 // Save+swap snapshot. rt_exit takes one back to restore the previous

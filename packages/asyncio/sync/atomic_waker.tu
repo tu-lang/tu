@@ -18,8 +18,7 @@ mem AtomicWaker {
     u64 ctx_packed    // payload waker fires with
 }
 
-// Build an empty waker (state=WAITING, ctx=0).
-// `new AtomicWaker` already returns the heap pointer; pass it through.
+// Build a fresh waker (state=WAITING, ctx=0). new returns a heap pointer.
 const AtomicWaker::new() AtomicWaker {
     a<AtomicWaker> = new AtomicWaker
     a.state       = WAITING
