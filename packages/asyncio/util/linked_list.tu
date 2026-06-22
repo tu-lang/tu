@@ -1,8 +1,11 @@
 // Intrusive doubly linked list shared by every asyncio waiter list.
-// Nodes must place Pointers at offset 0 so (Pointers*) and (NodeMem*) are
-// interchangeable; the list itself only walks the Pointers chain.
+// Nodes must place Pointers at offset 0 so a `Pointers` reference and a
+// `NodeMem` reference are interchangeable; the list itself only walks
+// the Pointers chain.
 
-// Pointer pair embedded by every list-resident node.
+// Pointer pair embedded by every list-resident node. `prev` / `next` are
+// declared as Pointers* in the mem body (the only legal place for `*`);
+// callers see them as plain Pointers references.
 mem Pointers {
     Pointers* prev
     Pointers* next
@@ -19,21 +22,22 @@ mem LinkedList {
     Pointers* tail
 }
 
-// Build an empty list.
-const LinkedList::new() LinkedList* {
+// Build an empty list. `new LinkedList` already returns the heap pointer.
+const LinkedList::new() LinkedList {
     l<LinkedList> = new LinkedList
     l.head = null
     l.tail = null
     return l
 }
 
+// True when no nodes are linked.
 LinkedList::is_empty() bool {
     if this.head == null return true
     return false
 }
 
 // Prepend node. Caller must guarantee node currently belongs to no list.
-LinkedList::push_front(node<Pointers*>){
+LinkedList::push_front(node<Pointers>){
     node.prev = null
     node.next = this.head
     if this.head != null {
@@ -45,7 +49,7 @@ LinkedList::push_front(node<Pointers*>){
 }
 
 // Append node. Caller must guarantee node currently belongs to no list.
-LinkedList::push_back(node<Pointers*>){
+LinkedList::push_back(node<Pointers>){
     node.prev = this.tail
     node.next = null
     if this.tail != null {
@@ -57,8 +61,8 @@ LinkedList::push_back(node<Pointers*>){
 }
 
 // Detach + return the head node. Returns null when empty; popped node has prev/next reset.
-LinkedList::pop_front() Pointers* {
-    n<Pointers*> = this.head
+LinkedList::pop_front() Pointers {
+    n<Pointers> = this.head
     if n == null return null
     this.head = n.next
     if this.head != null {
@@ -72,8 +76,8 @@ LinkedList::pop_front() Pointers* {
 }
 
 // Detach + return the tail node. Returns null when empty.
-LinkedList::pop_back() Pointers* {
-    n<Pointers*> = this.tail
+LinkedList::pop_back() Pointers {
+    n<Pointers> = this.tail
     if n == null return null
     this.tail = n.prev
     if this.tail != null {
@@ -87,7 +91,7 @@ LinkedList::pop_back() Pointers* {
 }
 
 // O(1) detach. Caller must guarantee node currently lives on this list.
-LinkedList::remove(node<Pointers*>){
+LinkedList::remove(node<Pointers>){
     if node.prev != null {
         node.prev.next = node.next
     } else {
@@ -101,4 +105,3 @@ LinkedList::remove(node<Pointers*>){
     node.prev = null
     node.next = null
 }
-

@@ -21,7 +21,7 @@ fn task_list_push_back(head_ptr<u64*>, tail_ptr<u64*>, raw<RawTask>){
 
 // O(1) detach + return the head. Returns null when empty; on the last pop
 // both head and tail are reset to null.
-fn task_list_pop_front(head_ptr<u64*>, tail_ptr<u64*>) RawTask* {
+fn task_list_pop_front(head_ptr<u64*>, tail_ptr<u64*>) RawTask {
     head_bits<u64> = *head_ptr
     raw<RawTask> = head_bits.(RawTask)
     if raw == null return null

@@ -13,8 +13,8 @@ fn notified_from_raw(raw<RawTask>) Notified {
     return n
 }
 
-// Unwrap to the underlying RawTask*.
-Notified::raw() RawTask* {
+// Unwrap to the underlying RawTask reference.
+Notified::raw() RawTask {
     return this.raw
 }
 

@@ -11,7 +11,7 @@ mem RcCell {
 }
 
 // Build a fresh cell with strong=1 and the supplied value.
-const RcCell::new(v<u64>) RcCell* {
+const RcCell::new(v<u64>) RcCell {
     c<RcCell> = new RcCell
     c.strong = 1
     c.value  = v
@@ -19,7 +19,7 @@ const RcCell::new(v<u64>) RcCell* {
 }
 
 // strong+=1, returns this so callers share the same cell.
-RcCell::clone() RcCell* {
+RcCell::clone() RcCell {
     this.strong += 1
     return this
 }

@@ -14,7 +14,7 @@ mem OnceCell {
 }
 
 // Build an empty cell.
-const OnceCell::new() OnceCell* {
+const OnceCell::new() OnceCell {
     c<OnceCell> = new OnceCell
     c.inited = 0
     c.value  = 0

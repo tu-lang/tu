@@ -9,7 +9,7 @@ mem IdleNotifiedSet {
 }
 
 // Build the set with two empty lists.
-const IdleNotifiedSet::new() IdleNotifiedSet* {
+const IdleNotifiedSet::new() IdleNotifiedSet {
     s<IdleNotifiedSet> = new IdleNotifiedSet
     s.idle     = LinkedList::new()
     s.notified = LinkedList::new()
@@ -17,29 +17,29 @@ const IdleNotifiedSet::new() IdleNotifiedSet* {
 }
 
 // Push a fresh node onto the idle tail. Node must not be on any list yet.
-IdleNotifiedSet::insert(node<Pointers*>){
+IdleNotifiedSet::insert(node<Pointers>){
     this.idle.push_back(node)
 }
 
 // Move node from idle -> notified tail. Caller must guarantee node lives on idle.
-IdleNotifiedSet::transition_to_notified(node<Pointers*>){
+IdleNotifiedSet::transition_to_notified(node<Pointers>){
     this.idle.remove(node)
     this.notified.push_back(node)
 }
 
 // Move node from notified -> idle tail; the worker uses this after task completion.
-IdleNotifiedSet::transition_to_idle(node<Pointers*>){
+IdleNotifiedSet::transition_to_idle(node<Pointers>){
     this.notified.remove(node)
     this.idle.push_back(node)
 }
 
 // Pop the notified head; null when empty.
-IdleNotifiedSet::pop_notified() Pointers* {
+IdleNotifiedSet::pop_notified() Pointers {
     return this.notified.pop_front()
 }
 
 // Pop the idle head; null when empty (used during ordered shutdown reclaim).
-IdleNotifiedSet::drain_idle() Pointers* {
+IdleNotifiedSet::drain_idle() Pointers {
     return this.idle.pop_front()
 }
 
