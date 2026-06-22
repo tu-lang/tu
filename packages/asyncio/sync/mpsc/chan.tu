@@ -21,11 +21,13 @@ mem Chan {
 }
 
 // Build a Chan with `sem` (or null for unbounded). tx_count starts at 1.
-const Chan::new(sem<BatchSemaphore>) Chan* {
+// list_new() returns heap-pointer ListTx / ListRx; assign them straight
+// into the Chan fields (do NOT `&tx` / `&rx` — those are stack slots).
+const Chan::new(sem<BatchSemaphore>) Chan {
     c<Chan> = new Chan
     tx<ListTx>, rx<ListRx> = list_new()
-    c.tx               = &tx
-    c.rx               = &rx
+    c.tx               = tx
+    c.rx               = rx
     c.rx_waker         = sync.AtomicWaker::new()
     c.notify_rx_closed = sync.Notify::new()
     c.semaphore        = sem
@@ -33,7 +35,7 @@ const Chan::new(sem<BatchSemaphore>) Chan* {
     c.tx_weak_count    = 0
     c.rx_lock.init()
     c.rx_closed        = 0
-    return &c
+    return c
 }
 
 // Atomically increment Sender count.

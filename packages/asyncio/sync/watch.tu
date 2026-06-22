@@ -15,13 +15,13 @@ mem Watch {
 
 // Build a Watch initialised to `value`. version starts at 1 so receivers
 // constructed against the seed see no spurious changed() event.
-const Watch::new(value<u64>) Watch* {
+const Watch::new(value<u64>) Watch {
     w<Watch> = new Watch
     w.value      = value
     w.version    = 1
     w.changed    = sync.Notify::new()
     w.tx_dropped = 0
-    return &w
+    return w
 }
 
 // Sender side. Cloning bumps no counter; senders are reference-equal.
@@ -36,10 +36,11 @@ mem WatchReceiver {
 }
 
 // Build a (Sender, Receiver) pair starting at the seed value.
+// Watch::new() already returns a heap pointer; pass it through.
 const watch_channel(value<u64>) (WatchSender, WatchReceiver) {
     w<Watch> = Watch::new(value)
-    s<WatchSender>   = new WatchSender   { inner: &w }
-    r<WatchReceiver> = new WatchReceiver { inner: &w, last_seen_version: 1 }
+    s<WatchSender>   = new WatchSender   { inner: w }
+    r<WatchReceiver> = new WatchReceiver { inner: w, last_seen_version: 1 }
     return s, r
 }
 

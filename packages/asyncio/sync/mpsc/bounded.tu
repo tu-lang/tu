@@ -18,7 +18,7 @@ mem Receiver {
 const mpsc_bounded(cap<u32>) (Sender, Receiver) {
     sem<BatchSemaphore> = BatchSemaphore::new(cap)
     c<Chan>             = Chan::new(sem)
-    return new Sender { chan: &c }, new Receiver { chan: &c }
+    return new Sender { chan: c }, new Receiver { chan: c }
 }
 
 // Cloneable strong sender; tracks tx_count so drop_last_sender wakes the receiver.

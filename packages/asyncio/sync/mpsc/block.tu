@@ -15,12 +15,12 @@ mem Block {
 }
 
 // Build an empty block whose first slot represents global index `start`.
-const Block::new(start<u32>) Block* {
+const Block::new(start<u32>) Block {
     b<Block> = new Block
     b.start_index = start
     b.next        = null
     b.ready_slots = 0
-    return &b
+    return b
 }
 
 // True when bit `idx` is set in ready_slots.
