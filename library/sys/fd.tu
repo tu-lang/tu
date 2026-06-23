@@ -2,7 +2,7 @@ use io
 
 // Raw Unix-like file descriptors.
 api AsRawFd {
-    fn as_raw_fd() i32
+    fn as_raw_fd() (i32)
 }
 
 mem FileDesc {

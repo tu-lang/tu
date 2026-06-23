@@ -146,3 +146,50 @@ std_gettid:
     syscall
     retq
 
+
+.globl std_signalfd4
+std_signalfd4:
+     mov %rcx, %r10
+     mov $289 , %rax
+     syscall
+     retq
+
+.globl std_rt_sigprocmask
+std_rt_sigprocmask:
+     mov %rcx, %r10
+     mov $14 , %rax
+     syscall
+     retq
+
+.globl std_pidfd_open
+std_pidfd_open:
+     mov $434 , %rax
+     syscall
+     retq
+
+.globl std_wait4
+std_wait4:
+     mov %rcx, %r10
+     mov $61 , %rax
+     syscall
+     retq
+
+
+.globl std_fork
+std_fork:
+     mov $57 , %rax
+     syscall
+     retq
+
+.globl std_dup2
+std_dup2:
+     mov $33 , %rax
+     syscall
+     retq
+
+.globl std_pipe2
+std_pipe2:
+     mov $293 , %rax
+     syscall
+     retq
+
