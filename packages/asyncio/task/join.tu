@@ -59,5 +59,5 @@ JoinHandle::poll(ctx){
 }
 
 // Signature alias for casting RawVTable.try_read_output back to a callable.
-fn vtable_try_read_output(raw) i32, i64
+fn vtable_try_read_output(raw) (i32, i64)
 

@@ -3,9 +3,9 @@
 
 // spawn(fut)        : create a Task wrapping fut and schedule its first poll.
 // schedule(t)       : enqueue a Notified for the next polling round.
-// next_wake_ms() i32: park timeout hint for the IO driver, in milliseconds.
+// next_wake_ms()    : park timeout hint for the IO driver, in milliseconds.
 api SchedulerHandle {
     fn spawn(fut)
     fn schedule(t)
-    fn next_wake_ms() i32
+    fn next_wake_ms() (i32)
 }

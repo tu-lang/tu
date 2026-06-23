@@ -10,10 +10,10 @@ use asyncio.error as aerr
 // Signature aliases used to cast the u64 vtable slots back to callables.
 fn vtable_poll(raw<RawTask>, ctx<u64>)
 fn vtable_dealloc(raw<RawTask>)
-fn vtable_try_read_output_h(raw<RawTask>) i32, i64
+fn vtable_try_read_output_h(raw<RawTask>) (i32, i64)
 fn vtable_drop_join_handle_slow(raw<RawTask>)
 fn vtable_shutdown(raw<RawTask>)
-fn future_poll(fut, ctx<u64>) i64, i64
+fn future_poll(fut, ctx<u64>) (i64, i64)
 
 // Run one polling round on raw. ctx packs (scheduler_handle, task_id);
 // harness does not interpret it but threads it through to the future.

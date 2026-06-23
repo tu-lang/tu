@@ -5,7 +5,7 @@
 use os
 
 // Initialiser callback: produces the cell's u64 value (often a pointer cast).
-fn once_init_fn() u64
+fn once_init_fn() (u64)
 
 // One-shot value with an init flag.
 mem OnceCell {

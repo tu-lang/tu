@@ -5,7 +5,7 @@
 use asyncio.task
 
 // Caller-provided closure: runs once on a pool worker.
-fn blocking_op() u64
+fn blocking_op() (u64)
 
 // Backing structure for one spawn_blocking submission.
 mem BlockingTask {

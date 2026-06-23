@@ -8,5 +8,5 @@ use runtime
 // runtime.PollError; on success the caller inspects buf.filled() to
 // learn how many bytes landed.
 api AsyncRead {
-    fn poll_read(ctx<u64>, buf<ReadBuf>) i32
+    fn poll_read(ctx<u64>, buf<ReadBuf>) (i32)
 }

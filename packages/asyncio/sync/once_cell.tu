@@ -11,7 +11,7 @@ INIT_RUN<i32>   = 1
 INIT_DONE<i32>  = 2
 
 // Caller-supplied initializer; produces the cell's u64 value.
-fn once_init_factory() u64
+fn once_init_factory() (u64)
 
 // Cross-thread one-shot init container.
 mem OnceCell {

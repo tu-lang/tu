@@ -41,7 +41,7 @@ mem SignalfdSiginfo {
 // signum is 1-based; out-of-range returns 0.
 fn sigmask_bit(signum<i32>) u64 {
     if signum < 1 return 0
-    return 1.(u64) << ((signum - 1).(u64))
+    return 1 << (signum - 1)
 }
 
 // On x86_64 sigset_t is a single 8-byte u64 bitmask.

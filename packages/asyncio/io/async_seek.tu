@@ -42,6 +42,6 @@ const SeekFrom::end(off<i64>) SeekFrom {
 // Two-phase async seek: start_seek records the request, poll_complete
 // drains it (returning the new absolute offset on Ready).
 api AsyncSeek {
-    fn start_seek(pos<SeekFrom>) i32
+    fn start_seek(pos<SeekFrom>) (i32)
     fn poll_complete(ctx<u64>) (i32, u64)
 }
