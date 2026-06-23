@@ -65,11 +65,11 @@ func pidfd_open(pid<i32>, flags<u32>)
 func wait4(pid<i32>, status<u64>, options<i32>, rusage<u64>)
 
 // Linux x86_64 syscall 57. Parent receives the child pid, child receives 0.
-fn fork() i64
+fn fork() (i64)
 
 // Linux x86_64 syscall 33. Returns the new fd or -errno.
-fn dup2(oldfd<i32>, newfd<i32>) i32
+fn dup2(oldfd<i32>, newfd<i32>) (i32)
 
 // Linux x86_64 syscall 293. fds is a length-2 i32 array [read_end, write_end];
 // flags accept O_CLOEXEC | O_NONBLOCK. Returns 0 on success, -errno otherwise.
-fn pipe2(fds<i32*>, flags<i32>) i32
+fn pipe2(fds<i32*>, flags<i32>) (i32)
