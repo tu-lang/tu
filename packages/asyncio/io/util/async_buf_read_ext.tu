@@ -116,6 +116,7 @@ const Lines::new(r<u64>) Lines {
 async Split::next(dst<aio.ReadBuf>) (i32, u64) {
     if this.done return iobuf.UnexpectedEof, 0.(u64)
     total<u64> = 0
+    take<u64>  = 0
     loop {
         err<i32>, slice<iobuf.Buf> = fill_buf(this.r).await
         if err != 0 return iobuf.Other, total
@@ -127,7 +128,7 @@ async Split::next(dst<aio.ReadBuf>) (i32, u64) {
         idx<i64> = buf_index_of(slice.inner, slice.len(), this.delim)
         if idx >= 0 {
             // Copy [0, idx) to dst, then consume idx+1 (drop delimiter).
-            take<u64> = idx.(u64)
+            take = idx.(u64)
             if take > dst.remaining() take = dst.remaining()
             read_buf_append(dst, slice.inner, take)
             total = total + take
@@ -136,7 +137,7 @@ async Split::next(dst<aio.ReadBuf>) (i32, u64) {
         }
         // No delimiter in this slice — copy what we can, consume,
         // repeat.
-        take<u64> = slice.len()
+        take = slice.len()
         if take > dst.remaining() take = dst.remaining()
         read_buf_append(dst, slice.inner, take)
         total = total + take
