@@ -100,9 +100,10 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             break
         }
 
-        // Park: first-pass uses sync.Notify until the runtime root wires
-        // up the IO/time driver; that happens in Phase 10's build path.
-        shared.woken.notified().await
+        // Park placeholder: yield to the OS and re-check the queues. block_on
+        // is a plain fn (not async), so it cannot await; the real driver
+        // (Phase 10) will block on shared.woken instead of spinning.
+        runtime.osyield()
     }
 
     ct_exit(saved)
