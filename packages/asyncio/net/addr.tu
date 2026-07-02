@@ -1,107 +1,21 @@
-// User-facing socket-address types for asyncio.net. Self-contained: does not
-// depend on library/net (whose parser/string layer is an unverified draft).
-// Only verified Tu constructs are used (fixed arrays, casts, string.Str
-// catfmt/%u, hand-rolled hex).
+// User-facing socket-address surface for asyncio.net.
 //
-// Design note (task 15.1/15.2): instead of the spec's `void* inner`, SocketAddr
-// holds two nullable typed pointers (one per family) to avoid raw u64 casts.
-// to_string emits the full, non-compressed IPv6 form ("[h:h:h:h:h:h:h:h]:port")
-// so parse -> to_string -> parse round-trips; "::" compression is not produced
-// and only the full form is accepted by parse.
+// The address type is net.SocketAddr (library/net) on purpose: netio's socket
+// layer (netio.net.udp.UdpSocket::bind, netio.net.tcp.stream.TcpStream::connect,
+// netio.sys.*) all consume net.SocketAddr, so asyncio.net must speak the same
+// type to feed those APIs.
+//
+// net's own parser (parse_ascii) and Ip*Addr::string() are still WIP, so parse
+// and to_string are implemented here on top of net's working constructors and
+// getters (Ipv4Addr::new / SocketAddrV4::new / octets() / segments() / port()).
+// to_string emits the full, non-compressed IPv6 form ("[h:...:h]:port") and
+// parse only accepts that full form, guaranteeing round-trip.
 
+use net
 use string
 use io
 
-// Address family tags (4 = IPv4, 6 = IPv6).
-FAMILY_V4<i32> = 4
-FAMILY_V6<i32> = 6
-
-// IPv4 socket address: four octets plus a port (host byte order).
-mem SocketAddrV4 {
-    u8  octets[4]
-    u16 port
-}
-
-// IPv6 socket address: eight 16-bit segments plus port, flow label and scope.
-mem SocketAddrV6 {
-    u16 segs[8]
-    u16 port
-    u32 flow
-    u32 scope
-}
-
-// Family-tagged address. Exactly one of v4 / v6 is non-null, per `family`.
-mem SocketAddr {
-    i32 family          // FAMILY_V4 or FAMILY_V6
-    SocketAddrV4* v4    // set when family == FAMILY_V4, else null
-    SocketAddrV6* v6    // set when family == FAMILY_V6, else null
-}
-
-// Build an IPv4 address from four octets and a port.
-const SocketAddrV4::new(a<u8>, b<u8>, c<u8>, d<u8>, port<u16>) SocketAddrV4 {
-    return new SocketAddrV4 { octets: [a, b, c, d], port: port }
-}
-
-// Build an IPv6 address from eight segments, a port, flow label and scope id.
-const SocketAddrV6::new(s0<u16>, s1<u16>, s2<u16>, s3<u16>, s4<u16>, s5<u16>, s6<u16>, s7<u16>, port<u16>, flow<u32>, scope<u32>) SocketAddrV6 {
-    return new SocketAddrV6 {
-        segs: [s0, s1, s2, s3, s4, s5, s6, s7],
-        port: port,
-        flow: flow,
-        scope: scope
-    }
-}
-
-// Wrap a concrete IPv4 address as a family-tagged SocketAddr.
-const SocketAddr::from_v4(a<SocketAddrV4>) SocketAddr {
-    return new SocketAddr { family: FAMILY_V4, v4: a, v6: null }
-}
-
-// Wrap a concrete IPv6 address as a family-tagged SocketAddr.
-const SocketAddr::from_v6(a<SocketAddrV6>) SocketAddr {
-    return new SocketAddr { family: FAMILY_V6, v4: null, v6: a }
-}
-
-// True when this address is IPv4 / IPv6 respectively.
-SocketAddr::is_v4() i32 { return this.family == FAMILY_V4 }
-SocketAddr::is_v6() i32 { return this.family == FAMILY_V6 }
-
-// Port in host byte order, regardless of family.
-SocketAddr::port() u16 {
-    if this.family == FAMILY_V4 return this.v4.port
-    return this.v6.port
-}
-
-// Format as "a.b.c.d:port" (IPv4) or "[h:h:h:h:h:h:h:h]:port" (IPv6, full form,
-// lowercase hex). Round-trips through parse_socket_addr.
-SocketAddr::to_string() string.String {
-    sl<string.Str> = string.empty()
-    if this.family == FAMILY_V4 {
-        v<SocketAddrV4> = this.v4
-        sl = sl.catfmt(
-            "%u.%u.%u.%u:%u".(i8),
-            v.octets[0], v.octets[1], v.octets[2], v.octets[3],
-            v.port
-        )
-        return string.S(sl)
-    }
-    v6<SocketAddrV6> = this.v6
-    hexd<i8*> = "0123456789abcdef".(i8)
-    sl = sl.putc('['.(i8))
-    for i<i32> = 0 ; i < 8 ; i += 1 {
-        if i > 0 sl = sl.putc(':'.(i8))
-        seg<u16> = v6.segs[i]
-        sl = sl.putc(hexd[(seg >> 12) & 0xF])
-        sl = sl.putc(hexd[(seg >> 8) & 0xF])
-        sl = sl.putc(hexd[(seg >> 4) & 0xF])
-        sl = sl.putc(hexd[seg & 0xF])
-    }
-    sl = sl.putc(']'.(i8))
-    sl = sl.catfmt(":%u".(i8), v6.port)
-    return string.S(sl)
-}
-
-// Read a base-10 number from b[pos..len). Returns (ok, value, new_pos); ok == 0
+// Parse a base-10 number from b[pos..len). Returns (ok, value, new_pos); ok == 0
 // when no digit was consumed.
 fn read_dec(b<u8*>, pos<i32>, len<i32>) i32, u32, i32 {
     v<u32> = 0
@@ -116,7 +30,7 @@ fn read_dec(b<u8*>, pos<i32>, len<i32>) i32, u32, i32 {
     return 1, v, pos
 }
 
-// Read a base-16 number from b[pos..len). Returns (ok, value, new_pos); ok == 0
+// Parse a base-16 number from b[pos..len). Returns (ok, value, new_pos); ok == 0
 // when no hex digit was consumed.
 fn read_hex(b<u8*>, pos<i32>, len<i32>) i32, u32, i32 {
     v<u32> = 0
@@ -140,9 +54,9 @@ fn read_hex(b<u8*>, pos<i32>, len<i32>) i32, u32, i32 {
     return 1, v, pos
 }
 
-// Parse "a.b.c.d:port" into an IPv4 SocketAddr. Returns (io.Ok, addr) or
+// Parse "a.b.c.d:port" into a net.SocketAddr (IPv4). Returns (io.Ok, addr) or
 // (io.OtherParse, null).
-fn parse_v4_with_port(b<u8*>, len<i32>) i32, SocketAddr {
+fn parse_v4_with_port(b<u8*>, len<i32>) i32, net.SocketAddr {
     o<u8:4> = null
     pos<i32> = 0
     for i<i32> = 0 ; i < 4 ; i += 1 {
@@ -161,13 +75,14 @@ fn parse_v4_with_port(b<u8*>, len<i32>) i32, SocketAddr {
     if pok == 0 || pval > 65535 return io.OtherParse, null
     pos = pnp
     if pos != len return io.OtherParse, null
-    v4<SocketAddrV4> = SocketAddrV4::new(o[0], o[1], o[2], o[3], pval.(u16))
-    return io.Ok, SocketAddr::from_v4(v4)
+    ip<net.Ipv4Addr> = net.Ipv4Addr::new(o[0], o[1], o[2], o[3])
+    v4<net.SocketAddrV4> = net.SocketAddrV4::new(ip, pval.(u16))
+    return io.Ok, v4
 }
 
-// Parse "[h:h:h:h:h:h:h:h]:port" (full, non-compressed) into an IPv6
-// SocketAddr. Returns (io.Ok, addr) or (io.OtherParse, null).
-fn parse_v6_with_port(b<u8*>, len<i32>) i32, SocketAddr {
+// Parse "[h:h:h:h:h:h:h:h]:port" (full, non-compressed) into a net.SocketAddr
+// (IPv6). Returns (io.Ok, addr) or (io.OtherParse, null).
+fn parse_v6_with_port(b<u8*>, len<i32>) i32, net.SocketAddr {
     pos<i32> = 0
     if pos >= len || b[pos] != '['.(u8) return io.OtherParse, null
     pos += 1
@@ -190,42 +105,51 @@ fn parse_v6_with_port(b<u8*>, len<i32>) i32, SocketAddr {
     if pok == 0 || pval > 65535 return io.OtherParse, null
     pos = pnp
     if pos != len return io.OtherParse, null
-    v6<SocketAddrV6> = SocketAddrV6::new(s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], pval.(u16), 0, 0)
-    return io.Ok, SocketAddr::from_v6(v6)
+    ip6<net.Ipv6Addr> = net.Ipv6Addr::new(s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7])
+    v6<net.SocketAddrV6> = net.SocketAddrV6::new(ip6, pval.(u16), 0, 0)
+    return io.Ok, v6
 }
 
-// Parse an "ip:port" literal into a SocketAddr. A leading '[' selects the IPv6
-// grammar, otherwise IPv4. Returns (io.Ok, addr) or (io.OtherParse, null).
-fn parse_socket_addr(b<u8*>, len<i32>) i32, SocketAddr {
+// Parse an "ip:port" literal into a net.SocketAddr. A leading '[' selects the
+// IPv6 grammar, otherwise IPv4. Returns (io.Ok, addr) or (io.OtherParse, null).
+fn parse_socket_addr(b<u8*>, len<i32>) i32, net.SocketAddr {
     if len == 0 return io.OtherParse, null
     if b[0] == '['.(u8) return parse_v6_with_port(b, len)
     return parse_v4_with_port(b, len)
 }
 
-// Types accepted where a socket address is expected (tokio's ToSocketAddrs).
-// Returns (err, addr); concrete addresses resolve to themselves. Host-name
-// resolution is async and lives in net.lookup (task 15.4).
-api ToSocketAddrs {
-    fn to_socket_addrs() (i32, SocketAddr)
+// Format a net.SocketAddr as "a.b.c.d:port" (IPv4) or "[h:...:h]:port" (IPv6,
+// full form, lowercase hex). Round-trips through parse_socket_addr.
+fn socket_addr_to_string(addr<net.SocketAddr>) string.String {
+    sl<string.Str> = string.empty()
+    if addr.v4() {
+        a4<net.SocketAddrV4> = addr
+        ip<net.Ipv4Addr> = a4.ip()
+        o0<u8>, o1<u8>, o2<u8>, o3<u8> = ip.octets()
+        sl = sl.catfmt("%u.%u.%u.%u:%u".(i8), o0, o1, o2, o3, a4.port())
+        return string.S(sl)
+    }
+    a6<net.SocketAddrV6> = addr
+    ip6<net.Ipv6Addr> = a6.ip()
+    segs<u16*> = ip6.segments()
+    hexd<i8*> = "0123456789abcdef".(i8)
+    sl = sl.putc('['.(i8))
+    for i<i32> = 0 ; i < 8 ; i += 1 {
+        if i > 0 sl = sl.putc(':'.(i8))
+        seg<u16> = segs[i]
+        sl = sl.putc(hexd[(seg >> 12) & 0xF])
+        sl = sl.putc(hexd[(seg >> 8) & 0xF])
+        sl = sl.putc(hexd[(seg >> 4) & 0xF])
+        sl = sl.putc(hexd[seg & 0xF])
+    }
+    sl = sl.putc(']'.(i8))
+    sl = sl.catfmt(":%u".(i8), a6.port())
+    return string.S(sl)
 }
 
-// A family-tagged SocketAddr resolves to itself.
-impl ToSocketAddrs for SocketAddr {
-    fn to_socket_addrs() i32, SocketAddr {
-        return io.Ok, this
-    }
-}
-
-// A concrete IPv4 address wraps into a SocketAddr.
-impl ToSocketAddrs for SocketAddrV4 {
-    fn to_socket_addrs() i32, SocketAddr {
-        return io.Ok, SocketAddr::from_v4(this)
-    }
-}
-
-// A concrete IPv6 address wraps into a SocketAddr.
-impl ToSocketAddrs for SocketAddrV6 {
-    fn to_socket_addrs() i32, SocketAddr {
-        return io.Ok, SocketAddr::from_v6(this)
-    }
+// Identity resolution for an already-parsed address (tokio's ToSocketAddrs for
+// the SocketAddr case). net.SocketAddr is itself the polymorphic api, so no
+// extra api is introduced; host-name resolution is async (net.lookup, 15.4).
+fn to_socket_addrs(addr<net.SocketAddr>) i32, net.SocketAddr {
+    return io.Ok, addr
 }
