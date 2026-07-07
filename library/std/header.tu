@@ -15,7 +15,12 @@ O_CREAT<i64>  = 64
 O_TRUNC<i64>  = 512
 O_APPEND<i64> = 1024
 O_DIRECTORY<i64> = 65536
+O_EXCL<i64> = 128
 
+// openat dir fd meaning "resolve relative to the current working directory".
+AT_FDCWD<i32> = -100
+
+S_IFMT<i64>  = 61440   // file-type mask (0o170000)
 S_IFDIR<i64> = 16384 
 S_IFREG<i64> = 32768
 

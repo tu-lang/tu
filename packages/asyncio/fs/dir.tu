@@ -62,7 +62,7 @@ fn is_dot_name(name<string.String>) bool {
 // Open `path` as a directory for iteration. Returns (io.Ok, ReadDir) or
 // (err, null).
 async fs_read_dir(path<string.String>) i32, ReadDir {
-    err<i32>, fd<u64> = sys.cvt(sys_openat(AT_FDCWD, path.str(), std.O_RDONLY | std.O_DIRECTORY | O_CLOEXEC, 0))
+    err<i32>, fd<u64> = sys.cvt(sys_openat(std.AT_FDCWD, path.str(), std.O_RDONLY | std.O_DIRECTORY | std.O_CLOEXEC.(i64), 0))
     if err != io.Ok return err, null
     r<ReadDir> = new ReadDir
     r.fd         = fd.(i32)

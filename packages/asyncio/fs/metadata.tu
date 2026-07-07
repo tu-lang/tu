@@ -6,10 +6,6 @@ use io
 use string
 use sys
 
-// File-type mask (S_IFMT, 0o170000); absent from std/header. mode & S_IFMT
-// isolates the type bits so a symlink / block device is not misread as a dir.
-S_IFMT<i64> = 61440
-
 // Snapshot of a file's stat(2) result. mtime is split into whole seconds plus
 // the nanosecond remainder to avoid 64-bit overflow when composed.
 mem Metadata {
@@ -40,13 +36,13 @@ Metadata::len() u64 {
 
 // True when the entry is a directory ((mode & S_IFMT) == S_IFDIR).
 Metadata::is_dir() bool {
-    if (this.mode.(i64) & S_IFMT) == std.S_IFDIR return true
+    if (this.mode.(i64) & std.S_IFMT) == std.S_IFDIR return true
     return false
 }
 
 // True when the entry is a regular file ((mode & S_IFMT) == S_IFREG).
 Metadata::is_file() bool {
-    if (this.mode.(i64) & S_IFMT) == std.S_IFREG return true
+    if (this.mode.(i64) & std.S_IFMT) == std.S_IFREG return true
     return false
 }
 

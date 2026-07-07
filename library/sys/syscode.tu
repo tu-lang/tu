@@ -13,6 +13,12 @@ SHUT_RDWR<i32> = 2
 
 SOL_SOCKET<i32> = 1
 SO_ERROR<i32> = 4
+// Common socket options (Linux x86_64). SO_* live at the SOL_SOCKET level;
+// TCP_NODELAY at IPPROTO_TCP. Shared so callers don't redeclare kernel values.
+SO_REUSEADDR<i32> = 2
+SO_KEEPALIVE<i32> = 9
+IPPROTO_TCP<i32>  = 6
+TCP_NODELAY<i32>  = 1
 
 
 MSG_NOSIGNAL<i32> = 0x4000

@@ -11,11 +11,6 @@ use io
 use string
 use sys
 
-// openat dir fd meaning "resolve relative to the current working directory".
-AT_FDCWD<i32> = -100
-// O_CLOEXEC (Linux x86_64): close the fd across exec. Absent from std/header.
-O_CLOEXEC<i64> = 524288
-
 // An open file. fd is the raw descriptor; blocking-pool routing is deferred so
 // no Spawner handle is cached yet (see file header).
 mem File {
@@ -27,7 +22,7 @@ mem File {
 async fs_open(path<string.String>, opts<OpenOptions>) i32, File {
     ferr<i32>, flags<i64> = opts.to_flags()
     if ferr != io.Ok return ferr, null
-    err<i32>, fd<u64> = sys.cvt(sys_openat(AT_FDCWD, path.str(), flags | O_CLOEXEC, opts.mode.(i64)))
+    err<i32>, fd<u64> = sys.cvt(sys_openat(std.AT_FDCWD, path.str(), flags | std.O_CLOEXEC.(i64), opts.mode.(i64)))
     if err != io.Ok return err, null
     return io.Ok, new File { fd: fd.(i32) }
 }
