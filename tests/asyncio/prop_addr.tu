@@ -53,6 +53,8 @@ fn check_v6(seg<u16*>, port<u16>) {
     if a6.port() != port os.dief("v6 port mismatch")
 }
 
+// Feature: packages-asyncio-runtime, Property: SocketAddr to_string/parse
+// round-trip preserves octets, segments and port for random v4/v6 addresses.
 fn prop_addr_parse_roundtrip(){
     fmt.println("prop_addr_parse_roundtrip test")
     st<u64> = 0x9e3779b97f4a7c15

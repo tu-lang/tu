@@ -35,6 +35,8 @@ async never_fut() i64 {
     return n.await
 }
 
+// Feature: packages-asyncio-runtime, Property P: select2 fairness — over many
+// rounds neither branch is chosen first far more often than the other (R45.1).
 // task 19.10: over many rounds, neither select2 branch wins far more often.
 async fairness_body() i32 {
     first<i32>  = 0
@@ -55,6 +57,8 @@ async fairness_body() i32 {
     return io.Ok
 }
 
+// Feature: packages-asyncio-runtime, Property P: join completeness — joinN
+// resolves only after every branch completes, returning all results (R45.3).
 // task 19.11: join2 completes with both results once both futures resolve.
 async join_all_body() i32 {
     s<i32>, ra<i64>, rb<i64> = m.join2(ready_val(11), ready_val(22)).await
@@ -64,6 +68,8 @@ async join_all_body() i32 {
     return io.Ok
 }
 
+// Feature: packages-asyncio-runtime, Property P: try_join short-circuit — an
+// error branch resolves try_joinN immediately without the others completing (R45.4).
 // task 19.12: try_join2 short-circuits when a branch resolves to an error,
 // even though the other branch never completes.
 async try_short_body() i32 {
