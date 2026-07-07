@@ -1,18 +1,8 @@
 // TCP socket-option setters used by TcpStream / TcpListener. Thin wrappers over
-// sys.setsockopt keyed by raw fd.
-//
-// Note: SO_REUSEADDR / SO_KEEPALIVE / TCP_NODELAY / IPPROTO_TCP are not defined
-// in library/sys (only SOL_SOCKET / SO_ERROR are), so their Linux x86_64 values
-// are declared here.
+// sys.setsockopt keyed by raw fd. Option constants live in library/sys.
 
 use sys
 use io
-
-// Socket-option level / name constants (Linux x86_64).
-SO_REUSEADDR<i32> = 2
-SO_KEEPALIVE<i32> = 9
-IPPROTO_TCP<i32>  = 6
-TCP_NODELAY<i32>  = 1
 
 // Wrap a raw fd as a sys.Socket for setsockopt (mirrors library/net's fromrawfd).
 fn fd_to_socket(fd<i32>) sys.Socket {
@@ -24,7 +14,7 @@ fn tcp_set_reuseaddr(fd<i32>, on<i32>) i32 {
     val<i32> = 0
     if on != 0 val = 1
     sock<sys.Socket> = fd_to_socket(fd)
-    return sys.setsockopt(sock, sys.SOL_SOCKET, SO_REUSEADDR, &val, sizeof(i32))
+    return sys.setsockopt(sock, sys.SOL_SOCKET, sys.SO_REUSEADDR, &val, sizeof(i32))
 }
 
 // Toggle TCP_NODELAY (disable Nagle). on != 0 disables buffering.
@@ -32,7 +22,7 @@ fn tcp_set_nodelay(fd<i32>, on<i32>) i32 {
     val<i32> = 0
     if on != 0 val = 1
     sock<sys.Socket> = fd_to_socket(fd)
-    return sys.setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(i32))
+    return sys.setsockopt(sock, sys.IPPROTO_TCP, sys.TCP_NODELAY, &val, sizeof(i32))
 }
 
 // Enable/disable SO_KEEPALIVE. secs > 0 turns keepalive on; per-idle tuning
@@ -41,5 +31,5 @@ fn tcp_set_keepalive(fd<i32>, secs<i32>) i32 {
     val<i32> = 0
     if secs > 0 val = 1
     sock<sys.Socket> = fd_to_socket(fd)
-    return sys.setsockopt(sock, sys.SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(i32))
+    return sys.setsockopt(sock, sys.SOL_SOCKET, sys.SO_KEEPALIVE, &val, sizeof(i32))
 }

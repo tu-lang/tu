@@ -5,9 +5,6 @@
 use std
 use io
 
-// O_EXCL is absent from library/std/header; declared here (Linux x86_64).
-O_EXCL<i64> = 128
-
 // Requested open behaviour. Booleans are stored as i32 (0/1); mode is the
 // permission bits applied when the file is created.
 mem OpenOptions {
@@ -91,7 +88,7 @@ OpenOptions::creation_mode() i32, i64 {
             return io.InvalidInput, 0
         }
     }
-    if this.create_new != 0 return io.Ok, std.O_CREAT | O_EXCL
+    if this.create_new != 0 return io.Ok, std.O_CREAT | std.O_EXCL
     if this.create != 0 && this.truncate != 0 return io.Ok, std.O_CREAT | std.O_TRUNC
     if this.create != 0 return io.Ok, std.O_CREAT
     if this.truncate != 0 return io.Ok, std.O_TRUNC

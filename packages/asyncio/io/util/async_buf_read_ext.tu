@@ -8,8 +8,7 @@ use std
 use io as iobuf
 use asyncio.io as aio
 
-// LF separator used by Lines.
-LF<u8> = 10
+// LF (newline byte) is defined once in async_read_ext.tu; same package, shared.
 
 // Leaf future for a single AsyncBufRead::poll_fill_buf call. `r` is
 // the raw bits of an AsyncBufRead implementor; the PollReady payload
