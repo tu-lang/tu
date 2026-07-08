@@ -96,29 +96,11 @@ mem UnixReadyFut: async {
 }
 
 UnixReadyFut::poll(ctx){
-    c<u64> = ctx.(u64)
-    bits<i32> = 0
-    if this.want_read == 1 {
-        rerr<i32>, rev<rtio.ReadyEvent> = this.io.poll_read_ready(c)
-        if rerr == 0 {
-            bits = bits | rev.ready.bits
-        } else if rerr != runtime.PollPending {
-            return runtime.PollReady, rerr
-        }
-    }
-    if this.want_write == 1 {
-        werr<i32>, wev<rtio.ReadyEvent> = this.io.poll_write_ready(c)
-        if werr == 0 {
-            bits = bits | wev.ready.bits
-        } else if werr != runtime.PollPending {
-            return runtime.PollReady, werr
-        }
-    }
-    if bits != 0 {
-        this.result = aio.Ready::from_bits(bits)
-        return runtime.PollReady, io.Ok
-    }
-    return runtime.PollPending
+    st<i32>, err<i32>, r<aio.Ready> = aio.poll_ready_bits(this.io, this.want_read, this.want_write, ctx.(u64))
+    if st == runtime.PollPending return runtime.PollPending
+    if err != io.Ok return runtime.PollReady, err
+    this.result = r
+    return runtime.PollReady, io.Ok
 }
 
 // Await read and/or write readiness for `interest`.
