@@ -6,6 +6,7 @@
 use runtime
 use netio
 use asyncio.runtime as rt
+use io as iolib
 
 // inner is the netio source (TcpStream / UdpSocket / pipe / ...). reg
 // owns the ScheduledIo that bridges into the IO Driver dispatch loop.
@@ -62,4 +63,33 @@ PollEvented::try_io(interest<netio.Interest>, op<rt.io.IoOp>) (i32, i64) {
 // be used; callers should drop their reference.
 PollEvented::deregister() i32 {
     return this.reg.deregister(this.inner)
+}
+
+// Poll the requested read/write readiness on `pe`, OR-ing whatever the driver
+// reports. Shared by every net *ReadyFut::poll so the loop lives in one place.
+// Returns (state, err, ready): state is runtime.PollReady / runtime.PollPending;
+// on PollReady, err == io.Ok means `ready` carries the set bits, otherwise err
+// is a driver error code and `ready` is null.
+fn poll_ready_bits(pe<PollEvented>, want_read<i32>, want_write<i32>, ctx<u64>) (i32, i32, Ready) {
+    bits<i32> = 0
+    if want_read == 1 {
+        rerr<i32>, rev<rt.io.ReadyEvent> = pe.poll_read_ready(ctx)
+        if rerr == 0 {
+            bits = bits | rev.ready.bits
+        } else if rerr != runtime.PollPending {
+            return runtime.PollReady, rerr, null
+        }
+    }
+    if want_write == 1 {
+        werr<i32>, wev<rt.io.ReadyEvent> = pe.poll_write_ready(ctx)
+        if werr == 0 {
+            bits = bits | wev.ready.bits
+        } else if werr != runtime.PollPending {
+            return runtime.PollReady, werr, null
+        }
+    }
+    if bits != 0 {
+        return runtime.PollReady, iolib.Ok, Ready::from_bits(bits)
+    }
+    return runtime.PollPending, 0, null
 }
