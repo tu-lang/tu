@@ -100,6 +100,11 @@ ScannerStatic::skipblock() {
         tk<i64> = this.scan()
         if tk == ast.RBRACE block -= 1
         if tk == ast.LBRACE block += 1
+        // Unmatched '{' (e.g. an extra '{' inside a function body) would otherwise make the
+        // scanner keep reading END past EOF forever since block never reaches 0.
+        if tk == ast.END {
+            os.dief("[error] unexpected EOF while skipping block, unmatched '{' file:%s line:%d column:%d",this.filepath,int(this.line),int(this.column))
+        }
     }
     this.scan()
 }
