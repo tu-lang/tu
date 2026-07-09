@@ -11,7 +11,7 @@ mem Stdout {
 }
 
 // Build the stdout handle.
-const stdout() Stdout {
+fn stdout() Stdout {
     s<Stdout> = new Stdout
     s.fd = 1
     return s

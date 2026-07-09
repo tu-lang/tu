@@ -14,7 +14,7 @@ mem Stdin {
 }
 
 // Build the stdin handle.
-const stdin() Stdin {
+fn stdin() Stdin {
     s<Stdin> = new Stdin
     s.fd = 0
     return s

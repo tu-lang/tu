@@ -11,7 +11,7 @@ mem Stderr {
 }
 
 // Build the stderr handle.
-const stderr() Stderr {
+fn stderr() Stderr {
     s<Stderr> = new Stderr
     s.fd = 2
     return s
