@@ -35,7 +35,7 @@ Handle::spawn(fut) JoinHandle {
 }
 
 // Spawn a synchronous closure on the blocking pool.
-Handle::spawn_blocking(op<fc<rtblk.blocking_op>>) JoinHandle {
+Handle::spawn_blocking(op<u64>) JoinHandle {
     return this.inner.spawn_blocking(op)
 }
 

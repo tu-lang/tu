@@ -144,7 +144,7 @@ SECOND<Duration:> = new Duration{
 MILLISECOND<Duration:> = new Duration{
     secs: 0,
     nanos: NANOS_PER_MILLI % NANOS_PER_SEC,
-};
+}
 MICROSECOND<Duration:> = new Duration {
     secs: 0,
     nanos: NANOS_PER_MICRO % NANOS_PER_SEC,

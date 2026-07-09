@@ -23,7 +23,7 @@ fn spawn(fut) JoinHandle {
 }
 
 // Spawn a synchronous closure on the active runtime's blocking pool.
-fn spawn_blocking(op<fc<rtblk.blocking_op>>) JoinHandle {
+fn spawn_blocking(op<u64>) JoinHandle {
     err<i32>, h<rt.Handle> = rt.Handle::current()
     if err != 0 return empty_join()
     return h.spawn_blocking(op)
