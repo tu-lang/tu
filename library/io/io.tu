@@ -77,8 +77,8 @@ api Read {
 	fn read_vectored(buf<Buf>) i32, u64 {
 		return default_read_vectored(this, buf)
 	}
-	fn is_read_vectored() bool {
-		return false
+	fn is_read_vectored() i32 {
+		return 0
 	}
 	fn take(limit<u64>) Take {
 		return Take_new(this, limit)
@@ -120,8 +120,8 @@ api Write {
 	fn write_vectored(buf<Buf>) i32, u64 {
 		return default_write_vectored(this, buf)
 	}
-	fn is_write_vectored() bool {
-		return false
+	fn is_write_vectored() i32 {
+		return 0
 	}
 	fn flush() (i32)
 	fn write_all(buf<Buf>) i32 {

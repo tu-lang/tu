@@ -7,7 +7,7 @@ ShutdownBoth<i32> = 3
 
 impl sys.AsRawFd for TcpStream {
     fn as_raw_fd() i32 {
-        return this.asinner().socket().as_raw()
+        return this.inner.socket().as_raw()
     }
 }
 

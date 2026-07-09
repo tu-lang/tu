@@ -4,7 +4,7 @@ mem U16 {
 
 const U16::is_le() i32 {
 	x<u16> = 1
-	x2<u16> = &x
+	x2<u16*> = &x
 	return *x2 == 1
 }
 

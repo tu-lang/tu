@@ -120,15 +120,15 @@ Socket::write(buf<io.Buf>) i32 , u64 {
 }
 
 Socket::shutdown(how<i32>) i32 {
-    let how<i32> = 0
+    shut<i32> = 0
     match how {
-        net.ShutdownWrite: how =  SHUT_WR,
-        net.ShutdownRead:  how =  SHUT_RD,
-        net.ShutdownBoth:  how = SHUT_RDWR,
+        net.ShutdownWrite: shut =  SHUT_WR,
+        net.ShutdownRead:  shut =  SHUT_RD,
+        net.ShutdownBoth:  shut = SHUT_RDWR,
         _: runtime.printf("shutdown type err")
     }
     //TODO:
-    err<i32> =  cvt(sys_shutdown(this.fd.as_raw_fd(), how) )
+    err<i32> =  cvt(sys_shutdown(this.fd.as_raw_fd(), shut) )
     return err
 }
 

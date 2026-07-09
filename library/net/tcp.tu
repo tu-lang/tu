@@ -54,7 +54,7 @@ TcpListener::fromrawfd(fd<i32>) TcpStream {
 impl io.Read for TcpStream {
     fn read(buf<io.Buf>) i32,u64 {
         err<i32>, size<u64> = this.inner.read(buf)
-        return err size
+        return err, size
     }
 }
 

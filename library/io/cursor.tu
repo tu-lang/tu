@@ -37,7 +37,7 @@ Cursor::remaining_slice() Buf {
 	}
 }
 
-Cursor::is_empty() bool {
+Cursor::is_empty() i32 {
 	return this.pos >= this.inner.len()
 }
 
