@@ -144,11 +144,11 @@ api Write {
 }
 
 mem Take {
-	inner
+	u64 inner // raw bits of Read implementor
 	u64 limit
 }
 
-fn Take_new(inner, limit<u64>) Take {
+fn Take_new(inner<u64>, limit<u64>) Take {
 	return new Take { inner: inner, limit: limit }
 }
 
@@ -160,7 +160,7 @@ impl Read for Take {
 		if this.limit < cap
 			cap = this.limit
 		slice<Buf> = new Buf { inner: buf.inner, len: cap }
-		err<i32>, n<u64> = this.inner.read(slice)
+		err<i32>, n<u64> = this.inner.(Read).read(slice)
 		if err != Ok
 			return err, 0
 		if n > this.limit
@@ -172,7 +172,7 @@ impl Read for Take {
 		if this.limit == 0
 			return Ok
 		cur<BufferCursor> = cursor.reborrow()
-		err<i32> = this.inner.read_buf(cur)
+		err<i32> = this.inner.(Read).read_buf(cur)
 		if err != Ok
 			return err
 		written<u64> = cursor.written()

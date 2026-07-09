@@ -79,7 +79,7 @@ SocketAddrV4::set_port( new_port<u16>){
 
 SocketAddrV4::into_inner() sys.SockaddrIn {
     return new sys.SockaddrIn{
-        sin_family: sys.AF_INET
+        sin_family: sys.AF_INET,
         sin_port: this.port(),
         sin_addr: sys.InAddr{
             s_addr: this.ip().into_inner()
@@ -90,8 +90,7 @@ SocketAddrV4::into_inner() sys.SockaddrIn {
 mem SocketAddrV6 {
     Ipv6Addr* ip
     u16 port
-    u32 flowinfo,
-    u32 scope_id
+    u32 flowinfo, scope_id
 }
 
     

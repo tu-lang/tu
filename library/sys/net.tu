@@ -94,7 +94,7 @@ Socket::recv_from_with_flags(
         //TODO:
         sys_recvfrom(
             this.fd.as_raw_fd(),
-            buf.ptr()
+            buf.ptr(),
             buf.len(),
             flags,
             storage,
@@ -126,7 +126,7 @@ Socket::shutdown(how<i32>) i32 {
         net.ShutdownRead:  how =  SHUT_RD,
         net.ShutdownBoth:  how = SHUT_RDWR,
         _: runtime.printf("shutdown type err")
-    };
+    }
     //TODO:
     err<i32> =  cvt(sys_shutdown(this.fd.as_raw_fd(), how) )
     return err
@@ -234,7 +234,7 @@ LookupHost::next() i32,net.SockAddr {
         if cur == null return None
 
         this.cur = cur.ai_next
-        ok<i32> , addr<net.SockAddr> =  sockaddr_to_addr(cur.ai_addr, cur.ai_addrlen ) {
+        ok<i32> , addr<net.SockAddr> = sockaddr_to_addr(cur.ai_addr, cur.ai_addrlen)
         if ok {
             return Has,addr
         } 
@@ -246,7 +246,7 @@ LookupHost::next() i32,net.SockAddr {
 
 //NOTICE: free lookuphost.original
 const LookupHost::lookuphost_fromstr(s<string.String>) i32 , LookupHost {
-    err<i32> , host<string.Sring,port_str<string.String> = s.rSplitOnce(string.S(*":"))
+    err<i32>, host<string.String>, port_str<string.String> = s.rSplitOnce(string.S(*":"))
     if err != Ok return io.InvalidInputSocketAddress
 
     port<u16> = port_str.tonumber()

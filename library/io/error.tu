@@ -2,10 +2,10 @@ use sys
 use string
 
 //module
-MOD_STD_ID:i32 =  1;
-MOD_NETIO_ID:i32 =  2;
-MOD_ASYNC_RUNTIME_ID:i32     = 3;
-MOD_WS_ID:i32     = 4;
+MOD_STD_ID<i32> = 1
+MOD_NETIO_ID<i32> = 2
+MOD_ASYNC_RUNTIME_ID<i32> = 3
+MOD_WS_ID<i32> = 4
 // layer
 MOD_OS<i32> = 1
 MOD_CUSTOM<i32> = 2
