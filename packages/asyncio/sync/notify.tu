@@ -5,7 +5,7 @@
 //                        already pending.
 
 use runtime
-use util
+use asyncio.util as util
 
 // notify_one permit accounting. Only NONE and ONE are used today; the
 // ALL flag is reserved for a future "broadcast" extension.
@@ -39,14 +39,15 @@ const NotifyWaiter::new(ctx<u64>) NotifyWaiter {
 // Notify itself. waiters is the queue of pending Notified futures; state
 // holds at most one queued permit when no waiter is around to consume it.
 mem Notify {
-    runtime.MutexInter lock
-    i32                state    // permit slot; only NONE / ONE used
-    LinkedList*        waiters
+    MutexInter* lock
+    i32         state    // permit slot; only NONE / ONE used
+    LinkedList* waiters
 }
 
 // Build an empty Notify in the NOTIFY_NONE state.
 const Notify::new() Notify {
     n<Notify> = new Notify
+    n.lock = new MutexInter
     n.lock.init()
     n.state   = NOTIFY_NONE
     n.waiters = LinkedList::new()

@@ -22,7 +22,7 @@ const OnceCell::new() OnceCell {
 }
 
 // Return value when initialised; otherwise call initfn() once, store, mark inited.
-OnceCell::get_or_init(initfn<fc<once_init_fn>>) u64 {
+OnceCell::get_or_init(initfn) u64 {
     if this.inited == 1 return this.value
     v<u64> = initfn()
     this.value = v
@@ -36,8 +36,8 @@ OnceCell::get() u64 {
     return this.value
 }
 
-OnceCell::is_initialized() bool {
-    if this.inited == 1 return true
-    return false
+OnceCell::is_initialized() i32 {
+    if this.inited == 1 return 1
+    return 0
 }
 

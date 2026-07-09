@@ -30,9 +30,9 @@ const OnceCell::new() OnceCell {
 }
 
 // Returns true once initialised.
-OnceCell::is_initialized() bool {
-    if atomic.load(&this.state) == INIT_DONE return true
-    return false
+OnceCell::is_initialized() i32 {
+    if atomic.load(&this.state) == INIT_DONE return 1
+    return 0
 }
 
 // Set the value if the cell is still UNINIT. Returns 0 on success,
@@ -56,7 +56,7 @@ OnceCell::get() (i32, u64) {
 
 // Initialise on first call, return the stored value on every call. The
 // initializer runs at most once; concurrent waiters park on `ready`.
-async OnceCell::get_or_init(initfn<fc<once_init_factory>>){
+async OnceCell::get_or_init(initfn<fc<once_init_factory> >){
     loop {
         cur<i32> = atomic.load(&this.state)
         if cur == INIT_DONE {

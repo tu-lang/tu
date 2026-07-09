@@ -4,20 +4,20 @@
 
 use std.atomic
 use runtime
-use sync
+use asyncio.sync as sync
 use asyncio.error as aerr
 
 // Backed-by either a real BatchSemaphore (bounded) or null (unbounded).
 mem Chan {
-    ListTx*               tx
-    sync.AtomicWaker*     rx_waker
-    sync.Notify*          notify_rx_closed
-    BatchSemaphore*       semaphore           // null for unbounded channels
-    i32                   tx_count            // atomic; live Sender clones
-    i32                   tx_weak_count       // atomic; weak senders that don't keep the channel open
-    runtime.MutexInter    rx_lock
-    ListRx*               rx
-    i32                   rx_closed           // 0/1 monotonic
+    ListTx*         tx
+    AtomicWaker*    rx_waker
+    Notify*         notify_rx_closed
+    BatchSemaphore* semaphore           // null for unbounded channels
+    i32             tx_count            // atomic; live Sender clones
+    i32             tx_weak_count       // atomic; weak senders that don't keep the channel open
+    MutexInter*     rx_lock
+    ListRx*         rx
+    i32             rx_closed           // 0/1 monotonic
 }
 
 // Build a Chan with `sem` (or null for unbounded). tx_count starts at 1.
@@ -33,6 +33,7 @@ const Chan::new(sem<BatchSemaphore>) Chan {
     c.semaphore        = sem
     c.tx_count         = 1
     c.tx_weak_count    = 0
+    c.rx_lock = new MutexInter
     c.rx_lock.init()
     c.rx_closed        = 0
     return c
