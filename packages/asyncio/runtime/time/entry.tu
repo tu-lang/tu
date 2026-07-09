@@ -4,7 +4,7 @@
 
 use std.atomic
 use runtime
-use sync
+use asyncio.sync as sync
 
 // Sentinels packed into StateCell.state.
 //   STATE_DEREGISTERED — entry removed from the wheel; subsequent polls bail.
@@ -22,10 +22,10 @@ RESULT_FIRED<i32>       = 2
 // Atomic state + waker slot for one Sleep. waker is registered on first
 // poll and re-armed if the task is moved between threads.
 mem StateCell {
-    u64                state    // atomic; deadline_ms or sentinel
-    i32                result   // last delivered result code
-    runtime.MutexInter waker_lock
-    sync.AtomicWaker*  waker
+    u64           state    // atomic; deadline_ms or sentinel
+    i32           result   // last delivered result code
+    MutexInter*   waker_lock
+    AtomicWaker*  waker
 }
 
 // Build a StateCell owning a fresh AtomicWaker.
@@ -33,6 +33,7 @@ const StateCell::new() StateCell {
     s<StateCell> = new StateCell
     s.state  = STATE_DEREGISTERED
     s.result = RESULT_OK
+    s.waker_lock = new MutexInter
     s.waker_lock.init()
     s.waker  = sync.AtomicWaker::new()
     return s

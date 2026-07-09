@@ -7,16 +7,17 @@ use runtime
 
 // Barrier capacity + generation counter + Notify hand-off.
 mem Barrier {
-    runtime.MutexInter lock
-    i32                n             // total participants per round
-    i32                arrived        // current round arrival count
-    i32                generation     // monotonic round counter
-    Notify*            notify
+    MutexInter* lock
+    i32         n             // total participants per round
+    i32         arrived        // current round arrival count
+    i32         generation     // monotonic round counter
+    Notify*     notify
 }
 
 // Build a Barrier expecting n participants per round.
 const Barrier::new(n<i32>) Barrier {
     b<Barrier> = new Barrier
+    b.lock = new MutexInter
     b.lock.init()
     b.n          = n
     b.arrived    = 0

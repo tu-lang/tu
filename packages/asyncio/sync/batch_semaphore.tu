@@ -4,7 +4,7 @@
 // so smaller release calls cannot starve a large request.
 
 use runtime
-use util
+use asyncio.util as util
 use io
 use asyncio.error as aerr
 
@@ -35,16 +35,17 @@ const SemWaiter::new(n<u32>, ctx<u64>) SemWaiter {
 
 // Counting semaphore with FIFO fairness.
 mem BatchSemaphore {
-    u32                permits     // free permits (must read under lock when waiters present)
-    runtime.MutexInter lock
-    LinkedList*        waiters     // FIFO of SemWaiter
-    i32                closed      // 0 / CLOSED_FLAG
+    u32         permits     // free permits (must read under lock when waiters present)
+    MutexInter* lock
+    LinkedList* waiters     // FIFO of SemWaiter
+    i32         closed      // 0 / CLOSED_FLAG
 }
 
 // Build with `n` initial permits. n must be <= MAX_PERMITS.
 const BatchSemaphore::new(n<u32>) BatchSemaphore {
     s<BatchSemaphore> = new BatchSemaphore
     s.permits = n
+    s.lock = new MutexInter
     s.lock.init()
     s.waiters = LinkedList::new()
     s.closed  = 0

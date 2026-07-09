@@ -3,8 +3,8 @@
 // SignalDriver::new and looked up from the syscall handler.
 
 use std
-use util
-use sync
+use asyncio.util as util
+use asyncio.sync as sync
 
 // Linux supports up to 64 RT/standard signals (signum 1..63).
 NUM_SIGNALS<i32> = 64
@@ -12,9 +12,9 @@ NUM_SIGNALS<i32> = 64
 // Per-signum bookkeeping: a Notify so subscribers can listen for the
 // "fired" edge and a counter the driver bumps on every observation.
 mem EventInfo {
-    i32          signum
-    sync.Notify* notify
-    u64          fired_count   // monotonic; subscribers compare their last seen to detect new events
+    i32     signum
+    Notify* notify
+    u64     fired_count   // monotonic; subscribers compare their last seen to detect new events
 }
 
 // Build a fresh EventInfo for signum.

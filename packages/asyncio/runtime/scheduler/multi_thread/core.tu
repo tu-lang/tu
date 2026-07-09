@@ -3,7 +3,7 @@
 // worker's MtShared back-edge + the AtomicCell that lets block_in_place
 // hand its core to a stand-in (deferred until Phase 10).
 
-use util
+use asyncio.util as util
 
 // Per-worker mutable state. lifo_slot is one extra cache-line so a hot
 // task can re-enter the worker without going through the Local FIFO.
