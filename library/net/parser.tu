@@ -12,7 +12,6 @@ const Parser::new(input<u8*> , len<i32> ) Parser {
 
 /// Run a parser, and restore the pre-parse state if it fails.
 Parser::read_atomically(inner) bool,SocketAddrV4 {
-{
     state<u8*> = this.state
     len<i32>   = this.len
     has<i32>, result<u64> = inner(this)
