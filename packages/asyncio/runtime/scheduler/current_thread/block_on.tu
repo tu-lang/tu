@@ -25,10 +25,10 @@ fn core_run_task(t<task.RawTask>, handle<CtHandle>){
 // Drain the Defer list back to inject. Defer hosts the tasks parked by
 // coop yield_now; pushing them back to inject preserves FIFO across the
 // next polling round.
-fn drain_defer(defer<Defer>, inj<Inject>) bool {
-    if defer.is_empty() return false
+fn drain_defer(defer<Defer>, inj<Inject>) i32 {
+    if defer.is_empty() != 0 return 0
     defer.drain_into_inject(inj)
-    return true
+    return 1
 }
 
 // block_on the root future. Returns (err, value) once the root completes
@@ -47,8 +47,8 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
     saved<CtSavedSlot> = ct_enter(ctx_obj)
 
     // Initial schedule: the root task starts on the local queue.
-    notif_root<task.Notified> = task.notified_from_raw(&root)
-    core_obj.push_local(&root)
+    notif_root<task.Notified> = task.notified_from_raw(root)
+    core_obj.push_local(root)
 
     err_out<i32> = 0
     val_out<i64> = 0
@@ -60,8 +60,8 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
         snap<i32>          = st.load()
         if (snap & task.COMPLETE) != 0 {
             vt<task.RawVTable> = root.vtable
-            fc<task.vtable_try_read_output> = vt.try_read_output.(u64)
-            err_out, val_out = fc(&root)
+            read_fc<task.vtable_try_read_output> = vt.try_read_output
+            err_out, val_out = read_fc(root)
             break
         }
 
@@ -81,7 +81,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
         }
 
         // Local FIFO.
-        lerr<i32>, tl<task.RawTask*> = core_obj.pop_local()
+        lerr<i32>, tl<task.RawTask> = core_obj.pop_local()
         if lerr == 0 {
             core_run_task(tl, handle)
             continue

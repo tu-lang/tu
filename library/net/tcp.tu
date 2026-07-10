@@ -63,4 +63,7 @@ impl io.Write for TcpStream {
         err<i32> , size<u64> = this.inner.write(buf)
         return err, size
     }
+    fn flush() i32 {
+        return io.Ok
+    }
 }

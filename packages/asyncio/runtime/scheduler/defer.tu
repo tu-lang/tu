@@ -23,9 +23,9 @@ const Defer::new() Defer {
     return d
 }
 
-Defer::is_empty() bool {
-    if this.len == 0 return true
-    return false
+Defer::is_empty() i32 {
+    if this.len == 0 return 1
+    return 0
 }
 
 // Grow slots to max(INITIAL_CAP, cap*2) and copy existing entries over.

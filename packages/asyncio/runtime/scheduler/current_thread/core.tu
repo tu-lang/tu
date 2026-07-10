@@ -34,9 +34,9 @@ const Core::new(driver_ptr<u64>, global_interval<u32>) Core {
 }
 
 // True when the local ring is non-empty.
-Core::has_local() bool {
-    if this.tasks_head != this.tasks_tail return true
-    return false
+Core::has_local() i32 {
+    if this.tasks_head != this.tasks_tail return 1
+    return 0
 }
 
 // Power-of-two helper: doubles the ring buffer when it's full. Copies

@@ -6,14 +6,12 @@ mem UnixStream {
     sys.Socket* inner
 }
 
-UnixStream::try_clone() i32,UnixStream {
-    ok<i32>, fd<sys.Socket*> = this.inner.duplicate()
-    if ok {
-        return new UnixStream{
-            inner: fd
-        }
-    } 
-    return Err
+UnixStream::try_clone() i32, UnixStream {
+    err<i32>, sock<sys.Socket> = this.inner.duplicate()
+    if err != io.Ok {
+        return err, null
+    }
+    return io.Ok, new UnixStream { inner: sock }
 }
 
 UnixStream::take_error() i32, i32 , i32 {
@@ -44,6 +42,9 @@ impl io.Write for UnixStream {
     fn write(buf<io.Buf>) i32,u64 {
         err<i32>, size<u64> = this.inner.write(buf)
         return err,size
+    }
+    fn flush() i32 {
+        return io.Ok
     }
 }
 

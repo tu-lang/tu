@@ -25,10 +25,10 @@ mem UnixStream {
 const UnixStream::from_netio(inner<netuds.UnixStream>) (i32, UnixStream) {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return aerr.RuntimeShutdown, null
-    dh<rt.DriverHandle> = rc.driver.(rt.DriverHandle)
+    dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.interest_add(aio.Interest::readable(), aio.Interest::writable())
+    interest<netio.Interest> = aio.interest_add(aio.readable(), aio.writable())
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return io.Ok, new UnixStream { io: pe }
@@ -156,7 +156,7 @@ impl rtio.IoOp for UnixWriteOp {
 UnixStream::try_read(buf<io.Buf>) i32, u64 {
     sock<netuds.UnixStream> = this.io.source()
     op<UnixReadOp> = new UnixReadOp { sock: sock, buf: buf }
-    err<i32>, val<i64> = this.io.try_io(aio.Interest::readable(), op)
+    err<i32>, val<i64> = this.io.try_io(aio.readable(), op)
     return err, val.(u64)
 }
 
@@ -164,7 +164,7 @@ UnixStream::try_read(buf<io.Buf>) i32, u64 {
 UnixStream::try_write(buf<io.Buf>) i32, u64 {
     sock<netuds.UnixStream> = this.io.source()
     op<UnixWriteOp> = new UnixWriteOp { sock: sock, buf: buf }
-    err<i32>, val<i64> = this.io.try_io(aio.Interest::writable(), op)
+    err<i32>, val<i64> = this.io.try_io(aio.writable(), op)
     return err, val.(u64)
 }
 

@@ -1,11 +1,8 @@
-// Cross-thread weak handle to a Runtime. spawn / spawn_blocking /
-// block_on / enter all funnel through here so user code never depends
-// on the concrete scheduler kind.
-
+use io
 use asyncio.error as aerr
 use asyncio.task
 
-// Weak runtime handle. sched_handle is a u64 because both schedulers
+// Cross-thread weak handle to a Runtime. spawn / spawn_blocking /
 // (current_thread.CtHandle and multi_thread.MtHandle) implement
 // task.Schedule but the union type stays opaque at this layer.
 mem Handle {
@@ -27,14 +24,16 @@ const Handle::new(sched<u64>, kind<i32>, driver<DriverHandle>, blocking<u64>) Ha
 
 // Look up the active Handle. Returns (OtherRuntime1XNotFound, null)
 // outside any runtime context.
-const Handle::current() (i32, Handle) {
+const Handle::current() i32, Handle {
     rc<RuntimeContext> = current_context()
     if rc == null return io.OtherRuntime1XNotFound, null
 
     // The runtime root stores the Handle pointer in sched_handle for
     // first-pass simplicity; later phases may split scheduler-only ops
     // out behind a thinner interface.
-    return 0, rc.sched.(Handle)
+    sched_bits<u64> = rc.sched
+    h<Handle> = sched_bits.(Handle)
+    return 0, h
 }
 
 // Spawn a future via the active scheduler. Routes by sched_kind.
@@ -85,7 +84,7 @@ Handle::spawn_blocking(op<u64>) JoinHandle {
 }
 
 // Run fut to completion via the active scheduler's block_on.
-Handle::block_on(fut) (i32, i64) {
+Handle::block_on(fut) i32, i64 {
     if this.sched_kind == 1 {
         // multi_thread does not own block_on directly; route through the
         // current_thread's caller. The runtime root's block_on shim

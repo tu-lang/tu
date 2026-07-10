@@ -58,7 +58,7 @@ BlockingTask::run(){
     // Drop the run-queue ref; dealloc when it was the last one.
     if st.ref_dec() != 0 {
         vt<RawVTable> = raw.vtable
-        dealloc_fc<vtable_dealloc> = vt.dealloc.(u64)
+        dealloc_fc<vtable_dealloc> = vt.dealloc
         dealloc_fc(raw)
     }
 }
