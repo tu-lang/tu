@@ -40,14 +40,15 @@ const BufReader::new(inner<u64>) BufReader {
 }
 
 // True when the buffered window has been fully consumed.
-BufReader::buffered_empty() bool {
+BufReader::buffered_empty() i32 {
     return this.pos >= this.cap
 }
 
 // Slice [pos, cap) of the backing buffer, i.e. the still-unread tail.
 BufReader::buffered() iobuf.Buf {
+    off<i32> = int(this.pos)
     return new iobuf.Buf {
-        inner: this.buf.buf.inner + this.pos.(i32),
+        inner: this.buf.buf.inner + off,
         len:   this.cap - this.pos
     }
 }
@@ -95,7 +96,7 @@ impl aio.AsyncRead for BufReader {
 // consume() merely advances `pos`; refill happens lazily on the next
 // poll_fill_buf when the window is exhausted.
 impl aio.AsyncBufRead for BufReader {
-    fn poll_fill_buf(ctx<u64>) (i32, iobuf.Buf) {
+    fn poll_fill_buf(ctx<u64>) i32, iobuf.Buf {
         if this.buffered_empty() {
             err<i32> = buf_reader_refill(this, ctx)
             if err != runtime.PollReady {
@@ -119,7 +120,8 @@ impl aio.AsyncSeek for BufReader {
         this.cap = 0
         return this.inner.(aio.AsyncSeek).start_seek(pos)
     }
-    fn poll_complete(ctx<u64>) (i32, u64) {
-        return this.inner.(aio.AsyncSeek).poll_complete(ctx)
+    fn poll_complete(ctx<u64>) i32, u64 {
+        err<i32>, pos<u64> = this.inner.(aio.AsyncSeek).poll_complete(ctx)
+        return err, pos
     }
 }

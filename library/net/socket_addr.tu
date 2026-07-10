@@ -151,23 +151,27 @@ fn resolve_socket_addr(lh<LookupHost>) i32, std.Array {
 
         v.push(addr)
     }
-    return Ok,v
+    return io.Ok, v
 }
 
-fn strto_socket_addrs(s<string.String>) i32,std.Array,i32 {
+fn parse_ascii(s<string.String>) i32, SocketAddr {
+    return io.OtherParse, null
+}
+
+fn strto_socket_addrs(s<string.String>) i32, std.Array {
     v<std.Array> = std.NewArray()
     // try to parse as a regular SocketAddr first
-    err<i32> ,addr<SocketAddr> = SocketAddr::parse_ascii(s)
-    if err == Ok {
+    err<i32>, addr<SocketAddr> = parse_ascii(s)
+    if err == io.Ok {
         v.push(addr)
         return err, v
     }
 
-    err,lookup<LookupHost> = sys.lookuphost_fromstr(s)
-    if err != Ok {
-        return err
+    lerr<i32>, lookup<LookupHost> = sys.lookuphost_fromstr(s)
+    if lerr != io.Ok {
+        return lerr, null
     }
-    err,ret<i64*> = resolve_socket_addr(lookup)
-    return err,ret
+    rerr<i32>, addrs<std.Array> = resolve_socket_addr(lookup)
+    return rerr, addrs
 }
 

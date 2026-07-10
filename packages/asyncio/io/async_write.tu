@@ -11,11 +11,12 @@ api AsyncWrite {
     fn poll_write(ctx<u64>, buf<iobuf.Buf>) (i32, u64)
     fn poll_flush(ctx<u64>) (i32)
     fn poll_shutdown(ctx<u64>) (i32)
-    fn poll_write_vectored(ctx<u64>, bufs<iobuf.Buf>) (i32, u64) {
+    fn poll_write_vectored(ctx<u64>, bufs<iobuf.Buf>) i32, u64 {
         // Default: write the first buffer and return whatever poll_write produced.
-        return this.poll_write(ctx, bufs)
+        err<i32>, n<u64> = this.poll_write(ctx, bufs)
+        return err, n
     }
-    fn is_write_vectored() bool {
-        return false
+    fn is_write_vectored() i32 {
+        return 0
     }
 }

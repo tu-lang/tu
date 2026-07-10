@@ -42,7 +42,7 @@ SeekComplete::poll(ctx) {
 //   (0, off) on success;
 //   (start_err, 0) when start_seek rejected the request;
 //   (iobuf.Other, 0) when poll_complete surfaced an error after start.
-async seek(s<u64>, pos<aio.SeekFrom>) (i32, u64) {
+async seek(s<u64>, pos<aio.SeekFrom>) {
     start_err<i32> = s.(aio.AsyncSeek).start_seek(pos)
     if start_err != 0 return start_err, 0.(u64)
     fut<SeekComplete> = SeekComplete::new(s)

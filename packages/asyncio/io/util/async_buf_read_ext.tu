@@ -43,7 +43,7 @@ FillBuf::poll(ctx) {
 // Wait until the underlying buffered reader has bytes available.
 // Returns (0, slice) on success — slice may be empty when the source
 // is at EOF. (iobuf.Other, empty) is returned on an underlying error.
-async fill_buf(r<u64>) (i32, iobuf.Buf) {
+async fill_buf(r<u64>) {
     fut<FillBuf> = FillBuf::new(r)
     fut.await
     if fut.out_err == runtime.PollError {
@@ -57,7 +57,8 @@ async fill_buf(r<u64>) (i32, iobuf.Buf) {
 fn buf_index_of(ptr<u8*>, len<u64>, needle<u8>) i64 {
     i<u64> = 0
     while i < len {
-        if ptr[i.(i32)] == needle return i.(i64)
+        idx<i32> = int(i)
+        if ptr[idx] == needle return i.(i64)
         i = i + 1
     }
     return -1
@@ -66,7 +67,8 @@ fn buf_index_of(ptr<u8*>, len<u64>, needle<u8>) i64 {
 // Append `n` bytes starting at `src` into `dst`'s unfilled region.
 // Caller guarantees dst.remaining() >= n.
 fn read_buf_append(dst<aio.ReadBuf>, src<u8*>, n<u64>){
-    base<u8*> = dst.inner.buf.inner + dst.filled.(i32)
+    off<i32> = int(dst.filled)
+    base<u8*> = dst.inner.buf.inner + off
     if n > 0 std.memcpy(base, src, n)
     dst.advance(n)
 }
@@ -112,7 +114,7 @@ const Lines::new(r<u64>) Lines {
 //     (n is the number of bytes already accumulated into dst).
 // `dst` running out of capacity is treated as an early return — the
 // next call resumes scanning with a fresh dst from the caller.
-async Split::next(dst<aio.ReadBuf>) (i32, u64) {
+async Split::next(dst<aio.ReadBuf>) {
     if this.done return iobuf.UnexpectedEof, 0.(u64)
     total<u64> = 0
     take<u64>  = 0
@@ -147,7 +149,7 @@ async Split::next(dst<aio.ReadBuf>) (i32, u64) {
 
 // Read the next line into `dst`. Trailing LF is consumed but not stored;
 // trailing CR is preserved (callers strip it as needed).
-async Lines::next_line(dst<aio.ReadBuf>) (i32, u64) {
+async Lines::next_line(dst<aio.ReadBuf>) {
     if this.done return iobuf.UnexpectedEof, 0.(u64)
     inner<Split> = Split::new(this.r, LF)
     err<i32>, n<u64> = inner.next(dst).await

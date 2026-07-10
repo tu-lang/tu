@@ -29,8 +29,9 @@ impl AsyncRead for IoJoin {
 
 // Forward all write-side ops to the AsyncWrite backing via api dispatch.
 impl AsyncWrite for IoJoin {
-    fn poll_write(ctx<u64>, buf<iobuf.Buf>) (i32, u64) {
-        return this.w.(AsyncWrite).poll_write(ctx, buf)
+    fn poll_write(ctx<u64>, buf<iobuf.Buf>) i32, u64 {
+        err<i32>, n<u64> = this.w.(AsyncWrite).poll_write(ctx, buf)
+        return err, n
     }
     fn poll_flush(ctx<u64>) i32 {
         return this.w.(AsyncWrite).poll_flush(ctx)

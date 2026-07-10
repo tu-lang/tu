@@ -38,7 +38,8 @@ ReadBuf::remaining() u64 {
 // `slice.len() <= remaining()`. Updates the inner Buffer's bookkeeping.
 ReadBuf::put_slice(slice<iobuf.Buf>){
     base<iobuf.Buf> = this.inner.buf
-    base.copy_at(this.filled.(i32), slice)
+    off<i32> = int(this.filled)
+    base.copy_at(off, slice)
     this.filled = this.filled + slice.len()
     this.inner.filled = this.filled
     if this.inner.init < this.filled {

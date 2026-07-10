@@ -23,7 +23,7 @@ mem BufWriter {
 
 // Build a BufWriter with `cap` bytes of buffer space.
 const BufWriter::with_capacity(inner<u64>, cap<u64>) BufWriter {
-    raw<iobuf.Buf>        = iobuf.NewBuf(cap.(i32))
+    raw<iobuf.Buf>        = iobuf.NewBuf(int(cap))
     backing<iobuf.Buffer> = iobuf.Buffer::from_uinit(raw)
     bw<BufWriter> = new BufWriter
     bw.inner = inner
@@ -55,7 +55,8 @@ fn buf_writer_push(bw<BufWriter>, ctx<u64>) i32 {
     if bw.pending() == 0 {
         return runtime.PollReady
     }
-    base<u8*> = bw.buf.buf.inner + bw.pos.(i32)
+    off<i32> = int(bw.pos)
+    base<u8*> = bw.buf.buf.inner + off
     slice<iobuf.Buf> = new iobuf.Buf { inner: base, len: bw.pending() }
     err<i32>, n<u64> = bw.inner.(aio.AsyncWrite).poll_write(ctx, slice)
     if err == runtime.PollPending return runtime.PollPending
@@ -76,7 +77,7 @@ fn buf_writer_push(bw<BufWriter>, ctx<u64>) i32 {
 // AsyncWrite: small writes land in `buf`; oversize writes drain the
 // buffer first, then delegate straight to the sink.
 impl aio.AsyncWrite for BufWriter {
-    fn poll_write(ctx<u64>, src<iobuf.Buf>) (i32, u64) {
+    fn poll_write(ctx<u64>, src<iobuf.Buf>) i32, u64 {
         // If the caller's slice would not fit, flush the buffer first.
         if src.len() > this.room() {
             err<i32> = buf_writer_push(this, ctx)
@@ -84,11 +85,13 @@ impl aio.AsyncWrite for BufWriter {
             if err == runtime.PollError   return runtime.PollError, 0.(u64)
             // After a successful flush, large writes bypass the buffer.
             if src.len() >= this.buf.capacity() {
-                return this.inner.(aio.AsyncWrite).poll_write(ctx, src)
+                err2<i32>, n2<u64> = this.inner.(aio.AsyncWrite).poll_write(ctx, src)
+                return err2, n2
             }
         }
         // Append into our buffer.
-        dst<u8*> = this.buf.buf.inner + this.buf.filled.(i32)
+        off<i32> = int(this.buf.filled)
+        dst<u8*> = this.buf.buf.inner + off
         std.memcpy(dst, src.inner, src.len())
         this.buf.filled = this.buf.filled + src.len()
         return runtime.PollReady, src.len()

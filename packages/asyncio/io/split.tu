@@ -38,8 +38,9 @@ impl AsyncRead for ReadHalf {
 
 // Forward all write-side ops to the backing object via api dispatch.
 impl AsyncWrite for WriteHalf {
-    fn poll_write(ctx<u64>, buf<iobuf.Buf>) (i32, u64) {
-        return this.inner.(AsyncWrite).poll_write(ctx, buf)
+    fn poll_write(ctx<u64>, buf<iobuf.Buf>) i32, u64 {
+        err<i32>, n<u64> = this.inner.(AsyncWrite).poll_write(ctx, buf)
+        return err, n
     }
     fn poll_flush(ctx<u64>) i32 {
         return this.inner.(AsyncWrite).poll_flush(ctx)

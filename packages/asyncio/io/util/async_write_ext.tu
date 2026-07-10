@@ -102,7 +102,7 @@ Shutdown::poll(ctx) {
 // number of bytes the underlying writer accepted. n == 0 typically
 // indicates a writer-side stall; callers should treat repeated zero
 // returns as io.WriteZero.
-async write(w<u64>, buf<iobuf.Buf>) (i32, u64) {
+async write(w<u64>, buf<iobuf.Buf>) {
     fut<Write> = Write::new(w, buf)
     n<u64> = fut.await
     return 0, n
@@ -111,7 +111,7 @@ async write(w<u64>, buf<iobuf.Buf>) (i32, u64) {
 // Write the entire `buf` to `w`. Returns 0 when every byte landed,
 // io.WriteZero if the underlying writer ever accepts zero bytes
 // without yielding (which would otherwise spin forever).
-async write_all(w<u64>, buf<iobuf.Buf>) i32 {
+async write_all(w<u64>, buf<iobuf.Buf>) {
     rest<iobuf.Buf> = buf
     while rest.len() > 0 {
         fut<Write> = Write::new(w, rest)
@@ -128,7 +128,7 @@ async write_all(w<u64>, buf<iobuf.Buf>) i32 {
 // error (the underlying error code is currently swallowed by the leaf
 // — this matches the read-side convention until poll_flush gains a
 // secondary error channel).
-async flush(w<u64>) i32 {
+async flush(w<u64>) {
     fut<Flush> = Flush::new(w)
     fut.await
     if fut.done == 2 return iobuf.Other
@@ -136,7 +136,7 @@ async flush(w<u64>) i32 {
 }
 
 // Shut the writer down. Same return convention as flush.
-async shutdown(w<u64>) i32 {
+async shutdown(w<u64>) {
     fut<Shutdown> = Shutdown::new(w)
     fut.await
     if fut.done == 2 return iobuf.Other
@@ -150,57 +150,65 @@ async shutdown(w<u64>) i32 {
 // ---------------------------------------------------------------------
 
 // Write one byte as u8.
-async write_u8(w<u64>, v<u8>) i32 {
+async write_u8(w<u64>, v<u8>) {
     tmp<iobuf.Buf> = iobuf.NewBuf(1)
     tmp.inner[0] = v
     return write_all(w, tmp).await
 }
 
 // Write one byte as i8 (raw two's-complement bits).
-async write_i8(w<u64>, v<i8>) i32 {
+async write_i8(w<u64>, v<i8>) {
     return write_u8(w, v.(u8)).await
 }
 
 // Write two bytes as u16, big-endian.
-async write_u16(w<u64>, v<u16>) i32 {
+async write_u16(w<u64>, v<u16>) {
     tmp<iobuf.Buf> = iobuf.NewBuf(2)
-    tmp.inner[0] = ((v >> 8) & 0xFF).(u8)
-    tmp.inner[1] = (v & 0xFF).(u8)
+    hi<u32> = (v >> 8) & 0xFF
+    lo<u32> = v & 0xFF
+    b0<u8> = hi.(u8)
+    b1<u8> = lo.(u8)
+    tmp.inner[0] = b0
+    tmp.inner[1] = b1
     return write_all(w, tmp).await
 }
 
 // Write two bytes as i16, big-endian.
-async write_i16(w<u64>, v<i16>) i32 {
+async write_i16(w<u64>, v<i16>) {
     return write_u16(w, v.(u16)).await
 }
 
 // Write four bytes as u32, big-endian.
-async write_u32(w<u64>, v<u32>) i32 {
+async write_u32(w<u64>, v<u32>) {
     tmp<iobuf.Buf> = iobuf.NewBuf(4)
-    tmp.inner[0] = ((v >> 24) & 0xFF).(u8)
-    tmp.inner[1] = ((v >> 16) & 0xFF).(u8)
-    tmp.inner[2] = ((v >> 8)  & 0xFF).(u8)
-    tmp.inner[3] = ( v        & 0xFF).(u8)
+    w0<u32> = (v >> 24) & 0xFF
+    w1<u32> = (v >> 16) & 0xFF
+    w2<u32> = (v >> 8) & 0xFF
+    w3<u32> = v & 0xFF
+    tmp.inner[0] = w0.(u8)
+    tmp.inner[1] = w1.(u8)
+    tmp.inner[2] = w2.(u8)
+    tmp.inner[3] = w3.(u8)
     return write_all(w, tmp).await
 }
 
 // Write four bytes as i32, big-endian.
-async write_i32(w<u64>, v<i32>) i32 {
+async write_i32(w<u64>, v<i32>) {
     return write_u32(w, v.(u32)).await
 }
 
 // Write eight bytes as u64, big-endian.
-async write_u64(w<u64>, v<u64>) i32 {
+async write_u64(w<u64>, v<u64>) {
     tmp<iobuf.Buf> = iobuf.NewBuf(8)
-    i<i32> = 0
-    for(; i < 8; i += 1){
+    for i<i32> = 0 ; i < 8 ; i += 1 {
         shift<i32> = (7 - i) * 8
-        tmp.inner[i] = ((v >> shift) & 0xFF).(u8)
+        w<u64> = (v >> shift) & 0xFF
+        tmp.inner[i] = w.(u8)
     }
     return write_all(w, tmp).await
 }
 
 // Write eight bytes as i64, big-endian.
-async write_i64(w<u64>, v<i64>) i32 {
+async write_i64(w<u64>, v<i64>) {
     return write_u64(w, v.(u64)).await
 }

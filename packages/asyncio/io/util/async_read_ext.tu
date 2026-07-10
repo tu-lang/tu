@@ -50,7 +50,7 @@ Read::poll(ctx) {
 
 // Read at most one chunk into `buf`. Returns (0, n) where n is the
 // number of bytes that landed during this call. `n == 0` denotes EOF.
-async read(r<u64>, buf<aio.ReadBuf>) (i32, u64) {
+async read(r<u64>, buf<aio.ReadBuf>) {
     fut<Read> = Read::new(r, buf)
     n<u64> = fut.await
     return 0, n
@@ -59,7 +59,7 @@ async read(r<u64>, buf<aio.ReadBuf>) (i32, u64) {
 // Read until `buf` is filled exactly to capacity. Returns 0 on full
 // fill, or io.UnexpectedEof if the source stopped producing bytes
 // before the buffer was full.
-async read_exact(r<u64>, buf<aio.ReadBuf>) i32 {
+async read_exact(r<u64>, buf<aio.ReadBuf>) {
     while buf.remaining() > 0 {
         before<u64> = buf.filled_len()
         fut<Read> = Read::new(r, buf)
@@ -77,7 +77,7 @@ async read_exact(r<u64>, buf<aio.ReadBuf>) i32 {
 // (0, total_bytes_read). When the buffer fills before EOF the call
 // stops early; higher-level helpers grow the underlying Buffer as
 // needed.
-async read_to_end(r<u64>, buf<aio.ReadBuf>) (i32, u64) {
+async read_to_end(r<u64>, buf<aio.ReadBuf>) {
     total<u64> = 0
     loop {
         if buf.remaining() == 0 break
@@ -100,7 +100,7 @@ LF<u8> = 10
 // filled cursor by one.
 fn read_buf_push_byte(dst<aio.ReadBuf>, byte<u8>){
     base<u8*> = dst.inner.buf.inner
-    pos<i32>  = dst.filled.(i32)
+    pos<i32>  = int(dst.filled)
     base[pos] = byte
     dst.advance(1)
 }
@@ -115,7 +115,8 @@ fn read_buf_push_byte(dst<aio.ReadBuf>, byte<u8>){
 fn validate_utf8(ptr<u8*>, len<u64>) i32 {
     i<u64> = 0
     while i < len {
-        b<u8>      = ptr[i.(i32)]
+        idx<i32> = int(i)
+        b<u8>      = ptr[idx]
         extra<i32> = 0
         if (b & 0x80) == 0 {
             extra = 0
@@ -128,13 +129,13 @@ fn validate_utf8(ptr<u8*>, len<u64>) i32 {
         } else {
             return iobuf.InvalidData
         }
-        if (i + extra.(u64)) >= len return iobuf.InvalidData
-        j<i32> = 1
-        for(; j <= extra; j += 1){
-            cb<u8> = ptr[i.(i32) + j]
+        extra_u<u64> = extra.(u64)
+        if i + extra_u >= len return iobuf.InvalidData
+        for j<i32> = 1 ; j <= extra ; j += 1 {
+            cb<u8> = ptr[idx + j]
             if (cb & 0xC0) != 0x80 return iobuf.InvalidData
         }
-        i = i + 1 + extra.(u64)
+        i = i + 1 + extra_u
     }
     return 0
 }
@@ -144,7 +145,7 @@ fn validate_utf8(ptr<u8*>, len<u64>) i32 {
 // is the number of bytes appended during this call. Reading is performed
 // one byte at a time; for higher throughput use a BufReader-backed
 // AsyncBufReadExt::read_until once available.
-async read_until(r<u64>, delim<u8>, dst<aio.ReadBuf>) (i32, u64) {
+async read_until(r<u64>, delim<u8>, dst<aio.ReadBuf>) {
     total<u64> = 0
     loop {
         if dst.remaining() == 0 break
@@ -166,7 +167,7 @@ async read_until(r<u64>, delim<u8>, dst<aio.ReadBuf>) (i32, u64) {
 
 // Read bytes from `r` into `dst` until LF, EOF, or dst is full. Thin
 // wrapper over read_until with delim = '\n'. CRLF is not trimmed.
-async read_line(r<u64>, dst<aio.ReadBuf>) (i32, u64) {
+async read_line(r<u64>, dst<aio.ReadBuf>) {
     err<i32>, n<u64> = read_until(r, LF, dst).await
     return err, n
 }
@@ -175,11 +176,12 @@ async read_line(r<u64>, dst<aio.ReadBuf>) (i32, u64) {
 // appended region as UTF-8. Returns (0, n) on success, (iobuf.InvalidData,
 // n) when the appended bytes are not valid UTF-8, or whatever non-zero
 // error code read_to_end surfaced.
-async read_to_string(r<u64>, dst<aio.ReadBuf>) (i32, u64) {
+async read_to_string(r<u64>, dst<aio.ReadBuf>) {
     before<u64>      = dst.filled_len()
     err<i32>, n<u64> = read_to_end(r, dst).await
     if err != 0 return err, n
-    base<u8*> = dst.inner.buf.inner + before.(i32)
+    off<i32> = int(before)
+    base<u8*> = dst.inner.buf.inner + off
     if validate_utf8(base, n) != 0 return iobuf.InvalidData, n
     return 0, n
 }
@@ -192,7 +194,7 @@ async read_to_string(r<u64>, dst<aio.ReadBuf>) (i32, u64) {
 // ---------------------------------------------------------------------
 
 // Read one byte as u8.
-async read_u8(r<u64>) (i32, u8) {
+async read_u8(r<u64>) {
     tmp<iobuf.Buf>          = iobuf.NewBuf(1)
     tmp_buffer<iobuf.Buffer> = iobuf.Buffer::from_uinit(tmp)
     rb<aio.ReadBuf>         = aio.ReadBuf::new(tmp_buffer)
@@ -202,69 +204,69 @@ async read_u8(r<u64>) (i32, u8) {
 }
 
 // Read one byte as i8 (two's-complement reinterpretation of read_u8).
-async read_i8(r<u64>) (i32, i8) {
+async read_i8(r<u64>) {
     err<i32>, v<u8> = read_u8(r).await
     if err != 0 return err, 0.(i8)
     return 0, v.(i8)
 }
 
 // Read two bytes as u16, big-endian.
-async read_u16(r<u64>) (i32, u16) {
+async read_u16(r<u64>) {
     tmp<iobuf.Buf>          = iobuf.NewBuf(2)
     tmp_buffer<iobuf.Buffer> = iobuf.Buffer::from_uinit(tmp)
     rb<aio.ReadBuf>         = aio.ReadBuf::new(tmp_buffer)
     err<i32> = read_exact(r, rb).await
     if err != 0 return err, 0.(u16)
-    b0<u16> = tmp.inner[0].(u16)
-    b1<u16> = tmp.inner[1].(u16)
-    return 0, (b0 << 8) | b1
+    b0<u8> = tmp.inner[0]
+    b1<u8> = tmp.inner[1]
+    return 0, (b0.(u16) << 8) | b1.(u16)
 }
 
 // Read two bytes as i16, big-endian.
-async read_i16(r<u64>) (i32, i16) {
+async read_i16(r<u64>) {
     err<i32>, v<u16> = read_u16(r).await
     if err != 0 return err, 0.(i16)
     return 0, v.(i16)
 }
 
 // Read four bytes as u32, big-endian.
-async read_u32(r<u64>) (i32, u32) {
+async read_u32(r<u64>) {
     tmp<iobuf.Buf>          = iobuf.NewBuf(4)
     tmp_buffer<iobuf.Buffer> = iobuf.Buffer::from_uinit(tmp)
     rb<aio.ReadBuf>         = aio.ReadBuf::new(tmp_buffer)
     err<i32> = read_exact(r, rb).await
     if err != 0 return err, 0.(u32)
-    b0<u32> = tmp.inner[0].(u32)
-    b1<u32> = tmp.inner[1].(u32)
-    b2<u32> = tmp.inner[2].(u32)
-    b3<u32> = tmp.inner[3].(u32)
-    return 0, (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+    b0<u8> = tmp.inner[0]
+    b1<u8> = tmp.inner[1]
+    b2<u8> = tmp.inner[2]
+    b3<u8> = tmp.inner[3]
+    return 0, (b0.(u32) << 24) | (b1.(u32) << 16) | (b2.(u32) << 8) | b3.(u32)
 }
 
 // Read four bytes as i32, big-endian.
-async read_i32(r<u64>) (i32, i32) {
+async read_i32(r<u64>) {
     err<i32>, v<u32> = read_u32(r).await
     if err != 0 return err, 0
     return 0, v.(i32)
 }
 
 // Read eight bytes as u64, big-endian.
-async read_u64(r<u64>) (i32, u64) {
+async read_u64(r<u64>) {
     tmp<iobuf.Buf>          = iobuf.NewBuf(8)
     tmp_buffer<iobuf.Buffer> = iobuf.Buffer::from_uinit(tmp)
     rb<aio.ReadBuf>         = aio.ReadBuf::new(tmp_buffer)
     err<i32> = read_exact(r, rb).await
     if err != 0 return err, 0.(u64)
     acc<u64> = 0
-    i<i32> = 0
-    for(; i < 8; i += 1){
-        acc = (acc << 8) | tmp.inner[i].(u64)
+    for i<i32> = 0 ; i < 8 ; i += 1 {
+        b<u8> = tmp.inner[i]
+        acc = (acc << 8) | b.(u64)
     }
     return 0, acc
 }
 
 // Read eight bytes as i64, big-endian.
-async read_i64(r<u64>) (i32, i64) {
+async read_i64(r<u64>) {
     err<i32>, v<u64> = read_u64(r).await
     if err != 0 return err, 0.(i64)
     return 0, v.(i64)
