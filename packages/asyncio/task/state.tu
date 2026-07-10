@@ -58,23 +58,23 @@ State::load() i32 {
 }
 
 // Bit accessors over a snapshot value (pure helpers).
-fn st_is_running(v<i32>) bool {
+fn st_is_running(v<i32>) i32 {
     if (v & RUNNING) != 0 return true
     return false
 }
-fn st_is_complete(v<i32>) bool {
+fn st_is_complete(v<i32>) i32 {
     if (v & COMPLETE) != 0 return true
     return false
 }
-fn st_is_notified(v<i32>) bool {
+fn st_is_notified(v<i32>) i32 {
     if (v & NOTIFIED) != 0 return true
     return false
 }
-fn st_is_cancelled(v<i32>) bool {
+fn st_is_cancelled(v<i32>) i32 {
     if (v & CANCELLED) != 0 return true
     return false
 }
-fn st_is_join_interested(v<i32>) bool {
+fn st_is_join_interested(v<i32>) i32 {
     if (v & JOIN_INTEREST) != 0 return true
     return false
 }

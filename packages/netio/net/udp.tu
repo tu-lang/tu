@@ -2,14 +2,14 @@ use netio
 use io
 use netio.event
 use netio.sys
-use net
+use net as libnet
 
 mem UdpSocket {
 	netio.IoSource* inner
 }
 
-const UdpSocket::bind(addr<net.SocketAddr>) i32, UdpSocket {
-	err<i32>, socket<net.UdpSocket> = sys.bind(addr)
+const UdpSocket::bind(addr<libnet.SocketAddr>) i32, UdpSocket {
+	err<i32>, socket<libnet.UdpSocket> = sys.bind(addr)
 	if err != Ok
 		return err, null
 	return Ok, new UdpSocket {
@@ -17,15 +17,15 @@ const UdpSocket::bind(addr<net.SocketAddr>) i32, UdpSocket {
 	}
 }
 
-const UdpSocket::from_std(socket<net.UdpSocket>) UdpSocket {
+const UdpSocket::from_std(socket<libnet.UdpSocket>) UdpSocket {
 	return new UdpSocket { inner: netio.IoSource::new(socket) }
 }
 
-UdpSocket::send_to(buf<io.Buf>, target<net.SocketAddr>) i32, u64 {
+UdpSocket::send_to(buf<io.Buf>, target<libnet.SocketAddr>) i32, u64 {
 	return this.inner.inner.send_to(buf, target)
 }
 
-UdpSocket::recv_from(buf<io.Buf>) i32, u64, net.SocketAddr {
+UdpSocket::recv_from(buf<io.Buf>) i32, u64, libnet.SocketAddr {
 	return this.inner.inner.recv_from(buf)
 }
 

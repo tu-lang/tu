@@ -5,11 +5,11 @@ mem Interest {
 	u8 bits
 }
 
-const Interest_readable() Interest {
+const Interest::readable() Interest {
 	return new Interest { bits: READABLE_BIT }
 }
 
-const Interest_writable() Interest {
+const Interest::writable() Interest {
 	return new Interest { bits: WRITABLE_BIT }
 }
 
@@ -17,10 +17,10 @@ const Interest::add(other<Interest>) Interest {
 	return new Interest { bits: this.bits | other.bits }
 }
 
-const Interest::is_readable() bool {
+Interest::is_readable() i32 {
 	return (this.bits & READABLE_BIT) != 0
 }
 
-const Interest::is_writable() bool {
+Interest::is_writable() i32 {
 	return (this.bits & WRITABLE_BIT) != 0
 }

@@ -50,49 +50,59 @@ OwnedTasks::bind(raw<RawTask>) i32 {
 OwnedTasks::remove(raw<RawTask>){
     m<runtime.MutexInter> = this.lock
     m.lock()
-    cur<RawTask> = this.head.(RawTask)
-    prev<RawTask> = null
-    while cur != null {
+    cur_bits<u64> = this.head
+    prev_bits<u64> = 0
+    while cur_bits != 0 {
+        cur<RawTask> = cur_bits.(RawTask)
         if cur == raw {
             ch<Header> = cur.hdr
             nxt<RawTask> = ch.queue_next
-            if prev == null {
-                this.head = nxt.(u64)
+            if prev_bits == 0 {
+                if nxt == null this.head = 0
+                else this.head = nxt.(u64)
             } else {
+                prev<RawTask> = prev_bits.(RawTask)
                 ph<Header> = prev.hdr
                 ph.queue_next = nxt
             }
-            if nxt == null this.tail = prev.(u64)
+            if nxt == null {
+                this.tail = prev_bits
+            }
             ch.queue_next = null
             this.active -= 1
             break
         }
-        prev = cur
+        prev_bits = cur_bits
         ch<Header> = cur.hdr
-        cur = ch.queue_next
+        nxt<RawTask> = ch.queue_next
+        if nxt == null {
+            cur_bits = 0
+        } else {
+            cur_bits = nxt.(u64)
+        }
     }
     m.unlock()
 }
 
-// Mark closed. Idempotent — returns true only on the first call.
-OwnedTasks::close() bool {
+// Mark closed. Idempotent — returns 1 only on the first call.
+OwnedTasks::close() i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
-    first<bool> = false
+    first<i32> = 0
     if this.closed == 0 {
         this.closed = 1
-        first = true
+        first = 1
     }
     m.unlock()
     return first
 }
 
 // Atomic-ish snapshot: read head under lock to avoid torn updates.
-OwnedTasks::is_empty() bool {
+OwnedTasks::is_empty() i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
-    empty<bool> = false
-    if this.head == 0 empty = true
+    empty<i32> = 0
+    if this.head == 0 empty = 1
     m.unlock()
     return empty
 }
@@ -105,4 +115,3 @@ OwnedTasks::active_count() i32 {
     m.unlock()
     return n
 }
-

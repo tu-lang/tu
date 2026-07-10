@@ -1,17 +1,17 @@
 use netio.event
 use io
-use netio.sys
-use sys
+use netio.sys as nsys
+use sys as libsys
 
 mem IoSource {
-	sys.IoSourceState* state
-	sys.AsRawFd inner
+	nsys.IoSourceState* state
+	libsys.AsRawFd inner
 	u64 selector_id
 }
 
-const IoSource::new(io_obj<sys.AsRawFd>) IoSource {
+const IoSource::new(io_obj<libsys.AsRawFd>) IoSource {
 	return new IoSource {
-		state: sys.IoSourceState::new(),
+		state: nsys.IoSourceState::new(),
 		inner: io_obj,
 		selector_id: 0
 	}

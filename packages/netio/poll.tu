@@ -1,18 +1,18 @@
 use netio.event
 use io
-use netio.sys
-use sys
+use netio.sys as nsys
+use sys as libsys
 
 mem Poll {
 	Registry* registry
 }
 
 mem Registry {
-	sys.Selector* selector
+	nsys.Selector* selector
 }
 
 const Poll::new() i32, Poll {
-	err<i32>, selector<sys.Selector> = sys.Selector::new()
+	err<i32>, selector<nsys.Selector> = nsys.Selector::new()
 	if err != Ok
 		return err, null
 	return Ok, new Poll {
@@ -24,7 +24,7 @@ Poll::registry() Registry {
 	return this.registry
 }
 
-Poll::poll(events<event.Events>, timeout<sys.Duration>) i32 {
+Poll::poll(events<event.Events>, timeout<libsys.Duration>) i32 {
 	return this.registry.selector.select(events.sys(), timeout)
 }
 
@@ -41,7 +41,7 @@ Registry::deregister(source_obj<event.Source>) i32 {
 }
 
 Registry::try_clone() i32, Registry {
-	err<i32>, selector<sys.Selector> = this.selector.try_clone()
+	err<i32>, selector<nsys.Selector> = this.selector.try_clone()
 	if err != Ok
 		return err, null
 	return Ok, new Registry { selector: selector }
@@ -53,6 +53,6 @@ Registry::register_waker() i32 {
 	return Ok
 }
 
-Registry::selector() sys.Selector {
+Registry::selector() nsys.Selector {
 	return this.selector
 }
