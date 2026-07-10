@@ -7,19 +7,19 @@
 // array. Kept async to match the awaitable public contract; the DNS variant
 // will route through runtime.blocking spawn_mandatory_blocking.
 
-use net
-use io
+use net as libnet
+use io as libio
 use string
 use std
 
-// Resolve `host` ("ip:port") to a list of net.SocketAddr. Returns (io.Ok, addrs)
-// with one or more entries, or (io.Unsupported, empty) for names that need DNS.
+// Resolve `host` ("ip:port") to a list of libnet.SocketAddr. Returns (libio.Ok, addrs)
+// with one or more entries, or (libio.Unsupported, empty) for names that need DNS.
 async lookup_host(host<string.String>) i32, std.Array {
     v<std.Array> = std.NewArray()
-    perr<i32>, addr<net.SocketAddr> = parse_socket_addr(host.str(), host.len())
-    if perr == io.Ok {
+    perr<i32>, addr<libnet.SocketAddr> = parse_socket_addr(host.str(), host.len())
+    if perr == libio.Ok {
         v.push(addr)
-        return io.Ok, v
+        return libio.Ok, v
     }
-    return io.Unsupported, v
+    return libio.Unsupported, v
 }
