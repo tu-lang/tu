@@ -20,7 +20,7 @@ const Repeat::new(byte<u8>) Repeat {
 }
 
 // Convenience top-level constructor.
-const repeat(byte<u8>) Repeat {
+fn repeat(byte<u8>) Repeat {
     return Repeat::new(byte)
 }
 

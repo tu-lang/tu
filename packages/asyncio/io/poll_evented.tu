@@ -5,21 +5,22 @@
 
 use runtime
 use netio
-use asyncio.runtime as rt
+use netio.event as evsrc
+use asyncio.runtime.io as rtio
 use io as iolib
 
 // inner is the netio source (TcpStream / UdpSocket / pipe / ...). reg
 // owns the ScheduledIo that bridges into the IO Driver dispatch loop.
 mem PollEvented {
-    netio.event.Source* inner
-    rt.io.Registration* reg
+    evsrc.Source* inner
+    rtio.Registration* reg
 }
 
 // Build a PollEvented by registering `inner` with `io_handle` for the
 // supplied interest. Returns (err, evented); err != 0 signals the
 // underlying netio register call failed.
-const PollEvented::new(inner<netio.event.Source>, interest<netio.Interest>, sched<u64>, io_handle<rt.io.IoHandle>) (i32, PollEvented) {
-    err<i32>, reg<rt.io.Registration> = rt.io.Registration::new_with_interest_and_handle(inner, interest, sched, io_handle)
+const PollEvented::new(inner<evsrc.Source>, interest<netio.Interest>, sched<u64>, io_handle<rtio.IoHandle>) (i32, PollEvented) {
+    err<i32>, reg<rtio.Registration> = rtio.Registration::new_with_interest_and_handle(inner, interest, sched, io_handle)
     if err != 0 return err, null
 
     p<PollEvented> = new PollEvented
@@ -29,33 +30,33 @@ const PollEvented::new(inner<netio.event.Source>, interest<netio.Interest>, sche
 }
 
 // Borrow the inner netio source.
-PollEvented::source() netio.event.Source {
+PollEvented::source() evsrc.Source {
     return this.inner
 }
 
 // Poll for read readiness; ctx is the (sched, task_id) packed waker payload.
-PollEvented::poll_read_ready(ctx<u64>) (i32, rt.io.ReadyEvent) {
+PollEvented::poll_read_ready(ctx<u64>) (i32, rtio.ReadyEvent) {
     return this.reg.poll_read_ready(ctx)
 }
 
 // Poll for write readiness.
-PollEvented::poll_write_ready(ctx<u64>) (i32, rt.io.ReadyEvent) {
+PollEvented::poll_write_ready(ctx<u64>) (i32, rtio.ReadyEvent) {
     return this.reg.poll_write_ready(ctx)
 }
 
 // Drive `op` against the read side: poll readiness, run op, retry on
 // WouldBlock until either a real result lands or readiness goes Pending.
-PollEvented::poll_read_io(ctx<u64>, op<rt.io.IoOp>) (i32, i64) {
+PollEvented::poll_read_io(ctx<u64>, op<rtio.IoOp>) (i32, i64) {
     return this.reg.poll_read_io(ctx, op)
 }
 
 // Mirror of poll_read_io for the write side.
-PollEvented::poll_write_io(ctx<u64>, op<rt.io.IoOp>) (i32, i64) {
+PollEvented::poll_write_io(ctx<u64>, op<rtio.IoOp>) (i32, i64) {
     return this.reg.poll_write_io(ctx, op)
 }
 
 // Single-shot try_io: one readiness check + one op invocation.
-PollEvented::try_io(interest<netio.Interest>, op<rt.io.IoOp>) (i32, i64) {
+PollEvented::try_io(interest<netio.Interest>, op<rtio.IoOp>) (i32, i64) {
     return this.reg.try_io(interest, op)
 }
 
@@ -73,7 +74,7 @@ PollEvented::deregister() i32 {
 fn poll_ready_bits(pe<PollEvented>, want_read<i32>, want_write<i32>, ctx<u64>) (i32, i32, Ready) {
     bits<i32> = 0
     if want_read == 1 {
-        rerr<i32>, rev<rt.io.ReadyEvent> = pe.poll_read_ready(ctx)
+        rerr<i32>, rev<rtio.ReadyEvent> = pe.poll_read_ready(ctx)
         if rerr == 0 {
             bits = bits | rev.ready.bits
         } else if rerr != runtime.PollPending {
@@ -81,7 +82,7 @@ fn poll_ready_bits(pe<PollEvented>, want_read<i32>, want_write<i32>, ctx<u64>) (
         }
     }
     if want_write == 1 {
-        werr<i32>, wev<rt.io.ReadyEvent> = pe.poll_write_ready(ctx)
+        werr<i32>, wev<rtio.ReadyEvent> = pe.poll_write_ready(ctx)
         if werr == 0 {
             bits = bits | wev.ready.bits
         } else if werr != runtime.PollPending {

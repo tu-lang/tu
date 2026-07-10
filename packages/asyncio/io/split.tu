@@ -52,6 +52,6 @@ impl AsyncWrite for WriteHalf {
 // Build a (ReadHalf, WriteHalf) pair sharing one backing object. `rw` is
 // the raw bits of any value that implements both AsyncRead and AsyncWrite;
 // callers cast via obj.(u64) at the call site.
-const split(rw<u64>) (ReadHalf, WriteHalf) {
+fn split(rw<u64>) (ReadHalf, WriteHalf) {
     return ReadHalf::new(rw), WriteHalf::new(rw)
 }

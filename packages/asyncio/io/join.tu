@@ -41,6 +41,6 @@ impl AsyncWrite for IoJoin {
 }
 
 // Free function alias matching split()'s pairing style.
-const join(r<u64>, w<u64>) IoJoin {
+fn join(r<u64>, w<u64>) IoJoin {
     return IoJoin::new(r, w)
 }

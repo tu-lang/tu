@@ -24,7 +24,7 @@ const Chain::new(first<u64>, second<u64>) Chain {
 }
 
 // Convenience top-level constructor.
-const chain(first<u64>, second<u64>) Chain {
+fn chain(first<u64>, second<u64>) Chain {
     return Chain::new(first, second)
 }
 

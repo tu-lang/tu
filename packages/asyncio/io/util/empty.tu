@@ -18,7 +18,7 @@ const Empty::new() Empty {
 }
 
 // Convenience top-level constructor.
-const empty() Empty {
+fn empty() Empty {
     return Empty::new()
 }
 

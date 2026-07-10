@@ -18,7 +18,7 @@ const Sink::new() Sink {
 }
 
 // Convenience top-level constructor.
-const sink() Sink {
+fn sink() Sink {
     return Sink::new()
 }
 
