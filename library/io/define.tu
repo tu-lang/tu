@@ -27,7 +27,7 @@ fn module_name(module<i32>) i32* {
 
 fn error_message(code<i32>) i8*{
     match code {
-        /* ================= CUSTOM ================= */
+        // CUSTOM section
         16908289 : return "An entity was not found, often a file"
         16908290 : return "The operation lacked the necessary privileges to complete"
         16908291 : return "The connection was refused by the remote server"
@@ -83,10 +83,10 @@ fn error_message(code<i32>) i8*{
         16908341 : return "Path contains interior NUL byte"
         16908342 : return "No address to send data to"
 
-        /* ================= OS ================= */
+        // OS section
         16842807 : return "OS error: EINPROGRESS"
 
-        /* ================= ASYNC ================= */
+        // ASYNC section
         50397240 : return "Reactor at max I/O resources"
         50397241 : return "Failed to find event loop"
         50397242 : return "Reactor gone"
@@ -96,14 +96,14 @@ fn error_message(code<i32>) i8*{
         50397246 : return "Failed to write frame to transport"
         50397247 : return "Park error"
 
-        /* ================= SIMPLE ================= */
+        // SIMPLE section
         67371009 : return "Connection closed normally"
         67371010 : return "Connection already closed"
         67371053 : return "HTTP response error"
         67371054 : return "HTTP format error"
         67371055 : return "UTF-8 encoding error"
 
-        /* ================= PROTOCOL ================= */
+        // PROTOCOL section
         67502084 : return "Unknown data frame type"
         67502085 : return "Expected fragment"
         67502086 : return "Unexpected continue frame"
@@ -132,7 +132,7 @@ fn error_message(code<i32>) i8*{
         67502109 : return "Invalid close sequence"
         67502111 : return "Frame not recognised"
 
-        /* ================= SEND QUEUE ================= */
+        // SEND QUEUE section
         67567648 : return "Invalid text message"
         67567649 : return "Invalid binary message"
         67567650 : return "Ping payload too large"
@@ -140,10 +140,10 @@ fn error_message(code<i32>) i8*{
         67567652 : return "Invalid close frame"
         67567653 : return "Unexpected raw frame"
 
-        /* ================= CAPCITY ================= */
+        // CAPCITY section
         67633190 : return "Too many headers or message too long"
 
-        /* ================= URL ================= */
+        // URL section
         67698727 : return "TLS feature not enabled"
         67698728 : return "URL has no host name"
         67698729 : return "Unable to connect URL"
@@ -151,10 +151,10 @@ fn error_message(code<i32>) i8*{
         67698731 : return "Empty URL host name"
         67698732 : return "URL missing path or query"
 
-        /* ================= IO ================= */
+        // IO section
         67436592 : return "I/O other error"
 
-        /* ================= TLS ================= */
+        // TLS section
         67764273 : return "Native TLS error"
         67764274 : return "Rustls error"
         67764275 : return "Webpki error"

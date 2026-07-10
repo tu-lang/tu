@@ -28,11 +28,13 @@ fn default_read_to_end(r, buf<Buf>, size_hint_opt<i32>) i32, u64 {
 }
 
 fn default_read_vectored(r, buf<Buf>) i32, u64 {
-	return r.read(buf)
+	err<i32>, n<u64> = r.(Read).read(buf)
+	return err, n
 }
 
 fn default_write_vectored(w, buf<Buf>) i32, u64 {
-	return w.write(buf)
+	err<i32>, n<u64> = w.(Write).write(buf)
+	return err, n
 }
 
 fn default_read_exact(this, buf<Buf>) i32 {
@@ -41,7 +43,7 @@ fn default_read_exact(this, buf<Buf>) i32 {
 		if pos >= buf.len()
 			return Ok
 		slice<Buf> = new Buf { inner: buf.inner + pos, len: buf.len() - pos }
-		err<i32>, n<u64> = this.read(slice)
+		err<i32>, n<u64> = this.(Read).read(slice)
 		if err != Ok
 			if err == Interrupted
 				continue
@@ -56,7 +58,7 @@ fn default_read_exact(this, buf<Buf>) i32 {
 fn default_read_buf(this, cursor<BufferCursor>) i32 {
 	cursor.ensure_init()
 	b<Buf> = cursor.as_mut()
-	err<i32>, n<u64> = this.read(b)
+	err<i32>, n<u64> = this.(Read).read(b)
 	if err != Ok
 		return err
 	cursor.advance(n)
@@ -69,13 +71,15 @@ api Read {
 		return default_read_buf(this, cursor)
 	}
 	fn read_to_end(buf<Buf>) i32, u64 {
-		return default_read_to_end(this, buf, 0)
+		err<i32>, n<u64> = default_read_to_end(this, buf, 0)
+		return err, n
 	}
 	fn read_exact(buf<Buf>) i32 {
 		return default_read_exact(this, buf)
 	}
 	fn read_vectored(buf<Buf>) i32, u64 {
-		return default_read_vectored(this, buf)
+		err<i32>, n<u64> = default_read_vectored(this, buf)
+		return err, n
 	}
 	fn is_read_vectored() i32 {
 		return 0
@@ -111,14 +115,16 @@ api Seek {
 	}
 	fn stream_len() (i32, u64)
 	fn stream_position() i32, u64 {
-		return this.seek(SeekFrom_current(0))
+		err<i32>, pos<u64> = this.seek(SeekFrom_current(0))
+		return err, pos
 	}
 }
 
 api Write {
 	fn write(buf<Buf>) (i32, u64)
 	fn write_vectored(buf<Buf>) i32, u64 {
-		return default_write_vectored(this, buf)
+		err<i32>, n<u64> = default_write_vectored(this, buf)
+		return err, n
 	}
 	fn is_write_vectored() i32 {
 		return 0
@@ -130,7 +136,7 @@ api Write {
 			if pos >= buf.len()
 				return Ok
 			slice<Buf> = new Buf { inner: buf.inner + pos, len: buf.len() - pos }
-			err<i32>, n<u64> = this.write(slice)
+			err<i32>, n<u64> = this.(Write).write(slice)
 			if err != Ok
 				if err == Interrupted
 					continue

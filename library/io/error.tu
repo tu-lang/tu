@@ -1,5 +1,6 @@
 use sys
 use string
+use fmt
 
 //module
 MOD_STD_ID<i32> = 1
@@ -40,12 +41,12 @@ fn decode_error_code(code<i32>) i32 {
     return code        & 0xFFFF
 }
 
-pub fn last_error(code<i32>)  i32 {
-    sys.decode_error_code(code)
+fn last_error(code<i32>) i32 {
+    return decode_error_code(code)
 }
 
-pub fn errormsg(code<i32>)  {
-    layer<i32>, module<i32> = decode_error(code)
+fn errormsg(code<i32>) string.String {
+    layer<i32>, module<i32>, _<i32> = decode_error(code)
 
     layer_name<i8*> = layer_name(layer)
     module_name<i8*> = module_name(module)
@@ -66,33 +67,33 @@ InvalidInputPathContainInteriorNullByte<i32> = -16908341
 OtherParse<i32> = -16908354
 
 // layer=1, module=1 : (1<<24)|(1<<16)|X  = 0x01010000 + X
-/// An entity was not found, often a file.
+// An entity was not found, often a file.
 NotFound<i32> = 16908289      // 0x01020001
-/// The operation lacked the necessary privileges to complete.
+// The operation lacked the necessary privileges to complete.
 PermissionDenied<i32> = 16908290
-/// The connection was refused by the remote server.
+// The connection was refused by the remote server.
 ConnectionRefused<i32> = 16908291
-/// The connection was reset by the remote server.
+// The connection was reset by the remote server.
 ConnectionReset<i32> = 16908292
-/// The remote host is not reachable.
+// The remote host is not reachable.
 HostUnreachable<i32> = 16908293
-/// The network containing the remote host is not reachable.
+// The network containing the remote host is not reachable.
 NetworkUnreachable<i32> = 16908294
-/// The connection was aborted (terminated) by the remote server.
+// The connection was aborted (terminated) by the remote server.
 ConnectionAborted<i32> = 16908295
-/// The network operation failed because it was not connected yet.
+// The network operation failed because it was not connected yet.
 NotConnected<i32> = 16908296
-/// A socket address could not be bound because the address is already in use elsewhere.
+// A socket address could not be bound because the address is already in use elsewhere.
 AddrInUse<i32> = 16908297
-/// A nonexistent interface was requested or the requested address was not local.
+// A nonexistent interface was requested or the requested address was not local.
 AddrNotAvailable<i32> = 16908298
-/// The system's networking is down.
+// The system's networking is down.
 NetworkDown<i32> = 16908299
-/// The operation failed because a pipe was closed.
+// The operation failed because a pipe was closed.
 BrokenPipe<i32> = 16908300
-/// An entity already exists, often a file.
+// An entity already exists, often a file.
 AlreadyExists<i32> = 16908301
-/// The operation needs to block to complete, but the blocking operation was requested to not occur.
+// The operation needs to block to complete, but the blocking operation was requested to not occur.
 WouldBlock<i32> = 16908302
 NotADirectory<i32> = 16908303
 IsADirectory<i32> = 16908304

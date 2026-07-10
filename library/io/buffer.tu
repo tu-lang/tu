@@ -154,7 +154,7 @@ BufferCursor::written() u64 {
 BufferCursor::init_ref() Buf {
     ptr<u8*> = this.buf.buf.inner + this.buf.filled
     // SAFETY: We only slice the initialized part of the buffer, which is always valid
-    return Buf {
+    return new Buf {
         inner: ptr,
         len: this.buf.init
     }
@@ -163,7 +163,7 @@ BufferCursor::init_ref() Buf {
 BufferCursor::init_mut() Buf {
     ptr<u8*> = this.buf.buf.inner + this.buf.filled
     // SAFETY: We only slice the initialized part of the buffer, which is always valid
-    return Buf {
+    return new Buf {
         inner: ptr,
         len: this.buf.init
     }
@@ -172,7 +172,7 @@ BufferCursor::init_mut() Buf {
 BufferCursor::uninit_mut() Buf {
     ptr<u8*> = this.buf.buf.inner + this.buf.init
     // SAFETY: We only slice the initialized part of the buffer, which is always valid
-    return Buf {
+    return new Buf {
         inner: ptr,
         len: this.buf.capacity() - this.buf.init
     }
@@ -181,7 +181,7 @@ BufferCursor::uninit_mut() Buf {
 BufferCursor::as_mut() Buf {
     ptr<u8*> = this.buf.buf.inner + this.buf.filled
     // SAFETY: We only slice the initialized part of the buffer, which is always valid
-    return Buf {
+    return new Buf {
         inner: ptr,
         len: this.buf.capacity() - this.buf.filled
     }
@@ -192,11 +192,12 @@ BufferCursor::advance(n<u64>) BufferCursor {
     if this.buf.init < this.buf.filled {
         this.buf.init = this.buf.filled
     }
+    return this
 }
 
-/// Initializes all bytes in the cursor.
+// Initializes all bytes in the cursor.
 BufferCursor::ensure_init() BufferCursor {
-    uninit<Buf> = this.uninit_mut();
+    uninit<Buf> = this.uninit_mut()
     // SAFETY: 0 is a valid value for MaybeUninit<u8> and the length matches the allocation
     // since it is comes from a slice reference.
 
@@ -227,9 +228,12 @@ BufferCursor::append(buf<Buf>) {
 }
 
 impl Write for BufferCursor {
-    fn write(buf<Buf>) i32,u64 {
+    fn write(buf<Buf>) i32, u64 {
         this.append(buf)
-        return Ok , buf.len()
+        return Ok, buf.len()
+    }
+    fn flush() i32 {
+        return Ok
     }
 }
 
