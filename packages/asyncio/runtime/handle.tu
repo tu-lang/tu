@@ -49,17 +49,38 @@ Handle::spawn(fut) JoinHandle {
 
 // Spawn a sync closure on the blocking pool. Returns a JoinHandle the
 // caller can await for the u64 result.
-// First-pass surfaces an empty JoinHandle; the real wiring lands in
-// task 8.3 / 8.6 follow-ups.
-Handle::spawn_blocking(op<fc<blocking_op>>) JoinHandle {
+Handle::spawn_blocking(op<u64>) JoinHandle {
     sp<Spawner> = this.blocking_spawner.(Spawner)
     if sp == null {
         jh<JoinHandle> = new JoinHandle
         jh.init(null)
         return jh
     }
+
+    inject<Inject> = null
+    if this.sched_kind == 1 {
+        mh<MtHandle> = this.sched_handle.(MtHandle)
+        inject = mh.shared.inject
+    } else {
+        ct<CtHandle> = this.sched_handle.(CtHandle)
+        inject = ct.shared.inject
+    }
+
+    bsched<BlockingSchedule> = BlockingSchedule::new(inject)
+    tid<task.TaskId> = task.alloc_id()
     jh<JoinHandle> = new JoinHandle
-    jh.init(null)
+    raw<task.RawTask> = task.raw_new(jh, bsched, tid.v)
+    hdr<task.Header> = raw.hdr
+    st<task.State> = hdr.state
+    st.ref_dec()
+    jh.init(raw)
+
+    bt<BlockingTask> = BlockingTask::new(op, raw)
+    item<BlockingTaskItem> = BlockingTaskItem::new(bt, 0)
+    err<i32> = sp.spawn(item)
+    if err != 0 {
+        jh.init(null)
+    }
     return jh
 }
 

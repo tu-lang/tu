@@ -13,7 +13,7 @@ mem RegistrationSetSynced {
 
 // Public handle bundling the lock and the synced fields.
 mem RegistrationSet {
-    runtime.MutexInter   lock
+    runtime.MutexInter*   lock
     RegistrationSetSynced* synced
 }
 
@@ -24,6 +24,7 @@ const RegistrationSet::new() RegistrationSet {
     s.tail = null
     s.num  = 0
     rs<RegistrationSet> = new RegistrationSet
+    rs.lock = new runtime.MutexInter
     rs.lock.init()
     rs.synced = s
     return rs

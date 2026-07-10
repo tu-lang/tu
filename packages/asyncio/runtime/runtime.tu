@@ -63,7 +63,7 @@ Runtime::spawn(fut) JoinHandle {
 }
 
 // Spawn a blocking closure.
-Runtime::spawn_blocking(op<fc<blocking_op>>) JoinHandle {
+Runtime::spawn_blocking(op<u64>) JoinHandle {
     return this.weak_handle.spawn_blocking(op)
 }
 

@@ -6,8 +6,9 @@
 
 use runtime
 use std.atomic
-use io
+use io as libio
 use netio
+use netio.event as nidev
 use sys
 
 TOKEN_WAKEUP<u64> = 0
@@ -19,7 +20,7 @@ EVENTS_CAPACITY<u64> = 1024
 // Reactor state held by the dedicated driver thread / block_on park path.
 mem IoDriver {
     i32                  signal_ready    // set to 1 when TOKEN_SIGNAL fires
-    netio.event.Events*  events
+    nidev.Events*  events
     netio.Poll*          poll
 }
 
@@ -28,7 +29,7 @@ mem IoDriver {
 mem IoHandle {
     netio.Registry*    registry
     RegistrationSet*   registrations
-    runtime.MutexInter synced_lock     // serialises registrations
+    runtime.MutexInter* synced_lock     // serialises registrations
     netio.Waker*       waker           // eventfd-backed cross-thread wake
     Metrics*           metrics
 }
@@ -43,7 +44,7 @@ const IoDriver::new() (i32, IoDriver, IoHandle) {
         return err, null, null
     }
 
-    events_buf<netio.event.Events> = netio.event.Events::with_capacity(EVENTS_CAPACITY)
+    events_buf<nidev.Events> = nidev.Events::with_capacity(EVENTS_CAPACITY)
 
     drv<IoDriver> = new IoDriver
     drv.signal_ready = 0
@@ -53,6 +54,7 @@ const IoDriver::new() (i32, IoDriver, IoHandle) {
     h<IoHandle> = new IoHandle
     h.registry     = p.registry()
     h.registrations = RegistrationSet::new()
+    h.synced_lock = new runtime.MutexInter
     h.synced_lock.init()
     h.metrics       = Metrics::new()
 
@@ -67,7 +69,7 @@ const IoDriver::new() (i32, IoDriver, IoHandle) {
 
 // Register a source. Token is the new ScheduledIo* cast to u64; later
 // turn() reverses the cast to dispatch the event back.
-IoHandle::add_source(io_obj<netio.event.Source>, interest<netio.Interest>) (i32, ScheduledIo) {
+IoHandle::add_source(io_obj<nidev.Source>, interest<netio.Interest>) (i32, ScheduledIo) {
     err<i32>, sio<ScheduledIo> = this.registrations.allocate(interest)
     if err != 0 {
         return err, null
@@ -89,9 +91,9 @@ IoHandle::wake_by_ref() i32 {
 }
 
 // Detach a previously registered source. Caller passes the original
-// io.event.Source object (so netio can extract the fd) plus the
+// libio.event.Source object (so netio can extract the fd) plus the
 // ScheduledIo* it received from add_source.
-IoHandle::remove_source(io_obj<netio.event.Source>, sio<ScheduledIo>) i32 {
+IoHandle::remove_source(io_obj<nidev.Source>, sio<ScheduledIo>) i32 {
     this.synced_lock.lock()
     err<i32> = this.registry.deregister(io_obj)
     this.synced_lock.unlock()
@@ -111,13 +113,13 @@ IoHandle::shutdown(){
 // Interrupted maps to a no-op turn so the caller can re-park as needed.
 IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
     err<i32> = this.poll.poll(this.events, max_wait)
-    if err == io.Interrupted return 0
+    if err == libio.Interrupted return 0
     if err != 0 return err
 
-    iter<netio.event.Iter> = this.events.iter()
+    iter<nidev.Iter> = this.events.iter()
     fired<u64> = 0
     loop {
-        ie<i32>, ev<netio.event.Event> = iter.next()
+        ie<i32>, ev<nidev.Event> = iter.next()
         if ie != 0 break
 
         token<u64> = ev.token().as_u64()

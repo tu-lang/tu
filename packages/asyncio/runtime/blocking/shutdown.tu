@@ -6,7 +6,7 @@ use runtime
 // Shared inner state behind the Sender / Receiver pair.
 mem ShutdownInner {
     i32                done       // 0 / 1
-    runtime.MutexInter lock
+    runtime.MutexInter* lock
     runtime.Note       notify
 }
 
@@ -25,6 +25,7 @@ mem ShutdownReceiver {
 const shutdown_channel() (ShutdownSender, ShutdownReceiver) {
     inner<ShutdownInner> = new ShutdownInner
     inner.done = 0
+    inner.lock = new runtime.MutexInter
     inner.lock.init()
     inner.notify.Clear()
     s<ShutdownSender>   = new ShutdownSender   { inner: inner }

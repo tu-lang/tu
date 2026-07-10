@@ -2,7 +2,7 @@
 // wraps runtime.Note so the current_thread block_on path can park while
 // waiting for cross-thread schedule notifications.
 
-use runtime
+use runtime as rtcore
 use std.atomic
 use sys
 
@@ -13,7 +13,7 @@ NOTIFIED_PARK<u32> = 2
 // Per-thread park slot.
 mem CachedParkThread {
     u32          state    // atomic
-    runtime.Note note
+    rtcore.Note note
 }
 
 // Build a CachedParkThread.

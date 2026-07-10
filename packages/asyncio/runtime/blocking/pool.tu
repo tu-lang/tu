@@ -62,7 +62,7 @@ Shared::pop() (i32, u64) {
 
 // The pool itself. Wraps Shared with the lock + worker bookkeeping.
 mem BlockingPool {
-    runtime.MutexInter shared_lock
+    runtime.MutexInter* shared_lock
     Shared*            shared
     u64                stack_size
     u32                thread_cap            // upper bound on workers
@@ -74,6 +74,7 @@ mem BlockingPool {
 // Build a pool with default capacities.
 const BlockingPool::new(thread_cap<u32>) BlockingPool {
     p<BlockingPool> = new BlockingPool
+    p.shared_lock = new runtime.MutexInter
     p.shared_lock.init()
     p.shared           = Shared::new(DEFAULT_QUEUE_DEPTH)
     p.stack_size       = 0
