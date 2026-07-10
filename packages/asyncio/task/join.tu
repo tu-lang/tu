@@ -49,8 +49,8 @@ JoinHandle::poll(ctx){
     }
 
     vt<RawVTable> = raw.vtable
-    fc<vtable_try_read_output> = vt.try_read_output.(u64)
-    err<i32>, val<i64> = fc(raw)
+    read_fc<vtable_try_read_output> = vt.try_read_output
+    err<i32>, val<i64> = read_fc(raw)
     this.consumed = 1
     if err == 0 {
         return runtime.PollReady, val

@@ -1,16 +1,15 @@
 use io
 use netio
-use os
 
 api Source {
 	fn register(registry<netio.Registry>, token<netio.Token>, interests<netio.Interest>) i32 {
-		os.die("need impl")
+		return io.Uncategorized
 	}
 	fn reregister(registry<netio.Registry>, token<netio.Token>, interests<netio.Interest>) i32 {
-		os.die("need impl")
+		return io.Uncategorized
 	}
 	fn deregister(registry<netio.Registry>) i32 {
-		os.die("need impl")
+		return io.Uncategorized
 	}
 }
 

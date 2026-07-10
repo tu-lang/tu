@@ -36,8 +36,8 @@ fn task_list_pop_front(head_ptr<u64*>, tail_ptr<u64*>) RawTask {
 }
 
 // True when *head_ptr == null.
-fn task_list_is_empty(head_ptr<u64*>) bool {
-    if *head_ptr == 0 return true
-    return false
+fn task_list_is_empty(head_ptr<u64*>) i32 {
+    if *head_ptr == 0 return 1
+    return 0
 }
 

@@ -82,7 +82,7 @@ mem SignalStream {
 async signal(kind<SignalKind>) i32, SignalStream {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return aerr.RuntimeShutdown, null
-    dh<rt.DriverHandle> = rc.driver.(rt.DriverHandle)
+    dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.signal_handle == null return aerr.RuntimeShutdown, null
 
     sh<rtsig.SignalDriverHandle> = dh.signal_handle
