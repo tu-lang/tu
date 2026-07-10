@@ -1,18 +1,18 @@
 use netio
 use io
-use sys
+use sys as libsys
 
 mem EventfdWaker {
-	sys.FileDesc* fd
+	libsys.FileDesc* fd
 }
 
 const EventfdWaker::new(selector<Selector>, t<netio.Token>) i32, EventfdWaker {
 	fd<i32> = sys_eventfd(0, 0x80000 | 0x800)
 	if fd == -1
-		return sys.last_error(), null
+		return libsys.last_error(), null
 
-	file<sys.FileDesc> = sys.FileDesc::from_raw_fd(fd)
-	err<i32> = selector.register(fd, t, netio.Interest_readable())
+	file<libsys.FileDesc> = new libsys.FileDesc { fd: fd }
+	err<i32> = selector.register(fd, t, netio.Interest::readable())
 	if err != Ok {
 		file.close()
 		return err, null
@@ -27,7 +27,7 @@ EventfdWaker::wake() i32 {
 		len: 8
 	}
 	*buf.inner = 1
-	err<i32>, _<u64> = this.fd.write(buf)
+	err<i32>, junk<u64> = this.fd.write(buf)
 	if err == io.WouldBlock {
 		err = this.reset()
 		if err != Ok
@@ -42,7 +42,7 @@ EventfdWaker::reset() i32 {
 		inner: new 8,
 		len: 8
 	}
-	err<i32>, _<u64> = this.fd.read(buf)
+	err<i32>, junk<u64> = this.fd.read(buf)
 	if err == io.WouldBlock
 		return Ok
 	return err

@@ -1,7 +1,8 @@
 use netio
 use io
 use runtime
-use sys
+use std
+use sys as libsys
 
 LOWEST_FD<i32> = 3
 EPOLL_CLOEXEC<i32> = 0x80000
@@ -31,8 +32,8 @@ mem Events {
 }
 
 const Events::with_capacity(capacity<u64>) Events {
-	ptr<Event*> = new (capacity * 16)
-	return new Events { inner: ptr, len: 0, cap: capacity }
+	ptr<u64> = std.malloc(sizeof(Event) * capacity)
+	return new Events { inner: ptr.(Event), len: 0, cap: capacity }
 }
 
 Events::clear() {
@@ -64,24 +65,24 @@ Events::get(pos<u64>) Event {
 mem Selector {
 	u64 id
 	i32 ep
-	bool has_waker
+	i32 has_waker
 }
 
 const Selector::new() i32, Selector {
 	ep<i32> = sys_epoll_create1(EPOLL_CLOEXEC)
 	if ep == -1
-		return sys.last_error(), null
+		return libsys.last_error(), null
 	id<u64> = NEXT_SELECTOR_ID
 	NEXT_SELECTOR_ID += 1
 	return Ok, new Selector {
 		id: id,
 		ep: ep,
-		has_waker: false
+		has_waker: 0
 	}
 }
 
 Selector::try_clone() i32, Selector {
-	err<i32>, ep<i32> = sys.cvt(sys_fcntl(this.ep, sys.F_DUPFD_CLOEXEC, LOWEST_FD))
+	err<i32>, ep<i32> = libsys.cvt(sys_fcntl(this.ep, libsys.F_DUPFD_CLOEXEC, LOWEST_FD))
 	if err != Ok
 		return err, null
 	return Ok, new Selector {
@@ -91,7 +92,7 @@ Selector::try_clone() i32, Selector {
 	}
 }
 
-Selector::select(events<Events>, timeout<sys.Duration>) i32 {
+Selector::select(events<Events>, timeout<libsys.Duration>) i32 {
 	timeout_ms<i32> = -1
 	if timeout != null {
 		ms<u64> = timeout.as_millis()
@@ -104,7 +105,7 @@ Selector::select(events<Events>, timeout<sys.Duration>) i32 {
 	events.clear()
 	n_events<i32> = sys_epoll_wait(this.ep, events.as_mut_ptr(), events.capacity(), timeout_ms)
 	if n_events == -1
-		return sys.last_error()
+		return libsys.last_error()
 	events.set_len(n_events)
 	return Ok
 }
@@ -116,7 +117,7 @@ Selector::register(fd<i32>, t<netio.Token>, interests<netio.Interest>) i32 {
 	}
 	ret<i32> = sys_epoll_ctl(this.ep, EPOLL_CTL_ADD, fd, ev)
 	if ret == -1
-		return sys.last_error()
+		return libsys.last_error()
 	return Ok
 }
 
@@ -127,20 +128,20 @@ Selector::reregister(fd<i32>, t<netio.Token>, interests<netio.Interest>) i32 {
 	}
 	ret<i32> = sys_epoll_ctl(this.ep, EPOLL_CTL_MOD, fd, ev)
 	if ret == -1
-		return sys.last_error()
+		return libsys.last_error()
 	return Ok
 }
 
 Selector::deregister(fd<i32>) i32 {
 	ret<i32> = sys_epoll_ctl(this.ep, EPOLL_CTL_DEL, fd, null)
 	if ret == -1
-		return sys.last_error()
+		return libsys.last_error()
 	return Ok
 }
 
-Selector::register_waker() bool {
-	already<bool> = this.has_waker
-	this.has_waker = true
+Selector::register_waker() i32 {
+	already<i32> = this.has_waker
+	this.has_waker = 1
 	return already
 }
 
@@ -169,26 +170,26 @@ fn event_token(event<Event>) netio.Token {
 	return netio.Token::new(event.token)
 }
 
-fn event_is_readable(event<Event>) bool {
+fn event_is_readable(event<Event>) i32 {
 	return (event.events & EPOLLIN) != 0 || (event.events & EPOLLPRI) != 0
 }
 
-fn event_is_writable(event<Event>) bool {
+fn event_is_writable(event<Event>) i32 {
 	return (event.events & EPOLLOUT) != 0
 }
 
-fn event_is_error(event<Event>) bool {
+fn event_is_error(event<Event>) i32 {
 	return (event.events & EPOLLERR) != 0
 }
 
-fn event_is_read_closed(event<Event>) bool {
+fn event_is_read_closed(event<Event>) i32 {
 	return (event.events & EPOLLHUP) != 0 || ((event.events & EPOLLIN) != 0 && (event.events & EPOLLRDHUP) != 0)
 }
 
-fn event_is_write_closed(event<Event>) bool {
+fn event_is_write_closed(event<Event>) i32 {
 	return (event.events & EPOLLHUP) != 0 || ((event.events & EPOLLOUT) != 0 && (event.events & EPOLLERR) != 0) || event.events == EPOLLERR
 }
 
-fn event_is_priority(event<Event>) bool {
+fn event_is_priority(event<Event>) i32 {
 	return (event.events & EPOLLPRI) != 0
 }
