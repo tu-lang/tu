@@ -29,8 +29,10 @@ impl aio.AsyncRead for Repeat {
     fn poll_read(ctx<u64>, dst<aio.ReadBuf>) i32 {
         room<u64> = dst.remaining()
         if room == 0 return runtime.PollReady
-        base<u8*> = dst.inner.buf.inner + dst.filled.(i32)
-        std.memset(base, this.byte.(i8), room)
+        off<i32> = int(dst.filled)
+        base<u8*> = dst.inner.buf.inner + off
+        b<i32> = int(this.byte)
+        std.memset(base, b, room)
         dst.advance(room)
         return runtime.PollReady
     }

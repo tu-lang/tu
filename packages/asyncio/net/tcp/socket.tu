@@ -14,7 +14,7 @@ fn tcp_set_reuseaddr(fd<i32>, on<i32>) i32 {
     val<i32> = 0
     if on != 0 val = 1
     sock<sys.Socket> = fd_to_socket(fd)
-    return sys.setsockopt(sock, sys.SOL_SOCKET, sys.SO_REUSEADDR, &val, sizeof(i32))
+    return sys.setsockopt(sock, sys.SOL_SOCKET, sys.SO_REUSEADDR, &val, 4)
 }
 
 // Toggle TCP_NODELAY (disable Nagle). on != 0 disables buffering.
@@ -22,7 +22,7 @@ fn tcp_set_nodelay(fd<i32>, on<i32>) i32 {
     val<i32> = 0
     if on != 0 val = 1
     sock<sys.Socket> = fd_to_socket(fd)
-    return sys.setsockopt(sock, sys.IPPROTO_TCP, sys.TCP_NODELAY, &val, sizeof(i32))
+    return sys.setsockopt(sock, sys.IPPROTO_TCP, sys.TCP_NODELAY, &val, 4)
 }
 
 // Enable/disable SO_KEEPALIVE. secs > 0 turns keepalive on; per-idle tuning
@@ -31,5 +31,5 @@ fn tcp_set_keepalive(fd<i32>, secs<i32>) i32 {
     val<i32> = 0
     if secs > 0 val = 1
     sock<sys.Socket> = fd_to_socket(fd)
-    return sys.setsockopt(sock, sys.SOL_SOCKET, sys.SO_KEEPALIVE, &val, sizeof(i32))
+    return sys.setsockopt(sock, sys.SOL_SOCKET, sys.SO_KEEPALIVE, &val, 4)
 }

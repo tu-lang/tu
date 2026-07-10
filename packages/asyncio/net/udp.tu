@@ -34,10 +34,10 @@ const UdpSocket::bind(addr<libnet.SocketAddr>) (i32, UdpSocket) {
 const UdpSocket::from_netio(inner<netnet.UdpSocket>) (i32, UdpSocket) {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return aerr.RuntimeShutdown, null
-    dh<rt.DriverHandle> = rc.driver.(rt.DriverHandle)
+    dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.interest_add(aio.Interest::readable(), aio.Interest::writable())
+    interest<netio.Interest> = aio.interest_add(aio.readable(), aio.writable())
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return libio.Ok, new UdpSocket { io: pe }
@@ -171,7 +171,7 @@ async UdpSocket::recv_from(buf<libio.Buf>) i32, u64, libnet.SocketAddr {
 UdpSocket::try_send_to(buf<libio.Buf>, addr<libnet.SocketAddr>) i32, u64 {
     sock<netnet.UdpSocket> = this.io.source()
     op<SendToOp> = new SendToOp { sock: sock, buf: buf, addr: addr }
-    interest<netio.Interest> = aio.Interest::writable()
+    interest<netio.Interest> = aio.writable()
     err<i32>, val<i64> = this.io.try_io(interest, op)
     return err, val.(u64)
 }
@@ -181,7 +181,7 @@ UdpSocket::try_send_to(buf<libio.Buf>, addr<libnet.SocketAddr>) i32, u64 {
 UdpSocket::try_recv_from(buf<libio.Buf>) i32, u64, libnet.SocketAddr {
     sock<netnet.UdpSocket> = this.io.source()
     op<RecvFromOp> = new RecvFromOp { sock: sock, buf: buf, addr_out: null }
-    interest<netio.Interest> = aio.Interest::readable()
+    interest<netio.Interest> = aio.readable()
     err<i32>, val<i64> = this.io.try_io(interest, op)
     return err, val.(u64), op.addr_out
 }

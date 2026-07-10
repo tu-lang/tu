@@ -34,10 +34,10 @@ const TcpListener::bind(addr<net.SocketAddr>) (i32, TcpListener) {
 const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return aerr.RuntimeShutdown, null
-    dh<rt.DriverHandle> = rc.driver.(rt.DriverHandle)
+    dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.Interest::readable()
+    interest<netio.Interest> = aio.readable()
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return io.Ok, new TcpListener { io: pe }
@@ -81,7 +81,7 @@ AcceptFut::poll(ctx){
 // Accept the next inbound connection. Awaits read readiness as needed, then
 // registers the accepted stream with the IO driver. Returns (io.Ok, stream,
 // peer_addr) or (err, null, null).
-async TcpListener::accept() i32, TcpStream, net.SocketAddr {
+async TcpListener::accept() {
     op<AcceptOp> = new AcceptOp {
         listener: this.io.source(),
         out_stream: null,
@@ -89,26 +89,26 @@ async TcpListener::accept() i32, TcpStream, net.SocketAddr {
     }
     f<AcceptFut> = new AcceptFut { io: this.io, op: op }
     err<i32> = f.await
-    if err != io.Ok return err, null, null
+    if err != io.Ok return err, null
     rerr<i32>, s<TcpStream> = TcpStream::from_netio(op.out_stream, op.out_addr)
-    if rerr != io.Ok return rerr, null, null
-    return io.Ok, s, op.out_addr
+    if rerr != io.Ok return rerr, null
+    return io.Ok, s
 }
 
 // Poll form of accept for hand-written state machines. Returns a Poll state as
 // the first value: PollPending while no connection is ready, PollError on a
 // syscall / registration failure, or PollReady with the registered stream and
 // its peer address.
-TcpListener::poll_accept(ctx<u64>) i32, TcpStream, net.SocketAddr {
+TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
     op<AcceptOp> = new AcceptOp {
         listener: this.io.source(),
         out_stream: null,
         out_addr: null
     }
     e<i32>, n<i64> = this.io.poll_read_io(ctx, op)
-    if e == runtime.PollPending return runtime.PollPending, null, null
-    if e != io.Ok return runtime.PollError, null, null
+    if e == runtime.PollPending return runtime.PollPending, null
+    if e != io.Ok return runtime.PollError, null
     rerr<i32>, s<TcpStream> = TcpStream::from_netio(op.out_stream, op.out_addr)
-    if rerr != io.Ok return runtime.PollError, null, null
-    return runtime.PollReady, s, op.out_addr
+    if rerr != io.Ok return runtime.PollError, null
+    return runtime.PollReady, s
 }

@@ -30,10 +30,10 @@ const UnixListener::bind(path<string.String>) (i32, UnixListener) {
 const UnixListener::from_netio(inner<netuds.UnixListener>) (i32, UnixListener) {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return aerr.RuntimeShutdown, null
-    dh<rt.DriverHandle> = rc.driver.(rt.DriverHandle)
+    dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.Interest::readable()
+    interest<netio.Interest> = aio.readable()
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return io.Ok, new UnixListener { io: pe }

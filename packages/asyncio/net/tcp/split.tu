@@ -31,11 +31,11 @@ const TcpWriteHalf::new(s<TcpStream>) TcpWriteHalf {
 }
 
 // Cached remote address of the backing stream.
-TcpReadHalf::peer_addr() i32, net.SocketAddr {
+TcpReadHalf::peer_addr() {
     return this.stream.peer_addr()
 }
 
-TcpWriteHalf::peer_addr() i32, net.SocketAddr {
+TcpWriteHalf::peer_addr() {
     return this.stream.peer_addr()
 }
 
@@ -49,7 +49,8 @@ impl aio.AsyncRead for TcpReadHalf {
 // Forward all write-side ops to the backing TcpStream's AsyncWrite impl.
 impl aio.AsyncWrite for TcpWriteHalf {
     fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
-        return this.stream.(aio.AsyncWrite).poll_write(ctx, buf)
+        err<i32>, n<u64> = this.stream.(aio.AsyncWrite).poll_write(ctx, buf)
+        return err, n
     }
     fn poll_flush(ctx<u64>) i32 {
         return this.stream.(aio.AsyncWrite).poll_flush(ctx)

@@ -34,10 +34,10 @@ mem TcpStream {
 const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32, TcpStream) {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return aerr.RuntimeShutdown, null
-    dh<rt.DriverHandle> = rc.driver.(rt.DriverHandle)
+    dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.interest_add(aio.Interest::readable(), aio.Interest::writable())
+    interest<netio.Interest> = aio.interest_add(aio.readable(), aio.writable())
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return io.Ok, new TcpStream { io: pe, peer: peer }
@@ -50,13 +50,13 @@ TcpStream::netio_sock() nettcp.TcpStream {
 
 // Cached remote address. Returns (io.Ok, addr) or (io.Unsupported, null) when
 // the stream was built without a known peer.
-TcpStream::peer_addr() i32, net.SocketAddr {
+TcpStream::peer_addr() {
     if this.peer == null return io.Unsupported, null
     return io.Ok, this.peer
 }
 
 // Local address is unsupported: the net/sys layer has no getsockname binding.
-TcpStream::local_addr() i32, net.SocketAddr {
+TcpStream::local_addr() {
     return io.Unsupported, null
 }
 
@@ -88,7 +88,7 @@ ConnectFut::poll(ctx){
 // Connect to `addr`. netio issues a nonblocking connect (EINPROGRESS -> Ok);
 // this awaits write readiness and the SO_ERROR check before returning the
 // registered stream. Returns (io.Ok, stream) or (err, null).
-async TcpStream::connect(addr<net.SocketAddr>) i32, TcpStream {
+async TcpStream::connect(addr<net.SocketAddr>) {
     cerr<i32>, inner<nettcp.TcpStream> = nettcp.TcpStream::connect(addr)
     if inner == null return cerr, null
     rerr<i32>, s<TcpStream> = TcpStream::from_netio(inner, addr)
@@ -123,7 +123,7 @@ TcpReadyFut::poll(ctx){
 
 // Await read and/or write readiness for `interest`. Returns (io.Ok, ready)
 // with the ready bits, or (err, null) on driver error.
-async TcpStream::ready(interest<netio.Interest>) i32, aio.Ready {
+async TcpStream::ready(interest<netio.Interest>) {
     f<TcpReadyFut> = new TcpReadyFut {
         io: this.io,
         want_read: 0,
@@ -137,13 +137,13 @@ async TcpStream::ready(interest<netio.Interest>) i32, aio.Ready {
 }
 
 // Await readable readiness. Returns io.Ok or a driver error code.
-async TcpStream::readable() i32 {
+async TcpStream::readable() {
     f<TcpReadyFut> = new TcpReadyFut { io: this.io, want_read: 1, want_write: 0, result: null }
     return f.await
 }
 
 // Await writable readiness. Returns io.Ok or a driver error code.
-async TcpStream::writable() i32 {
+async TcpStream::writable() {
     f<TcpReadyFut> = new TcpReadyFut { io: this.io, want_read: 0, want_write: 1, result: null }
     return f.await
 }
@@ -182,7 +182,7 @@ impl rtio.IoOp for TcpWriteOp {
 TcpStream::try_read(buf<io.Buf>) i32, u64 {
     sock<nettcp.TcpStream> = this.io.source()
     op<TcpReadOp> = new TcpReadOp { sock: sock, buf: buf }
-    err<i32>, val<i64> = this.io.try_io(aio.Interest::readable(), op)
+    err<i32>, val<i64> = this.io.try_io(aio.readable(), op)
     return err, val.(u64)
 }
 
@@ -191,7 +191,7 @@ TcpStream::try_read(buf<io.Buf>) i32, u64 {
 TcpStream::try_write(buf<io.Buf>) i32, u64 {
     sock<nettcp.TcpStream> = this.io.source()
     op<TcpWriteOp> = new TcpWriteOp { sock: sock, buf: buf }
-    err<i32>, val<i64> = this.io.try_io(aio.Interest::writable(), op)
+    err<i32>, val<i64> = this.io.try_io(aio.writable(), op)
     return err, val.(u64)
 }
 
