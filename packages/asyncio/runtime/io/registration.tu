@@ -3,12 +3,13 @@
 // the readiness lifecycle.
 
 use runtime
-use io
+use io as libio
 use netio
+use netio.event as nidev
 
 // Caller-supplied operation invoked by poll_read_io / poll_write_io once
 // the resource is ready. Implementations should issue one syscall and
-// surface (io.WouldBlock, 0) when the kernel says EAGAIN; Registration
+// surface (libio.WouldBlock, 0) when the kernel says EAGAIN; Registration
 // then clears the readiness bit and re-polls.
 api IoOp {
     fn try_perform() (i32, i64)
@@ -28,12 +29,7 @@ mem Registration {
 
 // Build a Registration: allocate the ScheduledIo and register the source
 // with netio. On failure leaves nothing behind.
-const Registration::new_with_interest_and_handle(
-    io_obj<netio.event.Source>,
-    interest<netio.Interest>,
-    handle<u64>,
-    io_handle<IoHandle>
-) (i32, Registration) {
+const Registration::new_with_interest_and_handle(io_obj<nidev.Source>, interest<netio.Interest>, handle<u64>, io_handle<IoHandle>) (i32, Registration) {
     err<i32>, sio<ScheduledIo> = io_handle.add_source(io_obj, interest)
     if err != 0 return err, null
     r<Registration> = new Registration
@@ -45,7 +41,7 @@ const Registration::new_with_interest_and_handle(
 
 // Detach the source from netio and drop it from RegistrationSet. The
 // Registration is unusable afterwards.
-Registration::deregister(io_obj<netio.event.Source>) i32 {
+Registration::deregister(io_obj<nidev.Source>) i32 {
     return this.io_handle.remove_source(io_obj, this.shared)
 }
 
@@ -86,11 +82,11 @@ fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) (i
     loop {
         err<i32>, ev<ReadyEvent> = this.shared.poll_readiness(ctx, dir)
         if err == runtime.PollPending return runtime.PollPending, 0
-        if err == io.OtherDriverTerminated return io.OtherDriverTerminated, 0
+        if err == libio.OtherDriverTerminated return libio.OtherDriverTerminated, 0
         if err != 0 return err, 0
 
         op_err<i32>, val<i64> = op.try_perform()
-        if op_err == io.WouldBlock {
+        if op_err == libio.WouldBlock {
             this.shared.clear_readiness(ev)
             continue
         }
@@ -105,9 +101,9 @@ fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) (i
 // stays usable from non-async paths.
 Registration::try_io(interest<netio.Interest>, op<IoOp>) (i32, i64) {
     ev<ReadyEvent> = this.shared.ready_event(interest)
-    if ev.ready.is_empty() return io.WouldBlock, 0
+    if ev.ready.is_empty() return libio.WouldBlock, 0
     op_err<i32>, val<i64> = op.try_perform()
-    if op_err == io.WouldBlock {
+    if op_err == libio.WouldBlock {
         this.shared.clear_readiness(ev)
     }
     return op_err, val

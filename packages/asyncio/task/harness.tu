@@ -30,8 +30,8 @@ fn harness_poll(raw<RawTask>, ctx<u64>){
     }
     if snap == TR_Dealloc {
         vt<RawVTable> = raw.vtable
-        fc<vtable_dealloc> = vt.dealloc.(u64)
-        fc(raw)
+        dealloc_fc<vtable_dealloc> = vt.dealloc
+        dealloc_fc(raw)
         return
     }
 
@@ -41,14 +41,14 @@ fn harness_poll(raw<RawTask>, ctx<u64>){
     fut = raw.fut
     f<runtime.Future> = fut.(runtime.Future)
     virf<runtime.VObjFunc> = f.virf
-    fc_poll<future_poll> = virf.entry.(u64)
+    fc_poll<future_poll> = virf.entry
     ready<i64>, output<i64> = fc_poll(fut, ctx)
 
     if ready == runtime.PollPending {
         idle<i32> = st.transition_to_idle()
         if idle == TI_OkNotified {
-            sched = h.scheduler
-            if sched != null {
+            if h.scheduler != 0 {
+                sched<Schedule> = h.scheduler
                 n<Notified> = notified_from_raw(raw)
                 sched.schedule(n)
             }
@@ -56,7 +56,7 @@ fn harness_poll(raw<RawTask>, ctx<u64>){
         }
         if idle == TI_OkDealloc {
             vt<RawVTable> = raw.vtable
-            fc_dealloc<vtable_dealloc> = vt.dealloc.(u64)
+            fc_dealloc<vtable_dealloc> = vt.dealloc
             fc_dealloc(raw)
             return
         }
@@ -92,8 +92,8 @@ fn harness_complete(raw<RawTask>, err<i32>, output<i64>){
 
     if st.ref_dec() != 0 {
         vt<RawVTable> = raw.vtable
-        fc<vtable_dealloc> = vt.dealloc.(u64)
-        fc(raw)
+        dealloc_fc<vtable_dealloc> = vt.dealloc
+        dealloc_fc(raw)
     }
 }
 
@@ -109,9 +109,9 @@ fn wake_join_waker(raw<RawTask>){
     ctx<u64> = cell.join_ctx_packed
     st.unset_join_waker()
 
-    sched = h.scheduler
-    if sched == null return
+    if h.scheduler == 0 return
     if ctx == 0 return
+    sched<Schedule> = h.scheduler
     n<Notified> = notified_from_raw(raw)
     sched.schedule(n)
 }
@@ -138,8 +138,8 @@ fn harness_drop_join_handle_slow_default(raw<RawTask>){
     st<State> = h.state
     if st.ref_dec() != 0 {
         vt<RawVTable> = raw.vtable
-        fc<vtable_dealloc> = vt.dealloc.(u64)
-        fc(raw)
+        dealloc_fc<vtable_dealloc> = vt.dealloc
+        dealloc_fc(raw)
     }
 }
 
@@ -150,8 +150,8 @@ fn harness_shutdown_default(raw<RawTask>){
     st.set_cancelled()
     code<i32> = st.transition_to_notified_by_ref()
     if code == TN_Submit {
-        sched = h.scheduler
-        if sched != null {
+        if h.scheduler != 0 {
+            sched<Schedule> = h.scheduler
             n<Notified> = notified_from_raw(raw)
             sched.schedule(n)
         }

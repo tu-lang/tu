@@ -4,7 +4,7 @@
 
 use runtime
 use std.atomic
-use io
+use io as libio
 use netio
 
 // readiness packing: [shutdown:1 | tick:15 | readiness:16].
@@ -65,7 +65,7 @@ const Waiter::new(ctx<u64>, interest<netio.Interest>) Waiter {
 mem ScheduledIo {
     Pointers           linked_list_pointers
     u64                readiness        // atomic; packed bits above
-    runtime.MutexInter waiters_lock
+    runtime.MutexInter* waiters_lock
     LinkedList*        waiters          // intrusive list of Waiter
     u64                reader_ctx       // poll_readiness(DIR_READ) ctx slot
     u64                writer_ctx       // poll_readiness(DIR_WRITE) ctx slot
@@ -77,6 +77,7 @@ const ScheduledIo::new() ScheduledIo {
     s.linked_list_pointers.prev = null
     s.linked_list_pointers.next = null
     s.readiness = 0
+    s.waiters_lock = new runtime.MutexInter
     s.waiters_lock.init()
     s.waiters    = LinkedList::new()
     s.reader_ctx = 0
@@ -114,7 +115,7 @@ ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
     addr<u64*> = &this.readiness
     loop {
         cur<u64> = atomic.load64(addr)
-        if pack_is_shutdown(cur) return io.OtherDriverTerminated
+        if pack_is_shutdown(cur) return libio.OtherDriverTerminated
 
         cur_ready<i32> = unpack_ready_bits(cur)
         merged_ready<i32> = cur_ready | new_ready_bits
@@ -196,7 +197,7 @@ ScheduledIo::wake(ready<Ready>) WakeList {
 ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) (i32, ReadyEvent) {
     cur<u64> = atomic.load64(&this.readiness)
     if pack_is_shutdown(cur) {
-        return io.OtherDriverTerminated, ReadyEvent::new(0, Ready::empty())
+        return libio.OtherDriverTerminated, ReadyEvent::new(0, Ready::empty())
     }
     bits<i32> = unpack_ready_bits(cur)
     interest_mask<i32> = 0
@@ -293,7 +294,7 @@ Readiness::poll(ctx){
     sio<ScheduledIo> = this.sio
     cur<u64> = atomic.load64(&sio.readiness)
     if pack_is_shutdown(cur) {
-        return runtime.PollError, io.OtherDriverTerminated
+        return runtime.PollError, libio.OtherDriverTerminated
     }
 
     mask<i32> = interest_to_ready_mask(this.interest)

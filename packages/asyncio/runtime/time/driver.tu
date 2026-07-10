@@ -18,7 +18,7 @@ mem TimeDriver {
 // wheel through TimeHandle.
 mem TimeHandle {
     TimeSource*       source
-    runtime.MutexInter lock     // serialises wheel mutations
+    runtime.MutexInter* lock     // serialises wheel mutations
     Wheel*            wheel
     Clock*            clock
 }
@@ -37,6 +37,7 @@ const TimeDriver::new(io_park<IoDriver>) (TimeDriver, TimeHandle) {
 
     h<TimeHandle> = new TimeHandle
     h.source = src
+    h.lock = new runtime.MutexInter
     h.lock.init()
     h.wheel = w
     h.clock = c

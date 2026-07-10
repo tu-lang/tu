@@ -16,14 +16,13 @@ mem SignalDriver {
     i32                reg_fd        // signalfd descriptor
     u64                reg_sio       // raw bits of ScheduledIo*; null until task 11.x wires it
     SignalGlobals*     globals
-    runtime.MutexInter lock
+    runtime.MutexInter* lock
     u64                io_handle     // raw bits of IoHandle*; reserved for shutdown wiring
 }
 
 // Initialise globals + open the signalfd with an empty mask. Returns
 // (err, driver, handle); err != 0 means the signalfd syscall failed.
-// `&drv.lock.(u64)` takes the address of the embedded MutexInter field
-// inside the heap-allocated SignalDriver — that is a stable heap address.
+// `drv.lock` is a heap MutexInter*; expose its address for cross-pkg lock/unlock.
 const SignalDriver::new(io_handle_ptr<u64>) (i32, SignalDriver, SignalDriverHandle) {
     err<i32>, g<SignalGlobals> = signal_globals_get_or_init()
     if err != 0 return err, null, null
@@ -38,12 +37,13 @@ const SignalDriver::new(io_handle_ptr<u64>) (i32, SignalDriver, SignalDriverHand
     drv.reg_fd    = fd
     drv.reg_sio   = 0
     drv.globals   = g
+    drv.lock = new runtime.MutexInter
     drv.lock.init()
     drv.io_handle = io_handle_ptr
 
     h<SignalDriverHandle> = new SignalDriverHandle
     h.globals = g
-    h.lock_addr = &drv.lock.(u64)
+    h.lock_addr = drv.lock.(u64*)
 
     return 0, drv, h
 }

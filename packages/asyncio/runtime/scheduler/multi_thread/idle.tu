@@ -85,7 +85,7 @@ Idle::transition_worker_from_searching() bool {
 // Move the worker out of unparked. is_searching tells us whether the
 // caller was the last searcher; if not we refuse to park (caller
 // continues spinning) so we don't lose work-stealing momentum.
-Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter>, worker<u32>, is_searching<bool>) bool {
+Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter*>, worker<u32>, is_searching<bool>) bool {
     if is_searching == false return false
     addr<u32*> = &this.state
     loop {
@@ -110,7 +110,7 @@ Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter>, 
 }
 
 // Worker just woke — update unparked counter and remove from sleepers.
-Idle::transition_worker_from_parked(synced<IdleSynced>, lock<runtime.MutexInter>, worker<u32>){
+Idle::transition_worker_from_parked(synced<IdleSynced>, lock<runtime.MutexInter*>, worker<u32>){
     addr<u32*> = &this.state
     loop {
         cur<u32> = atomic.load(addr)
@@ -136,7 +136,7 @@ Idle::transition_worker_from_parked(synced<IdleSynced>, lock<runtime.MutexInter>
 }
 
 // Pick one sleeper to wake; returns (1, idx) on hit, (0, 0) when empty.
-Idle::worker_to_notify(synced<IdleSynced>, lock<runtime.MutexInter>) (i32, u32) {
+Idle::worker_to_notify(synced<IdleSynced>, lock<runtime.MutexInter*>) (i32, u32) {
     if this.notify_should_wakeup() == false return 0, 0
     lock.lock()
     if synced.sleepers_len == 0 {
@@ -162,7 +162,7 @@ Idle::notify_should_wakeup() bool {
 
 // Wrapper that picks a sleeper and tells the caller to wake them. Caller
 // is responsible for the actual unpark (we don't hold a Parker* here).
-Idle::notify_one(synced<IdleSynced>, lock<runtime.MutexInter>) (i32, u32) {
+Idle::notify_one(synced<IdleSynced>, lock<runtime.MutexInter*>) (i32, u32) {
     return this.worker_to_notify(synced, lock)
 }
 
