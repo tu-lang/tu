@@ -6,7 +6,7 @@ mem Event {
 }
 
 const Event::token() netio.Token {
-	return sys.event_token(this.inner)
+	return netio.token_from_u64(sys.event_token_bits(this.inner))
 }
 
 const Event::is_readable() i32 {

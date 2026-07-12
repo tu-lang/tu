@@ -12,7 +12,7 @@ const EventfdWaker::new(selector<Selector>, t<netio.Token>) i32, EventfdWaker {
 		return libsys.last_error(), null
 
 	file<libsys.FileDesc> = new libsys.FileDesc { fd: fd }
-	err<i32> = selector.register(fd, t, netio.Interest::readable())
+	err<i32> = selector.register(fd, t, netio.readable_interest())
 	if err != Ok {
 		file.close()
 		return err, null

@@ -166,30 +166,30 @@ fn interests_to_epoll(interests<netio.Interest>) u32 {
 	return kind
 }
 
-fn event_token(event<Event>) netio.Token {
-	return netio.Token::new(event.token)
+fn event_token_bits(evt<Event>) u64 {
+	return evt.token
 }
 
-fn event_is_readable(event<Event>) i32 {
-	return (event.events & EPOLLIN) != 0 || (event.events & EPOLLPRI) != 0
+fn event_is_readable(evt<Event>) i32 {
+	return (evt.events & EPOLLIN) != 0 || (evt.events & EPOLLPRI) != 0
 }
 
-fn event_is_writable(event<Event>) i32 {
-	return (event.events & EPOLLOUT) != 0
+fn event_is_writable(evt<Event>) i32 {
+	return (evt.events & EPOLLOUT) != 0
 }
 
-fn event_is_error(event<Event>) i32 {
-	return (event.events & EPOLLERR) != 0
+fn event_is_error(evt<Event>) i32 {
+	return (evt.events & EPOLLERR) != 0
 }
 
-fn event_is_read_closed(event<Event>) i32 {
-	return (event.events & EPOLLHUP) != 0 || ((event.events & EPOLLIN) != 0 && (event.events & EPOLLRDHUP) != 0)
+fn event_is_read_closed(evt<Event>) i32 {
+	return (evt.events & EPOLLHUP) != 0 || ((evt.events & EPOLLIN) != 0 && (evt.events & EPOLLRDHUP) != 0)
 }
 
-fn event_is_write_closed(event<Event>) i32 {
-	return (event.events & EPOLLHUP) != 0 || ((event.events & EPOLLOUT) != 0 && (event.events & EPOLLERR) != 0) || event.events == EPOLLERR
+fn event_is_write_closed(evt<Event>) i32 {
+	return (evt.events & EPOLLHUP) != 0 || ((evt.events & EPOLLOUT) != 0 && (evt.events & EPOLLERR) != 0) || evt.events == EPOLLERR
 }
 
-fn event_is_priority(event<Event>) i32 {
-	return (event.events & EPOLLPRI) != 0
+fn event_is_priority(evt<Event>) i32 {
+	return (evt.events & EPOLLPRI) != 0
 }
