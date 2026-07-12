@@ -4,7 +4,7 @@
 
 use std.atomic
 use runtime
-use asyncio.sync as sync
+use asyncio.sync
 
 // Sentinels packed into StateCell.state.
 //   STATE_DEREGISTERED — entry removed from the wheel; subsequent polls bail.

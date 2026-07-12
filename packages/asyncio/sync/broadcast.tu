@@ -55,7 +55,7 @@ mem BroadcastReceiver {
 
 // Build a (Sender, Receiver) pair sharing one ring.
 // Broadcast::new() returns a heap pointer; pass it through.
-const broadcast_channel(cap<u64>) (BroadcastSender, BroadcastReceiver) {
+fn broadcast_channel(cap<u64>) (BroadcastSender, BroadcastReceiver) {
     b<Broadcast> = Broadcast::new(cap)
     s<BroadcastSender>   = new BroadcastSender   { inner: b }
     r<BroadcastReceiver> = new BroadcastReceiver { inner: b, last_seen: 0 }

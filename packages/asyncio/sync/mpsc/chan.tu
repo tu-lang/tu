@@ -4,7 +4,7 @@
 
 use std.atomic
 use runtime
-use asyncio.sync as sync
+use asyncio.sync
 use asyncio.error as aerr
 
 // Backed-by either a real BatchSemaphore (bounded) or null (unbounded).

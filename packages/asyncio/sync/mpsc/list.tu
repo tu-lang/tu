@@ -21,7 +21,7 @@ mem ListRx {
 
 // Build (tx, rx) pair sharing one Block to start with. Block::new
 // returns a heap pointer; pass it through to both endpoints.
-const list_new() (ListTx, ListRx) {
+fn list_new() (ListTx, ListRx) {
     blk<Block> = Block::new(0)
     tx<ListTx> = new ListTx { head_block: blk, tail_index: 0 }
     rx<ListRx> = new ListRx { head_block: blk, head_index: 0 }

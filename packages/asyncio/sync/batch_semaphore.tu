@@ -4,7 +4,7 @@
 // so smaller release calls cannot starve a large request.
 
 use runtime
-use asyncio.util as util
+use asyncio.util
 use io
 use asyncio.error as aerr
 

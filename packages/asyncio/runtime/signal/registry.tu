@@ -3,8 +3,8 @@
 // SignalDriver::new and looked up from the syscall handler.
 
 use std
-use asyncio.util as util
-use asyncio.sync as sync
+use asyncio.util
+use asyncio.sync
 
 // Linux supports up to 64 RT/standard signals (signum 1..63).
 NUM_SIGNALS<i32> = 64

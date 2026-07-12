@@ -5,19 +5,17 @@
 
 use std.atomic
 use asyncio.error as aerr
+use asyncio.sync as asyncsync
 
 UNINIT<i32>     = 0
 INIT_RUN<i32>   = 1
 INIT_DONE<i32>  = 2
 
-// Caller-supplied initializer; produces the cell's u64 value.
-fn once_init_factory() (u64)
-
 // Cross-thread one-shot init container.
 mem OnceCell {
     i32     state    // atomic; UNINIT / INIT_RUN / INIT_DONE
     u64     value    // raw bits; pointer or i64 payload
-    Notify* ready
+    asyncsync.Notify* ready
 }
 
 // Build an empty cell.
@@ -25,7 +23,7 @@ const OnceCell::new() OnceCell {
     c<OnceCell> = new OnceCell
     c.state = UNINIT
     c.value = 0
-    c.ready = Notify::new()
+    c.ready = asyncsync.Notify::new()
     return c
 }
 
@@ -54,26 +52,22 @@ OnceCell::get() (i32, u64) {
     return 0, this.value
 }
 
-// Initialise on first call, return the stored value on every call. The
-// initializer runs at most once; concurrent waiters park on `ready`.
-async OnceCell::get_or_init(initfn<fc<once_init_factory> >){
+// Initialise on first call, return the stored value on every call.
+async OnceCell::get_or_init(initfn){
     loop {
         cur<i32> = atomic.load(&this.state)
         if cur == INIT_DONE {
             return 0, this.value
         }
         if cur == UNINIT {
-            // Try to claim the slot.
             if atomic.cas(&this.state, UNINIT, INIT_RUN) != 0 {
                 v<u64> = initfn()
                 this.value = v
-                atomic.store(&this.state, INIT_RUN, INIT_DONE)
+                atomic.store(&this.state, INIT_DONE)
                 this.ready.notify_waiters()
                 return 0, v
             }
-            // Lost the race; fall through and wait.
         }
-        // INIT_RUN — wait for the running initializer to finish.
         code<i32> = this.ready.notified().await
         if code != 0 return code, 0
     }

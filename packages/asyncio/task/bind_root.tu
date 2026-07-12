@@ -7,8 +7,8 @@ use std.atomic
 fn bind_root(fut, sched) RawTask {
     tid<TaskId> = alloc_id()
     raw<RawTask> = raw_new(fut, sched, tid.v)
-    h<Header> = raw.hdr
-    st<State> = h.state
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
     st.ref_dec()
     return raw
 }

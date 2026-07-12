@@ -5,7 +5,7 @@
 //                        already pending.
 
 use runtime
-use asyncio.util as util
+use asyncio.util
 
 // notify_one permit accounting. Only NONE and ONE are used today; the
 // ALL flag is reserved for a future "broadcast" extension.

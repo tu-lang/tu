@@ -14,7 +14,7 @@ CONSUMED<i32>  = 3
 // Cell holds the future, the future's eventual output, the join-waker ctx
 // slot, and the atomic stage word.
 mem Cell {
-    Header* hdr
+    Header* header
     runtime.Future* fut
     i64 output_slot         // raw bits; caller re-casts via obj.(Type)
     u64 join_ctx_packed     // ctx written by JoinHandle::poll
@@ -22,9 +22,9 @@ mem Cell {
 }
 
 // Build a fresh IDLE cell.
-const Cell::new(hdr, fut) Cell {
+const Cell::new(header, fut) Cell {
     c<Cell> = new Cell
-    c.hdr               = hdr
+    c.header            = header
     c.fut               = fut
     c.output_slot       = 0
     c.join_ctx_packed   = 0

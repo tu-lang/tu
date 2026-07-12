@@ -15,7 +15,7 @@ mem Receiver {
 }
 
 // Build a (Sender, Receiver) pair with capacity `cap` permits.
-const mpsc_bounded(cap<u32>) (Sender, Receiver) {
+fn mpsc_bounded(cap<u32>) (Sender, Receiver) {
     sem<BatchSemaphore> = BatchSemaphore::new(cap)
     c<Chan>             = Chan::new(sem)
     return new Sender { chan: c }, new Receiver { chan: c }

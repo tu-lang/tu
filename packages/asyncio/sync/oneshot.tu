@@ -42,7 +42,7 @@ mem OneshotReceiver {
 }
 
 // Build a (Sender, Receiver) pair sharing one inner.
-const oneshot_channel() (OneshotSender, OneshotReceiver) {
+fn oneshot_channel() (OneshotSender, OneshotReceiver) {
     inner<OneshotInner> = OneshotInner::new()
     s<OneshotSender>   = new OneshotSender { inner: inner }
     r<OneshotReceiver> = new OneshotReceiver { inner: inner, consumed: 0 }
