@@ -35,24 +35,49 @@ AsyncBlock::getstruct(expr){
             if var != null {
                 if !var.structtype || var.structname == "" {
                     return null
-                    expr.check(false,"await function only support for struct member")
                 }
                 s = p.pkg.getPackage(var.structpkg).getStruct(var.structname)
                 if s == null expr.check(false,"gen await static struct not exist")
-                asyncfn = s.getFunc(fc.funcname)
+                asyncfn = s.resolveAsyncMember(fc.funcname)
                 if asyncfn == null || asyncfn.fntype != ast.AsyncFunc {
                     expr.check(false,"gen await: func not async")
                 }
-
                 return asyncfn.asyncst
             }
         }
-
+        parent = p.getStruct("", fc.package)
+        if parent != null {
+            asyncfn = parent.resolveAsyncMember(fc.funcname)
+            if asyncfn != null && asyncfn.fntype == ast.AsyncFunc
+                return asyncfn.asyncst
+        }
         s = p.getStruct(fc.package,fc.funcname) 
         if s == null {
             expr.check(false,"await function not found when async gen")
         }
         return s
+    }else if type(expr) == type(gen.MemberCallExpr) {
+        mc = expr
+        fc = mc.call
+        if fc == null
+            expr.check(false,"membercall await missing call expr")
+        parent = null
+        if mc.staticCall != null {
+            parent = mc.staticCall
+        }else if mc.obj != null {
+            parent = p.pkg.getPackage(mc.obj.structpkg).getStruct(mc.obj.structname)
+        }else if mc.tyassert != null {
+            parent = mc.tyassert.getStruct()
+        }else if curf.thisvar != null && curf.thisvar.structname != "" {
+            parent = p.getStruct(curf.thisvar.structpkg, curf.thisvar.structname)
+        }
+        if parent == null
+            expr.check(false,"gen await membercall without struct context")
+        asyncfn = parent.resolveAsyncMember(mc.membername)
+        if asyncfn == null || asyncfn.fntype != ast.AsyncFunc {
+            expr.check(false,"gen await: func not async")
+        }
+        return asyncfn.asyncst
     }else{
         expr.check(false,"expr can't be await struct")
     }
@@ -69,7 +94,7 @@ AsyncBlock::genawait(stmt , recvs){
         return retvar
     }else if type(stmt) == type(gen.AssignExpr) {
         ae = stmt
-        if !ae.rhs.hasawait {
+        if !gen.expressionHasAwait(ae.rhs) {
            ae.check(false,"right must be await expression") 
         }
         retvar = this.genawait(ae.rhs,recvs)
@@ -78,10 +103,10 @@ AsyncBlock::genawait(stmt , recvs){
        return ae.lhs
     }else if type(stmt) == type(gen.BinaryExpr) {
         be = stmt
-        if be.lhs != null && be.lhs.hasawait {
+        if be.lhs != null && gen.expressionHasAwait(be.lhs) {
             be.lhs = this.genawait(be.lhs,recvs)
         }
-        if be.rhs != null && be.rhs.hasawait {
+        if be.rhs != null && gen.expressionHasAwait(be.rhs) {
             be.rhs = this.genawait(be.rhs,recvs)
         }
        return be       
@@ -99,6 +124,13 @@ AsyncBlock::genawait(stmt , recvs){
 
         retvar  = this.genawait3(rv,astruct,call,recvs)
         return retvar
+    }else if type(stmt) == type(gen.MemberCallExpr) {
+        mc = stmt
+        fc = mc.call
+        if fc == null
+            stmt.check(false,"membercall await missing call expr")
+        s = this.getstruct(stmt)
+        return this.genawait2(s, fc, recvs, false)
     }else {
         stmt.check(false,"unknown await stmt type")
     }        
@@ -256,7 +288,7 @@ AsyncBlock::genawaitresult(retvar , stmt){
         return retvar
     }else if type(stmt) == type(gen.AssignExpr) {
         ae = stmt
-        if !ae.rhs.hasawait {
+        if !gen.expressionHasAwait(ae.rhs) {
            ae.check(false,"right must be await expression") 
         }
        ae.rhs = retvar

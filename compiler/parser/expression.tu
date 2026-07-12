@@ -59,6 +59,7 @@ Parser::parseChainExpr(first){
                     mc = new gen.MemberCallExpr(this.line,this.column)
                     mc.membername = membername 
                     mc.call = this.parseFuncallExpr("")
+                    mc.checkawait()
                     mc.tyassert = ta
                     if is_gmvar {
                         is_gmvar = false
@@ -89,7 +90,11 @@ Parser::parseChainExpr(first){
         }
     }
     if std.len(chainExpr.fields) == 1 {
-        return chainExpr.fields[0]
+        f = chainExpr.fields[0]
+        if type(f) == type(gen.MemberCallExpr) {
+            f.checkawait()
+        }
+        return f
     }
     chainExpr.checkawait()
     return ret
@@ -715,6 +720,7 @@ Parser::parseStaticCall(pkg , mname){
 
     mc.membername = membername
     mc.call = this.parseFuncallExpr("")
+    mc.checkawait()
     return mc
 }
 

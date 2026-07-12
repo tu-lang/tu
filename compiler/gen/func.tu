@@ -419,12 +419,19 @@ FunCallExpr::getFutureStruct(){
             }
 			s = p.pkg.getPackage(var.structpkg).getStruct(var.structname)
             if s == null this.check(false,"gen await static class not exist:" + var.structpkg + "." +  var.structname)
-			asyncfn = s.getFunc(fc.funcname)
+			asyncfn = s.resolveAsyncMember(fc.funcname)
             if(asyncfn == null || asyncfn.fntype != ast.AsyncFunc){
                 this.check(false,"gen await: func not async ")
             }
             return asyncfn.asyncst
         }
+    }
+
+    parent = this.p.getStruct("", this.package)
+    if parent != null {
+        asyncfn = parent.resolveAsyncMember(this.funcname)
+        if asyncfn != null && asyncfn.fntype == ast.AsyncFunc
+            return asyncfn.asyncst
     }
 
 	s = this.p.getStruct(this.package,this.funcname)

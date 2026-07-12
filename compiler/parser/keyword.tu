@@ -366,6 +366,11 @@ Parser::parseAsyncDef2(fcname , parethis)
     if f.mcount == 0 {
         f.mcount = 1
     }
+    if compile.phase == compile.GlobalPhase && parethis != null && parethis.structname != "" && st != null {
+        parent = this.pkg.getStruct(parethis.structname)
+        if parent != null
+            parent.asyncMemberLeaves[fcname] = st
+    }
     return f
 }
 

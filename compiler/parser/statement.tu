@@ -290,7 +290,7 @@ Parser::parseReturnStmt() {
         retexpr = this.parseExpression(1)
         if retexpr != null{
             ret[] = retexpr
-            if retexpr.hasawait {
+            if retexpr.hasawait || gen.expressionHasAwait(retexpr) {
                 node.hasawait = true
             }
         }
@@ -346,7 +346,7 @@ Parser::parseMultiAssignStmt(firstv){
     }
     loop {
         p = this.parseExpression()
-        if p.hasawait
+        if p.hasawait || gen.expressionHasAwait(p)
             stmt.hasawait = true
         stmt.rs[] = p
         if reader.curToken != ast.COMMA 
