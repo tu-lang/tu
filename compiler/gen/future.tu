@@ -1,3 +1,20 @@
+// True when expr contains .await, including MemberCallExpr wrapping inner FunCallExpr.
+func expressionHasAwait(e){
+    if e == null return false
+    if e.hasawait return true
+    if type(e) == type(MemberCallExpr) {
+        mc = e
+        return mc.call != null && mc.call.hasawait
+    }
+    return false
+}
+
+MemberCallExpr::checkawait(){
+    if this.call != null && this.call.hasawait {
+        this.hasawait = true
+    }
+}
+
 IfStmt::checkawait(){
     for it : this.cases {
         if it.cond.hasawait {
@@ -18,7 +35,7 @@ IfStmt::checkawait(){
 
 ChainExpr::checkawait() {
     for it : this.fields {
-        if it.hasawait {
+        if expressionHasAwait(it) {
             this.hasawait = true
             return true
         }
@@ -38,7 +55,7 @@ AssignExpr::checkawait(){
 	if this.lhs.hasawait {
 		this.hasawait = true
 	}
-	if this.rhs != null && this.rhs.hasawait {
+	if expressionHasAwait(this.rhs) {
 		this.hasawait = true
 	}	
 }

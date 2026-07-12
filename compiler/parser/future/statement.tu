@@ -316,7 +316,7 @@ AsyncBlock::parseMultiAssignStmt(stmt){
             assignExpr.opt = stmt.opt
             assignExpr.lhs = lexpr
             assignExpr.rhs = rexpr
-            if(rexpr.hasawait){
+            if(rexpr.hasawait || gen.expressionHasAwait(rexpr)){
                 this.genawait(assignExpr,null)
             }else {
                 this.push(assignExpr)
@@ -326,7 +326,7 @@ AsyncBlock::parseMultiAssignStmt(stmt){
     }
 
     rs = stmt.rs[0]
-    if(rs.hasawait){
+    if(rs.hasawait || gen.expressionHasAwait(rs)){
         this.genawait(rs,stmt)
     }else{
         this.push(stmt)

@@ -59,7 +59,7 @@ AsyncBlock::parse( stmt ) {
                     first = false
                     continue
                 }
-                if(r.hasawait){
+                if(r.hasawait || gen.expressionHasAwait(r)){
                     ret[] = this.genawait(r,null)
                 }else{
                     ret[] = r
@@ -78,7 +78,7 @@ AsyncBlock::parse( stmt ) {
         this.push(stmt)
     }else {
         stmt1 = stmt
-        if(stmt.hasawait){
+        if stmt.hasawait || gen.expressionHasAwait(stmt1) {
             this.genawait(stmt1,null)
             return null
         }

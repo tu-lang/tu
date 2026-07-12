@@ -26,6 +26,8 @@ class Struct {
 	parser = null
 	funcs  		= {} // funcs
 	order_funcs = [] // funcs
+	// GlobalPhase leaf index: method name -> async future struct; survives parse2 funcs clear
+	asyncMemberLeaves = {}
 }
 
 class Member
@@ -115,6 +117,19 @@ Struct::getFunc(name){
 	if this.funcs[name] != null
 		return this.funcs[name]
 	return null
+}
+
+// Resolve async mem member poll fn: parse3 funcs first, else GlobalPhase asyncMemberLeaves.
+Struct::resolveAsyncMember(method){
+	memfn = this.getFunc(method)
+	if memfn != null
+		return memfn
+	if this.asyncMemberLeaves[method] == null
+		return null
+	leaf = this.asyncMemberLeaves[method]
+	if leaf == null || leaf.asyncfn == null
+		return null
+	return leaf.asyncfn
 }
 
 Struct::futurepollname(){
