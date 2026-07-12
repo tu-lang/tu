@@ -17,13 +17,15 @@ const FastRand::new(seed<u64>) FastRand {
 
 // Advance one step and return the low 32 bits.
 FastRand::next_u32() u32 {
-    s0<u32> = this.s0.(u32)
-    s1<u32> = this.s1.(u32)
-    s1 ^= s1 << 17
-    s1  = s1 ^ s0 ^ (s1 >> 7) ^ (s0 >> 16)
-    this.s0 = s0.(u64)
-    this.s1 = s1.(u64)
-    return (s0 + s1).(u32)
+    v0<u64> = this.s0
+    v1<u64> = this.s1
+    a<u32> = v0.(u32)
+    b<u32> = v1.(u32)
+    b = b ^ (b << 17)
+    b = b ^ a ^ (b >> 7) ^ (a >> 16)
+    this.s0 = a.(u64)
+    this.s1 = b.(u64)
+    return a + b
 }
 
 // Lemire fastrange in [0, n); n==0 returns 0.
@@ -31,5 +33,6 @@ FastRand::fastrand_n(n<u32>) u32 {
     if n == 0 return 0
     r<u32> = this.next_u32()
     prod<u64> = r.(u64) * n.(u64)
-    return (prod >> 32).(u32)
+    hi<u64> = prod >> 32
+    return hi.(u32)
 }

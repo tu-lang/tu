@@ -3,7 +3,6 @@
 // First-pass uses a single Mutex; sharded variant is future work.
 
 use runtime
-use asyncio.error as aerr
 
 // Single-linked list of RawTasks under one mutex; chained via Header.queue_next.
 // head/tail hold raw bits of RawTask* so &this.head matches the u64* signature
@@ -37,7 +36,7 @@ OwnedTasks::bind(raw<RawTask>) i32 {
     m.lock()
     if this.closed == 1 {
         m.unlock()
-        return aerr.RuntimeShutdown
+        return OwnedBindShutdown
     }
     task_list_push_back(&this.head, &this.tail, raw)
     this.active += 1
@@ -47,34 +46,31 @@ OwnedTasks::bind(raw<RawTask>) i32 {
 
 // Unlink raw. O(n) walk because the list has no back pointers (acceptable
 // for the first-pass impl). Caller must guarantee raw lives on this list.
-OwnedTasks::remove(raw<RawTask>){
+OwnedTasks::remove(rtask<RawTask>){
     m<runtime.MutexInter> = this.lock
     m.lock()
     cur_bits<u64> = this.head
     prev_bits<u64> = 0
     while cur_bits != 0 {
         cur<RawTask> = cur_bits.(RawTask)
-        if cur == raw {
-            chd<Header> = cur.head_meta
-            nxt<RawTask> = chd.queue_next
+        if cur == rtask {
+            nxt<RawTask> = cur.list_take_next()
             if prev_bits == 0 {
                 if nxt == null this.head = 0
                 else this.head = nxt.(u64)
             } else {
                 prev<RawTask> = prev_bits.(RawTask)
-                phd<Header> = prev.head_meta
-                phd.queue_next = nxt
+                prev.list_link_next(nxt)
             }
             if nxt == null {
                 this.tail = prev_bits
             }
-            chd.queue_next = null
+            cur.list_prep_push()
             this.active -= 1
             break
         }
         prev_bits = cur_bits
-        chd<Header> = cur.head_meta
-        nxt<RawTask> = chd.queue_next
+        nxt<RawTask> = cur.list_take_next()
         if nxt == null {
             cur_bits = 0
         } else {

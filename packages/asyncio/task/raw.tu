@@ -15,34 +15,76 @@ mem RawVTable {
 
 // Aggregate view used by every scheduler / harness call site.
 mem RawTask {
-    Header* head_meta
-    runtime.Future* fut
-    Cell* cell
-    RawVTable* vt           // points at the shared default vtable
+    Header* task_header
+    runtime.Future* future_ptr
+    Cell* task_cell
+    RawVTable* vt
 }
 
-// Return the fixed metadata block for this task.
-RawTask::meta() Header {
-    return this.head_meta
+// Drop one ref for block_on root (no JoinHandle).
+RawTask::bind_root_unref(){
+    this.task_header.life_slot().ref_dec()
 }
 
-// Return the output cell backing this task.
-RawTask::cell_ptr() Cell {
-    return this.cell
+// Stash join ctx and arm JOIN_WAKER. Returns set_join_waker code.
+RawTask::register_join_waker(ctx<u64>) i32 {
+    this.task_cell.write_packed_waker(ctx)
+    return this.task_header.arm_join_waker()
 }
 
-// Return the shared vtable pointer.
-RawTask::vt_ptr() RawVTable {
-    return this.vt
+// Read packed join-waker ctx from the task cell.
+RawTask::join_bits() u64 {
+    return this.task_cell.read_packed_waker()
+}
+
+// Lifecycle snapshot for JoinHandle::poll.
+RawTask::life_load() i32 {
+    return this.task_header.life_load()
+}
+
+// Return the lifecycle State slot for this task.
+RawTask::life_st() State {
+    return this.task_header.life_slot()
+}
+
+// Read output from the task cell (vtable try_read_output slot).
+RawTask::take_cell_output() (i32, i64) {
+    err<i32> = 0
+    val<i64> = 0
+    err, val = this.task_cell.take_output()
+    return err, val
+}
+
+// Read output via the shared vtable slot.
+RawTask::read_output() (i32, i64) {
+    vt<RawVTable> = this.vt
+    read_fc<vtable_try_read_output> = vt.read_output
+    err<i32> = 0
+    val<i64> = 0
+    err, val = read_fc(this)
+    return err, val
+}
+
+// Intrusive-list helpers (inject / OwnedTasks).
+RawTask::list_prep_push(){
+    this.task_header.clear_queue_next()
+}
+
+RawTask::list_link_next(nxt<RawTask>){
+    this.task_header.set_queue_next(nxt)
+}
+
+RawTask::list_take_next() RawTask {
+    return this.task_header.queue_next_out()
 }
 
 // Set CANCELLED and enqueue one wake if needed.
 RawTask::abort_signal(){
-    life_st<State> = this.head_meta.life_state
+    life_st<State> = this.life_st()
     life_st.set_cancelled()
     code<i32> = life_st.transition_to_notified_by_ref()
     if code == TN_Submit {
-        sched_bits<u64> = this.head_meta.scheduler
+        sched_bits<u64> = this.task_header.sched_bits()
         if sched_bits != 0 {
             sched<Schedule> = sched_bits
             n<Notified> = notified_from_raw(this)
@@ -60,7 +102,7 @@ fn raw_vtable_default() RawVTable {
         v<RawVTable> = new RawVTable
         v.poll                  = 0
         v.dealloc               = 0
-        v.read_output       = 0
+        v.read_output           = 0
         v.drop_join_handle_slow = 0
         v.shutdown              = 0
         default_vtable = v
@@ -80,26 +122,24 @@ fn raw_vtable_install(
     v<RawVTable> = raw_vtable_default()
     v.poll                  = poll
     v.dealloc               = dealloc
-    v.read_output       = read_output
+    v.read_output           = read_output
     v.drop_join_handle_slow = drop_join_handle_slow
     v.shutdown              = shutdown
 }
 
 // Allocate State + Header + Cell + RawTask wired to the default vtable.
-// State starts at INITIAL_STATE (refcount=3, JOIN_INTEREST, NOTIFIED) and
-// Cell starts at IDLE.
-// Each ::new() already returns a heap pointer, so pass them through
-// (no `&st` / `&hdr` — those would be stack-slot addresses).
 fn raw_new(fut, scheduler, task_id<u64>) RawTask {
     st<State> = State::new()
     hdr<Header> = header_new(st, scheduler, fut, task_id)
     cell<Cell> = Cell::new(hdr, fut)
 
-    raw<RawTask> = new RawTask
-    raw.head_meta = hdr
-    raw.fut    = fut
-    raw.cell   = cell
-    raw.vt = raw_vtable_default()
-    return raw
+    rtask<RawTask> = new RawTask
+    rtask.task_header = hdr
+    rtask.future_ptr  = fut
+    rtask.task_cell   = cell
+    rtask.vt          = raw_vtable_default()
+    return rtask
 }
 
+// Signature alias for casting RawVTable.read_output back to a callable.
+fn vtable_try_read_output(rtask) (i32, i64)

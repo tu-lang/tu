@@ -7,7 +7,7 @@
 // Describes one contiguous bit field.
 mem Pack {
     u64 mask     // 1s within field width, unshifted
-    i32 shift    // bit offset relative to base
+    i32 bit_off  // bit offset relative to base
 }
 
 // Build a field starting at bit 0 with width n.
@@ -15,16 +15,16 @@ const Pack::least_significant(n<i32>) Pack {
     p<Pack> = new Pack
     if n <= 0 {
         p.mask  = 0
-        p.shift = 0
+        p.bit_off = 0
         return p
     }
     if n >= 64 {
         p.mask  = 0xFFFFFFFFFFFFFFFF
-        p.shift = 0
+        p.bit_off = 0
         return p
     }
     p.mask  = (1.(u64) << n.(u64)) - 1
-    p.shift = 0
+    p.bit_off = 0
     return p
 }
 
@@ -32,14 +32,14 @@ const Pack::least_significant(n<i32>) Pack {
 Pack::then(n<i32>) Pack {
     p<Pack> = new Pack
     width<i32> = popcount_u64(this.mask)
-    new_shift<i32> = this.shift + width
+    new_off<i32> = this.bit_off + width
     if n <= 0 {
         p.mask  = 0
-        p.shift = new_shift
+        p.bit_off = new_off
         return p
     }
     p.mask  = (1.(u64) << n.(u64)) - 1
-    p.shift = new_shift
+    p.bit_off = new_off
     return p
 }
 
@@ -47,13 +47,19 @@ Pack::then(n<i32>) Pack {
 // other fields of base are left untouched.
 Pack::pack(value<u64>, base<u64>) u64 {
     masked<u64> = value & this.mask
-    cleared<u64> = base & (~(this.mask << this.shift.(u64)))
-    return cleared | (masked << this.shift.(u64))
+    off<i32> = this.bit_off
+    sh<u64> = off.(u64)
+    allones<u64> = 0xFFFFFFFFFFFFFFFF
+    inv_mask<u64> = allones ^ (this.mask << sh)
+    out<u64> = base & inv_mask
+    return out | (masked << sh)
 }
 
 // Extract this field's value from base, right-shifted to bit 0.
 Pack::unpack(base<u64>) u64 {
-    return (base >> this.shift.(u64)) & this.mask
+    off<i32> = this.bit_off
+    sh<u64> = off.(u64)
+    return (base >> sh) & this.mask
 }
 
 // Count the number of 1 bits in v.

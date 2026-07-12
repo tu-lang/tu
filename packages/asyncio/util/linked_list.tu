@@ -31,9 +31,14 @@ const LinkedList::new() LinkedList {
 }
 
 // True when no nodes are linked.
-LinkedList::is_empty() bool {
-    if this.head == null return true
-    return false
+LinkedList::is_empty() i32 {
+    if this.head == null return 1
+    return 0
+}
+
+// Return the head node without removing it; null when empty.
+LinkedList::peek_head() Pointers {
+    return this.head
 }
 
 // Prepend node. Caller must guarantee node currently belongs to no list.

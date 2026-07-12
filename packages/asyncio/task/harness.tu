@@ -1,171 +1,189 @@
 // Single polling round driver. Schedulers always go through harness_poll;
 // it transitions State, invokes the future via VObjFunc.entry, then routes
-// PollPending / PollReady / PollError to the right path. harness_complete
-// is also reused by leaf futures that short-circuit via cancellation.
-// Default RawVTable slots are wired in `init()` at package load time.
+// PollPending / PollReady / PollError to the right path.
 
 use runtime
-use asyncio.error as aerr
 
 // Signature aliases used to cast the u64 vtable slots back to callables.
-fn vtable_poll(raw<RawTask>, ctx<u64>)
-fn vtable_dealloc(raw<RawTask>)
-fn vtable_try_read_output_h(raw<RawTask>) (i32, i64)
-fn vtable_drop_join_handle_slow(raw<RawTask>)
-fn vtable_shutdown(raw<RawTask>)
+fn vtable_poll(rtask<RawTask>, ctx<u64>)
+fn vtable_dealloc(rtask<RawTask>)
+fn vtable_try_read_output_h(rtask<RawTask>) (i32, i64)
+fn vtable_drop_join_handle_slow(rtask<RawTask>)
+fn vtable_shutdown(rtask<RawTask>)
 fn future_poll(fut, ctx<u64>) (i64, i64)
 
-// Run one polling round on raw. ctx packs (scheduler_handle, task_id);
-// harness does not interpret it but threads it through to the future.
-fn harness_poll(raw<RawTask>, ctx<u64>){
-    hd<Header> = raw.head_meta
-    st<State> = hd.life_state
-    snap<i32> = st.transition_to_running()
+// Run one polling round. ctx packs (scheduler_handle, task_id).
+RawTask::harness_poll(ctx<u64>){
+    life_st<State> = this.life_st()
+    snap<i32> = life_st.transition_to_running()
     if snap == TR_Cancelled {
-        harness_complete(raw, aerr.Cancelled, 0)
+        this.harness_complete(JoinErrorCancelled, 0)
         return
     }
     if snap == TR_Failed {
         return
     }
     if snap == TR_Dealloc {
-        vt<RawVTable> = raw.vt
-        dealloc_fc<vtable_dealloc> = vt.dealloc
-        dealloc_fc(raw)
+        this.harness_dealloc()
         return
     }
 
-    cell<Cell> = raw.cell
-    cell.transition_to_running()
+    this.task_cell.transition_to_running()
 
-    fut = raw.fut
+    fut = this.future_ptr
     f<runtime.Future> = fut.(runtime.Future)
     virf<runtime.VObjFunc> = f.virf
     fc_poll<future_poll> = virf.entry
     ready<i64>, output<i64> = fc_poll(fut, ctx)
 
     if ready == runtime.PollPending {
-        idle<i32> = st.transition_to_idle()
+        idle<i32> = life_st.transition_to_idle()
         if idle == TI_OkNotified {
-            if hd.scheduler != 0 {
-                sched<Schedule> = hd.scheduler
-                n<Notified> = notified_from_raw(raw)
+            sched_bits<u64> = this.task_header.sched_bits()
+            if sched_bits != 0 {
+                sched<Schedule> = sched_bits
+                n<Notified> = notified_from_raw(this)
                 sched.schedule(n)
             }
             return
         }
         if idle == TI_OkDealloc {
-            vt<RawVTable> = raw.vt
-            fc_dealloc<vtable_dealloc> = vt.dealloc
-            fc_dealloc(raw)
+            this.harness_dealloc()
             return
         }
         if idle == TI_Cancelled {
-            harness_complete(raw, aerr.Cancelled, 0)
+            this.harness_complete(JoinErrorCancelled, 0)
             return
         }
         return
     }
     if ready == runtime.PollReady {
-        harness_complete(raw, 0, output)
+        this.harness_complete(0, output)
         return
     }
-    harness_complete(raw, aerr.RuntimePollError, 0)
+    this.harness_complete(JoinErrorRuntimePollError, 0)
 }
 
-// Finalise the task: write output, flip COMPLETE, wake the join waker, drop
-// the task's own ref. err != 0 overwrites output_slot with the err code as
-// a side channel JoinHandle picks up.
-fn harness_complete(raw<RawTask>, err<i32>, output<i64>){
-    cell<Cell> = raw.cell
-    hd<Header> = raw.head_meta
-    st<State> = hd.life_state
-
-    cell.store_output(output)
-    st.transition_to_complete()
+// Finalise the task: write output, flip COMPLETE, wake join waker, drop ref.
+RawTask::harness_complete(err<i32>, output<i64>){
+    life_st<State> = this.life_st()
+    this.task_cell.store_output(output)
+    life_st.transition_to_complete()
 
     if err != 0 {
-        cell.output_slot = err.(i64)
+        this.task_cell.store_output_err(err)
     }
 
-    wake_join_waker(raw)
+    this.wake_join_waker()
 
-    if st.ref_dec() != 0 {
-        vt<RawVTable> = raw.vt
-        dealloc_fc<vtable_dealloc> = vt.dealloc
-        dealloc_fc(raw)
+    if life_st.ref_dec() != 0 {
+        this.harness_dealloc()
     }
 }
 
-// Idempotent join-waker kick: JOIN_WAKER is cleared on the first wake so a
-// second completion path no-ops. Re-enqueue the task as the wake hook.
-fn wake_join_waker(raw<RawTask>){
-    hd<Header> = raw.head_meta
-    st<State> = hd.life_state
-    snap<i32> = st.load()
+// Idempotent join-waker kick; re-enqueue when JOIN_WAKER was set.
+RawTask::wake_join_waker(){
+    life_st<State> = this.life_st()
+    snap<i32> = life_st.load()
+    sched_bits<u64> = 0
+    sched<Schedule> = null
+    n<Notified> = null
     if (snap & JOIN_WAKER) == 0 return
 
-    cell<Cell> = raw.cell
-    ctx<u64> = cell.join_ctx_packed
-    st.unset_join_waker()
+    life_st.unset_join_waker()
 
-    if hd.scheduler == 0 return
-    if ctx == 0 return
-    sched<Schedule> = hd.scheduler
-    n<Notified> = notified_from_raw(raw)
+    sched_bits = this.task_header.sched_bits()
+    if sched_bits == 0 return
+    if this.join_bits() == 0 return
+    sched = sched_bits
+    n = notified_from_raw(this)
     sched.schedule(n)
 }
 
-// Default vtable.dealloc: null out cross references so future use surfaces
-// as a clear crash. Real GC integration is follow-up work.
-fn harness_dealloc_default(raw<RawTask>){
-    raw.head_meta = null
-    raw.fut     = null
-    raw.cell    = null
-    raw.vt  = null
+// Null out cross references on dealloc.
+RawTask::harness_dealloc(){
+    this.task_header = null
+    this.future_ptr  = null
+    this.task_cell   = null
+    this.vt          = null
 }
 
-// Default vtable.try_read_output: bridges Cell::take_output.
-fn harness_try_read_output_default(raw<RawTask>) i32, i64 {
-    cell<Cell> = raw.cell
-    err<i32>, val<i64> = cell.take_output()
-    return err, val
-}
-
-// Default vtable.drop_join_handle_slow: drop one ref; dealloc on zero.
-fn harness_drop_join_handle_slow_default(raw<RawTask>){
-    hd<Header> = raw.head_meta
-    st<State> = hd.life_state
-    if st.ref_dec() != 0 {
-        vt<RawVTable> = raw.vt
-        dealloc_fc<vtable_dealloc> = vt.dealloc
-        dealloc_fc(raw)
+// Drop one ref; dealloc when it hits zero.
+RawTask::drop_join_handle_slow(){
+    life_st<State> = this.life_st()
+    if life_st.ref_dec() != 0 {
+        this.harness_dealloc()
     }
 }
 
-// Default vtable.shutdown: set CANCELLED and ensure one schedule kick fires.
-fn harness_shutdown_default(raw<RawTask>){
-    hd<Header> = raw.head_meta
-    st<State> = hd.life_state
-    st.set_cancelled()
-    code<i32> = st.transition_to_notified_by_ref()
+// Set CANCELLED and ensure one schedule kick fires.
+RawTask::harness_shutdown(){
+    life_st<State> = this.life_st()
+    life_st.set_cancelled()
+    code<i32> = life_st.transition_to_notified_by_ref()
     if code == TN_Submit {
-        if hd.scheduler != 0 {
-            sched<Schedule> = hd.scheduler
-            n<Notified> = notified_from_raw(raw)
+        sched_bits<u64> = this.task_header.sched_bits()
+        if sched_bits != 0 {
+            sched<Schedule> = sched_bits
+            n<Notified> = notified_from_raw(this)
             sched.schedule(n)
         }
     }
 }
 
-// Wire harness functions into the default RawVTable. Last writer wins.
-func init(){
-    raw_vtable_install(
-        harness_poll.(u64),
-        harness_dealloc_default.(u64),
-        harness_try_read_output_default.(u64),
-        harness_drop_join_handle_slow_default.(u64),
-        harness_shutdown_default.(u64)
-    )
+// Publish blocking-pool result and complete the task.
+RawTask::blocking_finish(val<u64>){
+    this.task_cell.transition_to_running()
+    this.task_cell.store_output(val.(i64))
+    life_st<State> = this.life_st()
+    life_st.transition_to_complete()
+    this.wake_join_waker()
+    if life_st.ref_dec() != 0 {
+        this.harness_dealloc()
+    }
 }
 
+// Package-level harness entry used by schedulers.
+fn harness_poll(rtask<RawTask>, ctx<u64>){
+    rtask.harness_poll(ctx)
+}
+
+// Package-level wake helper for blocking pool.
+fn wake_join_waker(rtask<RawTask>){
+    rtask.wake_join_waker()
+}
+
+// Vtable bridges.
+fn harness_poll_vtable(rtask<RawTask>, ctx<u64>){
+    rtask.harness_poll(ctx)
+}
+
+fn harness_dealloc_vtable(rtask<RawTask>){
+    rtask.harness_dealloc()
+}
+
+fn harness_try_read_output_vtable(rtask<RawTask>) i32, i64 {
+    err<i32> = 0
+    val<i64> = 0
+    err, val = rtask.take_cell_output()
+    return err, val
+}
+
+fn harness_drop_join_slow_vtable(rtask<RawTask>){
+    rtask.drop_join_handle_slow()
+}
+
+fn harness_shutdown_vtable(rtask<RawTask>){
+    rtask.harness_shutdown()
+}
+
+// Wire harness functions into the default RawVTable.
+func init(){
+    raw_vtable_install(
+        harness_poll_vtable.(u64),
+        harness_dealloc_vtable.(u64),
+        harness_try_read_output_vtable.(u64),
+        harness_drop_join_slow_vtable.(u64),
+        harness_shutdown_vtable.(u64)
+    )
+}
