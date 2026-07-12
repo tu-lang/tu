@@ -4,25 +4,28 @@
 // flag is off.
 
 use sys
-use io
+use io as libio
+use asyncio.runtime.io as rtio
+use asyncio.runtime.time as rttime
+use asyncio.runtime.signal as rtsig
 
 // Strong-side aggregate held by Runtime.
 mem Driver {
-    IoDriver*     io
-    TimeDriver*   time
-    SignalDriver* signal
+    rtio.IoDriver*     io
+    rttime.TimeDriver*   time
+    rtsig.SignalDriver* signal
 }
 
 // Weak-side aggregate held by Handle / context. Cross-thread safe.
 mem DriverHandle {
-    IoHandle*           io_handle
-    TimeHandle*         time_handle
-    SignalDriverHandle* signal_handle
+    rtio.IoHandle*           io_handle
+    rttime.TimeHandle*         time_handle
+    rtsig.SignalDriverHandle* signal_handle
 }
 
 // Build a Driver pair. Caller passes already-created subsystems (or
 // null) so feature flags compose cleanly.
-const Driver::compose(io<IoDriver>, ioh<IoHandle>, time<TimeDriver>, timeh<TimeHandle>, sig<SignalDriver>, sigh<SignalDriverHandle>) (Driver, DriverHandle) {
+const Driver::compose(io<rtio.IoDriver>, ioh<rtio.IoHandle>, time<rttime.TimeDriver>, timeh<rttime.TimeHandle>, sig<rtsig.SignalDriver>, sigh<rtsig.SignalDriverHandle>) (Driver, DriverHandle) {
     d<Driver> = new Driver
     d.io     = io
     d.time   = time

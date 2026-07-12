@@ -1,6 +1,8 @@
 use io
 use asyncio.error as aerr
 use asyncio.task
+use asyncio.runtime.scheduler as sched
+use asyncio.runtime.blocking as rtblk
 
 // Cross-thread weak handle to a Runtime. spawn / spawn_blocking /
 // (current_thread.CtHandle and multi_thread.MtHandle) implement
@@ -37,45 +39,45 @@ const Handle::current() i32, Handle {
 }
 
 // Spawn a future via the active scheduler. Routes by sched_kind.
-Handle::spawn(fut) JoinHandle {
+Handle::spawn(fut) task.JoinHandle {
     if this.sched_kind == 1 {
-        mh<MtHandle> = this.sched_handle.(MtHandle)
+        mh<sched.MtHandle> = this.sched_handle.(sched.MtHandle)
         return mh.spawn(fut)
     }
-    ct<CtHandle> = this.sched_handle.(CtHandle)
+    ct<sched.CtHandle> = this.sched_handle.(sched.CtHandle)
     return ct.spawn(fut)
 }
 
 // Spawn a sync closure on the blocking pool. Returns a JoinHandle the
 // caller can await for the u64 result.
-Handle::spawn_blocking(op<u64>) JoinHandle {
-    sp<Spawner> = this.blocking_spawner.(Spawner)
+Handle::spawn_blocking(op<u64>) task.JoinHandle {
+    sp<rtblk.Spawner> = this.blocking_spawner.(rtblk.Spawner)
     if sp == null {
-        jh<JoinHandle> = new JoinHandle
+        jh<task.JoinHandle> = new task.JoinHandle
         jh.init(null)
         return jh
     }
 
-    inject<Inject> = null
+    inject<sched.Inject> = null
     if this.sched_kind == 1 {
-        mh<MtHandle> = this.sched_handle.(MtHandle)
+        mh<sched.MtHandle> = this.sched_handle.(sched.MtHandle)
         inject = mh.shared.inject
     } else {
-        ct<CtHandle> = this.sched_handle.(CtHandle)
+        ct<sched.CtHandle> = this.sched_handle.(sched.CtHandle)
         inject = ct.shared.inject
     }
 
-    bsched<BlockingSchedule> = BlockingSchedule::new(inject)
+    bsched<rtblk.BlockingSchedule> = rtblk.BlockingSchedule::new(inject)
     tid<task.TaskId> = task.alloc_id()
-    jh<JoinHandle> = new JoinHandle
+    jh<task.JoinHandle> = new task.JoinHandle
     raw<task.RawTask> = task.raw_new(jh, bsched, tid.v)
     hdr<task.Header> = raw.hdr
     st<task.State> = hdr.state
     st.ref_dec()
     jh.init(raw)
 
-    bt<BlockingTask> = BlockingTask::new(op, raw)
-    item<BlockingTaskItem> = BlockingTaskItem::new(bt, 0)
+    bt<rtblk.BlockingTask> = rtblk.BlockingTask::new(op, raw)
+    item<rtblk.BlockingTaskItem> = rtblk.BlockingTaskItem::new(bt, 0)
     err<i32> = sp.spawn(item)
     if err != 0 {
         jh.init(null)
@@ -91,7 +93,9 @@ Handle::block_on(fut) i32, i64 {
         // handles this dispatch.
         return aerr.RuntimeShutdown, 0
     }
-    ct<CtHandle> = this.sched_handle.(CtHandle)
-    return block_on(ct, fut)
+    ct<sched.CtHandle> = this.sched_handle.(sched.CtHandle)
+    err<i32> = 0
+    val<i64> = 0
+    err, val = sched.block_on(ct, fut)
+    return err, val
 }
-

@@ -3,6 +3,11 @@
 // touching the runtime internals directly.
 
 use asyncio.error as aerr
+use asyncio.runtime.io as rtio
+use asyncio.runtime.time as rttime
+use asyncio.runtime.signal as rtsig
+use asyncio.runtime.blocking as rtblk
+use asyncio.runtime.scheduler as sched
 
 // Default cap for the blocking pool.
 DEFAULT_MAX_BLOCKING_THREADS<u32> = 512
@@ -88,21 +93,21 @@ Builder::disable_lifo_slot_set() Builder {
 // Compose IO + time + signal drivers based on enable_* flags. Returns
 // a (Driver, DriverHandle) pair plus an optional error code.
 fn build_drivers(b<Builder>) (i32, Driver, DriverHandle) {
-    io_drv<IoDriver>    = null
-    io_h<IoHandle>      = null
-    time_drv<TimeDriver> = null
-    time_h<TimeHandle>   = null
-    sig_drv<SignalDriver> = null
-    sig_h<SignalDriverHandle> = null
+    io_drv<rtio.IoDriver>    = null
+    io_h<rtio.IoHandle>      = null
+    time_drv<rttime.TimeDriver> = null
+    time_h<rttime.TimeHandle>   = null
+    sig_drv<rtsig.SignalDriver> = null
+    sig_h<rtsig.SignalDriverHandle> = null
 
     if b.enable_io == 1 {
-        ierr<i32>, iod<IoDriver>, ioh<IoHandle> = IoDriver::new()
+        ierr<i32>, iod<rtio.IoDriver>, ioh<rtio.IoHandle> = rtio.IoDriver::new()
         if ierr != 0 return ierr, null, null
         io_drv = iod
         io_h   = ioh
 
         // Signal driver lives on top of the IO driver.
-        serr<i32>, sd<SignalDriver>, sh<SignalDriverHandle> = SignalDriver::new(ioh.(u64))
+        serr<i32>, sd<rtsig.SignalDriver>, sh<rtsig.SignalDriverHandle> = rtsig.SignalDriver::new(ioh.(u64))
         if serr == 0 {
             sig_drv = sd
             sig_h   = sh
@@ -110,7 +115,7 @@ fn build_drivers(b<Builder>) (i32, Driver, DriverHandle) {
     }
 
     if b.enable_time == 1 {
-        td<TimeDriver>, th<TimeHandle> = TimeDriver::new(io_drv)
+        td<rttime.TimeDriver>, th<rttime.TimeHandle> = rttime.TimeDriver::new(io_drv)
         time_drv = td
         time_h   = th
     }
@@ -125,13 +130,13 @@ fn build_current_thread(b<Builder>) (i32, Runtime) {
     err<i32>, drv<Driver>, drv_h<DriverHandle> = build_drivers(b)
     if err != 0 return err, null
 
-    pool<BlockingPool> = BlockingPool::new(b.max_blocking_threads)
-    spawner<Spawner>   = Spawner::new(pool)
+    pool<rtblk.BlockingPool> = rtblk.BlockingPool::new(b.max_blocking_threads)
+    spawner<rtblk.Spawner>   = rtblk.Spawner::new(pool)
 
-    shared<CtShared>   = CtShared::new()
+    shared<sched.CtShared>   = sched.CtShared::new()
     shared.driver_handle    = drv_h.(u64)
     shared.blocking_spawner = spawner.(u64)
-    handle<CtHandle>   = CtHandle::new(shared)
+    handle<sched.CtHandle>   = sched.CtHandle::new(shared)
 
     weak<Handle> = Handle::new(handle.(u64), KIND_CURRENT_THREAD, drv_h, spawner.(u64))
     return 0, Runtime::compose(KIND_CURRENT_THREAD, weak, drv, drv_h, spawner, pool, handle.(u64))
@@ -145,29 +150,29 @@ fn build_multi_thread(b<Builder>) (i32, Runtime) {
     err<i32>, drv<Driver>, drv_h<DriverHandle> = build_drivers(b)
     if err != 0 return err, null
 
-    pool<BlockingPool> = BlockingPool::new(b.max_blocking_threads)
-    spawner<Spawner>   = Spawner::new(pool)
+    pool<rtblk.BlockingPool> = rtblk.BlockingPool::new(b.max_blocking_threads)
+    spawner<rtblk.Spawner>   = rtblk.Spawner::new(pool)
 
-    shared<MtShared>   = MtShared::new(b.worker_threads)
-    handle<MtHandle>   = MtHandle::new(shared)
+    shared<sched.MtShared>   = sched.MtShared::new(b.worker_threads)
+    handle<sched.MtHandle>   = sched.MtHandle::new(shared)
     handle.driver_handle    = drv_h.(u64)
     handle.blocking_spawner = spawner.(u64)
 
     for i<u32> = 0 ; i < b.worker_threads ; i += 1 {
-        steal_a<Steal>, local_b<Local> = queue_local()
-        rng<FastRand>     = FastRand::new(0xdeadbeef + i.(u64))
-        park<Parker>      = Parker::new(drv_h.(u64))
-        unparker<Unparker> = Unparker::new(park)
-        core<WorkerCore>  = WorkerCore::new(local_b, park, rng, b.global_queue_interval)
-        worker<MtWorker>  = MtWorker::new(handle, i, core)
+        steal_a<sched.Steal>, local_b<sched.Local> = sched.queue_local()
+        rng<sched.FastRand>     = sched.FastRand::new(0xdeadbeef + i.(u64))
+        park<sched.Parker>      = sched.Parker::new(drv_h.(u64))
+        unparker<sched.Unparker> = sched.Unparker::new(park)
+        core<sched.WorkerCore>  = sched.WorkerCore::new(local_b, park, rng, b.global_queue_interval)
+        worker<sched.MtWorker>  = sched.MtWorker::new(handle, i, core)
 
-        r<Remote> = new Remote
-        r.steal    = steal_a
+        r<sched.Remote> = new sched.Remote
+        r.steal_end = steal_a
         r.unparker = unparker
         shared.remotes[i] = r.(u64)
 
         ACTIVE_WORKER = worker
-        runtime.newcore(worker_entry.(u64))
+        runtime.newcore(sched.worker_entry.(u64))
     }
 
     weak<Handle> = Handle::new(handle.(u64), KIND_MULTI_THREAD, drv_h, spawner.(u64))

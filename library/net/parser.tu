@@ -1,326 +1,504 @@
 use io
 
-mem Parser{
+// Sentinel: no max-digit cap when parsing numbers.
+MAX_DIGITS_NONE<i32> = -1
+PARSER_U32_MAX<u32> = 2147483647.(u32)
+
+mem Parser {
     // Parsing as ASCII, so can use byte array.
     u8* state
     i32 len
 }
 
-const Parser::new(input<u8*> , len<i32> ) Parser {
-    return new Parser { state: input ,len: len}
+const Parser::new(input<u8*>, len<i32>) Parser {
+    return new Parser { state: input, len: len }
 }
 
-/// Run a parser, and restore the pre-parse state if it fails.
-Parser::read_atomically(inner) bool,SocketAddrV4 {
-    state<u8*> = this.state
-    len<i32>   = this.len
+// Restore cursor when inner reports failure (None).
+Parser::read_none_atomically(inner) i32 {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
+    has<i32> = inner(this)
+    if has == None {
+        this.state = saved_state
+        this.len = saved_len
+        return None
+    }
+    return Has
+}
+
+Parser::read_u8_atomically(inner) i32, u8 {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
+    has<i32>, result<u8> = inner(this)
+    if has == None {
+        this.state = saved_state
+        this.len = saved_len
+        return None, 0
+    }
+    return Has, result
+}
+
+Parser::read_u16_atomically(inner) i32, u16 {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
+    has<i32>, result<u16> = inner(this)
+    if has == None {
+        this.state = saved_state
+        this.len = saved_len
+        return None, 0
+    }
+    return Has, result
+}
+
+Parser::read_u32_atomically(inner) i32, u32 {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
+    has<i32>, result<u32> = inner(this)
+    if has == None {
+        this.state = saved_state
+        this.len = saved_len
+        return None, 0
+    }
+    return Has, result
+}
+
+Parser::read_ipv4_atomically(inner) i32, Ipv4Addr {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
+    has<i32>, result<Ipv4Addr> = inner(this)
+    if has == None {
+        this.state = saved_state
+        this.len = saved_len
+        return None, null
+    }
+    return Has, result
+}
+
+Parser::read_ipv6_atomically(inner) i32, Ipv6Addr {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
+    has<i32>, result<Ipv6Addr> = inner(this)
+    if has == None {
+        this.state = saved_state
+        this.len = saved_len
+        return None, null
+    }
+    return Has, result
+}
+
+Parser::read_sock_atomically(inner) i32, SocketAddrV4 {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
+    has<i32>, result<SocketAddrV4> = inner(this)
+    if has == None {
+        this.state = saved_state
+        this.len = saved_len
+        return None, null
+    }
+    return Has, result
+}
+
+Parser::read_sockv6_atomically(inner) i32, SocketAddrV6 {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
+    has<i32>, result<SocketAddrV6> = inner(this)
+    if has == None {
+        this.state = saved_state
+        this.len = saved_len
+        return None, null
+    }
+    return Has, result
+}
+
+// Legacy generic atomic helper kept for older call sites.
+Parser::read_atomically(inner) i32, u64 {
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.len
     has<i32>, result<u64> = inner(this)
     if has == None {
-        this.state = state
-        this.len   = len
-        return None
+        this.state = saved_state
+        this.len = saved_len
+        return None, 0
     }
-    return Has,result
+    return Has, result
 }
 
-/// Run a parser, but fail if the entire input wasn't consumed.
-/// Doesn't run atomically.
-Parser::parse_with(inner, kind<i32>) i32,SocketAddr {
-    result<u64> = inner(this)
-    if this.len == 0 {
-        return Ok,result 
-    } else { 
-        return io.OtherParse
+// Run inner and require the entire input to be consumed.
+Parser::parse_with(inner, kind<i32>) i32, SocketAddr {
+    has<i32>, result<SocketAddr> = inner(this)
+    if has == None {
+        return io.OtherParse, null
     }
+    if this.len == 0 {
+        return io.Ok, result
+    }
+    return io.OtherParse, null
 }
 
-/// Peek the next character from the input
-Parser::peek_char() i32,i8 {
+Parser::peek_char() i32, i8 {
     if this.len == 0 {
-        return None
+        return None, 0
     }
-    return Has,this.state[0]
+    return Has, this.state[0]
 }
 
-/// Read the next character from the input
-Parser::read_char() i32,i8 {
+Parser::read_char() i32, i8 {
     if this.len == 0 {
-        return None
+        return None, 0
     }
-    first<i8>   = this.state[0]
+    first<i8> = this.state[0]
     this.state += 1
-    this.len   -= 1
-
-    return Has,first
+    this.len -= 1
+    return Has, first
 }
 
-/// Read the next character from the input if it matches the target.
-Parser::read_given_char(target<i8>) i32 {
+// Package-level bodies: inline fn callbacks may only contain a single return.
 
-    return this.read_atomically(func(p<Parser>){
-        has<i32> ,ret<i8> = p.read_char()
-        if has == None {
-            return None
-        }
-
-        if ret == c {
-            return Has
-        }
+fn parser_given_char_body(p<Parser>, target<i8>) i32 {
+    has<i32>, c<i8> = p.read_char()
+    if has == None {
         return None
-    })
-    
-}
-
-Parser::read_separator(sep<i8>, index<u64>, inner) i32,u64 {
-
-    has<i32>,ret<u64> = this.read_atomically( func(p<Parser>) {
-        if index > 0 {
-            has<i32> = p.read_given_char(sep)
-            if has == None {
-                return None
-            }
-        }
-        has,ret<u64> = inner(p)
-        return has,ret
-    })
-    return has,ret
-}
-
-Parser::read_number(radix<u32>, digits<i32>, max_digits<usize>, allow_zero_prefix<i32>,
-) i32,u32 {
-    has<i32>, ret<u32> = this.read_atomically(func(p<Parser>) {
-        result<u32> = 0
-        digit_count<i32> = 0
-        has_leading_zero<i32> = false
-
-        has<i32> ,c<i8> = p.peek_char()
-        if c == '0' {
-            has_leading_zero = true
-        }
-
-        loop {
-            has,digit<u32> = p.read_atomically(func(p<Parser>){
-                ok<i32> , c<i8> = p.read_char()
-                if ok != Ok {
-                    return ok
-                }
-                ok,d<u32> = toDigit(c,radix)
-                return ok,d
-            })
-            //break
-            if has != Ok  break
-
-            checkMulAdd = fn(v<u32>, radix<u32>, digit<u32>) i32,u32 {
-                if radix != 0 && v > (runtime.I32_MAX - digit) / radix {
-                    return Err
-                }
-                return Ok, v * radix + digit
-            }
-
-            ok,result = checkMulAdd(result,radix,digit)
-            if ok != Ok {
-                return ok
-            }
-            digit_count += 1
-
-            if digits == Has {
-                if digit_count > max_digits {
-                    return None
-                }
-            }
-        }
-
-        if digit_count == 0 {
-            return None
-        } else if !allow_zero_prefix && has_leading_zero && digit_count > 1 {
-            return None
-        } else {
-            return Has,result
-        }
-    })
-}
-
-
-/// Read an IPv4 address.
-Parser::read_ipv4_addr() i32, Ipv4Addr {
-
-    ok<i32>, addr<Ipv4Addr> = this.read_atomically(func(p<Parser>) {
-        groups<u8:4> = null
-        
-        for i<i32> = 0 ; i < 4 ; i += 1 {
-            ok<i32>,slot<u8> = p.read_separator('.',i,func(p<Parser>){
-                // Disallow octal number in IP string.
-                ok<i32>,slot<u8> = p.read_number(10, Has,3, false)
-            })
-            if ok != Ok {
-                return ok
-            }
-            groups[i] = slot
-        }
-        return Ok,Ipv4Addr::from(&groups)
-    })
-    
-    return ok,addr
-}
-
-/// Read an IPv6 Address.
-Parser::read_ipv6_addr() i32 , Ipv6Addr {
-    read_groups = fn(p<Parser>, limit<i32>,groups<u16*> ) i32, u64 {
-        for i<i32> = 0 ;i < limit ; i += 1 {
-            // Try to read a trailing embedded IPv4 address. There must be
-            // at least two groups left.
-            if i < limit - 1 {
-                ok<i32>,ipv4<Ipv4Addr> = p.read_separator(':', i, fn(p<Parser>){
-                        ok<i32>,addr<u64> = p.read_ipv4_addr()
-                        return ok,addr
-                    } 
-                )
-
-                if ok {
-                    one<u8>, two<u8>, three<u8>, four<u8> = ipv4.octets()
-                    groups[i + 0] = tou16(one,two)
-                    groups[i + 1] = tou16(three,four)
-                    return Ok,i + 2
-                }
-            }
-
-            ok<i32>, group<u16> = p.read_separator(':', i, fn(p<Parser>){
-                    p.read_number(16, Has,4, true)
-                } 
-            )
-            if ok == None  return None, i
-
-            groups[i] = group
-        }
-        return None, limit
     }
-
-    ok<i32>, ret<Ipv4Addr> = this.read_ipv6_atomically(fn(p<Parser>) {
-        // Read the front part of the address; either the whole thing, or up
-        // to the first ::
-        head<u16:8> = null
-        head_ipv4<i32>,head_size<i32> = read_groups(p, &head)
-
-        if head_size == 8 {
-            return Has,Ipv6Addr::from_u16(&head)
-        }
-
-        // IPv4 part is not allowed before `::`
-        if head_ipv4 {
-            return None
-        }
-
-        // Read `::` if previous code parsed less than 8 groups.
-        // `::` indicates one or more groups of 16 bits of zeros.
-        has<i32> = p.read_given_char(':')
-        if has != Ok return has
-        has<i32> =p.read_given_char(':')
-        if has != Ok return has
-
-        // Read the back part of the address. The :: must contain at least one
-        // set of zeroes, so our max length is 7.
-        tail<u16:7> = null
-        limit<i32> = 8 - (head_size + 1)
-
-        tail_<i32>,tail_size<i32> = read_groups(p,limit,&tail)
-
-        // Concat the head and tail of the IP address
-        copy_tail_to_head_u16(head, 8 ,tail , tail_size)
-
-        return Has, Ipv6Addr::from_u16(&head)
-    })
-
-    return ok, ret
-}
-
-/// Read a `:` followed by a port in base 10.
-Parser::read_port() i32,u16 {
-    has<i32> , ret<u16> = this.read_atomically(fn(p<Parser>) {
-        has<i32> = p.read_given_char(':')
-        if has != Ok {
-            return has
-        }
-        has,ret<i32> = p.read_number(10, None, None, true)
-        return has,ret
-    })
-    return has,ret
-}
-
-/// Read a `%` followed by a scope ID in base 10.
-Parser::read_scope_id() i32,u32 {
-    has<i32> , ret<u32> = this.read_atomically(fn(p<Parser>) {
-        has<i32> = p.read_given_char('%')
-        if has != Ok {
-            return has
-        }
-        ret<i32> , has<u32> = p.read_u32_number(10, None,None, true)
-    })
-    return has,ret
-}
-
-/// Read an IPv4 address with a port.
-Parser::read_socket_addr_v4() i32 , SocketAddrV4 {
-    ok<i32> , ret<SocketAddrV4> = this.read_sock_atomically(fn(p<Parser>) {
-        has<i32> ,ip<Ipv4Addr> = p.read_ipv4_addr()
-        if has != Ok return has
-
-        has, port<u16> = p.read_port()
-        if has != Ok return has
-
-        return Ok , SocketAddrV4::new(ip,port)
-    })
-    return ok, ret
-}
-
-/// Read an IPv6 address with a port.
-Parser::read_socket_addr_v6() i32,SocketAddrV6 {
-    ok<i32> , addr<SocketAddrV6> = this.read_sockv6_atomically(fn(p<Parser>) {
-        has<i32> = p.read_given_char('[')
-        if has != Ok return has
-
-        has<i32>, ip<Ipv6Addr> = p.read_ipv6_addr()
-        if has != Ok return has
-
-        has, scope_id<u32> = p.read_scope_id()
-        if has != Ok {
-                scope_id = 0
-        }
-
-        has = p.read_given_char(']')
-        if has != Ok return has
-
-        has, port<u16> = p.read_port()
-        if has != Ok return has
-
-        return Ok, SocketAddrV6::new(ip,port,0,scope_id)
-    })
-    return ok, addr
-}
-
-/// Read an IP address with a port
-Parser::read_socket_addr() i32 , SocketAddr {
-    ok<i32>, addr<SocketAddrV4> = this.read_socket_addr_v4()
-    if ok {
-        return ok,addr
-    }
-
-    ok, addr_v6<SocketAddrV6> = this.read_socket_addr_v6()
-    if ok {
-        return ok,addr_v6
+    if c == target {
+        return Has
     }
     return None
 }
 
-
-const SocketAddr::parse_ascii(b<u8*>,len<i32>) i32,SocketAddr {
-    p<Parser> = Parser::new(b,len)
-    ok<i32> , ret<p.parse_with(fn(p<Parser>) {
-        has<i32> , ret<SocketAddr> = p.read_socket_addr()
-    },Socket)
-    return ok,ret
+Parser::read_given_char(target<i8>) i32 {
+    return this.read_none_atomically(fn(p) {
+        return parser_given_char_body(p, target)
+    })
 }
 
-enum  {
+Parser::read_u8_given_char(target<i8>) i32 {
+    return this.read_given_char(target)
+}
+
+Parser::read_u16_given_char(target<i8>) i32 {
+    return this.read_given_char(target)
+}
+
+fn parser_u8_sep_body(p<Parser>, sep<i8>, index<i32>, inner) i32, u8 {
+    if index > 0 {
+        if p.read_u8_given_char(sep) == None {
+            return None, 0
+        }
+    }
+    return inner(p)
+}
+
+fn parser_u16_sep_body(p<Parser>, sep<i8>, index<i32>, inner) i32, u16 {
+    if index > 0 {
+        if p.read_u16_given_char(sep) == None {
+            return None, 0
+        }
+    }
+    return inner(p)
+}
+
+fn parser_ipv4_sep_body(p<Parser>, sep<i8>, index<i32>, inner) i32, Ipv4Addr {
+    if index > 0 {
+        if p.read_given_char(sep) == None {
+            return None, null
+        }
+    }
+    return inner(p)
+}
+
+fn parser_sep_body(p<Parser>, sep<i8>, idx<i32>, inner) i32, u64 {
+    if idx > 0 {
+        if p.read_given_char(sep) == None {
+            return None, 0
+        }
+    }
+    return inner(p)
+}
+
+Parser::read_u8_separator(sep<i8>, index<i32>, inner) i32, u8 {
+    has<i32>, ret<u8> = this.read_u8_atomically(fn(p) {
+        return parser_u8_sep_body(p, sep, index, inner)
+    })
+    return has, ret
+}
+
+Parser::read_u16_separator(sep<i8>, index<i32>, inner) i32, u16 {
+    has<i32>, ret<u16> = this.read_u16_atomically(fn(p) {
+        return parser_u16_sep_body(p, sep, index, inner)
+    })
+    return has, ret
+}
+
+Parser::read_ipv4_separator(sep<i8>, index<i32>, inner) i32, Ipv4Addr {
+    has<i32>, ret<Ipv4Addr> = this.read_ipv4_atomically(fn(p) {
+        return parser_ipv4_sep_body(p, sep, index, inner)
+    })
+    return has, ret
+}
+
+Parser::read_separator(sep<i8>, index<u64>, inner) i32, u64 {
+    idx<i32> = index.(i32)
+    has<i32>, ret<u64> = this.read_atomically(fn(p) {
+        return parser_sep_body(p, sep, idx, inner)
+    })
+    return has, ret
+}
+
+fn parser_u32_digit_body(p<Parser>, radix<u32>) i32, u32 {
+    ok<i32>, c<i8> = p.read_char()
+    if ok != Has {
+        return None, 0
+    }
+    tok<i32>, d<i32> = toDigit(c, radix.(i32))
+    if tok != Ok {
+        return None, 0
+    }
+    return Has, d.(u32)
+}
+
+fn parser_u32_number_body(p<Parser>, radix<u32>, max_digits<i32>, allow_zero_prefix<i32>) i32, u32 {
+    result<u32> = 0
+    digit_count<i32> = 0
+    has_leading_zero<i32> = 0
+    peek_has<i32>, peek_c<i8> = p.peek_char()
+    if peek_has == Has && peek_c == '0' {
+        has_leading_zero = 1
+    }
+    loop {
+        has<i32>, digit<u32> = p.read_u32_atomically(fn(p2) {
+            return parser_u32_digit_body(p2, radix)
+        })
+        if has != Has {
+            break
+        }
+        if radix != 0 && result > (PARSER_U32_MAX - digit) / radix {
+            return None, 0
+        }
+        result = result * radix + digit
+        digit_count += 1
+        if max_digits != MAX_DIGITS_NONE && digit_count > max_digits {
+            return None, 0
+        }
+    }
+    if digit_count == 0 {
+        return None, 0
+    }
+    if allow_zero_prefix == 0 && has_leading_zero != 0 && digit_count > 1 {
+        return None, 0
+    }
+    return Has, result
+}
+
+Parser::read_u32_number(radix<u32>, max_digits<i32>, allow_zero_prefix<i32>) i32, u32 {
+    has<i32>, ret<u32> = this.read_u32_atomically(fn(p) {
+        return parser_u32_number_body(p, radix, max_digits, allow_zero_prefix)
+    })
+    return has, ret
+}
+
+Parser::read_u16_number(radix<u32>, max_digits<i32>, allow_zero_prefix<i32>) i32, u16 {
+    has<i32>, v<u32> = this.read_u32_number(radix, max_digits, allow_zero_prefix)
+    if has != Has {
+        return None, 0
+    }
+    return Has, v.(u16)
+}
+
+Parser::read_u8_number(radix<u32>, max_digits<i32>, allow_zero_prefix<i32>) i32, u8 {
+    has<i32>, v<u32> = this.read_u32_number(radix, max_digits, allow_zero_prefix)
+    if has != Has {
+        return None, 0
+    }
+    return Has, v.(u8)
+}
+
+// Back-compat wrapper: digits==Has enables max_digits, else unlimited.
+Parser::read_number(radix<u32>, digits<i32>, max_digits<i32>, allow_zero_prefix<i32>) i32, u32 {
+    cap<i32> = MAX_DIGITS_NONE
+    if digits == Has {
+        cap = max_digits
+    }
+    has<i32>, ret<u32> = this.read_u32_number(radix, cap, allow_zero_prefix)
+    return has, ret
+}
+
+fn parser_ipv4_octet_body(p<Parser>) i32, u8 {
+    has<i32>, v<u8> = p.read_u8_number(10, 3, 0)
+    return has, v
+}
+
+fn parser_ipv4_addr_body(p<Parser>) i32, Ipv4Addr {
+    groups<u8:4> = null
+    for i<i32> = 0 ; i < 4 ; i += 1 {
+        ok<i32>, slot<u8> = p.read_u8_separator('.'.(i8), i, fn(p2) {
+            return parser_ipv4_octet_body(p2)
+        })
+        if ok != Has {
+            return None, null
+        }
+        groups[i] = slot
+    }
+    return Has, Ipv4Addr::from(&groups)
+}
+
+Parser::read_ipv4_addr() i32, Ipv4Addr {
+    has<i32>, ret<Ipv4Addr> = this.read_ipv4_atomically(fn(p) {
+        return parser_ipv4_addr_body(p)
+    })
+    return has, ret
+}
+
+fn parser_ipv6_read_groups(p<Parser>, groups<u16*>, limit<i32>) i32, i32 {
+    for i<i32> = 0 ; i < limit ; i += 1 {
+        if i < limit - 1 {
+            ok<i32>, ipv4<Ipv4Addr> = p.read_ipv4_separator(':'.(i8), i, fn(p2) {
+                return p2.read_ipv4_addr()
+            })
+            if ok == Has {
+                one<u8>, two<u8>, three<u8>, four<u8> = ipv4.octets()
+                groups[i + 0] = tou16(one, two)
+                groups[i + 1] = tou16(three, four)
+                return i + 2, 1
+            }
+        }
+        ok<i32>, group<u16> = p.read_u16_separator(':'.(i8), i, fn(p2) {
+            return p2.read_u16_number(16, 4, 1)
+        })
+        if ok != Has {
+            return i, 0
+        }
+        groups[i] = group
+    }
+    return limit, 0
+}
+
+fn parser_ipv6_addr_body(p<Parser>) i32, Ipv6Addr {
+    head<u16:8> = null
+    head_size<i32>, head_ipv4<i32> = parser_ipv6_read_groups(p, &head, 8)
+    if head_size == 8 {
+        return Has, Ipv6Addr::from_u16(&head)
+    }
+    if head_ipv4 != 0 {
+        return None, null
+    }
+    has<i32> = p.read_given_char(':'.(i8))
+    if has != Has {
+        return None, null
+    }
+    has = p.read_given_char(':'.(i8))
+    if has != Has {
+        return None, null
+    }
+    tail<u16:7> = null
+    limit<i32> = 8 - (head_size + 1)
+    tail_size<i32>, _<i32> = parser_ipv6_read_groups(p, &tail, limit)
+    copy_tail_to_head_u16(&head, 8, &tail, tail_size)
+    return Has, Ipv6Addr::from_u16(&head)
+}
+
+Parser::read_ipv6_addr() i32, Ipv6Addr {
+    has<i32>, ret<Ipv6Addr> = this.read_ipv6_atomically(fn(p) {
+        return parser_ipv6_addr_body(p)
+    })
+    return has, ret
+}
+
+fn parser_read_port_body(p<Parser>) i32, u16 {
+    has<i32> = p.read_u16_given_char(':'.(i8))
+    if has != Has {
+        return None, 0
+    }
+    ph<i32>, pv<u16> = p.read_u16_number(10, MAX_DIGITS_NONE, 1)
+    return ph, pv
+}
+
+Parser::read_port() i32, u16 {
+    has<i32>, ret<u16> = this.read_u16_atomically(fn(p) {
+        return parser_read_port_body(p)
+    })
+    return has, ret
+}
+
+fn parser_read_scope_id_body(p<Parser>) i32, u32 {
+    has<i32> = p.read_given_char('%'.(i8))
+    if has != Has {
+        return None, 0
+    }
+    sh<i32>, sv<u32> = p.read_u32_number(10, MAX_DIGITS_NONE, 1)
+    return sh, sv
+}
+
+Parser::read_scope_id() i32, u32 {
+    has<i32>, ret<u32> = this.read_u32_atomically(fn(p) {
+        return parser_read_scope_id_body(p)
+    })
+    return has, ret
+}
+
+fn parser_socket_addr_v4_body(p<Parser>) i32, SocketAddrV4 {
+    has<i32>, ip<Ipv4Addr> = p.read_ipv4_addr()
+    if has != Has {
+        return None, null
+    }
+    has, port<u16> = p.read_port()
+    if has != Has {
+        return None, null
+    }
+    return Has, SocketAddrV4::new(ip, port)
+}
+
+Parser::read_socket_addr_v4() i32, SocketAddrV4 {
+    has<i32>, ret<SocketAddrV4> = this.read_sock_atomically(fn(p) {
+        return parser_socket_addr_v4_body(p)
+    })
+    return has, ret
+}
+
+fn parser_socket_addr_v6_body(p<Parser>) i32, SocketAddrV6 {
+    has<i32> = p.read_given_char('['.(i8))
+    if has != Has {
+        return None, null
+    }
+    has, ip<Ipv6Addr> = p.read_ipv6_addr()
+    if has != Has {
+        return None, null
+    }
+    has, scope_id<u32> = p.read_scope_id()
+    if has != Has {
+        scope_id = 0
+    }
+    has = p.read_given_char(']'.(i8))
+    if has != Has {
+        return None, null
+    }
+    has, port<u16> = p.read_port()
+    if has != Has {
+        return None, null
+    }
+    return Has, SocketAddrV6::new(ip, port, 0, scope_id)
+}
+
+Parser::read_socket_addr_v6() i32, SocketAddrV6 {
+    has<i32>, ret<SocketAddrV6> = this.read_sockv6_atomically(fn(p) {
+        return parser_socket_addr_v6_body(p)
+    })
+    return has, ret
+}
+
+Parser::read_socket_addr() i32, SocketAddr {
+    ok<i32>, addr4<SocketAddrV4> = this.read_socket_addr_v4()
+    if ok == Has {
+        return Has, addr4
+    }
+    ok, addr6<SocketAddrV6> = this.read_socket_addr_v6()
+    if ok == Has {
+        return Has, addr6
+    }
+    return None, null
+}
+
+enum {
     Ip,
     Ipv4,
     Ipv6,
@@ -328,13 +506,23 @@ enum  {
     SocketV4,
     SocketV6,
 }
+
+fn parse_ascii_bytes(b<u8*>, len<i32>) i32, SocketAddr {
+    p<Parser> = Parser::new(b, len)
+    ok<i32>, ret<SocketAddr> = p.parse_with(fn(p2) {
+        rh<i32>, rv<SocketAddr> = p2.read_socket_addr()
+        return rh, rv
+    }, Socket)
+    return ok, ret
+}
+
 fn err_description(kind<i32>) i8* {
     match kind {
-        Ip => return "invalid IP address syntax",
-        Ipv4 => return "invalid IPv4 address syntax",
-        Ipv6 => return "invalid IPv6 address syntax",
-        Socket => return "invalid socket address syntax",
-        SocketV4 => return "invalid IPv4 socket address syntax",
-        SocketV6 => return "invalid IPv6 socket address syntax",
+        Ip : return "invalid IP address syntax",
+        Ipv4 : return "invalid IPv4 address syntax",
+        Ipv6 : return "invalid IPv6 address syntax",
+        Socket : return "invalid socket address syntax",
+        SocketV4 : return "invalid IPv4 socket address syntax",
+        SocketV6 : return "invalid IPv6 socket address syntax",
     }
 }

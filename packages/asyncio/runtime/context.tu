@@ -18,7 +18,7 @@ ACTIVE_RT<RuntimeContext> = null
 mem RuntimeContext {
     u64        sched          // raw bits of runtime.scheduler.SchedulerHandle*
     u64        driver         // raw bits of runtime.driver.DriverHandle*
-    FastRand*  rng
+    util.FastRand*  rng
     i32        coop_budget    // remaining budget in this poll round
     i32        enter_kind     // ENTER_*
 }
@@ -26,7 +26,7 @@ mem RuntimeContext {
 // Build a context for a given enter point. coop_budget defaults to 128
 // (matches DEFAULT_BUDGET in coop.tu but kept duplicated to avoid the
 // circular import).
-const RuntimeContext::new(sched_ptr<u64>, driver_ptr<u64>, rng<FastRand>, kind<i32>) RuntimeContext {
+const RuntimeContext::new(sched_ptr<u64>, driver_ptr<u64>, rng<util.FastRand>, kind<i32>) RuntimeContext {
     c<RuntimeContext> = new RuntimeContext
     c.sched       = sched_ptr
     c.driver      = driver_ptr
