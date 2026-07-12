@@ -4,7 +4,7 @@
 // Token reservations: 0 = wakeup (cross-thread eventfd), 1 = signal driver.
 // All other tokens are ScheduledIo* cast to u64.
 
-use asyncio.util as util
+use asyncio.util
 
 use runtime
 use std.atomic

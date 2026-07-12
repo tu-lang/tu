@@ -7,7 +7,7 @@ use std.atomic
 use io as libio
 use netio
 
-use asyncio.util as util
+use asyncio.util
 
 // readiness packing: [shutdown:1 | tick:15 | readiness:16].
 READINESS_BITS<i32> = 16

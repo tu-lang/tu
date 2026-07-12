@@ -4,7 +4,7 @@
 // outside any runtime, which lets `Handle::current()` surface the
 // canonical "no runtime" error code.
 
-use asyncio.util as util
+use asyncio.util
 
 // Enter-kind tags so coop / signal can adjust their behaviour.
 ENTER_RUNTIME<i32> = 0

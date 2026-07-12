@@ -28,9 +28,7 @@ mem Inject {
     InjectSynced* synced
 }
 
-// Build an empty, open queue. The inj.lock / inj.synced fields are
-// pointer-typed; assign the heap pointers from MutexInter / Synced
-// directly (no `&m` / `&sn` — those are stack-slot addresses).
+// Build an empty, open queue.
 const Inject::new() Inject {
     sh<InjectShared> = new InjectShared
     sh.len = 0
@@ -48,22 +46,21 @@ const Inject::new() Inject {
 }
 
 // Snapshot of synced.is_closed; reads under lock to avoid torn updates.
-Inject::is_closed() bool {
+Inject::is_closed() i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
     s<InjectSynced> = this.synced
-    closed<bool> = false
-    if s.is_closed == 1 closed = true
+    closed<i32> = 0
+    if s.is_closed == 1 closed = 1
     m.unlock()
     return closed
 }
 
-// Lock-free snapshot via atomic len. May briefly observe false while a
-// concurrent push is linking the tail; not for correctness decisions.
-Inject::is_empty() bool {
+// Lock-free snapshot via atomic len.
+Inject::is_empty() i32 {
     sh<InjectShared> = this.shared
-    if atomic.load(&sh.len) == 0 return true
-    return false
+    if atomic.load(&sh.len) == 0 return 1
+    return 0
 }
 
 // Atomic load of the depth counter.
@@ -73,8 +70,8 @@ Inject::len() u32 {
 }
 
 // Enqueue at the tail. Returns 0 on success, asyncio.error.Closed when shut.
-Inject::push(t) i32 {
-    raw<task.RawTask> = t.raw
+Inject::push(t<task.Notified>) i32 {
+    raw<task.RawTask> = t.raw()
     m<runtime.MutexInter> = this.lock
     m.lock()
     s<InjectSynced> = this.synced
@@ -89,22 +86,21 @@ Inject::push(t) i32 {
     return 0
 }
 
-// Mark the queue closed; idempotent. Returns true only on the first call.
-Inject::close() bool {
+// Mark the queue closed; idempotent. Returns 1 only on the first call.
+Inject::close() i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
     s<InjectSynced> = this.synced
-    first<bool> = false
+    first<i32> = 0
     if s.is_closed == 0 {
         s.is_closed = 1
-        first = true
+        first = 1
     }
     m.unlock()
     return first
 }
 
 // Dequeue the head. Returns (0, Notified) or (io.NotFound, empty) when drained.
-// Closed queues still drain successfully (close blocks push only).
 Inject::pop() (i32, task.Notified) {
     m<runtime.MutexInter> = this.lock
     m.lock()
@@ -116,9 +112,8 @@ Inject::pop() (i32, task.Notified) {
         return io.NotFound, empty
     }
     sh<InjectShared> = this.shared
-    atomic.xadd(&sh.len, 0xFFFFFFFF.(u32))   // -1 via two's complement
+    atomic.xadd(&sh.len, 0xFFFFFFFF.(u32))
     m.unlock()
     n<task.Notified> = task.notified_from_raw(raw)
     return 0, n
 }
-

@@ -1,10 +1,9 @@
 // Owns every ScheduledIo allocated by the IO driver. Linked via
 // ScheduledIo.linked_list_pointers so shutdown can drain them all.
 
-use asyncio.util as util
-
 use runtime
 use netio
+use asyncio.util
 
 // Mutex-protected list head/tail and live count.
 mem RegistrationSetSynced {

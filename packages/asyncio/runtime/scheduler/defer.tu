@@ -34,7 +34,8 @@ Defer::grow(){
     if this.cap > 0 {
         new_cap = this.cap * 2
     }
-    new_slots<u64*> = std.malloc(sizeof(u64) * new_cap.(u64))
+    nc<u64> = new_cap.(u64)
+    new_slots<u64*> = std.malloc(8 * nc)
     n<i32> = this.len
     if n > 0 {
         old<u64*> = this.slots
