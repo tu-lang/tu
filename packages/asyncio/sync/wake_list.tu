@@ -15,23 +15,23 @@ WakeList::init(){
     this.len = 0
 }
 
-WakeList::is_empty() bool {
-    if this.len == 0 return true
-    return false
+WakeList::is_empty() i32 {
+    if this.len == 0 return 1
+    return 0
 }
 
-WakeList::is_full() bool {
-    if this.len >= NUM_WAKERS return true
-    return false
+WakeList::is_full() i32 {
+    if this.len >= NUM_WAKERS return 1
+    return 0
 }
 
-// Append ctx; returns false when buffer is already full so the caller can
+// Append ctx; returns 0 when buffer is already full so the caller can
 // drop the lock, drain, and try again.
-WakeList::push(ctx<u64>) bool {
-    if this.len >= NUM_WAKERS return false
+WakeList::push(ctx<u64>) i32 {
+    if this.len >= NUM_WAKERS return 0
     this.ctxs[this.len] = ctx
     this.len += 1
-    return true
+    return 1
 }
 
 // Aliased to avoid shadowing std.len when used inline.

@@ -133,11 +133,8 @@ fn blocking_worker_run(){
             // Non-mandatory items dropped during shutdown; the JoinHandle
             // observes a Cancelled outcome on its next poll.
             tk<BlockingTask> = item.task
-            raw<task.RawTask> = tk.task_ptr
-            hd<task.Header> = raw.head_meta
-            st<task.State> = hd.life_state
-            st.set_cancelled()
-            task.wake_join_waker(raw)
+            rtask<task.RawTask> = tk.task_ptr
+            rtask.harness_shutdown()
             continue
         }
         item.task.run()

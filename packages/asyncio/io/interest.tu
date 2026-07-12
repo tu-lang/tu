@@ -5,14 +5,14 @@ use netio
 READABLE<u8> = netio.READABLE_BIT
 WRITABLE<u8> = netio.WRITABLE_BIT
 
-fn readable() netio.Interest {
-    return netio.Interest::readable()
+fn readable() {
+    return netio.readable_interest()
 }
 
-fn writable() netio.Interest {
-    return netio.Interest::writable()
+fn writable() {
+    return netio.writable_interest()
 }
 
-fn interest_add(a<netio.Interest>, b<netio.Interest>) netio.Interest {
-    return a.add(b)
+fn interest_add(a, b) {
+    return netio.interest_merge(a, b)
 }

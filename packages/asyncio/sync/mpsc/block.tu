@@ -24,9 +24,9 @@ const Block::new(start<u32>) Block {
 }
 
 // True when bit `idx` is set in ready_slots.
-fn block_slot_ready(bits<u64>, idx<u32>) bool {
-    if (bits & (1.(u64) << idx.(u64))) != 0 return true
-    return false
+fn block_slot_ready(bits<u64>, idx<u32>) i32 {
+    if (bits & (1.(u64) << idx.(u64))) != 0 return 1
+    return 0
 }
 
 // Mark slot idx as containing `value`. Returns 0 on success or io.Other

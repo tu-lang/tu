@@ -31,12 +31,13 @@ const AtomicWaker::new() AtomicWaker {
 // immediately so the task does not stall behind a stale ctx.
 AtomicWaker::register_by_ref(ctx<u64>){
     addr<i32*> = &this.state
+    cur<i32> = 0
 
     // Try the fast path: WAITING -> REGISTERING. If that fails, either
     // another register is in flight or wake() raced ahead — fall back to
     // wiring ctx and notifying directly.
     if atomic.cas(addr, WAITING, REGISTERING) == 0 {
-        cur<i32> = *addr
+        cur = *addr
         if cur == REGISTERING return
         if cur == WAKING {
             // wake() landed first; deliver this ctx ourselves so the task
@@ -54,7 +55,7 @@ AtomicWaker::register_by_ref(ctx<u64>){
     // assignment we honour it by clearing the slot here (the task is
     // already on its way to the run queue from the wake side).
     if atomic.cas(addr, REGISTERING, WAITING) != 0 return
-    cur<i32> = *addr
+    cur = *addr
     if cur == WAKING {
         atomic.cas(addr, WAKING, WAITING)
     }
@@ -72,8 +73,9 @@ AtomicWaker::take_ctx() u64 {
 // Concurrent register_by_ref observes WAKING and re-arms itself.
 AtomicWaker::wake() u64 {
     addr<i32*> = &this.state
+    cur<i32> = 0
     loop {
-        cur<i32> = *addr
+        cur = *addr
         if cur == WAKING return 0
         if cur == REGISTERING {
             // Hand the kick to the registering thread; it sees WAKING and

@@ -46,15 +46,15 @@ Chan::inc_tx(){
 
 // Atomically decrement Sender count; mark the channel closed for recv
 // once the last Sender drops.
-Chan::drop_last_sender() bool {
+Chan::drop_last_sender() i32 {
     n<i32> = atomic.xadd(&this.tx_count, -1.(i32).(u32))
     if n == 1 {
         // Last sender just left; wake any waiting receiver so it surfaces
         // ChannelClosed instead of waiting forever.
         this.rx_waker.wake()
-        return true
+        return 1
     }
-    return false
+    return 0
 }
 
 // Mark the receiver gone; senders surface SendNoReceiver going forward.
@@ -69,9 +69,9 @@ Chan::close_receiver(){
 }
 
 // True when the receiver has dropped or been closed.
-Chan::is_closed() bool {
-    if this.rx_closed == 1 return true
-    return false
+Chan::is_closed() i32 {
+    if this.rx_closed == 1 return 1
+    return 0
 }
 
 // Non-blocking send. Bounded variant returns SendFull when permits run
