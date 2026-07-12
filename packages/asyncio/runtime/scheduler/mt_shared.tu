@@ -3,11 +3,12 @@
 // inject queue, the OwnedTasks tracker, and the Idle / IdleSynced pair.
 
 use runtime
+use std
 use asyncio.task
 
 // One slot per worker exposing its Steal end + Unparker.
 mem Remote {
-    Steal*    steal
+    Steal*    steal_end
     Unparker* unparker
 }
 
@@ -35,7 +36,9 @@ mem MtShared {
 // later when each worker's queue is created.
 const MtShared::new(num_workers<u32>) MtShared {
     s<MtShared> = new MtShared
-    s.remotes     = std.malloc(sizeof(u64) * num_workers.(u64))
+    nw<u64> = num_workers.(u64)
+    bytes<u64> = 8 * nw
+    s.remotes     = std.malloc(bytes)
     s.num_workers = num_workers
     s.inject      = Inject::new()
     idle_pair_a<Idle>, idle_pair_b<IdleSynced> = idle_new(num_workers)
@@ -48,7 +51,7 @@ const MtShared::new(num_workers<u32>) MtShared {
     s.synced      = sn
     s.shutdown_cores_lock = new runtime.MutexInter
     s.shutdown_cores_lock.init()
-    s.shutdown_cores     = std.malloc(sizeof(u64) * num_workers.(u64))
+    s.shutdown_cores     = std.malloc(bytes)
     s.shutdown_cores_len = 0
     return s
 }

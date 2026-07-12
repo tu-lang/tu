@@ -4,6 +4,7 @@
 // wake-up: the last searcher always notifies one peer.
 
 use runtime
+use io
 use asyncio.task
 
 // Pack (handle, task_id) into the future's ctx slot. Mirrors the
@@ -15,7 +16,10 @@ fn ctx_pack(handle<MtHandle>, task_id<u64>) u64 {
 
 // Periodic inject pull keeps fairness vs. the local queue.
 fn mt_next_global_task(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
-    return w.handle.shared.inject.pop()
+    err<i32> = 0
+    t<task.Notified> = task.notified_from_raw(null)
+    err, t = w.handle.shared.inject.pop()
+    return err, t
 }
 
 // Try to steal a batch of tasks. Returns one task to run immediately and
@@ -30,8 +34,11 @@ fn mt_steal_work(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (start + i) % n
         if idx == w.index continue
-        r<Remote> = shared.remotes[idx].(Remote)
-        err<i32>, t<task.Notified> = r.steal.steal_into(core.run_queue)
+        bits<u64> = shared.remotes[idx]
+        r<Remote> = bits.(Remote)
+        err<i32> = 0
+        t<task.Notified> = task.notified_from_raw(null)
+        err, t = r.steal_end.steal_into(core.run_queue)
         if err == 0 return 0, t
     }
     return io.NotFound, task.notified_from_raw(null)
@@ -41,18 +48,19 @@ fn mt_steal_work(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
 fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
     if core.is_searching == 1 {
         core.is_searching = 0
-        last<bool> = w.handle.shared.idle.transition_worker_from_searching()
-        if last {
+        last<i32> = w.handle.shared.idle.transition_worker_from_searching()
+        if last == 1 {
             // Last searcher: keep the pipeline filled by waking another peer.
             sn<MtSynced> = w.handle.shared.synced
             found<i32>, idx<u32> = w.handle.shared.idle.notify_one(sn.idle_synced, w.handle.shared.synced_lock)
             if found == 1 && idx < w.handle.shared.num_workers {
-                r<Remote> = w.handle.shared.remotes[idx].(Remote)
+                bits2<u64> = w.handle.shared.remotes[idx]
+                r<Remote> = bits2.(Remote)
                 if r.unparker != null r.unparker.unpark()
             }
         }
     }
-    raw<task.RawTask> = t.raw
+    raw<task.RawTask> = t.raw()
     h<task.Header> = raw.hdr
     ctx<u64> = ctx_pack(w.handle, h.task_id)
     task.harness_poll(raw, ctx)
@@ -124,7 +132,7 @@ fn worker_run(w<MtWorker>){
         // 4) Steal phase. Only enter searching state when the wheel
         // policy allows it (cap on concurrent searchers).
         if core.is_searching == 0 {
-            if shared.idle.transition_worker_to_searching() {
+            if shared.idle.transition_worker_to_searching() == 1 {
                 core.is_searching = 1
             }
         }
@@ -138,20 +146,20 @@ fn worker_run(w<MtWorker>){
 
         // 5) Park. Drop searching state first so other workers can
         // start new searches on our behalf.
-        is_last_searcher<bool> = false
+        is_last_searcher<i32> = 0
         if core.is_searching == 1 {
             is_last_searcher = shared.idle.transition_worker_from_searching()
             core.is_searching = 0
         }
         sn<MtSynced> = shared.synced
-        will_park<bool> = shared.idle.transition_worker_to_parked(
+        will_park<i32> = shared.idle.transition_worker_to_parked(
             sn.idle_synced, shared.synced_lock, w.index, is_last_searcher
         )
-        if will_park == false continue
+        if will_park == 0 continue
 
         core.park.park(w.handle.driver_handle)
         shared.idle.transition_worker_from_parked(sn.idle_synced, shared.synced_lock, w.index)
-        if shared.idle.transition_worker_to_searching() {
+        if shared.idle.transition_worker_to_searching() == 1 {
             core.is_searching = 1
         }
     }

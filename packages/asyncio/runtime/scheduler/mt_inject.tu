@@ -3,6 +3,7 @@
 
 use runtime
 use io
+use std.atomic
 use asyncio.task
 
 // Pull min(n, len) tasks from inj into the worker's Local queue. Returns
@@ -29,8 +30,9 @@ fn pop_n_into_local(inj<Inject>, n<u32>, local<Local>) u32 {
     sh<InjectShared> = inj.shared
     if moved > 0 {
         // -moved via two's complement. xadd takes u32.
-        delta<u32> = (0 - moved.(i32)).(u32)
-        runtime.atomic.xadd(&sh.len, delta)
+        neg<i32> = 0 - moved.(i32)
+        delta<u32> = neg.(u32)
+        atomic.xadd(&sh.len, delta)
     }
     inj.lock.unlock()
     return moved

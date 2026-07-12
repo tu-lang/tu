@@ -6,13 +6,13 @@ use runtime
 use std.atomic
 use sys
 
-EMPTY<u32>    = 0
-PARKED<u32>   = 1
-NOTIFIED<u32> = 2
+EMPTY<i32>    = 0
+PARKED<i32>   = 1
+NOTIFIED<i32> = 2
 
 // Per-worker park slot.
 mem Parker {
-    u32          state         // atomic
+    i32          state         // atomic
     runtime.Note note
     u64          driver_slot   // raw bits of runtime.driver.Driver*; 0 = no driver
 }
@@ -41,21 +41,18 @@ const Unparker::new(p<Parker>) Unparker {
 // Park indefinitely. Returns 0 on a normal wake, surfaces driver errors
 // when a driver is wired in.
 Parker::park(handle_ptr<u64>) i32 {
-    addr<u32*> = &this.state
-    // Fast path: someone already notified us.
-    if atomic.cas(addr.(i32*), NOTIFIED.(i32), EMPTY.(i32)) != 0 return 0
+    addr<i32*> = &this.state
+    if atomic.cas(addr, NOTIFIED, EMPTY) != 0 return 0
 
-    if atomic.cas(addr.(i32*), EMPTY.(i32), PARKED.(i32)) == 0 {
-        // Lost race with concurrent notify; treat as woken.
-        atomic.cas(addr.(i32*), NOTIFIED.(i32), EMPTY.(i32))
+    if atomic.cas(addr, EMPTY, PARKED) == 0 {
+        atomic.cas(addr, NOTIFIED, EMPTY)
         return 0
     }
 
-    // Block on the Note. Once woken, reset state to EMPTY.
     this.note.Sleep()
     this.note.Clear()
-    atomic.cas(addr.(i32*), PARKED.(i32), EMPTY.(i32))
-    atomic.cas(addr.(i32*), NOTIFIED.(i32), EMPTY.(i32))
+    atomic.cas(addr, PARKED, EMPTY)
+    atomic.cas(addr, NOTIFIED, EMPTY)
     return 0
 }
 
@@ -69,13 +66,12 @@ Parker::park_timeout(handle_ptr<u64>, max<sys.Duration>) i32 {
 // Wake the parker. Idempotent.
 Unparker::unpark(){
     p<Parker> = this.p
-    addr<u32*> = &p.state
-    if atomic.cas(addr.(i32*), EMPTY.(i32), NOTIFIED.(i32)) != 0 return
-    if atomic.cas(addr.(i32*), PARKED.(i32), NOTIFIED.(i32)) != 0 {
+    addr<i32*> = &p.state
+    if atomic.cas(addr, EMPTY, NOTIFIED) != 0 return
+    if atomic.cas(addr, PARKED, NOTIFIED) != 0 {
         p.note.Wake()
         return
     }
-    // Already NOTIFIED — nothing to do.
 }
 
 // Wake every worker on the same handle and surrender the driver slot.
