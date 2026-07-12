@@ -55,26 +55,26 @@ OwnedTasks::remove(raw<RawTask>){
     while cur_bits != 0 {
         cur<RawTask> = cur_bits.(RawTask)
         if cur == raw {
-            ch<Header> = cur.hdr
-            nxt<RawTask> = ch.queue_next
+            chd<Header> = cur.head_meta
+            nxt<RawTask> = chd.queue_next
             if prev_bits == 0 {
                 if nxt == null this.head = 0
                 else this.head = nxt.(u64)
             } else {
                 prev<RawTask> = prev_bits.(RawTask)
-                ph<Header> = prev.hdr
-                ph.queue_next = nxt
+                phd<Header> = prev.head_meta
+                phd.queue_next = nxt
             }
             if nxt == null {
                 this.tail = prev_bits
             }
-            ch.queue_next = null
+            chd.queue_next = null
             this.active -= 1
             break
         }
         prev_bits = cur_bits
-        ch<Header> = cur.hdr
-        nxt<RawTask> = ch.queue_next
+        chd<Header> = cur.head_meta
+        nxt<RawTask> = chd.queue_next
         if nxt == null {
             cur_bits = 0
         } else {

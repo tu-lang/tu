@@ -3,18 +3,18 @@
 
 // One-field wrapper so schedulers do not depend on RawTask layout.
 mem Notified {
-    RawTask* raw
+    RawTask* task_ptr
 }
 
 // Wrap a RawTask*. Caller must guarantee the strong ref count covers this slot.
 fn notified_from_raw(raw<RawTask>) Notified {
     n<Notified> = new Notified
-    n.raw = raw
+    n.task_ptr = raw
     return n
 }
 
 // Unwrap to the underlying RawTask reference.
 Notified::raw() RawTask {
-    return this.raw
+    return this.task_ptr
 }
 

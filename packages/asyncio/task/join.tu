@@ -6,13 +6,13 @@ use asyncio.error as aerr
 
 // Async leaf future; State.JOIN_WAKER + Cell.join_ctx_packed track the waker.
 mem JoinHandle: async {
-    RawTask* raw    // null when the task has been released
+    RawTask* task_ptr    // null when the task has been released
     i32 consumed    // monotonic 0->1 once the value is taken
 }
 
 // Initialise a JoinHandle around raw.
 JoinHandle::init(raw<RawTask>){
-    this.raw = raw
+    this.task_ptr = raw
     this.consumed = 0
 }
 
@@ -21,8 +21,8 @@ JoinHandle::init(raw<RawTask>){
 fn register_join_waker(raw<RawTask>, ctx<u64>) i32 {
     cell<Cell> = raw.cell
     cell.join_ctx_packed = ctx
-    h<Header> = raw.hdr
-    st<State> = h.state
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
     return st.set_join_waker()
 }
 
@@ -32,15 +32,15 @@ fn register_join_waker(raw<RawTask>, ctx<u64>) i32 {
 //   - task not done yet  -> arm join waker, PollPending
 //   - task done          -> read output via vtable, mark consumed, PollReady
 JoinHandle::poll(ctx){
-    if this.raw == null {
+    if this.task_ptr == null {
         return runtime.PollReady, aerr.AlreadyConsumed
     }
     if this.consumed == 1 {
         return runtime.PollReady, aerr.AlreadyConsumed
     }
-    raw<RawTask> = this.raw
-    h<Header> = raw.hdr
-    st<State> = h.state
+    raw<RawTask> = this.task_ptr
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
     snap<i32> = st.load()
 
     if (snap & COMPLETE) == 0 {
@@ -48,8 +48,8 @@ JoinHandle::poll(ctx){
         return runtime.PollPending
     }
 
-    vt<RawVTable> = raw.vtable
-    read_fc<vtable_try_read_output> = vt.try_read_output
+    vt<RawVTable> = raw.vt
+    read_fc<vtable_try_read_output> = vt.read_output
     err<i32>, val<i64> = read_fc(raw)
     this.consumed = 1
     if err == 0 {

@@ -18,8 +18,8 @@ fn future_poll(fut, ctx<u64>) (i64, i64)
 // Run one polling round on raw. ctx packs (scheduler_handle, task_id);
 // harness does not interpret it but threads it through to the future.
 fn harness_poll(raw<RawTask>, ctx<u64>){
-    h<Header> = raw.hdr
-    st<State> = h.state
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
     snap<i32> = st.transition_to_running()
     if snap == TR_Cancelled {
         harness_complete(raw, aerr.Cancelled, 0)
@@ -29,7 +29,7 @@ fn harness_poll(raw<RawTask>, ctx<u64>){
         return
     }
     if snap == TR_Dealloc {
-        vt<RawVTable> = raw.vtable
+        vt<RawVTable> = raw.vt
         dealloc_fc<vtable_dealloc> = vt.dealloc
         dealloc_fc(raw)
         return
@@ -47,15 +47,15 @@ fn harness_poll(raw<RawTask>, ctx<u64>){
     if ready == runtime.PollPending {
         idle<i32> = st.transition_to_idle()
         if idle == TI_OkNotified {
-            if h.scheduler != 0 {
-                sched<Schedule> = h.scheduler
+            if hd.scheduler != 0 {
+                sched<Schedule> = hd.scheduler
                 n<Notified> = notified_from_raw(raw)
                 sched.schedule(n)
             }
             return
         }
         if idle == TI_OkDealloc {
-            vt<RawVTable> = raw.vtable
+            vt<RawVTable> = raw.vt
             fc_dealloc<vtable_dealloc> = vt.dealloc
             fc_dealloc(raw)
             return
@@ -78,8 +78,8 @@ fn harness_poll(raw<RawTask>, ctx<u64>){
 // a side channel JoinHandle picks up.
 fn harness_complete(raw<RawTask>, err<i32>, output<i64>){
     cell<Cell> = raw.cell
-    h<Header> = raw.hdr
-    st<State> = h.state
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
 
     cell.store_output(output)
     st.transition_to_complete()
@@ -91,7 +91,7 @@ fn harness_complete(raw<RawTask>, err<i32>, output<i64>){
     wake_join_waker(raw)
 
     if st.ref_dec() != 0 {
-        vt<RawVTable> = raw.vtable
+        vt<RawVTable> = raw.vt
         dealloc_fc<vtable_dealloc> = vt.dealloc
         dealloc_fc(raw)
     }
@@ -100,8 +100,8 @@ fn harness_complete(raw<RawTask>, err<i32>, output<i64>){
 // Idempotent join-waker kick: JOIN_WAKER is cleared on the first wake so a
 // second completion path no-ops. Re-enqueue the task as the wake hook.
 fn wake_join_waker(raw<RawTask>){
-    h<Header> = raw.hdr
-    st<State> = h.state
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
     snap<i32> = st.load()
     if (snap & JOIN_WAKER) == 0 return
 
@@ -109,9 +109,9 @@ fn wake_join_waker(raw<RawTask>){
     ctx<u64> = cell.join_ctx_packed
     st.unset_join_waker()
 
-    if h.scheduler == 0 return
+    if hd.scheduler == 0 return
     if ctx == 0 return
-    sched<Schedule> = h.scheduler
+    sched<Schedule> = hd.scheduler
     n<Notified> = notified_from_raw(raw)
     sched.schedule(n)
 }
@@ -119,10 +119,10 @@ fn wake_join_waker(raw<RawTask>){
 // Default vtable.dealloc: null out cross references so future use surfaces
 // as a clear crash. Real GC integration is follow-up work.
 fn harness_dealloc_default(raw<RawTask>){
-    raw.hdr     = null
+    raw.head_meta = null
     raw.fut     = null
     raw.cell    = null
-    raw.vtable  = null
+    raw.vt  = null
 }
 
 // Default vtable.try_read_output: bridges Cell::take_output.
@@ -134,10 +134,10 @@ fn harness_try_read_output_default(raw<RawTask>) i32, i64 {
 
 // Default vtable.drop_join_handle_slow: drop one ref; dealloc on zero.
 fn harness_drop_join_handle_slow_default(raw<RawTask>){
-    h<Header> = raw.hdr
-    st<State> = h.state
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
     if st.ref_dec() != 0 {
-        vt<RawVTable> = raw.vtable
+        vt<RawVTable> = raw.vt
         dealloc_fc<vtable_dealloc> = vt.dealloc
         dealloc_fc(raw)
     }
@@ -145,13 +145,13 @@ fn harness_drop_join_handle_slow_default(raw<RawTask>){
 
 // Default vtable.shutdown: set CANCELLED and ensure one schedule kick fires.
 fn harness_shutdown_default(raw<RawTask>){
-    h<Header> = raw.hdr
-    st<State> = h.state
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
     st.set_cancelled()
     code<i32> = st.transition_to_notified_by_ref()
     if code == TN_Submit {
-        if h.scheduler != 0 {
-            sched<Schedule> = h.scheduler
+        if hd.scheduler != 0 {
+            sched<Schedule> = hd.scheduler
             n<Notified> = notified_from_raw(raw)
             sched.schedule(n)
         }

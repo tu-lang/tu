@@ -8,17 +8,47 @@ use runtime
 mem RawVTable {
     u64 poll                    // (raw, ctx)
     u64 dealloc                 // (raw)
-    u64 try_read_output         // (raw) -> (i32, i64)
+    u64 read_output             // (raw) -> (i32, i64)
     u64 drop_join_handle_slow   // (raw)
     u64 shutdown                // (raw)
 }
 
 // Aggregate view used by every scheduler / harness call site.
 mem RawTask {
-    Header* hdr
+    Header* head_meta
     runtime.Future* fut
     Cell* cell
-    RawVTable* vtable           // points at the shared default vtable
+    RawVTable* vt           // points at the shared default vtable
+}
+
+// Return the fixed metadata block for this task.
+RawTask::meta() Header {
+    return this.head_meta
+}
+
+// Return the output cell backing this task.
+RawTask::cell_ptr() Cell {
+    return this.cell
+}
+
+// Return the shared vtable pointer.
+RawTask::vt_ptr() RawVTable {
+    return this.vt
+}
+
+// Set CANCELLED and enqueue one wake if needed.
+RawTask::abort_signal(){
+    life_st<State> = this.head_meta.life_state
+    life_st.set_cancelled()
+    code<i32> = life_st.transition_to_notified_by_ref()
+    if code == TN_Submit {
+        sched_bits<u64> = this.head_meta.scheduler
+        if sched_bits != 0 {
+            sched<Schedule> = sched_bits
+            n<Notified> = notified_from_raw(this)
+            sched.schedule(n)
+        }
+    }
 }
 
 // Module-level singleton; lazily allocated so package init can populate it.
@@ -30,7 +60,7 @@ fn raw_vtable_default() RawVTable {
         v<RawVTable> = new RawVTable
         v.poll                  = 0
         v.dealloc               = 0
-        v.try_read_output       = 0
+        v.read_output       = 0
         v.drop_join_handle_slow = 0
         v.shutdown              = 0
         default_vtable = v
@@ -43,14 +73,14 @@ fn raw_vtable_default() RawVTable {
 fn raw_vtable_install(
     poll<u64>,
     dealloc<u64>,
-    try_read_output<u64>,
+    read_output<u64>,
     drop_join_handle_slow<u64>,
     shutdown<u64>
 ){
     v<RawVTable> = raw_vtable_default()
     v.poll                  = poll
     v.dealloc               = dealloc
-    v.try_read_output       = try_read_output
+    v.read_output       = read_output
     v.drop_join_handle_slow = drop_join_handle_slow
     v.shutdown              = shutdown
 }
@@ -66,10 +96,10 @@ fn raw_new(fut, scheduler, task_id<u64>) RawTask {
     cell<Cell> = Cell::new(hdr, fut)
 
     raw<RawTask> = new RawTask
-    raw.hdr    = hdr
+    raw.head_meta = hdr
     raw.fut    = fut
     raw.cell   = cell
-    raw.vtable = raw_vtable_default()
+    raw.vt = raw_vtable_default()
     return raw
 }
 

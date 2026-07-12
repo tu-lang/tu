@@ -6,13 +6,13 @@
 
 // O(1) append at tail.
 fn task_list_push_back(head_ptr<u64*>, tail_ptr<u64*>, raw<RawTask>){
-    h<Header> = raw.hdr
-    h.queue_next = null
+    hd<Header> = raw.head_meta
+    hd.queue_next = null
     t_bits<u64> = *tail_ptr
     t<RawTask> = t_bits.(RawTask)
     if t != null {
-        prev<Header> = t.hdr
-        prev.queue_next = raw
+        prev_hd<Header> = t.head_meta
+        prev_hd.queue_next = raw
     } else {
         *head_ptr = raw.(u64)
     }
@@ -25,13 +25,13 @@ fn task_list_pop_front(head_ptr<u64*>, tail_ptr<u64*>) RawTask {
     head_bits<u64> = *head_ptr
     raw<RawTask> = head_bits.(RawTask)
     if raw == null return null
-    h<Header> = raw.hdr
-    nxt<RawTask> = h.queue_next
-    *head_ptr = nxt.(u64)
-    if nxt == null {
+    hd<Header> = raw.head_meta
+    nxt_task<RawTask> = hd.queue_next
+    *head_ptr = nxt_task.(u64)
+    if nxt_task == null {
         *tail_ptr = 0
     }
-    h.queue_next = null
+    hd.queue_next = null
     return raw
 }
 
@@ -40,4 +40,3 @@ fn task_list_is_empty(head_ptr<u64*>) i32 {
     if *head_ptr == 0 return 1
     return 0
 }
-

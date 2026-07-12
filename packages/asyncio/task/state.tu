@@ -59,24 +59,24 @@ State::load() i32 {
 
 // Bit accessors over a snapshot value (pure helpers).
 fn st_is_running(v<i32>) i32 {
-    if (v & RUNNING) != 0 return true
-    return false
+    if (v & RUNNING) != 0 return 1
+    return 0
 }
 fn st_is_complete(v<i32>) i32 {
-    if (v & COMPLETE) != 0 return true
-    return false
+    if (v & COMPLETE) != 0 return 1
+    return 0
 }
 fn st_is_notified(v<i32>) i32 {
-    if (v & NOTIFIED) != 0 return true
-    return false
+    if (v & NOTIFIED) != 0 return 1
+    return 0
 }
 fn st_is_cancelled(v<i32>) i32 {
-    if (v & CANCELLED) != 0 return true
-    return false
+    if (v & CANCELLED) != 0 return 1
+    return 0
 }
 fn st_is_join_interested(v<i32>) i32 {
-    if (v & JOIN_INTEREST) != 0 return true
-    return false
+    if (v & JOIN_INTEREST) != 0 return 1
+    return 0
 }
 fn st_ref_count(v<i32>) i32 {
     return (v & REF_COUNT_MASK) >> REF_COUNT_SHIFT.(u32)
@@ -90,8 +90,8 @@ State::transition_to_running() i32 {
         if (cur & CANCELLED) != 0 return TR_Cancelled
         if (cur & RUNNING) != 0   return TR_Failed
         if (cur & COMPLETE) != 0  return TR_Failed
-        newv<i32> = (cur | RUNNING) & (~NOTIFIED)
-        if atomic.cas(&this.val, cur, newv) != 0 return TR_Success
+        new_state<i32> = (cur | RUNNING) & (~NOTIFIED)
+        if atomic.cas(&this.val, cur, new_state) != 0 return TR_Success
     }
     return TR_Failed
 }
@@ -102,13 +102,13 @@ State::transition_to_idle() i32 {
     loop {
         cur<i32> = atomic.load(&this.val)
         if (cur & CANCELLED) != 0 {
-            newv<i32> = cur & (~RUNNING)
-            if atomic.cas(&this.val, cur, newv) != 0 return TI_Cancelled
+            new_state<i32> = cur & (~RUNNING)
+            if atomic.cas(&this.val, cur, new_state) != 0 return TI_Cancelled
             continue
         }
         notified<i32> = cur & NOTIFIED
-        newv<i32> = cur & (~RUNNING)
-        if atomic.cas(&this.val, cur, newv) != 0 {
+        new_state<i32> = cur & (~RUNNING)
+        if atomic.cas(&this.val, cur, new_state) != 0 {
             if notified != 0 return TI_OkNotified
             return TI_Ok
         }
@@ -120,8 +120,8 @@ State::transition_to_idle() i32 {
 State::transition_to_complete() i32 {
     loop {
         cur<i32> = atomic.load(&this.val)
-        newv<i32> = (cur & (~RUNNING)) | COMPLETE
-        if atomic.cas(&this.val, cur, newv) != 0 return 0
+        new_state<i32> = (cur & (~RUNNING)) | COMPLETE
+        if atomic.cas(&this.val, cur, new_state) != 0 return 0
     }
     return 0
 }
@@ -130,12 +130,12 @@ State::transition_to_complete() i32 {
 State::ref_inc(){
     loop {
         cur<i32> = atomic.load(&this.val)
-        newv<i32> = cur + REF_ONE
-        if (newv & REF_COUNT_MASK) == 0 {
+        new_state<i32> = cur + REF_ONE
+        if (new_state & REF_COUNT_MASK) == 0 {
             os.die("task.state ref_inc overflow")
             return
         }
-        if atomic.cas(&this.val, cur, newv) != 0 return
+        if atomic.cas(&this.val, cur, new_state) != 0 return
     }
 }
 
@@ -148,9 +148,9 @@ State::ref_dec() i32 {
             os.die("task.state ref_dec underflow")
             return 0
         }
-        newv<i32> = cur - REF_ONE
-        if atomic.cas(&this.val, cur, newv) != 0 {
-            if (newv & REF_COUNT_MASK) == 0 return 1
+        new_state<i32> = cur - REF_ONE
+        if atomic.cas(&this.val, cur, new_state) != 0 {
+            if (new_state & REF_COUNT_MASK) == 0 return 1
             return 0
         }
     }
@@ -168,15 +168,15 @@ State::transition_to_notified_by_val() i32 {
                 os.die("task.state ref_dec underflow")
                 return TN_DoNothing
             }
-            newv<i32> = cur - REF_ONE
-            if atomic.cas(&this.val, cur, newv) != 0 {
-                if (newv & REF_COUNT_MASK) == 0 return TN_Dealloc
+            new_state<i32> = cur - REF_ONE
+            if atomic.cas(&this.val, cur, new_state) != 0 {
+                if (new_state & REF_COUNT_MASK) == 0 return TN_Dealloc
                 return TN_DoNothing
             }
             continue
         }
-        newv<i32> = cur | NOTIFIED
-        if atomic.cas(&this.val, cur, newv) != 0 return TN_Submit
+        new_state<i32> = cur | NOTIFIED
+        if atomic.cas(&this.val, cur, new_state) != 0 return TN_Submit
     }
     return TN_DoNothing
 }
@@ -187,8 +187,8 @@ State::transition_to_notified_by_ref() i32 {
         cur<i32> = atomic.load(&this.val)
         already<i32> = cur & (RUNNING | COMPLETE | NOTIFIED)
         if already != 0 return TN_DoNothing
-        newv<i32> = cur | NOTIFIED
-        if atomic.cas(&this.val, cur, newv) != 0 return TN_Submit
+        new_state<i32> = cur | NOTIFIED
+        if atomic.cas(&this.val, cur, new_state) != 0 return TN_Submit
     }
     return TN_DoNothing
 }
@@ -198,8 +198,8 @@ State::set_join_waker() i32 {
     loop {
         cur<i32> = atomic.load(&this.val)
         if (cur & JOIN_WAKER) != 0 return 1
-        newv<i32> = cur | JOIN_WAKER
-        if atomic.cas(&this.val, cur, newv) != 0 return 0
+        new_state<i32> = cur | JOIN_WAKER
+        if atomic.cas(&this.val, cur, new_state) != 0 return 0
     }
     return 0
 }
@@ -208,8 +208,8 @@ State::set_join_waker() i32 {
 State::unset_join_waker(){
     loop {
         cur<i32> = atomic.load(&this.val)
-        newv<i32> = cur & (~JOIN_WAKER)
-        if atomic.cas(&this.val, cur, newv) != 0 return
+        new_state<i32> = cur & (~JOIN_WAKER)
+        if atomic.cas(&this.val, cur, new_state) != 0 return
     }
 }
 
@@ -218,7 +218,6 @@ State::set_cancelled(){
     loop {
         cur<i32> = atomic.load(&this.val)
         if (cur & CANCELLED) != 0 return
-        newv<i32> = cur | CANCELLED
-        if atomic.cas(&this.val, cur, newv) != 0 return
+        if atomic.cas(&this.val, cur, (cur | CANCELLED)) != 0 return
     }
 }

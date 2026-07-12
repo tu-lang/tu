@@ -12,6 +12,11 @@ const AtomicCell::new(v<u64>) AtomicCell {
     return new AtomicCell { slot: v }
 }
 
+// Package-level bridge for cross-package callers (no alias.Type::method).
+fn atomic_cell_new(v<u64>) AtomicCell {
+    return AtomicCell::new(v)
+}
+
 // Unconditionally store v. Emulates xchg64 via a cas64 retry loop.
 AtomicCell::set(v<u64>){
     loop {
@@ -30,7 +35,7 @@ AtomicCell::take() u64 {
 }
 
 // Compare-and-swap. Returns true on success.
-AtomicCell::cas(old<u64>, newv<u64>) bool {
-    if atomic.cas64(&this.slot, old, newv) != 0 return true
-    return false
+AtomicCell::cas(old<u64>, nxt<u64>) i32 {
+    if atomic.cas64(&this.slot, old, nxt) != 0 return 1
+    return 0
 }
