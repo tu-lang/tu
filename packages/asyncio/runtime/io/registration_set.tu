@@ -1,6 +1,8 @@
 // Owns every ScheduledIo allocated by the IO driver. Linked via
 // ScheduledIo.linked_list_pointers so shutdown can drain them all.
 
+use asyncio.util as util
+
 use runtime
 use netio
 
@@ -53,26 +55,26 @@ RegistrationSet::allocate(interest<netio.Interest>) (i32, ScheduledIo) {
 RegistrationSet::release(sio<ScheduledIo>){
     this.lock.lock()
     s<RegistrationSetSynced> = this.synced
-    p<Pointers> = sio.linked_list_pointers
+    p<util.Pointers> = sio.linked_list_pointers
     if p.prev != null {
-        prev_node<Pointers> = p.prev
+        prev_node<util.Pointers> = p.prev
         prev_node.next = p.next
     } else {
         if p.next == null {
             s.head = null
         } else {
-            nxt<Pointers> = p.next
+            nxt<util.Pointers> = p.next
             s.head = nxt.(ScheduledIo)
         }
     }
     if p.next != null {
-        next_node<Pointers> = p.next
+        next_node<util.Pointers> = p.next
         next_node.prev = p.prev
     } else {
         if p.prev == null {
             s.tail = null
         } else {
-            prv<Pointers> = p.prev
+            prv<util.Pointers> = p.prev
             s.tail = prv.(ScheduledIo)
         }
     }
@@ -92,7 +94,7 @@ RegistrationSet::drain_all_for_shutdown(){
     // Drop the lock before calling shutdown; shutdown grabs ScheduledIo's
     // own waiters_lock, and reactor wake-ups must run unsynchronised.
     while cur != null {
-        nxt_node<Pointers> = cur.linked_list_pointers.next
+        nxt_node<util.Pointers> = cur.linked_list_pointers.next
         cur.shutdown()
         if nxt_node == null break
         cur = nxt_node.(ScheduledIo)

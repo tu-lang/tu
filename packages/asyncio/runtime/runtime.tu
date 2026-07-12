@@ -2,7 +2,10 @@
 // release the held drivers + blocking pool. Runtime::handle returns a
 // weak Handle suitable for cloning across threads.
 
+use sys
 use asyncio.task
+use asyncio.runtime.scheduler as sched
+use asyncio.runtime.blocking as rtblk
 
 KIND_CURRENT_THREAD<i32> = 0
 KIND_MULTI_THREAD<i32>   = 1
@@ -13,8 +16,8 @@ mem Runtime {
     Handle*       weak_handle
     DriverHandle* driver_handle
     Driver*       driver
-    Spawner*      blocking_spawner
-    BlockingPool* blocking_pool
+    rtblk.Spawner*      blocking_spawner
+    rtblk.BlockingPool* blocking_pool
     u64           scheduler_handle    // raw bits of CtHandle* / MtHandle*
     i32           shutdown_state      // 0 = running, 1 = shutting down, 2 = done
 }
@@ -26,8 +29,8 @@ const Runtime::compose(
     weak<Handle>,
     drv<Driver>,
     drv_h<DriverHandle>,
-    sp<Spawner>,
-    pool<BlockingPool>,
+    sp<rtblk.Spawner>,
+    pool<rtblk.BlockingPool>,
     sched<u64>
 ) Runtime {
     r<Runtime> = new Runtime
@@ -51,19 +54,25 @@ Runtime::handle() Handle {
 // driver since block_on is inherently single-threaded.
 Runtime::block_on(fut) (i32, i64) {
     if this.kind == KIND_CURRENT_THREAD {
-        ct<CtHandle> = this.scheduler_handle.(CtHandle)
-        return block_on(ct, fut)
+        ct<sched.CtHandle> = this.scheduler_handle.(sched.CtHandle)
+        err<i32> = 0
+        val<i64> = 0
+        err, val = sched.block_on(ct, fut)
+        return err, val
     }
-    return this.weak_handle.block_on(fut)
+    err2<i32> = 0
+    val2<i64> = 0
+    err2, val2 = this.weak_handle.block_on(fut)
+    return err2, val2
 }
 
 // Spawn a future via the active scheduler.
-Runtime::spawn(fut) JoinHandle {
+Runtime::spawn(fut) task.JoinHandle {
     return this.weak_handle.spawn(fut)
 }
 
 // Spawn a blocking closure.
-Runtime::spawn_blocking(op<u64>) JoinHandle {
+Runtime::spawn_blocking(op<u64>) task.JoinHandle {
     return this.weak_handle.spawn_blocking(op)
 }
 
@@ -74,10 +83,10 @@ Runtime::shutdown_timeout(d<sys.Duration>){
     if this.shutdown_state == 2 return
     this.shutdown_state = 1
     if this.kind == KIND_CURRENT_THREAD {
-        ct<CtHandle> = this.scheduler_handle.(CtHandle)
+        ct<sched.CtHandle> = this.scheduler_handle.(sched.CtHandle)
         ct.shared.inject.close()
     } else {
-        mh<MtHandle> = this.scheduler_handle.(MtHandle)
+        mh<sched.MtHandle> = this.scheduler_handle.(sched.MtHandle)
         mh.shared.inject.close()
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
@@ -90,14 +99,13 @@ Runtime::shutdown_background(){
     if this.shutdown_state == 2 return
     this.shutdown_state = 1
     if this.kind == KIND_CURRENT_THREAD {
-        ct<CtHandle> = this.scheduler_handle.(CtHandle)
+        ct<sched.CtHandle> = this.scheduler_handle.(sched.CtHandle)
         ct.shared.inject.close()
     } else {
-        mh<MtHandle> = this.scheduler_handle.(MtHandle)
+        mh<sched.MtHandle> = this.scheduler_handle.(sched.MtHandle)
         mh.shared.inject.close()
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
     if this.driver != null this.driver.shutdown(this.driver_handle)
     this.shutdown_state = 2
 }
-

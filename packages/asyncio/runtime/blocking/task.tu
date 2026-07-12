@@ -10,14 +10,14 @@ fn blocking_op() (u64)
 // Backing structure for one spawn_blocking submission.
 mem BlockingTask {
     u64       closure_bits    // raw bits of blocking closure (fn blocking_op)
-    RawTask*  raw             // task identity wired to a BlockingSchedule
+    RawTask*  task_ptr        // task identity wired to a BlockingSchedule
 }
 
 // Build a task that, when run, executes op and stores the u64 result.
 const BlockingTask::new(op<u64>, raw<RawTask>) BlockingTask {
     t<BlockingTask> = new BlockingTask
     t.closure_bits = op
-    t.raw = raw
+    t.task_ptr = raw
     return t
 }
 
@@ -38,7 +38,7 @@ const BlockingTaskItem::new(task<BlockingTask>, mandatory<i32>) BlockingTaskItem
 
 // Run the closure, publish the result, and drop the run-queue ref.
 BlockingTask::run(){
-    raw<RawTask> = this.raw
+    raw<RawTask> = this.task_ptr
     cell<Cell>   = raw.cell
     cell.transition_to_running()
 
@@ -47,8 +47,8 @@ BlockingTask::run(){
     val<u64> = op_fc()
 
     cell.store_output(val.(i64))
-    h<Header> = raw.hdr
-    st<State> = h.state
+    hd<Header> = raw.head_meta
+    st<State> = hd.life_state
     st.transition_to_complete()
 
     // Wake any JoinHandle parked on the result. wake_join_waker no-ops
@@ -57,7 +57,7 @@ BlockingTask::run(){
 
     // Drop the run-queue ref; dealloc when it was the last one.
     if st.ref_dec() != 0 {
-        vt<RawVTable> = raw.vtable
+        vt<RawVTable> = raw.vt
         dealloc_fc<vtable_dealloc> = vt.dealloc
         dealloc_fc(raw)
     }

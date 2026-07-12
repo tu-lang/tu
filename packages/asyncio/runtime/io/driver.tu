@@ -4,6 +4,8 @@
 // Token reservations: 0 = wakeup (cross-thread eventfd), 1 = signal driver.
 // All other tokens are ScheduledIo* cast to u64.
 
+use asyncio.util as util
+
 use runtime
 use std.atomic
 use io as libio
@@ -132,7 +134,7 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
         sio<ScheduledIo> = token.(ScheduledIo)
         ready<Ready> = ready_from_event(ev)
         sio.set_readiness(TICK_INC, ready.bits)
-        wakes<WakeList> = sio.wake(ready)
+        wakes<util.WakeList> = sio.wake(ready)
         // The reactor surfaces ctx_packed values to its caller; the
         // current first-pass impl drops them here because the scheduler
         // glue layer (task 11.x) has not landed yet. Once the runtime
@@ -150,7 +152,7 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
 
 // Drop pending wakes without scheduling. Used during reactor shutdown
 // once the scheduler is gone.
-WakeList::wake_by_ref(){
+util.WakeList::wake_by_ref(){
     this.len = 0
 }
 

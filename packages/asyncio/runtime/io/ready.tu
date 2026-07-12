@@ -40,39 +40,39 @@ fn ready_from_event(ev<netio.Event>) Ready {
 }
 
 // True when no bits are set.
-Ready::is_empty() bool {
-    if this.bits == 0 return true
-    return false
+Ready::is_empty() i32 {
+    if this.bits == 0 return 1
+    return 0
 }
 
-Ready::is_readable() bool {
-    if (this.bits & READABLE) != 0 return true
-    return false
+Ready::is_readable() i32 {
+    if (this.bits & READABLE) != 0 return 1
+    return 0
 }
 
-Ready::is_writable() bool {
-    if (this.bits & WRITABLE) != 0 return true
-    return false
+Ready::is_writable() i32 {
+    if (this.bits & WRITABLE) != 0 return 1
+    return 0
 }
 
-Ready::is_read_closed() bool {
-    if (this.bits & READ_CLOSED) != 0 return true
-    return false
+Ready::is_read_closed() i32 {
+    if (this.bits & READ_CLOSED) != 0 return 1
+    return 0
 }
 
-Ready::is_write_closed() bool {
-    if (this.bits & WRITE_CLOSED) != 0 return true
-    return false
+Ready::is_write_closed() i32 {
+    if (this.bits & WRITE_CLOSED) != 0 return 1
+    return 0
 }
 
-Ready::is_error() bool {
-    if (this.bits & ERROR) != 0 return true
-    return false
+Ready::is_error() i32 {
+    if (this.bits & ERROR) != 0 return 1
+    return 0
 }
 
-Ready::is_priority() bool {
-    if (this.bits & PRIORITY) != 0 return true
-    return false
+Ready::is_priority() i32 {
+    if (this.bits & PRIORITY) != 0 return 1
+    return 0
 }
 
 // Bitwise OR with another Ready; returns a fresh value.
@@ -89,11 +89,10 @@ Ready::without(mask<Ready>) Ready {
 // avoid clearing bits set after the snapshot was taken.
 mem ReadyEvent {
     i32 tick
-    Ready ready
+    Ready* ready
 }
 
 // Build a ReadyEvent from tick + ready.
 const ReadyEvent::new(tick<i32>, ready<Ready>) ReadyEvent {
     return new ReadyEvent { tick: tick, ready: ready }
 }
-

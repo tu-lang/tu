@@ -6,13 +6,13 @@ use runtime as rtcore
 use std.atomic
 use sys
 
-EMPTY_PARK<u32>   = 0
-PARKED_PARK<u32>  = 1
-NOTIFIED_PARK<u32> = 2
+EMPTY_PARK<i32>   = 0
+PARKED_PARK<i32>  = 1
+NOTIFIED_PARK<i32> = 2
 
 // Per-thread park slot.
 mem CachedParkThread {
-    u32          state    // atomic
+    i32          state    // atomic
     rtcore.Note note
 }
 
@@ -26,13 +26,13 @@ const CachedParkThread::new() CachedParkThread {
 
 // Block until somebody calls unpark.
 CachedParkThread::park(){
-    addr<u32*> = &this.state
-    if atomic.cas(addr.(i32*), NOTIFIED_PARK.(i32), EMPTY_PARK.(i32)) != 0 return
-    if atomic.cas(addr.(i32*), EMPTY_PARK.(i32), PARKED_PARK.(i32)) == 0 return
+    addr<i32*> = &this.state
+    if atomic.cas(addr, NOTIFIED_PARK, EMPTY_PARK) != 0 return
+    if atomic.cas(addr, EMPTY_PARK, PARKED_PARK) == 0 return
     this.note.Sleep()
     this.note.Clear()
-    atomic.cas(addr.(i32*), PARKED_PARK.(i32), EMPTY_PARK.(i32))
-    atomic.cas(addr.(i32*), NOTIFIED_PARK.(i32), EMPTY_PARK.(i32))
+    atomic.cas(addr, PARKED_PARK, EMPTY_PARK)
+    atomic.cas(addr, NOTIFIED_PARK, EMPTY_PARK)
 }
 
 // Park up to `d`. First-pass forwards to plain park; the IO/time driver
@@ -43,9 +43,9 @@ CachedParkThread::park_timeout(d<sys.Duration>){
 
 // Wake the parker. Idempotent.
 CachedParkThread::unpark(){
-    addr<u32*> = &this.state
-    if atomic.cas(addr.(i32*), EMPTY_PARK.(i32), NOTIFIED_PARK.(i32)) != 0 return
-    if atomic.cas(addr.(i32*), PARKED_PARK.(i32), NOTIFIED_PARK.(i32)) != 0 {
+    addr<i32*> = &this.state
+    if atomic.cas(addr, EMPTY_PARK, NOTIFIED_PARK) != 0 return
+    if atomic.cas(addr, PARKED_PARK, NOTIFIED_PARK) != 0 {
         this.note.Wake()
     }
 }

@@ -20,9 +20,8 @@ mem ShutdownReceiver {
     ShutdownInner* inner
 }
 
-// Build a fresh (Sender, Receiver) pair sharing one Inner. `new
-// ShutdownInner` already returns the heap pointer, so pass it through.
-const shutdown_channel() (ShutdownSender, ShutdownReceiver) {
+// Build a fresh (Sender, Receiver) pair sharing one Inner.
+fn shutdown_channel() (ShutdownSender, ShutdownReceiver) {
     inner<ShutdownInner> = new ShutdownInner
     inner.done = 0
     inner.lock = new runtime.MutexInter

@@ -7,6 +7,8 @@ use std.atomic
 use io as libio
 use netio
 
+use asyncio.util as util
+
 // readiness packing: [shutdown:1 | tick:15 | readiness:16].
 READINESS_BITS<i32> = 16
 TICK_BITS<i32>      = 15
@@ -24,17 +26,17 @@ TICK_INC<i32> = 1
 
 // Pre-built bit packs over the readiness u64. Built lazily in package
 // init() since module-level expressions are not a Tu convention.
-ready_pack<Pack>    = null
-tick_pack<Pack>     = null
-shutdown_pack<Pack> = null
+ready_pack<util.Pack>    = null
+tick_pack<util.Pack>     = null
+shutdown_pack<util.Pack> = null
 
 // Wire the bit-pack singletons. Called once on package load.
 // Pack::least_significant / Pack::then return heap pointers; assign them
 // directly to the module slots (no `&r` — that would be a stack address).
 func init(){
-    r<Pack> = Pack::least_significant(READINESS_BITS)
-    t<Pack> = r.then(TICK_BITS)
-    s<Pack> = t.then(SHUTDOWN_BITS)
+    r<util.Pack> = util.Pack::least_significant(READINESS_BITS)
+    t<util.Pack> = r.then(TICK_BITS)
+    s<util.Pack> = t.then(SHUTDOWN_BITS)
     ready_pack    = r
     tick_pack     = t
     shutdown_pack = s
@@ -42,7 +44,7 @@ func init(){
 
 // One queued waiter on a ScheduledIo. Embedded via Pointers at offset 0.
 mem Waiter {
-    Pointers       node           // intrusive prev/next; must stay at offset 0
+    util.Pointers       node           // intrusive prev/next; must stay at offset 0
     u64            ctx_packed     // (sched, task_id) the driver re-schedules
     netio.Interest interest       // bits the waiter cares about
     i32            is_ready       // 1 once ScheduledIo::wake matched this waiter
@@ -63,7 +65,7 @@ const Waiter::new(ctx<u64>, interest<netio.Interest>) Waiter {
 // list via linked_list_pointers. Tokens registered with netio.Registry
 // are ScheduledIo* cast to u64.
 mem ScheduledIo {
-    Pointers           linked_list_pointers
+    util.Pointers           linked_list_pointers
     u64                readiness        // atomic; packed bits above
     runtime.MutexInter* waiters_lock
     LinkedList*        waiters          // intrusive list of Waiter
@@ -79,7 +81,7 @@ const ScheduledIo::new() ScheduledIo {
     s.readiness = 0
     s.waiters_lock = new runtime.MutexInter
     s.waiters_lock.init()
-    s.waiters    = LinkedList::new()
+    s.waiters    = util.LinkedList::new()
     s.reader_ctx = 0
     s.writer_ctx = 0
     return s
@@ -102,9 +104,9 @@ fn unpack_shutdown(pack<u64>) i32 {
 }
 
 // True when SHUTDOWN bit is set in pack.
-fn pack_is_shutdown(pack<u64>) bool {
-    if unpack_shutdown(pack) != 0 return true
-    return false
+fn pack_is_shutdown(pack<u64>) i32 {
+    if unpack_shutdown(pack) != 0 return 1
+    return 0
 }
 
 // CAS retry that combines new_ready bits with the previous ready bits via
@@ -124,9 +126,9 @@ ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
             next_tick = (next_tick + 1) & 0x7FFF
         }
 
-        newv<u64> = ready_pack.pack(merged_ready.(u64), cur)
-        newv = tick_pack.pack(next_tick.(u64), newv)
-        if atomic.cas64(addr.(i64*), cur.(i64), newv.(i64)) != 0 return 0
+        nxt<u64> = ready_pack.pack(merged_ready.(u64), cur)
+        nxt = tick_pack.pack(next_tick.(u64), nxt)
+        if atomic.cas64(addr.(i64*), cur.(i64), nxt.(i64)) != 0 return 0
     }
     return 0
 }
@@ -151,8 +153,8 @@ fn interest_to_ready_mask(interest<netio.Interest>) i32 {
 // flagged is_ready=1 and their ctx is handed back to the caller via the
 // returned WakeList; reader_ctx / writer_ctx are also drained. The driver
 // schedules wakes outside the lock.
-ScheduledIo::wake(ready<Ready>) WakeList {
-    out<WakeList> = new WakeList
+ScheduledIo::wake(ready<Ready>) util.WakeList {
+    out<util.WakeList> = new util.WakeList
     out.init()
 
     this.waiters_lock.lock()
@@ -174,9 +176,9 @@ ScheduledIo::wake(ready<Ready>) WakeList {
 
     // Walk the waiter list FIFO; matched waiters are removed and queued for
     // schedule. Waiters whose interest does not overlap stay in place.
-    cur<Pointers> = this.waiters.head
+    cur<util.Pointers> = this.waiters.head
     while cur != null {
-        nxt<Pointers> = cur.next
+        nxt<util.Pointers> = cur.next
         w<Waiter> = cur.(Waiter)
         match_mask<i32> = interest_to_ready_mask(w.interest)
         if (ready.bits & match_mask) != 0 {
@@ -226,24 +228,24 @@ ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
         if unpack_tick(cur) != event.tick return 0
         cur_ready<i32> = unpack_ready_bits(cur)
         next_ready<i32> = cur_ready & (~event.ready.bits)
-        newv<u64> = ready_pack.pack(next_ready.(u64), cur)
-        if atomic.cas64(addr.(i64*), cur.(i64), newv.(i64)) != 0 return 0
+        nxt<u64> = ready_pack.pack(next_ready.(u64), cur)
+        if atomic.cas64(addr.(i64*), cur.(i64), nxt.(i64)) != 0 return 0
     }
     return 0
 }
 
 // Flip the SHUTDOWN bit and wake every waiter with OtherDriverTerminated.
 // All callers entering after shutdown observe the bit and bail out.
-ScheduledIo::shutdown() WakeList {
+ScheduledIo::shutdown() util.WakeList {
     addr<u64*> = &this.readiness
     loop {
         cur<u64> = atomic.load64(addr)
-        if pack_is_shutdown(cur) break
-        newv<u64> = shutdown_pack.pack(1, cur)
-        if atomic.cas64(addr.(i64*), cur.(i64), newv.(i64)) != 0 break
+        if pack_is_shutdown(cur) != 0 break
+        nxt<u64> = shutdown_pack.pack(1, cur)
+        if atomic.cas64(addr.(i64*), cur.(i64), nxt.(i64)) != 0 break
     }
 
-    out<WakeList> = new WakeList
+    out<util.WakeList> = new util.WakeList
     out.init()
     this.waiters_lock.lock()
 
@@ -256,9 +258,9 @@ ScheduledIo::shutdown() WakeList {
         this.writer_ctx = 0
     }
 
-    cur_node<Pointers> = this.waiters.head
+    cur_node<util.Pointers> = this.waiters.head
     while cur_node != null {
-        nxt<Pointers> = cur_node.next
+        nxt<util.Pointers> = cur_node.next
         w<Waiter> = cur_node.(Waiter)
         this.waiters.remove(cur_node)
         w.is_ready = 1
