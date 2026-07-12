@@ -192,8 +192,22 @@ Parser::parsePrimaryExpr()
         builtinfunc = new gen.BuiltinFuncExpr(reader.curLex.dyn(),int(reader.line),int(reader.column))
         this.next_expect( ast.LPAREN )
         reader.scan()
-        
-        if reader.curToken == ast.MUL {
+        if builtinfunc.funcname == "sizeof" {
+            // Primitive names are keywords; synthesize VarExpr for gen lookup.
+            if reader.curToken >= ast.I8 && reader.curToken <= ast.F64 {
+                builtinfunc.expr = new gen.VarExpr(
+                    reader.curLex.dyn(),
+                    int(reader.line),
+                    int(reader.column)
+                )
+                reader.scan()
+            } else if reader.curToken == ast.MUL {
+                reader.scan()
+                builtinfunc.expr = this.parseUnaryExpr()
+            } else {
+                builtinfunc.expr = this.parseExpression(1)
+            }
+        } else if reader.curToken == ast.MUL {
             builtinfunc.expr = this.parsePrimaryExpr()
         }else{
             builtinfunc.expr = this.parseExpression(1)

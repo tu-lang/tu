@@ -5,6 +5,8 @@ use std
 use compiler.utils
 use compiler.compile
 use compiler.internal
+use compiler.parser
+use compiler.parser.scanner
 
 class BuiltinFuncExpr : ast.Ast {
     funcname  = funcname
@@ -18,11 +20,22 @@ BuiltinFuncExpr::compile(ctx,load){
 	utils.debugf("gen.BuiltinFuncExpr::compile() funcname:%s",funcname)
 	match funcname {
 		"sizeof" : {
+			if type(this.expr) == type(DelRefExpr) {
+				this.check(false, "sizeof(*expr) is not supported yet")
+			}
 			this.check(
 				type(this.expr) == type(VarExpr),
 				"must be varexpr in sizeof()"
 			)
 			ve = this.expr
+			match ve.varname {
+				"i8" | "u8" | "i16" | "u16" | "i32" | "u32" |
+				"i64" | "u64" | "f32" | "f64" : {
+					tk = int(scanner.keywords[ve.varname])
+					compile.writeln("   mov $%d , %%rax", parser.typesize[tk])
+					return null
+				}
+			}
 			m = package.getStruct(ve.package,ve.varname)
 			this.check(m != null,"mem not exist")
 
