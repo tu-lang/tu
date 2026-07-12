@@ -1,8 +1,64 @@
 use fmt
 use os
+use std
 
 fn offsetof(ptr1<i64> , ptr2<i64>){
 	return ptr2  - ptr1
+}
+
+// Mixed-width probe for sizeof(Mem) alongside primitives in one layout.
+mem SizeProbe {
+	u32 events
+	u64 token
+}
+
+// Every i8..f64 primitive: compile-time constant and compare/codegen paths.
+fn test8(){
+	fmt.println("test8 primitive sizeof")
+
+	if sizeof(i8) != 1 os.die("sizeof i8")
+	if sizeof(i16) != 2 os.die("sizeof i16")
+	if sizeof(i32) != 4 os.die("sizeof i32")
+	if sizeof(i64) != 8 os.die("sizeof i64")
+	if sizeof(u8) != 1 os.die("sizeof u8")
+	if sizeof(u16) != 2 os.die("sizeof u16")
+	if sizeof(u32) != 4 os.die("sizeof u32")
+	if sizeof(u64) != 8 os.die("sizeof u64")
+	if sizeof(f32) != 4 os.die("sizeof f32")
+	if sizeof(f64) != 8 os.die("sizeof f64")
+
+	// == branch (not only !=) exercises binary compare codegen on builtins.
+	if sizeof(u64) == 8 {} else os.die("sizeof u64 eq")
+	if sizeof(f32) == 4 {} else os.die("sizeof f32 eq")
+
+	sz<i32> = sizeof(i64)
+	if sz != 8 os.die("sizeof assign i64")
+
+	fmt.println("test8 primitive sizeof success")
+}
+
+// sizeof in arithmetic, mem scaling, and malloc — patterns used by asyncio/runtime.
+fn test9(){
+	fmt.println("test9 sizeof arith and malloc")
+
+	if sizeof(u32) + sizeof(i32) != 8 os.die("primitive add")
+	if sizeof(u64) * 2 != 16 os.die("primitive mul literal")
+	n<u64> = 4
+	if sizeof(u64) * n != 32 os.die("primitive mul var")
+	if sizeof(SizeProbe) != 16 os.die("sizeof SizeProbe")
+	if sizeof(Demo) != 8 os.die("sizeof Demo")
+
+	p<u64> = std.malloc(sizeof(u64) * n)
+	if p == 0 os.die("malloc sizeof u64 scale")
+	q<u64> = std.malloc(sizeof(SizeProbe) * 2)
+	if q == 0 os.die("malloc sizeof mem scale")
+	r<u64> = std.malloc(sizeof(Demo) + sizeof(u32))
+	if r == 0 os.die("malloc sizeof mixed add")
+
+	// Mem sizeof still works in the same function as primitive sizeof.
+	if sizeof(T1) == 8 {} else os.die("sizeof T1 beside primitive")
+
+	fmt.println("test9 sizeof arith and malloc success")
 }
 
 mem T1 {
@@ -181,6 +237,8 @@ fn test7(){
 	fmt.println("test external static fn success")
 }
 fn main(){
+	test8()
+	test9()
 	test1()
 	test2()
 	test3()
