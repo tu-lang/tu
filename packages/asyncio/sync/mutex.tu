@@ -1,5 +1,5 @@
 // Async Mutex backed by BatchSemaphore(1). The guard re-permits via
-// release(); callers must invoke MutexGuard::release explicitly because
+// give_back(); callers must invoke MutexGuard::give_back explicitly because
 // TuLang has no Drop.
 
 // Async mutex over a u64 slot. Owners cast the slot via slot.(SomeMem).
@@ -16,7 +16,7 @@ const Mutex::new(value<u64>) Mutex {
     return m
 }
 
-// Guard handed back by lock(). MutexGuard::release re-permits the mutex.
+// Guard handed back by lock(). MutexGuard::give_back re-permits the mutex.
 mem MutexGuard {
     Mutex* m
 }
@@ -36,17 +36,17 @@ MutexGuard::set(value<u64>){
     this.m.slot = value
 }
 
-// Release the lock. Calling release twice is a logic error.
-MutexGuard::release(){
-    s<BatchSemaphore> = this.m.sem
-    s.release(1)
+// Release the lock. Calling give_back twice is a logic error.
+MutexGuard::give_back(){
+    batch_sem_release(this.m.sem, 1)
 }
 
 // Acquire the lock. Returns (0, MutexGuard) on success or (Closed, empty
 // guard) when the underlying semaphore was closed.
 async Mutex::lock(){
-    err<i32> = this.sem.acquire(1).await
+    fut<AcquireFut> = new AcquireFut
+    fut.init(this.sem, 1)
+    err<i32> = fut.await
     if err != 0 return err, new MutexGuard { m: null }
     return 0, MutexGuard::new(this)
 }
-

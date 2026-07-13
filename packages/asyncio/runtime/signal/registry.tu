@@ -4,7 +4,7 @@
 
 use std
 use asyncio.util
-use asyncio.sync
+use asyncio.sync as libsync
 
 // Linux supports up to 64 RT/standard signals (signum 1..63).
 NUM_SIGNALS<i32> = 64
@@ -21,7 +21,7 @@ mem EventInfo {
 const EventInfo::new(signum<i32>) EventInfo {
     e<EventInfo> = new EventInfo
     e.signum      = signum
-    e.notify_bits = notify_new_raw()
+    e.notify_bits = libsync.notify_new_raw()
     e.fired_count = 0
     return e
 }
@@ -71,6 +71,6 @@ EventInfo::fired_count_snapshot() u64 {
 // Called by SignalDriver::process when read(signalfd) returns siginfo.
 EventInfo::fire(){
     this.fired_count += 1
-    notify_waiters_raw(this.notify_bits)
+    libsync.notify_waiters_raw(this.notify_bits)
 }
 

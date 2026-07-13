@@ -14,7 +14,9 @@ mem Instant {
 const Instant::now() Instant {
     ts<std.TimeSpec:> = null
     std.clock_gettime(std.CLOCK_MONOTONIC, ts)
-    n<u64> = (ts.sec.(u64)) * 1000000000 + ts.nsec.(u64)
+    sec_v<i64> = ts.sec
+    nsec_v<i64> = ts.nsec
+    n<u64> = (sec_v.(u64)) * 1000000000 + nsec_v.(u64)
     return new Instant { ns_since_epoch: n }
 }
 

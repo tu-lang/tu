@@ -1,5 +1,5 @@
 // Async RwLock backed by BatchSemaphore(MAX_READERS). A reader claims one
-// permit; the writer claims all MAX_READERS at once. Guards must release
+// permit; the writer claims all MAX_READERS at once. Guards must give_back
 // explicitly (TuLang has no Drop).
 
 MAX_READERS<u32> = 0x10000     // 65536 concurrent readers cap
@@ -32,9 +32,8 @@ ReadGuard::get() u64 {
     return this.lock.slot
 }
 
-ReadGuard::release(){
-    s<BatchSemaphore> = this.lock.sem
-    s.release(1)
+ReadGuard::give_back(){
+    batch_sem_release(this.lock.sem, 1)
 }
 
 // Write guard; releases MAX_READERS permits.
@@ -54,22 +53,24 @@ WriteGuard::set(value<u64>){
     this.lock.slot = value
 }
 
-WriteGuard::release(){
-    s<BatchSemaphore> = this.lock.sem
-    s.release(MAX_READERS)
+WriteGuard::give_back(){
+    batch_sem_release(this.lock.sem, MAX_READERS)
 }
 
 // Acquire a shared lock. Returns (0, ReadGuard) or (Closed, empty guard).
 async RwLock::read(){
-    err<i32> = this.sem.acquire(1).await
+    fut<AcquireFut> = new AcquireFut
+    fut.init(this.sem, 1)
+    err<i32> = fut.await
     if err != 0 return err, new ReadGuard { lock: null }
     return 0, ReadGuard::new(this)
 }
 
 // Acquire an exclusive lock. Returns (0, WriteGuard) or (Closed, empty).
 async RwLock::write(){
-    err<i32> = this.sem.acquire(MAX_READERS).await
+    fut<AcquireFut> = new AcquireFut
+    fut.init(this.sem, MAX_READERS)
+    err<i32> = fut.await
     if err != 0 return err, new WriteGuard { lock: null }
     return 0, WriteGuard::new(this)
 }
-

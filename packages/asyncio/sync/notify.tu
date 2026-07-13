@@ -38,7 +38,7 @@ const NotifyWaiter::new(ctx<u64>) NotifyWaiter {
 // Notify itself. waiter_q is the queue of pending Notified futures; permit_slot
 // holds at most one queued permit when no waiter is around to consume it.
 mem Notify {
-    MutexInter* lock
+    runtime.MutexInter* lock
     i32         permit_slot    // permit slot; only NONE / ONE used
     LinkedList* waiter_q
 }
@@ -46,7 +46,7 @@ mem Notify {
 // Build an empty Notify in the NOTIFY_NONE state.
 const Notify::new() Notify {
     n<Notify> = new Notify
-    n.lock = new MutexInter
+    n.lock = new runtime.MutexInter
     n.lock.init()
     n.permit_slot = NOTIFY_NONE
     n.waiter_q    = LinkedList::new()
@@ -107,14 +107,14 @@ Notify::notify_waiters(){
 
 // Async leaf future returned by Notify::notified().
 mem Notified: async {
-    Notify*        parent
+    Notify*        owner_notify
     i32            stage   // NOTIFIED_STAGE_*
     NotifyWaiter*  waiter_node    // null until first poll links us
 }
 
 // Initialise the future before the first poll.
-Notified::init(parent<Notify>){
-    this.parent = parent
+Notified::init(owner_notify<Notify>){
+    this.owner_notify = owner_notify
     this.stage  = NOTIFIED_STAGE_INIT
     this.waiter_node = null
 }
@@ -122,7 +122,7 @@ Notified::init(parent<Notify>){
 // Three-stage state machine. INIT consumes a stashed permit if available;
 // WAITING checks the wake flag; DONE re-poll is a logic error.
 Notified::poll(ctx){
-    par<Notify> = this.parent
+    par<Notify> = this.owner_notify
     if this.stage == NOTIFIED_STAGE_INIT {
         par.lock.lock()
         if par.take_permit() != 0 {
@@ -162,7 +162,7 @@ async Notify::notified(){
 
 // Initialise from a cross-package u64 Notify* slot.
 Notified::init_from_bits(bits<u64>){
-    this.parent = bits.(Notify)
+    this.owner_notify = bits.(Notify)
     this.stage  = NOTIFIED_STAGE_INIT
     this.waiter_node = null
 }
@@ -187,5 +187,12 @@ fn notify_waiters_raw(bits<u64>) {
 fn notified_from_bits(bits<u64>) Notified {
     fut<Notified> = new Notified
     fut.init_from_bits(bits)
+    return fut
+}
+
+// Same-package helper: build Notified from a Notify heap pointer.
+fn notified_from_notify(n<Notify>) Notified {
+    fut<Notified> = new Notified
+    fut.init(n)
     return fut
 }

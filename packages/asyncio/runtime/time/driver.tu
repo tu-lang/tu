@@ -63,8 +63,8 @@ fn ms_to_duration(ms<u64>) sys.Duration {
     rem<u64>  = ms % 1000
     nanos<u32> = (rem * 1000000).(u32)
     return new sys.Duration {
-        secs:  secs,
-        nanos: new sys.Nanoseconds { inner: nanos },
+        secs: secs,
+        subsec_nano: new sys.Nanoseconds { bits: nanos },
     }
 }
 

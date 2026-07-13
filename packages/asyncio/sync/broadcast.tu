@@ -1,95 +1,112 @@
-// Multi-producer multi-receiver fan-out channel. Backed by a fixed-size
-// ring; receivers track their last-seen sequence number and surface
-// asyncio.error.Lagged when they fall behind by more than `cap`.
-
+// Multi-producer multi-receiver fan-out (tokio sync::broadcast).
 use std
 use std.atomic
 use runtime
-use asyncio.error as aerr
 
-// Inner ring shared by every Sender / Receiver. tail is the next slot
-// to write; lapped tracks how many full sweeps have happened so
-// receivers can detect "this ring slot was overwritten before I read it".
+BCAST_LAGGED<i32> = 0x03020003
+
 mem Broadcast {
-    i64*         ring        // length cap
-    u64          cap
-    u64          tail        // atomic; total messages ever sent
-    u64          lapped      // atomic; sweeps written
-    Notify* changed
+    i64*    slot_store   // tokio: ring buffer
+    u64     cap
+    u64     tail         // atomic; messages sent
+    u64     lapped       // atomic; full laps
+    Notify* wake_notify  // tokio: notify_waiters on send
 }
 
-// Build a Broadcast with capacity cap (must be > 0).
 const Broadcast::new(cap<u64>) Broadcast {
     b<Broadcast> = new Broadcast
-    b.ring    = std.malloc(sizeof(i64) * cap)
-    b.cap     = cap
-    b.tail    = 0
-    b.lapped  = 0
-    b.changed = Notify::new()
+    b.slot_store = std.malloc(sizeof(i64) * cap)
+    b.cap = cap
+    b.tail = 0
+    b.lapped = 0
+    b.wake_notify = Notify::new()
     return b
 }
 
-// Atomic publish: write into the next slot, bump tail, wake every
-// receiver currently parked on `changed`.
 fn broadcast_publish(b<Broadcast>, v<i64>) i32 {
     slot<u64> = atomic.xadd64(&b.tail, 1)
     idx<u64> = slot % b.cap
-    b.ring[idx] = v
-    if (slot + 1) % b.cap == 0 {
-        atomic.xadd64(&b.lapped, 1)
-    }
-    b.changed.notify_waiters()
+    b.slot_store[idx] = v
+    if (slot + 1) % b.cap == 0 atomic.xadd64(&b.lapped, 1)
+    b.wake_notify.notify_waiters()
     return 0
 }
 
-// Sender side. Cloneable; cloning is just copying the pointer.
 mem BroadcastSender {
-    Broadcast* inner
+    Broadcast* backing
 }
 
-// Receiver tracks its own cursor; lagging receivers surface Lagged.
 mem BroadcastReceiver {
-    Broadcast* inner
+    Broadcast* backing
     u64        last_seen
 }
 
-// Build a (Sender, Receiver) pair sharing one ring.
-// Broadcast::new() returns a heap pointer; pass it through.
 fn broadcast_channel(cap<u64>) (BroadcastSender, BroadcastReceiver) {
     b<Broadcast> = Broadcast::new(cap)
-    s<BroadcastSender>   = new BroadcastSender   { inner: b }
-    r<BroadcastReceiver> = new BroadcastReceiver { inner: b, last_seen: 0 }
-    return s, r
+    return new BroadcastSender { backing: b }, new BroadcastReceiver { backing: b, last_seen: 0 }
 }
 
-// Publish a value; never blocks.
 BroadcastSender::send(v<i64>) i32 {
-    return broadcast_publish(this.inner, v)
+    return broadcast_publish(this.backing, v)
 }
 
-// Receive the next value, awaiting one if needed. Returns
-//   (0, value)        — fresh delivery
-//   (Lagged, value)   — caller missed one or more messages; cursor advanced
-//   (other err, 0)    — propagated from Notify
-async BroadcastReceiver::recv(){
-    inner<Broadcast> = this.inner
-    loop {
-        cur_tail<u64> = atomic.load64(&inner.tail)
-        if this.last_seen < cur_tail {
-            // Detect lap: if we're more than cap behind, fast-forward.
-            if cur_tail - this.last_seen > inner.cap {
-                this.last_seen = cur_tail - inner.cap
-                idx<u64> = this.last_seen % inner.cap
-                this.last_seen += 1
-                return aerr.Lagged, inner.ring[idx]
-            }
-            idx<u64> = this.last_seen % inner.cap
-            this.last_seen += 1
-            return 0, inner.ring[idx]
+// Async leaf for recv (tokio Receiver::recv).
+mem BroadcastRecvFut: async {
+    Broadcast* owner
+    u64        cursor
+    i32        stage
+    Notified*  notify_fut
+    i32        ready_err
+    i64        ready_val
+}
+
+BroadcastRecvFut::init(owner<Broadcast>, cursor<u64>){
+    this.owner = owner
+    this.cursor = cursor
+    this.stage = 0
+    this.notify_fut = null
+    this.ready_err = 0
+    this.ready_val = 0
+}
+
+BroadcastRecvFut::poll(ctx){
+    hub<Broadcast> = this.owner
+    cur_tail<u64> = atomic.load64(&hub.tail)
+    if this.cursor < cur_tail {
+        if cur_tail - this.cursor > hub.cap {
+            this.cursor = cur_tail - hub.cap
+            idx<u64> = this.cursor % hub.cap
+            this.cursor += 1
+            this.ready_err = BCAST_LAGGED
+            this.ready_val = hub.slot_store[idx]
+            return runtime.PollReady, BCAST_LAGGED
         }
-        code<i32> = inner.changed.notified().await
-        if code != 0 return code, 0
+        idx<u64> = this.cursor % hub.cap
+        this.cursor += 1
+        this.ready_err = 0
+        this.ready_val = hub.slot_store[idx]
+        return runtime.PollReady, 0
     }
-    return 0, 0
+    if this.notify_fut == null {
+        this.notify_fut = notified_from_notify(hub.wake_notify)
+    }
+    nfy<Notified> = this.notify_fut
+    code<i32> = nfy.poll(ctx)
+    if code == runtime.PollReady {
+        this.notify_fut = null
+    }
+    return runtime.PollPending
 }
 
+async BroadcastReceiver::recv(){
+    fut<BroadcastRecvFut> = broadcast_recv_fut(this)
+    err<i32> = fut.await
+    this.last_seen = fut.cursor
+    return err, fut.ready_val
+}
+
+fn broadcast_recv_fut(rx<BroadcastReceiver>) BroadcastRecvFut {
+    fut<BroadcastRecvFut> = new BroadcastRecvFut
+    fut.init(rx.backing, rx.last_seen)
+    return fut
+}

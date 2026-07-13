@@ -44,8 +44,7 @@ Clock::resume(){
 // Advance the frozen clock by d. Only meaningful while paused.
 Clock::advance(d<sys.Duration>){
     if this.paused == 0 return
-    ns_part<u64> = d.nanos.inner.(u64)
-    this.advanced_ms += d.secs * 1000 + ns_part / 1000000
+    this.advanced_ms += d.as_millis()
 }
 
 // Current ms reading. Frozen when paused; live otherwise.

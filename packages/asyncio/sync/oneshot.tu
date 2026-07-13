@@ -4,18 +4,22 @@
 
 use std.atomic
 use runtime
-use asyncio.error as aerr
 
 VALUE_SET<i32>  = 0b00001
 TX_DROPPED<i32> = 0b00010
 RX_DROPPED<i32> = 0b00100
 CLOSED<i32>     = 0b01000
 
+OS_ERR_SEND_NO_RECEIVER<i32> = 0x0302000B
+OS_ERR_ALREADY_CONSUMED<i32> = 0x03020007
+OS_ERR_CLOSED<i32>           = 0x03020002
+OS_ERR_RECV_EMPTY<i32>       = 0x0302000C
+
 // Shared inner state. State word is atomic; the value slot is published
 // via VALUE_SET and only read after the CAS that sets the bit.
 mem OneshotInner {
     i32           state       // atomic; bitfield over the constants above
-    i64           value_slot
+    i64           data_i64
     AtomicWaker*  tx_waker    // arms when sender awaits closed()
     AtomicWaker*  rx_waker    // arms while receiver awaits recv()
 }
@@ -24,7 +28,7 @@ mem OneshotInner {
 const OneshotInner::new() OneshotInner {
     s<OneshotInner> = new OneshotInner
     s.state      = 0
-    s.value_slot = 0
+    s.data_i64   = 0
     s.tx_waker   = AtomicWaker::new()
     s.rx_waker   = AtomicWaker::new()
     return s
@@ -32,37 +36,36 @@ const OneshotInner::new() OneshotInner {
 
 // Sender side. Drop the sender once you no longer plan to send.
 mem OneshotSender {
-    OneshotInner* inner
+    OneshotInner* backing
 }
 
 // Receiver side. Cannot be cloned.
 mem OneshotReceiver {
-    OneshotInner* inner
+    OneshotInner* backing
     i32           consumed   // monotonic 0 -> 1 once the value was taken
 }
 
 // Build a (Sender, Receiver) pair sharing one inner.
 fn oneshot_channel() (OneshotSender, OneshotReceiver) {
-    inner<OneshotInner> = OneshotInner::new()
-    s<OneshotSender>   = new OneshotSender { inner: inner }
-    r<OneshotReceiver> = new OneshotReceiver { inner: inner, consumed: 0 }
+    shell<OneshotInner> = OneshotInner::new()
+    s<OneshotSender>   = new OneshotSender { backing: shell }
+    r<OneshotReceiver> = new OneshotReceiver { backing: shell, consumed: 0 }
     return s, r
 }
 
-// Send the value. Returns asyncio.error.SendNoReceiver if the receiver
-// has been dropped or closed; AlreadyConsumed if a value is already set.
+// Send the value. Returns SendNoReceiver if the receiver has been dropped
+// or closed; AlreadyConsumed if a value is already set.
 OneshotSender::send(v<i64>) i32 {
-    inner<OneshotInner> = this.inner
+    inner<OneshotInner> = this.backing
     addr<i32*> = &inner.state
     loop {
         cur<i32> = atomic.load(addr)
-        if (cur & RX_DROPPED) != 0 return aerr.SendNoReceiver
-        if (cur & CLOSED) != 0     return aerr.SendNoReceiver
-        if (cur & VALUE_SET) != 0  return aerr.AlreadyConsumed
+        if (cur & RX_DROPPED) != 0 return OS_ERR_SEND_NO_RECEIVER
+        if (cur & CLOSED) != 0     return OS_ERR_SEND_NO_RECEIVER
+        if (cur & VALUE_SET) != 0  return OS_ERR_ALREADY_CONSUMED
         newv<i32> = cur | VALUE_SET
         if atomic.cas(addr, cur, newv) != 0 {
-            inner.value_slot = v
-            // Wake the receiver if it's waiting on the value.
+            inner.data_i64 = v
             inner.rx_waker.wake()
             return 0
         }
@@ -73,7 +76,7 @@ OneshotSender::send(v<i64>) i32 {
 // Mark the sender dropped. After this, recv eventually surfaces Closed
 // when no value was ever set.
 OneshotSender::drop_send(){
-    inner<OneshotInner> = this.inner
+    inner<OneshotInner> = this.backing
     addr<i32*> = &inner.state
     loop {
         cur<i32> = atomic.load(addr)
@@ -92,25 +95,25 @@ SC_STAGE_WAITING<i32> = 1
 SC_STAGE_DONE<i32>    = 2
 
 mem SenderClosedFut: async {
-    OneshotInner* inner
+    OneshotInner* backing
     i32           stage
 }
 
-SenderClosedFut::init(inner<OneshotInner>){
-    this.inner = inner
+SenderClosedFut::init(shell<OneshotInner>){
+    this.backing = shell
     this.stage = SC_STAGE_INIT
 }
 
 SenderClosedFut::poll(ctx){
-    inner<OneshotInner> = this.inner
+    inner<OneshotInner> = this.backing
     cur<i32> = atomic.load(&inner.state)
     if (cur & RX_DROPPED) != 0 || (cur & CLOSED) != 0 {
         this.stage = SC_STAGE_DONE
         return runtime.PollReady, 0
     }
     inner.tx_waker.register_by_ref(ctx.(u64))
-    cur = atomic.load(&inner.state)
-    if (cur & RX_DROPPED) != 0 || (cur & CLOSED) != 0 {
+    cur2<i32> = atomic.load(&inner.state)
+    if (cur2 & RX_DROPPED) != 0 || (cur2 & CLOSED) != 0 {
         this.stage = SC_STAGE_DONE
         return runtime.PollReady, 0
     }
@@ -121,7 +124,7 @@ SenderClosedFut::poll(ctx){
 // Block until the receiver has dropped (or close() landed). Returns 0.
 async OneshotSender::closed(){
     fut<SenderClosedFut> = new SenderClosedFut
-    fut.init(this.inner)
+    fut.init(this.backing)
     return fut.await
 }
 
@@ -129,23 +132,23 @@ async OneshotSender::closed(){
 // has not arrived, (Closed, 0) when sender dropped without sending, or
 // (AlreadyConsumed, 0) on second call.
 OneshotReceiver::try_recv() (i32, i64) {
-    if this.consumed == 1 return aerr.AlreadyConsumed, 0
-    inner<OneshotInner> = this.inner
+    if this.consumed == 1 return OS_ERR_ALREADY_CONSUMED, 0
+    inner<OneshotInner> = this.backing
     cur<i32> = atomic.load(&inner.state)
     if (cur & VALUE_SET) != 0 {
         this.consumed = 1
-        return 0, inner.value_slot
+        return 0, inner.data_i64
     }
     if (cur & TX_DROPPED) != 0 {
-        return aerr.Closed, 0
+        return OS_ERR_CLOSED, 0
     }
-    return aerr.RecvEmpty, 0
+    return OS_ERR_RECV_EMPTY, 0
 }
 
 // Mark the receiver dropped or close-requested; sender side surfaces
 // SendNoReceiver afterwards.
 OneshotReceiver::drop_recv(){
-    inner<OneshotInner> = this.inner
+    inner<OneshotInner> = this.backing
     addr<i32*> = &inner.state
     loop {
         cur<i32> = atomic.load(addr)
@@ -164,53 +167,51 @@ RV_STAGE_DONE<i32>    = 2
 
 // Await-shaped recv future.
 mem RecvFut: async {
-    OneshotInner* inner
+    OneshotInner* backing
     i32           stage
-    i32           closed_only   // 1 for closed(), 0 for recv()
+    i32           poll_mode   // 1 = closed(), 0 = recv()
 }
 
-RecvFut::init(inner<OneshotInner>, closed_only<i32>){
-    this.inner       = inner
-    this.stage       = RV_STAGE_INIT
-    this.closed_only = closed_only
+RecvFut::init(shell<OneshotInner>, poll_mode<i32>){
+    this.backing   = shell
+    this.stage     = RV_STAGE_INIT
+    this.poll_mode = poll_mode
 }
 
 RecvFut::poll(ctx){
-    inner<OneshotInner> = this.inner
-    cur<i32> = atomic.load(&inner.state)
-
-    if this.closed_only == 1 {
-        if (cur & TX_DROPPED) != 0 {
+    shell<OneshotInner> = this.backing
+    st<i32> = atomic.load(&shell.state)
+    if this.poll_mode == 1 {
+        if (st & TX_DROPPED) != 0 || (st & CLOSED) != 0 {
             this.stage = RV_STAGE_DONE
             return runtime.PollReady, 0
         }
     } else {
-        if (cur & VALUE_SET) != 0 {
+        if (st & VALUE_SET) != 0 {
             this.stage = RV_STAGE_DONE
-            return runtime.PollReady, inner.value_slot
+            return runtime.PollReady, shell.data_i64
         }
-        if (cur & TX_DROPPED) != 0 {
+        if (st & TX_DROPPED) != 0 {
             this.stage = RV_STAGE_DONE
-            return runtime.PollReady, aerr.Closed
+            return runtime.PollReady, OS_ERR_CLOSED.(i64)
         }
     }
 
-    inner.rx_waker.register_by_ref(ctx.(u64))
-    // Re-check after registering so we don't miss a concurrent send/drop.
-    cur = atomic.load(&inner.state)
-    if this.closed_only == 1 {
-        if (cur & TX_DROPPED) != 0 {
+    shell.rx_waker.register_by_ref(ctx.(u64))
+    st2<i32> = atomic.load(&shell.state)
+    if this.poll_mode == 1 {
+        if (st2 & TX_DROPPED) != 0 || (st2 & CLOSED) != 0 {
             this.stage = RV_STAGE_DONE
             return runtime.PollReady, 0
         }
     } else {
-        if (cur & VALUE_SET) != 0 {
+        if (st2 & VALUE_SET) != 0 {
             this.stage = RV_STAGE_DONE
-            return runtime.PollReady, inner.value_slot
+            return runtime.PollReady, shell.data_i64
         }
-        if (cur & TX_DROPPED) != 0 {
+        if (st2 & TX_DROPPED) != 0 {
             this.stage = RV_STAGE_DONE
-            return runtime.PollReady, aerr.Closed
+            return runtime.PollReady, OS_ERR_CLOSED.(i64)
         }
     }
     this.stage = RV_STAGE_WAITING
@@ -219,11 +220,11 @@ RecvFut::poll(ctx){
 
 // Receive the value. Single-shot: subsequent calls return AlreadyConsumed.
 async OneshotReceiver::recv(){
-    if this.consumed == 1 return aerr.AlreadyConsumed, 0.(i64)
+    if this.consumed == 1 return OS_ERR_ALREADY_CONSUMED, 0.(i64)
     fut<RecvFut> = new RecvFut
-    fut.init(this.inner, 0)
+    fut.init(this.backing, 0)
     val<i64> = fut.await
-    if val == aerr.Closed.(i64) return aerr.Closed, 0.(i64)
+    if val.(i32) == OS_ERR_CLOSED return OS_ERR_CLOSED, 0.(i64)
     this.consumed = 1
     return 0, val
 }
@@ -231,7 +232,6 @@ async OneshotReceiver::recv(){
 // Block until the sender has dropped or sent.
 async OneshotReceiver::closed(){
     fut<RecvFut> = new RecvFut
-    fut.init(this.inner, 1)
+    fut.init(this.backing, 1)
     return fut.await
 }
-
