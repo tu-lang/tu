@@ -24,7 +24,7 @@ mem Builder {
     u32   event_interval
     u32   global_queue_interval
     i32   disable_lifo_slot
-    Clock* clock
+    u64   clock_slot              // optional rttime.Clock heap pointer; 0 = none
 }
 
 // Build a current_thread builder with sane defaults.
@@ -39,7 +39,7 @@ const Builder::new_current_thread() Builder {
     b.event_interval        = DEFAULT_EVENT_INTERVAL
     b.global_queue_interval = DEFAULT_GLOBAL_QUEUE_INTERVAL
     b.disable_lifo_slot     = 0
-    b.clock                 = null
+    b.clock_slot            = 0
     return b
 }
 
