@@ -5,7 +5,6 @@
 //                        already pending.
 
 use runtime
-use asyncio.util
 
 // notify_one permit accounting. Only NONE and ONE are used today; the
 // ALL flag is reserved for a future "broadcast" extension.
@@ -133,7 +132,7 @@ Notified::poll(ctx){
         }
         // No permit; queue ourselves.
         w<NotifyWaiter> = NotifyWaiter::new(ctx.(u64))
-        par.waiter_q.push_back(&w.node)
+        par.waiter_q.push_back(w.node)
         par.lock.unlock()
         this.waiter_node = w
         this.stage = NOTIFIED_STAGE_WAITING
@@ -159,4 +158,34 @@ async Notify::notified(){
     fut.init(this)
     code<i32> = fut.await
     return code
+}
+
+// Initialise from a cross-package u64 Notify* slot.
+Notified::init_from_bits(bits<u64>){
+    this.parent = bits.(Notify)
+    this.stage  = NOTIFIED_STAGE_INIT
+    this.waiter_node = null
+}
+
+// Cross-package bridges: heap Notify* stored as u64 in foreign mem layouts.
+fn notify_new_raw() u64 {
+    n<Notify> = Notify::new()
+    return n.(u64)
+}
+
+fn notify_one_raw(bits<u64>) {
+    par<Notify> = bits.(Notify)
+    par.notify_one()
+}
+
+fn notify_waiters_raw(bits<u64>) {
+    par<Notify> = bits.(Notify)
+    par.notify_waiters()
+}
+
+// Factory for await at the call site (no package-level async).
+fn notified_from_bits(bits<u64>) Notified {
+    fut<Notified> = new Notified
+    fut.init_from_bits(bits)
+    return fut
 }

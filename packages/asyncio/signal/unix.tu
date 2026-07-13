@@ -15,6 +15,7 @@ use os
 use asyncio.runtime as rt
 use asyncio.runtime.signal as rtsig
 use asyncio.error as aerr
+use asyncio.sync
 
 // A Unix signal number (tokio::signal::unix::SignalKind).
 mem SignalKind {
@@ -118,7 +119,9 @@ async SignalStream::recv() i32 {
             this.last_seen = cur
             return io.Ok
         }
-        this.ev.notify.notified().await
+        fut<Notified> = notified_from_bits(this.ev.notify_bits)
+        code<i32> = fut.await
+        if code != 0 return code
     }
     return io.Ok
 }

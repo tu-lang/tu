@@ -4,7 +4,6 @@
 // so smaller release calls cannot starve a large request.
 
 use runtime
-use asyncio.util
 use io
 use asyncio.error as aerr
 
@@ -75,7 +74,7 @@ BatchSemaphore::release(n<u32>){
     this.lock.lock()
     pool<u32> = this.permits + n
     loop {
-        h<Pointers> = this.waiters.head
+        h<Pointers> = this.waiters.peek_head()
         if h == null break
         w<SemWaiter> = h.(SemWaiter)
         if w.remaining_permits > pool break
@@ -97,7 +96,7 @@ BatchSemaphore::close(){
     this.lock.lock()
     this.closed = CLOSED_FLAG
     loop {
-        h<Pointers> = this.waiters.head
+        h<Pointers> = this.waiters.peek_head()
         if h == null break
         w<SemWaiter> = h.(SemWaiter)
         this.waiters.remove(h)
@@ -146,14 +145,14 @@ AcquireFut::poll(ctx){
             this.stage = ACQ_STAGE_DONE
             return runtime.PollReady, aerr.Closed
         }
-        if parent.waiters.head == null && parent.permits >= this.needed {
+        if parent.waiters.is_empty() != 0 && parent.permits >= this.needed {
             parent.permits -= this.needed
             parent.lock.unlock()
             this.stage = ACQ_STAGE_DONE
             return runtime.PollReady, 0
         }
         w<SemWaiter> = SemWaiter::new(this.needed, ctx.(u64))
-        parent.waiters.push_back(&w.node)
+        parent.waiters.push_back(w.node)
         w.queued = 1
         parent.lock.unlock()
         this.node  = w

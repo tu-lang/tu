@@ -94,3 +94,19 @@ AtomicWaker::wake() u64 {
     return 0
 }
 
+// Cross-package bridges for AtomicWaker heap pointers stored as u64.
+fn atomic_waker_new_raw() u64 {
+    a<AtomicWaker> = AtomicWaker::new()
+    return a.(u64)
+}
+
+fn atomic_waker_register_raw(bits<u64>, ctx<u64>) {
+    a<AtomicWaker> = bits.(AtomicWaker)
+    a.register_by_ref(ctx)
+}
+
+fn atomic_waker_wake_raw(bits<u64>) u64 {
+    a<AtomicWaker> = bits.(AtomicWaker)
+    return a.wake()
+}
+

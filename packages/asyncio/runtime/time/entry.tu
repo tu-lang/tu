@@ -25,7 +25,7 @@ mem StateCell {
     u64           state    // atomic; deadline_ms or sentinel
     i32           result   // last delivered result code
     MutexInter*   waker_lock
-    AtomicWaker*  waker
+    u64           waker_bits   // AtomicWaker* bits
 }
 
 // Build a StateCell owning a fresh AtomicWaker.
@@ -35,7 +35,7 @@ const StateCell::new() StateCell {
     s.result = RESULT_OK
     s.waker_lock = new MutexInter
     s.waker_lock.init()
-    s.waker  = sync.AtomicWaker::new()
+    s.waker  = atomic_waker_new_raw()
     return s
 }
 
@@ -45,15 +45,15 @@ StateCell::load_state() u64 {
 }
 
 // True when the cell is no longer scheduled (deregister won the race).
-StateCell::is_deregistered() bool {
-    if this.load_state() == STATE_DEREGISTERED return true
-    return false
+StateCell::is_deregistered() i32 {
+    if this.load_state() == STATE_DEREGISTERED return 1
+    return 0
 }
 
 // True when the wheel has fired the timer (result is ready to deliver).
-StateCell::is_pending_fire() bool {
-    if this.load_state() == STATE_PENDING_FIRE return true
-    return false
+StateCell::is_pending_fire() i32 {
+    if this.load_state() == STATE_PENDING_FIRE return 1
+    return 0
 }
 
 // Mark the entry as ready to deliver. The wheel calls this just before
@@ -107,14 +107,14 @@ StateCell::poll(ctx<u64>) (i32, i32) {
     // Arm the waker under waker_lock so concurrent fire() observes a
     // stable ctx slot. AtomicWaker handles wake/register races itself.
     this.waker_lock.lock()
-    this.waker.register_by_ref(ctx)
+    atomic_waker_register_raw(this.waker_bits, ctx)
     this.waker_lock.unlock()
     return RESULT_OK, 0
 }
 
 // Hand the cell its waker so the wheel can pull ctx during fire().
 StateCell::take_waker_ctx() u64 {
-    return this.waker.wake()
+    return atomic_waker_wake_raw(this.waker_bits)
 }
 
 // Wheel-side handle. Sleeps reach the wheel through TimerShared, which is
@@ -160,7 +160,7 @@ TimerEntry::cancel(){
 }
 
 // True once the deadline has fired.
-TimerEntry::is_elapsed() bool {
+TimerEntry::is_elapsed() i32 {
     s<StateCell> = this.shared.state
     return s.is_pending_fire()
 }

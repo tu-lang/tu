@@ -15,7 +15,7 @@ mem Broadcast {
     u64          cap
     u64          tail        // atomic; total messages ever sent
     u64          lapped      // atomic; sweeps written
-    sync.Notify* changed
+    Notify* changed
 }
 
 // Build a Broadcast with capacity cap (must be > 0).
@@ -25,7 +25,7 @@ const Broadcast::new(cap<u64>) Broadcast {
     b.cap     = cap
     b.tail    = 0
     b.lapped  = 0
-    b.changed = sync.Notify::new()
+    b.changed = Notify::new()
     return b
 }
 
