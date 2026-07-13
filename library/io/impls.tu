@@ -28,11 +28,11 @@ impl Read for Buf {
 			amt = this.len()
 		a<Buf>, b<Buf> = this.split_at(amt)
 		if amt == 1
-			buf.inner[0] = a.inner[0]
+			buf.data_ptr[0] = a.data_ptr[0]
 		else
 			buf.copy_at(0, a)
-		this.inner = b.inner
-		this.len = b.len
+		this.data_ptr = b.data_ptr
+		this.byte_len = b.byte_len
 		return Ok, amt
 	}
 	fn read_buf(cursor<BufferCursor>) i32 {
@@ -41,8 +41,8 @@ impl Read for Buf {
 			amt = this.len()
 		a<Buf>, b<Buf> = this.split_at(amt)
 		cursor.append(a)
-		this.inner = b.inner
-		this.len = b.len
+		this.data_ptr = b.data_ptr
+		this.byte_len = b.byte_len
 		return Ok
 	}
 }

@@ -1,4 +1,3 @@
-use sys
 use string
 use fmt
 
@@ -46,16 +45,16 @@ fn last_error(code<i32>) i32 {
 }
 
 fn errormsg(code<i32>) string.String {
-    layer<i32>, module<i32>, _<i32> = decode_error(code)
+    code_layer<i32>, code_module<i32>, _<i32> = decode_error(code)
 
-    layer_name<i8*> = layer_name(layer)
-    module_name<i8*> = module_name(module)
+    ln_ptr<i8*> = layer_name(code_layer)
+    mn_ptr<i8*> = module_name(code_module)
     message<i8*> = error_message(code)
 
     return fmt.sprintf(
         "%s :: %s :: %s",
-        string.new(layer_name),
-        string.new(module_name),
+        string.new(ln_ptr),
+        string.new(mn_ptr),
         string.new(message)
     )
 }

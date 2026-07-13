@@ -1,4 +1,6 @@
 
+Ok<i32> = 1
+
 fn layer_name(layer<i32>) i32* {
     match layer {
         1 : return "STD"

@@ -1,4 +1,3 @@
-use sys
 use runtime
 
 DEFAULT_BUF_SIZE<i32> = 8 * 1024
@@ -42,7 +41,7 @@ fn default_read_exact(this, buf<Buf>) i32 {
 	loop {
 		if pos >= buf.len()
 			return Ok
-		slice<Buf> = new Buf { inner: buf.inner + pos, len: buf.len() - pos }
+		slice<Buf> = new Buf { data_ptr: buf.data_ptr + pos, byte_len: buf.len() - pos }
 		err<i32>, n<u64> = this.(Read).read(slice)
 		if err != Ok
 			if err == Interrupted
@@ -135,7 +134,7 @@ api Write {
 		loop {
 			if pos >= buf.len()
 				return Ok
-			slice<Buf> = new Buf { inner: buf.inner + pos, len: buf.len() - pos }
+			slice<Buf> = new Buf { data_ptr: buf.data_ptr + pos, byte_len: buf.len() - pos }
 			err<i32>, n<u64> = this.(Write).write(slice)
 			if err != Ok
 				if err == Interrupted
@@ -150,12 +149,12 @@ api Write {
 }
 
 mem Take {
-	u64 inner // raw bits of Read implementor
+	u64 reader_bits // raw bits of Read implementor
 	u64 limit
 }
 
-fn Take_new(inner<u64>, limit<u64>) Take {
-	return new Take { inner: inner, limit: limit }
+fn Take_new(reader_bits<u64>, limit<u64>) Take {
+	return new Take { reader_bits: reader_bits, limit: limit }
 }
 
 impl Read for Take {
@@ -165,8 +164,8 @@ impl Read for Take {
 		cap<u64> = buf.len()
 		if this.limit < cap
 			cap = this.limit
-		slice<Buf> = new Buf { inner: buf.inner, len: cap }
-		err<i32>, n<u64> = this.inner.(Read).read(slice)
+		slice<Buf> = new Buf { data_ptr: buf.data_ptr, byte_len: cap }
+		err<i32>, n<u64> = this.reader_bits.(Read).read(slice)
 		if err != Ok
 			return err, 0
 		if n > this.limit
@@ -178,7 +177,7 @@ impl Read for Take {
 		if this.limit == 0
 			return Ok
 		cur<BufferCursor> = cursor.reborrow()
-		err<i32> = this.inner.(Read).read_buf(cur)
+		err<i32> = this.reader_bits.(Read).read_buf(cur)
 		if err != Ok
 			return err
 		written<u64> = cursor.written()

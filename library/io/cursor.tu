@@ -1,53 +1,53 @@
 use runtime
 
 mem Cursor {
-	Buf* inner
-	u64 pos
+	Buf* backing
+	u64 cursor_pos
 }
 
-const Cursor::new(inner<Buf>) Cursor {
-	return new Cursor { pos: 0, inner: inner }
+const Cursor::new(backing<Buf>) Cursor {
+	return new Cursor { cursor_pos: 0, backing: backing }
 }
 
 Cursor::into_inner() Buf {
-	return this.inner
+	return this.backing
 }
 
-const Cursor::get_ref() Buf {
-	return this.inner
+Cursor::get_ref() Buf {
+	return this.backing
 }
 
 Cursor::get_mut() Buf {
-	return this.inner
+	return this.backing
 }
 
-const Cursor::position() u64 {
-	return this.pos
+Cursor::position() u64 {
+	return this.cursor_pos
 }
 
 Cursor::set_position(pos<u64>) {
-	this.pos = pos
+	this.cursor_pos = pos
 }
 
 Cursor::remaining_slice() Buf {
-	len<u64> = min_u64(this.pos, this.inner.len())
+	used<u64> = min_u64(this.cursor_pos, this.backing.len())
 	return new Buf {
-		inner: this.inner.inner + len,
-		len: this.inner.len() - len
+		data_ptr: this.backing.data_ptr + used,
+		byte_len: this.backing.len() - used
 	}
 }
 
 Cursor::is_empty() i32 {
-	return this.pos >= this.inner.len()
+	return this.cursor_pos >= this.backing.len()
 }
 
 Cursor::clone() Cursor {
-	return new Cursor { inner: this.inner.dup(), pos: this.pos }
+	return new Cursor { backing: this.backing.dup(), cursor_pos: this.cursor_pos }
 }
 
 Cursor::clone_from(other<Cursor>) {
-	this.inner = other.inner.dup()
-	this.pos = other.pos
+	this.backing = other.backing.dup()
+	this.cursor_pos = other.cursor_pos
 }
 
 fn checked_add_signed_u64(base_pos<u64>, offset<i64>) i32, u64 {
@@ -74,15 +74,15 @@ impl Seek for Cursor {
 
 		match pos.tag {
 			0 : {
-				this.pos = pos.start_val
-				return Ok, this.pos
+				this.cursor_pos = pos.start_val
+				return Ok, this.cursor_pos
 			}
 			1 : {
-				base_pos = this.inner.len()
+				base_pos = this.backing.len()
 				offset = pos.offset_val
 			}
 			2 : {
-				base_pos = this.pos
+				base_pos = this.cursor_pos
 				offset = pos.offset_val
 			}
 			_ : return InvalidInput, 0
@@ -91,16 +91,16 @@ impl Seek for Cursor {
 		err<i32>, next_pos<u64> = checked_add_signed_u64(base_pos, offset)
 		if err != Ok
 			return err, 0
-		this.pos = next_pos
-		return Ok, this.pos
+		this.cursor_pos = next_pos
+		return Ok, this.cursor_pos
 	}
 
 	fn stream_len() i32, u64 {
-		return Ok, this.inner.len()
+		return Ok, this.backing.len()
 	}
 
 	fn stream_position() i32, u64 {
-		return Ok, this.pos
+		return Ok, this.cursor_pos
 	}
 }
 
@@ -110,7 +110,7 @@ impl Read for Cursor {
 		err<i32>, n<u64> = remain.read(buf)
 		if err != Ok
 			return err, 0
-		this.pos += n
+		this.cursor_pos += n
 		return Ok, n
 	}
 }
