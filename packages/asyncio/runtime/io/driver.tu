@@ -124,7 +124,7 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
         ie<i32>, ev<nidev.Event> = iter.next()
         if ie != 0 break
 
-        token<u64> = ev.token().as_u64()
+        token<u64> = ev.token()
         if token == TOKEN_WAKEUP continue
         if token == TOKEN_SIGNAL {
             this.signal_ready = 1

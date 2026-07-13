@@ -122,7 +122,7 @@ fn parse_socket_addr(b<u8*>, len<i32>) i32, libnet.SocketAddr {
 // full form, lowercase hex). Round-trips through parse_socket_addr.
 fn socket_addr_to_string(addr<libnet.SocketAddr>) string.String {
     sl<string.Str> = string.empty()
-    if addr.v4() {
+    if net.socket_addr_is_v4(addr) {
         a4<libnet.SocketAddrV4> = addr
         ip<libnet.Ipv4Addr> = a4.ip()
         o0<u8>, o1<u8>, o2<u8>, o3<u8> = ip.octets()

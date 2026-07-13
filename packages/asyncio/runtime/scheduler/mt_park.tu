@@ -13,20 +13,20 @@ NOTIFIED<i32> = 2
 // Per-worker park slot.
 mem Parker {
     i32          state         // atomic
-    runtime.Note note
+    runtime.Note park_note
     u64          driver_slot   // raw bits of runtime.driver.Driver*; 0 = no driver
 }
 
 // Counterpart used by other workers to wake us up.
 mem Unparker {
-    Parker* p
+    Parker* owner
 }
 
 // Build a Parker that delegates to the supplied driver pointer (may be 0).
 const Parker::new(driver_ptr<u64>) Parker {
     p<Parker> = new Parker
     p.state = EMPTY
-    p.note.Clear()
+    p.park_note.Clear()
     p.driver_slot = driver_ptr
     return p
 }
@@ -34,13 +34,13 @@ const Parker::new(driver_ptr<u64>) Parker {
 // Build an Unparker pointing at p.
 const Unparker::new(p<Parker>) Unparker {
     u<Unparker> = new Unparker
-    u.p = p
+    u.owner = p
     return u
 }
 
 // Park indefinitely. Returns 0 on a normal wake, surfaces driver errors
 // when a driver is wired in.
-Parker::park(handle_ptr<u64>) i32 {
+Parker::wait_until_wake(handle_ptr<u64>) i32 {
     addr<i32*> = &this.state
     if atomic.cas(addr, NOTIFIED, EMPTY) != 0 return 0
 
@@ -49,8 +49,8 @@ Parker::park(handle_ptr<u64>) i32 {
         return 0
     }
 
-    this.note.Sleep()
-    this.note.Clear()
+    this.park_note.Sleep()
+    this.park_note.Clear()
     atomic.cas(addr, PARKED, EMPTY)
     atomic.cas(addr, NOTIFIED, EMPTY)
     return 0
@@ -60,16 +60,16 @@ Parker::park(handle_ptr<u64>) i32 {
 // to park(); driver-aware timeouts land in Phase 10 once Driver::park
 // is wired through handle_ptr.
 Parker::park_timeout(handle_ptr<u64>, max<sys.Duration>) i32 {
-    return this.park(handle_ptr)
+    return this.wait_until_wake(handle_ptr)
 }
 
 // Wake the parker. Idempotent.
 Unparker::unpark(){
-    p<Parker> = this.p
+    p<Parker> = this.owner
     addr<i32*> = &p.state
     if atomic.cas(addr, EMPTY, NOTIFIED) != 0 return
     if atomic.cas(addr, PARKED, NOTIFIED) != 0 {
-        p.note.Wake()
+        p.park_note.Wake()
         return
     }
 }

@@ -3,18 +3,16 @@
 
 use io as iobuf
 
-// Read-side cursor over an underlying io.buffer.Buffer. `filled` mirrors
-// the inner Buffer's filled count and is kept here so the user-facing
-// API does not have to chase through the inner pointer on every poll.
+// Read-side cursor over an underlying io.buffer.Buffer.
 mem ReadBuf {
-    iobuf.Buffer* inner
+    iobuf.Buffer* backing
     u64           filled    // bytes the reader has produced so far
 }
 
-// Build a ReadBuf wrapping `buf`. Initial filled = inner.filled.
+// Build a ReadBuf wrapping `buf`. Initial filled = backing.filled.
 const ReadBuf::new(buf<iobuf.Buffer>) ReadBuf {
     rb<ReadBuf> = new ReadBuf
-    rb.inner  = buf
+    rb.backing  = buf
     rb.filled = buf.len()
     return rb
 }
@@ -26,46 +24,47 @@ ReadBuf::filled_len() u64 {
 
 // Capacity of the backing Buffer.
 ReadBuf::capacity() u64 {
-    return this.inner.capacity()
+    return this.backing.capacity()
 }
 
 // Free bytes in the backing buffer.
 ReadBuf::remaining() u64 {
-    return this.inner.capacity() - this.filled
+    return this.backing.capacity() - this.filled
 }
 
-// Append `slice` to the filled region. Caller must ensure
-// `slice.len() <= remaining()`. Updates the inner Buffer's bookkeeping.
+// Pointer to the start of filled bytes in the backing store.
+ReadBuf::data_ptr() u8* {
+    return this.backing.backing.data_ptr
+}
+
+// Append `slice` to the filled region.
 ReadBuf::put_slice(slice<iobuf.Buf>){
-    base<iobuf.Buf> = this.inner.buf
+    base<iobuf.Buf> = this.backing.backing
     off<i32> = int(this.filled)
     base.copy_at(off, slice)
     this.filled = this.filled + slice.len()
-    this.inner.filled = this.filled
-    if this.inner.init < this.filled {
-        this.inner.init = this.filled
+    this.backing.filled = this.filled
+    if this.backing.init < this.filled {
+        this.backing.init = this.filled
     }
 }
 
-// Mark `n` more bytes as filled (for callers that wrote directly into the
-// unfilled region). Returns 0 on success, -1 when n exceeds remaining().
+// Mark `n` more bytes as filled. Returns 0 on success, -1 when n exceeds remaining().
 ReadBuf::advance(n<u64>) i32 {
     if n > this.remaining() return -1
     this.filled = this.filled + n
-    this.inner.filled = this.filled
-    if this.inner.init < this.filled {
-        this.inner.init = this.filled
+    this.backing.filled = this.filled
+    if this.backing.init < this.filled {
+        this.backing.init = this.filled
     }
     return 0
 }
 
-// Initialise the unfilled tail to zero; useful before handing the slice
-// to syscalls that read into uninitialised bytes. Returns the inner
-// Buffer (chainable).
+// Initialise the unfilled tail to zero.
 ReadBuf::initialize_unfilled() iobuf.Buffer {
-    cap<u64> = this.inner.capacity()
-    if this.inner.init < cap {
-        this.inner.init = cap
+    cap<u64> = this.backing.capacity()
+    if this.backing.init < cap {
+        this.backing.init = cap
     }
-    return this.inner
+    return this.backing
 }

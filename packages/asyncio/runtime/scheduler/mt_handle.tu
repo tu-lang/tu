@@ -33,7 +33,7 @@ impl task.Schedule for MtHandle {
         this.shared.inject.push(notif)
 
         // Wake one parked worker if any are sleeping.
-        sn<MtSynced> = this.shared.synced
+        sn<MtSynced> = this.shared.lock_hub
         found<i32>, idx<u32> = this.shared.idle.notify_one(sn.idle_synced, this.shared.synced_lock)
         if found == 1 && idx < this.shared.num_workers {
             rb<u64> = this.shared.remotes[idx]

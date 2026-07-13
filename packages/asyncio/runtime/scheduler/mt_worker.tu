@@ -33,7 +33,7 @@ fn mt_steal_work(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
     start<u32> = core.rand.fastrand_n(n)
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (start + i) % n
-        if idx == w.index continue
+        if idx == w.worker_idx continue
         bits<u64> = shared.remotes[idx]
         r<Remote> = bits.(Remote)
         err<i32> = 0
@@ -51,7 +51,7 @@ fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
         last<i32> = w.handle.shared.idle.transition_worker_from_searching()
         if last == 1 {
             // Last searcher: keep the pipeline filled by waking another peer.
-            sn<MtSynced> = w.handle.shared.synced
+            sn<MtSynced> = w.handle.shared.lock_hub
             found<i32>, idx<u32> = w.handle.shared.idle.notify_one(sn.idle_synced, w.handle.shared.synced_lock)
             if found == 1 && idx < w.handle.shared.num_workers {
                 bits2<u64> = w.handle.shared.remotes[idx]
@@ -151,14 +151,14 @@ fn worker_run(w<MtWorker>){
             is_last_searcher = shared.idle.transition_worker_from_searching()
             core.is_searching = 0
         }
-        sn<MtSynced> = shared.synced
+        sn<MtSynced> = shared.lock_hub
         will_park<i32> = shared.idle.transition_worker_to_parked(
-            sn.idle_synced, shared.synced_lock, w.index, is_last_searcher
+            sn.idle_synced, shared.synced_lock, w.worker_idx, is_last_searcher
         )
         if will_park == 0 continue
 
-        core.park.park(w.handle.driver_handle)
-        shared.idle.transition_worker_from_parked(sn.idle_synced, shared.synced_lock, w.index)
+        core.parker.wait_until_wake(w.handle.driver_handle)
+        shared.idle.transition_worker_from_parked(sn.idle_synced, shared.synced_lock, w.worker_idx)
         if shared.idle.transition_worker_to_searching() == 1 {
             core.is_searching = 1
         }

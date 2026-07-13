@@ -26,7 +26,7 @@ mem MtShared {
     Idle*             idle
     task.OwnedTasks*  owned
     runtime.MutexInter* synced_lock
-    MtSynced*         synced
+    MtSynced*         lock_hub
     runtime.MutexInter* shutdown_cores_lock
     u64*              shutdown_cores       // raw bits of WorkerCore*; len == num_workers
     u32               shutdown_cores_len
@@ -48,7 +48,7 @@ const MtShared::new(num_workers<u32>) MtShared {
     s.synced_lock.init()
     sn<MtSynced> = new MtSynced
     sn.idle_synced = idle_pair_b
-    s.synced      = sn
+    s.lock_hub      = sn
     s.shutdown_cores_lock = new runtime.MutexInter
     s.shutdown_cores_lock.init()
     s.shutdown_cores     = std.malloc(bytes)

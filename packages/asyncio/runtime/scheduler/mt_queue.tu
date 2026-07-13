@@ -8,7 +8,6 @@ use std
 use std.atomic
 use io
 use asyncio.task
-use asyncio.error as aerr
 
 LOCAL_QUEUE_CAPACITY<u32> = 256
 LOCAL_QUEUE_MASK<u32>     = 255
@@ -52,41 +51,41 @@ const QueueInner::new() QueueInner {
 
 // Producer side; only the owning worker writes.
 mem Local {
-    QueueInner* inner
+    QueueInner* queue_hub
 }
 
 // Stealer side; any other worker can drain a slice via steal_into.
 mem Steal {
-    QueueInner* inner
+    QueueInner* queue_hub
 }
 
 // Build a paired (Steal, Local). The two endpoints share one QueueInner.
 // QueueInner::new returns the heap pointer; both endpoints store it raw.
 fn queue_local() (Steal, Local) {
-    inner<QueueInner> = QueueInner::new()
-    s<Steal>          = new Steal { inner: inner }
-    l<Local>          = new Local { inner: inner }
+    hub<QueueInner> = QueueInner::new()
+    s<Steal>          = new Steal { queue_hub: hub }
+    l<Local>          = new Local { queue_hub: hub }
     return s, l
 }
 
 // Push at tail. Spills half the queue to inject when full so the next
 // push always succeeds and stealers can keep up. Returns 0 on success.
 Local::push_back_or_overflow(t<task.Notified>, overflow<Inject>) i32 {
-    inner<QueueInner> = this.inner
+    qhub<QueueInner> = this.queue_hub
     raw<task.RawTask> = t.raw()
     raw_bits<u64> = raw.(u64)
 
     loop {
-        h<u64> = atomic.load64(&inner.head)
+        h<u64> = atomic.load64(&qhub.head)
         steal<u32> = head_steal(h)
         real<u32>  = head_real(h)
-        tail<u32>  = inner.tail
+        tail<u32>  = qhub.tail
         size<u32>  = ring_size(tail, steal)
 
         if size < LOCAL_QUEUE_CAPACITY {
             idx<u32> = tail & LOCAL_QUEUE_MASK
-            inner.buffer[idx] = raw_bits
-            inner.tail = tail + 1
+            qhub.buffer[idx] = raw_bits
+            qhub.tail = tail + 1
             return 0
         }
 
@@ -100,26 +99,26 @@ Local::push_back_or_overflow(t<task.Notified>, overflow<Inject>) i32 {
 // full queue; we move LOCAL_QUEUE_CAPACITY/2 entries to inject so the
 // remaining slots are immediately writable on the next push.
 fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
-    inner<QueueInner> = local.inner
+    qhub<QueueInner> = local.queue_hub
     n<u32> = LOCAL_QUEUE_CAPACITY / 2
 
     // Try to claim the first n entries by bumping head.real (and steal
     // back to it afterwards). This races with stealers — if CAS fails we
     // simply retry the outer loop.
-    h<u64> = atomic.load64(&inner.head)
+    h<u64> = atomic.load64(&qhub.head)
     steal<u32> = head_steal(h)
     real<u32>  = head_real(h)
-    if steal != real return aerr.SendFull   // a stealer is already mid-flight
+    if steal != real return RT_SEND_FULL   // a stealer is already mid-flight
     new_real<u32> = real + n
     new_h<u64> = pack_head(new_real, new_real)
-    if atomic.cas64(&inner.head, h.(i64), new_h.(i64)) == 0 {
-        return aerr.SendFull
+    if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) == 0 {
+        return RT_SEND_FULL
     }
 
     // Drain the claimed entries to inject in FIFO order.
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (real + i) & LOCAL_QUEUE_MASK
-        bits<u64> = inner.buffer[idx]
+        bits<u64> = qhub.buffer[idx]
         stolen<task.RawTask> = bits.(task.RawTask)
         notif<task.Notified> = task.notified_from_raw(stolen)
         overflow.push(notif)
@@ -131,18 +130,18 @@ fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
 
 // Owner pop from head.real. CAS-bumps real on success.
 Local::pop() (i32, task.Notified) {
-    inner<QueueInner> = this.inner
+    qhub<QueueInner> = this.queue_hub
     loop {
-        h<u64> = atomic.load64(&inner.head)
+        h<u64> = atomic.load64(&qhub.head)
         steal<u32> = head_steal(h)
         real<u32>  = head_real(h)
-        if real == inner.tail {
+        if real == qhub.tail {
             return io.NotFound, task.notified_from_raw(null)
         }
         idx<u32> = real & LOCAL_QUEUE_MASK
-        bits<u64> = inner.buffer[idx]
+        bits<u64> = qhub.buffer[idx]
         new_h<u64> = pack_head(steal, real + 1)
-        if atomic.cas64(&inner.head, h.(i64), new_h.(i64)) != 0 {
+        if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) != 0 {
             rt<task.RawTask> = bits.(task.RawTask)
             return 0, task.notified_from_raw(rt)
         }
@@ -152,18 +151,18 @@ Local::pop() (i32, task.Notified) {
 
 // Number of queued tasks (best-effort; non-atomic w.r.t. concurrent ops).
 Local::len() u32 {
-    inner<QueueInner> = this.inner
-    real<u32> = head_real(atomic.load64(&inner.head))
-    return ring_size(inner.tail, real)
+    qhub<QueueInner> = this.queue_hub
+    real<u32> = head_real(atomic.load64(&qhub.head))
+    return ring_size(qhub.tail, real)
 }
 
 // Slots free for push. Stealers being mid-flight count as "still occupied"
 // so we mirror the actual write availability.
 Local::remaining_slots() u32 {
-    inner<QueueInner> = this.inner
-    h<u64> = atomic.load64(&inner.head)
+    qhub<QueueInner> = this.queue_hub
+    h<u64> = atomic.load64(&qhub.head)
     steal<u32> = head_steal(h)
-    return LOCAL_QUEUE_CAPACITY - ring_size(inner.tail, steal)
+    return LOCAL_QUEUE_CAPACITY - ring_size(qhub.tail, steal)
 }
 
 // Always 256 — surfaced for tests / metrics.
@@ -173,17 +172,17 @@ Local::max_capacity() u32 {
 
 // Quick-check from the steal side. Concurrent owner ops may race.
 Steal::is_empty() i32 {
-    inner<QueueInner> = this.inner
-    h<u64> = atomic.load64(&inner.head)
-    if head_real(h) == inner.tail return 1
+    qhub<QueueInner> = this.queue_hub
+    h<u64> = atomic.load64(&qhub.head)
+    if head_real(h) == qhub.tail return 1
     return 0
 }
 
 // Steal up to ceil(size/2) tasks into dst. Returns one of those tasks for
 // the caller to run immediately and leaves the rest in dst.
 Steal::steal_into(dst<Local>) (i32, task.Notified) {
-    src<QueueInner> = this.inner
-    dst_inner<QueueInner> = dst.inner
+    src<QueueInner> = this.queue_hub
+    dst_inner<QueueInner> = dst.queue_hub
 
     // Two-phase steal: claim a slice via CAS on head.steal, copy bytes,
     // then commit head.real.

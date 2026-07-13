@@ -22,7 +22,7 @@ const Socket::fromfd(file_desc<FileDesc>) Socket {
 }
 
 Socket::new(addr<net.SocketAddr>, ty<i32>) i32, Socket {
-    if addr.is_v4() {
+    if net.socket_addr_is_v4(addr) {
         err<i32>, sock<Socket> = new_socket_raw(AF_INET, ty)
         return err, sock
     }
@@ -196,7 +196,7 @@ fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
             sinaddr<InAddr> = addr.sin_addr
             ipv4<net.Ipv4Addr> = net.Ipv4Addr::from(&sinaddr.s_addr)
             saddr<SocketAddrV4> = net.SocketAddrV4::new(ipv4, u16::from_be(addr.sin_port))
-            return Ok , saddr
+            return Ok, net.socket_addr_from_v4(saddr)
         }
         AF_INET6 : {
             if len < sizeof(SockaddrIn6) {
@@ -214,7 +214,7 @@ fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
                 addr.sin6_scope_id,
             )
 
-            return Ok , sockaddr
+            return Ok, net.socket_addr_from_v6(sockaddr)
         }
         _ => return io.InvalidInputArgument
     }
@@ -337,9 +337,9 @@ UdpSocket::bind(ret<i32> , addr<net.SocketAddr>) i32, UdpSocket {
     ret,sock<Socket> = Socket::new(addr, SOCK_DGRAM)
     if ret != Ok return ret
 
-    addr<u64>, len<i32> = addr.into_inner()
+    addr_repr<sys.SocketAddrCRepr>, len<i32> = net.socket_addr_into_inner(addr)
     //TODO:
-    ret = cvt(sys_bind(sock.as_raw(), addr, len))
+    ret = cvt(sys_bind(sock.as_raw(), addr_repr, len))
     if ret != Ok return ret
 
     return Ok , new UdpSocket{
@@ -361,7 +361,7 @@ UdpSocket::send_to(buf<io.Buf> , dst<net.SocketAddr>) i32, u64 {
     if buf.len() < len {
         len = buf.len()
     }
-    dst, dstlen<i32> = dst.into_inner()
+    dst, dstlen<i32> = net.socket_addr_into_inner(dst)
     ok<i32> , ret<i32> = cvt(
         //TODO:
         sys_sendto(

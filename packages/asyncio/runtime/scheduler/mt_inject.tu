@@ -11,8 +11,8 @@ use asyncio.task
 fn pop_n_into_local(inj<Inject>, n<u32>, local<Local>) u32 {
     if n == 0 return 0
 
-    inj_synced<InjectSynced> = inj.synced
-    inj.lock.lock()
+    inj_synced<InjectSynced> = inj.fifo_state
+    inj.gate_lock.lock()
 
     moved<u32> = 0
     for i<u32> = 0 ; i < n ; i += 1 {
@@ -27,14 +27,14 @@ fn pop_n_into_local(inj<Inject>, n<u32>, local<Local>) u32 {
         moved += 1
     }
 
-    sh<InjectShared> = inj.shared
+    sh<InjectShared> = inj.depth_atomic
     if moved > 0 {
         // -moved via two's complement. xadd takes u32.
         neg<i32> = 0 - moved.(i32)
         delta<u32> = neg.(u32)
-        atomic.xadd(&sh.len, delta)
+        atomic.xadd(&sh.depth, delta)
     }
-    inj.lock.unlock()
+    inj.gate_lock.unlock()
     return moved
 }
 
