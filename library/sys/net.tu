@@ -105,7 +105,7 @@ Socket::recv_from_with_flags(
     )
     if err != Ok return err
 
-    err , skt<SocketAddr> = sockaddr_to_addr(storage, addrlen)
+    err , skt<net.SocketAddr> = sockaddr_to_addr(storage, addrlen)
     if err != Ok return err
     
     return Ok , n , skt
@@ -195,7 +195,7 @@ fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
             addr<SockaddrIn> = storage
             sinaddr<InAddr> = addr.sin_addr
             ipv4<net.Ipv4Addr> = net.Ipv4Addr::from(&sinaddr.s_addr)
-            saddr<SocketAddrV4> = net.SocketAddrV4::new(ipv4, u16::from_be(addr.sin_port))
+            saddr<net.SocketAddrV4> = net.socket_addr_v4_from_ipv4_port(ipv4, u16::from_be(addr.sin_port))
             return Ok, net.socket_addr_from_v4(saddr)
         }
         AF_INET6 : {
@@ -205,9 +205,9 @@ fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
             }
             addr<SockaddrIn6> = storage
             saddr<In6Addr> = addr.sin6_addr
-            ipv6<Ipv6Addr> = net.Ipv6Addr::from_u8(&saddr.s6_addr);
+            ipv6<net.Ipv6Addr> = net.Ipv6Addr::from_u8(&saddr.s6_addr)
 
-            sockaddr<SocketAddrV6> = net.SocketAddrV6::new(
+            sockaddr<net.SocketAddrV6> = net.socket_addr_v6_from_parts(
                 ipv6,
                 U16::from_be(addr.sin6_port),
                 addr.sin6_flowinfo,
@@ -226,7 +226,7 @@ mem LookupHost {
     u16 port_val
 }
 
-LookupHost::port() u16 {
+LookupHost::port_num() u16 {
     return this.port_val
 }
 
@@ -257,14 +257,14 @@ const LookupHost::lookuphost_fromstr(s<string.String>) i32 , LookupHost {
     err<i32>, host<string.String>, port_str<string.String> = s.rSplitOnce(string.S(*":"))
     if err != Ok return io.InvalidInputSocketAddress
 
-    port<u16> = port_str.tonumber()
-    if port <= 0 return io.InvalidInputPortValue
+    port_num<u16> = port_str.tonumber()
+    if port_num <= 0 return io.InvalidInputPortValue
 
-    err,ret<LookupHost> = LookupHost::from(host,port)
+    err,ret<LookupHost> = LookupHost::from(host, port_num)
     return err, ret
 }
 
-const LookupHost::from(host<string.String> , port<u16>) i32, LookupHost {
+const LookupHost::from(host<string.String> , port_num<u16>) i32, LookupHost {
 
     hints<AddrInfo>   = new AddrInfo{}
     hints.ai_socktype = SOCK_STREAM
@@ -276,7 +276,7 @@ const LookupHost::from(host<string.String> , port<u16>) i32, LookupHost {
     return Ok , new LookupHost {
         original: res,
         cur: res,
-        port_val: port,
+        port_val: port_num,
     }
 }
 
@@ -338,7 +338,6 @@ UdpSocket::bind(ret<i32> , addr<net.SocketAddr>) i32, UdpSocket {
     if ret != Ok return ret
 
     addr_repr<sys.SocketAddrCRepr>, len<i32> = net.socket_addr_into_inner(addr)
-    //TODO:
     ret = cvt(sys_bind(sock.as_raw(), addr_repr, len))
     if ret != Ok return ret
 
@@ -361,15 +360,14 @@ UdpSocket::send_to(buf<io.Buf> , dst<net.SocketAddr>) i32, u64 {
     if buf.len() < len {
         len = buf.len()
     }
-    dst, dstlen<i32> = net.socket_addr_into_inner(dst)
+    dst_repr<sys.SocketAddrCRepr>, dstlen<i32> = net.socket_addr_into_inner(dst)
     ok<i32> , ret<i32> = cvt(
-        //TODO:
         sys_sendto(
             this.socket_hub.as_raw(),
             buf.ptr(),
             len,
             MSG_NOSIGNAL,
-            dst,
+            dst_repr,
             dstlen,
         )
     )

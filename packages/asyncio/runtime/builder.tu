@@ -8,6 +8,7 @@ use asyncio.runtime.time as rttime
 use asyncio.runtime.signal as rtsig
 use asyncio.runtime.blocking as rtblk
 use asyncio.runtime.scheduler as sched
+use asyncio.util
 
 // Default cap for the blocking pool.
 DEFAULT_MAX_BLOCKING_THREADS<u32> = 512
@@ -160,7 +161,7 @@ fn build_multi_thread(b<Builder>) (i32, Runtime) {
 
     for i<u32> = 0 ; i < b.worker_threads ; i += 1 {
         steal_a<sched.Steal>, local_b<sched.Local> = sched.queue_local()
-        rng<sched.FastRand>     = sched.FastRand::new(0xdeadbeef + i.(u64))
+        rng<util.FastRand>     = util.FastRand::new(0xdeadbeef + i.(u64))
         park<sched.Parker>      = sched.Parker::new(drv_h.(u64))
         unparker<sched.Unparker> = sched.Unparker::new(park)
         core<sched.WorkerCore>  = sched.WorkerCore::new(local_b, park, rng, b.global_queue_interval)

@@ -1,9 +1,7 @@
 // User-facing socket-address surface for asyncio.net.
 //
-// The address type is libnet.SocketAddr (library/net) on purpose: netio's socket
-// layer (netio.net.udp.UdpSocket::bind, netio.net.tcp.stream.TcpStream::connect,
-// netio.sys.*) all consume libnet.SocketAddr, so asyncio.net must speak the same
-// type to feed those APIs.
+// The address type is libnet.SocketAddr (library/net). netio and sys all
+// consume libnet.SocketAddr, so asyncio.net must speak the same type.
 //
 // net's own parser (parse_ascii) and Ip*Addr::string() are still WIP, so parse
 // and to_string are implemented here on top of net's working constructors and
@@ -77,7 +75,7 @@ fn parse_v4_with_port(b<u8*>, len<i32>) i32, libnet.SocketAddr {
     if pos != len return libio.OtherParse, null
     ip<libnet.Ipv4Addr> = libnet.Ipv4Addr::new(o[0], o[1], o[2], o[3])
     v4<libnet.SocketAddrV4> = libnet.SocketAddrV4::new(ip, pval.(u16))
-    return libio.Ok, v4
+    return libio.Ok, libnet.socket_addr_from_v4(v4)
 }
 
 // Parse "[h:h:h:h:h:h:h:h]:port" (full, non-compressed) into a libnet.SocketAddr
@@ -107,7 +105,7 @@ fn parse_v6_with_port(b<u8*>, len<i32>) i32, libnet.SocketAddr {
     if pos != len return libio.OtherParse, null
     ip6<libnet.Ipv6Addr> = libnet.Ipv6Addr::new(s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7])
     v6<libnet.SocketAddrV6> = libnet.SocketAddrV6::new(ip6, pval.(u16), 0, 0)
-    return libio.Ok, v6
+    return libio.Ok, libnet.socket_addr_from_v6(v6)
 }
 
 // Parse an "ip:port" literal into a libnet.SocketAddr. A leading '[' selects the
@@ -122,14 +120,14 @@ fn parse_socket_addr(b<u8*>, len<i32>) i32, libnet.SocketAddr {
 // full form, lowercase hex). Round-trips through parse_socket_addr.
 fn socket_addr_to_string(addr<libnet.SocketAddr>) string.String {
     sl<string.Str> = string.empty()
-    if net.socket_addr_is_v4(addr) {
-        a4<libnet.SocketAddrV4> = addr
+    if libnet.socket_addr_is_v4(addr) {
+        a4<libnet.SocketAddrV4> = libnet.socket_addr_v4_store(addr)
         ip<libnet.Ipv4Addr> = a4.ip()
         o0<u8>, o1<u8>, o2<u8>, o3<u8> = ip.octets()
-        sl = sl.catfmt("%u.%u.%u.%u:%u".(i8), o0, o1, o2, o3, a4.port())
+        sl = sl.catfmt("%u.%u.%u.%u:%u".(i8), o0, o1, o2, o3, a4.port_num())
         return string.S(sl)
     }
-    a6<libnet.SocketAddrV6> = addr
+    a6<libnet.SocketAddrV6> = libnet.socket_addr_v6_store(addr)
     ip6<libnet.Ipv6Addr> = a6.ip()
     segs<u16*> = ip6.segments()
     hexd<i8*> = "0123456789abcdef".(i8)
@@ -143,7 +141,7 @@ fn socket_addr_to_string(addr<libnet.SocketAddr>) string.String {
         sl = sl.putc(hexd[seg & 0xF])
     }
     sl = sl.putc(']'.(i8))
-    sl = sl.catfmt(":%u".(i8), a6.port())
+    sl = sl.catfmt(":%u".(i8), a6.port_num())
     return string.S(sl)
 }
 
