@@ -6,8 +6,6 @@
 use runtime
 use io
 use asyncio.task
-use asyncio.error as aerr
-
 // Pack (handle, task_id) into one u64 for the future's ctx slot. High 32
 // bits = scheduler handle hash, low 32 bits = task id (truncated).
 fn ctx_pack(handle<CtHandle>, task_id<u64>) u64 {
@@ -98,7 +96,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
 
         // All queues empty. If inject is closed we cannot make progress.
         if shared.inject.is_closed() {
-            err_out = aerr.RuntimeShutdown
+            err_out = RT_RUNTIME_SHUTDOWN
             break
         }
 

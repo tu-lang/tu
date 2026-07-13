@@ -11,9 +11,9 @@ use asyncio.runtime.signal as rtsig
 
 // Strong-side aggregate held by Runtime.
 mem Driver {
-    rtio.IoDriver*     io
-    rttime.TimeDriver*   time
-    rtsig.SignalDriver* signal
+    rtio.IoDriver*       io_drv
+    rttime.TimeDriver*   time_drv
+    rtsig.SignalDriver*  sig_drv
 }
 
 // Weak-side aggregate held by Handle / context. Cross-thread safe.
@@ -25,11 +25,11 @@ mem DriverHandle {
 
 // Build a Driver pair. Caller passes already-created subsystems (or
 // null) so feature flags compose cleanly.
-const Driver::compose(io<rtio.IoDriver>, ioh<rtio.IoHandle>, time<rttime.TimeDriver>, timeh<rttime.TimeHandle>, sig<rtsig.SignalDriver>, sigh<rtsig.SignalDriverHandle>) (Driver, DriverHandle) {
+const Driver::compose(io<rtio.IoDriver>, ioh<rtio.IoHandle>, time_drv<rttime.TimeDriver>, timeh<rttime.TimeHandle>, sig<rtsig.SignalDriver>, sigh<rtsig.SignalDriverHandle>) (Driver, DriverHandle) {
     d<Driver> = new Driver
-    d.io     = io
-    d.time   = time
-    d.signal = sig
+    d.io_drv     = io
+    d.time_drv   = time_drv
+    d.sig_drv    = sig
 
     h<DriverHandle> = new DriverHandle
     h.io_handle     = ioh
@@ -48,12 +48,12 @@ Driver::park(handle<DriverHandle>) i32 {
 // Park for at most d. Time wheel narrows the wait if its next deadline
 // is closer; IoDriver::turn handles signal events via TOKEN_SIGNAL.
 Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
-    if this.time != null && handle.time_handle != null {
-        ms<u64> = d.secs * 1000 + d.nanos.inner.(u64) / 1000000
-        return this.time.park_internal(handle.time_handle, ms)
+    if this.time_drv != null && handle.time_handle != null {
+        ms<u64> = d.as_millis()
+        return this.time_drv.park_internal(handle.time_handle, ms)
     }
-    if this.io != null && handle.io_handle != null {
-        return this.io.turn(handle.io_handle, d)
+    if this.io_drv != null && handle.io_handle != null {
+        return this.io_drv.turn(handle.io_handle, d)
     }
     return 0
 }
@@ -61,8 +61,8 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
 // Tear-down sequence: signal first (so signalfd is unregistered before
 // the IO driver closes its registry), then IO, then time.
 Driver::shutdown(handle<DriverHandle>){
-    if this.signal != null this.signal.shutdown()
-    if this.io != null && handle.io_handle != null handle.io_handle.shutdown()
+    if this.sig_drv != null this.sig_drv.shutdown()
+    if this.io_drv != null && handle.io_handle != null handle.io_handle.shutdown()
     // Time has no explicit shutdown — wheel just stops being polled.
 }
 

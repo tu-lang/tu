@@ -5,7 +5,6 @@
 use runtime
 use std
 use io
-use asyncio.error as aerr
 
 KEEP_ALIVE_SEC<u64> = 10
 DEFAULT_QUEUE_DEPTH<u32> = 1024
@@ -43,7 +42,7 @@ Shared::is_empty() i32 {
 // Append item bits at tail. Caller holds the pool's shared_lock.
 Shared::push(item_bits<u64>) i32 {
     if (this.queue_tail - this.queue_head) >= this.queue_cap {
-        return aerr.SendFull
+        return RT_SEND_FULL
     }
     idx<u32> = this.queue_tail & (this.queue_cap - 1)
     this.queue[idx] = item_bits
@@ -87,13 +86,13 @@ const BlockingPool::new(thread_cap<u32>) BlockingPool {
 
 // Spawner is a thin handle over the pool, mirroring the runtime layout.
 mem Spawner {
-    BlockingPool* inner
+    BlockingPool* owner_pool
 }
 
 // Build a Spawner around pool.
 const Spawner::new(pool<BlockingPool>) Spawner {
     s<Spawner> = new Spawner
-    s.inner = pool
+    s.owner_pool = pool
     return s
 }
 
@@ -144,11 +143,11 @@ fn blocking_worker_run(){
 // Submit one item. Returns 0 on success, RuntimeShutdown when shutdown is
 // set and item is non-mandatory, SendFull when the queue is at capacity.
 Spawner::spawn(item<BlockingTaskItem>) i32 {
-    pool<BlockingPool> = this.inner
+    pool<BlockingPool> = this.owner_pool
     pool.shared_lock.lock()
     if pool.shared.shutdown == 1 && item.mandatory == 0 {
         pool.shared_lock.unlock()
-        return aerr.RuntimeShutdown
+        return RT_RUNTIME_SHUTDOWN
     }
     err<i32> = pool.shared.push(item.(u64))
     if err != 0 {

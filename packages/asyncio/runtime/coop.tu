@@ -3,8 +3,6 @@
 // scheduler gets a chance to run other tasks, preventing one ready
 // future from monopolising the worker.
 
-use asyncio.error as aerr
-
 DEFAULT_BUDGET<i32> = 128
 
 // Returns 0 to proceed (decrement the budget), NoBudget when the task
@@ -15,14 +13,14 @@ fn poll_proceed(ctx<u64>) (i32, u64) {
     rc<RuntimeContext> = current_context()
     if rc == null return 0, 0
     if rc.coop_budget <= 0 {
-        return aerr.NoBudget, 0
+        return RT_NO_BUDGET, 0
     }
     rc.coop_budget -= 1
     return 0, 1
 }
 
 // True while there is at least one budget unit remaining.
-fn has_budget_remaining() bool {
+fn has_budget_remaining() i32 {
     rc<RuntimeContext> = current_context()
     if rc == null return true
     if rc.coop_budget > 0 return true

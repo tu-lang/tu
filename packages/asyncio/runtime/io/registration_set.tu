@@ -15,7 +15,7 @@ mem RegistrationSetSynced {
 // Public handle bundling the lock and the synced fields.
 mem RegistrationSet {
     runtime.MutexInter*   lock
-    RegistrationSetSynced* synced
+    RegistrationSetSynced* list_state
 }
 
 // Build an empty set.
@@ -27,7 +27,7 @@ const RegistrationSet::new() RegistrationSet {
     rs<RegistrationSet> = new RegistrationSet
     rs.lock = new runtime.MutexInter
     rs.lock.init()
-    rs.synced = s
+    rs.list_state = s
     return rs
 }
 
@@ -36,7 +36,7 @@ const RegistrationSet::new() RegistrationSet {
 RegistrationSet::allocate(interest<netio.Interest>) (i32, ScheduledIo) {
     sio<ScheduledIo> = ScheduledIo::new()
     this.lock.lock()
-    s<RegistrationSetSynced> = this.synced
+    s<RegistrationSetSynced> = this.list_state
     if s.tail != null {
         prev<ScheduledIo> = s.tail
         prev.linked_list_pointers.next = &sio.linked_list_pointers
@@ -53,7 +53,7 @@ RegistrationSet::allocate(interest<netio.Interest>) (i32, ScheduledIo) {
 // Detach sio from the global list. Caller must guarantee sio is on this set.
 RegistrationSet::release(sio<ScheduledIo>){
     this.lock.lock()
-    s<RegistrationSetSynced> = this.synced
+    s<RegistrationSetSynced> = this.list_state
     p<util.Pointers> = sio.linked_list_pointers
     if p.prev != null {
         prev_node<util.Pointers> = p.prev
@@ -87,7 +87,7 @@ RegistrationSet::release(sio<ScheduledIo>){
 // Used by IoDriver::shutdown so every waiter wakes with OtherDriverTerminated.
 RegistrationSet::drain_all_for_shutdown(){
     this.lock.lock()
-    s<RegistrationSetSynced> = this.synced
+    s<RegistrationSetSynced> = this.list_state
     cur<ScheduledIo> = s.head
     this.lock.unlock()
     // Drop the lock before calling shutdown; shutdown grabs ScheduledIo's
@@ -103,7 +103,7 @@ RegistrationSet::drain_all_for_shutdown(){
 // Live count snapshot under the lock.
 RegistrationSet::num() u32 {
     this.lock.lock()
-    s<RegistrationSetSynced> = this.synced
+    s<RegistrationSetSynced> = this.list_state
     n<u32> = s.num
     this.lock.unlock()
     return n

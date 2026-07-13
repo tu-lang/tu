@@ -5,7 +5,7 @@ use runtime
 
 // Wraps a single MutexInter so future replacements (ticket / RW) stay isolated.
 mem Lock {
-    runtime.MutexInter* inner
+    runtime.MutexInter* gate_mutex
 }
 
 // Build the wrapper with a fresh underlying mutex.
@@ -13,19 +13,18 @@ const Lock::new() Lock {
     l<Lock> = new Lock
     m<runtime.MutexInter> = new runtime.MutexInter
     m.init()
-    l.inner = m
+    l.gate_mutex = m
     return l
 }
 
 // Block until the lock is acquired. Not re-entrant.
 Lock::lock(){
-    m<runtime.MutexInter> = this.inner
+    m<runtime.MutexInter> = this.gate_mutex
     m.lock()
 }
 
 // Release the lock; caller must currently hold it.
 Lock::unlock(){
-    m<runtime.MutexInter> = this.inner
+    m<runtime.MutexInter> = this.gate_mutex
     m.unlock()
 }
-

@@ -1,5 +1,4 @@
 use io
-use asyncio.error as aerr
 use asyncio.task
 use asyncio.runtime.scheduler as sched
 use asyncio.runtime.blocking as rtblk
@@ -91,7 +90,7 @@ Handle::block_on(fut) i32, i64 {
         // multi_thread does not own block_on directly; route through the
         // current_thread's caller. The runtime root's block_on shim
         // handles this dispatch.
-        return aerr.RuntimeShutdown, 0
+        return RT_RUNTIME_SHUTDOWN, 0
     }
     ct<sched.CtHandle> = this.sched_handle.(sched.CtHandle)
     err<i32> = 0

@@ -13,24 +13,24 @@ NOTIFIED_PARK<i32> = 2
 // Per-thread park slot.
 mem CachedParkThread {
     i32          state    // atomic
-    rtcore.Note note
+    rtcore.Note park_note
 }
 
 // Build a CachedParkThread.
 const CachedParkThread::new() CachedParkThread {
     p<CachedParkThread> = new CachedParkThread
     p.state = EMPTY_PARK
-    p.note.Clear()
+    p.park_note.Clear()
     return p
 }
 
 // Block until somebody calls unpark.
-CachedParkThread::park(){
+CachedParkThread::wait_until_wake(){
     addr<i32*> = &this.state
     if atomic.cas(addr, NOTIFIED_PARK, EMPTY_PARK) != 0 return
     if atomic.cas(addr, EMPTY_PARK, PARKED_PARK) == 0 return
-    this.note.Sleep()
-    this.note.Clear()
+    this.park_note.Sleep()
+    this.park_note.Clear()
     atomic.cas(addr, PARKED_PARK, EMPTY_PARK)
     atomic.cas(addr, NOTIFIED_PARK, EMPTY_PARK)
 }
@@ -38,7 +38,7 @@ CachedParkThread::park(){
 // Park up to `d`. First-pass forwards to plain park; the IO/time driver
 // integration in build_* will replace this with a driver.park_timeout.
 CachedParkThread::park_timeout(d<sys.Duration>){
-    this.park()
+    this.wait_until_wake()
 }
 
 // Wake the parker. Idempotent.
@@ -46,7 +46,7 @@ CachedParkThread::unpark(){
     addr<i32*> = &this.state
     if atomic.cas(addr, EMPTY_PARK, NOTIFIED_PARK) != 0 return
     if atomic.cas(addr, PARKED_PARK, NOTIFIED_PARK) != 0 {
-        this.note.Wake()
+        this.park_note.Wake()
     }
 }
 

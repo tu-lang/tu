@@ -12,51 +12,50 @@ mem ShutdownInner {
 
 // Sender side; shutdown() is idempotent.
 mem ShutdownSender {
-    ShutdownInner* inner
+    ShutdownInner* shared_hub
 }
 
 // Receiver side; wait() blocks until done is set.
 mem ShutdownReceiver {
-    ShutdownInner* inner
+    ShutdownInner* shared_hub
 }
 
 // Build a fresh (Sender, Receiver) pair sharing one Inner.
 fn shutdown_channel() (ShutdownSender, ShutdownReceiver) {
-    inner<ShutdownInner> = new ShutdownInner
-    inner.done = 0
-    inner.lock = new runtime.MutexInter
-    inner.lock.init()
-    inner.notify.Clear()
-    s<ShutdownSender>   = new ShutdownSender   { inner: inner }
-    r<ShutdownReceiver> = new ShutdownReceiver { inner: inner }
+    hub<ShutdownInner> = new ShutdownInner
+    hub.done = 0
+    hub.lock = new runtime.MutexInter
+    hub.lock.init()
+    hub.notify.Clear()
+    s<ShutdownSender>   = new ShutdownSender   { shared_hub: hub }
+    r<ShutdownReceiver> = new ShutdownReceiver { shared_hub: hub }
     return s, r
 }
 
 // Flip done=1 and wake the receiver. Idempotent.
 ShutdownSender::shutdown(){
-    inner<ShutdownInner> = this.inner
-    inner.lock.lock()
-    if inner.done == 0 {
-        inner.done = 1
-        inner.lock.unlock()
-        inner.notify.Wake()
+    hub<ShutdownInner> = this.shared_hub
+    hub.lock.lock()
+    if hub.done == 0 {
+        hub.done = 1
+        hub.lock.unlock()
+        hub.notify.Wake()
         return
     }
-    inner.lock.unlock()
+    hub.lock.unlock()
 }
 
 // Block until done. Spurious wake-ups loop back.
 ShutdownReceiver::wait(){
-    inner<ShutdownInner> = this.inner
+    hub<ShutdownInner> = this.shared_hub
     loop {
-        inner.lock.lock()
-        if inner.done == 1 {
-            inner.lock.unlock()
+        hub.lock.lock()
+        if hub.done == 1 {
+            hub.lock.unlock()
             return
         }
-        inner.lock.unlock()
-        inner.notify.Sleep()
-        inner.notify.Clear()
+        hub.lock.unlock()
+        hub.notify.Sleep()
+        hub.notify.Clear()
     }
 }
-
