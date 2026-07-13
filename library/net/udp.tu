@@ -2,27 +2,28 @@ use std
 use io
 use sys
 
+// UDP socket wrapper around sys.UdpSocket.
 mem UdpSocket {
-    sys.UdpSocket* inner
+    sys.UdpSocket* socket_hub
 }
 
-  
 UdpSocket::recv_from(buf<io.Buf>) i32,u64,SocketAddr {
-    err<i32> , size<u64> , addr<SocketAddr> = this.inner.recv_from(buf)
+    err<i32> , size<u64> , addr<SocketAddr> = this.socket_hub.recv_from(buf)
     return err,size,addr
 }
 
 UdpSocket::send_to(buf<io.Buf> , addr<SocketAddr>) i32,u64 {
-    err<i32> , size<u64> = this.inner.send_to(buf, addr)
+    err<i32> , size<u64> = this.socket_hub.send_to(buf, addr)
     return err,size
 }
+
 UdpSocket::fromrawfd(fd<i32>)  UdpSocket {
     socket<sys.Socket> = new sys.Socket {
-        fd: sys.FileDesc::from_raw_fd(fd)
+        desc: sys.FileDesc::from_raw_fd(fd)
     }
     return new UdpSocket{
-        inner: new sys.UdpSocket { 
-            inner: socket 
+        socket_hub: new sys.UdpSocket {
+            socket_hub: socket
         }
     }
 }

@@ -1,10 +1,10 @@
 use fmt
 
 api IpAddr {
-    fn v4() i32 { return false}
-    fn v6() i32 { return false}
+    fn is_v4() i32 { return false}
+    fn is_v6() i32 { return false}
     fn string() string.String {
-        if this.v4() {
+        if this.is_v4() {
             addr<Ipv4Addr> = this
             return addr.string()
         }else {
@@ -13,7 +13,7 @@ api IpAddr {
         }
     }
     fn cmp(other<IpAddr>) i32 {
-        if this.v4() && other.v4() {
+        if this.is_v4() && other.is_v4() {
             addr1<Ipv4Addr> = this
             addr2<Ipv4Addr> = other
             if addr1.octets() == addr2.octets() {
@@ -21,7 +21,7 @@ api IpAddr {
             }
             return false
         }
-        if this.v6() && other.v6() {
+        if this.is_v6() && other.is_v6() {
             addr1<Ipv6Addr> = this
             addr2<Ipv6Addr> = other
             p1<u64*> = addr1.octets()

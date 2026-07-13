@@ -1,6 +1,17 @@
 use os
+use std
 
 NSEC_PER_SEC<u64> = 1000000000
+
+fn i64_checked_add(a<i64>, b<i64>) i32, i64 {
+    if b > 0 && a > runtime.I64_MAX - b {
+        return Err, 0
+    }
+    if b < 0 && a < runtime.I64_MIN - b {
+        return Err, 0
+    }
+    return Ok, a + b
+}
 
 mem Timespec {
     i64 tv_sec
@@ -19,13 +30,19 @@ const Timespec::new(tv_sec<i64>, tv_nsec<i64>)  Timespec {
     }
 }
 
+Timespec::now(clock_id<i32>) Timespec {
+    raw<std.TimeSpec> = new TimeSpec {}
+    std.clock_gettime(clock_id, &raw)
+    return Timespec::new(raw.sec, raw.nsec)
+}
+
 Timespec::cmp(other<Timespec>) i32 {
-    if this.tv_sec > other.tv_sec  return true
+    if this.tv_sec > other.tv_sec return 1
 
-    if this.tv_sec < other.tv_nsec return false
+    if this.tv_sec < other.tv_sec return 0
 
-    if this.tv_nsec >= other.tv_nsec return true
-    return false
+    if this.tv_nsec >= other.tv_nsec return 1
+    return 0
 }
 
 Timespec::sub_timespec(other<Timespec>) i32, Duration {
@@ -47,48 +64,46 @@ Timespec::sub_timespec(other<Timespec>) i32, Duration {
 }
 
 Timespec::checked_add_duration(other<Duration>) i32, Timespec {
-    erri32, secs<i64> = this.tv_sec.checked_add_unsigned(other.as_secs())
-    if  err != Ok return err
+    err<i32>, secs<i64> = i64_checked_add(this.tv_sec, other.as_secs().(i64))
+    if err != Ok return err, null
 
-    // Nano calculations can't overflow because nanos are <1B which fit
-    // in a u32.
     nsec<u32> = other.subsec_nanos() + this.tv_nsec
     if nsec >= NSEC_PER_SEC {
         nsec -= NSEC_PER_SEC
-        err , secs = secs.checked_add(1)
-        if err != Ok return err
+        err, secs = i64_checked_add(secs, 1)
+        if err != Ok return err, null
     }
     return Has, Timespec::new(secs, nsec)
 }
 
-Timespec::from(t<std.TimeSpec> ) Timespec {
-    return Timespec::new(t.tv_sec, t.tv_nsec)
+Timespec::from(ts<std.TimeSpec> ) Timespec {
+    return Timespec::new(ts.sec, ts.nsec)
 }
 
 
 mem Instant {
-    Timespec* t
+    Timespec* when
 }
 
 Instant::now() Instant {
     clock_id<i32> = CLOCK_MONOTONIC
-    return new Instant { 
-        t: Timespec::now(clock_id) 
+    return new Instant {
+        when: Timespec::now(clock_id)
     }
 }
 
 Instant::checked_sub_instant(other<Instant>) i32 ,Duration {
-    err<i32> ,d<Duration> = this.t.sub_timespec(other.t)
-    
+    err<i32> ,d<Duration> = this.when.sub_timespec(other.when)
+
     return err, d
 }
 
 Instant::checked_add_duration(other<Duration>) i32,Instant {
-    err<i32> , t<TimeSpec> = this.t.checked_add_duration(other)
+    err<i32> , new_ts<Timespec> = this.when.checked_add_duration(other)
     if err != Ok return err
 
     return Has, new Instant {
-        t: t
+        when: new_ts
     }
 }
 
@@ -116,7 +131,7 @@ const Instant::far_future()  Instant {
 }
 
 const Instant::add(s<Instant> , dur<Duration>) Instant {
-    has<i32> , inst<Instant> = s.checked_add(dur).expect("overflow when adding duration to instant")
+    has<i32> , inst<Instant> = s.checked_add(dur)
     if has != Has {
         runtime.dief("overflow when adding duration to instant")
     }
@@ -129,37 +144,37 @@ Instant::checked_add(duration<Duration>) i32,Instant {
 }
 
 mem Nanoseconds {
-    u32 inner 
+    u32 bits
 }
 
 mem Duration {
     u64 secs
-    Nanoseconds nanos // Always 0 <= nanos < NANOS_PER_SEC
+    Nanoseconds subsec_nano // Always 0 <= bits < NANOS_PER_SEC
 }
 
 SECOND<Duration:> = new Duration{
     secs: 1,
-    nanos: 0,
+    subsec_nano: new Nanoseconds { bits: 0 },
 }
 MILLISECOND<Duration:> = new Duration{
     secs: 0,
-    nanos: NANOS_PER_MILLI % NANOS_PER_SEC,
+    subsec_nano: new Nanoseconds { bits: NANOS_PER_MILLI % NANOS_PER_SEC },
 }
 MICROSECOND<Duration:> = new Duration {
     secs: 0,
-    nanos: NANOS_PER_MICRO % NANOS_PER_SEC,
+    subsec_nano: new Nanoseconds { bits: NANOS_PER_MICRO % NANOS_PER_SEC },
 }
 NANOSECOND<Duration:> = new Duration{
     secs: 0 ,
-    nanos: 1,
+    subsec_nano: new Nanoseconds { bits: 1 },
 }
 ZERO<Duration:> = new Duration{
     secs: 0 ,
-    nanos: 0,
+    subsec_nano: new Nanoseconds { bits: 0 },
 }
 MAX<Duration:> = new Duration {
     secs: runtime.U64_MAX,
-    nanos: 0
+    subsec_nano: new Nanoseconds { bits: 0 },
 }
 
 fn u64_checked_add(a<u64>, b<u64>) u64 {
@@ -168,13 +183,13 @@ fn u64_checked_add(a<u64>, b<u64>) u64 {
     }
     return a + b
 }
-const Duration::new(secs<u64>, nanos<u32>)  Duration {
-    secs = u64_checked_add(secs,nanos / NANOS_PER_SEC)
-    nanos = nanos % NANOS_PER_SEC
-    // SAFETY: nanos % NANOS_PER_SEC < NANOS_PER_SEC, therefore nanos is within the valid range
-    return new Duration { 
-        secs: secs, 
-        nanos: nanos 
+const Duration::new(secs<u64>, nano_count<u32>)  Duration {
+    secs = u64_checked_add(secs, nano_count / NANOS_PER_SEC)
+    rem<u32> = nano_count % NANOS_PER_SEC
+    // SAFETY: rem < NANOS_PER_SEC, therefore bits is within the valid range
+    return new Duration {
+        secs: secs,
+        subsec_nano: new Nanoseconds { bits: rem },
     }
 }
 const Duration::from_secs(secs<u64>) Duration {
@@ -195,13 +210,13 @@ Duration::as_secs() u64 {
 }
 
 Duration::subsec_nanos()  u32 {
-    return this.nanos.inner
+    return this.subsec_nano.bits
 }
 Duration::as_millis()  u64 {
-    return this.secs  * MILLIS_PER_SEC + (this.nanos.inner / NANOS_PER_MILLI)
+    return this.secs  * MILLIS_PER_SEC + (this.subsec_nano.bits / NANOS_PER_MILLI)
 }
 
 Duration::as_nanos() u64 {
-    return this.secs * NANOS_PER_SEC + this.nanos.inner
+    return this.secs * NANOS_PER_SEC + this.subsec_nano.bits
 }
 

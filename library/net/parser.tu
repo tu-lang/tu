@@ -7,149 +7,149 @@ PARSER_U32_MAX<u32> = 2147483647.(u32)
 mem Parser {
     // Parsing as ASCII, so can use byte array.
     u8* state
-    i32 len
+    i32 remain
 }
 
 const Parser::new(input<u8*>, len<i32>) Parser {
-    return new Parser { state: input, len: len }
+    return new Parser { state: input, remain: len }
 }
 
-// Restore cursor when inner reports failure (None).
-Parser::read_none_atomically(inner) i32 {
+// Restore cursor when step_fn reports failure (None).
+Parser::read_none_atomically(step_fn) i32 {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None
     }
     return Has
 }
 
-Parser::read_u8_atomically(inner) i32, u8 {
+Parser::read_u8_atomically(step_fn) i32, u8 {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32>, result<u8> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32>, result<u8> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None, 0
     }
     return Has, result
 }
 
-Parser::read_u16_atomically(inner) i32, u16 {
+Parser::read_u16_atomically(step_fn) i32, u16 {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32>, result<u16> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32>, result<u16> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None, 0
     }
     return Has, result
 }
 
-Parser::read_u32_atomically(inner) i32, u32 {
+Parser::read_u32_atomically(step_fn) i32, u32 {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32>, result<u32> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32>, result<u32> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None, 0
     }
     return Has, result
 }
 
-Parser::read_ipv4_atomically(inner) i32, Ipv4Addr {
+Parser::read_ipv4_atomically(step_fn) i32, Ipv4Addr {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32>, result<Ipv4Addr> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32>, result<Ipv4Addr> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None, null
     }
     return Has, result
 }
 
-Parser::read_ipv6_atomically(inner) i32, Ipv6Addr {
+Parser::read_ipv6_atomically(step_fn) i32, Ipv6Addr {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32>, result<Ipv6Addr> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32>, result<Ipv6Addr> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None, null
     }
     return Has, result
 }
 
-Parser::read_sock_atomically(inner) i32, SocketAddrV4 {
+Parser::read_sock_atomically(step_fn) i32, SocketAddrV4 {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32>, result<SocketAddrV4> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32>, result<SocketAddrV4> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None, null
     }
     return Has, result
 }
 
-Parser::read_sockv6_atomically(inner) i32, SocketAddrV6 {
+Parser::read_sockv6_atomically(step_fn) i32, SocketAddrV6 {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32>, result<SocketAddrV6> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32>, result<SocketAddrV6> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None, null
     }
     return Has, result
 }
 
 // Legacy generic atomic helper kept for older call sites.
-Parser::read_atomically(inner) i32, u64 {
+Parser::read_atomically(step_fn) i32, u64 {
     saved_state<u8*> = this.state
-    saved_len<i32> = this.len
-    has<i32>, result<u64> = inner(this)
+    saved_len<i32> = this.remain
+    has<i32>, result<u64> = step_fn(this)
     if has == None {
         this.state = saved_state
-        this.len = saved_len
+        this.remain = saved_len
         return None, 0
     }
     return Has, result
 }
 
-// Run inner and require the entire input to be consumed.
-Parser::parse_with(inner, kind<i32>) i32, SocketAddr {
-    has<i32>, result<SocketAddr> = inner(this)
+// Run step_fn and require the entire input to be consumed.
+Parser::parse_with(step_fn, kind<i32>) i32, SocketAddr {
+    has<i32>, result<SocketAddr> = step_fn(this)
     if has == None {
         return io.OtherParse, null
     }
-    if this.len == 0 {
+    if this.remain == 0 {
         return io.Ok, result
     }
     return io.OtherParse, null
 }
 
 Parser::peek_char() i32, i8 {
-    if this.len == 0 {
+    if this.remain == 0 {
         return None, 0
     }
     return Has, this.state[0]
 }
 
 Parser::read_char() i32, i8 {
-    if this.len == 0 {
+    if this.remain == 0 {
         return None, 0
     }
     first<i8> = this.state[0]
     this.state += 1
-    this.len -= 1
+    this.remain -= 1
     return Has, first
 }
 
@@ -180,67 +180,67 @@ Parser::read_u16_given_char(target<i8>) i32 {
     return this.read_given_char(target)
 }
 
-fn parser_u8_sep_body(p<Parser>, sep<i8>, index<i32>, inner) i32, u8 {
+fn parser_u8_sep_body(p<Parser>, sep<i8>, index<i32>, step_fn) i32, u8 {
     if index > 0 {
         if p.read_u8_given_char(sep) == None {
             return None, 0
         }
     }
-    return inner(p)
+    return step_fn(p)
 }
 
-fn parser_u16_sep_body(p<Parser>, sep<i8>, index<i32>, inner) i32, u16 {
+fn parser_u16_sep_body(p<Parser>, sep<i8>, index<i32>, step_fn) i32, u16 {
     if index > 0 {
         if p.read_u16_given_char(sep) == None {
             return None, 0
         }
     }
-    return inner(p)
+    return step_fn(p)
 }
 
-fn parser_ipv4_sep_body(p<Parser>, sep<i8>, index<i32>, inner) i32, Ipv4Addr {
+fn parser_ipv4_sep_body(p<Parser>, sep<i8>, index<i32>, step_fn) i32, Ipv4Addr {
     if index > 0 {
         if p.read_given_char(sep) == None {
             return None, null
         }
     }
-    return inner(p)
+    return step_fn(p)
 }
 
-fn parser_sep_body(p<Parser>, sep<i8>, idx<i32>, inner) i32, u64 {
+fn parser_sep_body(p<Parser>, sep<i8>, idx<i32>, step_fn) i32, u64 {
     if idx > 0 {
         if p.read_given_char(sep) == None {
             return None, 0
         }
     }
-    return inner(p)
+    return step_fn(p)
 }
 
-Parser::read_u8_separator(sep<i8>, index<i32>, inner) i32, u8 {
+Parser::read_u8_separator(sep<i8>, index<i32>, step_fn) i32, u8 {
     has<i32>, ret<u8> = this.read_u8_atomically(fn(p) {
-        return parser_u8_sep_body(p, sep, index, inner)
+        return parser_u8_sep_body(p, sep, index, step_fn)
     })
     return has, ret
 }
 
-Parser::read_u16_separator(sep<i8>, index<i32>, inner) i32, u16 {
+Parser::read_u16_separator(sep<i8>, index<i32>, step_fn) i32, u16 {
     has<i32>, ret<u16> = this.read_u16_atomically(fn(p) {
-        return parser_u16_sep_body(p, sep, index, inner)
+        return parser_u16_sep_body(p, sep, index, step_fn)
     })
     return has, ret
 }
 
-Parser::read_ipv4_separator(sep<i8>, index<i32>, inner) i32, Ipv4Addr {
+Parser::read_ipv4_separator(sep<i8>, index<i32>, step_fn) i32, Ipv4Addr {
     has<i32>, ret<Ipv4Addr> = this.read_ipv4_atomically(fn(p) {
-        return parser_ipv4_sep_body(p, sep, index, inner)
+        return parser_ipv4_sep_body(p, sep, index, step_fn)
     })
     return has, ret
 }
 
-Parser::read_separator(sep<i8>, index<u64>, inner) i32, u64 {
+Parser::read_separator(sep<i8>, index<u64>, step_fn) i32, u64 {
     idx<i32> = index.(i32)
     has<i32>, ret<u64> = this.read_atomically(fn(p) {
-        return parser_sep_body(p, sep, idx, inner)
+        return parser_sep_body(p, sep, idx, step_fn)
     })
     return has, ret
 }
@@ -498,31 +498,11 @@ Parser::read_socket_addr() i32, SocketAddr {
     return None, null
 }
 
-enum {
-    Ip,
-    Ipv4,
-    Ipv6,
-    Socket,
-    SocketV4,
-    SocketV6,
-}
-
 fn parse_ascii_bytes(b<u8*>, len<i32>) i32, SocketAddr {
     p<Parser> = Parser::new(b, len)
     ok<i32>, ret<SocketAddr> = p.parse_with(fn(p2) {
         rh<i32>, rv<SocketAddr> = p2.read_socket_addr()
         return rh, rv
-    }, Socket)
+    }, 0)
     return ok, ret
-}
-
-fn err_description(kind<i32>) i8* {
-    match kind {
-        Ip : return "invalid IP address syntax",
-        Ipv4 : return "invalid IPv4 address syntax",
-        Ipv6 : return "invalid IPv6 address syntax",
-        Socket : return "invalid socket address syntax",
-        SocketV4 : return "invalid IPv4 socket address syntax",
-        SocketV6 : return "invalid IPv6 socket address syntax",
-    }
 }

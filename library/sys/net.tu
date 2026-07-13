@@ -12,55 +12,60 @@ fn cvt_gai(err<i32>) i32 {
 }
 
 mem Socket {
-    FileDesc* fd
+    FileDesc* desc
 }
 
-const Socket::fromfd(file_desc<FileDesc>) FileDesc {
-    return new FileDesc{fd: file_desc}
-}
-
-Socket::new(addr<net.SocketAddr>, ty<i32>) i32, Socket {
-    match addr.v4() {
-        true : return Socket::new_raw(AF_INET, ty)
-        false: return Socket::new_raw(AF_INET6, ty)
+const Socket::fromfd(file_desc<FileDesc>) Socket {
+    return new Socket {
+        desc: new FileDesc { raw_fd: file_desc.raw_fd }
     }
 }
 
-const Socket::new_raw(fam<i32> , ty<i32>) i32, Socket {
+Socket::new(addr<net.SocketAddr>, ty<i32>) i32, Socket {
+    if addr.is_v4() {
+        err<i32>, sock<Socket> = new_socket_raw(AF_INET, ty)
+        return err, sock
+    }
+    err<i32>, sock6<Socket> = new_socket_raw(AF_INET6, ty)
+    return err, sock6
+}
+
+fn new_socket_raw(fam<i32>, ty<i32>) i32, Socket {
     // On platforms that support it we pass the SOCK_CLOEXEC
     // flag to atomically create the socket and set it as
     // CLOEXEC. On Linux this was added in 2.6.27.
     //TODO:
-    err<i32>,fd<i32> = cvt(sys_socket(fam, ty | SOCK_CLOEXEC, 0))
-    if err != Ok return err,fd
+    err<i32>, sock_fd<i32> = cvt(sys_socket(fam, ty | SOCK_CLOEXEC, 0))
+    if err != Ok return err, null
 
-    if fd == runtime.U32_MAX {
+    if sock_fd == 0xFFFFFFFF.(i32) {
         runtime.printf("socket new_raw invalid fd")
         os.exit(-1)
     }
     return Ok, new Socket{
-        fd: new FileDesc{
-            fd: fd
+        desc: new FileDesc{
+            raw_fd: sock_fd
         }
     }
 }
 
 Socket::duplicate() i32, Socket {
-    err<i32> , fd<FileDesc> = this.fd.duplicate()
-    if err != Ok return err
+    err<i32> , dup_desc<FileDesc> = this.desc.duplicate()
+    if err != Ok return err, null
 
     return Ok , new Socket {
-        fd: fd
+        desc: dup_desc
     }
 }
 
-Socket::recv_with_flags(buf<io.ReadBufCursor> , flags<i32> ) i32 {
+Socket::recv_with_flags(buf<io.BufferCursor> , flags<i32> ) i32 {
+    slice<io.Buf> = buf.as_mut()
     err<i32>, ret<i32> = cvt(
         //TODO:
         sys_recv(
-            this.fd.as_raw_fd(),
-            buf.ptr() ,
-            buf.capacity(),
+            file_desc_raw(this.desc),
+            slice.ptr() ,
+            slice.len(),
             flags,
         )
     )
@@ -71,14 +76,11 @@ Socket::recv_with_flags(buf<io.ReadBufCursor> , flags<i32> ) i32 {
 }
 
 Socket::read(buf<io.Buf>) i32 , u64 {
-    buf<io.ReadBuf> = io.ReadBuf::from(buf)
-    err<i32> = this.recv_with_flags(buf.unfilled(), 0)
-    if err != Ok return err
-
-    return Ok, buf.len()
+    err<i32>, size<u64> = this.desc.read_io(buf)
+    return err, size
 }
 
-Socket::read_buf(buf<io.ReadBufCursor>) i32 {
+Socket::read_buf(buf<io.BufferCursor>) i32 {
     return this.recv_with_flags(buf, 0)
 }
 
@@ -93,7 +95,7 @@ Socket::recv_from_with_flags(
     err<i32> , n<i64> = cvt(
         //TODO:
         sys_recvfrom(
-            this.fd.as_raw_fd(),
+            file_desc_raw(this.desc),
             buf.ptr(),
             buf.len(),
             flags,
@@ -115,7 +117,7 @@ Socket::recv_from(buf<io.Buf>) i32 , u64 , net.SocketAddr {
 }
 
 Socket::write(buf<io.Buf>) i32 , u64 {
-    err<i32> , size<u64> = this.fd.write(buf)
+    err<i32> , size<u64> = this.desc.write_io(buf)
     return err , size
 }
 
@@ -128,7 +130,7 @@ Socket::shutdown(how<i32>) i32 {
         _: runtime.printf("shutdown type err")
     }
     //TODO:
-    err<i32> =  cvt(sys_shutdown(this.fd.as_raw_fd(), shut) )
+    err<i32> =  cvt(sys_shutdown(file_desc_raw(this.desc), shut) )
     return err
 }
 
@@ -145,7 +147,7 @@ Socket::take_error() i32 ,i32, i32 {
 
 // This is used by sys_common code to abstract over Windows and Unix.
 Socket::as_raw() i32 {
-    return this.fd.as_raw_fd()
+    return file_desc_raw(this.desc)
 }
 
 fn on_resolver_failure() {
@@ -221,20 +223,20 @@ fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
 mem LookupHost {
     AddrInfo* original
     AddrInfo* cur
-    u16 port
+    u16 port_val
 }
 
 LookupHost::port() u16 {
-    return this.port
+    return this.port_val
 }
 
-LookupHost::next() i32,net.SockAddr {
+LookupHost::next() i32,net.SocketAddr {
     loop {
         cur<AddrInfo> = this.cur
         if cur == null return None
 
-        this.cur = cur.ai_next
-        ok<i32> , addr<net.SockAddr> = sockaddr_to_addr(cur.ai_addr, cur.ai_addrlen)
+        this.cur = cur.next
+        ok<i32> , addr<net.SocketAddr> = sockaddr_to_addr(cur.ai_addr, cur.ai_addrlen)
         if ok {
             return Has,addr
         } 
@@ -243,6 +245,12 @@ LookupHost::next() i32,net.SockAddr {
 }
 
 
+
+// Package bridge for net.socket_addr.
+fn lookuphost_fromstr(s<string.String>) i32, LookupHost {
+    err<i32>, ret<LookupHost> = LookupHost::lookuphost_fromstr(s)
+    return err, ret
+}
 
 //NOTICE: free lookuphost.original
 const LookupHost::lookuphost_fromstr(s<string.String>) i32 , LookupHost {
@@ -268,25 +276,25 @@ const LookupHost::from(host<string.String> , port<u16>) i32, LookupHost {
     return Ok , new LookupHost {
         original: res,
         cur: res,
-        port: port,
+        port_val: port,
     }
 }
 
 mem TcpStream {
-    Socket* inner
+    Socket* socket_hub
 }
 
     
 TcpStream::socket() Socket {
-    return this.inner
+    return this.socket_hub
 }
 TcpStream::read(buf<io.Buf>) i32, u64 {
-    ret<i32> , size<u64> = this.inner.read(buf)
+    ret<i32> , size<u64> = this.socket_hub.read(buf)
     return ret,size
 }
 
 TcpStream::read_buf(buf<io.BufferCursor>) i32 {
-    return this.inner.read_buf(buf)
+    return this.socket_hub.read_buf(buf)
 }
 
 TcpStream::write(buf<io.Buf>) i32, u64 {
@@ -296,31 +304,31 @@ TcpStream::write(buf<io.Buf>) i32, u64 {
     }
     ok<i32> , ret<i32> = cvt(
         //TODO:
-        sys_send(this.inner.as_raw(), buf.ptr(), len, MSG_NOSIGNAL)
+        sys_send(this.socket_hub.as_raw(), buf.ptr(), len, MSG_NOSIGNAL)
     )
     if ok != Ok return ok
     return Ok , ret
 }
 
 TcpStream::shutdown(how<i32>) i32 {
-    return this.inner.shutdown(how)
+    return this.socket_hub.shutdown(how)
 }
 
 TcpStream::take_error() i32,i32,i32 {
-    ok<i32>, has<i32> , ret<i32> = this.inner.take_error()
+    ok<i32>, has<i32> , ret<i32> = this.socket_hub.take_error()
     return ok,has,ret
 }
 
 mem TcpListener {
-    Socket* inner
+    Socket* socket_hub
 }
 
 TcpListener::socket() Socket {
-    return this.inner
+    return this.socket_hub
 }
 
 mem UdpSocket {
-    Socket* inner
+    Socket* socket_hub
 }
 
 UdpSocket::bind(ret<i32> , addr<net.SocketAddr>) i32, UdpSocket {
@@ -335,16 +343,16 @@ UdpSocket::bind(ret<i32> , addr<net.SocketAddr>) i32, UdpSocket {
     if ret != Ok return ret
 
     return Ok , new UdpSocket{
-        inner: sock
+        socket_hub: sock
     }
 }
 
 UdpSocket::socket() Socket {
-    return this.inner
+    return this.socket_hub
 }
 
 UdpSocket::recv_from(buf<io.Buf>) i32, u64, net.SocketAddr {
-    ret<i32> , size<u64> , addr<net.SocketAddr> = this.inner.recv_from(buf)
+    ret<i32> , size<u64> , addr<net.SocketAddr> = this.socket_hub.recv_from(buf)
     return ret,size,addr
 }
 
@@ -357,7 +365,7 @@ UdpSocket::send_to(buf<io.Buf> , dst<net.SocketAddr>) i32, u64 {
     ok<i32> , ret<i32> = cvt(
         //TODO:
         sys_sendto(
-            this.inner.as_raw(),
+            this.socket_hub.as_raw(),
             buf.ptr(),
             len,
             MSG_NOSIGNAL,
@@ -371,6 +379,6 @@ UdpSocket::send_to(buf<io.Buf> , dst<net.SocketAddr>) i32, u64 {
 
 
 mem SocketAddrCRepr {
-    u64* v4 
-    u64* v6
+    u64* v4_store
+    u64* v6_store
 }

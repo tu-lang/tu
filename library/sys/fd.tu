@@ -1,80 +1,52 @@
 use io
 
-// Raw Unix-like file descriptors.
-api AsRawFd {
-    fn as_raw_fd() (i32)
-}
-
 mem FileDesc {
-    i32 fd
+    i32 raw_fd
 }
 
 READ_LIMIT<u64> = 18446744073709551615
 UIO_MAXIOV<i32> = 1024
 F_DUPFD_CLOEXEC<i32> = 1030
 
-
 fn max_iov() u64 {
     return UIO_MAXIOV
 }
 
 FileDesc::try_clone() i32 ,FileDesc {
-    raw_fd<i32> = this.fd
-    cmd<i32> = F_DUPFD_CLOEXEC
-    //TODO
-    err<i32>, fd<i32> = cvt(sys_fcntl(raw_fd, cmd, 3))
+    fd_val<i32> = this.raw_fd
+    err<i32>, new_fd<i32> = cvt(sys_fcntl(fd_val, F_DUPFD_CLOEXEC, 3))
     if err != Ok return err
-
-    return Ok, new FileDesc {
-        fd: fd
-    }
+    return Ok, new FileDesc { raw_fd: new_fd }
 }
 
-FileDesc::from_raw_fd(fd<i32> ) FileDesc {
-    if fd == runtime.U32_MAX {
+FileDesc::from_raw_fd(fd_val<i32>) FileDesc {
+    if fd_val == 0xFFFFFFFF.(i32) {
         runtime.printf("fd is u32 max\n")
         os.die(1)
     }
-    // SAFETY: we just asserted that the value is in the valid range and isn't `-1` (the only value bigger than `0xFF_FF_FF_FE` unsigned)
-    return new FileDesc {
-        fd: fd
-    }
+    return new FileDesc { raw_fd: fd_val }
 }
 
-FileDesc::read(buf<io.Buf>) i32,u64 {
-    err<i32>,  ret<i64> = cvt(
-        //TODO:
-        sys_read(
-            this.as_raw_fd(),
-            buf.ptr(),
-            buf.len()
-        )
-    )
-    return err,ret
+FileDesc::read_io(buf<io.Buf>) i32,u64 {
+    err<i32>, ret<i64> = cvt(sys_read(this.raw_fd, buf.ptr(), buf.len()))
+    return err, ret
 }
 
-FileDesc::write(buf<io.Buf>) i32, u64 {
-    err<i32> , ret<u64> = cvt(
-        //TODO
-        sys_write(
-            this.as_raw_fd(),
-            buf.ptr(),
-            buf.len()
-        )
-    )
+FileDesc::write_io(buf<io.Buf>) i32, u64 {
+    err<i32>, ret<u64> = cvt(sys_write(this.raw_fd, buf.ptr(), buf.len()))
     return err, ret
 }
 
 FileDesc::duplicate() i32, FileDesc {
-    err<i32> , ret<FileDesc> = this.try_clone()
-    return err,ret
+    err<i32>, ret<FileDesc> = this.try_clone()
+    return err, ret
 }
 
-FileDesc::as_raw_fd() i32 {
-    return this.fd
+FileDesc::close_io() {
+    sys_close(this.raw_fd)
 }
 
-FileDesc::close() {
-    //TODO:
-    sys_close(this.fd)
+// Package bridge so net/sys callers avoid trait impl on FileDesc in this package.
+fn file_desc_raw(fd<FileDesc>) i32 {
+    return fd.raw_fd
 }

@@ -1,5 +1,5 @@
 mem U16 {
-	u16 inner
+	u16 bits
 }
 
 const U16::is_le() i32 {
