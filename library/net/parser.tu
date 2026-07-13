@@ -99,7 +99,7 @@ Parser::read_sock_atomically(step_fn) i32, SocketAddrV4 {
     return Has, result
 }
 
-Parser::read_sockv6_atomically(step_fn) i32, SocketAddrV6 {
+Parser::read_sock6_atomically(step_fn) i32, SocketAddrV6 {
     saved_state<u8*> = this.state
     saved_len<i32> = this.remain
     has<i32>, result<SocketAddrV6> = step_fn(this)
@@ -404,7 +404,7 @@ Parser::read_ipv6_addr() i32, Ipv6Addr {
     return has, ret
 }
 
-fn parser_read_port_body(p<Parser>) i32, u16 {
+fn parser_read_port_num_body(p<Parser>) i32, u16 {
     has<i32> = p.read_u16_given_char(':'.(i8))
     if has != Has {
         return None, 0
@@ -413,9 +413,9 @@ fn parser_read_port_body(p<Parser>) i32, u16 {
     return ph, pv
 }
 
-Parser::read_port() i32, u16 {
+Parser::read_port_num() i32, u16 {
     has<i32>, ret<u16> = this.read_u16_atomically(fn(p) {
-        return parser_read_port_body(p)
+        return parser_read_port_num_body(p)
     })
     return has, ret
 }
@@ -436,64 +436,67 @@ Parser::read_scope_id() i32, u32 {
     return has, ret
 }
 
-fn parser_socket_addr_v4_body(p<Parser>) i32, SocketAddrV4 {
-    has<i32>, ip<Ipv4Addr> = p.read_ipv4_addr()
-    if has != Has {
+fn parser_read_socket_addr_v4_body(p<Parser>) i32, SocketAddrV4 {
+    ih<i32>, ip<Ipv4Addr> = p.read_ipv4_addr()
+    if ih != Has {
         return None, null
     }
-    has, port<u16> = p.read_port()
-    if has != Has {
+    ph<i32>, port_num<u16> = p.read_port_num()
+    if ph != Has {
         return None, null
     }
-    return Has, SocketAddrV4::new(ip, port)
+    sa<SocketAddrV4> = socket_addr_v4_from_ipv4_port(ip, port_num)
+    return Has, sa
+}
+
+fn parser_read_socket_addr_v6_body(p<Parser>) i32, SocketAddrV6 {
+    bh<i32> = p.read_given_char('['.(i8))
+    if bh != Has {
+        return None, null
+    }
+    ih<i32>, ip<Ipv6Addr> = p.read_ipv6_addr()
+    if ih != Has {
+        return None, null
+    }
+    sh<i32>, scope_raw<u32> = p.read_scope_id()
+    scope_id<u32> = 0
+    if sh == Has {
+        scope_id = scope_raw
+    }
+    cbh<i32> = p.read_given_char(']'.(i8))
+    if cbh != Has {
+        return None, null
+    }
+    ph<i32>, port_num<u16> = p.read_port_num()
+    if ph != Has {
+        return None, null
+    }
+    sa<SocketAddrV6> = socket_addr_v6_from_parts(ip, port_num, 0, scope_id)
+    return Has, sa
 }
 
 Parser::read_socket_addr_v4() i32, SocketAddrV4 {
     has<i32>, ret<SocketAddrV4> = this.read_sock_atomically(fn(p) {
-        return parser_socket_addr_v4_body(p)
+        return parser_read_socket_addr_v4_body(p)
     })
     return has, ret
 }
 
-fn parser_socket_addr_v6_body(p<Parser>) i32, SocketAddrV6 {
-    has<i32> = p.read_given_char('['.(i8))
-    if has != Has {
-        return None, null
-    }
-    has, ip<Ipv6Addr> = p.read_ipv6_addr()
-    if has != Has {
-        return None, null
-    }
-    has, scope_id<u32> = p.read_scope_id()
-    if has != Has {
-        scope_id = 0
-    }
-    has = p.read_given_char(']'.(i8))
-    if has != Has {
-        return None, null
-    }
-    has, port<u16> = p.read_port()
-    if has != Has {
-        return None, null
-    }
-    return Has, SocketAddrV6::new(ip, port, 0, scope_id)
-}
-
 Parser::read_socket_addr_v6() i32, SocketAddrV6 {
-    has<i32>, ret<SocketAddrV6> = this.read_sockv6_atomically(fn(p) {
-        return parser_socket_addr_v6_body(p)
+    has<i32>, ret<SocketAddrV6> = this.read_sock6_atomically(fn(p) {
+        return parser_read_socket_addr_v6_body(p)
     })
     return has, ret
 }
 
 Parser::read_socket_addr() i32, SocketAddr {
-    ok<i32>, addr4<SocketAddrV4> = this.read_socket_addr_v4()
-    if ok == Has {
-        return Has, socket_addr_from_v4(addr4)
+    v4h<i32>, v4<SocketAddrV4> = this.read_socket_addr_v4()
+    if v4h == Has {
+        return Has, socket_addr_from_v4(v4)
     }
-    ok, addr6<SocketAddrV6> = this.read_socket_addr_v6()
-    if ok == Has {
-        return Has, socket_addr_from_v6(addr6)
+    v6h<i32>, v6<SocketAddrV6> = this.read_socket_addr_v6()
+    if v6h == Has {
+        return Has, socket_addr_from_v6(v6)
     }
     return None, null
 }
