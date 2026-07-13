@@ -31,7 +31,7 @@ impl task.Schedule for CtHandle {
         }
         // Foreign thread or no active context: route through inject.
         this.shared.inject.push(notif)
-        this.shared.woken.notify_one()
+        notify_one_raw(this.shared.woken)
     }
 
     fn release(raw){

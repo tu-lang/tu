@@ -11,7 +11,7 @@ use asyncio.task
 mem CtShared {
     Inject*           inject
     task.OwnedTasks*  owned
-    sync.Notify*      woken
+    u64          woken           // Notify* bits; use notify_*_raw bridges
     u64          driver_handle      // raw bits of runtime.driver.Handle*
     u64          blocking_spawner   // raw bits of runtime.blocking.Spawner*
     u64          config             // raw bits of runtime.Config*
@@ -22,7 +22,7 @@ const CtShared::new() CtShared {
     s<CtShared> = new CtShared
     s.inject           = Inject::new()
     s.owned            = task.OwnedTasks::new()
-    s.woken            = sync.Notify::new()
+    s.woken            = notify_new_raw()
     s.driver_handle    = 0
     s.blocking_spawner = 0
     s.config           = 0

@@ -8,22 +8,22 @@ use asyncio.task
 use asyncio.error as aerr
 
 // Empty JoinHandle used when there is no active runtime to spawn onto.
-fn empty_join() JoinHandle {
-    jh<JoinHandle> = new JoinHandle
+fn empty_join() task.JoinHandle {
+    jh<task.JoinHandle> = new task.JoinHandle
     jh.init(null)
     return jh
 }
 
 // Spawn `fut` on the active runtime. Outside a runtime this returns an empty
 // JoinHandle rather than aborting.
-fn spawn(fut) JoinHandle {
+fn spawn(fut) task.JoinHandle {
     err<i32>, h<rt.Handle> = rt.Handle::current()
     if err != 0 return empty_join()
     return h.spawn(fut)
 }
 
 // Spawn a synchronous closure on the active runtime's blocking pool.
-fn spawn_blocking(op<u64>) JoinHandle {
+fn spawn_blocking(op<u64>) task.JoinHandle {
     err<i32>, h<rt.Handle> = rt.Handle::current()
     if err != 0 return empty_join()
     return h.spawn_blocking(op)

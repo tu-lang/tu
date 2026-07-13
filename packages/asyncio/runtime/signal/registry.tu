@@ -13,7 +13,7 @@ NUM_SIGNALS<i32> = 64
 // "fired" edge and a counter the driver bumps on every observation.
 mem EventInfo {
     i32     signum
-    Notify* notify
+    u64     notify_bits   // Notify* bits; wake via notify_*_raw
     u64     fired_count   // monotonic; subscribers compare their last seen to detect new events
 }
 
@@ -21,7 +21,7 @@ mem EventInfo {
 const EventInfo::new(signum<i32>) EventInfo {
     e<EventInfo> = new EventInfo
     e.signum      = signum
-    e.notify      = sync.Notify::new()
+    e.notify_bits = notify_new_raw()
     e.fired_count = 0
     return e
 }
@@ -71,6 +71,6 @@ EventInfo::fired_count_snapshot() u64 {
 // Called by SignalDriver::process when read(signalfd) returns siginfo.
 EventInfo::fire(){
     this.fired_count += 1
-    this.notify.notify_waiters()
+    notify_waiters_raw(this.notify_bits)
 }
 

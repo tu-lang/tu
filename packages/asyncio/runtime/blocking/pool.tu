@@ -35,9 +35,9 @@ const Shared::new(queue_cap<u32>) Shared {
 }
 
 // True when no items are queued.
-Shared::is_empty() bool {
-    if this.queue_head == this.queue_tail return true
-    return false
+Shared::is_empty() i32 {
+    if this.queue_head == this.queue_tail return 1
+    return 0
 }
 
 // Append item bits at tail. Caller holds the pool's shared_lock.
