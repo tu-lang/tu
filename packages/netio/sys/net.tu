@@ -6,7 +6,7 @@ SOCK_NONBLOCK<i32> = 0x800
 SOCK_CLOEXEC<i32> = 0x80000
 
 fn new_ip_socket(addr<net.SocketAddr>, socket_type<i32>) i32, i32 {
-	if addr.v4() {
+	if net.socket_addr_is_v4(addr) {
 		err<i32>, fd<i32> = new_socket(libsys.AF_INET, socket_type)
 		return err, fd
 	}
@@ -26,7 +26,7 @@ mem SocketAddrCRepr {
 }
 
 fn socket_addr(addr<net.SocketAddr>) SocketAddrCRepr, i32 {
-	repr<libsys.SocketAddrCRepr>, len<u32> = addr.into_inner()
+	repr<libsys.SocketAddrCRepr>, len<u32> = net.socket_addr_into_inner(addr)
 	wrap<SocketAddrCRepr> = new SocketAddrCRepr
 	wrap.raw = repr.(u64)
 	wrap.raw_len = len.(u64)

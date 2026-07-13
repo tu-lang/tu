@@ -5,7 +5,7 @@ use runtime
 use sys as libsys
 
 fn new_for_addr(address<net.SocketAddr>) i32, i32 {
-	if address.v4() {
+	if net.socket_addr_is_v4(address) {
 		err<i32>, fd<i32> = new_socket(libsys.AF_INET, libsys.SOCK_STREAM)
 		return err, fd
 	}
