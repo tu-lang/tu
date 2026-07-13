@@ -489,11 +489,11 @@ Parser::read_socket_addr_v6() i32, SocketAddrV6 {
 Parser::read_socket_addr() i32, SocketAddr {
     ok<i32>, addr4<SocketAddrV4> = this.read_socket_addr_v4()
     if ok == Has {
-        return Has, addr4
+        return Has, socket_addr_from_v4(addr4)
     }
     ok, addr6<SocketAddrV6> = this.read_socket_addr_v6()
     if ok == Has {
-        return Has, addr6
+        return Has, socket_addr_from_v6(addr6)
     }
     return None, null
 }

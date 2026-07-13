@@ -5,3 +5,5 @@ SendErrorClosed<i32> = 0x0302000D
 SendErrorFull<i32>   = 0x0302000A
 RecvErrorEmpty<i32>  = 0x0302000C
 RecvErrorClosed<i32> = 0x0302000D
+MpscPushBusy<i32>      = 16908328   // same code as io.Other
+MpscPopEmpty<i32>      = 16908289   // same code as io.NotFound

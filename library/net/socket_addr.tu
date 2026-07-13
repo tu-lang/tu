@@ -1,64 +1,63 @@
 use io
 use sys
 
-api SocketAddr {
-    fn is_v4() i32 {
-        return false
-    }
-    fn is_v6() i32 {
-        return false
-    }
-    fn get_port() u16 {
-        if this.is_v4() {
-            addr<SocketAddrV4> = this
-            return addr.port()
-        }else {
-            addr<SocketAddrV6> = this
-            return addr.port()
-        }
-    }
+ADDR_V4_KIND<i32> = 4
+ADDR_V6_KIND<i32> = 6
 
-    fn assign_port(new_port<u16>) {
-        if this.is_v4() {
-            addr<SocketAddrV4> = this
-            return addr.set_port(new_port)
-        }else {
-            addr<SocketAddrV6> = this
-            return addr.set_port(new_port)
-        }
+// Tagged socket address; avoids api/impl SocketAddr (compiler object-func trap).
+mem SocketAddr {
+    i32 kind
+    SocketAddrV4* v4_store
+    SocketAddrV6* v6_store
+}
+
+fn socket_addr_from_v4(v4<SocketAddrV4>) SocketAddr {
+    return new SocketAddr { kind: ADDR_V4_KIND, v4_store: v4, v6_store: null }
+}
+
+fn socket_addr_from_v6(v6<SocketAddrV6>) SocketAddr {
+    return new SocketAddr { kind: ADDR_V6_KIND, v4_store: null, v6_store: v6 }
+}
+
+fn socket_addr_is_v4(addr<SocketAddr>) i32 {
+    return addr.kind == ADDR_V4_KIND
+}
+
+fn socket_addr_is_v6(addr<SocketAddr>) i32 {
+    return addr.kind == ADDR_V6_KIND
+}
+
+fn socket_addr_get_port(addr<SocketAddr>) u16 {
+    if socket_addr_is_v4(addr) {
+        return addr.v4_store.port()
     }
-    fn into_inner() sys.SocketAddrCRepr, u32 {
-        match this.is_v4() {
-            true : {
-                addr<SocketAddrV4> = this
-                sockaddr<i64*> = new sys.SocketAddrCRepr {
-                    v4_store: addr.into_inner()
-                }
-                return sockaddr, sizeof(sys.SockaddrIn)
-            }
-            false: {
-                addr<SocketAddrV6> = this
-                sockaddr<i64*> = new sys.SocketAddrCRepr {
-                    v6_store: addr.into_inner()
-                }
-                return sockaddr, sizeof(sys.SockaddrIn6)
-            }
-        }
+    return addr.v6_store.port()
+}
+
+fn socket_addr_assign_port(addr<SocketAddr>, new_port<u16>) {
+    if socket_addr_is_v4(addr) {
+        addr.v4_store.set_port(new_port)
+        return
     }
+    addr.v6_store.set_port(new_port)
+}
+
+fn socket_addr_into_inner(addr<SocketAddr>) sys.SocketAddrCRepr, u32 {
+    if socket_addr_is_v4(addr) {
+        repr<sys.SocketAddrCRepr> = new sys.SocketAddrCRepr {
+            v4_store: addr.v4_store.into_inner()
+        }
+        return repr, sizeof(sys.SockaddrIn)
+    }
+    repr6<sys.SocketAddrCRepr> = new sys.SocketAddrCRepr {
+        v6_store: addr.v6_store.into_inner()
+    }
+    return repr6, sizeof(sys.SockaddrIn6)
 }
 
 mem SocketAddrV4 {
     Ipv4Addr* host_v4
     u16 port_val
-}
-
-impl SocketAddr for SocketAddrV4 {
-    fn is_v4() i32 {
-        return true
-    }
-    fn is_v6() i32 {
-        return 0
-    }
 }
 
 const SocketAddrV4::new(host<Ipv4Addr>, port<u16>)  SocketAddrV4 {
@@ -94,15 +93,6 @@ mem SocketAddrV6 {
     Ipv6Addr* host_v6
     u16 port_val
     u32 flow_bits, scope_bits
-}
-
-impl SocketAddr for SocketAddrV6 {
-    fn is_v4() i32 {
-        return 0
-    }
-    fn is_v6() i32 {
-        return 1
-    }
 }
 
 const SocketAddrV6::new(host<Ipv6Addr>, port<u16>, flowinfo<u32>, scope_id<u32>) SocketAddrV6 {

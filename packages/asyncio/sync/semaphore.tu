@@ -1,6 +1,6 @@
 // User-facing semaphore. Thin wrapper over BatchSemaphore with a Permit
 // guard so calls form RAII-shaped sites in user code. No Drop in TuLang —
-// callers must release / forget explicitly.
+// callers must give_back / forget explicitly.
 
 // Counting semaphore with FIFO fairness.
 mem Semaphore {
@@ -14,42 +14,43 @@ const Semaphore::new(n<u32>) Semaphore {
     return s
 }
 
-// Permit handed back by acquire(); release() returns the permit, forget()
+// Permit handed back by acquire(); give_back() returns the permit, forget()
 // drops it.
 mem Permit {
-    Semaphore* parent
+    Semaphore* owner_sem
     u32        n          // permit count this guard holds
 }
 
-// Build a permit holding `n` slots of parent.
-const Permit::new(parent<Semaphore>, n<u32>) Permit {
-    return new Permit { parent: parent, n: n }
+// Build a permit holding `n` slots of owner_sem.
+const Permit::new(owner_sem<Semaphore>, n<u32>) Permit {
+    return new Permit { owner_sem: owner_sem, n: n }
 }
 
-// Return the held permits to the parent.
-Permit::release(){
-    if this.parent == null return
-    s<BatchSemaphore> = this.parent.sem
-    s.release(this.n)
-    this.parent = null
+// Return the held permits to the owner semaphore.
+Permit::give_back(){
+    if this.owner_sem == null return
+    batch_sem_release(this.owner_sem.sem, this.n)
+    this.owner_sem = null
 }
 
 // Drop the permits without returning them. Useful for one-shot bursts.
 Permit::forget(){
-    this.parent = null
+    this.owner_sem = null
 }
 
 // Acquire n permits. Returns (0, Permit) or (Closed, empty Permit).
 async Semaphore::acquire(n<u32>){
-    err<i32> = this.sem.acquire(n).await
-    if err != 0 return err, new Permit { parent: null, n: 0 }
+    fut<AcquireFut> = new AcquireFut
+    fut.init(this.sem, n)
+    err<i32> = fut.await
+    if err != 0 return err, new Permit { owner_sem: null, n: 0 }
     return 0, Permit::new(this, n)
 }
 
 // Non-blocking variant; returns SendFull when permits are unavailable.
 Semaphore::try_acquire(n<u32>) (i32, Permit) {
     err<i32> = this.sem.try_acquire(n)
-    if err != 0 return err, new Permit { parent: null, n: 0 }
+    if err != 0 return err, new Permit { owner_sem: null, n: 0 }
     return 0, Permit::new(this, n)
 }
 
@@ -57,4 +58,3 @@ Semaphore::try_acquire(n<u32>) (i32, Permit) {
 Semaphore::close(){
     this.sem.close()
 }
-

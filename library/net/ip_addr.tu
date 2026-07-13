@@ -1,47 +1,12 @@
 use fmt
 
-api IpAddr {
-    fn is_v4() i32 { return false}
-    fn is_v6() i32 { return false}
-    fn string() string.String {
-        if this.is_v4() {
-            addr<Ipv4Addr> = this
-            return addr.string()
-        }else {
-            addr<Ipv6Addr> = this
-            return addr.string()
-        }
-    }
-    fn cmp(other<IpAddr>) i32 {
-        if this.is_v4() && other.is_v4() {
-            addr1<Ipv4Addr> = this
-            addr2<Ipv4Addr> = other
-            if addr1.octets() == addr2.octets() {
-                return true
-            }
-            return false
-        }
-        if this.is_v6() && other.is_v6() {
-            addr1<Ipv6Addr> = this
-            addr2<Ipv6Addr> = other
-            p1<u64*> = addr1.octets()
-            p2<u64*> = addr2.octets()
-            if p1[0] == p2[0] && p1[1] == p2[1] {
-                return true
-            }
-            return false
-        }
-        return false
-    }
-}
-
 mem Ipv4Addr {
     u8 octets[4]
 }
 
 const Ipv4Addr::new(a<u8>, b<u8>, c<u8>, d<u8>) Ipv4Addr {
-    return new Ipv4Addr { 
-        octets: [a, b, c, d] 
+    return new Ipv4Addr {
+        octets: [a, b, c, d]
     }
 }
 
@@ -58,7 +23,6 @@ BROADCAST<Ipv4Addr:> = new Ipv4Addr {
 }
 
 Ipv4Addr::octets()  u8,u8,u8,u8 {
-    
     return this.octets[0],
            this.octets[1],
            this.octets[2],
@@ -123,12 +87,10 @@ UNSPECIFIED<Ipv6Addr:> = new Ipv6Addr{
     ]
 }
 
-// @return [u16:8]
 Ipv6Addr::segments()  u16* {
     return &this.octets
 }
 
-// @return [u8:16]
 Ipv6Addr::octets() u8* {
     return &this.octets
 }
@@ -164,4 +126,3 @@ Ipv6Addr::into_inner()  u8* {
 Ipv6Addr::string() string.String {
     return string.S("(ipv6 addr)".(i8))
 }
-

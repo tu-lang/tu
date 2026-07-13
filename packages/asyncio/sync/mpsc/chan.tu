@@ -4,38 +4,35 @@
 
 use std.atomic
 use runtime
-use asyncio.sync
-use asyncio.error as aerr
+use asyncio.sync as libsync
 
-// Backed-by either a real BatchSemaphore (bounded) or null (unbounded).
+// Backed-by either a real BatchSemaphore (bounded) or zero (unbounded).
 mem Chan {
-    ListTx*         tx
-    AtomicWaker*    rx_waker
-    Notify*         notify_rx_closed
-    BatchSemaphore* semaphore           // null for unbounded channels
-    i32             tx_count            // atomic; live Sender clones
-    i32             tx_weak_count       // atomic; weak senders that don't keep the channel open
-    MutexInter*     rx_lock
-    ListRx*         rx
-    i32             rx_closed           // 0/1 monotonic
+    ListTx*             producer
+    u64                 rx_waker_bits
+    u64                 notify_rx_closed_bits
+    u64                 semaphore_bits    // 0 = unbounded; else BatchSemaphore*
+    i32                 tx_count          // atomic; live Sender clones
+    i32                 tx_weak_count     // atomic; weak senders
+    runtime.MutexInter* rx_lock
+    ListRx*             consumer
+    i32                 rx_closed         // 0/1 monotonic
 }
 
-// Build a Chan with `sem` (or null for unbounded). tx_count starts at 1.
-// list_new() returns heap-pointer ListTx / ListRx; assign them straight
-// into the Chan fields (do NOT `&tx` / `&rx` — those are stack slots).
-const Chan::new(sem<BatchSemaphore>) Chan {
+// Build a Chan with `sem_bits` (0 for unbounded). tx_count starts at 1.
+const Chan::new(sem_bits<u64>) Chan {
     c<Chan> = new Chan
-    tx<ListTx>, rx<ListRx> = list_new()
-    c.tx               = tx
-    c.rx               = rx
-    c.rx_waker         = sync.AtomicWaker::new()
-    c.notify_rx_closed = sync.Notify::new()
-    c.semaphore        = sem
-    c.tx_count         = 1
-    c.tx_weak_count    = 0
-    c.rx_lock = new MutexInter
+    prod<ListTx>, cons<ListRx> = mpsc_list_new()
+    c.producer              = prod
+    c.consumer              = cons
+    c.rx_waker_bits         = libsync.atomic_waker_new_raw()
+    c.notify_rx_closed_bits = libsync.notify_new_raw()
+    c.semaphore_bits        = sem_bits
+    c.tx_count              = 1
+    c.tx_weak_count         = 0
+    c.rx_lock               = new runtime.MutexInter
     c.rx_lock.init()
-    c.rx_closed        = 0
+    c.rx_closed             = 0
     return c
 }
 
@@ -44,14 +41,14 @@ Chan::inc_tx(){
     atomic.xadd(&this.tx_count, 1)
 }
 
+TX_COUNT_DEC<u32> = 0xFFFFFFFF
+
 // Atomically decrement Sender count; mark the channel closed for recv
 // once the last Sender drops.
 Chan::drop_last_sender() i32 {
-    n<i32> = atomic.xadd(&this.tx_count, -1.(i32).(u32))
+    n<i32> = atomic.xadd(&this.tx_count, TX_COUNT_DEC)
     if n == 1 {
-        // Last sender just left; wake any waiting receiver so it surfaces
-        // ChannelClosed instead of waiting forever.
-        this.rx_waker.wake()
+        libsync.atomic_waker_wake_raw(this.rx_waker_bits)
         return 1
     }
     return 0
@@ -64,8 +61,8 @@ Chan::close_receiver(){
         this.rx_closed = 1
     }
     this.rx_lock.unlock()
-    if this.semaphore != null this.semaphore.close()
-    this.notify_rx_closed.notify_waiters()
+    if this.semaphore_bits != 0 libsync.batch_sem_close_raw(this.semaphore_bits)
+    libsync.notify_waiters_raw(this.notify_rx_closed_bits)
 }
 
 // True when the receiver has dropped or been closed.
@@ -77,17 +74,17 @@ Chan::is_closed() i32 {
 // Non-blocking send. Bounded variant returns SendFull when permits run
 // out; unbounded always allocates a slot (memory permitting).
 fn chan_send_inner(c<Chan>, v<i64>) i32 {
-    if c.is_closed() return aerr.ChannelClosed
-    if c.semaphore != null {
-        err<i32> = c.semaphore.try_acquire(1)
+    if c.is_closed() return RecvErrorClosed
+    if c.semaphore_bits != 0 {
+        err<i32> = libsync.batch_sem_try_acquire_raw(c.semaphore_bits, 1)
         if err != 0 return err
     }
-    perr<i32> = c.tx.push(v)
+    perr<i32> = c.producer.publish(v)
     if perr != 0 {
-        if c.semaphore != null c.semaphore.release(1)
+        if c.semaphore_bits != 0 libsync.batch_sem_release_raw(c.semaphore_bits, 1)
         return perr
     }
-    c.rx_waker.wake()
+    libsync.atomic_waker_wake_raw(c.rx_waker_bits)
     return 0
 }
 
@@ -95,13 +92,11 @@ fn chan_send_inner(c<Chan>, v<i64>) i32 {
 // yet, (ChannelClosed, 0) when the senders are gone and the queue is
 // drained.
 fn chan_recv_inner(c<Chan>) (i32, i64) {
-    err<i32>, val<i64> = c.rx.pop()
-    if err == 0 {
-        if c.semaphore != null c.semaphore.release(1)
-        return 0, val
+    code<i32>, data<i64> = c.consumer.pop()
+    if code == 0 {
+        if c.semaphore_bits != 0 libsync.batch_sem_release_raw(c.semaphore_bits, 1)
+        return 0, data
     }
-    // Empty: differentiate "wait for more" from "channel closed".
-    if atomic.load(&c.tx_count) == 0 return aerr.ChannelClosed, 0
-    return aerr.RecvEmpty, 0
+    if atomic.load(&c.tx_count) == 0 return RecvErrorClosed, 0
+    return RecvErrorEmpty, 0
 }
-
