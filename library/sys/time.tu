@@ -1,5 +1,6 @@
 use os
 use std
+use runtime
 
 NSEC_PER_SEC<u64> = 1000000000
 
@@ -24,14 +25,14 @@ const Timespec::new(tv_sec<i64>, tv_nsec<i64>)  Timespec {
         os.exit(-1)
     }
     // SAFETY: The assert above checks tv_nsec is within the valid range
-    return Timespec { 
+    return new Timespec { 
         tv_sec: tv_sec,
         tv_nsec: tv_nsec,
     }
 }
 
-Timespec::now(clock_id<i32>) Timespec {
-    raw<std.TimeSpec> = new TimeSpec {}
+const Timespec::now(clock_id<i32>) Timespec {
+    raw<std.TimeSpec> = new std.TimeSpec {}
     std.clock_gettime(clock_id, &raw)
     return Timespec::new(raw.sec, raw.nsec)
 }
@@ -63,11 +64,24 @@ Timespec::sub_timespec(other<Timespec>) i32, Duration {
     }
 }
 
-Timespec::checked_add_duration(other<Duration>) i32, Timespec {
-    err<i32>, secs<i64> = i64_checked_add(this.tv_sec, other.as_secs().(i64))
+const Duration::secs_raw(d<Duration>) u64 {
+    return d.secs
+}
+
+const Duration::subsec_bits(d<Duration>) u32 {
+    return d.subsec_nano.bits
+}
+
+const Duration::secs_i64(d<Duration>) i64 {
+    raw<u64> = Duration::secs_raw(d)
+    return raw.(i64)
+}
+
+Timespec::checked_add_duration(dur<Duration>) i32, Timespec {
+    err<i32>, secs<i64> = i64_checked_add(this.tv_sec, Duration::secs_i64(dur))
     if err != Ok return err, null
 
-    nsec<u32> = other.subsec_nanos() + this.tv_nsec
+    nsec<u32> = Duration::subsec_bits(dur) + this.tv_nsec
     if nsec >= NSEC_PER_SEC {
         nsec -= NSEC_PER_SEC
         err, secs = i64_checked_add(secs, 1)
@@ -85,7 +99,7 @@ mem Instant {
     Timespec* when
 }
 
-Instant::now() Instant {
+const Instant::now() Instant {
     clock_id<i32> = CLOCK_MONOTONIC
     return new Instant {
         when: Timespec::now(clock_id)
@@ -100,7 +114,7 @@ Instant::checked_sub_instant(other<Instant>) i32 ,Duration {
 
 Instant::checked_add_duration(other<Duration>) i32,Instant {
     err<i32> , new_ts<Timespec> = this.when.checked_add_duration(other)
-    if err != Ok return err
+    if err != Ok return err, null
 
     return Has, new Instant {
         when: new_ts
@@ -109,9 +123,9 @@ Instant::checked_add_duration(other<Duration>) i32,Instant {
 
 Instant::duration_since(earlier<Instant>) Duration {
     err<i32> ,d<Duration> = this.checked_duration_since(earlier)
-    if err != Ok return Duration::new(0,0)
+    if err != Ok return Duration::new(0, 0)
 
-    return err, d
+    return d
 }
 
 Instant::checked_duration_since(earlier<Instant>)  i32 , Duration {
@@ -119,7 +133,7 @@ Instant::checked_duration_since(earlier<Instant>)  i32 , Duration {
     return err, d
 }
 
-const Instant::elapsed() Duration {
+Instant::elapsed() Duration {
     return Instant::now().duration_since(this)
 }
 
@@ -172,13 +186,16 @@ ZERO<Duration:> = new Duration{
     secs: 0 ,
     subsec_nano: new Nanoseconds { bits: 0 },
 }
+// Mother: Duration::new(u64::MAX, NANOS_PER_SEC - 1)
 MAX<Duration:> = new Duration {
-    secs: runtime.U64_MAX,
-    subsec_nano: new Nanoseconds { bits: 0 },
+    secs: 18446744073709551615,
+    subsec_nano: new Nanoseconds { bits: 999999999 },
 }
 
+U64_MAX_VAL<u64> = 18446744073709551615
+
 fn u64_checked_add(a<u64>, b<u64>) u64 {
-    if runtime.U64_MAX - a < b {
+    if U64_MAX_VAL - a < b {
         runtime.dief("overflow in u64 checkd add")
     }
     return a + b

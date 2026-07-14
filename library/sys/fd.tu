@@ -14,12 +14,13 @@ fn max_iov() u64 {
 
 FileDesc::try_clone() i32 ,FileDesc {
     fd_val<i32> = this.raw_fd
-    err<i32>, new_fd<i32> = cvt(sys_fcntl(fd_val, F_DUPFD_CLOEXEC, 3))
+    err<i32>, new_fd<i32> = cvt(fcntl(fd_val, F_DUPFD_CLOEXEC, 3))
     if err != Ok return err
     return Ok, new FileDesc { raw_fd: new_fd }
 }
 
-FileDesc::from_raw_fd(fd_val<i32>) FileDesc {
+// Associated constructor (tustd FileDesc::from_raw_fd); const for Type::method static call.
+const FileDesc::from_raw_fd(fd_val<i32>) FileDesc {
     if fd_val == 0xFFFFFFFF.(i32) {
         runtime.printf("fd is u32 max\n")
         os.die(1)
@@ -28,12 +29,12 @@ FileDesc::from_raw_fd(fd_val<i32>) FileDesc {
 }
 
 FileDesc::read_io(buf<io.Buf>) i32,u64 {
-    err<i32>, ret<i64> = cvt(sys_read(this.raw_fd, buf.ptr(), buf.len()))
+    err<i32>, ret<i64> = cvt(read(this.raw_fd, buf.ptr(), buf.len()))
     return err, ret
 }
 
 FileDesc::write_io(buf<io.Buf>) i32, u64 {
-    err<i32>, ret<u64> = cvt(sys_write(this.raw_fd, buf.ptr(), buf.len()))
+    err<i32>, ret<u64> = cvt(write(this.raw_fd, buf.ptr(), buf.len()))
     return err, ret
 }
 
@@ -43,7 +44,7 @@ FileDesc::duplicate() i32, FileDesc {
 }
 
 FileDesc::close_io() {
-    sys_close(this.raw_fd)
+    close(this.raw_fd)
 }
 
 // Package bridge so net/sys callers avoid trait impl on FileDesc in this package.

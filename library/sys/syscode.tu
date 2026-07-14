@@ -1,5 +1,8 @@
 Ok<i32> = 1
 Err<i32> = -1
+// Option-ish tags for take_error / LookupHost::next (mother Result<Option<_>>).
+None<i32> = -1
+Has<i32> = 1
 // inet
 AF_UNIX<i32> = 1
 AF_INET<i32> = 2
@@ -22,6 +25,33 @@ TCP_NODELAY<i32>  = 1
 
 
 MSG_NOSIGNAL<i32> = 0x4000
+
+// Linux errno (negated), matching syscalls that return -errno. Mother: libc::E*.
+EPERM<i32> = -1
+ENOENT<i32> = -2
+EINTR<i32> = -4
+EIO<i32> = -5
+E2BIG<i32> = -7
+EAGAIN<i32> = -11
+EWOULDBLOCK<i32> = -11
+ENOMEM<i32> = -12
+EACCES<i32> = -13
+EFAULT<i32> = -14
+EBUSY<i32> = -16
+EEXIST<i32> = -17
+EXDEV<i32> = -18
+ENODEV<i32> = -19
+ENOTDIR<i32> = -20
+EISDIR<i32> = -21
+EINVAL<i32> = -22
+EMFILE<i32> = -24
+ETXTBSY<i32> = -26
+EFBIG<i32> = -27
+ENOSPC<i32> = -28
+ESPIPE<i32> = -29
+EROFS<i32> = -30
+EMLINK<i32> = -31
+EPIPE<i32> = -32
 
 EDEADLK<i32> = -35
 ENAMETOOLONG<i32> = -36
