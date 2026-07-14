@@ -5,7 +5,7 @@
 use runtime
 use io as libio
 use netio
-use netio.event as nidev
+use netio.event
 
 // Caller-supplied operation invoked by poll_read_io / poll_write_io once
 // the resource is ready. Implementations should issue one syscall and
@@ -29,7 +29,7 @@ mem Registration {
 
 // Build a Registration: allocate the ScheduledIo and register the source
 // with netio. On failure leaves nothing behind.
-const Registration::new_with_interest_and_handle(io_obj<nidev.Source>, interest<netio.Interest>, handle<u64>, io_handle<IoHandle>) (i32, Registration) {
+const Registration::new_with_interest_and_handle(io_obj<Source>, interest<netio.Interest>, handle<u64>, io_handle<IoHandle>) i32, Registration {
     err<i32>, sio<ScheduledIo> = io_handle.add_source(io_obj, interest)
     if err != 0 return err, null
     r<Registration> = new Registration
@@ -41,20 +41,26 @@ const Registration::new_with_interest_and_handle(io_obj<nidev.Source>, interest<
 
 // Detach the source from netio and drop it from RegistrationSet. The
 // Registration is unusable afterwards.
-Registration::deregister(io_obj<nidev.Source>) i32 {
+Registration::deregister(io_obj<Source>) i32 {
     return this.io_handle.remove_source(io_obj, this.shared)
 }
 
 // Poll for read readiness. Caller hands ctx so the driver can wake the task.
 // PollReady -> (0, ReadyEvent); PollPending -> (PollPending, empty event);
 // shutdown -> (OtherDriverTerminated, empty event).
-Registration::poll_read_ready(ctx<u64>) (i32, ReadyEvent) {
-    return this.shared.poll_readiness(ctx, DIR_READ)
+Registration::poll_read_ready(ctx<u64>) i32, ReadyEvent {
+    err<i32> = 0
+    ev<ReadyEvent> = new ReadyEvent
+    err, ev = this.shared.poll_readiness(ctx, DIR_READ)
+    return err, ev
 }
 
 // Mirror of poll_read_ready for the writable side.
-Registration::poll_write_ready(ctx<u64>) (i32, ReadyEvent) {
-    return this.shared.poll_readiness(ctx, DIR_WRITE)
+Registration::poll_write_ready(ctx<u64>) i32, ReadyEvent {
+    err<i32> = 0
+    ev<ReadyEvent> = new ReadyEvent
+    err, ev = this.shared.poll_readiness(ctx, DIR_WRITE)
+    return err, ev
 }
 
 // Clear the readiness bits captured by `event` on the ScheduledIo. tick
@@ -67,18 +73,24 @@ Registration::clear_readiness(event<ReadyEvent>) i32 {
 // Drive `op` against the read side: poll readiness, run op, retry on
 // WouldBlock until readiness goes Pending. Returns (PollPending, 0) when
 // the task should yield; (op_err, value) once op produces a real result.
-Registration::poll_read_io(ctx<u64>, op<IoOp>) (i32, i64) {
-    return registration_poll_io_dir(this, ctx, op, DIR_READ)
+Registration::poll_read_io(ctx<u64>, op<IoOp>) i32, i64 {
+    err<i32> = 0
+    val<i64> = 0
+    err, val = registration_poll_io_dir(this, ctx, op, DIR_READ)
+    return err, val
 }
 
 // Mirror of poll_read_io for the writable side.
-Registration::poll_write_io(ctx<u64>, op<IoOp>) (i32, i64) {
-    return registration_poll_io_dir(this, ctx, op, DIR_WRITE)
+Registration::poll_write_io(ctx<u64>, op<IoOp>) i32, i64 {
+    err<i32> = 0
+    val<i64> = 0
+    err, val = registration_poll_io_dir(this, ctx, op, DIR_WRITE)
+    return err, val
 }
 
 // Common loop body for poll_{read,write}_io. Stays a free fn so the two
 // member helpers above only differ in the direction selector.
-fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) (i32, i64) {
+fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) i32, i64 {
     loop {
         err<i32>, ev<ReadyEvent> = this.shared.poll_readiness(ctx, dir)
         if err == runtime.PollPending return runtime.PollPending, 0
@@ -99,7 +111,7 @@ fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) (i
 // Returns whatever op produced; readiness is cleared on WouldBlock so the
 // next poll_*_ready actually yields. Skips the retry loop above so it
 // stays usable from non-async paths.
-Registration::try_io(interest<netio.Interest>, op<IoOp>) (i32, i64) {
+Registration::try_io(interest<netio.Interest>, op<IoOp>) i32, i64 {
     ev<ReadyEvent> = this.shared.ready_event(interest)
     if ev.ready.is_empty() return libio.WouldBlock, 0
     op_err<i32>, val<i64> = op.try_perform()

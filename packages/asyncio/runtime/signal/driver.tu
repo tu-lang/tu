@@ -20,6 +20,12 @@ mem SignalDriver {
     u64                io_handle     // raw bits of IoHandle*; reserved for shutdown wiring
 }
 
+// Cross-call-face handle backing the signal-subscription API.
+mem SignalDriverHandle {
+    SignalGlobals* globals
+    u64            lock_bits   // MutexInter* bits for cross-pkg lock/unlock
+}
+
 // Initialise globals + open the signalfd with an empty mask. Returns
 // (err, driver, handle); err != 0 means the signalfd syscall failed.
 // `drv.lock` is a heap MutexInter*; expose its address for cross-pkg lock/unlock.
@@ -28,7 +34,9 @@ const SignalDriver::new(io_handle_ptr<u64>) (i32, SignalDriver, SignalDriverHand
     if err != 0 return err, null, null
 
     mask<u64> = 0
-    fd<i32>   = std.signalfd4(-1, mask.(u64*).(u64), 8, std.SFD_CLOEXEC | std.SFD_NONBLOCK)
+    mask_ptr<u64*> = &mask
+    mask_bits<u64> = mask_ptr.(u64)
+    fd<i32>   = std.signalfd4(-1, mask_bits, 8, std.SFD_CLOEXEC | std.SFD_NONBLOCK)
     if fd < 0 return io.Other, null, null
 
     g.signal_fd = fd
@@ -43,7 +51,8 @@ const SignalDriver::new(io_handle_ptr<u64>) (i32, SignalDriver, SignalDriverHand
 
     h<SignalDriverHandle> = new SignalDriverHandle
     h.globals = g
-    h.lock_addr = drv.lock.(u64*)
+    lk<runtime.MutexInter> = drv.lock
+    h.lock_bits = lk.(u64)
 
     return 0, drv, h
 }
@@ -62,11 +71,15 @@ SignalDriver::process(){
         // call it in a loop until EAGAIN. Reads are non-blocking due to
         // SFD_NONBLOCK.
         size<u64> = sizeof(std.SignalfdSiginfo)
-        n<i64>    = std.read(g.signal_fd, &si.(u8*), size)
+        fd32<i32> = g.signal_fd
+        fd64<i64> = fd32.(i64)
+        n<i64>    = std.read(fd64, si, size)
         if n <= 0 break
-        if n.(u64) < size break
+        n_u<u64> = n.(u64)
+        if n_u < size break
 
-        signum<i32> = si.ssi_signo.(i32)
+        signo_u<u32> = si.ssi_signo
+        signum<i32> = signo_u.(i32)
         ev<EventInfo> = signal_globals_event(g, signum)
         if ev != null ev.fire()
     }

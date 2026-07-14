@@ -4,27 +4,28 @@
 use runtime
 use sys
 use io
+use asyncio.runtime.io as rtio
 
 // Driver-side state. wheel + clock are owned here; io_park is borrowed
 // from the runtime's IoDriver so park_internal can delegate.
 mem TimeDriver {
-    Wheel*       wheel
-    TimeSource*  source
-    Clock*       clock
-    IoDriver*    io_park       // borrowed; null when IO driver disabled
+    Wheel*          wheel
+    TimeSource*     source
+    Clock*          clock
+    rtio.IoDriver*  io_park       // borrowed; null when IO driver disabled
 }
 
 // Cross-thread companion. Anything that schedules a timer touches the
 // wheel through TimeHandle.
 mem TimeHandle {
-    TimeSource*       source
+    TimeSource*         source
     runtime.MutexInter* lock     // serialises wheel mutations
-    Wheel*            wheel
-    Clock*            clock
+    Wheel*              wheel
+    Clock*              clock
 }
 
 // Build a paired (driver, handle).
-const TimeDriver::new(io_park<IoDriver>) (TimeDriver, TimeHandle) {
+const TimeDriver::new(io_park<rtio.IoDriver>) (TimeDriver, TimeHandle) {
     src<TimeSource> = TimeSource::new()
     w<Wheel>        = Wheel::new()
     c<Clock>        = Clock::new(src)
@@ -57,15 +58,9 @@ fn compute_effective_ms(handle<TimeHandle>, limit_ms<u64>) u64 {
     return delta
 }
 
-// Convert ms to sys.Duration (secs + nanos<u32>).
+// Convert ms to sys.Duration (mother: Duration::from_millis).
 fn ms_to_duration(ms<u64>) sys.Duration {
-    secs<u64> = ms / 1000
-    rem<u64>  = ms % 1000
-    nanos<u32> = (rem * 1000000).(u32)
-    return new sys.Duration {
-        secs: secs,
-        subsec_nano: new sys.Nanoseconds { bits: nanos },
-    }
+    return sys.Duration::from_millis(ms)
 }
 
 // Advance the wheel up to `now` and wake every fired timer. Wakes are
@@ -110,7 +105,7 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>) i32 {
 // Helper: surface whatever IoHandle the io_park driver is paired with.
 // First-pass returns null because the runtime root has not wired the
 // pair through yet; build_*_thread (Phase 10) will replace this.
-TimeDriver::io_park_handle_for(handle<TimeHandle>) IoHandle {
+TimeDriver::io_park_handle_for(handle<TimeHandle>) rtio.IoHandle {
     return null
 }
 

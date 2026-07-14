@@ -47,22 +47,45 @@ impl task.Schedule for MtHandle {
     }
 }
 
-// Spawn a future. Returns a JoinHandle; the first Notified is enqueued
-// via schedule(). raw_new returns a heap RawTask; pass it through.
-MtHandle::spawn(fut) task.JoinHandle {
+// Close the runtime inject queue via raw MtHandle bits.
+fn mt_inject_close(bits<u64>) {
+    mh<MtHandle> = bits.(MtHandle)
+    mh.shared.inject.close()
+}
+
+// Raw-bits inject lookup for callers outside this package.
+fn mt_sched_inject(bits<u64>) Inject* {
+    mh<MtHandle> = bits.(MtHandle)
+    return mh.shared.inject
+}
+
+// Raw-bits spawn entry for callers outside this package.
+fn mt_handle_spawn_raw(bits<u64>, fut) task.JoinHandle {
+    mh<MtHandle> = bits.(MtHandle)
+    return mt_handle_spawn_fut(mh, fut)
+}
+
+// Package-level spawn entry (avoids mh.spawn parser trap).
+fn mt_handle_spawn_fut(h<MtHandle>, fut) task.JoinHandle {
     tid<task.TaskId> = task.alloc_id()
-    raw<task.RawTask> = task.raw_new(fut, this, tid.v)
-    err<i32> = this.shared.owned.bind(raw)
+    raw<task.RawTask> = task.raw_new(fut, h, tid.v)
+    err<i32> = h.shared.owned.bind(raw)
     if err != 0 {
         jh<task.JoinHandle> = new task.JoinHandle
         jh.init(null)
         return jh
     }
     notif<task.Notified> = task.notified_from_raw(raw)
-    this.schedule(notif)
+    h.schedule(notif)
 
-    jh<task.JoinHandle> = new task.JoinHandle
-    jh.init(raw)
-    return jh
+    jh2<task.JoinHandle> = new task.JoinHandle
+    jh2.init(raw)
+    return jh2
+}
+
+// Spawn a future. Returns a JoinHandle; the first Notified is enqueued
+// via schedule(). raw_new returns a heap RawTask; pass it through.
+MtHandle::spawn(fut) task.JoinHandle {
+    return mt_handle_spawn_fut(this, fut)
 }
 

@@ -9,6 +9,9 @@ use std.atomic
 use io
 use asyncio.task
 
+// asyncio.error.SendFull
+SCHED_SEND_FULL<i32> = 0x0302000A
+
 LOCAL_QUEUE_CAPACITY<u32> = 256
 LOCAL_QUEUE_MASK<u32>     = 255
 
@@ -108,11 +111,11 @@ fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
     h<u64> = atomic.load64(&qhub.head)
     steal<u32> = head_steal(h)
     real<u32>  = head_real(h)
-    if steal != real return RT_SEND_FULL   // a stealer is already mid-flight
+    if steal != real return SCHED_SEND_FULL   // a stealer is already mid-flight
     new_real<u32> = real + n
     new_h<u64> = pack_head(new_real, new_real)
     if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) == 0 {
-        return RT_SEND_FULL
+        return SCHED_SEND_FULL
     }
 
     // Drain the claimed entries to inject in FIFO order.

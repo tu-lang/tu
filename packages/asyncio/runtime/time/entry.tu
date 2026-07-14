@@ -4,7 +4,8 @@
 
 use std.atomic
 use runtime
-use asyncio.sync
+use asyncio.sync as libsync
+use asyncio.util
 
 // Sentinels packed into StateCell.state.
 //   STATE_DEREGISTERED — entry removed from the wheel; subsequent polls bail.
@@ -22,10 +23,10 @@ RESULT_FIRED<i32>       = 2
 // Atomic state + waker slot for one Sleep. waker is registered on first
 // poll and re-armed if the task is moved between threads.
 mem StateCell {
-    u64           state    // atomic; deadline_ms or sentinel
-    i32           result   // last delivered result code
-    MutexInter*   waker_lock
-    u64           waker_bits   // AtomicWaker* bits
+    u64                 state    // atomic; deadline_ms or sentinel
+    i32                 result   // last delivered result code
+    runtime.MutexInter* waker_lock
+    u64                 waker_bits   // AtomicWaker* bits
 }
 
 // Build a StateCell owning a fresh AtomicWaker.
@@ -33,9 +34,9 @@ const StateCell::new() StateCell {
     s<StateCell> = new StateCell
     s.state  = STATE_DEREGISTERED
     s.result = RESULT_OK
-    s.waker_lock = new MutexInter
+    s.waker_lock = new runtime.MutexInter
     s.waker_lock.init()
-    s.waker  = atomic_waker_new_raw()
+    s.waker_bits = libsync.atomic_waker_new_raw()
     return s
 }
 
@@ -60,13 +61,12 @@ StateCell::is_pending_fire() i32 {
 // firing the waker. Returns 0 on success, RESULT_CANCELLED when state was
 // already DEREGISTERED.
 StateCell::mark_pending(not_after<u64>) i32 {
-    addr<u64*> = &this.state
     loop {
-        cur<u64> = atomic.load64(addr)
+        cur<u64> = atomic.load64(&this.state)
         if cur == STATE_DEREGISTERED return RESULT_CANCELLED
         if cur == STATE_PENDING_FIRE return RESULT_OK
         if cur > not_after return RESULT_CANCELLED
-        if atomic.cas64(addr.(i64*), cur.(i64), STATE_PENDING_FIRE.(i64)) != 0 {
+        if atomic.cas64(&this.state, cur.(i64), STATE_PENDING_FIRE.(i64)) != 0 {
             return RESULT_OK
         }
     }
@@ -78,22 +78,20 @@ StateCell::mark_pending(not_after<u64>) i32 {
 // the cell has been deregistered.
 StateCell::arm(deadline_ms<u64>) i32 {
     if deadline_ms >= MAX_SAFE_MILLIS return RESULT_CANCELLED
-    addr<u64*> = &this.state
     loop {
-        cur<u64> = atomic.load64(addr)
+        cur<u64> = atomic.load64(&this.state)
         if cur == STATE_DEREGISTERED return RESULT_CANCELLED
-        if atomic.cas64(addr.(i64*), cur.(i64), deadline_ms.(i64)) != 0 return RESULT_OK
+        if atomic.cas64(&this.state, cur.(i64), deadline_ms.(i64)) != 0 return RESULT_OK
     }
     return RESULT_OK
 }
 
 // Permanently unwire the entry. Wheel callbacks become no-ops afterwards.
 StateCell::deregister(){
-    addr<u64*> = &this.state
     loop {
-        cur<u64> = atomic.load64(addr)
+        cur<u64> = atomic.load64(&this.state)
         if cur == STATE_DEREGISTERED return
-        if atomic.cas64(addr.(i64*), cur.(i64), STATE_DEREGISTERED.(i64)) != 0 return
+        if atomic.cas64(&this.state, cur.(i64), STATE_DEREGISTERED.(i64)) != 0 return
     }
 }
 
@@ -107,23 +105,23 @@ StateCell::poll(ctx<u64>) (i32, i32) {
     // Arm the waker under waker_lock so concurrent fire() observes a
     // stable ctx slot. AtomicWaker handles wake/register races itself.
     this.waker_lock.lock()
-    atomic_waker_register_raw(this.waker_bits, ctx)
+    libsync.atomic_waker_register_raw(this.waker_bits, ctx)
     this.waker_lock.unlock()
     return RESULT_OK, 0
 }
 
 // Hand the cell its waker so the wheel can pull ctx during fire().
 StateCell::take_waker_ctx() u64 {
-    return atomic_waker_wake_raw(this.waker_bits)
+    return libsync.atomic_waker_wake_raw(this.waker_bits)
 }
 
 // Wheel-side handle. Sleeps reach the wheel through TimerShared, which is
 // embedded in TimerEntry; cached_when speeds up cancellation by skipping
 // the slot scan when the deadline has not changed since insert.
 mem TimerShared {
-    StateCell* state
-    Pointers   pointers      // intrusive prev/next on a wheel slot list
-    u64        cached_when   // last deadline_ms seen by the wheel
+    StateCell*    state
+    util.Pointers pointers      // intrusive prev/next on a wheel slot list
+    u64           cached_when   // last deadline_ms seen by the wheel
 }
 
 // Build a wheel-side handle for cell.

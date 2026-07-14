@@ -2,6 +2,9 @@
 // 64-bit bitfield over them. Each slot stores a doubly linked list of
 // TimerShared via the embedded Pointers.
 
+use std
+use asyncio.util
+
 LEVEL_SLOTS<i32> = 64
 LEVEL_MASK<u64>  = 63
 
@@ -20,9 +23,9 @@ const EntryList::new() EntryList {
 }
 
 // True when no entries are linked.
-EntryList::is_empty() bool {
-    if this.head == null return true
-    return false
+EntryList::is_empty() i32 {
+    if this.head == null return 1
+    return 0
 }
 
 // Append entry at tail; entry's pointers must be detached.
@@ -43,7 +46,7 @@ EntryList::push_back(entry<TimerShared>){
 EntryList::pop_front() TimerShared {
     e<TimerShared> = this.head
     if e == null return null
-    nxt_node<Pointers> = e.pointers.next
+    nxt_node<util.Pointers> = e.pointers.next
     if nxt_node == null {
         this.head = null
         this.tail = null
@@ -62,7 +65,13 @@ EntryList::pop_front() TimerShared {
 mem Level {
     u32   level
     u64   occupied
-    u64*  slots         // raw bits of EntryList*; length LEVEL_SLOTS, reader casts via slot.(EntryList)
+    u64*  slots         // raw bits of EntryList*; length LEVEL_SLOTS
+}
+
+// Resolve EntryList* bits stored in Level.slots[slot].
+fn slot_list(slots<u64*>, slot<i32>) EntryList {
+    bits<u64> = slots[slot]
+    return bits.(EntryList)
 }
 
 // Build an empty Level.
@@ -81,52 +90,54 @@ const Level::new(level<u32>) Level {
 
 // Append entry to the slot. occupied bit is set on the empty -> non-empty edge.
 Level::add_entry(slot<i32>, entry<TimerShared>){
-    s<EntryList> = this.slots[slot].(EntryList)
-    was_empty<bool> = s.is_empty()
+    s<EntryList> = slot_list(this.slots, slot)
+    was_empty<i32> = s.is_empty()
     s.push_back(entry)
-    if was_empty {
+    if was_empty != 0 {
         this.occupied = this.occupied | (1.(u64) << slot.(u64))
     }
 }
 
 // Detach entry from slot. Caller must guarantee entry currently lives there.
 Level::remove_entry(slot<i32>, entry<TimerShared>){
-    s<EntryList> = this.slots[slot].(EntryList)
-    p<Pointers> = entry.pointers
+    s<EntryList> = slot_list(this.slots, slot)
+    p<util.Pointers> = entry.pointers
     if p.prev != null {
-        prev_node<Pointers> = p.prev
+        prev_node<util.Pointers> = p.prev
         prev_node.next = p.next
     } else {
         if p.next == null {
             s.head = null
         } else {
-            nxt<TimerShared> = p.next.(TimerShared)
+            nxt_ptr<util.Pointers> = p.next
+            nxt<TimerShared> = nxt_ptr.(TimerShared)
             nxt.pointers.prev = null
             s.head = nxt
         }
     }
     if p.next != null {
-        next_node<Pointers> = p.next
+        next_node<util.Pointers> = p.next
         next_node.prev = p.prev
     } else {
         if p.prev == null {
             s.tail = null
         } else {
-            prv<TimerShared> = p.prev.(TimerShared)
+            prv_ptr<util.Pointers> = p.prev
+            prv<TimerShared> = prv_ptr.(TimerShared)
             prv.pointers.next = null
             s.tail = prv
         }
     }
     entry.pointers.prev = null
     entry.pointers.next = null
-    if s.is_empty() {
+    if s.is_empty() != 0 {
         this.occupied = this.occupied & (~(1.(u64) << slot.(u64)))
     }
 }
 
 // Take ownership of an entire slot's list, leaving the slot empty.
 Level::take_slot(slot<i32>) EntryList {
-    src<EntryList> = this.slots[slot].(EntryList)
+    src<EntryList> = slot_list(this.slots, slot)
     out<EntryList> = EntryList::new()
     out.head = src.head
     out.tail = src.tail
@@ -140,25 +151,20 @@ Level::take_slot(slot<i32>) EntryList {
 Level::next_occupied_slot(start<i32>) i32 {
     bits<u64> = this.occupied
     if bits == 0 return -1
-    if start <= 0 {
-        // ctz on bits
-        n<i32> = 0
-        v<u64> = bits
-        while (v & 1) == 0 {
-            v = v >> 1
-            n += 1
-        }
-        return n
+    v<u64> = bits
+    if start > 0 {
+        // Mask off slots < start, then ctz.
+        shift_base<u64> = 1.(u64) << start.(u64)
+        mask_lo<u64> = shift_base - 1
+        v = bits & (~mask_lo)
+        if v == 0 return -1
     }
-    // Mask off slots < start, then ctz.
-    masked<u64> = bits & (~((1.(u64) << start.(u64)) - 1))
-    if masked == 0 return -1
     n<i32> = 0
-    v<u64> = masked
-    while (v & 1) == 0 {
+    loop {
+        low<u64> = v & 1
+        if low != 0 break
         v = v >> 1
         n += 1
     }
     return n
 }
-

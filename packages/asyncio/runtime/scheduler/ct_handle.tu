@@ -3,6 +3,7 @@
 // re-enqueue tasks without knowing which scheduler kind it is on.
 
 use asyncio.task
+use asyncio.sync as libsync
 
 // Handle holds the shared state and implements task.Schedule.
 mem CtHandle {
@@ -31,7 +32,7 @@ impl task.Schedule for CtHandle {
         }
         // Foreign thread or no active context: route through inject.
         this.shared.inject.push(notif)
-        notify_one_raw(this.shared.woken)
+        libsync.notify_one_raw(this.shared.woken)
     }
 
     fn release(raw){
@@ -39,24 +40,41 @@ impl task.Schedule for CtHandle {
     }
 }
 
-// Spawn a future as a new task. Wires it into OwnedTasks and schedules
-// the first poll. Returns a JoinHandle the caller can await.
-// task.raw_new returns a heap RawTask; bind / notified_from_raw take it
-// directly (no `&raw` — that would be a stack slot address).
-CtHandle::spawn(fut) task.JoinHandle {
+// Raw-bits inject lookup for callers outside this package.
+fn ct_sched_inject(bits<u64>) Inject* {
+    ct<CtHandle> = bits.(CtHandle)
+    return ct.shared.inject
+}
+
+// Raw-bits spawn entry for callers outside this package.
+fn ct_handle_spawn_raw(bits<u64>, fut) task.JoinHandle {
+    ct<CtHandle> = bits.(CtHandle)
+    return ct_handle_spawn_fut(ct, fut)
+}
+
+// Package-level spawn entry (avoids mh.spawn / ct.spawn parser traps).
+fn ct_handle_spawn_fut(h<CtHandle>, fut) task.JoinHandle {
     tid<task.TaskId> = task.alloc_id()
-    raw<task.RawTask> = task.raw_new(fut, this, tid.v)
-    err<i32> = this.shared.owned.bind(raw)
+    raw<task.RawTask> = task.raw_new(fut, h, tid.v)
+    err<i32> = h.shared.owned.bind(raw)
     if err != 0 {
         jh<task.JoinHandle> = new task.JoinHandle
         jh.init(null)
         return jh
     }
     notif<task.Notified> = task.notified_from_raw(raw)
-    this.schedule(notif)
+    h.schedule(notif)
 
-    jh<task.JoinHandle> = new task.JoinHandle
-    jh.init(raw)
-    return jh
+    jh2<task.JoinHandle> = new task.JoinHandle
+    jh2.init(raw)
+    return jh2
+}
+
+// Spawn a future as a new task. Wires it into OwnedTasks and schedules
+// the first poll. Returns a JoinHandle the caller can await.
+// task.raw_new returns a heap RawTask; bind / notified_from_raw take it
+// directly (no `&raw` — that would be a stack slot address).
+CtHandle::spawn(fut) task.JoinHandle {
+    return ct_handle_spawn_fut(this, fut)
 }
 

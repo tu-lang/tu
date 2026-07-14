@@ -61,7 +61,7 @@ fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
         }
     }
     raw<task.RawTask> = t.raw()
-    h<task.Header> = raw.hdr
+    h<task.Header> = raw.task_header
     ctx<u64> = ctx_pack(w.handle, h.task_id)
     task.harness_poll(raw, ctx)
 }
@@ -94,11 +94,16 @@ fn mt_finalize_shutdown(w<MtWorker>, core<WorkerCore>){
     shared.shutdown_cores_lock.unlock()
 }
 
-// Worker main loop.
+// Take the WorkerCore hand-off, then enter the typed loop body.
 fn worker_run(w<MtWorker>){
     core_bits<u64> = w.core.take()
     if core_bits == 0 return
-    core<WorkerCore> = core_bits.(WorkerCore)
+    worker_run_loop(w, core_bits.(WorkerCore))
+}
+
+// Loop body takes WorkerCore as a parameter so member access is typed.
+// A local `core = bits.(WorkerCore)` does not (asmgen: undefined variable core.*).
+fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     shared<MtShared> = w.handle.shared
 
     loop {

@@ -7,6 +7,10 @@ use std.atomic
 use io
 use asyncio.task
 
+// asyncio.error.Closed (0x03020002); local alias — scheduler cannot pull
+// parent package consts via `aerr.Closed` in this package.
+INJECT_CLOSED<i32> = 0x03020002
+
 // Atomic depth counter; readers may load it without holding `lock`.
 mem InjectShared {
     u32 depth
@@ -76,7 +80,7 @@ Inject::push(t<task.Notified>) i32 {
     s<InjectSynced> = this.fifo_state
     if s.shut_flag == 1 {
         m.unlock()
-        return RT_CLOSED
+        return INJECT_CLOSED
     }
     task.task_list_push_back(&s.head, &s.tail, raw)
     sh<InjectShared> = this.depth_atomic

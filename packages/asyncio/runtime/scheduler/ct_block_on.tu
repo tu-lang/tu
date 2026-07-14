@@ -6,6 +6,9 @@
 use runtime
 use io
 use asyncio.task
+
+// asyncio.error.RuntimeShutdown
+SCHED_RUNTIME_SHUTDOWN<i32> = 0x03020005
 // Pack (handle, task_id) into one u64 for the future's ctx slot. High 32
 // bits = scheduler handle hash, low 32 bits = task id (truncated).
 fn ctx_pack(handle<CtHandle>, task_id<u64>) u64 {
@@ -15,7 +18,7 @@ fn ctx_pack(handle<CtHandle>, task_id<u64>) u64 {
 
 // Run one polling round on raw via the harness vtable.
 fn core_run_task(t<task.RawTask>, handle<CtHandle>){
-    h_hdr<task.Header> = t.hdr
+    h_hdr<task.Header> = t.task_header
     ctx<u64> = ctx_pack(handle, h_hdr.task_id)
     task.harness_poll(t, ctx)
 }
@@ -27,6 +30,21 @@ fn drain_defer(defer<Defer>, inj<Inject>) i32 {
     if defer.is_empty() != 0 return 0
     defer.drain_into_inject(inj)
     return 1
+}
+
+// Close the runtime inject queue via raw CtHandle bits.
+fn ct_inject_close(bits<u64>) {
+    ct<CtHandle> = bits.(CtHandle)
+    ct.shared.inject.close()
+}
+
+// block_on via raw CtHandle bits (for callers outside this package).
+fn block_on_raw(bits<u64>, fut) i32, i64 {
+    ct<CtHandle> = bits.(CtHandle)
+    err<i32> = 0
+    val<i64> = 0
+    err, val = block_on(ct, fut)
+    return err, val
 }
 
 // block_on the root future. Returns (err, value) once the root completes
@@ -53,13 +71,9 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
 
     loop {
         // Check root completion before doing more work.
-        h_hdr<task.Header> = root.hdr
-        st<task.State>     = h_hdr.state
-        snap<i32>          = st.load()
+        snap<i32> = root.life_load()
         if (snap & task.COMPLETE) != 0 {
-            vt<task.RawVTable> = root.vtable
-            read_fc<task.vtable_try_read_output> = vt.try_read_output
-            err_out, val_out = read_fc(root)
+            err_out, val_out = root.read_output()
             break
         }
 
@@ -96,7 +110,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
 
         // All queues empty. If inject is closed we cannot make progress.
         if shared.inject.is_closed() {
-            err_out = RT_RUNTIME_SHUTDOWN
+            err_out = SCHED_RUNTIME_SHUTDOWN
             break
         }
 

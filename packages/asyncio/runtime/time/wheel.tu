@@ -49,7 +49,8 @@ fn level_for(when_relative<u64>) i32 {
 // Slot within `level` for `deadline_ms` (taking elapsed into account).
 fn slot_for(level<i32>, elapsed<u64>, deadline_ms<u64>) i32 {
     sr<u64> = slot_range(level)
-    return ((deadline_ms / sr) & LEVEL_MASK).(i32)
+    idx<u64> = (deadline_ms / sr) & LEVEL_MASK
+    return idx.(i32)
 }
 
 // Hashed timer wheel.
@@ -73,6 +74,12 @@ const Wheel::new() Wheel {
     return w
 }
 
+// Resolve Level* bits stored in Wheel.levels[lv].
+fn level_at(levels<u64*>, lv<i32>) Level {
+    bits<u64> = levels[lv]
+    return bits.(Level)
+}
+
 // Insert entry. Returns (INSERT_OK, deadline_ms) on success. INSERT_ELAPSED
 // when the deadline is at or before elapsed (caller should fire it now);
 // INSERT_TOO_FAR when the deadline is beyond MAX_DURATION.
@@ -85,7 +92,7 @@ Wheel::insert(item<TimerShared>, deadline_ms<u64>) (i32, u64) {
     sl<i32> = slot_for(lv, this.elapsed, deadline_ms)
     item.cached_when = deadline_ms
 
-    layer<Level> = this.levels[lv].(Level)
+    layer<Level> = level_at(this.levels, lv)
     layer.add_entry(sl, item)
     return INSERT_OK, deadline_ms
 }
@@ -99,7 +106,7 @@ Wheel::remove(item<TimerShared>) i32 {
     rel<u64> = cw - this.elapsed
     lv<i32> = level_for(rel)
     sl<i32> = slot_for(lv, this.elapsed, cw)
-    layer<Level> = this.levels[lv].(Level)
+    layer<Level> = level_at(this.levels, lv)
     layer.remove_entry(sl, item)
     item.cached_when = STATE_DEREGISTERED
     return 0
@@ -109,7 +116,7 @@ Wheel::remove(item<TimerShared>) i32 {
 // (EXPIR_NONE, 0).
 Wheel::poll_at() (i32, u64) {
     for lv<i32> = 0 ; lv < NUM_LEVELS ; lv += 1 {
-        layer<Level> = this.levels[lv].(Level)
+        layer<Level> = level_at(this.levels, lv)
         sl<i32> = layer.next_occupied_slot(0)
         if sl >= 0 {
             sr<u64> = slot_range(lv)
@@ -147,7 +154,7 @@ Wheel::cascade_level(list<EntryList>){
         rel<u64> = e.cached_when - this.elapsed
         lv<i32> = level_for(rel)
         sl<i32> = slot_for(lv, this.elapsed, e.cached_when)
-        layer<Level> = this.levels[lv].(Level)
+        layer<Level> = level_at(this.levels, lv)
         layer.add_entry(sl, e)
     }
 }
@@ -166,10 +173,12 @@ Wheel::poll(now<u64>) u64 {
         // target. Cascade from there until elapsed catches up.
         moved<i32> = 0
         for lv<i32> = 0 ; lv < NUM_LEVELS ; lv += 1 {
-            layer<Level> = this.levels[lv].(Level)
+            layer<Level> = level_at(this.levels, lv)
             sr<u64> = slot_range(lv)
-            cur_slot<i32> = ((this.elapsed / sr) & LEVEL_MASK).(i32)
-            target_slot<i32> = ((target / sr) & LEVEL_MASK).(i32)
+            cur_idx<u64> = (this.elapsed / sr) & LEVEL_MASK
+            tgt_idx<u64> = (target / sr) & LEVEL_MASK
+            cur_slot<i32> = cur_idx.(i32)
+            target_slot<i32> = tgt_idx.(i32)
             // Walk every slot strictly between cur_slot (inclusive) and
             // target_slot (inclusive). For now we scan one slot per loop
             // and let the outer loop iterate.
