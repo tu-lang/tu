@@ -10,7 +10,7 @@ use asyncio.io.util as aiou
 // Pump bytes from buffered reader `br` to writer `w` until EOF.
 // Returns (0, total) on success; (err, total) when fill_buf or
 // write_all surfaced an error.
-async copy_buf(br<u64>, w<u64>) (i32, u64) {
+async copy_buf(br<u64>, w<u64>) {
     total<u64> = 0
     loop {
         rerr<i32>, slice<iobuf.Buf> = aiou.fill_buf(br).await

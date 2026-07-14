@@ -15,7 +15,7 @@ use sys
 // any other failure.
 async fs_canonicalize(path<string.String>) i32, string.String {
     buf<u8*> = new 4096
-    err<i32>, n<u64> = sys.cvt(sys_readlink(path.str(), buf, 4096))
+    err<i32>, n<u64> = sys.cvt(sys.readlink(path.str(), buf, 4096))
     if err == io.Ok {
         return io.Ok, new string.String { inner: string.newlen(buf, n) }
     }

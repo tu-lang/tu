@@ -96,7 +96,7 @@ async ReadDir::next_entry() i32, DirEntry {
 // Close the directory fd. Returns io.Ok / error.
 ReadDir::close() i32 {
     if this.fd < 0 return io.Ok
-    err<i32>, _ = sys.cvt(sys_close(this.fd))
+    err<i32>, _ = sys.cvt(sys.close(this.fd))
     this.fd = -1
     return err
 }

@@ -13,7 +13,7 @@ use asyncio.io.util as aiou
 // Pump bytes a -> b then b -> a, returning (0, ab_total, ba_total) on
 // clean EOF on both sides. On error from either direction the function
 // short-circuits and returns whatever totals were observed so far.
-async copy_bidirectional(a<u64>, b<u64>) (i32, u64, u64) {
+async copy_bidirectional(a<u64>, b<u64>) {
     err_ab<i32>, ab<u64> = aiou.copy(a, b).await
     if err_ab != 0 return err_ab, ab, 0.(u64)
     err_ba<i32>, ba<u64> = aiou.copy(b, a).await

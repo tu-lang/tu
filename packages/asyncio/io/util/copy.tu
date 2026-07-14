@@ -16,7 +16,7 @@ COPY_DEFAULT_CAP<u64> = 8192
 // where total is the number of bytes forwarded; (err, total) when a
 // poll_write error short-circuits. EOF on the read side is the only
 // natural termination condition.
-async copy(r<u64>, w<u64>) (i32, u64) {
+async copy(r<u64>, w<u64>) {
     raw<iobuf.Buf>          = iobuf.NewBuf(COPY_DEFAULT_CAP.(i32))
     backing<iobuf.Buffer>   = iobuf.Buffer::from_uinit(raw)
     rb<aio.ReadBuf>         = aio.ReadBuf::new(backing)

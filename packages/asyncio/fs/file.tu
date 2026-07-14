@@ -46,14 +46,14 @@ async fs_create(path<string.String>) i32, File {
 
 // Read up to buf.len() bytes into `buf`. Returns (io.Ok, n) with n==0 at EOF.
 async File::read(buf<io.Buf>) i32, u64 {
-    err<i32>, n<u64> = sys.cvt(sys_read(this.fd, buf.ptr(), buf.len()))
+    err<i32>, n<u64> = sys.cvt(sys.read(this.fd, buf.ptr(), buf.len()))
     if err != io.Ok return err, 0
     return io.Ok, n
 }
 
 // Write up to buf.len() bytes from `buf`. Returns (io.Ok, n) written.
 async File::write(buf<io.Buf>) i32, u64 {
-    err<i32>, n<u64> = sys.cvt(sys_write(this.fd, buf.ptr(), buf.len()))
+    err<i32>, n<u64> = sys.cvt(sys.write(this.fd, buf.ptr(), buf.len()))
     if err != io.Ok return err, 0
     return io.Ok, n
 }
@@ -107,7 +107,7 @@ async File::metadata() i32, Metadata {
 // Close the underlying fd. Idempotent-ish: fd is set to -1 afterwards.
 File::close() i32 {
     if this.fd < 0 return io.Ok
-    err<i32>, _ = sys.cvt(sys_close(this.fd))
+    err<i32>, _ = sys.cvt(sys.close(this.fd))
     this.fd = -1
     return err
 }
