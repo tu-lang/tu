@@ -262,3 +262,25 @@ Note::Clear()
 {
 	this.key = 0
 }
+
+// Cross-package bridges: asyncio.runtime cannot embed pkg.Note (self-name conflict + mem field rule).
+fn note_new_raw() u64 {
+	n<Note> = new Note
+	n.Clear()
+	return n.(u64)
+}
+
+fn note_wake_raw(bits<u64>) {
+	n<Note> = bits.(Note)
+	n.Wake()
+}
+
+fn note_sleep_raw(bits<u64>) {
+	n<Note> = bits.(Note)
+	n.Sleep()
+}
+
+fn note_clear_raw(bits<u64>) {
+	n<Note> = bits.(Note)
+	n.Clear()
+}

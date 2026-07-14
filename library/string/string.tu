@@ -25,6 +25,12 @@ func string(){
 String::str(){
 	return this.inner
 }
+
+// C string pointer for libc (getaddrinfo etc.); mother Path/OsStr::as_bytes/as_ptr.
+fn cstr(s<String>) i8* {
+	return s.str()
+}
+
 String::hash64(){
 	return this.inner.(Str).hash64()
 }
@@ -134,9 +140,19 @@ String::lastStringIndex(sep<String>) i32,i32 {
 String::rSplitOnce(sep<string.String>) i32,String,String {
 	i<i32>,pos<i32> = this.lastStringIndex(sep)
 	if i < 0 {
-		return i
+		return i, null, null
 	}
 	secondS<i32> = pos + sep.len()
 	secondE<i32> = this.len() - secondS
 	return true, this.sub(0,pos), this.sub(secondS,secondE)
+}
+
+// Cross-pkg bridges for string.String member calls (sys/net LookupHost port parse).
+fn rsplit_once(s<String>, sep<String>) i32, String, String {
+	err<i32>, a<String>, b<String> = s.rSplitOnce(sep)
+	return err, a, b
+}
+
+fn tonumber_i64(s<String>) i64 {
+	return s.tonumber()
 }
