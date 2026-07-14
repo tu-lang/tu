@@ -2,6 +2,7 @@ use netio.event
 use io
 use netio.sys as nsys
 use sys as libsys
+use runtime
 
 mem Poll {
 	Registry* registry
@@ -20,12 +21,44 @@ const Poll::new() i32, Poll {
 	}
 }
 
+// Raw-bits Registry decode for callers outside this package.
+fn registry_from_bits(bits<u64>) Registry {
+    return bits.(Registry)
+}
+
+// Package-level registry bridge (avoids p.registry parser trap).
+fn poll_registry(p<Poll>) Registry {
+    return Poll::registry(p)
+}
+
+// Package-level poll bridge (avoids p.poll parser trap).
+fn poll_poll(p<Poll>, events<event.Events>, timeout<libsys.Duration>) i32 {
+    return Poll::poll(p, events, timeout)
+}
+
+fn registry_register(reg<Registry>, source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
+    return Registry::register(reg, source_obj, t, interests)
+}
+
+fn registry_deregister(reg<Registry>, source_obj<event.Source>) i32 {
+    return Registry::deregister(reg, source_obj)
+}
+
 Poll::registry() Registry {
 	return this.registry
 }
 
 Poll::poll(events<event.Events>, timeout<libsys.Duration>) i32 {
-	return this.registry.selector.select(events.sys(), timeout)
+	timeout_ms<i32> = -1
+	if timeout != null {
+		ms<u64> = timeout.as_millis()
+		if ms > runtime.I32_MAX.(u64) {
+			timeout_ms = runtime.I32_MAX
+		} else {
+			timeout_ms = ms.(i32)
+		}
+	}
+	return this.registry.selector.select(events.sys(), timeout_ms)
 }
 
 Registry::register(source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
@@ -53,6 +86,15 @@ Registry::register_waker() i32 {
 	return Ok
 }
 
-Registry::selector() nsys.Selector {
-	return this.selector
+// Raw-bits Poll decode for callers outside this package.
+fn poll_from_bits(bits<u64>) Poll {
+    return bits.(Poll)
+}
+
+// Package-level constructor for cross-package callers.
+fn make_poll() i32, Poll {
+    err<i32> = 0
+    out<Poll> = null
+    err, out = Poll::new()
+    return err, out
 }

@@ -21,12 +21,20 @@ const UdpSocket::from_std(socket<libnet.UdpSocket>) UdpSocket {
 	return new UdpSocket { inner: netio.IoSource::new(socket) }
 }
 
+const UdpSocket::fromrawfd(fd<i32>) UdpSocket {
+	return UdpSocket::from_std(libnet.UdpSocket::fromrawfd(fd))
+}
+
 UdpSocket::send_to(buf<io.Buf>, target<libnet.SocketAddr>) i32, u64 {
-	return this.inner.inner.send_to(buf, target)
+	return this.inner.do_io(fn(inner) {
+		return inner.send_to(buf, target)
+	})
 }
 
 UdpSocket::recv_from(buf<io.Buf>) i32, u64, libnet.SocketAddr {
-	return this.inner.inner.recv_from(buf)
+	return this.inner.do_io(fn(inner) {
+		return inner.recv_from(buf)
+	})
 }
 
 impl event.Source for UdpSocket {

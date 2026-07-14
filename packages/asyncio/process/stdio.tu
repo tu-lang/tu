@@ -32,7 +32,7 @@ mem ChildStderr {
 // Close a stdio fd once (idempotent-ish; fd set to -1 afterwards).
 fn close_fd(fd<i32>) i32 {
     if fd < 0 return io.Ok
-    err<i32>, _ = sys.cvt(sys_close(fd))
+    err<i32>, _ = sys.cvt(sys.close(fd))
     return err
 }
 
@@ -56,7 +56,7 @@ ChildStderr::close() i32 {
 // poll_flush is a no-op; poll_shutdown closes the write end (EOF for the child).
 impl aio.AsyncWrite for ChildStdin {
     fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
-        err<i32>, n<u64> = sys.cvt(sys_write(this.fd, buf.ptr(), buf.len()))
+        err<i32>, n<u64> = sys.cvt(sys.write(this.fd, buf.ptr(), buf.len()))
         if err != io.Ok return runtime.PollError, 0
         return runtime.PollReady, n
     }
@@ -74,7 +74,7 @@ impl aio.AsyncRead for ChildStdout {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
         base<io.Buf> = buf.inner.buf
         _, tail<io.Buf> = base.split_at(buf.filled)
-        err<i32>, n<u64> = sys.cvt(sys_read(this.fd, tail.ptr(), tail.len()))
+        err<i32>, n<u64> = sys.cvt(sys.read(this.fd, tail.ptr(), tail.len()))
         if err != io.Ok return runtime.PollError
         if n > 0 buf.advance(n)
         return runtime.PollReady
@@ -86,7 +86,7 @@ impl aio.AsyncRead for ChildStderr {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
         base<io.Buf> = buf.inner.buf
         _, tail<io.Buf> = base.split_at(buf.filled)
-        err<i32>, n<u64> = sys.cvt(sys_read(this.fd, tail.ptr(), tail.len()))
+        err<i32>, n<u64> = sys.cvt(sys.read(this.fd, tail.ptr(), tail.len()))
         if err != io.Ok return runtime.PollError
         if n > 0 buf.advance(n)
         return runtime.PollReady
@@ -104,7 +104,7 @@ fn read_all_fd(fd<i32>) i32, io.Buf {
             std.memcpy(grown.ptr(), buf.ptr(), total)
             buf = grown
         }
-        err<i32>, n<u64> = sys.cvt(sys_read(fd, buf.ptr() + total, buf.len() - total))
+        err<i32>, n<u64> = sys.cvt(sys.read(fd, buf.ptr() + total, buf.len() - total))
         if err != io.Ok return err, null
         if n == 0 break
         total += n

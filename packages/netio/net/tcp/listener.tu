@@ -12,9 +12,7 @@ const TcpListener::bind(addr<net.SocketAddr>) i32, TcpListener {
 	err<i32>, fd<i32> = sys.new_for_addr(addr)
 	if err != Ok
 		return err, null
-	listener<TcpListener> = new TcpListener {
-		inner: netio.IoSource::new(net.TcpListener::fromrawfd(fd))
-	}
+	listener<TcpListener> = TcpListener::fromrawfd(fd)
 	err = sys.set_reuseaddr(listener.inner.inner, true)
 	if err != Ok
 		return err, null
@@ -31,8 +29,15 @@ const TcpListener::from_std(listener<net.TcpListener>) TcpListener {
 	return new TcpListener { inner: netio.IoSource::new(listener) }
 }
 
+const TcpListener::fromrawfd(fd<i32>) TcpListener {
+	return TcpListener::from_std(net.TcpListener::fromrawfd(fd))
+}
+
 TcpListener::accept() i32, TcpStream, net.SocketAddr {
-	err<i32>, std_stream<net.TcpStream>, addr<net.SocketAddr> = sys.accept(this.inner.inner)
+	err<i32>, std_stream<net.TcpStream>, addr<net.SocketAddr> = this.inner.do_io(fn(inner) {
+		aerr<i32>, s<net.TcpStream>, peer<net.SocketAddr> = sys.accept(inner)
+		return aerr, s, peer
+	})
 	if err != Ok
 		return err, null, null
 	return Ok, TcpStream::from_std(std_stream), addr

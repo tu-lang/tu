@@ -14,6 +14,16 @@ fn readable_interest() Interest {
 	return Interest::readable()
 }
 
+// Heap bits of Interest::readable for packages that cannot resolve readable_interest().
+fn readable_interest_bits() u64 {
+	i<Interest> = Interest::readable()
+	return i.(u64)
+}
+
+fn interest_from_bits(bits<u64>) Interest {
+	return bits.(Interest)
+}
+
 const Interest::writable() Interest {
 	return new Interest { bits: WRITABLE_BIT }
 }
@@ -38,4 +48,13 @@ Interest::is_readable() i32 {
 
 Interest::is_writable() i32 {
 	return (this.bits & WRITABLE_BIT) != 0
+}
+
+// Cross-pkg bridges (caller holds Interest as typed value / bits).
+fn interest_is_readable(i<Interest>) i32 {
+	return i.is_readable()
+}
+
+fn interest_is_writable(i<Interest>) i32 {
+	return i.is_writable()
 }

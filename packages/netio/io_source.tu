@@ -25,7 +25,7 @@ IoSource::register(registry<Registry>, t<Token>, interests<Interest>) i32 {
 	if this.selector_id != 0 && this.selector_id != registry.selector().id()
 		return io.AlreadyExists
 	this.selector_id = registry.selector().id()
-	return registry.selector().register(this.inner.as_raw_fd(), t, interests)
+	return registry.selector().register(this.inner.as_raw_fd(), t.as_u64(), interests.bits)
 }
 
 IoSource::reregister(registry<Registry>, t<Token>, interests<Interest>) i32 {
@@ -33,7 +33,7 @@ IoSource::reregister(registry<Registry>, t<Token>, interests<Interest>) i32 {
 		return io.NotFound
 	if this.selector_id != registry.selector().id()
 		return io.AlreadyExists
-	return registry.selector().reregister(this.inner.as_raw_fd(), t, interests)
+	return registry.selector().reregister(this.inner.as_raw_fd(), t.as_u64(), interests.bits)
 }
 
 IoSource::deregister(registry<Registry>) i32 {
