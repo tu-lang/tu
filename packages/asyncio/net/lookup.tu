@@ -1,25 +1,49 @@
-// Host resolution for asyncio.net (tokio's lookup_host).
+// Host resolution — mirrors tokio::net::lookup_host → addr::to_socket_addrs.
 //
-// V1: numeric "ip:port" literals resolve synchronously via parse_socket_addr
-// and yield a single-entry array. Hostname DNS (getaddrinfo) is deferred until
-// the blocking pool + a working resolver are wired -- library's sys.LookupHost
-// path is still WIP -- so non-numeric hosts return io.Unsupported with an empty
-// array. Kept async to match the awaitable public contract; the DNS variant
-// will route through runtime.blocking spawn_mandatory_blocking.
+// Fast path: parse_ascii_bytes (tustd SocketAddr::parse_ascii). Slow path:
+// strto_socket_addrs on the mandatory blocking pool (tokio spawn_blocking).
 
 use net as libnet
 use io as libio
 use string
 use std
+use asyncio.runtime as rt
+use asyncio.task
 
-// Resolve `host` ("ip:port") to a list of libnet.SocketAddr. Returns (libio.Ok, addrs)
-// with one or more entries, or (libio.Unsupported, empty) for names that need DNS.
+// Blocking worker output: err code + resolved address list.
+mem DnsLookupResult {
+    i32        err_code
+    std.Array* addrs
+}
+
+// Run getaddrinfo resolution off the reactor thread.
+fn blocking_strto_socket_addrs(host<string.String>) u64 {
+    derr<i32>, list<std.Array> = libnet.strto_socket_addrs(host)
+    out<DnsLookupResult> = new DnsLookupResult
+    out.err_code = derr
+    out.addrs = list
+    return out.(u64)
+}
+
+// Resolve `host` ("ip:port" or hostname:port) to a SocketAddr list.
 async lookup_host(host<string.String>) i32, std.Array {
-    v<std.Array> = std.NewArray()
+    empty<std.Array> = std.NewArray()
     perr<i32>, addr<libnet.SocketAddr> = parse_socket_addr(host.str(), host.len())
     if perr == libio.Ok {
-        v.push(addr)
-        return libio.Ok, v
+        empty.push(addr)
+        return libio.Ok, empty
     }
-    return libio.Unsupported, v
+
+    herr<i32>, h<rt.Handle> = rt.Handle::current()
+    if herr != libio.Ok return libio.Unsupported, empty
+
+    captured<string.String> = host
+    dns_op = fn() u64 {
+        return blocking_strto_socket_addrs(captured)
+    }
+    jh<task.JoinHandle> = h.spawn_mandatory_blocking(dns_op)
+    packed<i64> = jh.await
+    out<DnsLookupResult> = packed.(DnsLookupResult)
+    if out.err_code != libio.Ok return out.err_code, empty
+    return libio.Ok, out.addrs
 }
