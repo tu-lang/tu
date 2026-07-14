@@ -16,28 +16,19 @@ fn new_ip_socket(addr<net.SocketAddr>, socket_type<i32>) i32, i32 {
 
 fn new_socket(domain<i32>, socket_type<i32>) i32, i32 {
 	full_type<i32> = socket_type | SOCK_NONBLOCK | SOCK_CLOEXEC
-	err<i32>, fd<u64> = libsys.cvt(sys_socket(domain, full_type, 0))
+	err<i32>, fd<u64> = libsys.cvt(libsys.socket(domain, full_type, 0))
 	return err, fd.(i32)
 }
 
-mem SocketAddrCRepr {
-	u64 raw
-	u64 raw_len
+// Mother: SocketAddrCRepr.as_ptr + socklen for bind/connect.
+fn socket_addr(addr<net.SocketAddr>) u64, i32 {
+	bits<u64>, len_u<u32> = net.socket_addr_into_inner_bits(addr)
+	return libsys.socket_addr_crepr_as_ptr_raw(bits), len_u.(i32)
 }
 
-fn socket_addr(addr<net.SocketAddr>) SocketAddrCRepr, i32 {
-	repr<libsys.SocketAddrCRepr>, len<u32> = net.socket_addr_into_inner(addr)
-	wrap<SocketAddrCRepr> = new SocketAddrCRepr
-	wrap.raw = repr.(u64)
-	wrap.raw_len = len.(u64)
-	return wrap, len.(i32)
-}
-
-SocketAddrCRepr::as_ptr() u64 {
-	return this.raw
-}
-
-fn to_socket_addr(storage<libsys.SockaddrStorage>) i32, net.SocketAddr {
-	err<i32>, sa<net.SocketAddr> = libsys.sockaddr_to_addr(storage, sizeof(libsys.SockaddrStorage))
-	return err, sa
+fn to_socket_addr(storage_bits<u64>) i32, net.SocketAddr {
+	slen<i32> = libsys.SOCKADDR_STORAGE_LEN
+	slen_u<u64> = slen.(u64)
+	err<i32>, sa_bits<u64> = libsys.sockaddr_to_addr_raw(storage_bits, slen_u)
+	return err, net.socket_addr_from_bits(sa_bits)
 }

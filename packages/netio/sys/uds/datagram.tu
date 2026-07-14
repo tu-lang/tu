@@ -10,12 +10,12 @@ fn bind(path<string.String>) i32, net.UnixDatagram {
 		return err, null
 	err, sockaddr<sys.SockaddrUn>, socklen<i32> = socket_addr(path)
 	if err != Ok {
-		sys_close(fd)
+		sys.close(fd)
 		return err, null
 	}
-	err = sys.cvt(sys_bind(fd, sockaddr, socklen))
+	err = sys.cvt(sys.bind(fd, sockaddr, socklen))
 	if err != Ok {
-		sys_close(fd)
+		sys.close(fd)
 		return err, null
 	}
 	return Ok, net.UnixDatagram::fromrawfd(fd)
@@ -24,7 +24,7 @@ fn bind(path<string.String>) i32, net.UnixDatagram {
 fn recv_from(socket<net.UnixDatagram>, dst<io.Buf>) i32, u64, SocketAddr {
 	count<u64> = 0
 	err<i32>, addr<SocketAddr> = SocketAddr::new(fn(raw_sockaddr, raw_len){
-		err<i32>, n<i64> = sys.cvt(sys_recvfrom(socket.as_raw_fd(), dst.ptr(), dst.len(), 0, raw_sockaddr, raw_len))
+		err<i32>, n<i64> = sys.cvt(sys.recvfrom(socket.as_raw_fd(), dst.ptr(), dst.len(), 0, raw_sockaddr, raw_len))
 		if err != Ok
 			return err
 		count = n

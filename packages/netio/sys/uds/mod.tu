@@ -30,7 +30,7 @@ fn socket_addr(path<string.String>) i32, sys.SockaddrUn, i32 {
 
 fn pair(flags<i32>) i32, net.UnixStream, net.UnixStream {
 	fds<i32*> = new 8
-	err<i32> = sys.cvt(sys_socketpair(sys.AF_UNIX, flags | sys.SOCK_NONBLOCK | sys.SOCK_CLOEXEC, 0, fds))
+	err<i32> = sys.cvt(sys.socketpair(sys.AF_UNIX, flags | sys.SOCK_NONBLOCK | sys.SOCK_CLOEXEC, 0, fds))
 	if err != Ok
 		return err, null, null
 	return Ok, net.UnixStream::fromrawfd(fds[0]), net.UnixStream::fromrawfd(fds[1])

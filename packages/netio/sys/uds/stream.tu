@@ -10,12 +10,12 @@ fn connect(path<string.String>) i32, net.UnixStream {
 		return err, null
 	err, sockaddr<sys.SockaddrUn>, socklen<i32> = socket_addr(path)
 	if err != Ok {
-		sys_close(fd)
+		sys.close(fd)
 		return err, null
 	}
-	err = sys.cvt(sys_connect(fd, sockaddr, socklen))
+	err = sys.cvt(sys.connect(fd, sockaddr, socklen))
 	if err != Ok && err != io.WouldBlock {
-		sys_close(fd)
+		sys.close(fd)
 		return err, null
 	}
 	return Ok, net.UnixStream::fromrawfd(fd)

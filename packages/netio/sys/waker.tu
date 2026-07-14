@@ -1,49 +1,59 @@
+// eventfd-based thread waker. Mother: netio/src/sys/waker.rs eventfd::Waker
+
 use netio
-use io
 use sys as libsys
 
+WAKE_WOULD_BLOCK<i32> = 16908302
+
 mem EventfdWaker {
-	libsys.FileDesc* fd
+	i32 fd_num
 }
 
-const EventfdWaker::new(selector<Selector>, t<netio.Token>) i32, EventfdWaker {
-	fd<i32> = sys_eventfd(0, 0x80000 | 0x800)
-	if fd == -1
-		return libsys.last_error(), null
+const EventfdWaker::new(selector_obj<Selector>, tok_bits<u64>) i32, EventfdWaker {
+	raw<i32> = libsys.eventfd(0, 0x80000 | 0x800)
+	err<i32>, fd_u<u64> = libsys.cvt(raw)
+	if err != libsys.Ok {
+		return err, null
+	}
+	fd<i32> = fd_u.(i32)
 
-	file<libsys.FileDesc> = new libsys.FileDesc { fd: fd }
-	err<i32> = selector.register(fd, t, netio.readable_interest())
-	if err != Ok {
-		file.close()
+	err = selector_obj.register_readable(fd, tok_bits)
+	if err != libsys.Ok {
+		libsys.close(fd)
 		return err, null
 	}
 
-	return Ok, new EventfdWaker { fd: file }
+	return libsys.Ok, new EventfdWaker { fd_num: fd }
 }
 
 EventfdWaker::wake() i32 {
-	buf<io.Buf> = new io.Buf {
-		inner: new 8,
-		len: 8
-	}
-	*buf.inner = 1
-	err<i32>, junk<u64> = this.fd.write(buf)
-	if err == io.WouldBlock {
-		err = this.reset()
-		if err != Ok
-			return err
-		return this.wake()
+	return eventfd_wake_fd(this)
+}
+
+EventfdWaker::reset() i32 {
+	return eventfd_reset_fd(this)
+}
+
+fn eventfd_wake_fd(w<EventfdWaker>) i32 {
+	one<u64> = 1
+	n<u64> = 8
+	err<i32>, junk<u64> = libsys.cvt(libsys.write(w.fd_num, &one, n))
+	if err == WAKE_WOULD_BLOCK {
+		rerr<i32> = eventfd_reset_fd(w)
+		if rerr != libsys.Ok {
+			return rerr
+		}
+		return eventfd_wake_fd(w)
 	}
 	return err
 }
 
-EventfdWaker::reset() i32 {
-	buf<io.Buf> = new io.Buf {
-		inner: new 8,
-		len: 8
+fn eventfd_reset_fd(w<EventfdWaker>) i32 {
+	tmp<u64> = 0
+	n<u64> = 8
+	err<i32>, junk<u64> = libsys.cvt(libsys.read(w.fd_num, &tmp, n))
+	if err == WAKE_WOULD_BLOCK {
+		return libsys.Ok
 	}
-	err<i32>, junk<u64> = this.fd.read(buf)
-	if err == io.WouldBlock
-		return Ok
 	return err
 }
