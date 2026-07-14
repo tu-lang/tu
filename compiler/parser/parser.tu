@@ -177,7 +177,7 @@ Parser::lassigner(p){
         type(gen.DelRefExpr): return true
         type(gen.StructMemberExpr)  : return true
         _:{
-            this.check(false,"ParseError: can not assign to " + p.name())
+            this.check(false,"ParseError: can not assign to " + p.toString())
         }
     }
 }
