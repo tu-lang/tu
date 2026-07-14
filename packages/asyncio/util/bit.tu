@@ -62,6 +62,21 @@ Pack::unpack(base<u64>) u64 {
     return (base >> sh) & this.mask
 }
 
+// Package-level pack bridge (avoids p.pack parser trap).
+fn pack_pack_field(p<Pack>, value<u64>, base<u64>) u64 {
+    return Pack::pack(p, value, base)
+}
+
+// Package-level then bridge (avoids p.then parser trap).
+fn pack_then_next(p<Pack>, n<i32>) Pack {
+    return Pack::then(p, n)
+}
+
+// Package-level unpack bridge (avoids ready_pack.unpack parser trap).
+fn pack_unpack_field(p<Pack>, base<u64>) u64 {
+    return Pack::unpack(p, base)
+}
+
 // Count the number of 1 bits in v.
 fn popcount_u64(v<u64>) i32 {
     n<i32> = 0

@@ -38,6 +38,11 @@ WakeList::len_count() i32 {
     return this.len
 }
 
+// Drop pending wakes without scheduling.
+fn wake_list_clear(list<WakeList>) {
+    list.len = 0
+}
+
 // Call closure(ctx) for every entry, then reset. Must NOT be invoked while
 // holding any lock to avoid waker re-entry deadlocks.
 WakeList::wake_all_with(closure){
