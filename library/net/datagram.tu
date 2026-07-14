@@ -1,37 +1,44 @@
 use sys
 use io
+use string
 
-// Unix domain datagram socket backed by sys.Socket.
+// Unix domain datagram (tustd::net::UnixDatagram).
 mem UnixDatagram {
-    sys.Socket* socket_hub
+    sys.Socket* socket_hub // tustd: inner
 }
 
-UnixDatagram::recv(buf<u8*>) i32,u64 {
-    ret<i32>,size<i32> = this.socket_hub.read(buf)
-    return ret,size
+UnixDatagram::recv(buf<io.Buf>) i32, u64 {
+    ret<i32>, size<u64> = this.socket_hub.read(buf)
+    return ret, size
 }
 
-UnixDatagram::send_to(buf<string.String>, path<string.String>) i32,u64 {
-    ret<i32>,addr<sys.SockaddrUn>, len<i32> = sockaddr_un(path)
+UnixDatagram::send_to(buf<io.Buf>, path<string.String>) i32, u64 {
+    ret<i32>, addr<sys.SockaddrUn>, len<u32> = sockaddr_un(path)
     if ret != Ok {
-        return ret
+        return ret, 0
     }
 
-    ret<i32>,count<i64> = sys.cvt(sendto(
+    // Mother: libc::sendto(as_raw_fd(), buf, MSG_NOSIGNAL, &addr, len)
+    blen<u64> = buf.len()
+    flags<i32> = sys.MSG_NOSIGNAL
+    addr_le<i32> = len.(i32)
+    addr_bits<u64> = addr
+    raw<i64> = sys.sendto(
         this.as_raw_fd(),
-        buf.str(),
-        buf.len(),
-        sys.MSG_NOSIGNAL,
-        addr,
-        len,
-    ))
-    if ret != Ok {
-        return ret
+        buf.ptr(),
+        blen,
+        flags,
+        addr_bits,
+        addr_le,
+    )
+    ok<i32>, count<u64> = sys.cvt(raw)
+    if ok != Ok {
+        return ok, 0
     }
-    return Ok,count
+    return Ok, count
 }
 
-const UnixDatagram::fromrawfd(fd<i32>)  UnixDatagram {
+const UnixDatagram::fromrawfd(fd<i32>) UnixDatagram {
     return new UnixDatagram {
         socket_hub: sys.Socket::fromfd(sys.FileDesc::from_raw_fd(fd))
     }

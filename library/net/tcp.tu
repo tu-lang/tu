@@ -2,17 +2,17 @@ use std
 use io
 use sys
 
-// TCP stream wrapper around sys.TcpStream.
+// TCP stream wrapper around sys.TcpStream (tustd::net::TcpStream).
 mem TcpStream {
-    sys.TcpStream* stream_hub
+    sys.TcpStream* stream_hub // tustd: inner
 }
 
-// TCP listener wrapper around sys.TcpListener.
+// TCP listener wrapper around sys.TcpListener (tustd::net::TcpListener).
 mem TcpListener {
-    sys.TcpListener* listener_hub
+    sys.TcpListener* listener_hub // tustd: inner
 }
 
-TcpListener::fromrawfd(fd<i32>)  TcpListener {
+const TcpListener::fromrawfd(fd<i32>) TcpListener {
     socket<sys.Socket> = new sys.Socket{
         desc: sys.FileDesc::from_raw_fd(fd)
     }
@@ -24,24 +24,11 @@ TcpListener::fromrawfd(fd<i32>)  TcpListener {
     return new TcpListener{listener_hub: hub}
 }
 
-TcpListener::as_raw_fd()  i32 {
+TcpListener::as_raw_fd() i32 {
     return this.listener_hub.socket().as_raw()
 }
 
-TcpListener::shutdown(how<i32>) i32 {
-    return this.listener_hub.shutdown(how)
-}
-
-TcpListener::take_error() i32,i32,i32 {
-    ok<i32>,has<i32>,ret<i32> = this.listener_hub.take_error()
-    return ok,has,ret
-}
-
-TcpListener::asinner() sys.TcpStream {
-    return this.listener_hub
-}
-
-TcpStream::fromrawfd(fd<i32>) TcpStream {
+const TcpStream::fromrawfd(fd<i32>) TcpStream {
     socket<sys.Socket> = new sys.Socket {
         desc: sys.FileDesc::from_raw_fd(fd)
     }
@@ -50,6 +37,19 @@ TcpStream::fromrawfd(fd<i32>) TcpStream {
             socket_hub: socket
         }
     }
+}
+
+TcpStream::shutdown(how<i32>) i32 {
+    return this.stream_hub.shutdown(how)
+}
+
+TcpStream::take_error() i32,i32,i32 {
+    ok<i32>, has<i32>, ret<i32> = this.stream_hub.take_error()
+    return ok, has, ret
+}
+
+TcpStream::asinner() sys.TcpStream {
+    return this.stream_hub
 }
 
 TcpStream::as_raw_fd() i32 {

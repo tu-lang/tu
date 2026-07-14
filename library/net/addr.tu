@@ -1,6 +1,7 @@
 use io
 use sys
 use string
+use std
 
 fn bytes_contain_zero(str<string.String>) i32 {
     ll<i32> = str.len()
@@ -13,26 +14,32 @@ fn bytes_contain_zero(str<string.String>) i32 {
     return false
 }
 
-fn sockaddr_un(path<string.String>) i32, sys.SockaddrUn*,u32 {
-    // SAFETY: All zeros is a valid representation for `sockaddr_un`.
-    addr<sys.SockaddrUn> = new SockaddrUn{}
+// Mother tustd::net::addr::sockaddr_un — build AF_UNIX sockaddr from path bytes.
+fn sockaddr_un(path<string.String>) i32, sys.SockaddrUn, u32 {
+    // SAFETY: All zeros is a valid representation for sockaddr_un.
+    addr<sys.SockaddrUn> = new sys.SockaddrUn{}
     addr.sun_family = sys.AF_UNIX
 
     if bytes_contain_zero(path) {
-        return io.InvalidInputPathContainInteriorNullByte
+        return io.InvalidInputPathContainInteriorNullByte, null, 0
     }
 
     if path.len() >= sys.SUN_PATH_LEN {
-        return return io.InvalidInputPathShorterSunLen
+        return io.InvalidInputPathShorterSunLen, null, 0
     }
 
-    std.byte_copy(&addr.sun_path,path.str(),path.len())
+    plen<i32> = path.len()
+    plen_u64<u64> = plen.(u64)
+    std.byte_copy(&addr.sun_path, path.str(), plen_u64)
 
-    len<i32> = addr.sun_offset() + path.len()
-    // zero append
-    if bytes.len() != 0  && bytes[0] != 0 {
+    offs<i64> = addr.sun_offset()
+    offs_i32<i32> = offs.(i32)
+    len<i32> = offs_i32 + plen
+    // Mother: Some(nonzero first byte) => include trailing NUL in socklen.
+    p<i8*> = path.str()
+    if plen != 0 && p[0] != 0 {
         len += 1
     }
-    return Ok,addr,len
+    socklen<u32> = len.(u32)
+    return Ok, addr, socklen
 }
-

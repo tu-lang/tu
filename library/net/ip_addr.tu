@@ -1,7 +1,8 @@
 use fmt
 use string
+use sys
 
-// IPv4 / IPv6 addresses (tokio std::net::Ipv4Addr / Ipv6Addr).
+// IPv4 / IPv6 addresses (tustd::net::Ipv4Addr / Ipv6Addr).
 
 mem Ipv4Addr {
     u8 octets[4]
@@ -13,6 +14,7 @@ const Ipv4Addr::new(a<u8>, b<u8>, c<u8>, d<u8>) Ipv4Addr {
     }
 }
 
+// Mother: Ipv4Addr::LOCALHOST / UNSPECIFIED / BROADCAST (associated consts).
 LOCALHOST<Ipv4Addr:> = new Ipv4Addr{
     octets: [127,0,0,1]
 }
@@ -63,29 +65,33 @@ mem Ipv6Addr {
     u8 octets[16]
 }
 
-const Ipv6Addr::new(a<u16>, b<u16>, c<u16>, d<u16>, e<u16>, f<u16>, g<u16>, h<u16>)  Ipv6Addr {
-    return new Ipv6Addr {
-        octets: [
-            a,
-            b,
-            c,
-            d,
-            e,
-            f,
-            g,
-            h
-        ]
-    }
+// Mother: Ipv6Addr::new — eight host u16 segments, each to_be, laid out as [u8;16].
+const Ipv6Addr::new(a<u16>, b<u16>, c<u16>, d<u16>, e<u16>, f<u16>, g<u16>, h<u16>) Ipv6Addr {
+    addr<Ipv6Addr> = new Ipv6Addr{}
+    segs<u16*> = &addr.octets
+    segs[0] = sys.u16_to_be(a)
+    segs[1] = sys.u16_to_be(b)
+    segs[2] = sys.u16_to_be(c)
+    segs[3] = sys.u16_to_be(d)
+    segs[4] = sys.u16_to_be(e)
+    segs[5] = sys.u16_to_be(f)
+    segs[6] = sys.u16_to_be(g)
+    segs[7] = sys.u16_to_be(h)
+    return addr
 }
 
-LOCALHOST<Ipv6Addr:> = new Ipv6Addr {
+// Mother: Ipv6Addr::LOCALHOST = new(0,0,0,0,0,0,0,1) → octet[15]=1 on wire.
+IPV6_LOCALHOST<Ipv6Addr:> = new Ipv6Addr {
     octets: [
+        0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 1
     ]
 }
 
-UNSPECIFIED<Ipv6Addr:> = new Ipv6Addr{
+// Mother: Ipv6Addr::UNSPECIFIED.
+IPV6_UNSPECIFIED<Ipv6Addr:> = new Ipv6Addr{
     octets: [
+        0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0
     ]
 }

@@ -27,6 +27,11 @@ fn socket_addr_from_v6(sa_v6<SocketAddrV6>) SocketAddr {
     return new SocketAddr { kind: ADDR_V6_KIND, v4_raw: 0, v6_raw: sa_v6 }
 }
 
+// Restore SocketAddr heap pointer from raw bits (cross-pkg bridge).
+fn socket_addr_from_bits(bits<u64>) SocketAddr {
+    return bits.(SocketAddr)
+}
+
 fn socket_addr_is_v4(addr<SocketAddr>) i32 {
     return addr.kind == ADDR_V4_KIND
 }
@@ -69,4 +74,10 @@ fn socket_addr_into_inner(addr<SocketAddr>) sys.SocketAddrCRepr, u32 {
         v6_store: socket_addr_v6_store(addr).into_inner()
     }
     return repr6, sizeof(sys.SockaddrIn6)
+}
+
+// Cross-pkg consumers store SocketAddrCRepr as u64 and call sys.socket_addr_crepr_as_ptr_raw.
+fn socket_addr_into_inner_bits(addr<SocketAddr>) u64, u32 {
+    repr<sys.SocketAddrCRepr>, len<u32> = socket_addr_into_inner(addr)
+    return repr.(u64), len
 }

@@ -17,7 +17,7 @@ UdpSocket::send_to(buf<io.Buf> , addr<net.SocketAddr>) i32,u64 {
     return err,size
 }
 
-UdpSocket::fromrawfd(fd<i32>)  UdpSocket {
+const UdpSocket::fromrawfd(fd<i32>)  UdpSocket {
     socket<sys.Socket> = new sys.Socket {
         desc: sys.FileDesc::from_raw_fd(fd)
     }
