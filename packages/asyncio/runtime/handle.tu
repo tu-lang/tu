@@ -1,6 +1,7 @@
 use io
 use asyncio.task
-use asyncio.runtime.scheduler as sched
+use asyncio.runtime.scheduler
+use asyncio.runtime.blocking
 use asyncio.runtime.blocking as rtblk
 
 // Cross-thread weak handle to a Runtime. spawn / spawn_blocking /
@@ -37,51 +38,73 @@ const Handle::current() i32, Handle {
     return 0, h
 }
 
-// Spawn a future via the active scheduler. Routes by sched_kind.
-Handle::spawn(fut) task.JoinHandle {
-    if this.sched_kind == 1 {
-        mh<sched.MtHandle> = this.sched_handle.(sched.MtHandle)
-        return mh.spawn(fut)
+// Package-level dispatch (Handle::spawn name confuses parser on return paths).
+fn handle_spawn_impl(h<Handle>, fut) task.JoinHandle {
+    if h.sched_kind == 1 {
+        return mt_handle_spawn_raw(h.sched_handle, fut)
     }
-    ct<sched.CtHandle> = this.sched_handle.(sched.CtHandle)
-    return ct.spawn(fut)
+    return ct_handle_spawn_raw(h.sched_handle, fut)
 }
 
-// Spawn a sync closure on the blocking pool. Returns a JoinHandle the
-// caller can await for the u64 result.
-Handle::spawn_blocking(op<u64>) task.JoinHandle {
-    sp<rtblk.Spawner> = this.blocking_spawner.(rtblk.Spawner)
+// Spawn a future via the active scheduler. Routes by sched_kind.
+Handle::spawn(fut) task.JoinHandle {
+    return handle_spawn_impl(this, fut)
+}
+
+// Package-level block_on dispatch (avoids weak_handle.block_on parser trap).
+fn handle_block_on_impl(h<Handle>, fut) i32, i64 {
+    if h.sched_kind == 1 {
+        return RT_RUNTIME_SHUTDOWN, 0
+    }
+    return block_on_raw(h.sched_handle, fut)
+}
+
+// Shared blocking-pool spawn wiring (keeps cross-package assertions out of methods).
+fn handle_blocking_impl(h<Handle>, op<u64>, mandatory<i32>) task.JoinHandle {
+    sp<Spawner> = spawner_from_bits(h.blocking_spawner)
     if sp == null {
         jh<task.JoinHandle> = new task.JoinHandle
         jh.init(null)
         return jh
     }
 
-    inject<sched.Inject> = null
-    if this.sched_kind == 1 {
-        mh<sched.MtHandle> = this.sched_handle.(sched.MtHandle)
-        inject = mh.shared.inject
+    inject<Inject> = null
+    if h.sched_kind == 1 {
+        inject = mt_sched_inject(h.sched_handle)
     } else {
-        ct<sched.CtHandle> = this.sched_handle.(sched.CtHandle)
-        inject = ct.shared.inject
+        inject = ct_sched_inject(h.sched_handle)
     }
 
     bsched<rtblk.BlockingSchedule> = rtblk.BlockingSchedule::new(inject)
     tid<task.TaskId> = task.alloc_id()
-    jh<task.JoinHandle> = new task.JoinHandle
-    raw<task.RawTask> = task.raw_new(jh, bsched, tid.v)
-    hdr<task.Header> = raw.hdr
-    st<task.State> = hdr.state
-    st.ref_dec()
-    jh.init(raw)
+    jh2<task.JoinHandle> = new task.JoinHandle
+    raw<task.RawTask> = task.raw_new(jh2, bsched, tid.v)
+    raw.life_slot().ref_dec()
+    jh2.init(raw)
 
     bt<rtblk.BlockingTask> = rtblk.BlockingTask::new(op, raw)
-    item<rtblk.BlockingTaskItem> = rtblk.BlockingTaskItem::new(bt, 0)
-    err<i32> = sp.spawn(item)
-    if err != 0 {
-        jh.init(null)
+    item<rtblk.BlockingTaskItem> = rtblk.BlockingTaskItem::new(bt, mandatory)
+    err<i32> = 0
+    if mandatory == 1 {
+        err = spawner_submit_mandatory(sp, item)
+    } else {
+        err = spawner_submit(sp, item)
     }
-    return jh
+    if err != 0 {
+        jh2.init(null)
+    }
+    return jh2
+}
+
+// Spawn a sync closure on the blocking pool. Returns a JoinHandle the
+// caller can await for the u64 result.
+Handle::spawn_blocking(op<u64>) task.JoinHandle {
+    return handle_blocking_impl(this, op, 0)
+}
+
+// Spawn a mandatory blocking closure (DNS / fs flush paths).
+Handle::spawn_mandatory_blocking(op<u64>) task.JoinHandle {
+    return handle_blocking_impl(this, op, 1)
 }
 
 // Run fut to completion via the active scheduler's block_on.
@@ -92,9 +115,5 @@ Handle::block_on(fut) i32, i64 {
         // handles this dispatch.
         return RT_RUNTIME_SHUTDOWN, 0
     }
-    ct<sched.CtHandle> = this.sched_handle.(sched.CtHandle)
-    err<i32> = 0
-    val<i64> = 0
-    err, val = sched.block_on(ct, fut)
-    return err, val
+    return handle_block_on_impl(this, fut)
 }

@@ -4,7 +4,7 @@
 
 use sys
 use asyncio.task
-use asyncio.runtime.scheduler as sched
+use asyncio.runtime.scheduler
 use asyncio.runtime.blocking as rtblk
 
 KIND_CURRENT_THREAD<i32> = 0
@@ -52,28 +52,24 @@ Runtime::handle() Handle {
 
 // Run fut to completion. multi_thread routes through a current_thread
 // driver since block_on is inherently single-threaded.
-Runtime::block_on(fut) (i32, i64) {
+Runtime::block_on(fut) i32, i64 {
     if this.kind == KIND_CURRENT_THREAD {
-        ct<sched.CtHandle> = this.scheduler_handle.(sched.CtHandle)
-        err<i32> = 0
-        val<i64> = 0
-        err, val = sched.block_on(ct, fut)
-        return err, val
+        return block_on_raw(this.scheduler_handle, fut)
     }
     err2<i32> = 0
     val2<i64> = 0
-    err2, val2 = this.weak_handle.block_on(fut)
+    err2, val2 = handle_block_on_impl(this.weak_handle, fut)
     return err2, val2
 }
 
 // Spawn a future via the active scheduler.
 Runtime::spawn(fut) task.JoinHandle {
-    return this.weak_handle.spawn(fut)
+    return handle_spawn_impl(this.weak_handle, fut)
 }
 
 // Spawn a blocking closure.
 Runtime::spawn_blocking(op<u64>) task.JoinHandle {
-    return this.weak_handle.spawn_blocking(op)
+    return handle_blocking_impl(this.weak_handle, op, 0)
 }
 
 // Shutdown with a deadline; idempotent. First call closes the inject
@@ -83,11 +79,9 @@ Runtime::shutdown_timeout(d<sys.Duration>){
     if this.shutdown_state == 2 return
     this.shutdown_state = 1
     if this.kind == KIND_CURRENT_THREAD {
-        ct<sched.CtHandle> = this.scheduler_handle.(sched.CtHandle)
-        ct.shared.inject.close()
+        ct_inject_close(this.scheduler_handle)
     } else {
-        mh<sched.MtHandle> = this.scheduler_handle.(sched.MtHandle)
-        mh.shared.inject.close()
+        mt_inject_close(this.scheduler_handle)
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
     if this.driver != null this.driver.shutdown(this.driver_handle)
@@ -99,11 +93,9 @@ Runtime::shutdown_background(){
     if this.shutdown_state == 2 return
     this.shutdown_state = 1
     if this.kind == KIND_CURRENT_THREAD {
-        ct<sched.CtHandle> = this.scheduler_handle.(sched.CtHandle)
-        ct.shared.inject.close()
+        ct_inject_close(this.scheduler_handle)
     } else {
-        mh<sched.MtHandle> = this.scheduler_handle.(sched.MtHandle)
-        mh.shared.inject.close()
+        mt_inject_close(this.scheduler_handle)
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
     if this.driver != null this.driver.shutdown(this.driver_handle)

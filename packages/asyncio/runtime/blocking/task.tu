@@ -9,12 +9,12 @@ fn blocking_op() (u64)
 
 // Backing structure for one spawn_blocking submission.
 mem BlockingTask {
-    u64       closure_bits    // raw bits of blocking closure (fn blocking_op)
-    RawTask*  task_ptr        // task identity wired to a BlockingSchedule
+    u64            closure_bits    // raw bits of blocking closure (fn blocking_op)
+    task.RawTask*  task_ptr        // task identity wired to a BlockingSchedule
 }
 
 // Build a task that, when run, executes op and stores the u64 result.
-const BlockingTask::new(op<u64>, raw<RawTask>) BlockingTask {
+const BlockingTask::new(op<u64>, raw<task.RawTask>) BlockingTask {
     t<BlockingTask> = new BlockingTask
     t.closure_bits = op
     t.task_ptr = raw
@@ -29,17 +29,18 @@ mem BlockingTaskItem {
 }
 
 // Build an item wrapping task with the given priority.
-const BlockingTaskItem::new(task<BlockingTask>, mandatory<i32>) BlockingTaskItem {
+const BlockingTaskItem::new(task_obj<BlockingTask>, mandatory<i32>) BlockingTaskItem {
     it<BlockingTaskItem> = new BlockingTaskItem
-    it.task      = task
+    it.task      = task_obj
     it.mandatory = mandatory
     return it
 }
 
 // Run the closure, publish the result, and drop the run-queue ref.
 BlockingTask::run(){
-    rtask<RawTask> = this.task_ptr
-    op_fc<blocking_op> = this.closure_bits.(u64)
+    rtask<task.RawTask> = this.task_ptr
+    bits<u64> = this.closure_bits
+    op_fc<blocking_op> = bits.(u64)
     val<u64> = op_fc()
     rtask.blocking_finish(val)
 }

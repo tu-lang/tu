@@ -35,8 +35,8 @@ shutdown_pack<util.Pack> = null
 // directly to the module slots (no `&r` — that would be a stack address).
 func init(){
     r<util.Pack> = util.Pack::least_significant(READINESS_BITS)
-    t<util.Pack> = r.then(TICK_BITS)
-    s<util.Pack> = t.then(SHUTDOWN_BITS)
+    t<util.Pack> = util.pack_then_next(r, TICK_BITS)
+    s<util.Pack> = util.pack_then_next(t, SHUTDOWN_BITS)
     ready_pack    = r
     tick_pack     = t
     shutdown_pack = s
@@ -46,17 +46,17 @@ func init(){
 mem Waiter {
     util.Pointers       node           // intrusive prev/next; must stay at offset 0
     u64            ctx_packed     // (sched, task_id) the driver re-schedules
-    netio.Interest interest       // bits the waiter cares about
+    u8             interest_bits  // netio.Interest.bits snapshot
     i32            is_ready       // 1 once ScheduledIo::wake matched this waiter
 }
 
 // Build a Waiter ready to be linked.
-const Waiter::new(ctx<u64>, interest<netio.Interest>) Waiter {
+const Waiter::new(ctx<u64>, interest_bits<u8>) Waiter {
     w<Waiter> = new Waiter
     w.node.prev   = null
     w.node.next   = null
     w.ctx_packed  = ctx
-    w.interest    = interest
+    w.interest_bits = interest_bits
     w.is_ready    = 0
     return w
 }
@@ -68,7 +68,7 @@ mem ScheduledIo {
     util.Pointers           linked_list_pointers
     u64                readiness        // atomic; packed bits above
     runtime.MutexInter* waiters_lock
-    LinkedList*        waiters          // intrusive list of Waiter
+    util.LinkedList*   waiters          // intrusive list of Waiter
     u64                reader_ctx       // poll_readiness(DIR_READ) ctx slot
     u64                writer_ctx       // poll_readiness(DIR_WRITE) ctx slot
 }
@@ -94,13 +94,16 @@ ScheduledIo::token() u64 {
 
 // Decode helpers over the packed readiness word.
 fn unpack_ready_bits(pack<u64>) i32 {
-    return ready_pack.unpack(pack).(i32)
+    bits<u64> = util.pack_unpack_field(ready_pack, pack)
+    return bits.(i32)
 }
 fn unpack_tick(pack<u64>) i32 {
-    return tick_pack.unpack(pack).(i32)
+    bits<u64> = util.pack_unpack_field(tick_pack, pack)
+    return bits.(i32)
 }
 fn unpack_shutdown(pack<u64>) i32 {
-    return shutdown_pack.unpack(pack).(i32)
+    bits<u64> = util.pack_unpack_field(shutdown_pack, pack)
+    return bits.(i32)
 }
 
 // True when SHUTDOWN bit is set in pack.
@@ -114,9 +117,8 @@ fn pack_is_shutdown(pack<u64>) i32 {
 // tick field is bumped under the same CAS so older snapshots can be
 // rejected by clear_readiness.
 ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
-    addr<u64*> = &this.readiness
     loop {
-        cur<u64> = atomic.load64(addr)
+        cur<u64> = atomic.load64(&this.readiness)
         if pack_is_shutdown(cur) return libio.OtherDriverTerminated
 
         cur_ready<i32> = unpack_ready_bits(cur)
@@ -126,9 +128,9 @@ ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
             next_tick = (next_tick + 1) & 0x7FFF
         }
 
-        nxt<u64> = ready_pack.pack(merged_ready.(u64), cur)
-        nxt = tick_pack.pack(next_tick.(u64), nxt)
-        if atomic.cas64(addr.(i64*), cur.(i64), nxt.(i64)) != 0 return 0
+        nxt<u64> = util.pack_pack_field(ready_pack, merged_ready.(u64), cur)
+        nxt = util.pack_pack_field(tick_pack, next_tick.(u64), nxt)
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) != 0 return 0
     }
     return 0
 }
@@ -141,12 +143,17 @@ ScheduledIo::ready_event(interest<netio.Interest>) ReadyEvent {
     return ReadyEvent::new(unpack_tick(cur), Ready::from_bits(bits))
 }
 
+// Translate Interest bits into the matching Ready mask.
+fn interest_bits_to_ready_mask(interest_bits<u8>) i32 {
+    mask<i32> = 0
+    if (interest_bits & 1) != 0 mask = mask | READABLE | READ_CLOSED | ERROR | PRIORITY
+    if (interest_bits & 2) != 0 mask = mask | WRITABLE | WRITE_CLOSED | ERROR
+    return mask
+}
+
 // Translate an Interest into the matching Ready mask.
 fn interest_to_ready_mask(interest<netio.Interest>) i32 {
-    mask<i32> = 0
-    if interest.is_readable() mask = mask | READABLE | READ_CLOSED | ERROR | PRIORITY
-    if interest.is_writable() mask = mask | WRITABLE | WRITE_CLOSED | ERROR
-    return mask
+    return interest_bits_to_ready_mask(interest.bits)
 }
 
 // Wake every waiter whose interest overlaps `ready`. Matched waiters are
@@ -180,7 +187,7 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
     while cur != null {
         nxt<util.Pointers> = cur.next
         w<Waiter> = cur.(Waiter)
-        match_mask<i32> = interest_to_ready_mask(w.interest)
+        match_mask<i32> = interest_bits_to_ready_mask(w.interest_bits)
         if (ready.bits & match_mask) != 0 {
             this.waiters.remove(cur)
             w.is_ready = 1
@@ -196,7 +203,7 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
 // Single-direction poll: returns PollReady with a ReadyEvent on hit, or
 // PollPending after stashing ctx into the matching reader/writer slot.
 // Returns OtherDriverTerminated when the driver has shut down.
-ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) (i32, ReadyEvent) {
+ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
     cur<u64> = atomic.load64(&this.readiness)
     if pack_is_shutdown(cur) {
         return libio.OtherDriverTerminated, ReadyEvent::new(0, Ready::empty())
@@ -222,14 +229,13 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) (i32, ReadyEvent) {
 // matches. A different tick means another set_readiness pass already
 // swept past the snapshot, so the bits remain valid.
 ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
-    addr<u64*> = &this.readiness
     loop {
-        cur<u64> = atomic.load64(addr)
+        cur<u64> = atomic.load64(&this.readiness)
         if unpack_tick(cur) != event.tick return 0
         cur_ready<i32> = unpack_ready_bits(cur)
         next_ready<i32> = cur_ready & (~event.ready.bits)
-        nxt<u64> = ready_pack.pack(next_ready.(u64), cur)
-        if atomic.cas64(addr.(i64*), cur.(i64), nxt.(i64)) != 0 return 0
+        nxt<u64> = util.pack_pack_field(ready_pack, next_ready.(u64), cur)
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) != 0 return 0
     }
     return 0
 }
@@ -237,12 +243,11 @@ ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
 // Flip the SHUTDOWN bit and wake every waiter with OtherDriverTerminated.
 // All callers entering after shutdown observe the bit and bail out.
 ScheduledIo::shutdown() util.WakeList {
-    addr<u64*> = &this.readiness
     loop {
-        cur<u64> = atomic.load64(addr)
+        cur<u64> = atomic.load64(&this.readiness)
         if pack_is_shutdown(cur) != 0 break
-        nxt<u64> = shutdown_pack.pack(1, cur)
-        if atomic.cas64(addr.(i64*), cur.(i64), nxt.(i64)) != 0 break
+        nxt<u64> = util.pack_pack_field(shutdown_pack, 1, cur)
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) != 0 break
     }
 
     out<util.WakeList> = new util.WakeList
@@ -276,7 +281,7 @@ ScheduledIo::shutdown() util.WakeList {
 // until ScheduledIo::wake matches `interest` or the driver shuts down.
 mem Readiness: async {
     ScheduledIo*    sio
-    netio.Interest  interest
+    u8 interest_bits  // netio.Interest.bits snapshot
     Waiter*         node       // null until the first poll registers
     i32             registered // monotonic 0 -> 1 once node is in waiters
 }
@@ -284,7 +289,7 @@ mem Readiness: async {
 // Build the future without touching the wait list yet.
 Readiness::init(sio<ScheduledIo>, interest<netio.Interest>){
     this.sio        = sio
-    this.interest   = interest
+    this.interest_bits = interest.bits
     this.node       = null
     this.registered = 0
 }
@@ -299,7 +304,7 @@ Readiness::poll(ctx){
         return runtime.PollError, libio.OtherDriverTerminated
     }
 
-    mask<i32> = interest_to_ready_mask(this.interest)
+    mask<i32> = interest_bits_to_ready_mask(this.interest_bits)
     hit<i32> = unpack_ready_bits(cur) & mask
     if hit != 0 {
         return runtime.PollReady, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(hit))
@@ -308,7 +313,7 @@ Readiness::poll(ctx){
     // First poll: link a Waiter node with the ctx. Subsequent polls just
     // refresh ctx so the latest waker wins.
     if this.registered == 0 {
-        w<Waiter> = Waiter::new(ctx.(u64), this.interest)
+        w<Waiter> = Waiter::new(ctx.(u64), this.interest_bits)
         this.node = w
         this.registered = 1
         sio.waiters_lock.lock()

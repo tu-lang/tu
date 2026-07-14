@@ -13,6 +13,13 @@ use asyncio.util
 // Default cap for the blocking pool.
 DEFAULT_MAX_BLOCKING_THREADS<u32> = 512
 
+// OS thread entry for multi_thread workers (mirrors blocking_worker_run).
+fn mt_os_core_start(){
+    w<sched.MtWorker> = sched.ACTIVE_WORKER
+    if w == null return
+    sched.worker_run(w)
+}
+
 // Build-time configuration. kind chooses current_thread vs multi_thread;
 // build() routes accordingly.
 mem Builder {
@@ -93,7 +100,7 @@ Builder::disable_lifo_slot_set() Builder {
 
 // Compose IO + time + signal drivers based on enable_* flags. Returns
 // a (Driver, DriverHandle) pair plus an optional error code.
-fn build_drivers(b<Builder>) (i32, Driver, DriverHandle) {
+fn build_drivers(b<Builder>) i32, Driver, DriverHandle {
     io_drv<rtio.IoDriver>    = null
     io_h<rtio.IoHandle>      = null
     time_drv<rttime.TimeDriver> = null
@@ -127,7 +134,7 @@ fn build_drivers(b<Builder>) (i32, Driver, DriverHandle) {
 
 // Build a current_thread runtime: shared scheduler + blocking pool +
 // optional drivers + a Handle wired to all of the above.
-fn build_current_thread(b<Builder>) (i32, Runtime) {
+fn build_current_thread(b<Builder>) i32, Runtime {
     err<i32>, drv<Driver>, drv_h<DriverHandle> = build_drivers(b)
     if err != 0 return err, null
 
@@ -147,7 +154,7 @@ fn build_current_thread(b<Builder>) (i32, Runtime) {
 // runtime.newcore(worker_entry).
 // queue_local() / Steal / Local return heap pointers; assign through
 // without wrapping with `&`.
-fn build_multi_thread(b<Builder>) (i32, Runtime) {
+fn build_multi_thread(b<Builder>) i32, Runtime {
     err<i32>, drv<Driver>, drv_h<DriverHandle> = build_drivers(b)
     if err != 0 return err, null
 
@@ -173,7 +180,7 @@ fn build_multi_thread(b<Builder>) (i32, Runtime) {
         shared.remotes[i] = r.(u64)
 
         ACTIVE_WORKER = worker
-        runtime.newcore(sched.worker_entry.(u64))
+        runtime.newcore(mt_os_core_start.(u64))
     }
 
     weak<Handle> = Handle::new(handle.(u64), KIND_MULTI_THREAD, drv_h, spawner.(u64))
@@ -181,8 +188,12 @@ fn build_multi_thread(b<Builder>) (i32, Runtime) {
 }
 
 // Top-level entry: validates kind and dispatches.
-Builder::build() (i32, Runtime) {
-    if this.kind == KIND_MULTI_THREAD return build_multi_thread(this)
-    return build_current_thread(this)
+Builder::build() i32, Runtime {
+    if this.kind == KIND_MULTI_THREAD {
+        err<i32>, rt<Runtime> = build_multi_thread(this)
+        return err, rt
+    }
+    err2<i32>, rt2<Runtime> = build_current_thread(this)
+    return err2, rt2
 }
 

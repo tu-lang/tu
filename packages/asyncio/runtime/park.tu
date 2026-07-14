@@ -10,17 +10,17 @@ EMPTY_PARK<i32>   = 0
 PARKED_PARK<i32>  = 1
 NOTIFIED_PARK<i32> = 2
 
-// Per-thread park slot.
+// Per-thread park slot. note_bits is Note* (cross-pkg; value embed fails).
 mem CachedParkThread {
-    i32          state    // atomic
-    rtcore.Note park_note
+    i32  state    // atomic
+    u64  note_bits
 }
 
 // Build a CachedParkThread.
 const CachedParkThread::new() CachedParkThread {
     p<CachedParkThread> = new CachedParkThread
     p.state = EMPTY_PARK
-    p.park_note.Clear()
+    p.note_bits = rtcore.note_new_raw()
     return p
 }
 
@@ -29,8 +29,8 @@ CachedParkThread::wait_until_wake(){
     addr<i32*> = &this.state
     if atomic.cas(addr, NOTIFIED_PARK, EMPTY_PARK) != 0 return
     if atomic.cas(addr, EMPTY_PARK, PARKED_PARK) == 0 return
-    this.park_note.Sleep()
-    this.park_note.Clear()
+    rtcore.note_sleep_raw(this.note_bits)
+    rtcore.note_clear_raw(this.note_bits)
     atomic.cas(addr, PARKED_PARK, EMPTY_PARK)
     atomic.cas(addr, NOTIFIED_PARK, EMPTY_PARK)
 }
@@ -46,7 +46,6 @@ CachedParkThread::unpark(){
     addr<i32*> = &this.state
     if atomic.cas(addr, EMPTY_PARK, NOTIFIED_PARK) != 0 return
     if atomic.cas(addr, PARKED_PARK, NOTIFIED_PARK) != 0 {
-        this.park_note.Wake()
+        rtcore.note_wake_raw(this.note_bits)
     }
 }
-

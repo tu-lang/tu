@@ -10,7 +10,7 @@ use runtime
 use std.atomic
 use io as libio
 use netio
-use netio.event as nidev
+use netio.event
 use sys
 
 TOKEN_WAKEUP<u64> = 0
@@ -21,63 +21,63 @@ EVENTS_CAPACITY<u64> = 1024
 
 // Reactor state held by the dedicated driver thread / block_on park path.
 mem IoDriver {
-    i32                  signal_ready    // set to 1 when TOKEN_SIGNAL fires
-    nidev.Events*  events
-    netio.Poll*          poll
+    i32 signal_ready    // set to 1 when TOKEN_SIGNAL fires
+    u64 events_slot     // Events* raw bits
+    u64 poll_slot       // Poll* raw bits
 }
 
 // Cross-thread companion to IoDriver. Owns the registry view + waker so
 // schedulers and Registration can register sources / kick the reactor.
 mem IoHandle {
-    netio.Registry*    registry
+    u64                registry_slot  // Registry* raw bits
     RegistrationSet*   registrations
-    runtime.MutexInter* synced_lock     // serialises registrations
-    netio.Waker*       waker           // eventfd-backed cross-thread wake
+    runtime.MutexInter* synced_lock   // serialises registrations
+    u64                waker_slot     // Waker* raw bits
     Metrics*           metrics
 }
 
 // Build (driver, handle) wired together. Allocates the netio.Poll and the
 // wakeup eventfd; subsequent registrations route through handle.
-// `netio.Poll::new` / `netio.Waker::new` already return heap pointers,
-// so assign them through directly.
-const IoDriver::new() (i32, IoDriver, IoHandle) {
-    err<i32>, p<netio.Poll> = netio.Poll::new()
+const IoDriver::new() i32, IoDriver, IoHandle {
+    err<i32>, p<Poll> = make_poll()
     if err != 0 {
         return err, null, null
     }
 
-    events_buf<nidev.Events> = nidev.Events::with_capacity(EVENTS_CAPACITY)
+    events_buf<Events> = make_events(EVENTS_CAPACITY)
 
     drv<IoDriver> = new IoDriver
     drv.signal_ready = 0
-    drv.events       = events_buf
-    drv.poll         = p
+    drv.events_slot  = events_buf.(u64)
+    drv.poll_slot    = p.(u64)
 
+    reg<Registry> = poll_registry(p)
     h<IoHandle> = new IoHandle
-    h.registry     = p.registry()
-    h.registrations = RegistrationSet::new()
-    h.synced_lock = new runtime.MutexInter
+    h.registry_slot  = reg.(u64)
+    h.registrations  = RegistrationSet::new()
+    h.synced_lock    = new runtime.MutexInter
     h.synced_lock.init()
-    h.metrics       = Metrics::new()
+    h.metrics        = Metrics::new()
 
-    werr<i32>, wk<netio.Waker> = netio.Waker::new(p.registry(), netio.Token::new(TOKEN_WAKEUP))
+    werr<i32>, wk<Waker> = make_waker(reg, token_from_u64(TOKEN_WAKEUP))
     if werr != 0 {
         return werr, null, null
     }
-    h.waker = wk
+    h.waker_slot = wk.(u64)
 
     return 0, drv, h
 }
 
 // Register a source. Token is the new ScheduledIo* cast to u64; later
 // turn() reverses the cast to dispatch the event back.
-IoHandle::add_source(io_obj<nidev.Source>, interest<netio.Interest>) (i32, ScheduledIo) {
+IoHandle::add_source(io_obj<Source>, interest<netio.Interest>) i32, ScheduledIo {
     err<i32>, sio<ScheduledIo> = this.registrations.allocate(interest)
     if err != 0 {
         return err, null
     }
+    reg<Registry> = registry_from_bits(this.registry_slot)
     this.synced_lock.lock()
-    rerr<i32> = this.registry.register(io_obj, netio.Token::new(sio.token()), interest)
+    rerr<i32> = registry_register(reg, io_obj, token_from_u64(sio.token()), interest)
     this.synced_lock.unlock()
     if rerr != 0 {
         this.registrations.release(sio)
@@ -89,15 +89,17 @@ IoHandle::add_source(io_obj<nidev.Source>, interest<netio.Interest>) (i32, Sched
 // Cross-thread wake: writes to the eventfd, which surfaces in turn() as a
 // TOKEN_WAKEUP event the driver swallows.
 IoHandle::wake_by_ref() i32 {
-    return this.waker.wake()
+    wk<Waker> = waker_from_bits(this.waker_slot)
+    return waker_wake(wk)
 }
 
 // Detach a previously registered source. Caller passes the original
 // libio.event.Source object (so netio can extract the fd) plus the
 // ScheduledIo* it received from add_source.
-IoHandle::remove_source(io_obj<nidev.Source>, sio<ScheduledIo>) i32 {
+IoHandle::remove_source(io_obj<Source>, sio<ScheduledIo>) i32 {
+    reg<Registry> = registry_from_bits(this.registry_slot)
     this.synced_lock.lock()
-    err<i32> = this.registry.deregister(io_obj)
+    err<i32> = registry_deregister(reg, io_obj)
     this.synced_lock.unlock()
     this.registrations.release(sio)
     return err
@@ -114,14 +116,14 @@ IoHandle::shutdown(){
 // waiters whose interest overlaps. Reserved tokens are recognised first.
 // Interrupted maps to a no-op turn so the caller can re-park as needed.
 IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
-    err<i32> = this.poll.poll(this.events, max_wait)
+    err<i32> = poll_poll(poll_from_bits(this.poll_slot), events_from_bits(this.events_slot), max_wait)
     if err == libio.Interrupted return 0
     if err != 0 return err
 
-    iter<nidev.Iter> = this.events.iter()
+    iter<Iter> = events_begin_iter(events_from_bits(this.events_slot))
     fired<u64> = 0
     loop {
-        ie<i32>, ev<nidev.Event> = iter.next()
+        ie<i32>, ev<Event> = events_iter_next(iter)
         if ie != 0 break
 
         token<u64> = ev.token()
@@ -139,20 +141,12 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
         // current first-pass impl drops them here because the scheduler
         // glue layer (task 11.x) has not landed yet. Once the runtime
         // root is ready, hand wakes back to the scheduler instead.
-        wakes.wake_by_ref()
+        util.wake_list_clear(wakes)
         fired += 1
     }
 
     if fired > 0 {
-        m<Metrics> = handle.metrics
-        m.incr_ready_count_by(fired)
+        metrics_incr_ready_count_by(handle.metrics, fired)
     }
     return 0
 }
-
-// Drop pending wakes without scheduling. Used during reactor shutdown
-// once the scheduler is gone.
-util.WakeList::wake_by_ref(){
-    this.len = 0
-}
-

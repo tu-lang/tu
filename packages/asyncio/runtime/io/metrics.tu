@@ -18,6 +18,11 @@ Metrics::incr_ready_count_by(n<u64>){
     this.ready_count += n
 }
 
+// Package-level bump bridge (avoids m.incr_ready_count_by parser trap).
+fn metrics_incr_ready_count_by(m<Metrics>, n<u64>) {
+    Metrics::incr_ready_count_by(m, n)
+}
+
 // Snapshot accessor; reads without atomics in the first-pass impl.
 Metrics::ready_count_snapshot() u64 {
     return this.ready_count

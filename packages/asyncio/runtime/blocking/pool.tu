@@ -140,6 +140,22 @@ fn blocking_worker_run(){
     }
 }
 
+// Raw-bits Spawner decode for callers outside this package.
+fn spawner_from_bits(bits<u64>) Spawner {
+    return bits.(Spawner)
+}
+
+// Package-level submit (avoids sp.spawn parser trap).
+fn spawner_submit(sp<Spawner>, item<BlockingTaskItem>) i32 {
+    return Spawner::spawn(sp, item)
+}
+
+// Package-level mandatory submit.
+fn spawner_submit_mandatory(sp<Spawner>, item<BlockingTaskItem>) i32 {
+    item.mandatory = 1
+    return spawner_submit(sp, item)
+}
+
 // Submit one item. Returns 0 on success, RuntimeShutdown when shutdown is
 // set and item is non-mandatory, SendFull when the queue is at capacity.
 Spawner::spawn(item<BlockingTaskItem>) i32 {

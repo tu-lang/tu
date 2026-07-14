@@ -2,15 +2,15 @@
 // the runtime's main scheduler via its inject queue.
 
 use asyncio.task
-use asyncio.runtime.scheduler
+use asyncio.runtime.scheduler as sched
 
 // BlockingSchedule routes JoinHandle wakes into the runtime's inject.
 mem BlockingSchedule {
-    Inject* runtime_inject     // back-edge into the main scheduler
+    sched.Inject* runtime_inject     // back-edge into the main scheduler
 }
 
 // Build a BlockingSchedule pointing at runtime_inject.
-const BlockingSchedule::new(runtime_inject<Inject>) BlockingSchedule {
+const BlockingSchedule::new(runtime_inject<sched.Inject>) BlockingSchedule {
     s<BlockingSchedule> = new BlockingSchedule
     s.runtime_inject = runtime_inject
     return s
@@ -28,4 +28,3 @@ impl task.Schedule for BlockingSchedule {
         // ephemeral submissions. Nothing to detach here.
     }
 }
-
