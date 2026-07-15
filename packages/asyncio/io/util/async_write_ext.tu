@@ -29,7 +29,8 @@ const Write::new(w<u64>, buf<iobuf.Buf>) Write {
 // PollError surfaces as (PollReady, 0) so write_all can detect a stall
 // and convert it to io.WriteZero.
 Write::poll(ctx) {
-    err<i32>, n<u64> = this.w.(aio.AsyncWrite).poll_write(ctx, this.buf)
+    bits<u64> = iobuf.buf_to_bits(this.buf)
+    err<i32>, n<u64> = this.w.(aio.AsyncWrite).poll_write(ctx, bits)
     if err == runtime.PollPending {
         return runtime.PollPending
     }
@@ -98,117 +99,130 @@ Shutdown::poll(ctx) {
     return runtime.PollReady, 0.(u64)
 }
 
-// Write at most one chunk from `buf`. Returns (0, n) where n is the
-// number of bytes the underlying writer accepted. n == 0 typically
-// indicates a writer-side stall; callers should treat repeated zero
-// returns as io.WriteZero.
-async write(w<u64>, buf<iobuf.Buf>) {
-    fut<Write> = Write::new(w, buf)
-    n<u64> = fut.await
-    return 0, n
+// Mother write(): sync factory returning Write leaf (await at call site).
+fn write(w<u64>, buf<iobuf.Buf>) Write {
+    return Write::new(w, buf)
 }
 
-// Write the entire `buf` to `w`. Returns 0 when every byte landed,
-// io.WriteZero if the underlying writer ever accepts zero bytes
-// without yielding (which would otherwise spin forever).
-async write_all(w<u64>, buf<iobuf.Buf>) {
-    rest<iobuf.Buf> = buf
-    while rest.len() > 0 {
-        fut<Write> = Write::new(w, rest)
-        n<u64> = fut.await
-        if n == 0 return iobuf.WriteZero
-        // Slice the unwritten tail; split_at returns (head, tail) at mid.
-        head<iobuf.Buf>, tail<iobuf.Buf> = rest.split_at(n)
-        rest = tail
+// Leaf future: write every byte of `buf` (mother tokio::io::WriteAll).
+mem WriteAll: async {
+    u64       writer_bits
+    iobuf.Buf remain
+    i32       done_code // latched error; 0 while in progress
+}
+
+const WriteAll::new(w<u64>, buf<iobuf.Buf>) WriteAll {
+    f<WriteAll> = new WriteAll
+    f.writer_bits = w
+    f.remain = buf
+    f.done_code = 0
+    return f
+}
+
+// Mother WriteAll::poll — keep issuing poll_write until remain is empty.
+WriteAll::poll(ctx) {
+    ready<i32> = runtime.PollReady
+    pend<i32> = runtime.PollPending
+    // io.WriteZero = 16908312
+    wz<i32> = 16908312
+    code<i32> = this.done_code
+    if code != 0 {
+        return ready, code
     }
-    return 0
+    rem<iobuf.Buf> = this.remain
+    while rem.len() > 0 {
+        bits<u64> = iobuf.buf_to_bits(rem)
+        st<i32>, n<u64> = this.writer_bits.(aio.AsyncWrite).poll_write(ctx, bits)
+        if st == pend {
+            this.remain = rem
+            return pend
+        }
+        if st == runtime.PollError || n == 0 {
+            this.done_code = wz
+            return ready, wz
+        }
+        head<iobuf.Buf>, tail<iobuf.Buf> = rem.split_at(n)
+        rem = tail
+    }
+    this.remain = rem
+    return ready, 0
 }
 
-// Flush the writer. Returns 0 on success, io.Other on a poll_flush
-// error (the underlying error code is currently swallowed by the leaf
-// — this matches the read-side convention until poll_flush gains a
-// secondary error channel).
-async flush(w<u64>) {
-    fut<Flush> = Flush::new(w)
-    fut.await
-    if fut.done == 2 return iobuf.Other
-    return 0
+// Mother write_all(): sync factory returning WriteAll leaf.
+fn write_all(w<u64>, buf<iobuf.Buf>) WriteAll {
+    return WriteAll::new(w, buf)
 }
 
-// Shut the writer down. Same return convention as flush.
-async shutdown(w<u64>) {
-    fut<Shutdown> = Shutdown::new(w)
-    fut.await
-    if fut.done == 2 return iobuf.Other
-    return 0
+fn flush(w<u64>) Flush {
+    return Flush::new(w)
 }
 
-// ---------------------------------------------------------------------
-// Big-endian integer writers. Each helper packs the value into a small
-// temporary Buf, then drives write_all to commit it. On write failure
-// the underlying error code is propagated.
-// ---------------------------------------------------------------------
+fn shutdown(w<u64>) Shutdown {
+    return Shutdown::new(w)
+}
 
-// Write one byte as u8.
-async write_u8(w<u64>, v<u8>) {
+// Big-endian integer writers — return WriteAll leaves.
+fn write_u8(w<u64>, v<u8>) WriteAll {
     tmp<iobuf.Buf> = iobuf.NewBuf(1)
-    tmp.inner[0] = v
-    return write_all(w, tmp).await
+    p<i8*> = tmp.ptr()
+    p[0] = v.(i8)
+    return WriteAll::new(w, tmp)
 }
 
-// Write one byte as i8 (raw two's-complement bits).
-async write_i8(w<u64>, v<i8>) {
-    return write_u8(w, v.(u8)).await
+fn write_i8(w<u64>, v<i8>) WriteAll {
+    return write_u8(w, v.(u8))
 }
 
-// Write two bytes as u16, big-endian.
-async write_u16(w<u64>, v<u16>) {
+fn write_u16(w<u64>, v<u16>) WriteAll {
     tmp<iobuf.Buf> = iobuf.NewBuf(2)
+    p<i8*> = tmp.ptr()
     hi<u32> = (v >> 8) & 0xFF
     lo<u32> = v & 0xFF
     b0<u8> = hi.(u8)
     b1<u8> = lo.(u8)
-    tmp.inner[0] = b0
-    tmp.inner[1] = b1
-    return write_all(w, tmp).await
+    p[0] = b0.(i8)
+    p[1] = b1.(i8)
+    return WriteAll::new(w, tmp)
 }
 
-// Write two bytes as i16, big-endian.
-async write_i16(w<u64>, v<i16>) {
-    return write_u16(w, v.(u16)).await
+fn write_i16(w<u64>, v<i16>) WriteAll {
+    return write_u16(w, v.(u16))
 }
 
-// Write four bytes as u32, big-endian.
-async write_u32(w<u64>, v<u32>) {
+fn write_u32(w<u64>, v<u32>) WriteAll {
     tmp<iobuf.Buf> = iobuf.NewBuf(4)
+    p<i8*> = tmp.ptr()
     w0<u32> = (v >> 24) & 0xFF
     w1<u32> = (v >> 16) & 0xFF
     w2<u32> = (v >> 8) & 0xFF
     w3<u32> = v & 0xFF
-    tmp.inner[0] = w0.(u8)
-    tmp.inner[1] = w1.(u8)
-    tmp.inner[2] = w2.(u8)
-    tmp.inner[3] = w3.(u8)
-    return write_all(w, tmp).await
+    b0<u8> = w0.(u8)
+    b1<u8> = w1.(u8)
+    b2<u8> = w2.(u8)
+    b3<u8> = w3.(u8)
+    p[0] = b0.(i8)
+    p[1] = b1.(i8)
+    p[2] = b2.(i8)
+    p[3] = b3.(i8)
+    return WriteAll::new(w, tmp)
 }
 
-// Write four bytes as i32, big-endian.
-async write_i32(w<u64>, v<i32>) {
-    return write_u32(w, v.(u32)).await
+fn write_i32(w<u64>, v<i32>) WriteAll {
+    return write_u32(w, v.(u32))
 }
 
-// Write eight bytes as u64, big-endian.
-async write_u64(w<u64>, v<u64>) {
+fn write_u64(w<u64>, v<u64>) WriteAll {
     tmp<iobuf.Buf> = iobuf.NewBuf(8)
+    p<i8*> = tmp.ptr()
     for i<i32> = 0 ; i < 8 ; i += 1 {
         shift<i32> = (7 - i) * 8
-        w<u64> = (v >> shift) & 0xFF
-        tmp.inner[i] = w.(u8)
+        b<u64> = (v >> shift) & 0xFF
+        bu<u8> = b.(u8)
+        p[i] = bu.(i8)
     }
-    return write_all(w, tmp).await
+    return WriteAll::new(w, tmp)
 }
 
-// Write eight bytes as i64, big-endian.
-async write_i64(w<u64>, v<i64>) {
-    return write_u64(w, v.(u64)).await
+fn write_i64(w<u64>, v<i64>) WriteAll {
+    return write_u64(w, v.(u64))
 }

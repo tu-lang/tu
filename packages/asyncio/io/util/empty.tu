@@ -31,8 +31,8 @@ impl aio.AsyncRead for Empty {
 
 // AsyncBufRead presents an empty slice; consume() is a no-op.
 impl aio.AsyncBufRead for Empty {
-    fn poll_fill_buf(ctx<u64>) (i32, iobuf.Buf) {
-        return runtime.PollReady, new iobuf.Buf { inner: null, len: 0 }
+    fn poll_fill_buf(ctx<u64>) (i32, u64, u64) {
+        return runtime.PollReady, 0.(u64), 0.(u64)
     }
     fn consume(amt<u64>){
     }

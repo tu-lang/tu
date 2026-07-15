@@ -7,7 +7,9 @@ use runtime
 use netio
 use netio.event as evsrc
 use asyncio.runtime.io as rtio
-use io as iolib
+
+// io.Ok without `use io` (package short-name clash with library/io).
+IO_OK<i32> = 1
 
 // inner is the netio source (TcpStream / UdpSocket / pipe / ...). reg
 // owns the ScheduledIo that bridges into the IO Driver dispatch loop.
@@ -95,7 +97,7 @@ fn poll_ready_bits(pe<PollEvented>, want_read<i32>, want_write<i32>, ctx<u64>) i
         }
     }
     if bits != 0 {
-        return runtime.PollReady, iolib.Ok, Ready::from_bits(bits)
+        return runtime.PollReady, IO_OK, Ready::from_bits(bits)
     }
     return runtime.PollPending, 0, null
 }

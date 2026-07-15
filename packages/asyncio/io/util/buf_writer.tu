@@ -39,12 +39,12 @@ const BufWriter::new(inner<u64>) BufWriter {
 
 // Bytes still pending in the buffer.
 BufWriter::pending() u64 {
-    return this.buf.filled - this.pos
+    return this.buf.len() - this.pos
 }
 
 // Free space remaining in the buffer.
 BufWriter::room() u64 {
-    return this.buf.capacity() - this.buf.filled
+    return this.buf.capacity() - this.buf.len()
 }
 
 // Drive a single poll_write to push `pending` bytes into the sink.
@@ -55,10 +55,10 @@ fn buf_writer_push(bw<BufWriter>, ctx<u64>) i32 {
     if bw.pending() == 0 {
         return runtime.PollReady
     }
-    off<i32> = int(bw.pos)
-    base<u8*> = bw.buf.buf.inner + off
-    slice<iobuf.Buf> = new iobuf.Buf { inner: base, len: bw.pending() }
-    err<i32>, n<u64> = bw.inner.(aio.AsyncWrite).poll_write(ctx, slice)
+    store_buf<iobuf.Buf> = bw.buf.store_buf()
+    base<u8*> = store_buf.ptr() + bw.pos
+    slice<iobuf.Buf> = new iobuf.Buf { data_ptr: base, byte_len: bw.pending() }
+    err<i32>, n<u64> = bw.inner.(aio.AsyncWrite).poll_write(ctx, iobuf.buf_to_bits(slice))
     if err == runtime.PollPending return runtime.PollPending
     if err == runtime.PollError   return runtime.PollError
     if n == 0 {
@@ -67,9 +67,9 @@ fn buf_writer_push(bw<BufWriter>, ctx<u64>) i32 {
         return runtime.PollError
     }
     bw.pos = bw.pos + n
-    if bw.pos >= bw.buf.filled {
+    if bw.pos >= bw.buf.len() {
         bw.pos = 0
-        bw.buf.filled = 0
+        bw.buf.set_filled_count(0)
     }
     return runtime.PollReady
 }
@@ -77,7 +77,8 @@ fn buf_writer_push(bw<BufWriter>, ctx<u64>) i32 {
 // AsyncWrite: small writes land in `buf`; oversize writes drain the
 // buffer first, then delegate straight to the sink.
 impl aio.AsyncWrite for BufWriter {
-    fn poll_write(ctx<u64>, src<iobuf.Buf>) i32, u64 {
+    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+        src<iobuf.Buf> = iobuf.buf_from_bits(buf_bits)
         // If the caller's slice would not fit, flush the buffer first.
         if src.len() > this.room() {
             err<i32> = buf_writer_push(this, ctx)
@@ -85,15 +86,15 @@ impl aio.AsyncWrite for BufWriter {
             if err == runtime.PollError   return runtime.PollError, 0.(u64)
             // After a successful flush, large writes bypass the buffer.
             if src.len() >= this.buf.capacity() {
-                err2<i32>, n2<u64> = this.inner.(aio.AsyncWrite).poll_write(ctx, src)
+                err2<i32>, n2<u64> = this.inner.(aio.AsyncWrite).poll_write(ctx, buf_bits)
                 return err2, n2
             }
         }
         // Append into our buffer.
-        off<i32> = int(this.buf.filled)
-        dst<u8*> = this.buf.buf.inner + off
-        std.memcpy(dst, src.inner, src.len())
-        this.buf.filled = this.buf.filled + src.len()
+        store_buf<iobuf.Buf> = this.buf.store_buf()
+        dst<u8*> = store_buf.ptr() + this.buf.len()
+        std.memcpy(dst, src.ptr(), src.len())
+        this.buf.set_filled_count(this.buf.len() + src.len())
         return runtime.PollReady, src.len()
     }
     fn poll_flush(ctx<u64>) i32 {

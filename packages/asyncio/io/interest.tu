@@ -1,18 +1,4 @@
-// User-facing Interest helpers; type is netio.Interest.
-
-use netio
-
-READABLE<u8> = netio.READABLE_BIT
-WRITABLE<u8> = netio.WRITABLE_BIT
-
-fn readable() {
-    return netio.readable_interest()
-}
-
-fn writable() {
-    return netio.writable_interest()
-}
-
-fn interest_add(a, b) {
-    return netio.interest_merge(a, b)
-}
+ // Interest helpers live on netio; this file kept to preserve package layout.
+ // asyncio.io short-name clashes with library/io — avoid `use netio` here so
+ // package-level init does not pull foreign constants into this package's
+ // static table.
