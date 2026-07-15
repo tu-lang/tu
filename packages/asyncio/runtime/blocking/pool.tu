@@ -9,6 +9,10 @@ use io
 KEEP_ALIVE_SEC<u64> = 10
 DEFAULT_QUEUE_DEPTH<u32> = 1024
 
+// Mirrors asyncio.runtime.error (blocking cannot see parent pkg consts).
+BLK_RUNTIME_SHUTDOWN<i32> = 0x03020005
+BLK_SEND_FULL<i32>        = 0x0302000A
+
 // Shared queue + bookkeeping.
 mem Shared {
     u64*           queue            // raw bits of BlockingTaskItem*; ring buffer
@@ -42,7 +46,7 @@ Shared::is_empty() i32 {
 // Append item bits at tail. Caller holds the pool's shared_lock.
 Shared::push(item_bits<u64>) i32 {
     if (this.queue_tail - this.queue_head) >= this.queue_cap {
-        return RT_SEND_FULL
+        return BLK_SEND_FULL
     }
     idx<u32> = this.queue_tail & (this.queue_cap - 1)
     this.queue[idx] = item_bits
@@ -147,7 +151,7 @@ fn spawner_from_bits(bits<u64>) Spawner {
 
 // Package-level submit (avoids sp.spawn parser trap).
 fn spawner_submit(sp<Spawner>, item<BlockingTaskItem>) i32 {
-    return Spawner::spawn(sp, item)
+    return sp.spawn(item)
 }
 
 // Package-level mandatory submit.
@@ -163,7 +167,7 @@ Spawner::spawn(item<BlockingTaskItem>) i32 {
     pool.shared_lock.lock()
     if pool.shared.shutdown == 1 && item.mandatory == 0 {
         pool.shared_lock.unlock()
-        return RT_RUNTIME_SHUTDOWN
+        return BLK_RUNTIME_SHUTDOWN
     }
     err<i32> = pool.shared.push(item.(u64))
     if err != 0 {

@@ -67,10 +67,12 @@ Driver::shutdown(handle<DriverHandle>){
 }
 
 // Time-aware deadline hint. Returns -1 when there's nothing scheduled.
+// EXPIR_FOUND=1 matches asyncio.runtime.time.wheel (asmgen cannot load pkg const).
 DriverHandle::next_wake_ms() i32 {
     if this.time_handle == null return -1
     found<i32>, deadline<u64> = this.time_handle.wheel.poll_at()
-    if found != EXPIR_FOUND return -1
+    expir_found<i32> = 1
+    if found != expir_found return -1
     return 0   // For now we just signal "something pending"; the actual
                // ms math lives in TimeDriver::park_internal.
 }

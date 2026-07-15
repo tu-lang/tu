@@ -4,7 +4,6 @@
 
 use runtime
 use std.atomic
-use io as libio
 use netio
 
 use asyncio.util
@@ -119,7 +118,7 @@ fn pack_is_shutdown(pack<u64>) i32 {
 ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
     loop {
         cur<u64> = atomic.load64(&this.readiness)
-        if pack_is_shutdown(cur) return libio.OtherDriverTerminated
+        if pack_is_shutdown(cur) return IO_OTHER_DRIVER_TERMINATED
 
         cur_ready<i32> = unpack_ready_bits(cur)
         merged_ready<i32> = cur_ready | new_ready_bits
@@ -206,7 +205,7 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
 ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
     cur<u64> = atomic.load64(&this.readiness)
     if pack_is_shutdown(cur) {
-        return libio.OtherDriverTerminated, ReadyEvent::new(0, Ready::empty())
+        return IO_OTHER_DRIVER_TERMINATED, ReadyEvent::new(0, Ready::empty())
     }
     bits<i32> = unpack_ready_bits(cur)
     interest_mask<i32> = 0
@@ -301,7 +300,7 @@ Readiness::poll(ctx){
     sio<ScheduledIo> = this.sio
     cur<u64> = atomic.load64(&sio.readiness)
     if pack_is_shutdown(cur) {
-        return runtime.PollError, libio.OtherDriverTerminated
+        return runtime.PollError, IO_OTHER_DRIVER_TERMINATED
     }
 
     mask<i32> = interest_bits_to_ready_mask(this.interest_bits)

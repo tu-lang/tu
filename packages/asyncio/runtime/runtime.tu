@@ -54,7 +54,7 @@ Runtime::handle() Handle {
 // driver since block_on is inherently single-threaded.
 Runtime::block_on(fut) i32, i64 {
     if this.sched_kind == KIND_CURRENT_THREAD {
-        return block_on_raw(this.scheduler_handle, fut)
+        return scheduler.block_on_raw(this.scheduler_handle, fut)
     }
     err2<i32> = 0
     val2<i64> = 0
@@ -79,9 +79,9 @@ Runtime::shutdown_timeout(d<sys.Duration>){
     if this.shutdown_state == 2 return
     this.shutdown_state = 1
     if this.sched_kind == KIND_CURRENT_THREAD {
-        ct_inject_close(this.scheduler_handle)
+        scheduler.ct_inject_close(this.scheduler_handle)
     } else {
-        mt_inject_close(this.scheduler_handle)
+        scheduler.mt_inject_close(this.scheduler_handle)
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
     if this.driver != null this.driver.shutdown(this.driver_handle)
@@ -93,9 +93,9 @@ Runtime::shutdown_background(){
     if this.shutdown_state == 2 return
     this.shutdown_state = 1
     if this.sched_kind == KIND_CURRENT_THREAD {
-        ct_inject_close(this.scheduler_handle)
+        scheduler.ct_inject_close(this.scheduler_handle)
     } else {
-        mt_inject_close(this.scheduler_handle)
+        scheduler.mt_inject_close(this.scheduler_handle)
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
     if this.driver != null this.driver.shutdown(this.driver_handle)

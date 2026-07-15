@@ -41,9 +41,9 @@ const Handle::current() i32, Handle {
 // Package-level dispatch (Handle::spawn name confuses parser on return paths).
 fn handle_spawn_impl(h<Handle>, fut) task.JoinHandle {
     if h.sched_kind == 1 {
-        return mt_handle_spawn_raw(h.sched_handle, fut)
+        return scheduler.mt_handle_spawn_raw(h.sched_handle, fut)
     }
-    return ct_handle_spawn_raw(h.sched_handle, fut)
+    return scheduler.ct_handle_spawn_raw(h.sched_handle, fut)
 }
 
 // Spawn a future via the active scheduler. Routes by sched_kind.
@@ -56,39 +56,41 @@ fn handle_block_on_impl(h<Handle>, fut) i32, i64 {
     if h.sched_kind == 1 {
         return RT_RUNTIME_SHUTDOWN, 0
     }
-    return block_on_raw(h.sched_handle, fut)
+    return scheduler.block_on_raw(h.sched_handle, fut)
 }
 
 // Shared blocking-pool spawn wiring (keeps cross-package assertions out of methods).
 fn handle_blocking_impl(h<Handle>, op<u64>, mandatory<i32>) task.JoinHandle {
-    sp<Spawner> = spawner_from_bits(h.blocking_spawner)
+    sp<rtblk.Spawner> = rtblk.spawner_from_bits(h.blocking_spawner)
     if sp == null {
         jh<task.JoinHandle> = new task.JoinHandle
         jh.init(null)
         return jh
     }
 
-    inject<Inject> = null
+    inject<scheduler.Inject> = null
     if h.sched_kind == 1 {
-        inject = mt_sched_inject(h.sched_handle)
+        inject = scheduler.mt_sched_inject(h.sched_handle)
     } else {
-        inject = ct_sched_inject(h.sched_handle)
+        inject = scheduler.ct_sched_inject(h.sched_handle)
     }
 
     bsched<rtblk.BlockingSchedule> = rtblk.BlockingSchedule::new(inject)
     tid<task.TaskId> = task.alloc_id()
     jh2<task.JoinHandle> = new task.JoinHandle
     raw<task.RawTask> = task.raw_new(jh2, bsched, tid.v)
-    raw.life_slot().ref_dec()
+    // Mother: header().state.ref_dec() after wiring JoinHandle
+    life_st<task.State> = raw.life_st()
+    life_st.ref_dec()
     jh2.init(raw)
 
     bt<rtblk.BlockingTask> = rtblk.BlockingTask::new(op, raw)
     item<rtblk.BlockingTaskItem> = rtblk.BlockingTaskItem::new(bt, mandatory)
     err<i32> = 0
     if mandatory == 1 {
-        err = spawner_submit_mandatory(sp, item)
+        err = rtblk.spawner_submit_mandatory(sp, item)
     } else {
-        err = spawner_submit(sp, item)
+        err = rtblk.spawner_submit(sp, item)
     }
     if err != 0 {
         jh2.init(null)

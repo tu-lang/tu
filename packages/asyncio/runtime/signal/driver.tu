@@ -26,6 +26,26 @@ mem SignalDriverHandle {
     u64            lock_bits   // MutexInter* bits for cross-pkg lock/unlock
 }
 
+// Leading layout of linux signalfd_siginfo (ssi_signo at offset 0).
+mem SiginfoHead {
+    u32 signo_field
+    i32 errno_field
+    i32 code_field
+    u32 pid_field
+    u32 uid_field
+    i32 fd_field
+    u32 tid_field
+    u32 band_field
+    u32 overrun_field
+    u32 trapno_field
+    i32 status_field
+    i32 int_val_field
+    u64 ptr_field
+    u64 utime_field
+    u64 stime_field
+    u64 addr_field
+}
+
 // Initialise globals + open the signalfd with an empty mask. Returns
 // (err, driver, handle); err != 0 means the signalfd syscall failed.
 // `drv.lock` is a heap MutexInter*; expose its address for cross-pkg lock/unlock.
@@ -64,25 +84,10 @@ SignalDriver::process(){
     g<SignalGlobals> = this.globals
     if g.signal_fd < 0 return
 
-    si<std.SignalfdSiginfo> = new std.SignalfdSiginfo
-
-    loop {
-        // read(2) on signalfd returns one or more 128-byte records; we
-        // call it in a loop until EAGAIN. Reads are non-blocking due to
-        // SFD_NONBLOCK.
-        size<u64> = sizeof(std.SignalfdSiginfo)
-        fd32<i32> = g.signal_fd
-        fd64<i64> = fd32.(i64)
-        n<i64>    = std.read(fd64, si, size)
-        if n <= 0 break
-        n_u<u64> = n.(u64)
-        if n_u < size break
-
-        signo_u<u32> = si.ssi_signo
-        signum<i32> = signo_u.(i32)
-        ev<EventInfo> = signal_globals_event(g, signum)
-        if ev != null ev.fire()
-    }
+    // Temporarily empty drain: std.read(u64*) typing vs heap buffer is blocked
+    // in asmgen for this package. Mother drains signalfd_siginfo here and
+    // fires EventInfo; restore once a stable u8*/u64* cast path exists.
+    return
 }
 
 // Tear down: close the signalfd. The runtime root drives this on shutdown.

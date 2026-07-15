@@ -2,7 +2,8 @@
 // Mirrors the boolean accessors on netio.Event so callers can OR-merge state
 // across multiple turn() rounds without re-querying epoll.
 
-use netio
+// Aliased: bare short-name `event` collides with ReadyEvent params named event.
+use netio.event as netevent
 
 // Readiness bit constants. Stored together so consumers can compose freely.
 READABLE<i32>      = 0x01
@@ -27,8 +28,8 @@ const Ready::from_bits(b<i32>) Ready {
     return new Ready { bits: b }
 }
 
-// Project a netio.Event into Ready by OR-ing every triggered bit.
-fn ready_from_event(ev<netio.Event>) Ready {
+// Project netio.event.Event into Ready by OR-ing every triggered bit.
+fn ready_from_event(ev<netevent.Event>) Ready {
     b<i32> = 0
     if ev.is_readable()     b = b | READABLE
     if ev.is_writable()     b = b | WRITABLE

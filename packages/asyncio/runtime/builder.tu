@@ -37,66 +37,69 @@ mem Builder {
 
 // Build a current_thread builder with sane defaults.
 const Builder::new_current_thread() Builder {
-    return new Builder {
-        sched_kind: KIND_CURRENT_THREAD,
-        enable_io: 0,
-        enable_time: 0,
-        worker_threads: 1,
-        max_blocking_threads: DEFAULT_MAX_BLOCKING_THREADS,
-        thread_stack_size: 0,
-        event_interval: DEFAULT_EVENT_INTERVAL,
-        global_queue_interval: DEFAULT_GLOBAL_QUEUE_INTERVAL,
-        disable_lifo_slot: 0,
-        clock_slot: 0
-    }
+    b<Builder> = new Builder
+    b.sched_kind                  = KIND_CURRENT_THREAD
+    b.enable_io             = 0
+    b.enable_time           = 0
+    b.worker_threads        = 1
+    b.max_blocking_threads  = DEFAULT_MAX_BLOCKING_THREADS
+    b.thread_stack_size     = 0
+    b.event_interval        = DEFAULT_EVENT_INTERVAL
+    b.global_queue_interval = DEFAULT_GLOBAL_QUEUE_INTERVAL
+    b.disable_lifo_slot     = 0
+    b.clock_slot            = 0
+    return b
 }
 
 // Build a multi_thread builder. worker_threads defaults to 1; user
 // should call worker_threads(n) before build.
 const Builder::new_multi_thread() Builder {
-    return new Builder {
-        sched_kind: KIND_MULTI_THREAD,
-        enable_io: 0,
-        enable_time: 0,
-        worker_threads: 1,
-        max_blocking_threads: DEFAULT_MAX_BLOCKING_THREADS,
-        thread_stack_size: 0,
-        event_interval: DEFAULT_EVENT_INTERVAL,
-        global_queue_interval: DEFAULT_GLOBAL_QUEUE_INTERVAL,
-        disable_lifo_slot: 0,
-        clock_slot: 0
-    }
+    b<Builder> = Builder::new_current_thread()
+    b.sched_kind = KIND_MULTI_THREAD
+    return b
 }
 
 // Setters return Builder so calls chain.
 Builder::worker_threads(n<u32>) Builder {
+    this.worker_threads = n
     return this
 }
 Builder::max_blocking_threads(n<u32>) Builder {
+    this.max_blocking_threads = n
     return this
 }
 Builder::thread_stack_size(n<u64>) Builder {
+    this.thread_stack_size = n
     return this
 }
 Builder::enable_io() Builder {
+    this.enable_io = 1
     return this
 }
 Builder::enable_time() Builder {
+    this.enable_time = 1
     return this
 }
 Builder::enable_all() Builder {
+    this.enable_io = 1
+    this.enable_time = 1
     return this
 }
 Builder::event_interval(n<u32>) Builder {
+    this.event_interval = n
     return this
 }
 Builder::global_queue_interval(n<u32>) Builder {
+    this.global_queue_interval = n
     return this
 }
 Builder::disable_lifo_slot_set() Builder {
+    this.disable_lifo_slot = 1
     return this
 }
 
+// Compose IO + time + signal drivers based on enable_* flags. Returns
+// a (Driver, DriverHandle) pair plus an optional error code.
 fn build_drivers(b<Builder>) i32, Driver, DriverHandle {
     io_drv<rtio.IoDriver>    = null
     io_h<rtio.IoHandle>      = null
@@ -148,7 +151,7 @@ fn build_current_thread(b<Builder>) i32, Runtime {
 }
 
 // Build a multi_thread runtime: shared MtShared + N workers spawned via
-// runtime.newcore(worker_entry).
+// rtblk.librt_newcore(worker_entry) — library runtime.newcore via blocking bridge.
 // queue_local() / Steal / Local return heap pointers; assign through
 // without wrapping with `&`.
 fn build_multi_thread(b<Builder>) i32, Runtime {
@@ -177,7 +180,7 @@ fn build_multi_thread(b<Builder>) i32, Runtime {
         shared.remotes[i] = r.(u64)
 
         ACTIVE_WORKER = worker
-        runtime.newcore(mt_os_core_start.(u64))
+        rtblk.librt_newcore(mt_os_core_start.(u64))
     }
 
     weak<Handle> = Handle::new(handle.(u64), KIND_MULTI_THREAD, drv_h, spawner.(u64))

@@ -11,19 +11,22 @@ use io
 SIGKILL_SIGNUM<i32> = 9
 SIGSTOP_SIGNUM<i32> = 19
 
+// asyncio.runtime.error.RT_SIG_NOT_REG (asmgen local)
+RT_SIG_NOT_REG<i32> = 0x0302000F
+
 // Register the calling thread's interest in `signum`. Returns
 //   0           — registered successfully; *out is filled with EventInfo*
 //   SignalNotRegistered — signum out of range or unsupported
 //   Other       — sigprocmask / signalfd4 syscall failure
 SignalDriverHandle::register(signum<i32>) i32, EventInfo {
-    if signum < 1 return RT_SIGNAL_NOT_REGISTERED, null
-    if signum >= NUM_SIGNALS return RT_SIGNAL_NOT_REGISTERED, null
-    if signum == SIGKILL_SIGNUM return RT_SIGNAL_NOT_REGISTERED, null
-    if signum == SIGSTOP_SIGNUM return RT_SIGNAL_NOT_REGISTERED, null
+    if signum < 1 return RT_SIG_NOT_REG, null
+    if signum >= NUM_SIGNALS return RT_SIG_NOT_REG, null
+    if signum == SIGKILL_SIGNUM return RT_SIG_NOT_REG, null
+    if signum == SIGSTOP_SIGNUM return RT_SIG_NOT_REG, null
 
     g<SignalGlobals> = this.globals
     ev<EventInfo>    = signal_globals_event(g, signum)
-    if ev == null return RT_SIGNAL_NOT_REGISTERED, null
+    if ev == null return RT_SIG_NOT_REG, null
 
     // Block the signal in the process mask so it queues into signalfd
     // instead of being delivered to a thread handler.
@@ -49,8 +52,8 @@ SignalDriverHandle::register(signum<i32>) i32, EventInfo {
 // Unsubscribe `signum`. We unblock the signal so the default handler
 // fires again. The Notify slot stays alive for any other subscribers.
 SignalDriverHandle::unregister(signum<i32>) i32 {
-    if signum < 1 return RT_SIGNAL_NOT_REGISTERED
-    if signum >= NUM_SIGNALS return RT_SIGNAL_NOT_REGISTERED
+    if signum < 1 return RT_SIG_NOT_REG
+    if signum >= NUM_SIGNALS return RT_SIG_NOT_REG
 
     mask<u64> = 0
     std.sigaddset(&mask, signum)

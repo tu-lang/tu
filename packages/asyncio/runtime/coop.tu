@@ -2,6 +2,7 @@
 // real work. When the budget hits zero we return PollPending so the
 // scheduler gets a chance to run other tasks, preventing one ready
 // future from monopolising the worker.
+// Mother: tokio::task::coop / budget (rough equivalent).
 
 DEFAULT_BUDGET<i32> = 128
 
@@ -10,36 +11,47 @@ DEFAULT_BUDGET<i32> = 128
 // caller hands it back via restore_budget after a long synchronous
 // operation if it needs the same slot back.
 fn poll_proceed(ctx<u64>) (i32, u64) {
-    rc<RuntimeContext> = current_context()
-    if rc == null return 0, 0
-    if rc.coop_budget <= 0 {
+    ctx_slot<RuntimeContext> = current_context()
+    if ctx_slot == null {
+        return 0, 0
+    }
+    if ctx_slot.coop_budget <= 0 {
         return RT_NO_BUDGET, 0
     }
-    rc.coop_budget -= 1
+    ctx_slot.coop_budget -= 1
     return 0, 1
 }
 
 // True while there is at least one budget unit remaining.
 fn has_budget_remaining() i32 {
-    rc<RuntimeContext> = current_context()
-    if rc == null return true
-    if rc.coop_budget > 0 return true
-    return false
+    ctx_slot<RuntimeContext> = current_context()
+    if ctx_slot == null {
+        return 1
+    }
+    if ctx_slot.coop_budget > 0 {
+        return 1
+    }
+    return 0
 }
 
 // Restore the budget cell taken by poll_proceed. Token is opaque; for
 // the first-pass impl we just bump the counter back by one.
 fn restore_budget(token<u64>){
-    if token == 0 return
-    rc<RuntimeContext> = current_context()
-    if rc == null return
-    rc.coop_budget += 1
+    if token == 0 {
+        return
+    }
+    ctx_slot<RuntimeContext> = current_context()
+    if ctx_slot == null {
+        return
+    }
+    ctx_slot.coop_budget += 1
 }
 
 // Refresh the budget at the top of a poll round.
 fn reset_budget(){
-    rc<RuntimeContext> = current_context()
-    if rc == null return
-    rc.coop_budget = DEFAULT_BUDGET
+    ctx_slot<RuntimeContext> = current_context()
+    if ctx_slot == null {
+        return
+    }
+    ctx_slot.coop_budget = DEFAULT_BUDGET
 }
-
