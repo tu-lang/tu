@@ -224,6 +224,13 @@ fn registerObjects(){
     }
 }
 
+// Emit api vtables.
+//
+// parse2 clears every struct's order_funcs; parse3 walks packages in hash order.
+// A cross-pkg `impl pkg.Api for S` that runs before the API package's FunctionPhase
+ // snapshots an empty order_funcs into ApiImpl.funcs, so codegen used to emit
+// empty apitl labels (asmer then dies on `.global`/`.text` after the label).
+// Resolve .quad slots from the API's final order_funcs + impl getFunc at emit time.
 fn registerApiTable(){
     for st : currentParser.structs {
         if st.isasync continue
@@ -235,8 +242,31 @@ fn registerApiTable(){
             tbptr = st.apiname(it.name)
             writeln("    .global %s",tbptr)
             writeln("%s:",tbptr)
-            for fc : it.funcs {
-                writeln("   .quad %s",fc.fullname())
+
+            apiDef = null
+            for pkg : package.packages {
+                cand = pkg.getStruct(it.name)
+                if cand == null || !cand.isapi
+                    continue
+                if apiDef == null || std.len(cand.order_funcs) > std.len(apiDef.order_funcs) {
+                    apiDef = cand
+                }
+            }
+
+            if apiDef != null && std.len(apiDef.order_funcs) > 0 {
+                for apiFn : apiDef.order_funcs {
+                    if apiFn == null continue
+                    implFn = st.getFunc(apiFn.name)
+                    if implFn != null {
+                        writeln("   .quad %s",implFn.fullname())
+                    }else if apiFn.hasBlock {
+                        writeln("   .quad %s",apiFn.fullname())
+                    }
+                }
+            }else{
+                for fc : it.funcs {
+                    writeln("   .quad %s",fc.fullname())
+                }
             }
         }
     }
