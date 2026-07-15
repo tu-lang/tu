@@ -153,7 +153,7 @@ fn interest_bits_to_ready_mask(interest_bits<u8>) i32 {
 
 // Translate an Interest into the matching Ready mask.
 fn interest_to_ready_mask(interest<netio.Interest>) i32 {
-    return interest_bits_to_ready_mask(interest.bits)
+    return interest_bits_to_ready_mask(netio.interest_as_u8(interest))
 }
 
 // Wake every waiter whose interest overlaps `ready`. Matched waiters are
@@ -289,7 +289,7 @@ mem Readiness: async {
 // Build the future without touching the wait list yet.
 Readiness::init(sio<ScheduledIo>, interest<netio.Interest>){
     this.sio        = sio
-    this.interest_bits = interest.bits
+    this.interest_bits = netio.interest_as_u8(interest)
     this.node       = null
     this.registered = 0
 }

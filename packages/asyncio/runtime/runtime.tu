@@ -12,7 +12,7 @@ KIND_MULTI_THREAD<i32>   = 1
 
 // Strong owner of every long-lived runtime resource.
 mem Runtime {
-    i32           kind
+    i32           sched_kind
     Handle*       weak_handle
     DriverHandle* driver_handle
     Driver*       driver
@@ -34,7 +34,7 @@ const Runtime::compose(
     sched<u64>
 ) Runtime {
     r<Runtime> = new Runtime
-    r.kind             = kind
+    r.sched_kind       = kind
     r.weak_handle      = weak
     r.driver           = drv
     r.driver_handle    = drv_h
@@ -53,7 +53,7 @@ Runtime::handle() Handle {
 // Run fut to completion. multi_thread routes through a current_thread
 // driver since block_on is inherently single-threaded.
 Runtime::block_on(fut) i32, i64 {
-    if this.kind == KIND_CURRENT_THREAD {
+    if this.sched_kind == KIND_CURRENT_THREAD {
         return block_on_raw(this.scheduler_handle, fut)
     }
     err2<i32> = 0
@@ -78,7 +78,7 @@ Runtime::spawn_blocking(op<u64>) task.JoinHandle {
 Runtime::shutdown_timeout(d<sys.Duration>){
     if this.shutdown_state == 2 return
     this.shutdown_state = 1
-    if this.kind == KIND_CURRENT_THREAD {
+    if this.sched_kind == KIND_CURRENT_THREAD {
         ct_inject_close(this.scheduler_handle)
     } else {
         mt_inject_close(this.scheduler_handle)
@@ -92,7 +92,7 @@ Runtime::shutdown_timeout(d<sys.Duration>){
 Runtime::shutdown_background(){
     if this.shutdown_state == 2 return
     this.shutdown_state = 1
-    if this.kind == KIND_CURRENT_THREAD {
+    if this.sched_kind == KIND_CURRENT_THREAD {
         ct_inject_close(this.scheduler_handle)
     } else {
         mt_inject_close(this.scheduler_handle)

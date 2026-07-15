@@ -20,10 +20,10 @@ fn mt_os_core_start(){
     sched.worker_run(w)
 }
 
-// Build-time configuration. kind chooses current_thread vs multi_thread;
+// Build-time configuration. sched_kind chooses current_thread vs multi_thread;
 // build() routes accordingly.
 mem Builder {
-    i32   kind                    // 0 = current_thread, 1 = multi_thread
+    i32   sched_kind                    // 0 = current_thread, 1 = multi_thread
     i32   enable_io
     i32   enable_time
     u32   worker_threads
@@ -37,26 +37,35 @@ mem Builder {
 
 // Build a current_thread builder with sane defaults.
 const Builder::new_current_thread() Builder {
-    b<Builder> = new Builder
-    b.kind                  = KIND_CURRENT_THREAD
-    b.enable_io             = 0
-    b.enable_time           = 0
-    b.worker_threads        = 1
-    b.max_blocking_threads  = DEFAULT_MAX_BLOCKING_THREADS
-    b.thread_stack_size     = 0
-    b.event_interval        = DEFAULT_EVENT_INTERVAL
-    b.global_queue_interval = DEFAULT_GLOBAL_QUEUE_INTERVAL
-    b.disable_lifo_slot     = 0
-    b.clock_slot            = 0
-    return b
+    return new Builder {
+        sched_kind: KIND_CURRENT_THREAD,
+        enable_io: 0,
+        enable_time: 0,
+        worker_threads: 1,
+        max_blocking_threads: DEFAULT_MAX_BLOCKING_THREADS,
+        thread_stack_size: 0,
+        event_interval: DEFAULT_EVENT_INTERVAL,
+        global_queue_interval: DEFAULT_GLOBAL_QUEUE_INTERVAL,
+        disable_lifo_slot: 0,
+        clock_slot: 0
+    }
 }
 
 // Build a multi_thread builder. worker_threads defaults to 1; user
 // should call worker_threads(n) before build.
 const Builder::new_multi_thread() Builder {
-    b<Builder> = Builder::new_current_thread()
-    b.kind = KIND_MULTI_THREAD
-    return b
+    return new Builder {
+        sched_kind: KIND_MULTI_THREAD,
+        enable_io: 0,
+        enable_time: 0,
+        worker_threads: 1,
+        max_blocking_threads: DEFAULT_MAX_BLOCKING_THREADS,
+        thread_stack_size: 0,
+        event_interval: DEFAULT_EVENT_INTERVAL,
+        global_queue_interval: DEFAULT_GLOBAL_QUEUE_INTERVAL,
+        disable_lifo_slot: 0,
+        clock_slot: 0
+    }
 }
 
 // Setters return Builder so calls chain.
@@ -189,7 +198,7 @@ fn build_multi_thread(b<Builder>) i32, Runtime {
 
 // Top-level entry: validates kind and dispatches.
 Builder::build() i32, Runtime {
-    if this.kind == KIND_MULTI_THREAD {
+    if this.sched_kind == KIND_MULTI_THREAD {
         err<i32>, rt<Runtime> = build_multi_thread(this)
         return err, rt
     }
