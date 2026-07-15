@@ -129,6 +129,38 @@ Buffer::set_init(n<u64>) Buffer {
     return this
 }
 
+// Full capacity store (avoids cross-pkg `.backing` / method vs field `filled` traps).
+Buffer::store_buf() Buf {
+    return this.backing
+}
+
+Buffer::set_filled_count(n<u64>) {
+    this.filled = n
+}
+
+Buffer::set_init_count(n<u64>) {
+    if this.init < n {
+        this.init = n
+    }
+}
+
+// Cross-pkg casting (asyncio.io cannot `use io` — short name conflicts).
+fn buffer_from_bits(bits<u64>) Buffer {
+    return bits.(Buffer)
+}
+
+fn buffer_to_bits(b<Buffer>) u64 {
+    return b.(u64)
+}
+
+fn buf_from_bits(bits<u64>) Buf {
+    return bits.(Buf)
+}
+
+fn buf_to_bits(b<Buf>) u64 {
+    return b.(u64)
+}
+
 mem BufferCursor {
     Buffer* owner
     u64     start
