@@ -32,6 +32,10 @@ fn socket_addr_from_bits(bits<u64>) SocketAddr {
     return bits.(SocketAddr)
 }
 
+fn socket_addr_to_bits(addr<SocketAddr>) u64 {
+    return addr.(u64)
+}
+
 fn socket_addr_is_v4(addr<SocketAddr>) i32 {
     return addr.kind == ADDR_V4_KIND
 }

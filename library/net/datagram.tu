@@ -47,3 +47,9 @@ const UnixDatagram::fromrawfd(fd<i32>) UnixDatagram {
 UnixDatagram::as_raw_fd() i32 {
     return this.socket_hub.as_raw()
 }
+
+impl sys.AsRawFd for UnixDatagram {
+    fn as_raw_fd() i32 {
+        return this.socket_hub.as_raw()
+    }
+}

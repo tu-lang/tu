@@ -35,6 +35,12 @@ UnixStream::as_raw_fd() i32 {
     return this.socket_hub.as_raw()
 }
 
+impl sys.AsRawFd for UnixStream {
+    fn as_raw_fd() i32 {
+        return this.socket_hub.as_raw()
+    }
+}
+
 impl io.Read for UnixStream {
     fn read(buf<io.Buf>) i32,u64 {
         err<i32>,size<u64> = this.socket_hub.read(buf)

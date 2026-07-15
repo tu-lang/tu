@@ -28,6 +28,12 @@ TcpListener::as_raw_fd() i32 {
     return this.listener_hub.socket().as_raw()
 }
 
+impl sys.AsRawFd for TcpListener {
+    fn as_raw_fd() i32 {
+        return this.listener_hub.socket().as_raw()
+    }
+}
+
 const TcpStream::fromrawfd(fd<i32>) TcpStream {
     socket<sys.Socket> = new sys.Socket {
         desc: sys.FileDesc::from_raw_fd(fd)
@@ -54,6 +60,12 @@ TcpStream::asinner() sys.TcpStream {
 
 TcpStream::as_raw_fd() i32 {
     return this.stream_hub.socket().as_raw()
+}
+
+impl sys.AsRawFd for TcpStream {
+    fn as_raw_fd() i32 {
+        return this.stream_hub.socket().as_raw()
+    }
 }
 
 impl io.Read for TcpStream {

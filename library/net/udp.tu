@@ -27,3 +27,13 @@ const UdpSocket::fromrawfd(fd<i32>)  UdpSocket {
         }
     }
 }
+
+UdpSocket::as_raw_fd() i32 {
+    return this.socket_hub.socket().as_raw()
+}
+
+impl sys.AsRawFd for UdpSocket {
+    fn as_raw_fd() i32 {
+        return this.socket_hub.socket().as_raw()
+    }
+}
