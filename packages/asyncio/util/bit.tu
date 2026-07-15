@@ -64,17 +64,25 @@ Pack::unpack(base<u64>) u64 {
 
 // Package-level pack bridge (avoids p.pack parser trap).
 fn pack_pack_field(p<Pack>, value<u64>, base<u64>) u64 {
-    return Pack::pack(p, value, base)
+    masked<u64> = value & p.mask
+    off<i32> = p.bit_off
+    sh<u64> = off.(u64)
+    allones<u64> = 0xFFFFFFFFFFFFFFFF
+    inv_mask<u64> = allones ^ (p.mask << sh)
+    out<u64> = base & inv_mask
+    return out | (masked << sh)
 }
 
 // Package-level then bridge (avoids p.then parser trap).
 fn pack_then_next(p<Pack>, n<i32>) Pack {
-    return Pack::then(p, n)
+    return p.then(n)
 }
 
 // Package-level unpack bridge (avoids ready_pack.unpack parser trap).
 fn pack_unpack_field(p<Pack>, base<u64>) u64 {
-    return Pack::unpack(p, base)
+    off<i32> = p.bit_off
+    sh<u64> = off.(u64)
+    return (base >> sh) & p.mask
 }
 
 // Count the number of 1 bits in v.

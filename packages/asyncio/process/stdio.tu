@@ -55,7 +55,8 @@ ChildStderr::close() i32 {
 // AsyncWrite over the stdin pipe: one blocking write, resolve immediately.
 // poll_flush is a no-op; poll_shutdown closes the write end (EOF for the child).
 impl aio.AsyncWrite for ChildStdin {
-    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
+    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+        buf<io.Buf> = io.buf_from_bits(buf_bits)
         err<i32>, n<u64> = sys.cvt(sys.write(this.fd, buf.ptr(), buf.len()))
         if err != io.Ok return runtime.PollError, 0
         return runtime.PollReady, n
@@ -72,9 +73,9 @@ impl aio.AsyncWrite for ChildStdin {
 // AsyncRead over the stdout pipe: fill the unfilled tail with one blocking read.
 impl aio.AsyncRead for ChildStdout {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-        base<io.Buf> = buf.inner.buf
-        _, tail<io.Buf> = base.split_at(buf.filled)
-        err<i32>, n<u64> = sys.cvt(sys.read(this.fd, tail.ptr(), tail.len()))
+        rem<u64> = buf.remaining()
+        if rem == 0 return runtime.PollReady
+        err<i32>, n<u64> = sys.cvt(sys.read(this.fd, buf.unfilled_ptr(), rem))
         if err != io.Ok return runtime.PollError
         if n > 0 buf.advance(n)
         return runtime.PollReady
@@ -84,9 +85,9 @@ impl aio.AsyncRead for ChildStdout {
 // AsyncRead over the stderr pipe (mirror of ChildStdout).
 impl aio.AsyncRead for ChildStderr {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-        base<io.Buf> = buf.inner.buf
-        _, tail<io.Buf> = base.split_at(buf.filled)
-        err<i32>, n<u64> = sys.cvt(sys.read(this.fd, tail.ptr(), tail.len()))
+        rem<u64> = buf.remaining()
+        if rem == 0 return runtime.PollReady
+        err<i32>, n<u64> = sys.cvt(sys.read(this.fd, buf.unfilled_ptr(), rem))
         if err != io.Ok return runtime.PollError
         if n > 0 buf.advance(n)
         return runtime.PollReady

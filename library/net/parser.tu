@@ -509,3 +509,9 @@ fn parse_ascii_bytes(b<u8*>, len<i32>) i32, SocketAddr {
     }, 0)
     return ok, ret
 }
+
+// Cross-package bridge: callers outside `net` take SocketAddr as u64 bits.
+fn parse_ascii_bytes_bits(b<u8*>, len<i32>) i32, u64 {
+    err<i32>, addr<SocketAddr> = parse_ascii_bytes(b, len)
+    return err, addr.(u64)
+}
