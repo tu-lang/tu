@@ -1,8 +1,14 @@
 use io
 
+// Mother: tustd::sys::AsRawFd — objects that expose a Unix raw fd.
+api AsRawFd {
+    fn as_raw_fd() (i32)
+}
+
 mem FileDesc {
     i32 raw_fd
 }
+
 
 READ_LIMIT<u64> = 18446744073709551615
 UIO_MAXIOV<i32> = 1024
@@ -45,6 +51,12 @@ FileDesc::duplicate() i32, FileDesc {
 
 FileDesc::close_io() {
     close(this.raw_fd)
+}
+
+impl AsRawFd for FileDesc {
+    fn as_raw_fd() i32 {
+        return this.raw_fd
+    }
 }
 
 // Package bridge so net/sys callers avoid trait impl on FileDesc in this package.
