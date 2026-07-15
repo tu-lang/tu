@@ -1,19 +1,21 @@
 // User-facing socket-address surface for asyncio.net.
 //
 // Mirrors tokio::net::addr — parsing/formatting delegates to library/net
-// (tustd::net::parser / SocketAddr::parse_ascii), same as tokio → std::net.
+// via asyncio.util bridges (this package short-name is `net` and must not
+// `use net` or getPackage poisons local mem types).
 
-use net as libnet
+use asyncio.util
 use string
-use io as libio
 
 // Parse bytes like tustd SocketAddr::parse_ascii / tokio str::parse.
-fn parse_socket_addr(b<u8*>, len<i32>) i32, libnet.SocketAddr {
-    err<i32>, addr<libnet.SocketAddr> = libnet.parse_ascii_bytes(b, len)
-    return err, addr
+// Returns (err, SocketAddr bits).
+fn parse_socket_addr(b<u8*>, len<i32>) i32, u64 {
+    err<i32>, bits<u64> = util.net_parse_ascii_bytes_bits(b, len)
+    return err, bits
 }
 
 // Identity resolution for an already-parsed address (tokio ToSocketAddrs for SocketAddr).
-fn to_socket_addrs(addr<libnet.SocketAddr>) i32, libnet.SocketAddr {
-    return libio.Ok, addr
+fn to_socket_addrs(addr_bits<u64>) i32, u64 {
+    ok_code<i32> = 1
+    return ok_code, addr_bits
 }
