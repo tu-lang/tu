@@ -1,11 +1,13 @@
 use os
 use std
+use apicross
 
 fn main(){
 	case1()
 	case2()
 	case3()
 	case4()
+	case_cross_pkg()
 }
 
 api ApiCase4 {
@@ -198,4 +200,24 @@ fn case1(){
 	fmt.println("test pass args cast")
 	passcast(129,22.33,123456,789.654,"passcast")
 	fmt.println("test pass args cast success")
+}
+// Cross-package api impl (apicross.CrossApi). Empty order_funcs snapshot used
+// to emit apitl with no .quad and null vtable dispatch. Uses a test-local
+// package so we do not drag library/sys (and its use net / sys/net.tu).
+mem CrossFd {
+	i32 fd
+}
+impl apicross.CrossApi for CrossFd {
+	fn get_fd() i32 {
+		return this.fd
+	}
+}
+fn case_cross_pkg(){
+	fmt.println("test cross-pkg api impl")
+	f<CrossFd> = new CrossFd {
+		fd: 9
+	}
+	a<apicross.CrossApi> = f
+	if a.get_fd() != 9 os.die("cross-pkg api vtable empty")
+	fmt.println("test cross-pkg api impl success")
 }
