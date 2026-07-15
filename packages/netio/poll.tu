@@ -52,8 +52,10 @@ Poll::poll(events<event.Events>, timeout<libsys.Duration>) i32 {
 	timeout_ms<i32> = -1
 	if timeout != null {
 		ms<u64> = timeout.as_millis()
-		if ms > runtime.I32_MAX.(u64) {
-			timeout_ms = runtime.I32_MAX
+		imax<i32> = runtime.I32_MAX
+		imax_u<u64> = imax.(u64)
+		if ms > imax_u {
+			timeout_ms = imax
 		} else {
 			timeout_ms = ms.(i32)
 		}

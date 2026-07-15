@@ -1,15 +1,15 @@
 use io
-use netio.sys
+use netio.sys as nsys
 
 mem Waker {
-	sys.EventfdWaker* inner
+	nsys.EventfdWaker* inner
 }
 
 const Waker::new(registry<Registry>, t<Token>) i32, Waker {
 	err<i32> = registry.register_waker()
 	if err != Ok
 		return err, null
-	err, inner<sys.EventfdWaker> = sys.EventfdWaker::new(registry.selector(), t.as_u64())
+	err, inner<nsys.EventfdWaker> = nsys.EventfdWaker::new(registry.selector(), t.as_u64())
 	if err != Ok
 		return err, null
 	return Ok, new Waker { inner: inner }

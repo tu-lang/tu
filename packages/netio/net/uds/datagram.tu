@@ -1,45 +1,55 @@
 use netio
 use io
 use netio.event
-use netio.sys
+use netio.sys as nsys
 use net
+use sys as libsys
 use sys.uds
 
 mem UnixDatagram {
-	netio.IoSource* inner
+	u64 iosrc_bits
 }
 
 const UnixDatagram::bind(path<string.String>) i32, UnixDatagram {
 	err<i32>, socket<net.UnixDatagram> = uds.bind(path)
 	if err != Ok
 		return err, null
-	return Ok, new UnixDatagram { inner: netio.IoSource::new(socket) }
+	return Ok, UnixDatagram::from_std(socket)
 }
 
 const UnixDatagram::from_std(socket<net.UnixDatagram>) UnixDatagram {
-	return new UnixDatagram { inner: netio.IoSource::new(socket) }
+	d<UnixDatagram> = new UnixDatagram
+	d.iosrc_bits = netio.iosource_new_bits(socket)
+	return d
+}
+
+UnixDatagram::std_socket() net.UnixDatagram {
+	bits<u64> = netio.iosource_fd_holder_bits(this.iosrc_bits)
+	return bits.(net.UnixDatagram)
 }
 
 UnixDatagram::recv_from(buf<io.Buf>) i32, u64, uds.SocketAddr {
-	return uds.recv_from(this.inner.inner, buf)
+	return uds.recv_from(this.std_socket(), buf)
 }
 
 UnixDatagram::recv(buf<io.Buf>) i32, u64 {
-	return this.inner.inner.recv(buf.ptr())
+	std_d<net.UnixDatagram> = this.std_socket()
+	return std_d.recv(buf.ptr())
 }
 
 UnixDatagram::send_to(buf<io.Buf>, path<string.String>) i32, u64 {
-	return this.inner.inner.send_to(buf, path)
+	std_d<net.UnixDatagram> = this.std_socket()
+	return std_d.send_to(buf, path)
 }
 
 impl event.Source for UnixDatagram {
 	fn register(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
-		return this.inner.register(registry, t, interests)
+		return netio.iosource_register_bits(this.iosrc_bits, registry, t, interests)
 	}
 	fn reregister(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
-		return this.inner.reregister(registry, t, interests)
+		return netio.iosource_reregister_bits(this.iosrc_bits, registry, t, interests)
 	}
 	fn deregister(registry<netio.Registry>) i32 {
-		return this.inner.deregister(registry)
+		return netio.iosource_deregister_bits(this.iosrc_bits, registry)
 	}
 }

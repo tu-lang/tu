@@ -1,11 +1,2 @@
-mem IoSourceState {
-	i64 pad
-}
-
-const IoSourceState::new() IoSourceState {
-	return new IoSourceState { pad: 0 }
-}
-
-IoSourceState::do_io(callable, io_obj) {
-	return callable(io_obj)
-}
+// Mother moved IoSourceState next to IoSource (netio package). Keep this file
+// as the unix/sys marker; state helpers live in netio/io_source.tu.
