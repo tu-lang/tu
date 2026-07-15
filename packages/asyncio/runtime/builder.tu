@@ -70,45 +70,33 @@ const Builder::new_multi_thread() Builder {
 
 // Setters return Builder so calls chain.
 Builder::worker_threads(n<u32>) Builder {
-    this.worker_threads = n
     return this
 }
 Builder::max_blocking_threads(n<u32>) Builder {
-    this.max_blocking_threads = n
     return this
 }
 Builder::thread_stack_size(n<u64>) Builder {
-    this.thread_stack_size = n
     return this
 }
 Builder::enable_io() Builder {
-    this.enable_io = 1
     return this
 }
 Builder::enable_time() Builder {
-    this.enable_time = 1
     return this
 }
 Builder::enable_all() Builder {
-    this.enable_io = 1
-    this.enable_time = 1
     return this
 }
 Builder::event_interval(n<u32>) Builder {
-    this.event_interval = n
     return this
 }
 Builder::global_queue_interval(n<u32>) Builder {
-    this.global_queue_interval = n
     return this
 }
 Builder::disable_lifo_slot_set() Builder {
-    this.disable_lifo_slot = 1
     return this
 }
 
-// Compose IO + time + signal drivers based on enable_* flags. Returns
-// a (Driver, DriverHandle) pair plus an optional error code.
 fn build_drivers(b<Builder>) i32, Driver, DriverHandle {
     io_drv<rtio.IoDriver>    = null
     io_h<rtio.IoHandle>      = null

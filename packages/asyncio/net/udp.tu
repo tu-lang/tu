@@ -37,7 +37,7 @@ const UdpSocket::from_netio(inner<netnet.UdpSocket>) (i32, UdpSocket) {
     dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.interest_add(aio.readable(), aio.writable())
+    interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return libio.Ok, new UdpSocket { io: pe }
@@ -70,55 +70,39 @@ UdpReadyFut::poll(ctx){
     return runtime.PollReady, libio.Ok
 }
 
-// Await read and/or write readiness for `interest`. Returns (libio.Ok, ready)
-// with the ready bits, or (err, null) on driver error.
-async UdpSocket::ready(interest<netio.Interest>) i32, aio.Ready {
-    f<UdpReadyFut> = new UdpReadyFut {
-        io: this.io,
-        want_read: 0,
-        want_write: 0,
-        result: null
-    }
-    if interest.is_readable() f.want_read = 1
-    if interest.is_writable() f.want_write = 1
-    err<i32> = f.await
-    return err, f.result
-}
-
-// ---- send_to / recv_from -------------------------------------------------
-
-// IoOp for a single send_to syscall. Returns (err, bytes); err == libio.WouldBlock
-// makes PollEvented retry after the next writable readiness.
+// IoOp for a single send_to syscall. Foreign pointers stored as u64.
 mem SendToOp {
-    netnet.UdpSocket* sock
-    libio.Buf*           buf
-    libnet.SocketAddr*   addr
+    u64 sock_bits
+    u64 buf_bits
+    u64 addr_bits
 }
 
 impl rtio.IoOp for SendToOp {
     fn try_perform() i32, i64 {
-        err<i32>, n<u64> = this.sock.send_to(this.buf, this.addr)
+        sock<netnet.UdpSocket> = netnet.udp_socket_from_bits(this.sock_bits)
+        buf<libio.Buf> = libio.buf_from_bits(this.buf_bits)
+        addr<libnet.SocketAddr> = libnet.socket_addr_from_bits(this.addr_bits)
+        err<i32>, n<u64> = sock.send_to(buf, addr)
         return err, n.(i64)
     }
 }
 
-// IoOp for a single recv_from syscall. The peer address is stashed in
-// addr_out; try_perform returns (err, bytes).
 mem RecvFromOp {
-    netnet.UdpSocket* sock
-    libio.Buf*           buf
-    libnet.SocketAddr*   addr_out
+    u64 sock_bits
+    u64 buf_bits
+    u64 addr_out_bits
 }
 
 impl rtio.IoOp for RecvFromOp {
     fn try_perform() i32, i64 {
-        err<i32>, n<u64>, addr<libnet.SocketAddr> = this.sock.recv_from(this.buf)
-        this.addr_out = addr
+        sock<netnet.UdpSocket> = netnet.udp_socket_from_bits(this.sock_bits)
+        buf<libio.Buf> = libio.buf_from_bits(this.buf_bits)
+        err<i32>, n<u64>, addr<libnet.SocketAddr> = sock.recv_from(buf)
+        this.addr_out_bits = libnet.socket_addr_to_bits(addr)
         return err, n.(i64)
     }
 }
 
-// Async leaf driving a write-side IoOp through PollEvented::poll_write_io.
 mem SendToFut: async {
     aio.PollEvented* io
     SendToOp*        op
@@ -129,10 +113,9 @@ SendToFut::poll(ctx){
     e<i32>, n<i64> = this.io.poll_write_io(ctx.(u64), this.op)
     if e == runtime.PollPending return runtime.PollPending
     this.size = n
-    return runtime.PollReady, e
+    return runtime.PollReady, e, n.(u64)
 }
 
-// Async leaf driving a read-side IoOp through PollEvented::poll_read_io.
 mem RecvFromFut: async {
     aio.PollEvented* io
     RecvFromOp*      op
@@ -143,35 +126,53 @@ RecvFromFut::poll(ctx){
     e<i32>, n<i64> = this.io.poll_read_io(ctx.(u64), this.op)
     if e == runtime.PollPending return runtime.PollPending
     this.size = n
-    return runtime.PollReady, e
+    peer = libnet.socket_addr_from_bits(this.op.addr_out_bits)
+    return runtime.PollReady, e, n.(u64), peer
 }
 
-// Send `buf` to `addr`. Awaits writable readiness as needed. Returns
-// (libio.Ok, bytes_sent) or (err, 0).
-async UdpSocket::send_to(buf<libio.Buf>, addr<libnet.SocketAddr>) i32, u64 {
-    sock<netnet.UdpSocket> = this.io.source()
-    op<SendToOp> = new SendToOp { sock: sock, buf: buf, addr: addr }
-    f<SendToFut> = new SendToFut { io: this.io, op: op, size: 0 }
-    err<i32> = f.await
-    return err, f.size.(u64)
+// Mother: ready / send_to / recv_from — return leaf futures (no member await).
+UdpSocket::ready(interest<netio.Interest>) UdpReadyFut {
+    f<UdpReadyFut> = new UdpReadyFut {
+        io: this.io,
+        want_read: 0,
+        want_write: 0,
+        result: null
+    }
+    if netio.interest_is_readable(interest) == 1 f.want_read = 1
+    if netio.interest_is_writable(interest) == 1 f.want_write = 1
+    return f
 }
 
-// Receive a datagram into `buf`. Awaits readable readiness as needed. Returns
-// (libio.Ok, bytes, peer_addr) or (err, 0, null).
-async UdpSocket::recv_from(buf<libio.Buf>) i32, u64, libnet.SocketAddr {
+UdpSocket::send_to(buf<libio.Buf>, addr<libnet.SocketAddr>) SendToFut {
     sock<netnet.UdpSocket> = this.io.source()
-    op<RecvFromOp> = new RecvFromOp { sock: sock, buf: buf, addr_out: null }
-    f<RecvFromFut> = new RecvFromFut { io: this.io, op: op, size: 0 }
-    err<i32> = f.await
-    return err, f.size.(u64), op.addr_out
+    op<SendToOp> = new SendToOp {
+        sock_bits: netnet.udp_socket_to_bits(sock),
+        buf_bits: libio.buf_to_bits(buf),
+        addr_bits: libnet.socket_addr_to_bits(addr)
+    }
+    return new SendToFut { io: this.io, op: op, size: 0 }
+}
+
+UdpSocket::recv_from(buf<libio.Buf>) RecvFromFut {
+    sock<netnet.UdpSocket> = this.io.source()
+    op<RecvFromOp> = new RecvFromOp {
+        sock_bits: netnet.udp_socket_to_bits(sock),
+        buf_bits: libio.buf_to_bits(buf),
+        addr_out_bits: 0
+    }
+    return new RecvFromFut { io: this.io, op: op, size: 0 }
 }
 
 // Non-blocking send_to: one writable-readiness check + one syscall. Returns
 // (libio.Ok, bytes), (libio.WouldBlock, 0) when not ready, or (err, 0).
 UdpSocket::try_send_to(buf<libio.Buf>, addr<libnet.SocketAddr>) i32, u64 {
     sock<netnet.UdpSocket> = this.io.source()
-    op<SendToOp> = new SendToOp { sock: sock, buf: buf, addr: addr }
-    interest<netio.Interest> = aio.writable()
+    op<SendToOp> = new SendToOp {
+        sock_bits: netnet.udp_socket_to_bits(sock),
+        buf_bits: libio.buf_to_bits(buf),
+        addr_bits: libnet.socket_addr_to_bits(addr)
+    }
+    interest<netio.Interest> = netio.writable_interest()
     err<i32>, val<i64> = this.io.try_io(interest, op)
     return err, val.(u64)
 }
@@ -180,8 +181,13 @@ UdpSocket::try_send_to(buf<libio.Buf>, addr<libnet.SocketAddr>) i32, u64 {
 // (libio.Ok, bytes, peer_addr), (libio.WouldBlock, 0, null), or (err, 0, null).
 UdpSocket::try_recv_from(buf<libio.Buf>) i32, u64, libnet.SocketAddr {
     sock<netnet.UdpSocket> = this.io.source()
-    op<RecvFromOp> = new RecvFromOp { sock: sock, buf: buf, addr_out: null }
-    interest<netio.Interest> = aio.readable()
+    op<RecvFromOp> = new RecvFromOp {
+        sock_bits: netnet.udp_socket_to_bits(sock),
+        buf_bits: libio.buf_to_bits(buf),
+        addr_out_bits: 0
+    }
+    interest<netio.Interest> = netio.readable_interest()
     err<i32>, val<i64> = this.io.try_io(interest, op)
-    return err, val.(u64), op.addr_out
+    peer = libnet.socket_addr_from_bits(op.addr_out_bits)
+    return err, val.(u64), peer
 }

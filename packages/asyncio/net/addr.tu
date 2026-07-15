@@ -9,12 +9,8 @@ use io as libio
 
 // Parse bytes like tustd SocketAddr::parse_ascii / tokio str::parse.
 fn parse_socket_addr(b<u8*>, len<i32>) i32, libnet.SocketAddr {
-    return libnet.parse_ascii_bytes(b, len)
-}
-
-// Format like std::net::SocketAddr Display (via library/net helpers).
-fn socket_addr_to_string(addr<libnet.SocketAddr>) string.String {
-    return libnet.socket_addr_to_string(addr)
+    err<i32>, addr<libnet.SocketAddr> = libnet.parse_ascii_bytes(b, len)
+    return err, addr
 }
 
 // Identity resolution for an already-parsed address (tokio ToSocketAddrs for SocketAddr).

@@ -49,8 +49,8 @@ impl aio.AsyncRead for OwnedReadHalf {
 
 // Forward all write-side ops to the backing TcpStream's AsyncWrite impl.
 impl aio.AsyncWrite for OwnedWriteHalf {
-    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
-        err<i32>, n<u64> = this.stream.(aio.AsyncWrite).poll_write(ctx, buf)
+    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+        err<i32>, n<u64> = this.stream.(aio.AsyncWrite).poll_write(ctx, buf_bits)
         return err, n
     }
     fn poll_flush(ctx<u64>) i32 {

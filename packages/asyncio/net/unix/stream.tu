@@ -28,7 +28,7 @@ const UnixStream::from_netio(inner<netuds.UnixStream>) (i32, UnixStream) {
     dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.interest_add(aio.readable(), aio.writable())
+    interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return io.Ok, new UnixStream { io: pe }
@@ -106,8 +106,8 @@ UnixReadyFut::poll(ctx){
 // Await read and/or write readiness for `interest`.
 async UnixStream::ready(interest<netio.Interest>) i32, aio.Ready {
     f<UnixReadyFut> = new UnixReadyFut { io: this.io, want_read: 0, want_write: 0, result: null }
-    if interest.is_readable() f.want_read = 1
-    if interest.is_writable() f.want_write = 1
+    if netio.interest_is_readable(interest) == 1 f.want_read = 1
+    if netio.interest_is_writable(interest) == 1 f.want_write = 1
     err<i32> = f.await
     return err, f.result
 }
@@ -156,7 +156,7 @@ impl rtio.IoOp for UnixWriteOp {
 UnixStream::try_read(buf<io.Buf>) i32, u64 {
     sock<netuds.UnixStream> = this.io.source()
     op<UnixReadOp> = new UnixReadOp { sock: sock, buf: buf }
-    err<i32>, val<i64> = this.io.try_io(aio.readable(), op)
+    err<i32>, val<i64> = this.io.try_io(netio.readable_interest(), op)
     return err, val.(u64)
 }
 
@@ -164,7 +164,7 @@ UnixStream::try_read(buf<io.Buf>) i32, u64 {
 UnixStream::try_write(buf<io.Buf>) i32, u64 {
     sock<netuds.UnixStream> = this.io.source()
     op<UnixWriteOp> = new UnixWriteOp { sock: sock, buf: buf }
-    err<i32>, val<i64> = this.io.try_io(aio.writable(), op)
+    err<i32>, val<i64> = this.io.try_io(netio.writable_interest(), op)
     return err, val.(u64)
 }
 
@@ -177,10 +177,14 @@ UnixStream::shutdown(how<i32>) i32 {
 // AsyncRead: read into the unfilled tail of `buf` via the read IoOp.
 impl aio.AsyncRead for UnixStream {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-        base<io.Buf>    = buf.inner.buf
-        _, tail<io.Buf> = base.split_at(buf.filled)
-        op<UnixReadOp>  = new UnixReadOp { sock: this.io.source(), buf: tail }
-        e<i32>, n<i64>  = this.io.poll_read_io(ctx, op)
+        rem<u64> = buf.remaining()
+        if rem == 0 return runtime.PollReady
+        tail<io.Buf> = new io.Buf {
+            data_ptr: buf.unfilled_ptr(),
+            byte_len: rem
+        }
+        op<UnixReadOp> = new UnixReadOp { sock: this.io.source(), buf: tail }
+        e<i32>, n<i64> = this.io.poll_read_io(ctx, op)
         if e == runtime.PollPending return runtime.PollPending
         if e == io.Ok {
             if n > 0 buf.advance(n.(u64))
@@ -193,8 +197,9 @@ impl aio.AsyncRead for UnixStream {
 // AsyncWrite: write from `buf` via the write IoOp; flush is a no-op,
 // shutdown closes the write half.
 impl aio.AsyncWrite for UnixStream {
-    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
-        op<UnixWriteOp> = new UnixWriteOp { sock: this.io.source(), buf: buf }
+    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+        b<io.Buf> = io.buf_from_bits(buf_bits)
+        op<UnixWriteOp> = new UnixWriteOp { sock: this.io.source(), buf: b }
         e<i32>, n<i64> = this.io.poll_write_io(ctx, op)
         if e == runtime.PollPending return runtime.PollPending, 0
         if e == io.Ok return runtime.PollReady, n.(u64)

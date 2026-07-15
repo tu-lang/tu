@@ -33,7 +33,7 @@ const UnixDatagram::from_netio(inner<netuds.UnixDatagram>) (i32, UnixDatagram) {
     dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.interest_add(aio.readable(), aio.writable())
+    interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return io.Ok, new UnixDatagram { io: pe }
@@ -148,7 +148,7 @@ async UnixDatagram::recv(buf<io.Buf>) i32, u64 {
 UnixDatagram::try_send_to(buf<io.Buf>, path<string.String>) i32, u64 {
     sock<netuds.UnixDatagram> = this.io.source()
     op<UnixSendToOp> = new UnixSendToOp { sock: sock, buf: buf, path: path }
-    err<i32>, val<i64> = this.io.try_io(aio.writable(), op)
+    err<i32>, val<i64> = this.io.try_io(netio.writable_interest(), op)
     return err, val.(u64)
 }
 
@@ -156,6 +156,6 @@ UnixDatagram::try_send_to(buf<io.Buf>, path<string.String>) i32, u64 {
 UnixDatagram::try_recv_from(buf<io.Buf>) i32, u64, udsaddr.SocketAddr {
     sock<netuds.UnixDatagram> = this.io.source()
     op<UnixRecvFromOp> = new UnixRecvFromOp { sock: sock, buf: buf, addr_out: null }
-    err<i32>, val<i64> = this.io.try_io(aio.readable(), op)
+    err<i32>, val<i64> = this.io.try_io(netio.readable_interest(), op)
     return err, val.(u64), op.addr_out
 }

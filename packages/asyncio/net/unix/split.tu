@@ -34,8 +34,8 @@ impl aio.AsyncRead for UnixReadHalf {
 }
 
 impl aio.AsyncWrite for UnixWriteHalf {
-    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
-        return this.stream.(aio.AsyncWrite).poll_write(ctx, buf)
+    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+        return this.stream.(aio.AsyncWrite).poll_write(ctx, buf_bits)
     }
     fn poll_flush(ctx<u64>) i32 {
         return this.stream.(aio.AsyncWrite).poll_flush(ctx)

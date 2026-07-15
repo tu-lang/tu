@@ -33,7 +33,7 @@ const UnixListener::from_netio(inner<netuds.UnixListener>) (i32, UnixListener) {
     dh<rt.DriverHandle> = rc.driver
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
-    interest<netio.Interest> = aio.readable()
+    interest<netio.Interest> = netio.readable_interest()
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
     if perr != 0 return perr, null
     return io.Ok, new UnixListener { io: pe }
