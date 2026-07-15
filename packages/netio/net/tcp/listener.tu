@@ -15,26 +15,26 @@ mem TcpListener {
 // Mother TcpListener::bind — new_for_addr, fromrawfd, set_reuseaddr, bind, listen.
 const TcpListener::bind(addr<net.SocketAddr>) i32, TcpListener {
 	err<i32>, fd<i32> = nsys.new_for_addr(addr)
-	if err != Ok
+	if err != io.Ok
 		return err, null
 	listener<TcpListener> = TcpListener::fromrawfd(fd)
 	// Mother: tcp::set_reuseaddr(&listener.inner, true) via IoSource Deref → net::TcpListener.
 	std_l<net.TcpListener> = listener.std_listener()
 	err = nsys.set_reuseaddr(std_l, 1)
-	if err != Ok
+	if err != io.Ok
 		return err, null
 	err = nsys.bind(std_l, addr)
-	if err != Ok
+	if err != io.Ok
 		return err, null
 	err = nsys.listen(std_l, 1024)
-	if err != Ok
+	if err != io.Ok
 		return err, null
-	return Ok, listener
+	return io.Ok, listener
 }
 
 const TcpListener::from_std(listener<net.TcpListener>) TcpListener {
 	l<TcpListener> = new TcpListener
-	l.iosrc_bits = netio.iosource_new_bits(listener)
+	l.iosrc_bits = netio.iosource_new_bits(listener.(u64), listener.as_raw_fd())
 	return l
 }
 
@@ -53,9 +53,9 @@ TcpListener::std_listener() net.TcpListener {
 TcpListener::accept() i32, TcpStream, net.SocketAddr {
 	std_l<net.TcpListener> = this.std_listener()
 	err<i32>, std_stream<net.TcpStream>, addr<net.SocketAddr> = nsys.accept(std_l)
-	if err != Ok
+	if err != io.Ok
 		return err, null, null
-	return Ok, TcpStream::from_std(std_stream), addr
+	return io.Ok, TcpStream::from_std(std_stream), addr
 }
 
 impl event.Source for TcpListener {

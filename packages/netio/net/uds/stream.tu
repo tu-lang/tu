@@ -5,7 +5,7 @@ use netio.sys as nsys
 use string
 use net
 use sys as libsys
-use sys.uds
+use netio.sys.uds as uds
 
 mem UnixStream {
 	u64 iosrc_bits
@@ -13,22 +13,22 @@ mem UnixStream {
 
 const UnixStream::connect(path<string.String>) i32, UnixStream {
 	err<i32>, stream<net.UnixStream> = uds.connect(path)
-	if err != Ok
+	if err != io.Ok
 		return err, null
-	return Ok, UnixStream::from_std(stream)
+	return io.Ok, UnixStream::from_std(stream)
 }
 
 const UnixStream::from_std(stream<net.UnixStream>) UnixStream {
 	s<UnixStream> = new UnixStream
-	s.iosrc_bits = netio.iosource_new_bits(stream)
+	s.iosrc_bits = netio.iosource_new_bits(stream.(u64), stream.as_raw_fd())
 	return s
 }
 
 const UnixStream::pair() i32, UnixStream, UnixStream {
 	err<i32>, left<net.UnixStream>, right<net.UnixStream> = uds.pair()
-	if err != Ok
+	if err != io.Ok
 		return err, null, null
-	return Ok, UnixStream::from_std(left), UnixStream::from_std(right)
+	return io.Ok, UnixStream::from_std(left), UnixStream::from_std(right)
 }
 
 UnixStream::std_stream() net.UnixStream {
@@ -62,7 +62,7 @@ impl io.Write for UnixStream {
 		return err, n
 	}
 	fn flush() i32 {
-		return Ok
+		return io.Ok
 	}
 }
 

@@ -4,7 +4,7 @@ use netio.event
 use netio.sys as nsys
 use net
 use sys as libsys
-use sys.uds
+use netio.sys.uds as uds
 
 mem UnixDatagram {
 	u64 iosrc_bits
@@ -12,14 +12,14 @@ mem UnixDatagram {
 
 const UnixDatagram::bind(path<string.String>) i32, UnixDatagram {
 	err<i32>, socket<net.UnixDatagram> = uds.bind(path)
-	if err != Ok
+	if err != io.Ok
 		return err, null
-	return Ok, UnixDatagram::from_std(socket)
+	return io.Ok, UnixDatagram::from_std(socket)
 }
 
 const UnixDatagram::from_std(socket<net.UnixDatagram>) UnixDatagram {
 	d<UnixDatagram> = new UnixDatagram
-	d.iosrc_bits = netio.iosource_new_bits(socket)
+	d.iosrc_bits = netio.iosource_new_bits(socket.(u64), socket.as_raw_fd())
 	return d
 }
 

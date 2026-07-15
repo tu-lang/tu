@@ -4,7 +4,7 @@ use netio.sys as nsys
 use string
 use net
 use sys as libsys
-use sys.uds
+use netio.sys.uds as uds
 
 mem UnixListener {
 	u64 iosrc_bits
@@ -19,7 +19,7 @@ const UnixListener::bind(path<string.String>) i32, UnixListener {
 
 const UnixListener::from_std(listener<net.UnixListener>) UnixListener {
 	l<UnixListener> = new UnixListener
-	l.iosrc_bits = netio.iosource_new_bits(listener)
+	l.iosrc_bits = netio.iosource_new_bits(listener.(u64), listener.as_raw_fd())
 	return l
 }
 

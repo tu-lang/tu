@@ -1,6 +1,7 @@
 use netio.event
 use io
 use sys
+use netio.sys as nsys
 
 // Mother: netio::sys::IoSourceState (linux). do_io just invokes the callback.
 mem IoSourceState {
@@ -15,7 +16,8 @@ IoSourceState::do_io(callable, io_bits<u64>) {
 	return callable(io_bits)
 }
 
-// Mother: IoSource<T: AsRawFd>. Tu stores raw_fd + original object bits.
+// Mother: IoSource<T: AsRawFd>. Tu stores raw_fd + original object bits
+// (api AsRawFd cannot be a mem field / constructor param type slot).
 mem IoSource {
 	IoSourceState* state
 	i32 raw_fd
@@ -23,11 +25,11 @@ mem IoSource {
 	u64 selector_id
 }
 
-const IoSource::new(io_obj<AsRawFd>) IoSource {
+const IoSource::new(fd<i32>, obj_bits<u64>) IoSource {
 	return new IoSource {
 		state: IoSourceState::new(),
-		raw_fd: io_obj.as_raw_fd(),
-		io_bits: io_obj.(u64),
+		raw_fd: fd,
+		io_bits: obj_bits,
 		selector_id: 0
 	}
 }
@@ -41,31 +43,35 @@ IoSource::io_object_bits() u64 {
 }
 
 IoSource::register(registry<Registry>, t<Token>, interests<Interest>) i32 {
-	if this.selector_id != 0 && this.selector_id != registry.selector().id()
+	sel<nsys.Selector> = registry_selector(registry)
+	if this.selector_id != 0 && this.selector_id != sel.id()
 		return io.AlreadyExists
-	this.selector_id = registry.selector().id()
-	return registry.selector().register(this.raw_fd, t.as_u64(), interest_as_u8(interests))
+	this.selector_id = sel.id()
+	return sel.register(this.raw_fd, t.as_u64(), interest_as_u8(interests))
 }
 
 IoSource::reregister(registry<Registry>, t<Token>, interests<Interest>) i32 {
+	sel2<nsys.Selector> = registry_selector(registry)
 	if this.selector_id == 0
 		return io.NotFound
-	if this.selector_id != registry.selector().id()
+	if this.selector_id != sel2.id()
 		return io.AlreadyExists
-	return registry.selector().reregister(this.raw_fd, t.as_u64(), interest_as_u8(interests))
+	return sel2.reregister(this.raw_fd, t.as_u64(), interest_as_u8(interests))
 }
 
 IoSource::deregister(registry<Registry>) i32 {
+	sel3<nsys.Selector> = registry_selector(registry)
 	if this.selector_id == 0
 		return io.NotFound
-	if this.selector_id != registry.selector().id()
+	if this.selector_id != sel3.id()
 		return io.AlreadyExists
 	this.selector_id = 0
-	return registry.selector().deregister(this.raw_fd)
+	return sel3.deregister(this.raw_fd)
 }
 
-fn iosource_new_bits(io_obj<AsRawFd>) u64 {
-	src<IoSource> = IoSource::new(io_obj)
+// Mother IoSource::new(T): pass as_raw_fd() + object heap bits.
+fn iosource_new_bits(obj_bits<u64>, fd<i32>) u64 {
+	src<IoSource> = IoSource::new(fd, obj_bits)
 	return src.(u64)
 }
 

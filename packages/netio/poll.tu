@@ -9,15 +9,15 @@ mem Poll {
 }
 
 mem Registry {
-	nsys.Selector* selector
+	nsys.Selector* sel // mother: selector; renamed (typeassert trap)
 }
 
 const Poll::new() i32, Poll {
 	err<i32>, selector<nsys.Selector> = nsys.Selector::new()
-	if err != Ok
+	if err != io.Ok
 		return err, null
-	return Ok, new Poll {
-		registry: new Registry { selector: selector }
+	return io.Ok, new Poll {
+		registry: new Registry { sel: selector }
 	}
 }
 
@@ -28,20 +28,20 @@ fn registry_from_bits(bits<u64>) Registry {
 
 // Package-level registry bridge (avoids p.registry parser trap).
 fn poll_registry(p<Poll>) Registry {
-    return Poll::registry(p)
+    return p.registry()
 }
 
 // Package-level poll bridge (avoids p.poll parser trap).
 fn poll_poll(p<Poll>, events<event.Events>, timeout<libsys.Duration>) i32 {
-    return Poll::poll(p, events, timeout)
+    return p.poll(events, timeout)
 }
 
 fn registry_register(reg<Registry>, source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
-    return Registry::register(reg, source_obj, t, interests)
+    return reg.register(source_obj, t, interests)
 }
 
 fn registry_deregister(reg<Registry>, source_obj<event.Source>) i32 {
-    return Registry::deregister(reg, source_obj)
+    return reg.deregister(source_obj)
 }
 
 Poll::registry() Registry {
@@ -60,7 +60,7 @@ Poll::poll(events<event.Events>, timeout<libsys.Duration>) i32 {
 			timeout_ms = ms.(i32)
 		}
 	}
-	return this.registry.selector.select(events.sys(), timeout_ms)
+	return this.registry.sel.select(events.sys(), timeout_ms)
 }
 
 Registry::register(source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
@@ -76,16 +76,21 @@ Registry::deregister(source_obj<event.Source>) i32 {
 }
 
 Registry::try_clone() i32, Registry {
-	err<i32>, selector<nsys.Selector> = this.selector.try_clone()
-	if err != Ok
+	err<i32>, selector<nsys.Selector> = this.sel.try_clone()
+	if err != io.Ok
 		return err, null
-	return Ok, new Registry { selector: selector }
+	return io.Ok, new Registry { sel: selector }
 }
 
 Registry::register_waker() i32 {
-	if this.selector.register_waker()
+	if this.sel.register_waker()
 		return io.AlreadyExists
-	return Ok
+	return io.Ok
+}
+
+// Expose mother Registry.selector() as a package helper.
+fn registry_selector(reg<Registry>) nsys.Selector {
+	return reg.sel
 }
 
 // Raw-bits Poll decode for callers outside this package.

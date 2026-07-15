@@ -1,3 +1,7 @@
+// Mother: netio::net::udp::UdpSocket (IoSource<net::UdpSocket>).
+// Lives in package netio.net.udp (short-name `udp`) so `use net as libnet`
+// does not poison getPackage for local mem types (parent short-name is `net`).
+
 use netio
 use io
 use netio.event
@@ -14,14 +18,14 @@ mem UdpSocket {
 
 const UdpSocket::bind(addr<libnet.SocketAddr>) i32, UdpSocket {
 	err<i32>, socket<libnet.UdpSocket> = nsys.bind(addr)
-	if err != Ok
+	if err != io.Ok
 		return err, null
-	return Ok, UdpSocket::from_std(socket)
+	return io.Ok, UdpSocket::from_std(socket)
 }
 
 const UdpSocket::from_std(socket<libnet.UdpSocket>) UdpSocket {
 	u<UdpSocket> = new UdpSocket
-	u.iosrc_bits = netio.iosource_new_bits(socket)
+	u.iosrc_bits = netio.iosource_new_bits(socket.(u64), socket.as_raw_fd())
 	return u
 }
 

@@ -15,7 +15,7 @@ mem TcpStream {
 
 const TcpStream::from_std(stream<net.TcpStream>) TcpStream {
 	s<TcpStream> = new TcpStream
-	s.iosrc_bits = netio.iosource_new_bits(stream)
+	s.iosrc_bits = netio.iosource_new_bits(stream.(u64), stream.as_raw_fd())
 	return s
 }
 
@@ -25,14 +25,14 @@ const TcpStream::fromrawfd(fd<i32>) TcpStream {
 
 const TcpStream::connect(addr<net.SocketAddr>) i32, TcpStream {
 	err<i32>, fd<i32> = nsys.new_for_addr(addr)
-	if err != Ok
+	if err != io.Ok
 		return err, null
 	stream<TcpStream> = TcpStream::fromrawfd(fd)
 	std_s<net.TcpStream> = stream.std_stream()
 	err = nsys.connect(std_s, addr)
-	if err != Ok
+	if err != io.Ok
 		return err, null
-	return Ok, stream
+	return io.Ok, stream
 }
 
 TcpStream::std_stream() net.TcpStream {
@@ -66,7 +66,7 @@ impl io.Write for TcpStream {
 		return err, n
 	}
 	fn flush() i32 {
-		return Ok
+		return io.Ok
 	}
 }
 
