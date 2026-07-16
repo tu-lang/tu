@@ -8,7 +8,8 @@ rd_done = false
 parser.Parser::registeDefault(){
     if rd_done return true
 
-    if this.pkg.package == "runtime" {
+    // full_package only: short name "runtime" also matches asyncio.runtime.
+    if this.pkg.full_package == "runtime" {
         compile.writeln("    .global runtime_default_virfuture")
         compile.writeln("runtime_default_virfuture:")
         compile.writeln("   .quad 0")
