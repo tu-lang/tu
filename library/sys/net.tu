@@ -34,8 +34,10 @@ fn new_socket_raw(fam<i32>, ty<i32>) i32, Socket {
     // On platforms that support it we pass the SOCK_CLOEXEC
     // flag to atomically create the socket and set it as
     // CLOEXEC. On Linux this was added in 2.6.27.
-    //TODO:
-    err<i32>, sock_fd<i32> = cvt(socket(fam, ty | SOCK_CLOEXEC, 0))
+    ce<i32> = SOCK_CLOEXEC
+    full_ty<i32> = ty | ce
+    proto<i32> = 0
+    err<i32>, sock_fd<i32> = cvt(socket(fam, full_ty, proto))
     if err != Ok return err, null
 
     if sock_fd == 0xFFFFFFFF.(i32) {
@@ -308,7 +310,39 @@ mem TcpStream {
     Socket* socket_hub
 }
 
-    
+fn tcp_stream_as_raw_fd(s<TcpStream>) i32 {
+    sock<Socket> = s.socket_hub
+    return sock.as_raw()
+}
+
+fn tcp_stream_as_raw_fd_bits(bits<u64>) i32 {
+    s<TcpStream> = bits.(TcpStream)
+    return tcp_stream_as_raw_fd(s)
+}
+
+fn tcp_stream_shutdown_bits(bits<u64>, how<i32>) i32 {
+    s<TcpStream> = bits.(TcpStream)
+    return s.shutdown(how)
+}
+
+fn tcp_stream_take_error_bits(bits<u64>) i32,i32,i32 {
+    s<TcpStream> = bits.(TcpStream)
+    ok<i32>, has<i32>, ret<i32> = s.take_error()
+    return ok, has, ret
+}
+
+fn tcp_stream_read_bits(bits<u64>, buf<io.Buf>) i32, u64 {
+    s<TcpStream> = bits.(TcpStream)
+    err<i32>, n<u64> = s.read(buf)
+    return err, n
+}
+
+fn tcp_stream_write_bits(bits<u64>, buf<io.Buf>) i32, u64 {
+    s<TcpStream> = bits.(TcpStream)
+    err<i32>, n<u64> = s.write(buf)
+    return err, n
+}
+
 TcpStream::socket() Socket {
     return this.socket_hub
 }
@@ -343,6 +377,38 @@ TcpStream::take_error() i32,i32,i32 {
 
 mem TcpListener {
     Socket* socket_hub
+}
+
+// Cross-pkg bridge: net.TcpListener::as_raw_fd must not chain
+// listener_hub.socket().as_raw() (codegen returns garbage across packages).
+fn tcp_listener_as_raw_fd(l<TcpListener>) i32 {
+    sock<Socket> = l.socket_hub
+    return sock.as_raw()
+}
+
+fn tcp_listener_from_fd(fd_val<i32>) u64 {
+    sock<Socket> = new Socket{
+        desc: FileDesc::from_raw_fd(fd_val)
+    }
+    hub<TcpListener> = new TcpListener {
+        socket_hub: sock
+    }
+    return hub.(u64)
+}
+
+fn tcp_stream_from_fd(fd_val<i32>) u64 {
+    sock<Socket> = new Socket{
+        desc: FileDesc::from_raw_fd(fd_val)
+    }
+    hub<TcpStream> = new TcpStream {
+        socket_hub: sock
+    }
+    return hub.(u64)
+}
+
+fn tcp_listener_as_raw_fd_bits(bits<u64>) i32 {
+    l<TcpListener> = bits.(TcpListener)
+    return tcp_listener_as_raw_fd(l)
 }
 
 TcpListener::socket() Socket {
