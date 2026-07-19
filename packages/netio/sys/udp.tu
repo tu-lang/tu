@@ -2,7 +2,7 @@ use netio
 use net
 use sys as libsys
 
-fn bind(addr<net.SocketAddr>) i32, net.UdpSocket {
+fn udp_bind(addr<net.SocketAddr>) i32, net.UdpSocket {
 	err<i32>, fd<i32> = new_ip_socket(addr, libsys.SOCK_DGRAM)
 	if err != libsys.Ok
 		return err, null

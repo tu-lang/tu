@@ -2,6 +2,7 @@ use netio.event
 use io
 use sys
 use netio.sys as nsys
+use fmt
 
 // Mother: netio::sys::IoSourceState (linux). do_io just invokes the callback.
 mem IoSourceState {
@@ -26,12 +27,14 @@ mem IoSource {
 }
 
 const IoSource::new(fd<i32>, obj_bits<u64>) IoSource {
-	return new IoSource {
-		state: IoSourceState::new(),
-		raw_fd: fd,
-		io_bits: obj_bits,
-		selector_id: 0
-	}
+	st<IoSourceState> = IoSourceState::new()
+	src<IoSource> = new IoSource
+	src.state = st
+	src.raw_fd = fd
+	src.io_bits = obj_bits
+	zero<u64> = 0
+	src.selector_id = zero
+	return src
 }
 
 IoSource::do_io(callable) {
@@ -47,7 +50,8 @@ IoSource::register(registry<Registry>, t<Token>, interests<Interest>) i32 {
 	if this.selector_id != 0 && this.selector_id != sel.id()
 		return io.AlreadyExists
 	this.selector_id = sel.id()
-	return sel.register(this.raw_fd, t.as_u64(), interest_as_u8(interests))
+	ret<i32> = sel.register(this.raw_fd, t.as_u64(), interest_as_u8(interests))
+	return ret
 }
 
 IoSource::reregister(registry<Registry>, t<Token>, interests<Interest>) i32 {
@@ -84,6 +88,11 @@ fn iosource_do_io_bits(bits<u64>, callable) {
 fn iosource_fd_holder_bits(bits<u64>) u64 {
 	src<IoSource> = bits.(IoSource)
 	return src.io_object_bits()
+}
+
+fn iosource_raw_fd(bits<u64>) i32 {
+	src<IoSource> = bits.(IoSource)
+	return src.raw_fd
 }
 
 fn iosource_register_bits(bits<u64>, registry<Registry>, t<Token>, interests<Interest>) i32 {

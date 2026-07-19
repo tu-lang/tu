@@ -16,22 +16,32 @@ fn writable_interest() Interest {
 	return new Interest { flags: WRITABLE_BIT }
 }
 
-// Temporary OR of common read|write pair used at TcpStream register sites.
-// General per-object flag OR deferred until field-load asmgen is fixed.
+// Mother: Interest::add — OR the flag bits.
 fn interest_merge(a<Interest>, b<Interest>) Interest {
-	return new Interest { flags: READABLE_BIT | WRITABLE_BIT }
+	af<u8> = a.flags
+	bf<u8> = b.flags
+	return new Interest { flags: af | bf }
 }
 
 fn interest_as_u8(i<Interest>) u8 {
-	return READABLE_BIT | WRITABLE_BIT
+	return i.flags
 }
 
+// Mother: Interest::is_readable / is_writable.
 fn interest_is_readable(i<Interest>) i32 {
-	return 1
+	f<u8> = i.flags
+	if (f & READABLE_BIT) != 0.(u8) {
+		return 1
+	}
+	return 0
 }
 
 fn interest_is_writable(i<Interest>) i32 {
-	return 1
+	f<u8> = i.flags
+	if (f & WRITABLE_BIT) != 0.(u8) {
+		return 1
+	}
+	return 0
 }
 
 fn readable_interest_bits() u64 {

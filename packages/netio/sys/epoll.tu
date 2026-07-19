@@ -98,18 +98,27 @@ mem Selector {
 	i32 has_waker
 }
 
-const Selector::new() i32, Selector {
+const Selector::new(_unused<i32>) i32, Selector {
+	s<Selector> = selector_create()
+	if s == null
+		return libsys.last_error(), null
+	return libsys.Ok, s
+}
+
+// Single-return constructor — avoids nested multi-return codegen dropping the pointer.
+fn selector_create() Selector {
 	ep<i32> = libsys.epoll_create1(EPOLL_CLOEXEC)
 	if ep == -1
-		return libsys.last_error(), null
-	id<u64> = NEXT_SELECTOR_ID
+		return null
+	sid<u64> = NEXT_SELECTOR_ID
 	NEXT_SELECTOR_ID += 1
-	return libsys.Ok, new Selector {
-		id: id,
+	return new Selector {
+		id: sid,
 		ep: ep,
 		has_waker: 0
 	}
 }
+
 
 fn selector_ep(sel<Selector>) i32 {
 	return sel.ep
@@ -253,4 +262,26 @@ fn event_is_write_closed(evt<Event>) i32 {
 
 fn event_is_priority(evt<Event>) i32 {
 	return (evt.flags & EPOLLPRI) != 0
+}
+
+// Raw-bits bridges for cross-package Registry storage (mother: selector field).
+fn selector_from_bits(bits<u64>) Selector {
+	return bits.(Selector)
+}
+fn selector_to_bits(sel<Selector>) u64 {
+	return sel.(u64)
+}
+fn selector_select(sel<Selector>, evts<Events>, timeout_ms<i32>) i32 {
+	return selector_select_impl(sel, evts, timeout_ms)
+}
+fn selector_register_waker_bit(sel<Selector>) i32 {
+	already<i32> = selector_has_waker(sel)
+	selector_set_has_waker(sel, 1)
+	return already
+}
+fn selector_try_clone_bits(sel<Selector>) i32, u64 {
+	err<i32>, cloned<Selector> = sel.try_clone()
+	if err != libsys.Ok
+		return err, 0.(u64)
+	return err, selector_to_bits(cloned)
 }

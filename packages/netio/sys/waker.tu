@@ -4,13 +4,15 @@ use netio
 use sys as libsys
 
 WAKE_WOULD_BLOCK<i32> = 16908302
+// Mother: libc::EFD_CLOEXEC | libc::EFD_NONBLOCK (avoid `a|b` dynamic codegen).
+EFD_CLOEXEC_NONBLOCK<i32> = 0x80800
 
 mem EventfdWaker {
 	i32 fd_num
 }
 
 const EventfdWaker::new(selector_obj<Selector>, tok_bits<u64>) i32, EventfdWaker {
-	raw<i32> = libsys.eventfd(0, 0x80000 | 0x800)
+	raw<i32> = libsys.eventfd(0, EFD_CLOEXEC_NONBLOCK)
 	err<i32>, fd_u<u64> = libsys.cvt(raw)
 	if err != libsys.Ok {
 		return err, null
