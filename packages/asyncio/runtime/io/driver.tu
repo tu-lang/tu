@@ -6,12 +6,18 @@
 // Mother: tokio::runtime::io::Driver / mio Poll.
 
 use asyncio.util
+use asyncio.task
 
 use runtime
 use std.atomic
 use netio
 use netio.event as netevent
 use sys
+use fmt
+
+// Mirrors library io.Ok (=1). This package's short name is also `io`, so
+// `use io as libio` conflicts with the self-import map.
+LIBIO_OK<i32> = 1
 
 TOKEN_WAKEUP<u64> = 0
 TOKEN_SIGNAL<u64> = 1
@@ -28,20 +34,39 @@ mem IoDriver {
 
 // Cross-thread companion to IoDriver. Owns the registry view + waker so
 // schedulers and Registration can register sources / kick the reactor.
+// Mother: Handle { registry, registrations, synced: Mutex<Synced>, waker, metrics }.
 mem IoHandle {
-    u64                registry_slot  // Registry* raw bits
-    RegistrationSet*   registrations
-    runtime.MutexInter* synced_lock   // serialises registrations
-    u64                waker_slot     // Waker* raw bits
-    Metrics*           metrics
+    u64                     registry_slot  // Registry* raw bits
+    RegistrationSet*        registrations
+    RegistrationSetSynced*  synced         // mother Synced; guarded by synced_lock
+    runtime.MutexInter*     synced_lock
+    u64                     waker_slot     // Waker* raw bits
+    Metrics*                metrics
+}
+
+// Last successful IoDriver::new results. Consumers use iodriver_last /
+// iohandle_last — (i32, mem...) multi-ret and cross-pkg mem field reads
+// drop or zero the handle (same trap as make_poll's dummy-arg pattern).
+LAST_IODRIVER<IoDriver> = null
+LAST_IOHANDLE<IoHandle> = null
+
+fn iodriver_last() IoDriver {
+    return LAST_IODRIVER
+}
+fn iohandle_last() IoHandle {
+    return LAST_IOHANDLE
 }
 
 // Build (driver, handle) wired together. Allocates the netio.Poll and the
 // wakeup eventfd; subsequent registrations route through handle.
-const IoDriver::new() i32, IoDriver, IoHandle {
-    err<i32>, p<netio.Poll> = netio.make_poll()
-    if err != 0 {
-        return err, null, null
+// Publishes the pair via iodriver_last / iohandle_last.
+const IoDriver::new() i32 {
+    LAST_IODRIVER = null
+    LAST_IOHANDLE = null
+    err<i32>, p<netio.Poll> = netio.make_poll(0)
+    // netio/io use Ok=1 (not 0) as success.
+    if err != LIBIO_OK {
+        return err
     }
 
     events_buf<netevent.Events> = netevent.make_events(EVENTS_CAPACITY)
@@ -53,34 +78,47 @@ const IoDriver::new() i32, IoDriver, IoHandle {
 
     reg<netio.Registry> = netio.poll_registry(p)
     h<IoHandle> = new IoHandle
-    h.registry_slot  = reg.(u64)
-    h.registrations  = RegistrationSet::new()
-    h.synced_lock    = new runtime.MutexInter
-    h.synced_lock.init()
-    h.metrics        = Metrics::new()
-
+    h.registry_slot = reg.(u64)
+    RegistrationSet::new()
+    h.registrations = registration_set_last()
+    h.synced = registration_synced_last()
+    lk<runtime.MutexInter> = new runtime.MutexInter
+    lk.init()
+    h.synced_lock = lk
+    h.metrics = Metrics::new()
     werr<i32>, wk<netio.Waker> = netio.make_waker(reg, netio.token_from_u64(TOKEN_WAKEUP))
-    if werr != 0 {
-        return werr, null, null
+    if werr != LIBIO_OK {
+        return werr
     }
     h.waker_slot = wk.(u64)
-
-    return 0, drv, h
+    LAST_IODRIVER = drv
+    LAST_IOHANDLE = h
+    return 0
 }
 
 // Register a source. Token is the new ScheduledIo* cast to u64; later
 // turn() reverses the cast to dispatch the event back.
+// Mother: allocate under synced.lock, then registry.register without the lock.
 IoHandle::add_source(io_obj<netevent.Source>, interest<netio.Interest>) i32, ScheduledIo {
-    err<i32>, sio<ScheduledIo> = this.registrations.allocate(interest)
+    if this.registrations == null || this.synced == null {
+        return 1, null
+    }
+    lk<runtime.MutexInter> = this.synced_lock
+    lk.lock()
+    err<i32>, sio<ScheduledIo> = this.registrations.allocate(this.synced)
+    lk.unlock()
     if err != 0 {
         return err, null
     }
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
-    this.synced_lock.lock()
-    rerr<i32> = netio.registry_register(reg, io_obj, netio.token_from_u64(sio.token()), interest)
-    this.synced_lock.unlock()
-    if rerr != 0 {
-        this.registrations.release(sio)
+    tok<u64> = sio.token()
+    t<netio.Token> = netio.token_from_u64(tok)
+    rerr<i32> = netio.registry_register(reg, io_obj, t, interest)
+    if rerr != LIBIO_OK {
+        // Mother: remove under synced.lock on register failure.
+        lk.lock()
+        this.registrations.remove(this.synced, sio)
+        lk.unlock()
         return rerr, null
     }
     return 0, sio
@@ -96,19 +134,45 @@ IoHandle::wake_by_ref() i32 {
 // Detach a previously registered source. Caller passes the original
 // netio.event.Source object (so netio can extract the fd) plus the
 // ScheduledIo* it received from add_source.
+// Mother: deregister OS first, then RegistrationSet::deregister under lock.
 IoHandle::remove_source(io_obj<netevent.Source>, sio<ScheduledIo>) i32 {
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
-    this.synced_lock.lock()
     err<i32> = netio.registry_deregister(reg, io_obj)
-    this.synced_lock.unlock()
-    this.registrations.release(sio)
+    lk<runtime.MutexInter> = this.synced_lock
+    lk.lock()
+    need_wake<i32> = this.registrations.deregister(this.synced, sio)
+    lk.unlock()
+    if need_wake != 0 {
+        this.wake_by_ref()
+    }
     return err
 }
 
 // Drain everything. Called on runtime shutdown; every waiter then observes
 // OtherDriverTerminated on its next poll_readiness or Readiness::poll.
 IoHandle::shutdown(){
-    this.registrations.drain_all_for_shutdown()
+    lk<runtime.MutexInter> = this.synced_lock
+    lk.lock()
+    head<ScheduledIo> = this.registrations.shutdown(this.synced)
+    lk.unlock()
+    cur<ScheduledIo> = head
+    while cur != null {
+        nxt_node<util.Pointers> = cur.linked_list_pointers.next
+        cur.shutdown()
+        if nxt_node == null break
+        cur = nxt_node.(ScheduledIo)
+    }
+}
+
+// Mother: release_pending_registrations before each turn.
+IoHandle::release_pending_registrations(){
+    if this.registrations.needs_release() == 0 {
+        return
+    }
+    lk<runtime.MutexInter> = this.synced_lock
+    lk.lock()
+    this.registrations.release(this.synced)
+    lk.unlock()
 }
 
 // Block on the netio poll. Each event is dispatched to the matching
@@ -116,9 +180,10 @@ IoHandle::shutdown(){
 // waiters whose reason interest overlaps. Reserved tokens first.
 // Interrupted maps to a no-op turn so the caller can re-park as needed.
 IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
+    handle.release_pending_registrations()
     err<i32> = netio.poll_poll(netio.poll_from_bits(this.poll_slot), netevent.events_from_bits(this.events_slot), max_wait)
     if err == IO_INTERRUPTED return 0
-    if err != 0 return err
+    if err != LIBIO_OK return err
 
     iter<netevent.Iter> = netevent.events_begin_iter(netevent.events_from_bits(this.events_slot))
     fired<u64> = 0
@@ -137,10 +202,14 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
         ready<Ready> = ready_from_event(ev)
         sio.set_readiness(TICK_INC, ready.bits)
         wakes<util.WakeList> = sio.wake(ready)
-        // The reactor surfaces ctx_packed values to its caller; the
-        // current first-pass impl drops them here because the scheduler
-        // glue layer (task 11.x) has not landed yet. Once the runtime
-        // root is ready, hand wakes back to the scheduler instead.
+        // Mother: WakeList::wake_all → Waker::wake → RawTask::wake_by_ref.
+        // ctx slots hold RawTask* (see ct_task_ctx / mt_ctx).
+        wi<i32> = 0
+        wlen<i32> = wakes.len_count()
+        while wi < wlen {
+            task.wake_by_ctx(wakes.ctxs[wi])
+            wi += 1
+        }
         util.wake_list_clear(wakes)
         fired += 1
     }

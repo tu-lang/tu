@@ -55,7 +55,9 @@ fn ct_handle_spawn_raw(bits<u64>, fut) task.JoinHandle {
 // Package-level spawn entry (avoids mh.spawn / ct.spawn parser traps).
 fn ct_handle_spawn_fut(h<CtHandle>, fut) task.JoinHandle {
     tid<task.TaskId> = task.alloc_id()
-    raw<task.RawTask> = task.raw_new(fut, h, tid.v)
+    fut_bits<u64> = 0
+    fut_bits = fut
+    raw<task.RawTask> = task.raw_new(fut_bits, h, tid.v)
     err<i32> = h.shared.owned.bind(raw)
     if err != 0 {
         jh<task.JoinHandle> = new task.JoinHandle

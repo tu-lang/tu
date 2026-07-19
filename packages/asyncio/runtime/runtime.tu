@@ -3,6 +3,7 @@
 // weak Handle suitable for cloning across threads.
 
 use sys
+use fmt
 use asyncio.task
 use asyncio.runtime.scheduler
 use asyncio.runtime.blocking as rtblk
@@ -45,21 +46,68 @@ const Runtime::compose(
     return r
 }
 
+fn runtime_from_bits(bits<u64>) Runtime {
+    return bits.(Runtime)
+}
+
+fn runtime_to_bits(r<Runtime>) u64 {
+    return r.(u64)
+}
+
 // Cheap weak handle clone.
 Runtime::handle() Handle {
     return this.weak_handle
 }
 
+// Mother: runtime::context::enter_runtime before driving the future so
+// Handle::current / PollEvented registration see the active driver.
+fn runtime_enter_block_on(wh<Handle>) RtSavedSlot {
+    drv_bits<u64> = 0
+    sched_bits<u64> = 0
+    if wh != null {
+        sched_bits = wh.sched_handle
+        d<DriverHandle> = wh.drv_h
+        if d != null {
+            drv_bits = d
+        }
+    }
+    ctx<RuntimeContext> = RuntimeContext::new(
+        sched_bits,
+        drv_bits,
+        null,
+        ENTER_BLOCK_ON
+    )
+    return rt_enter(ctx)
+}
+
 // Run fut to completion. multi_thread routes through a current_thread
 // driver since block_on is inherently single-threaded.
 Runtime::block_on(fut) i32, i64 {
-    if this.sched_kind == KIND_CURRENT_THREAD {
-        return scheduler.block_on_raw(this.scheduler_handle, fut)
-    }
+    saved<RtSavedSlot> = runtime_enter_block_on(this.weak_handle)
     err2<i32> = 0
     val2<i64> = 0
-    err2, val2 = handle_block_on_impl(this.weak_handle, fut)
+    if this.sched_kind == KIND_CURRENT_THREAD {
+        err2, val2 = scheduler.block_on_raw(this.scheduler_handle, fut)
+    } else {
+        err2, val2 = handle_block_on_impl(this.weak_handle, fut)
+    }
+    rt_exit(saved)
     return err2, val2
+}
+
+// Same as block_on but takes Future* bits — safe across package boundaries
+// where a dynamic fut argument is dropped/nulled by codegen.
+Runtime::block_on_bits(fut_bits<u64>) i32, i64 {
+    saved<RtSavedSlot> = runtime_enter_block_on(this.weak_handle)
+    err<i32> = 0
+    val<i64> = 0
+    if this.sched_kind == KIND_CURRENT_THREAD {
+        err, val = scheduler.block_on_bits(this.scheduler_handle, fut_bits)
+    } else {
+        err, val = scheduler.block_on_bits(this.weak_handle.sched_handle, fut_bits)
+    }
+    rt_exit(saved)
+    return err, val
 }
 
 // Spawn a future via the active scheduler.

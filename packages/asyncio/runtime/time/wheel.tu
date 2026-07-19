@@ -18,8 +18,6 @@ INSERT_TOO_FAR<i32>  = 2   // deadline > MAX_DURATION ahead
 EXPIR_NONE<i32>  = 0
 EXPIR_FOUND<i32> = 1
 
-LEVEL_MASK<u64>  = 63
-
 // Resolution of one slot at the given level (in ms).
 fn slot_range(level<i32>) u64 {
     if level == 0 return 1

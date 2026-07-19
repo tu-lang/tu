@@ -7,11 +7,9 @@ use runtime
 use io
 use asyncio.task
 
-// Pack (handle, task_id) into the future's ctx slot. Mirrors the
-// current_thread version so harnesses observe the same shape.
-fn ctx_pack(handle<MtHandle>, task_id<u64>) u64 {
-    h_bits<u64> = handle.(u64)
-    return (h_bits & 0xFFFFFFFF00000000) | (task_id & 0xFFFFFFFF)
+// Pack task pointer as future ctx (mother: waker data = Header*).
+fn mt_task_ctx(t<task.RawTask>) u64 {
+    return t.(u64)
 }
 
 // Periodic inject pull keeps fairness vs. the local queue.
@@ -61,8 +59,7 @@ fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
         }
     }
     raw<task.RawTask> = t.raw()
-    h<task.Header> = raw.task_header
-    ctx<u64> = ctx_pack(w.handle, h.task_id)
+    ctx<u64> = mt_task_ctx(raw)
     task.harness_poll(raw, ctx)
 }
 

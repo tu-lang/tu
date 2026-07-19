@@ -1,25 +1,26 @@
 // block_on main loop. Wraps the user's future as a root task, then spins
 // through Defer / Inject / Local until the root completes. When all
-// queues are empty we ask the driver to park; current_thread.Driver
-// integration lands in Phase 10 — for now we fall back to a yield loop.
+// queues are empty we ask the driver to park (mother: Context::park).
 
 use runtime
 use io
+use fmt
+use sys
 use asyncio.task
+use asyncio.runtime.io as rtio
 
 // asyncio.error.RuntimeShutdown
 SCHED_RUNTIME_SHUTDOWN<i32> = 0x03020005
-// Pack (handle, task_id) into one u64 for the future's ctx slot. High 32
-// bits = scheduler handle hash, low 32 bits = task id (truncated).
-fn ctx_pack(handle<CtHandle>, task_id<u64>) u64 {
-    h_bits<u64> = handle.(u64)
-    return (h_bits & 0xFFFFFFFF00000000) | (task_id & 0xFFFFFFFF)
+
+// Mother: waker data is the task Header*. Tu passes RawTask* as ctx so
+// ScheduledIo wake can RawTask::wake_by_ref without a (handle,id) lookup.
+fn ct_task_ctx(t<task.RawTask>) u64 {
+    return t.(u64)
 }
 
 // Run one polling round on raw via the harness vtable.
 fn core_run_task(t<task.RawTask>, handle<CtHandle>){
-    h_hdr<task.Header> = t.task_header
-    ctx<u64> = ctx_pack(handle, h_hdr.task_id)
+    ctx<u64> = ct_task_ctx(t)
     task.harness_poll(t, ctx)
 }
 
@@ -47,22 +48,46 @@ fn block_on_raw(bits<u64>, fut) i32, i64 {
     return err, val
 }
 
+// block_on with Future* passed as u64 (cross-pkg safe).
+fn block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
+    ct<CtHandle> = handle_bits.(CtHandle)
+    fut<runtime.Future> = fut_bits.(runtime.Future)
+    if fut == null {
+    } else {
+    }
+    err<i32> = 0
+    val<i64> = 0
+    err, val = block_on(ct, fut)
+    return err, val
+}
+
+// Mother: park the IO driver when local + inject are empty.
+fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
+    iod<u64> = shared.iod_bits
+    ioh<u64> = shared.ioh_bits
+    if iod == 0 || ioh == 0 {
+        runtime.osyield()
+        return
+    }
+    drv<rtio.IoDriver> = iod.(rtio.IoDriver)
+    ih<rtio.IoHandle> = ioh.(rtio.IoHandle)
+    drv.turn(ih, sys.MAX)
+}
+
 // block_on the root future. Returns (err, value) once the root completes
 // or RuntimeShutdown when the inject queue closed before the root did.
 fn block_on(handle<CtHandle>, fut) (i32, i64) {
     shared<CtShared> = handle.shared
-    sched_obj<task.Schedule> = handle
+    fut_bits<u64> = 0
+    fut_bits = fut
+    root<task.RawTask> = task.bind_root(fut_bits, handle)
 
-    // Wrap fut as a root task; bind_root drops one ref so refcount = 2
-    // (block_on + queue), without binding into OwnedTasks.
-    root<task.RawTask> = task.bind_root(fut, sched_obj)
-
-    core_obj<Core> = ct_core_new(0, DEFAULT_GLOBAL_QUEUE_INTERVAL)
+    // Mother: Core { driver: Some(driver), ... }
+    core_obj<Core> = ct_core_new(shared.driver, DEFAULT_GLOBAL_QUEUE_INTERVAL)
     defer<Defer>   = Defer::new()
     ctx_obj<CtContext> = CtContext::new(handle, core_obj, defer)
     saved<CtSavedSlot> = ct_enter(ctx_obj)
 
-    // Initial schedule: the root task starts on the local queue.
     notif_root<task.Notified> = task.notified_from_raw(root)
     core_obj.push_local(root)
 
@@ -70,19 +95,17 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
     val_out<i64> = 0
 
     loop {
-        // Check root completion before doing more work.
         snap<i32> = root.life_load()
         if (snap & task.COMPLETE) != 0 {
-            err_out, val_out = root.read_output()
+            err_out = 0
+            val_out = root.task_cell.peek_output()
             break
         }
 
-        // Defer first so yield_now wakers fire ahead of newly pushed tasks.
         if drain_defer(defer, shared.inject) {
             continue
         }
 
-        // Periodic inject pull keeps fairness vs. local queue.
         core_obj.tick = core_obj.tick + 1
         if (core_obj.tick % core_obj.global_queue_interval) == 0 {
             ierr<i32>, ti<task.Notified> = shared.inject.pop()
@@ -93,14 +116,12 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             }
         }
 
-        // Local FIFO.
         lerr<i32>, tl<task.RawTask> = core_obj.pop_local()
         if lerr == 0 {
             core_run_task(tl, handle)
             continue
         }
 
-        // Inject as a fallback; if it's empty too we have to park.
         ierr<i32>, ti<task.Notified> = shared.inject.pop()
         if ierr == 0 {
             raw_j<task.RawTask> = ti.raw()
@@ -108,19 +129,14 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             continue
         }
 
-        // All queues empty. If inject is closed we cannot make progress.
         if shared.inject.is_closed() {
             err_out = SCHED_RUNTIME_SHUTDOWN
             break
         }
 
-        // Park placeholder: yield to the OS and re-check the queues. block_on
-        // is a plain fn (not async), so it cannot await; the real driver
-        // (Phase 10) will block on shared.woken instead of spinning.
-        runtime.osyield()
+        ct_park_driver(shared, core_obj)
     }
 
     ct_exit(saved)
     return err_out, val_out
 }
-

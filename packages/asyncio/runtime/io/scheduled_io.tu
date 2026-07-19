@@ -7,6 +7,7 @@ use std.atomic
 use netio
 
 use asyncio.util
+use asyncio.task
 
 // readiness packing: [shutdown:1 | tick:15 | readiness:16].
 READINESS_BITS<i32> = 16
@@ -78,8 +79,9 @@ const ScheduledIo::new() ScheduledIo {
     s.linked_list_pointers.prev = null
     s.linked_list_pointers.next = null
     s.readiness = 0
-    s.waiters_lock = new runtime.MutexInter
-    s.waiters_lock.init()
+    wl<runtime.MutexInter> = new runtime.MutexInter
+    wl.init()
+    s.waiters_lock = wl
     s.waiters    = util.LinkedList::new()
     s.reader_ctx = 0
     s.writer_ctx = 0
@@ -163,7 +165,8 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
     out<util.WakeList> = new util.WakeList
     out.init()
 
-    this.waiters_lock.lock()
+    wl<runtime.MutexInter> = this.waiters_lock
+    wl.lock()
 
     // Single-direction shortcuts first: reader_ctx handles READABLE/closed/err,
     // writer_ctx handles WRITABLE/closed/err. Drained on first match.
@@ -195,7 +198,7 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
         cur = nxt
     }
 
-    this.waiters_lock.unlock()
+    wl.unlock()
     return out
 }
 
@@ -217,10 +220,11 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
         return runtime.PollReady, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(hit))
     }
 
-    // Stash the ctx for the wake path. Last writer wins; the driver
-    // tolerates stale slots because wake() drains and re-arms idempotently.
-    if dir == DIR_READ  this.reader_ctx = ctx
-    if dir == DIR_WRITE this.writer_ctx = ctx
+    // Stash the task waker (mother: cx.waker().clone()). Prefer the
+    // harness-published RawTask* when dynstackcall null-padded the poll ctx.
+    wake_ctx<u64> = task.resolve_poll_ctx(ctx)
+    if dir == DIR_READ  this.reader_ctx = wake_ctx
+    if dir == DIR_WRITE this.writer_ctx = wake_ctx
     return runtime.PollPending, ReadyEvent::new(unpack_tick(cur), Ready::empty())
 }
 
@@ -251,7 +255,8 @@ ScheduledIo::shutdown() util.WakeList {
 
     out<util.WakeList> = new util.WakeList
     out.init()
-    this.waiters_lock.lock()
+    wl<runtime.MutexInter> = this.waiters_lock
+    wl.lock()
 
     if this.reader_ctx != 0 {
         out.push(this.reader_ctx)
@@ -272,7 +277,7 @@ ScheduledIo::shutdown() util.WakeList {
         cur_node = nxt
     }
 
-    this.waiters_lock.unlock()
+    wl.unlock()
     return out
 }
 
@@ -315,9 +320,10 @@ Readiness::poll(ctx){
         w<Waiter> = Waiter::new(ctx.(u64), this.interest_bits)
         this.node = w
         this.registered = 1
-        sio.waiters_lock.lock()
+        wl<runtime.MutexInter> = sio.waiters_lock
+        wl.lock()
         sio.waiters.push_back(&w.node)
-        sio.waiters_lock.unlock()
+        wl.unlock()
     } else {
         n<Waiter> = this.node
         n.ctx_packed = ctx.(u64)

@@ -15,9 +15,10 @@ ENTER_BLOCKING<i32> = 2
 ACTIVE_RT<RuntimeContext> = null
 
 // Combined view used by hot-path helpers (coop, signal handlers).
+// Field `drv_bits` avoids `.driver` clashing with type Driver (type-assert trap).
 mem RuntimeContext {
-    u64        sched          // raw bits of runtime.scheduler.SchedulerHandle*
-    u64        driver         // raw bits of runtime.driver.DriverHandle*
+    u64        sched          // raw bits of scheduler handle
+    u64        drv_bits       // raw bits of DriverHandle* (tokio: Handle driver)
     util.FastRand*  rng
     i32        coop_budget    // remaining budget in this poll round
     i32        enter_kind     // ENTER_*
@@ -29,11 +30,19 @@ mem RuntimeContext {
 const RuntimeContext::new(sched_ptr<u64>, driver_ptr<u64>, rng<util.FastRand>, kind<i32>) RuntimeContext {
     c<RuntimeContext> = new RuntimeContext
     c.sched       = sched_ptr
-    c.driver      = driver_ptr
+    c.drv_bits    = driver_ptr
     c.rng         = rng
     c.coop_budget = 128
     c.enter_kind  = kind
     return c
+}
+
+// DriverHandle* stored in this context, or null when IO is disabled.
+RuntimeContext::drv_handle() DriverHandle {
+    if this.drv_bits == 0 return null
+    dh<DriverHandle> = null
+    dh = this.drv_bits
+    return dh
 }
 
 // Save+swap snapshot. rt_exit takes one back to restore the previous
@@ -60,3 +69,8 @@ fn current_context() RuntimeContext {
     return ACTIVE_RT
 }
 
+// Package bridge: DriverHandle* from an active context (avoids .driver trap).
+fn context_driver_handle(rc<RuntimeContext>) DriverHandle {
+    if rc == null return null
+    return rc.drv_handle()
+}

@@ -49,7 +49,7 @@ mem SiginfoHead {
 // Initialise globals + open the signalfd with an empty mask. Returns
 // (err, driver, handle); err != 0 means the signalfd syscall failed.
 // `drv.lock` is a heap MutexInter*; expose its address for cross-pkg lock/unlock.
-const SignalDriver::new(io_handle_ptr<u64>) (i32, SignalDriver, SignalDriverHandle) {
+const SignalDriver::new(io_handle_ptr<u64>) i32, SignalDriver, SignalDriverHandle {
     err<i32>, g<SignalGlobals> = signal_globals_get_or_init()
     if err != 0 return err, null, null
 

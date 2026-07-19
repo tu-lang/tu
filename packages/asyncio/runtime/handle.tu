@@ -10,7 +10,7 @@ use asyncio.runtime.blocking as rtblk
 mem Handle {
     u64           sched_handle      // CtHandle* or MtHandle* raw bits
     i32           sched_kind        // 0 = current_thread, 1 = multi_thread
-    DriverHandle* driver
+    DriverHandle* drv_h             // avoids .driver vs type Driver trap
     u64           blocking_spawner  // raw bits of blocking.Spawner*
 }
 
@@ -19,7 +19,7 @@ const Handle::new(sched<u64>, kind<i32>, driver<DriverHandle>, blocking<u64>) Ha
     h<Handle> = new Handle
     h.sched_handle     = sched
     h.sched_kind       = kind
-    h.driver           = driver
+    h.drv_h            = driver
     h.blocking_spawner = blocking
     return h
 }
@@ -78,9 +78,11 @@ fn handle_blocking_impl(h<Handle>, op<u64>, mandatory<i32>) task.JoinHandle {
     bsched<rtblk.BlockingSchedule> = rtblk.BlockingSchedule::new(inject)
     tid<task.TaskId> = task.alloc_id()
     jh2<task.JoinHandle> = new task.JoinHandle
-    raw<task.RawTask> = task.raw_new(jh2, bsched, tid.v)
+    jh_bits<u64> = 0
+    jh_bits = jh2
+    raw<task.RawTask> = task.raw_new(jh_bits, bsched, tid.v)
     // Mother: header().state.ref_dec() after wiring JoinHandle
-    life_st<task.State> = raw.life_st()
+    life_st<task.TaskState> = raw.life_st()
     life_st.ref_dec()
     jh2.init(raw)
 

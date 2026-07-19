@@ -17,25 +17,48 @@ mem Driver {
 }
 
 // Weak-side aggregate held by Handle / context. Cross-thread safe.
+// Field names avoid `io_*` — outer/method `.io_handle` is a type-assert trap.
 mem DriverHandle {
-    rtio.IoHandle*           io_handle
+    rtio.IoHandle*           ihandle
     rttime.TimeHandle*         time_handle
     rtsig.SignalDriverHandle* signal_handle
 }
 
+// Pair returned by compose — avoids multi-ret dropping DriverHandle.
+mem DriverPair {
+    Driver*       drv
+    DriverHandle* hdl
+}
+
 // Build a Driver pair. Caller passes already-created subsystems (or
 // null) so feature flags compose cleanly.
-const Driver::compose(io<rtio.IoDriver>, ioh<rtio.IoHandle>, time_drv<rttime.TimeDriver>, timeh<rttime.TimeHandle>, sig<rtsig.SignalDriver>, sigh<rtsig.SignalDriverHandle>) (Driver, DriverHandle) {
+const Driver::compose(io<rtio.IoDriver>, ioh<rtio.IoHandle>, time_drv<rttime.TimeDriver>, timeh<rttime.TimeHandle>, sig<rtsig.SignalDriver>, sigh<rtsig.SignalDriverHandle>) DriverPair {
     d<Driver> = new Driver
     d.io_drv     = io
     d.time_drv   = time_drv
     d.sig_drv    = sig
 
     h<DriverHandle> = new DriverHandle
-    h.io_handle     = ioh
+    h.ihandle       = ioh
     h.time_handle   = timeh
     h.signal_handle = sigh
-    return d, h
+    return new DriverPair { drv: d, hdl: h }
+}
+
+// Raw IoDriver* bits for scheduler park without `.io_drv.(u64)` assert traps.
+Driver::iod_bits() u64 {
+    if this.io_drv == null return 0
+    bits<u64> = 0
+    bits = this.io_drv
+    return bits
+}
+
+// Raw IoHandle* bits for scheduler park / registration.
+DriverHandle::ioh_bits() u64 {
+    if this.ihandle == null return 0
+    bits<u64> = 0
+    bits = this.ihandle
+    return bits
 }
 
 // Park indefinitely. Time-aware: if the wheel has a near deadline we
@@ -52,8 +75,8 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
         ms<u64> = d.as_millis()
         return this.time_drv.park_internal(handle.time_handle, ms)
     }
-    if this.io_drv != null && handle.io_handle != null {
-        return this.io_drv.turn(handle.io_handle, d)
+    if this.io_drv != null && handle.ihandle != null {
+        return this.io_drv.turn(handle.ihandle, d)
     }
     return 0
 }
@@ -62,7 +85,7 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
 // the IO driver closes its registry), then IO, then time.
 Driver::shutdown(handle<DriverHandle>){
     if this.sig_drv != null this.sig_drv.shutdown()
-    if this.io_drv != null && handle.io_handle != null handle.io_handle.shutdown()
+    if this.io_drv != null && handle.ihandle != null handle.ihandle.shutdown()
     // Time has no explicit shutdown — wheel just stops being polled.
 }
 
