@@ -60,8 +60,8 @@ read_dir(){
      if [ -d $file ] ; then
         read_dir $file
      else
-        "clean *.s"
-        "clean *.o"
+        clean "*.s"
+        clean "*.o"
         assert "OK" $file
         log "[compile] $file passed!\n"
      fi

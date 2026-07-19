@@ -6,11 +6,21 @@ use std
 func test_rand(){
     fmt.println("test_rand")
 
-    v1 = std.rand(100)
-    v2 = std.rand(100)
-    if v1 > 100 os.die("v1 should < 100")
-    if v2 > 100 os.die("v2 should < 100")
-    if v1 == v2 os.die("v1 != v2")
+    // Retry on collision: LCG first-pair equality is seed-dependent (~1%).
+    v1 = 0
+    v2 = 0
+    found = false
+    for i = 0; i < 32; i += 1 {
+        v1 = std.rand(100)
+        v2 = std.rand(100)
+        if v1 > 100 os.die("v1 should < 100")
+        if v2 > 100 os.die("v2 should < 100")
+        if v1 != v2 {
+            found = true
+            break
+        }
+    }
+    if !found os.die("rand never produced distinct values")
 
     fmt.println("test_rand success")
 }
