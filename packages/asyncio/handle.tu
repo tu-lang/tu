@@ -50,9 +50,13 @@ Handle::block_on(fut) (i32, i64) {
 // null rng (coop / select fairness fall back to their fixed path while
 // entered), which is sufficient for the manual enter/exit use.
 Handle::enter() EnterGuard {
+    bits<u64> = 0
+    if this.inner.drv_h != null {
+        bits = this.inner.drv_h
+    }
     ctx<rt.RuntimeContext> = rt.RuntimeContext::new(
         this.inner.sched_handle,
-        this.inner.driver.(u64),
+        bits,
         null,
         rt.ENTER_RUNTIME
     )

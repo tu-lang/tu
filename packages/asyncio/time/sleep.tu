@@ -13,7 +13,7 @@ use asyncio.runtime.time as rttime
 fn current_time_handle() rttime.TimeHandle {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return null
-    dh<rt.DriverHandle> = rc.driver
+    dh<rt.DriverHandle> = rt.context_driver_handle(rc)
     if dh == null return null
     return dh.time_handle
 }

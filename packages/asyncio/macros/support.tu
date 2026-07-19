@@ -16,7 +16,8 @@ fn future_poll(fut, ctx<u64>) (i64, i64)
 // runtime.PollReady / PollPending / PollError.
 fn poll_child(f<runtime.Future>, ctx<u64>) (i64, i64) {
     virf<runtime.VObjFunc> = f.virf
-    fc<future_poll> = virf.entry.(u64)
+    entry_bits<u64> = virf.entry
+    fc<future_poll> = entry_bits.(u64)
     return fc(f, ctx)
 }
 

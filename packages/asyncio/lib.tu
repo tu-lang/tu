@@ -37,11 +37,10 @@ fn block_on(fut) (i32, i64) {
     return h.block_on(fut)
 }
 
-// Build a default multi_thread runtime with all drivers enabled. Returns
-// (io.Ok, Runtime) or the builder error. (Deviation: returns the error code
-// alongside Runtime, matching Builder::build.)
-fn runtime_default() (i32, rt.Runtime) {
+// Build a default multi_thread runtime with all drivers enabled.
+// Returns BuildResult (mother: Result<Runtime>).
+fn runtime_default() rt.Runtime {
     b<rt.Builder> = rt.Builder::new_multi_thread()
     b = b.enable_all()
-    return b.build()
+    return rt.builder_build_rt(b)
 }
