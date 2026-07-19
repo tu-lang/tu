@@ -4,7 +4,7 @@ use runtime
 
 // Schedulers and the harness only access tasks through Header.
 mem Header {
-    State* life_state
+    TaskState* lifecycle
     u64 scheduler                  // raw bits of task.Schedule impl
     runtime.VObjFunc* poll_vtable  // cached from the future header
     RawTask* queue_next            // intrusive next pointer for inject / local queues
@@ -12,8 +12,8 @@ mem Header {
 }
 
 // Return the packed lifecycle / refcount slot.
-Header::life_slot() State {
-    return this.life_state
+Header::life_slot() TaskState {
+    return this.lifecycle
 }
 
 // Raw scheduler handle bits stored on this header.
@@ -23,12 +23,12 @@ Header::sched_bits() u64 {
 
 // Snapshot of the packed lifecycle word.
 Header::life_load() i32 {
-    return this.life_state.load()
+    return this.lifecycle.load()
 }
 
 // Arm the join waker bit; forwards to State.
 Header::arm_join_waker() i32 {
-    return this.life_state.set_join_waker()
+    return this.lifecycle.set_join_waker()
 }
 
 // Clear intrusive list link.
@@ -48,10 +48,10 @@ Header::queue_next_out() RawTask {
 
 // Build a fresh Header. Captures fut's VObjFunc* once so the harness does not
 // re-read it on every poll.
-fn header_new(life_state, scheduler, fut, task_id<u64>) Header {
+fn header_new(lifecycle, scheduler, fut, task_id<u64>) Header {
     f<runtime.Future> = fut.(runtime.Future)
     return new Header {
-        life_state: life_state,
+        lifecycle: lifecycle,
         scheduler: scheduler.(u64),
         poll_vtable: f.virf,
         queue_next: null,

@@ -3,6 +3,7 @@
 // default vtable suffices.
 
 use runtime
+use fmt
 
 // Function-pointer table. Slots are u64 raw addresses populated by task.harness.
 mem RawVTable {
@@ -23,7 +24,9 @@ mem RawTask {
 
 // Drop one ref for block_on root (no JoinHandle).
 RawTask::bind_root_unref(){
-    this.task_header.life_slot().ref_dec()
+    h<Header> = this.task_header
+    st<TaskState> = h.life_slot()
+    st.ref_dec()
 }
 
 // Stash join ctx and arm JOIN_WAKER. Returns set_join_waker code.
@@ -43,7 +46,7 @@ RawTask::life_load() i32 {
 }
 
 // Return the lifecycle State slot for this task.
-RawTask::life_st() State {
+RawTask::life_st() TaskState {
     return this.task_header.life_slot()
 }
 
@@ -56,12 +59,11 @@ RawTask::take_cell_output() (i32, i64) {
 }
 
 // Read output via the shared vtable slot.
+// Direct call — fn-pointer multi-return codegen drops/corrupts results.
 RawTask::read_output() (i32, i64) {
-    vt<RawVTable> = this.vt
-    read_fc<vtable_try_read_output> = vt.read_output
     err<i32> = 0
     val<i64> = 0
-    err, val = read_fc(this)
+    err, val = this.take_cell_output()
     return err, val
 }
 
@@ -78,10 +80,9 @@ RawTask::list_take_next() RawTask {
     return this.task_header.queue_next_out()
 }
 
-// Set CANCELLED and enqueue one wake if needed.
-RawTask::abort_signal(){
-    life_st<State> = this.life_st()
-    life_st.set_cancelled()
+// Mother: RawTask::wake_by_ref — set NOTIFIED and enqueue when needed.
+RawTask::wake_by_ref(){
+    life_st<TaskState> = this.life_st()
     code<i32> = life_st.transition_to_notified_by_ref()
     if code == TN_Submit {
         sched_bits<u64> = this.task_header.sched_bits()
@@ -91,6 +92,21 @@ RawTask::abort_signal(){
             sched.schedule(n)
         }
     }
+}
+
+// Wake from a packed ctx that holds RawTask* (mother waker data = Header*).
+fn wake_by_ctx(ctx<u64>){
+    if ctx != 0 {
+        rtask<RawTask> = ctx.(RawTask)
+        rtask.wake_by_ref()
+    }
+}
+
+// Set CANCELLED and enqueue one wake if needed.
+RawTask::abort_signal(){
+    life_st<TaskState> = this.life_st()
+    life_st.set_cancelled()
+    this.wake_by_ref()
 }
 
 // Module-level singleton; lazily allocated so package init can populate it.
@@ -127,9 +143,13 @@ fn raw_vtable_install(
     v.shutdown              = shutdown
 }
 
-// Allocate State + Header + Cell + RawTask wired to the default vtable.
-fn raw_new(fut, scheduler, task_id<u64>) RawTask {
-    st<State> = State::new()
+// Allocate TaskState + Header + Cell + RawTask wired to the default vtable.
+fn raw_new(fut_bits<u64>, scheduler, task_id<u64>) RawTask {
+    fut<runtime.Future> = fut_bits.(runtime.Future)
+    if fut == null {
+    } else {
+    }
+    st<TaskState> = TaskState::new()
     hdr<Header> = header_new(st, scheduler, fut, task_id)
     cell<Cell> = Cell::new(hdr, fut)
 
@@ -138,6 +158,9 @@ fn raw_new(fut, scheduler, task_id<u64>) RawTask {
     rtask.future_ptr  = fut
     rtask.task_cell   = cell
     rtask.vt          = raw_vtable_default()
+    if rtask.future_ptr == null {
+    } else {
+    }
     return rtask
 }
 

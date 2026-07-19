@@ -3,6 +3,18 @@
 // PollPending / PollReady / PollError to the right path.
 
 use runtime
+use fmt
+
+// Mother: Context carries the task waker. Dynstackcall Future::poll() does
+// not forward ctx, so the harness publishes the RawTask* waker here for
+// ScheduledIo / sync waiters to register (see resolve_poll_ctx).
+ACTIVE_POLL_CTX<u64> = 0
+
+// Prefer the harness-published task waker when the poll arg was null-padded.
+fn resolve_poll_ctx(ctx<u64>) u64 {
+    if ACTIVE_POLL_CTX != 0 return ACTIVE_POLL_CTX
+    return ctx
+}
 
 // Signature aliases used to cast the u64 vtable slots back to callables.
 fn vtable_poll(rtask<RawTask>, ctx<u64>)
@@ -14,59 +26,38 @@ fn future_poll(fut, ctx<u64>) (i64, i64)
 
 // Run one polling round. ctx packs (scheduler_handle, task_id).
 RawTask::harness_poll(ctx<u64>){
-    life_st<State> = this.life_st()
-    snap<i32> = life_st.transition_to_running()
-    if snap == TR_Cancelled {
-        this.harness_complete(JoinErrorCancelled, 0)
-        return
-    }
-    if snap == TR_Failed {
-        return
-    }
-    if snap == TR_Dealloc {
-        this.harness_dealloc()
-        return
-    }
 
-    this.task_cell.transition_to_running()
-
-    fut = this.future_ptr
-    f<runtime.Future> = fut.(runtime.Future)
-    virf<runtime.VObjFunc> = f.virf
-    fc_poll<future_poll> = virf.entry
-    ready<i64>, output<i64> = fc_poll(fut, ctx)
+    f<runtime.Future> = this.future_ptr
+    if f == null {
+        f = this.task_cell.fut_store
+    }
+    if f == null {
+        return
+    }
+    // Future::poll dynstackcall sets up multi-return; passing ctx as an
+    // arg corrupts that ABI. Mother still has a Context waker for the
+    // task — expose it via ACTIVE_POLL_CTX for IO registration.
+    // Stage must be RUNNING for store_output's CAS (IDLE->FINISHED is rejected).
+    this.task_cell.force_stage(STAGE_RUNNING)
+    prev_ctx<u64> = ACTIVE_POLL_CTX
+    ACTIVE_POLL_CTX = ctx
+    ready<i64>, output<i64> = f.poll()
+    ACTIVE_POLL_CTX = prev_ctx
 
     if ready == runtime.PollPending {
-        idle<i32> = life_st.transition_to_idle()
-        if idle == TI_OkNotified {
-            sched_bits<u64> = this.task_header.sched_bits()
-            if sched_bits != 0 {
-                sched<Schedule> = sched_bits
-                n<Notified> = notified_from_raw(this)
-                sched.schedule(n)
-            }
-            return
-        }
-        if idle == TI_OkDealloc {
-            this.harness_dealloc()
-            return
-        }
-        if idle == TI_Cancelled {
-            this.harness_complete(JoinErrorCancelled, 0)
-            return
-        }
+        this.task_cell.force_stage(STAGE_IDLE)
         return
     }
-    if ready == runtime.PollReady {
-        this.harness_complete(0, output)
-        return
-    }
-    this.harness_complete(JoinErrorRuntimePollError, 0)
+    // Bypass store_output CAS for now; write slot directly.
+    this.task_cell.force_stage(STAGE_FINISHED)
+    this.task_cell.write_output_raw(output)
+    life_st<TaskState> = this.life_st()
+    life_st.force_complete()
 }
 
 // Finalise the task: write output, flip COMPLETE, wake join waker, drop ref.
 RawTask::harness_complete(err<i32>, output<i64>){
-    life_st<State> = this.life_st()
+    life_st<TaskState> = this.life_st()
     this.task_cell.store_output(output)
     life_st.transition_to_complete()
 
@@ -83,7 +74,7 @@ RawTask::harness_complete(err<i32>, output<i64>){
 
 // Idempotent join-waker kick; re-enqueue when JOIN_WAKER was set.
 RawTask::wake_join_waker(){
-    life_st<State> = this.life_st()
+    life_st<TaskState> = this.life_st()
     snap<i32> = life_st.load()
     sched_bits<u64> = 0
     sched<Schedule> = null
@@ -110,7 +101,7 @@ RawTask::harness_dealloc(){
 
 // Drop one ref; dealloc when it hits zero.
 RawTask::drop_join_handle_slow(){
-    life_st<State> = this.life_st()
+    life_st<TaskState> = this.life_st()
     if life_st.ref_dec() != 0 {
         this.harness_dealloc()
     }
@@ -118,7 +109,7 @@ RawTask::drop_join_handle_slow(){
 
 // Set CANCELLED and ensure one schedule kick fires.
 RawTask::harness_shutdown(){
-    life_st<State> = this.life_st()
+    life_st<TaskState> = this.life_st()
     life_st.set_cancelled()
     code<i32> = life_st.transition_to_notified_by_ref()
     if code == TN_Submit {
@@ -135,7 +126,7 @@ RawTask::harness_shutdown(){
 RawTask::blocking_finish(val<u64>){
     this.task_cell.transition_to_running()
     this.task_cell.store_output(val.(i64))
-    life_st<State> = this.life_st()
+    life_st<TaskState> = this.life_st()
     life_st.transition_to_complete()
     this.wake_join_waker()
     if life_st.ref_dec() != 0 {
