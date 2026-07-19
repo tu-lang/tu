@@ -39,24 +39,25 @@ TcpWriteHalf::peer_addr() {
     return this.stream.peer_addr()
 }
 
-// Forward the read side to the backing TcpStream's AsyncRead impl.
+// Forward via TcpStream static members. Avoid `stream.(AsyncRead).poll_*`:
+// current codegen emits lea of the api-method symbol (no body) instead of
+// vtable dyn-dispatch, which leaves asyncio_io_Async*_poll_* undefined.
 impl aio.AsyncRead for TcpReadHalf {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-        return this.stream.(aio.AsyncRead).poll_read(ctx, buf)
+        return this.stream.poll_read(ctx, buf)
     }
 }
 
-// Forward all write-side ops to the backing TcpStream's AsyncWrite impl.
 impl aio.AsyncWrite for TcpWriteHalf {
     fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-        err<i32>, n<u64> = this.stream.(aio.AsyncWrite).poll_write(ctx, buf_bits)
+        err<i32>, n<u64> = this.stream.poll_write(ctx, buf_bits)
         return err, n
     }
     fn poll_flush(ctx<u64>) i32 {
-        return this.stream.(aio.AsyncWrite).poll_flush(ctx)
+        return this.stream.poll_flush(ctx)
     }
     fn poll_shutdown(ctx<u64>) i32 {
-        return this.stream.(aio.AsyncWrite).poll_shutdown(ctx)
+        return this.stream.poll_shutdown(ctx)
     }
 }
 

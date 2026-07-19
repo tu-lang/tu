@@ -36,11 +36,16 @@ const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32,
     ok_code<i32> = 1           // io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return shut_err, null
-    dh<rt.DriverHandle> = rc.driver
-    if dh == null || dh.io_handle == null return shut_err, null
+    dh<rt.DriverHandle> = rt.context_driver_handle(rc)
+    if dh == null return shut_err, null
+    // Avoid dh.io_handle — `use io` makes `.io_*` a type-assert trap.
+    ioh_bits<u64> = dh.ioh_bits()
+    if ioh_bits == 0 return shut_err, null
+    ioh<rtio.IoHandle> = null
+    ioh = ioh_bits
 
     interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, ioh)
     if perr != 0 return perr, null
     return ok_code, new TcpStream { io: pe, peer: peer }
 }
@@ -95,7 +100,11 @@ ConnectFut::poll(ctx){
 
 // Mother: TcpStream::connect — async entry returns ConnectFut leaf (no await body).
 async TcpStream::connect(addr<net.SocketAddr>) {
-    cerr<i32>, inner<nettcp.TcpStream> = nettcp.TcpStream::connect(addr)
+    cerr<i32> = nettcp.TcpStream::connect(addr)
+    if cerr != io.Ok {
+        return new ConnectFut { io: null, stream: null, stage: -1 }
+    }
+    inner<nettcp.TcpStream> = nettcp.tcp_stream_last()
     if inner == null {
         return new ConnectFut { io: null, stream: null, stage: -1 }
     }

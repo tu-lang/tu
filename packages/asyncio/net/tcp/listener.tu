@@ -6,6 +6,7 @@
 
 use net
 use io
+use fmt
 use runtime
 use netio
 use netio.net.tcp as nettcp
@@ -19,7 +20,9 @@ mem TcpListener {
 }
 
 const TcpListener::bind(addr<net.SocketAddr>) (i32, TcpListener) {
-    err<i32>, inner<nettcp.TcpListener> = nettcp.TcpListener::bind(addr)
+    err<i32> = nettcp.TcpListener::bind(addr)
+    if err != io.Ok return err, null
+    inner<nettcp.TcpListener> = nettcp.tcp_listener_last()
     if inner == null return err, null
     return TcpListener::from_netio(inner)
 }
@@ -28,13 +31,25 @@ const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
     shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
     ok_code<i32> = 1           // io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return shut_err, null
-    dh<rt.DriverHandle> = rc.driver
-    if dh == null || dh.io_handle == null return shut_err, null
+    if rc == null {
+        return shut_err, null
+    }
+    dh<rt.DriverHandle> = rt.context_driver_handle(rc)
+    if dh == null {
+        return shut_err, null
+    }
+    ioh_bits<u64> = dh.ioh_bits()
+    if ioh_bits == 0 {
+        return shut_err, null
+    }
+    ioh<rtio.IoHandle> = null
+    ioh = ioh_bits
 
     interest<netio.Interest> = netio.readable_interest()
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
-    if perr != 0 return perr, null
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, ioh)
+    if perr != 0 {
+        return perr, null
+    }
     return ok_code, new TcpListener { io: pe }
 }
 
@@ -50,10 +65,15 @@ mem AcceptOp {
 
 impl rtio.IoOp for AcceptOp {
     fn try_perform() i32, i64 {
-        err<i32>, s<nettcp.TcpStream>, addr<net.SocketAddr> = this.listener.accept()
-        this.out_stream = s
-        this.out_addr   = addr
-        return err, 0
+        err<i32> = this.listener.accept()
+        if err != io.Ok {
+            this.out_stream = null
+            this.out_addr = null
+            return err, 0
+        }
+        this.out_stream = nettcp.tcp_accept_stream_last()
+        this.out_addr = nettcp.tcp_accept_addr_last()
+        return io.Ok, 0
     }
 }
 

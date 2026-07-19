@@ -40,24 +40,24 @@ OwnedWriteHalf::peer_addr() {
     return this.stream.peer_addr()
 }
 
-// Forward the read side to the backing TcpStream's AsyncRead impl.
+// Forward via TcpStream static members (same rationale as split.tu: avoid
+// broken api dyn-call lea of asyncio_io_Async*_poll_*).
 impl aio.AsyncRead for OwnedReadHalf {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-        return this.stream.(aio.AsyncRead).poll_read(ctx, buf)
+        return this.stream.poll_read(ctx, buf)
     }
 }
 
-// Forward all write-side ops to the backing TcpStream's AsyncWrite impl.
 impl aio.AsyncWrite for OwnedWriteHalf {
     fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-        err<i32>, n<u64> = this.stream.(aio.AsyncWrite).poll_write(ctx, buf_bits)
+        err<i32>, n<u64> = this.stream.poll_write(ctx, buf_bits)
         return err, n
     }
     fn poll_flush(ctx<u64>) i32 {
-        return this.stream.(aio.AsyncWrite).poll_flush(ctx)
+        return this.stream.poll_flush(ctx)
     }
     fn poll_shutdown(ctx<u64>) i32 {
-        return this.stream.(aio.AsyncWrite).poll_shutdown(ctx)
+        return this.stream.poll_shutdown(ctx)
     }
 }
 

@@ -30,7 +30,7 @@ const UnixDatagram::bind(path<string.String>) (i32, UnixDatagram) {
 const UnixDatagram::from_netio(inner<netuds.UnixDatagram>) (i32, UnixDatagram) {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return aerr.RuntimeShutdown, null
-    dh<rt.DriverHandle> = rc.driver
+    dh<rt.DriverHandle> = rt.context_driver_handle(rc)
     if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
 
     interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
