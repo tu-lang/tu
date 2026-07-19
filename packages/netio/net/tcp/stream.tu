@@ -13,31 +13,47 @@ mem TcpStream {
 	u64 iosrc_bits
 }
 
+LAST_TCP_STREAM<TcpStream> = null
+
+fn tcp_stream_last() TcpStream {
+	return LAST_TCP_STREAM
+}
+
 const TcpStream::from_std(stream<net.TcpStream>) TcpStream {
+	return TcpStream::from_std_fd(stream, stream.as_raw_fd())
+}
+
+const TcpStream::from_std_fd(stream<net.TcpStream>, fd<i32>) TcpStream {
 	s<TcpStream> = new TcpStream
-	s.iosrc_bits = netio.iosource_new_bits(stream.(u64), stream.as_raw_fd())
+	s.iosrc_bits = netio.iosource_new_bits(stream.(u64), fd)
 	return s
 }
 
 const TcpStream::fromrawfd(fd<i32>) TcpStream {
-	return TcpStream::from_std(net.TcpStream::fromrawfd(fd))
+	return TcpStream::from_std_fd(net.TcpStream::fromrawfd(fd), fd)
 }
 
-const TcpStream::connect(addr<net.SocketAddr>) i32, TcpStream {
+// Mother TcpStream::connect. Returns err only; on success tcp_stream_last().
+const TcpStream::connect(addr<net.SocketAddr>) i32 {
+	LAST_TCP_STREAM = null
 	err<i32>, fd<i32> = nsys.new_for_addr(addr)
 	if err != io.Ok
-		return err, null
+		return err
 	stream<TcpStream> = TcpStream::fromrawfd(fd)
-	std_s<net.TcpStream> = stream.std_stream()
-	err = nsys.connect(std_s, addr)
+	err = nsys.connect_fd(stream.raw_fd(), addr)
 	if err != io.Ok
-		return err, null
-	return io.Ok, stream
+		return err
+	LAST_TCP_STREAM = stream
+	return io.Ok
 }
 
 TcpStream::std_stream() net.TcpStream {
 	bits<u64> = netio.iosource_fd_holder_bits(this.iosrc_bits)
 	return bits.(net.TcpStream)
+}
+
+TcpStream::raw_fd() i32 {
+	return netio.iosource_raw_fd(this.iosrc_bits)
 }
 
 TcpStream::shutdown(how<i32>) i32 {

@@ -4,6 +4,7 @@ use netio.event
 use netio.sys as nsys
 use net
 use sys as libsys
+use fmt
 
 // Mother: TcpListener { inner: IoSource<net::TcpListener> }.
 // Tu: IoSource lives in package netio; store raw bits + netio.*_bits bridges.
@@ -12,34 +13,63 @@ mem TcpListener {
 	u64 iosrc_bits
 }
 
+// Multi-ret (i32, TcpListener) drops the mem pointer across packages; publish
+// the successful listener here (same pattern as IoDriver::new / LAST_IODRIVER).
+LAST_TCP_LISTENER<TcpListener> = null
+
+fn tcp_listener_last() TcpListener {
+	return LAST_TCP_LISTENER
+}
+
 // Mother TcpListener::bind — new_for_addr, fromrawfd, set_reuseaddr, bind, listen.
-const TcpListener::bind(addr<net.SocketAddr>) i32, TcpListener {
+// Returns err only; on success call tcp_listener_last() for the listener.
+const TcpListener::bind(addr<net.SocketAddr>) i32 {
+	LAST_TCP_LISTENER = null
 	err<i32>, fd<i32> = nsys.new_for_addr(addr)
+	fmt.println("b_sock")
 	if err != io.Ok
-		return err, null
+		return err
 	listener<TcpListener> = TcpListener::fromrawfd(fd)
-	// Mother: tcp::set_reuseaddr(&listener.inner, true) via IoSource Deref → net::TcpListener.
-	std_l<net.TcpListener> = listener.std_listener()
-	err = nsys.set_reuseaddr(std_l, 1)
+	fd2<i32> = listener.raw_fd()
+	fmt.println("b_fd2")
+	fmt.println(int(fd))
+	fmt.println(int(fd2))
+	one<i32> = 1
+	err = nsys.set_reuseaddr_fd(fd, one)
+	fmt.println("b_reuse")
+	fmt.println(int(err))
 	if err != io.Ok
-		return err, null
-	err = nsys.bind(std_l, addr)
+		return err
+	fmt.println("b_pre_bind")
+	err = nsys.tcp_bind_fd(fd, addr)
+	fmt.println("b_bind")
+	fmt.println(int(err))
 	if err != io.Ok
-		return err, null
-	err = nsys.listen(std_l, 1024)
+		return err
+	bl<u32> = 1024
+	err = nsys.listen_fd(fd, bl)
+	fmt.println("b_listen")
+	fmt.println(int(err))
 	if err != io.Ok
-		return err, null
-	return io.Ok, listener
+		return err
+	LAST_TCP_LISTENER = listener
+	return io.Ok
 }
 
 const TcpListener::from_std(listener<net.TcpListener>) TcpListener {
+	return TcpListener::from_std_fd(listener, listener.as_raw_fd())
+}
+
+const TcpListener::from_std_fd(listener<net.TcpListener>, fd<i32>) TcpListener {
 	l<TcpListener> = new TcpListener
-	l.iosrc_bits = netio.iosource_new_bits(listener.(u64), listener.as_raw_fd())
+	bits<u64> = listener.(u64)
+	l.iosrc_bits = netio.iosource_new_bits(bits, fd)
 	return l
 }
 
 const TcpListener::fromrawfd(fd<i32>) TcpListener {
-	return TcpListener::from_std(net.TcpListener::fromrawfd(fd))
+	nl<net.TcpListener> = net.TcpListener::fromrawfd(fd)
+	return TcpListener::from_std_fd(nl, fd)
 }
 
 // Mother Deref of IoSource → net::TcpListener.
@@ -48,14 +78,35 @@ TcpListener::std_listener() net.TcpListener {
 	return bits.(net.TcpListener)
 }
 
+// Raw fd from the IoSource wrapper (avoids net.TcpListener::as_raw_fd cross-pkg).
+TcpListener::raw_fd() i32 {
+	return netio.iosource_raw_fd(this.iosrc_bits)
+}
+
 // Mother: self.inner.do_io(|inner| tcp::accept(inner)...).
 // Linux IoSourceState::do_io is a direct call; invoke accept on Deref target.
-TcpListener::accept() i32, TcpStream, net.SocketAddr {
-	std_l<net.TcpListener> = this.std_listener()
-	err<i32>, std_stream<net.TcpStream>, addr<net.SocketAddr> = nsys.accept(std_l)
+// Multi-ret stream pointer is published via LAST_TCP_ACCEPT_STREAM.
+LAST_TCP_ACCEPT_STREAM<TcpStream> = null
+LAST_TCP_ACCEPT_ADDR<net.SocketAddr> = null
+
+fn tcp_accept_stream_last() TcpStream {
+	return LAST_TCP_ACCEPT_STREAM
+}
+fn tcp_accept_addr_last() net.SocketAddr {
+	return LAST_TCP_ACCEPT_ADDR
+}
+
+TcpListener::accept() i32 {
+	LAST_TCP_ACCEPT_STREAM = null
+	LAST_TCP_ACCEPT_ADDR = null
+	err<i32> = nsys.accept_fd(this.raw_fd())
 	if err != io.Ok
-		return err, null, null
-	return io.Ok, TcpStream::from_std(std_stream), addr
+		return err
+	std_stream<net.TcpStream> = nsys.accept_stream_last()
+	addr<net.SocketAddr> = nsys.accept_addr_last()
+	LAST_TCP_ACCEPT_STREAM = TcpStream::from_std(std_stream)
+	LAST_TCP_ACCEPT_ADDR = addr
+	return io.Ok
 }
 
 impl event.Source for TcpListener {

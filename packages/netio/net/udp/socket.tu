@@ -17,7 +17,7 @@ mem UdpSocket {
 }
 
 const UdpSocket::bind(addr<libnet.SocketAddr>) i32, UdpSocket {
-	err<i32>, socket<libnet.UdpSocket> = nsys.bind(addr)
+	err<i32>, socket<libnet.UdpSocket> = nsys.udp_bind(addr)
 	if err != io.Ok
 		return err, null
 	return io.Ok, UdpSocket::from_std(socket)
