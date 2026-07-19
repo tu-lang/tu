@@ -65,7 +65,12 @@ fn default_read_buf(this, cursor<BufferCursor>) i32 {
 }
 
 api Read {
-	fn read(buf<Buf>) (i32, u64)
+	// Required by mother; body exists so codegen of `x.(Read).read` has a
+	// linkable symbol. Dyn-dispatch still needs a real vtable trampoline —
+	// this stub must not be treated as a semantic default (see Take::read).
+	fn read(buf<Buf>) i32, u64 {
+		return Unsupported, 0.(u64)
+	}
 	fn read_buf(cursor<BufferCursor>) i32 {
 		return default_read_buf(this, cursor)
 	}
@@ -120,7 +125,10 @@ api Seek {
 }
 
 api Write {
-	fn write(buf<Buf>) (i32, u64)
+	// Link shim for `x.(Write).write` (same issue as Read::read).
+	fn write(buf<Buf>) i32, u64 {
+		return Unsupported, 0.(u64)
+	}
 	fn write_vectored(buf<Buf>) i32, u64 {
 		err<i32>, n<u64> = default_write_vectored(this, buf)
 		return err, n
@@ -128,7 +136,9 @@ api Write {
 	fn is_write_vectored() i32 {
 		return 0
 	}
-	fn flush() (i32)
+	fn flush() i32 {
+		return Unsupported
+	}
 	fn write_all(buf<Buf>) i32 {
 		pos<u64> = 0
 		loop {
