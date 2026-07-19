@@ -4,6 +4,7 @@
 // all hold a PollEvented instead of touching the runtime tree directly.
 
 use runtime
+use fmt
 use netio
 use netio.event as evsrc
 use asyncio.runtime.io as rtio
