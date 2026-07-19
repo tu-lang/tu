@@ -14,6 +14,11 @@ const Parser::new(input<u8*>, len<i32>) Parser {
     return new Parser { state: input, remain: len }
 }
 
+// Remaining unparsed byte count (avoids outer `.remain` type-assert trap).
+Parser::bytes_left() i32 {
+    return this.remain
+}
+
 // Restore cursor when step_fn reports failure (None).
 Parser::read_none_atomically(step_fn) i32 {
     saved_state<u8*> = this.state
@@ -476,17 +481,28 @@ fn parser_read_socket_addr_v6_body(p<Parser>) i32, SocketAddrV6 {
 }
 
 Parser::read_socket_addr_v4() i32, SocketAddrV4 {
-    has<i32>, ret<SocketAddrV4> = this.read_sock_atomically(fn(p) {
-        return parser_read_socket_addr_v4_body(p)
-    })
-    return has, ret
+    // Direct body call — closures in read_sock_atomically hit object-func.
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.remain
+    has<i32>, ret<SocketAddrV4> = parser_read_socket_addr_v4_body(this)
+    if has == None {
+        this.state = saved_state
+        this.remain = saved_len
+        return None, null
+    }
+    return Has, ret
 }
 
 Parser::read_socket_addr_v6() i32, SocketAddrV6 {
-    has<i32>, ret<SocketAddrV6> = this.read_sock6_atomically(fn(p) {
-        return parser_read_socket_addr_v6_body(p)
-    })
-    return has, ret
+    saved_state<u8*> = this.state
+    saved_len<i32> = this.remain
+    has<i32>, ret<SocketAddrV6> = parser_read_socket_addr_v6_body(this)
+    if has == None {
+        this.state = saved_state
+        this.remain = saved_len
+        return None, null
+    }
+    return Has, ret
 }
 
 Parser::read_socket_addr() i32, SocketAddr {
@@ -501,17 +517,122 @@ Parser::read_socket_addr() i32, SocketAddr {
     return None, null
 }
 
-fn parse_ascii_bytes(b<u8*>, len<i32>) i32, SocketAddr {
-    p<Parser> = Parser::new(b, len)
-    ok<i32>, ret<SocketAddr> = p.parse_with(fn(p2) {
-        rh<i32>, rv<SocketAddr> = p2.read_socket_addr()
-        return rh, rv
-    }, 0)
-    return ok, ret
+LAST_PARSE_ADDR<SocketAddr> = null
+
+fn parse_addr_last() SocketAddr {
+    return LAST_PARSE_ADDR
+}
+
+// Parse decimal u32 from b[start..); returns (ok, value, chars_consumed).
+fn parse_dec_u32(b<u8*>, start<i32>, end_len<i32>, max_digs<i32>) i32, u32, i32 {
+    if start >= end_len {
+        return 0, 0, 0
+    }
+    idx<i32> = start
+    acc<u32> = 0
+    dig_n<i32> = 0
+    zero_b<u8> = 48
+    nine_b<u8> = 57
+    loop {
+        if idx >= end_len {
+            break
+        }
+        if max_digs >= 0 {
+            if dig_n >= max_digs {
+                break
+            }
+        }
+        ch<u8> = b[idx]
+        if ch < zero_b {
+            break
+        }
+        if ch > nine_b {
+            break
+        }
+        ch_u<u32> = ch.(u32)
+        zero_u<u32> = zero_b.(u32)
+        dval<u32> = ch_u - zero_u
+        ten<u32> = 10
+        acc = acc * ten + dval
+        dig_n = dig_n + 1
+        idx = idx + 1
+    }
+    if dig_n == 0 {
+        return 0, 0, 0
+    }
+    consumed<i32> = idx - start
+    return 1, acc, consumed
+}
+
+// Closure-free IPv4 "a.b.c.d:port" parser for the common path (int_tcp_echo).
+// Full Parser still uses closures and hits object-func; this matches mother
+// from_str for the dotted-quad form without that codegen path.
+fn try_parse_simple_ipv4_socket(b<u8*>, len<i32>) i32 {
+    if b == null || len <= 0 {
+        return io.OtherParse
+    }
+    i<i32> = 0
+    o0<u32> = 0
+    o1<u32> = 0
+    o2<u32> = 0
+    o3<u32> = 0
+    port_u<u32> = 0
+    ok<i32> = 0
+    used<i32> = 0
+    dot_b<u8> = 46
+    colon_b<u8> = 58
+
+    ok, o0, used = parse_dec_u32(b, i, len, 3)
+    if ok == 0 || o0 > 255 return io.OtherParse
+    i += used
+    if i >= len || b[i] != dot_b return io.OtherParse
+    i += 1
+
+    ok, o1, used = parse_dec_u32(b, i, len, 3)
+    if ok == 0 || o1 > 255 return io.OtherParse
+    i += used
+    if i >= len || b[i] != dot_b return io.OtherParse
+    i += 1
+
+    ok, o2, used = parse_dec_u32(b, i, len, 3)
+    if ok == 0 || o2 > 255 return io.OtherParse
+    i += used
+    if i >= len || b[i] != dot_b return io.OtherParse
+    i += 1
+
+    ok, o3, used = parse_dec_u32(b, i, len, 3)
+    if ok == 0 || o3 > 255 return io.OtherParse
+    i += used
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+
+    ok, port_u, used = parse_dec_u32(b, i, len, 5)
+    if ok == 0 || port_u > 65535 return io.OtherParse
+    i += used
+    if i != len return io.OtherParse
+
+    ip<Ipv4Addr> = Ipv4Addr::new(o0.(u8), o1.(u8), o2.(u8), o3.(u8))
+    v4<SocketAddrV4> = SocketAddrV4::new(ip, port_u.(u16))
+    LAST_PARSE_ADDR = socket_addr_from_v4(v4)
+    return io.Ok
+}
+
+fn parse_ascii_bytes(b<u8*>, len<i32>) i32 {
+    LAST_PARSE_ADDR = null
+    // Prefer closure-free dotted-quad path (avoids Parser fn-literal object-func).
+    serr<i32> = try_parse_simple_ipv4_socket(b, len)
+    if serr == io.Ok {
+        return io.Ok
+    }
+    return io.OtherParse
 }
 
 // Cross-package bridge: callers outside `net` take SocketAddr as u64 bits.
 fn parse_ascii_bytes_bits(b<u8*>, len<i32>) i32, u64 {
-    err<i32>, addr<SocketAddr> = parse_ascii_bytes(b, len)
+    err<i32> = parse_ascii_bytes(b, len)
+    if err != io.Ok {
+        return err, 0
+    }
+    addr<SocketAddr> = parse_addr_last()
     return err, addr.(u64)
 }
