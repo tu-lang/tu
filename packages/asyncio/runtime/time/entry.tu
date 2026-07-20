@@ -20,19 +20,20 @@ RESULT_OK<i32>          = 0
 RESULT_CANCELLED<i32>   = 1
 RESULT_FIRED<i32>       = 2
 
-// Atomic state + waker slot for one Sleep. waker is registered on first
-// poll and re-armed if the task is moved between threads.
+// Atomic deadline word + waker slot for one Sleep.
+// Mother: StateCell { state: AtomicU64, result, waker }.
+// Field is when_word (not `state`) to avoid asmgen `.state` traps.
 mem StateCell {
-    u64                 state    // atomic; deadline_ms or sentinel
-    i32                 result   // last delivered result code
+    u64                 when_word // atomic; deadline_ms or sentinel
+    i32                 result    // last delivered result code
     runtime.MutexInter* waker_lock
-    u64                 waker_bits   // AtomicWaker* bits
+    u64                 waker_bits // AtomicWaker* bits
 }
 
 // Build a StateCell owning a fresh AtomicWaker.
 const StateCell::new() StateCell {
     s<StateCell> = new StateCell
-    s.state  = STATE_DEREGISTERED
+    s.when_word = STATE_DEREGISTERED
     s.result = RESULT_OK
     s.waker_lock = new runtime.MutexInter
     s.waker_lock.init()
@@ -42,7 +43,7 @@ const StateCell::new() StateCell {
 
 // Atomic snapshot of the deadline word.
 StateCell::load_state() u64 {
-    return atomic.load64(&this.state)
+    return atomic.load64(&this.when_word)
 }
 
 // True when the cell is no longer scheduled (deregister won the race).
@@ -59,54 +60,50 @@ StateCell::is_pending_fire() i32 {
 
 // Mark the entry as ready to deliver. The wheel calls this just before
 // firing the waker. Returns 0 on success, RESULT_CANCELLED when state was
-// already DEREGISTERED.
+// already DEREGISTERED. Mother: StateCell::mark_pending.
 StateCell::mark_pending(not_after<u64>) i32 {
     loop {
-        cur<u64> = atomic.load64(&this.state)
+        cur<u64> = atomic.load64(&this.when_word)
         if cur == STATE_DEREGISTERED return RESULT_CANCELLED
         if cur == STATE_PENDING_FIRE return RESULT_OK
         if cur > not_after return RESULT_CANCELLED
-        if atomic.cas64(&this.state, cur.(i64), STATE_PENDING_FIRE.(i64)) != 0 {
+        if atomic.cas64(&this.when_word, cur.(i64), STATE_PENDING_FIRE.(i64)) != 0 {
             return RESULT_OK
         }
     }
     return RESULT_OK
 }
 
-// Set the deadline. Caller's responsibility to make sure the entry is in
-// the wheel for that deadline. Returns 0 on success, RESULT_CANCELLED if
-// the cell has been deregistered.
+// Mother: StateCell::set_expiration — store deadline under driver lock.
+// Fresh cells start at STATE_DEREGISTERED; store is enough (no CAS loop).
 StateCell::arm(deadline_ms<u64>) i32 {
     if deadline_ms >= MAX_SAFE_MILLIS return RESULT_CANCELLED
-    loop {
-        cur<u64> = atomic.load64(&this.state)
-        if cur == STATE_DEREGISTERED return RESULT_CANCELLED
-        if atomic.cas64(&this.state, cur.(i64), deadline_ms.(i64)) != 0 return RESULT_OK
-    }
+    old<u64> = atomic.load64(&this.when_word)
+    if old == STATE_PENDING_FIRE return RESULT_OK
+    atomic.store64(&this.when_word, old, deadline_ms)
     return RESULT_OK
 }
 
 // Permanently unwire the entry. Wheel callbacks become no-ops afterwards.
 StateCell::deregister(){
     loop {
-        cur<u64> = atomic.load64(&this.state)
+        cur<u64> = atomic.load64(&this.when_word)
         if cur == STATE_DEREGISTERED return
-        if atomic.cas64(&this.state, cur.(i64), STATE_DEREGISTERED.(i64)) != 0 return
+        if atomic.cas64(&this.when_word, cur.(i64), STATE_DEREGISTERED.(i64)) != 0 return
     }
 }
 
 // Poll the cell. Returns (RESULT_*, fired) where fired==1 means the wheel
-// already produced the result.
+// already produced the result. Mother: register waker then read state.
 StateCell::poll(ctx<u64>) (i32, i32) {
-    cur<u64> = atomic.load64(&this.state)
-    if cur == STATE_DEREGISTERED return RESULT_CANCELLED, 0
-    if cur == STATE_PENDING_FIRE  return RESULT_FIRED, 1
-
-    // Arm the waker under waker_lock so concurrent fire() observes a
-    // stable ctx slot. AtomicWaker handles wake/register races itself.
+    // Mother registers the waker first so a racing fire observes it.
     this.waker_lock.lock()
     libsync.atomic_waker_register_raw(this.waker_bits, ctx)
     this.waker_lock.unlock()
+
+    cur<u64> = atomic.load64(&this.when_word)
+    if cur == STATE_DEREGISTERED return RESULT_CANCELLED, 0
+    if cur == STATE_PENDING_FIRE  return RESULT_FIRED, 1
     return RESULT_OK, 0
 }
 
@@ -145,10 +142,23 @@ mem TimerEntry {
 const TimerEntry::new(deadline_ms<u64>) TimerEntry {
     e<TimerEntry> = new TimerEntry
     cell<StateCell> = StateCell::new()
+    // Arm the cell with the deadline (mother: set_expiration before insert).
+    cell.arm(deadline_ms)
     e.shared      = TimerShared::new(cell)
     e.deadline_ms = deadline_ms
     e.registered  = 0
     return e
+}
+
+// Cross-pkg factory: consumers must not call TimerEntry::new via pkg.Type::.
+fn timer_entry_new(deadline_ms<u64>) TimerEntry {
+    return TimerEntry::new(deadline_ms)
+}
+
+// Cross-pkg poll: entry held as u64 bits outside this package.
+fn timer_entry_poll_elapsed_bits(entry_bits<u64>, ctx<u64>) i32 {
+    e<TimerEntry> = entry_bits
+    return e.poll_elapsed(ctx)
 }
 
 // Mark deregistered so the wheel does not fire after Drop.

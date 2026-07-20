@@ -7,6 +7,7 @@ use io
 use fmt
 use sys
 use asyncio.task
+use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
 
 // asyncio.error.RuntimeShutdown
@@ -61,17 +62,22 @@ fn block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
     return err, val
 }
 
-// Mother: park the IO driver when local + inject are empty.
+// Mother: park via aggregate Driver (time-aware timeout + wheel process).
 fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
+    if shared.driver != 0 && shared.driver_handle != 0 {
+        rt.driver_park_bits(shared.driver, shared.driver_handle)
+        return
+    }
+    // Fallback: IO-only park when aggregate driver was not wired.
     iod<u64> = shared.iod_bits
     ioh<u64> = shared.ioh_bits
     if iod == 0 || ioh == 0 {
         runtime.osyield()
         return
     }
-    drv<rtio.IoDriver> = iod.(rtio.IoDriver)
+    iodrv<rtio.IoDriver> = iod.(rtio.IoDriver)
     ih<rtio.IoHandle> = ioh.(rtio.IoHandle)
-    drv.turn(ih, sys.MAX)
+    iodrv.turn(ih, sys.MAX)
 }
 
 // block_on the root future. Returns (err, value) once the root completes

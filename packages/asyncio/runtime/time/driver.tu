@@ -5,6 +5,7 @@ use runtime
 use sys
 use io
 use asyncio.runtime.io as rtio
+use asyncio.task as task
 
 // Driver-side state. wheel + clock are owned here; io_park is borrowed
 // from the runtime's IoDriver so park_internal can delegate.
@@ -46,6 +47,12 @@ const TimeDriver::new(io_park<rtio.IoDriver>) (TimeDriver, TimeHandle) {
     return drv, h
 }
 
+// Cross-pkg factory — callers must not write rttime.TimeDriver::new(...).
+fn time_driver_new(io_park<rtio.IoDriver>) (TimeDriver, TimeHandle) {
+    drv<TimeDriver>, h<TimeHandle> = TimeDriver::new(io_park)
+    return drv, h
+}
+
 // Compute the effective max-wait for the IO driver: min(limit, time to
 // next deadline). Called with the handle lock held by park_internal.
 fn compute_effective_ms(handle<TimeHandle>, limit_ms<u64>) u64 {
@@ -65,6 +72,7 @@ fn ms_to_duration(ms<u64>) sys.Duration {
 
 // Advance the wheel up to `now` and wake every fired timer. Wakes are
 // performed outside the wheel lock to avoid waker re-entry.
+// Mother: entry fire delivers AtomicWaker → task wake.
 TimeHandle::process(now_ms<u64>){
     this.lock.lock()
     this.wheel.poll(now_ms)
@@ -75,47 +83,72 @@ TimeHandle::process(now_ms<u64>){
     while cur != null {
         s<StateCell> = cur.state
         s.mark_pending(now_ms)
-        s.take_waker_ctx()
-        // ctx_packed of the AtomicWaker is consumed by take_waker_ctx; the
-        // caller layer will hand it to the scheduler once the runtime
-        // root lands. For now we merely flip state to PENDING_FIRE so a
-        // subsequent poll observes the result.
+        wake_ctx<u64> = s.take_waker_ctx()
+        if wake_ctx != 0 {
+            task.wake_by_ctx(wake_ctx)
+        }
         cur = pending.pop_front()
     }
 }
 
 // Park the IO driver up to `limit_ms`, but no longer than the next wheel
-// deadline. Returns whatever IoDriver::turn returned.
-TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>) i32 {
+// deadline. Mother: time driver computes timeout, then process() after turn.
+TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>) i32 {
     handle.lock.lock()
     eff_ms<u64> = compute_effective_ms(handle, limit_ms)
     handle.lock.unlock()
 
-    if this.io_park == null {
-        // No IO driver: nothing to park on; return immediately and let
-        // the scheduler run the next iteration.
+    if this.io_park == null || ioh == null {
+        // No IO park path: still advance the wheel, then yield briefly.
+        handle.process(handle.clock.now_ms())
+        runtime.osyield()
         return 0
     }
 
-    err<i32> = this.io_park.turn(this.io_park_handle_for(handle), ms_to_duration(eff_ms))
+    err<i32> = this.io_park.turn(ioh, ms_to_duration(eff_ms))
     handle.process(handle.clock.now_ms())
     return err
 }
 
-// Helper: surface whatever IoHandle the io_park driver is paired with.
-// First-pass returns null because the runtime root has not wired the
-// pair through yet; build_*_thread (Phase 10) will replace this.
-TimeDriver::io_park_handle_for(handle<TimeHandle>) rtio.IoHandle {
-    return null
-}
-
 // Schedule an entry. Returns INSERT_* from Wheel::insert.
+// Mother: InsertError::Elapsed → fire immediately (mark pending).
 TimeHandle::register(entry<TimerEntry>) i32 {
     this.lock.lock()
     err<i32>, deadline<u64> = this.wheel.insert(entry.shared, entry.deadline_ms)
-    if err == 0 entry.registered = 1
+    if err == INSERT_OK {
+        entry.registered = 1
+    } else if err == INSERT_ELAPSED {
+        // Mother: InsertError::Elapsed → entry.fire(Ok(())).
+        // mark_pending leaves PENDING_FIRE so poll_elapsed returns FIRED
+        // on this same Sleep::poll (waker optional — caller is polling now).
+        s<StateCell> = entry.shared.state
+        s.mark_pending(deadline)
+        entry.registered = 1
+    }
     this.lock.unlock()
     return err
+}
+
+// Cross-pkg register: handle + entry as u64 bits.
+fn time_handle_register_bits(handle_bits<u64>, entry_bits<u64>) i32 {
+    if handle_bits == 0 return -1
+    th<TimeHandle> = handle_bits
+    e<TimerEntry> = entry_bits
+    return th.register(e)
+}
+
+// Typed clock read used by the u64 bits bridge.
+fn time_handle_now_ms(th<TimeHandle>) u64 {
+    if th == null return 0
+    if th.clock == null return 0
+    return th.clock.now_ms()
+}
+
+// Cross-pkg clock read: foreign packages must not chain th.clock.now_ms().
+fn time_handle_now_ms_bits(handle_bits<u64>) u64 {
+    if handle_bits == 0 return 0
+    th<TimeHandle> = handle_bits
+    return time_handle_now_ms(th)
 }
 
 // Cancel an entry. Safe to call on un-registered entries.

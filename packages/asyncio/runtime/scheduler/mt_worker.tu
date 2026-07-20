@@ -6,6 +6,7 @@
 use runtime
 use io
 use asyncio.task
+use asyncio.util as util
 
 // Pack task pointer as future ctx (mother: waker data = Header*).
 fn mt_task_ctx(t<task.RawTask>) u64 {
@@ -28,7 +29,7 @@ fn mt_steal_work(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
     n<u32> = shared.num_workers
     if n <= 1 return io.NotFound, task.notified_from_raw(null)
 
-    start<u32> = core.rand.fastrand_n(n)
+    start<u32> = util.fastrand_n(core.rand, n)
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (start + i) % n
         if idx == w.worker_idx continue

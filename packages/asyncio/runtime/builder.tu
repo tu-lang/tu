@@ -126,7 +126,8 @@ fn build_drivers(b<Builder>) i32, DriverPair, i32 {
     }
 
     if b.time_enabled == 1 {
-        td<rttime.TimeDriver>, th<rttime.TimeHandle> = rttime.TimeDriver::new(io_drv)
+        // Package bridge — not rttime.TimeDriver::new (cross-pkg static call).
+        td<rttime.TimeDriver>, th<rttime.TimeHandle> = rttime.time_driver_new(io_drv)
         time_drv = td
         time_h   = th
     }
@@ -216,9 +217,17 @@ fn builder_build_rt(b<Builder>) Runtime {
 // Dummy arg keeps multi-return second value (same trap as netio.make_poll).
 fn builder_block_on(b<Builder>, fut_bits<u64>, _unused<i32>) i32, i64 {
     rt<Runtime> = builder_build_rt(b)
+    // Publish TimeHandle bits for asyncio.runtime.time.Sleep registration
+    // (Sleep lives in the time subpackage and cannot import this package).
+    publish_sleep_time_handle(rt)
     err<i32>, val<i64> = rt.block_on_bits(fut_bits)
     rt.shutdown_background()
     return err, val
+}
+
+// Push the runtime's TimeHandle bits into the time Sleep registrar.
+fn publish_sleep_time_handle(rtv<Runtime>) {
+    rttime.sleep_set_handle_bits(runtime_sleep_time_bits(rtv))
 }
 
 // Member sugar matching mother Builder::build — returns Runtime only for

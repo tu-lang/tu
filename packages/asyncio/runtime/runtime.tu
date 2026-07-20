@@ -50,6 +50,14 @@ fn runtime_from_bits(bits<u64>) Runtime {
     return bits.(Runtime)
 }
 
+// TimeHandle bits for Sleep registration (package fn avoids member-call traps).
+fn runtime_sleep_time_bits(rtv<Runtime>) u64 {
+    if rtv == null return 0
+    hdl<DriverHandle> = rtv.driver_handle
+    if hdl == null return 0
+    return hdl.time_bits()
+}
+
 fn runtime_to_bits(r<Runtime>) u64 {
     return r.(u64)
 }

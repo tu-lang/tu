@@ -61,6 +61,21 @@ DriverHandle::ioh_bits() u64 {
     return bits
 }
 
+// Raw TimeHandle* bits for asyncio.time Sleep (foreign pkgs must not
+// read DriverHandle.time_handle — cross-pkg field type crashes).
+DriverHandle::time_bits() u64 {
+    if this.time_handle == null return 0
+    bits<u64> = 0
+    bits = this.time_handle
+    return bits
+}
+
+// Package bridge for foreign packages.
+fn driver_handle_time_bits(dh<DriverHandle>) u64 {
+    if dh == null return 0
+    return dh.time_bits()
+}
+
 // Park indefinitely. Time-aware: if the wheel has a near deadline we
 // park up to that; otherwise we park "forever" (as far as the IO
 // driver is concerned, that's poll(events, -1)).
@@ -68,12 +83,20 @@ Driver::park(handle<DriverHandle>) i32 {
     return this.park_timeout(handle, sys.MAX)
 }
 
+// Cross-pkg park via u64 slots (scheduler cannot annotate Driver*).
+fn driver_park_bits(drv_bits<u64>, handle_bits<u64>) i32 {
+    if drv_bits == 0 || handle_bits == 0 return -1
+    drv<Driver> = drv_bits
+    h<DriverHandle> = handle_bits
+    return drv.park(h)
+}
+
 // Park for at most d. Time wheel narrows the wait if its next deadline
 // is closer; IoDriver::turn handles signal events via TOKEN_SIGNAL.
 Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
     if this.time_drv != null && handle.time_handle != null {
         ms<u64> = d.as_millis()
-        return this.time_drv.park_internal(handle.time_handle, ms)
+        return this.time_drv.park_internal(handle.time_handle, ms, handle.ihandle)
     }
     if this.io_drv != null && handle.ihandle != null {
         return this.io_drv.turn(handle.ihandle, d)
