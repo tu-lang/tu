@@ -4,14 +4,14 @@ use netio.sys as nsys
 use string
 use net
 use sys as libsys
-use netio.sys.uds as uds
+use netio.sys.uds as sysuds
 
 mem UnixListener {
 	u64 iosrc_bits
 }
 
 const UnixListener::bind(path<string.String>) i32, UnixListener {
-	err<i32>, listener<net.UnixListener> = uds.bind(path)
+	err<i32>, listener<net.UnixListener> = sysuds.bind(path)
 	if err != Ok
 		return err, null
 	return Ok, UnixListener::from_std(listener)
@@ -28,9 +28,9 @@ UnixListener::std_listener() net.UnixListener {
 	return bits.(net.UnixListener)
 }
 
-UnixListener::accept() i32, UnixStream, uds.SocketAddr {
+UnixListener::accept() i32, UnixStream, sysuds.SocketAddr {
 	std_l<net.UnixListener> = this.std_listener()
-	err<i32>, std_stream<net.UnixStream>, addr<uds.SocketAddr> = uds.accept(std_l)
+	err<i32>, std_stream<net.UnixStream>, addr<sysuds.SocketAddr> = sysuds.accept(std_l)
 	if err != Ok
 		return err, null, null
 	return Ok, UnixStream::from_std(std_stream), addr
