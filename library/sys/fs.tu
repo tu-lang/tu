@@ -68,6 +68,4 @@ impl io.Write for File {
     }
 }
 
-fn unlink(p<string.String>) i32 {
-    return Ok
-}
+// Path unlink lives in sys.tu as fn unlink(path<i8*>) → sys_unlink asm.

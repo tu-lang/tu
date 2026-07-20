@@ -31,6 +31,35 @@ fn cstr(s<String>) i8* {
 	return s.str()
 }
 
+// Cross-package path bridge: string_to_bits copies the cstr into an owned
+// GC buffer. path_bits must not hold a raw String* (u64 slots are not traced).
+fn cstr_from_bits(bits<u64>) i8* {
+	p<i8*> = bits
+	return p
+}
+
+fn string_to_bits(s<String>) u64 {
+	src<i8*> = s.inner
+	if src == null {
+		empty<i8*> = new 1
+		*empty = 0
+		return empty.(u64)
+	}
+	n_u<u64> = std.strlen(src)
+	n_i<i32> = n_u.(i32)
+	alloc_n<i32> = n_i + 1
+	dst<i8*> = new alloc_n
+	std.memcpy(dst, src, n_u)
+	end<i8*> = dst + n_i
+	*end = 0
+	return dst.(u64)
+}
+
+fn string_from_bits(bits<u64>) String {
+	p<i8*> = bits
+	return S(p)
+}
+
 String::hash64(){
 	return this.inner.(Str).hash64()
 }

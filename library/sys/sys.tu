@@ -93,15 +93,31 @@ fn fcntl(fd<i32>, cmd<i32>, arg<i32>) (i32)
 // read 0 / write 1 / close 3
 fn read(fd<i32>, buff<u8*>, len<u64>) (i64)
 fn write(fd<i32>, buff<u8*>, len<u64>) (i64)
-fn close(fd<i32>)
+fn close(fd<i32>) (i32)
 // socketpair 53
 fn socketpair(domain<i32>, ty<i32>, protocol<i32>, sv<i32*>) (i32)
 // epoll_* — used by netio; keep under sys so symbols are sys_epoll_*
 fn epoll_create1(flags<i32>) (i32)
 fn epoll_ctl(epfd<i32>, op<i32>, fd<i32>, event<u64>) (i32)
 fn epoll_wait(epfd<i32>, events<u64>, maxevents<i32>, timeout_ms<i32>) (i32)
-// path helpers used by asyncio.fs
+// path helpers used by asyncio.fs (mother: libc / tustd sys::fs)
 fn readlink(path<i8*>, buf<i8*>, bufsiz<u64>) (i64)
 fn rename(oldpath<i8*>, newpath<i8*>) (i32)
 fn link(oldpath<i8*>, newpath<i8*>) (i32)
 fn symlink(target<i8*>, linkpath<i8*>) (i32)
+// openat 257 / mkdir 83 / rmdir 84 / unlink 87 / chmod 90
+fn openat(dirfd<i32>, path<i8*>, flags<i64>, mode<i64>) (i32)
+fn mkdir(path<i8*>, mode<i64>) (i32)
+fn rmdir(path<i8*>) (i32)
+fn unlink(path<i8*>) (i32)
+fn chmod(path<i8*>, mode<i64>) (i32)
+// stat 4 / fstat 5 / lstat 6 (same numbers as std_*)
+fn stat(path<i8*>, statbuf<u64>) (i32)
+fn fstat(fd<i32>, statbuf<u64>) (i32)
+fn lstat(path<i8*>, statbuf<u64>) (i32)
+// lseek 8 / fsync 74 / fdatasync 75 / ftruncate 77 / getdents64 217
+fn lseek(fd<i32>, offset<i64>, whence<i64>) (i64)
+fn fsync(fd<i32>) (i32)
+fn fdatasync(fd<i32>) (i32)
+fn ftruncate(fd<i32>, length<i64>) (i32)
+fn getdents64(fd<i32>, dirp<u8*>, count<u64>) (i64)

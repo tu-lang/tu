@@ -56,10 +56,32 @@ func test_nativeop(){
     }
     fmt.println("test string native memory operate success")
 }
+
+// string_to_bits / string_from_bits / cstr_from_bits (library formal bridges).
+fn test_string_bits_bridge(){
+    fmt.println("test string bits bridge")
+    src<string.String> = string.S(*"tu-lib-bits")
+    path_bits<u64> = string.string_to_bits(src)
+    if path_bits == 0 os.die("string_to_bits returned 0")
+    cpath<i8*> = string.cstr_from_bits(path_bits)
+    if cpath == null os.die("cstr_from_bits null")
+    // Compare via string.new(cstr) — same pattern as native string tests.
+    if string.new(cpath) != "tu-lib-bits" os.die("cstr_from_bits content mismatch")
+    back<string.String> = string.string_from_bits(path_bits)
+    if string.new(back.str()) != "tu-lib-bits" os.die("string_from_bits roundtrip mismatch")
+    empty_s<string.String> = string.S(*"")
+    empty_bits<u64> = string.string_to_bits(empty_s)
+    empty_p<i8*> = string.cstr_from_bits(empty_bits)
+    if empty_p == null os.die("empty cstr null")
+    if *empty_p != 0 os.die("empty cstr not NUL")
+    fmt.println("test string bits bridge success")
+}
+
 //native memory operte
 func main(){
     test_string()
     test_string_int(99,"test")
     test_index()
     test_nativeop()
+    test_string_bits_bridge()
 }

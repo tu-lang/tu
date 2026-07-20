@@ -161,6 +161,34 @@ fn buf_to_bits(b<Buf>) u64 {
     return b.(u64)
 }
 
+// Cross-package field bridges (mem fields of Buf are not visible outside io).
+fn buf_len(b<Buf>) u64 {
+    return b.byte_len
+}
+
+fn buf_ptr(b<Buf>) i8* {
+    return b.data_ptr
+}
+
+fn buf_memcpy_in(b<Buf>, src<i8*>, n<u64>) {
+    std.memcpy(b.data_ptr, src, n)
+}
+
+// Borrowed sub-slice of b starting at off for len bytes.
+fn buf_slice(b<Buf>, off<u64>, len<u64>) Buf {
+    return new Buf {
+        data_ptr: b.data_ptr + off,
+        byte_len: len
+    }
+}
+
+fn buf_with_len(b<Buf>, len<u64>) Buf {
+    return new Buf {
+        data_ptr: b.data_ptr,
+        byte_len: len
+    }
+}
+
 mem BufferCursor {
     Buffer* owner
     u64     start

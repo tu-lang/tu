@@ -173,3 +173,84 @@ sys_symlink:
 	mov $88, %rax
 	syscall
 	retq
+
+# openat(dirfd, path, flags, mode) — 4th arg via r10
+.global sys_openat
+sys_openat:
+	mov %rcx, %r10
+	mov $257, %rax
+	syscall
+	retq
+
+.global sys_mkdir
+sys_mkdir:
+	mov $83, %rax
+	syscall
+	retq
+
+.global sys_rmdir
+sys_rmdir:
+	mov $84, %rax
+	syscall
+	retq
+
+.global sys_unlink
+sys_unlink:
+	mov $87, %rax
+	syscall
+	retq
+
+.global sys_chmod
+sys_chmod:
+	mov $90, %rax
+	syscall
+	retq
+
+.global sys_stat
+sys_stat:
+	mov $4, %rax
+	syscall
+	retq
+
+.global sys_fstat
+sys_fstat:
+	mov $5, %rax
+	syscall
+	retq
+
+.global sys_lstat
+sys_lstat:
+	mov $6, %rax
+	syscall
+	retq
+
+.global sys_lseek
+sys_lseek:
+	mov $8, %rax
+	syscall
+	retq
+
+.global sys_fsync
+sys_fsync:
+	mov $74, %rax
+	syscall
+	retq
+
+.global sys_fdatasync
+sys_fdatasync:
+	mov $75, %rax
+	syscall
+	retq
+
+.global sys_ftruncate
+sys_ftruncate:
+	mov $77, %rax
+	syscall
+	retq
+
+# getdents64(fd, dirp, count)
+.global sys_getdents64
+sys_getdents64:
+	mov $217, %rax
+	syscall
+	retq
