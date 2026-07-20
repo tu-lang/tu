@@ -24,3 +24,8 @@ SocketAddr::as_pathname() string.String {
 		return ""
 	return string.new(this.sockaddr.sun_path)
 }
+
+fn socket_addr_pathname(addr) string.String {
+	a<SocketAddr> = addr
+	return a.as_pathname()
+}

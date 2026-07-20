@@ -22,5 +22,6 @@ fn connect(path<string.String>) i32, net.UnixStream {
 }
 
 fn pair() i32, net.UnixStream, net.UnixStream {
-	return pair(sys.SOCK_STREAM)
+	err<i32>, left<net.UnixStream>, right<net.UnixStream> = socket_pair(sys.SOCK_STREAM)
+	return err, left, right
 }
