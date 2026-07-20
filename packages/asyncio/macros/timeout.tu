@@ -1,30 +1,58 @@
-// Library-function form of tokio::time::timeout, built on select2 + sleep.
-// Races `fut` against a sleep of `d`; if the sleep wins, the operation timed
-// out (aerr.Elapsed), otherwise `fut`'s value is returned.
+// timeout / timeout_at. Mother: tokio::time::timeout — poll value first,
+// then the Sleep delay; delay Ready yields Elapsed.
 //
-// Design note (§14.8): time.timeout was deferred until select2 existed; it now
-// lives here and time.timeout can re-export this.
+// Returns (err, value): err==io.Ok with value on success; err==TIMEOUT_ELAPSED
+// when the delay fires first.
 
 use runtime
 use io
 use sys
 use asyncio.time as atime
 use asyncio.runtime.time as rttime
-use asyncio.error as aerr
 
-// Run `fut`, cancelling it after `d`. Returns (io.Ok, value) when `fut`
-// resolves first, or (aerr.Elapsed, 0) when the timer fires first.
-async timeout(d<sys.Duration>, fut<runtime.Future>) i32, i64 {
-    sleepfut<runtime.Future> = atime.sleep(d)
-    which<i32>, val<i64> = select2(fut, sleepfut).await
-    if which == SELECT_SECOND_READY return aerr.Elapsed, 0
-    return io.Ok, val
+// Mother / asyncio.error.Elapsed.
+TIMEOUT_ELAPSED<i32> = 0x03020004
+
+mem Timeout: async {
+    runtime.Future* value
+    runtime.Future* delay
 }
 
-// Absolute-deadline variant: cancel `fut` once `when` passes.
-async timeout_at(when<rttime.Instant>, fut<runtime.Future>) i32, i64 {
-    sleepfut<runtime.Future> = atime.sleep_until(when)
-    which<i32>, val<i64> = select2(fut, sleepfut).await
-    if which == SELECT_SECOND_READY return aerr.Elapsed, 0
-    return io.Ok, val
+// Mother: Timeout::poll — value first, then delay.
+Timeout::poll(ctx){
+    packed<u64> = ctx.(u64)
+    ready_i<i64> = 0
+    val_i<i64> = 0
+    ready_i, val_i = poll_child(this.value, packed)
+    if ready_i == runtime.PollReady {
+        ok_code<i32> = io.Ok
+        return runtime.PollReady, ok_code, val_i
+    }
+    if ready_i == runtime.PollError {
+        return runtime.PollError, 0, 0
+    }
+
+    d_ready<i64> = 0
+    d_val<i64> = 0
+    d_ready, d_val = poll_child(this.delay, packed)
+    if d_ready == runtime.PollReady {
+        code_e<i32> = TIMEOUT_ELAPSED
+        return runtime.PollReady, code_e, 0
+    }
+    if d_ready == runtime.PollError {
+        return runtime.PollError, 0, 0
+    }
+    return runtime.PollPending
+}
+
+// Mother: time::timeout(duration, future).
+fn timeout(d<sys.Duration>, fut<runtime.Future>) Timeout {
+    delay_f<runtime.Future> = atime.sleep(d)
+    return new Timeout { value: fut, delay: delay_f }
+}
+
+// Mother: time::timeout_at(deadline, future).
+fn timeout_at(when<rttime.Instant>, fut<runtime.Future>) Timeout {
+    delay_f<runtime.Future> = atime.sleep_until(when)
+    return new Timeout { value: fut, delay: delay_f }
 }

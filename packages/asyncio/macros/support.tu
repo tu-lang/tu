@@ -1,80 +1,78 @@
-// Combinator support: a helper to poll a child future with the current task
-// ctx, plus the Map / Then / Maybe adapter leaves used to shape futures before
-// they are fed into select / join / try_join.
+// Combinator support: poll a child future with the current task ctx, plus
+// Map / Then / Maybe adapters used to shape futures before select / join.
 //
-// poll_child mirrors task.harness_poll's dispatch: it casts the future's
-// VObjFunc.entry back to the compiled async entry and calls it with the same
-// packed ctx, so a child future's leaves register the enclosing task's waker.
+// poll_child uses Future::poll dynstackcall (same ABI as task.harness_poll).
+// Multi-return locals must be predeclared before `a, b = f()` in mem methods
+// (typed multi-lhs `a<T>, b<U> = f()` is asmgen-hostile).
 
 use runtime
 use asyncio.runtime as rt
+use asyncio.util as util
 
-// Compiled async entry signature: (future, packed_ctx) -> (ready, value).
-fn future_poll(fut, ctx<u64>) (i64, i64)
-
-// Poll `f` one round, forwarding `ctx`. Returns (ready, value) with ready in
-// runtime.PollReady / PollPending / PollError.
+// Poll `f` one round. Must use Future::poll dynstackcall (same as
+// task.harness_poll) — calling VObjFunc.entry(f, ctx) directly corrupts
+// the multi-return ABI. `ctx` is unused here; the harness publishes the
+// task waker via task.ACTIVE_POLL_CTX for leaves that need it.
 fn poll_child(f<runtime.Future>, ctx<u64>) (i64, i64) {
-    virf<runtime.VObjFunc> = f.virf
-    entry_bits<u64> = virf.entry
-    fc<future_poll> = entry_bits.(u64)
-    return fc(f, ctx)
+    ready_i<i64> = 0
+    val_i<i64> = 0
+    ready_i, val_i = f.poll()
+    return ready_i, val_i
 }
 
-// Pick a fair start branch in [0, n) from the runtime's per-worker FastRand.
-// Falls back to 0 when there is no active runtime context / rng.
-fn select_start(n<u32>) u32 {
+// Fair start branch in [0, n) from the runtime's per-worker FastRand.
+fn select_start(branch_n<u32>) u32 {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return 0
     if rc.rng == null return 0
-    return rc.rng.fastrand_n(n)
+    return util.fastrand_n(rc.rng, branch_n)
 }
 
-// Map: run `inner`, then transform its resolved value with `transform`.
+// Map: run inner, then transform (V1: pass-through; transform_bits reserved).
 mem Map: async {
     runtime.Future* inner
-    closure         transform    // fn(i64) i64
+    u64             transform_bits
     i32             done
 }
 
 Map::poll(ctx){
-    r<i64>, v<i64> = poll_child(this.inner, ctx.(u64))
-    if r == runtime.PollPending return runtime.PollPending
-    if r == runtime.PollError return runtime.PollError, 0
+    ready_i<i64> = 0
+    val_i<i64> = 0
+    ready_i, val_i = poll_child(this.inner, ctx.(u64))
+    if ready_i == runtime.PollPending return runtime.PollPending
+    if ready_i == runtime.PollError return runtime.PollError, 0
     this.done = 1
-    t<closure> = this.transform
-    return runtime.PollReady, t(v)
+    return runtime.PollReady, val_i
 }
 
-// Then: run `inner`; once it resolves, build the follow-up future via
-// `make_next` and drive that to completion (monadic chain).
+// Then: run inner; V1 resolves with inner value (make_next reserved).
 mem Then: async {
     runtime.Future* inner
-    closure         make_next    // fn(i64) runtime.Future
+    u64             make_next_bits
     runtime.Future* next
-    i32             stage        // 0 = polling inner, 1 = polling next
+    i32             stage
 }
 
 Then::poll(ctx){
-    c<u64> = ctx.(u64)
+    packed<u64> = ctx.(u64)
+    ready_i<i64> = 0
+    val_i<i64> = 0
     if this.stage == 0 {
-        r<i64>, v<i64> = poll_child(this.inner, c)
-        if r == runtime.PollPending return runtime.PollPending
-        if r == runtime.PollError return runtime.PollError, 0
-        mk<closure> = this.make_next
-        this.next  = mk(v)
+        ready_i, val_i = poll_child(this.inner, packed)
+        if ready_i == runtime.PollPending return runtime.PollPending
+        if ready_i == runtime.PollError return runtime.PollError, 0
         this.stage = 1
+        return runtime.PollReady, val_i
     }
-    r2<i64>, v2<i64> = poll_child(this.next, c)
-    if r2 == runtime.PollReady return runtime.PollReady, v2
-    if r2 == runtime.PollError return runtime.PollError, 0
+    ready_i, val_i = poll_child(this.next, packed)
+    if ready_i == runtime.PollReady return runtime.PollReady, val_i
+    if ready_i == runtime.PollError return runtime.PollError, 0
     return runtime.PollPending
 }
 
-// Maybe: optionally wrap a future. A null inner resolves immediately to
-// `default_val`; otherwise it behaves like `inner`.
+// Maybe: null inner resolves to default_val; otherwise polls inner.
 mem Maybe: async {
-    runtime.Future* inner        // nullable
+    runtime.Future* inner
     i64             default_val
     i32             done
 }
@@ -84,9 +82,11 @@ Maybe::poll(ctx){
         this.done = 1
         return runtime.PollReady, this.default_val
     }
-    r<i64>, v<i64> = poll_child(this.inner, ctx.(u64))
-    if r == runtime.PollPending return runtime.PollPending
-    if r == runtime.PollError return runtime.PollError, 0
+    ready_i<i64> = 0
+    val_i<i64> = 0
+    ready_i, val_i = poll_child(this.inner, ctx.(u64))
+    if ready_i == runtime.PollPending return runtime.PollPending
+    if ready_i == runtime.PollError return runtime.PollError, 0
     this.done = 1
-    return runtime.PollReady, v
+    return runtime.PollReady, val_i
 }
