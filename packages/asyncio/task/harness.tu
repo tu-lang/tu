@@ -16,6 +16,10 @@ fn resolve_poll_ctx(ctx<u64>) u64 {
     return ctx
 }
 
+fn active_poll_ctx() u64 {
+    return ACTIVE_POLL_CTX
+}
+
 // Signature aliases used to cast the u64 vtable slots back to callables.
 fn vtable_poll(rtask<RawTask>, ctx<u64>)
 fn vtable_dealloc(rtask<RawTask>)

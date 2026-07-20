@@ -5,16 +5,14 @@
 // SignalDriver::process bumps once per delivered siginfo); the stream tracks
 // last_seen against fired_count and parks on the Notify between deliveries.
 //
-// Design note (task 18.2): the spec models SignalStream over a
-// sync.broadcast.Receiver, but the registry exposes EventInfo, so the stream
-// is built on that instead. `class` -> `mem` per library-static-only.
+// Call-site naming: never export `signal*` as the first path segment after
+// `sig.` — `sig.signal_…` parses as a type-assert and corrupts async frames.
 
 use runtime
 use io
 use os
 use asyncio.runtime as rt
 use asyncio.runtime.signal as rtsig
-use asyncio.error as aerr
 use asyncio.sync
 
 // A Unix signal number (tokio::signal::unix::SignalKind).
@@ -32,96 +30,139 @@ SignalKind::as_raw_value() i32 {
     return this.num
 }
 
-// Named constructors for the signals tokio exposes on Unix.
-fn SignalKind_hangup() SignalKind {
+// Named constructors (no `signal*` prefix — avoids sig.signal_* assert trap).
+fn kind_hangup() SignalKind {
     return new SignalKind { num: os.SIGHUP }
 }
-fn SignalKind_interrupt() SignalKind {
+fn kind_interrupt() SignalKind {
     return new SignalKind { num: os.SIGINT }
 }
-fn SignalKind_quit() SignalKind {
+fn kind_quit() SignalKind {
     return new SignalKind { num: os.SIGQUIT }
 }
-fn SignalKind_terminate() SignalKind {
+fn kind_terminate() SignalKind {
     return new SignalKind { num: os.SIGTERM }
 }
-fn SignalKind_user_defined1() SignalKind {
+fn kind_user_defined1() SignalKind {
     return new SignalKind { num: os.SIGUSR1 }
 }
-fn SignalKind_user_defined2() SignalKind {
+fn kind_user_defined2() SignalKind {
     return new SignalKind { num: os.SIGUSR2 }
 }
-fn SignalKind_pipe() SignalKind {
+fn kind_pipe() SignalKind {
     return new SignalKind { num: os.SIGPIPE }
 }
-fn SignalKind_alarm() SignalKind {
+fn kind_alarm() SignalKind {
     return new SignalKind { num: os.SIGALRM }
 }
-fn SignalKind_child() SignalKind {
+fn kind_child() SignalKind {
     return new SignalKind { num: os.SIGCHLD }
 }
-fn SignalKind_window_change() SignalKind {
+fn kind_window_change() SignalKind {
     return new SignalKind { num: os.SIGWINCH }
 }
-fn SignalKind_io_event() SignalKind {
+fn kind_io_event() SignalKind {
     return new SignalKind { num: os.SIGIO }
 }
 
 // A stream of delivered `kind` signals. last_seen is the EventInfo fired_count
 // observed so far; recv resolves once the count advances past it.
+// ev_bits: EventInfo* as u64 (cross-pkg mem field type crashes).
 mem SignalStream {
-    rtsig.EventInfo* ev
-    SignalKind       kind
-    u64              last_seen
+    u64        ev_bits
+    SignalKind kind
+    u64        last_seen
 }
 
-// Subscribe to `kind` on the current runtime's signal driver. Returns
-// (io.Ok, stream) or (err, null): RuntimeShutdown when no signal driver is
-// active, or the driver register error (SignalNotRegistered / signalfd fail).
-// last_seen starts at the current count so only signals delivered after this
-// call are surfaced.
-async signal(kind<SignalKind>) i32, SignalStream {
+// Mother: tokio::signal::unix::signal — sync Result<Signal>, not async.
+// Publishes via stream_last — dual-ret (i32, SignalStream) drops mem.
+LAST_SIGNAL_STREAM<SignalStream> = null
+
+fn stream_last() SignalStream {
+    return LAST_SIGNAL_STREAM
+}
+
+// Mother: unix::signal(kind).
+fn subscribe(kind<SignalKind>) i32 {
+    LAST_SIGNAL_STREAM = null
+    shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
+    not_reg<i32>  = 0x0302000F // aerr.SignalNotRegistered
+    ok_code<i32>  = io.Ok
+
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return aerr.RuntimeShutdown, null
+    if rc == null return shut_err
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
-    if dh == null || dh.signal_handle == null return aerr.RuntimeShutdown, null
+    if dh == null return shut_err
+    sh_bits<u64> = dh.sigh_bits()
+    if sh_bits == 0 return shut_err
 
-    sh<rtsig.SignalDriverHandle> = dh.signal_handle
-    rerr<i32>, ev<rtsig.EventInfo> = sh.register(kind.num)
-    if rerr != 0 return rerr, null
-    if ev == null return aerr.SignalNotRegistered, null
+    sh<rtsig.SignalDriverHandle> = null
+    sh = sh_bits
+    signum<i32> = kind.as_raw_value()
+    rerr<i32> = sh.register(signum)
+    if rerr != 0 return rerr
+    ev<rtsig.EventInfo> = rtsig.eventinfo_last()
+    if ev == null return not_reg
 
+    ev_bits<u64> = 0
+    ev_bits = ev
     s<SignalStream> = new SignalStream
-    s.ev        = ev
+    s.ev_bits   = ev_bits
     s.kind      = kind
-    s.last_seen = ev.fired_count_snapshot()
-    return io.Ok, s
+    s.last_seen = rtsig.event_info_fired_count(ev_bits)
+    LAST_SIGNAL_STREAM = s
+    return ok_code
 }
 
-// Non-blocking poll: returns true and consumes one delivery if a signal has
-// fired since last_seen, else false. Useful to assert a signal did NOT arrive.
-SignalStream::try_recv() bool {
-    cur<u64> = this.ev.fired_count_snapshot()
+// Non-blocking poll: 1 and consume one delivery if a signal has fired since
+// last_seen, else 0. Mother: Signal ready/pending as Tu i32.
+SignalStream::try_recv() i32 {
+    cur<u64> = rtsig.event_info_fired_count(this.ev_bits)
     if cur > this.last_seen {
         this.last_seen = cur
-        return true
+        return 1
     }
-    return false
+    return 0
 }
 
-// Await the next delivered signal. Returns io.Ok once fired_count advances.
-// V1 note: a fire landing in the narrow window between the count check and
-// parking on Notify can be missed; the signal-driver integration is WIP.
-async SignalStream::recv() i32 {
-    loop {
-        cur<u64> = this.ev.fired_count_snapshot()
-        if cur > this.last_seen {
-            this.last_seen = cur
-            return io.Ok
-        }
-        fut<Notified> = notified_from_bits(this.ev.notify_bits)
-        code<i32> = fut.await
-        if code != 0 return code
+// Leaf future for SignalStream::recv (mother: Signal::recv / poll_recv).
+mem RecvFut: async {
+    SignalStream* stream
+    u64           pending_nf
+}
+
+// Mother: poll_recv — check fired_count, else park on EventInfo Notify.
+RecvFut::poll(ctx) {
+    s<SignalStream> = this.stream
+    ev_bits<u64> = s.ev_bits
+    cur<u64> = rtsig.event_info_fired_count(ev_bits)
+    if cur > s.last_seen {
+        s.last_seen = cur
+        return runtime.PollReady, io.Ok
     }
-    return io.Ok
+    if this.pending_nf == 0 {
+        nbits<u64> = rtsig.event_info_notify_bits(ev_bits)
+        nf<sync.Notified> = sync.notified_from_bits(nbits)
+        this.pending_nf = nf.(u64)
+    }
+    nfy<sync.Notified> = this.pending_nf
+    ready_i<i64>, _out<i64> = nfy.poll(ctx)
+    if ready_i == runtime.PollReady {
+        this.pending_nf = 0
+        cur2<u64> = rtsig.event_info_fired_count(ev_bits)
+        if cur2 > s.last_seen {
+            s.last_seen = cur2
+            return runtime.PollReady, io.Ok
+        }
+        return runtime.PollPending
+    }
+    return runtime.PollPending
+}
+
+// Mother: Signal::recv — return RecvFut leaf for caller await.
+SignalStream::recv() RecvFut {
+    return new RecvFut {
+        stream: this,
+        pending_nf: 0
+    }
 }

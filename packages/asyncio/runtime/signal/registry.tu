@@ -29,7 +29,7 @@ const EventInfo::new(signum<i32>) EventInfo {
 // Process-global registry. events[i] is null until something registers
 // for signum i; use signal_globals_get_or_init to grab the singleton.
 mem SignalGlobals {
-    i32         signal_fd     // signalfd descriptor; <0 = uninitialised
+    i32         sfd     // signalfd descriptor; <0 = uninitialised
     u64*        events        // raw bits of EventInfo*; sized NUM_SIGNALS slots
 }
 
@@ -42,7 +42,7 @@ fn signal_globals_get_or_init() (i32, SignalGlobals) {
     if G_SIGNAL_GLOBALS != null return 0, G_SIGNAL_GLOBALS
 
     g<SignalGlobals> = new SignalGlobals
-    g.signal_fd = -1
+    g.sfd = -1
     g.events    = std.malloc(sizeof(u64) * NUM_SIGNALS.(u64))
     for i<i32> = 0 ; i < NUM_SIGNALS ; i += 1 {
         g.events[i] = 0
@@ -62,9 +62,34 @@ fn signal_globals_event(g<SignalGlobals>, signum<i32>) EventInfo {
     return e
 }
 
+// Snapshot signalfd descriptor for package-level callers.
+fn globals_sfd(g<SignalGlobals>) i32 {
+    if g == null return -1
+    return g.sfd
+}
+
+SignalGlobals::fd_num() i32 {
+    return this.sfd
+}
+
 // Snapshot fired_count without taking the Notify lock.
 EventInfo::fired_count_snapshot() u64 {
     return this.fired_count
+}
+
+// Cross-pkg bridges — asyncio.signal passes EventInfo* as u64.
+fn event_info_fired_count(ev_bits<u64>) u64 {
+    if ev_bits == 0 return 0
+    ev<EventInfo> = null
+    ev = ev_bits
+    return ev.fired_count_snapshot()
+}
+
+fn event_info_notify_bits(ev_bits<u64>) u64 {
+    if ev_bits == 0 return 0
+    ev<EventInfo> = null
+    ev = ev_bits
+    return ev.notify_bits
 }
 
 // Increment fired_count and wake every waiter currently parked on notify.

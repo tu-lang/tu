@@ -113,12 +113,16 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
         }
 
         core_obj.tick = core_obj.tick + 1
+        // Skip Inject::pop when empty: empty (NotFound, Notified) multi-ret
+        // hangs / corrupts the dyn return ABI (layout). Mother Option::None.
         if (core_obj.tick % core_obj.global_queue_interval) == 0 {
-            ierr<i32>, ti<task.Notified> = shared.inject.pop()
-            if ierr == 0 {
-            raw_i<task.RawTask> = ti.raw()
-            core_run_task(raw_i, handle)
-                continue
+            if shared.inject.is_empty() == 0 {
+                ierr<i32>, ti<task.Notified> = shared.inject.pop()
+                if ierr == 0 {
+                    raw_i<task.RawTask> = ti.raw()
+                    core_run_task(raw_i, handle)
+                    continue
+                }
             }
         }
 
@@ -128,11 +132,13 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             continue
         }
 
-        ierr<i32>, ti<task.Notified> = shared.inject.pop()
-        if ierr == 0 {
-            raw_j<task.RawTask> = ti.raw()
-            core_run_task(raw_j, handle)
-            continue
+        if shared.inject.is_empty() == 0 {
+            ierr<i32>, ti<task.Notified> = shared.inject.pop()
+            if ierr == 0 {
+                raw_j<task.RawTask> = ti.raw()
+                core_run_task(raw_j, handle)
+                continue
+            }
         }
 
         if shared.inject.is_closed() {

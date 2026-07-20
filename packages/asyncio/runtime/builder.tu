@@ -117,19 +117,26 @@ fn build_drivers(b<Builder>) i32, DriverPair, i32 {
         if io_drv == null || io_h == null return 1, null, 0
 
         // Signal driver lives on top of the IO driver (mother: runtime signal).
-        serr<i32>, sd<rtsig.SignalDriver>, sh<rtsig.SignalDriverHandle> = rtsig.SignalDriver::new(io_h.(u64))
+        // Use last() getters — SignalDriver::new triple-ret drops the handle.
+        iod_bits<u64> = 0
+        ioh_bits<u64> = 0
+        iod_bits = io_drv
+        ioh_bits = io_h
+        serr<i32> = rtsig.SignalDriver::new(iod_bits, ioh_bits)
         if serr == 0 {
-            sig_drv = sd
-            sig_h   = sh
+            sig_drv = rtsig.signaldriver_last()
+            sig_h   = rtsig.signalhandle_last()
         }
     } else {
     }
 
     if b.time_enabled == 1 {
-        // Package bridge — not rttime.TimeDriver::new (cross-pkg static call).
-        td<rttime.TimeDriver>, th<rttime.TimeHandle> = rttime.time_driver_new(io_drv)
-        time_drv = td
-        time_h   = th
+        // Package bridge + last() getters — dual-ret drops TimeDriver.io_park.
+        terr<i32> = rttime.time_driver_new(io_drv)
+        if terr == 0 {
+            time_drv = rttime.timedriver_last()
+            time_h   = rttime.timehandle_last()
+        }
     }
 
     pair<DriverPair> = Driver::compose(io_drv, io_h, time_drv, time_h, sig_drv, sig_h)

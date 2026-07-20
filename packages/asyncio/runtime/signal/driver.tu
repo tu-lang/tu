@@ -3,99 +3,141 @@
 // the dispatcher in IoDriver::turn flag this.signal_ready when an event
 // arrives. process() is invoked from the runtime root after every IO
 // turn to drain the signalfd and fan signals out to subscribers.
+//
+// Mother: tokio::runtime::signal::Driver (pipe + broadcast). Tu V1 uses
+// signalfd per design §15 — same park → process → fan-out shape.
 
 use runtime
 use std
 use io
+use sys
+use asyncio.runtime.io as rtio
 
-// Driver-side state. handle is a back-edge pointer (raw bits of
-// IoHandle*) so process() can read events and SignalDriverHandle::register
-// can call into the IO driver to update the signal mask without a
-// circular import.
+// Driver-side state. park_iod_bits / park_ioh_bits back-edges into the IO
+// driver so process() can consume_signal_ready and new() can register the fd.
+// Not named io_* — `.io_handle` / `.iod_bits` are type-assert traps.
 mem SignalDriver {
     i32                reg_fd        // signalfd descriptor
-    u64                reg_sio       // raw bits of ScheduledIo*; null until task 11.x wires it
-    SignalGlobals*     globals
+    u64                reg_sio       // unused; reserved for ScheduledIo wiring
+    u64                gslot_bits    // SignalGlobals* as u64 (avoid .globals/.gslot traps)
     runtime.MutexInter* lock
-    u64                io_handle     // raw bits of IoHandle*; reserved for shutdown wiring
+    u64                park_iod_bits // IoDriver* bits for consume_signal_ready
+    u64                park_ioh_bits // IoHandle* bits for register_sfd
 }
 
 // Cross-call-face handle backing the signal-subscription API.
 mem SignalDriverHandle {
-    SignalGlobals* globals
+    u64            gslot_bits  // SignalGlobals* as u64
     u64            lock_bits   // MutexInter* bits for cross-pkg lock/unlock
 }
 
-// Leading layout of linux signalfd_siginfo (ssi_signo at offset 0).
-mem SiginfoHead {
-    u32 signo_field
-    i32 errno_field
-    i32 code_field
-    u32 pid_field
-    u32 uid_field
-    i32 fd_field
-    u32 tid_field
-    u32 band_field
-    u32 overrun_field
-    u32 trapno_field
-    i32 status_field
-    i32 int_val_field
-    u64 ptr_field
-    u64 utime_field
-    u64 stime_field
-    u64 addr_field
+// Last successful SignalDriver::new results. build_drivers uses
+// signaldriver_last / signalhandle_last — (i32, mem, mem) triple-ret drops
+// the handle (same trap as IoDriver::new / make_poll).
+LAST_SIGDRIVER<SignalDriver> = null
+LAST_SIGHANDLE<SignalDriverHandle> = null
+
+fn signaldriver_last() SignalDriver {
+    return LAST_SIGDRIVER
+}
+fn signalhandle_last() SignalDriverHandle {
+    return LAST_SIGHANDLE
 }
 
-// Initialise globals + open the signalfd with an empty mask. Returns
-// (err, driver, handle); err != 0 means the signalfd syscall failed.
-// `drv.lock` is a heap MutexInter*; expose its address for cross-pkg lock/unlock.
-const SignalDriver::new(io_handle_ptr<u64>) i32, SignalDriver, SignalDriverHandle {
+// sizeof(signalfd_siginfo) on Linux.
+SIGINFO_LEN<u64> = 128
+// io.WouldBlock — local copy avoids short-name clash in this package.
+SIG_WOULD_BLOCK<i32> = 16908302
+
+// Initialise globals + open the signalfd with an empty mask, register it
+// on the IO driver as TOKEN_SIGNAL. Publishes via last() getters.
+// Mother: runtime::signal::Driver::new + register_signal_receiver.
+const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
+    LAST_SIGDRIVER = null
+    LAST_SIGHANDLE = null
+
     err<i32>, g<SignalGlobals> = signal_globals_get_or_init()
-    if err != 0 return err, null, null
+    if err != 0 return err
 
     mask<u64> = 0
     mask_ptr<u64*> = &mask
     mask_bits<u64> = mask_ptr.(u64)
-    fd<i32>   = std.signalfd4(-1, mask_bits, 8, std.SFD_CLOEXEC | std.SFD_NONBLOCK)
-    if fd < 0 return io.Other, null, null
+    // Locals for every signalfd4 arg — literal -1 / 8 corrupt in syscall ABI
+    // (same trap as process dup2/kill 2nd arg).
+    fd_in<i32> = -1
+    szmask<u64> = 8
+    sfd_flags<i32> = std.SFD_CLOEXEC | std.SFD_NONBLOCK
+    fd<i32> = std.signalfd4(fd_in, mask_bits, szmask, sfd_flags)
+    if fd < 0 return io.Other
 
-    g.signal_fd = fd
+    g.sfd = fd
+
+    // Mother: io_handle.register_signal_receiver — epoll ADD TOKEN_SIGNAL.
+    // register_sfd returns sys.Ok (=1) on success (netio Selector convention).
+    if ioh_bits != 0 {
+        ioh<rtio.IoHandle> = null
+        ioh = ioh_bits
+        rerr<i32> = ioh.register_sfd(fd)
+        ok_sel<i32> = 1
+        if rerr != 0 {
+            if rerr != ok_sel return rerr
+        }
+    }
 
     drv<SignalDriver> = new SignalDriver
     drv.reg_fd    = fd
     drv.reg_sio   = 0
-    drv.globals   = g
+    gbits<u64> = 0
+    gbits = g
+    drv.gslot_bits = gbits
     drv.lock = new runtime.MutexInter
     drv.lock.init()
-    drv.io_handle = io_handle_ptr
+    drv.park_iod_bits = iod_bits
+    drv.park_ioh_bits = ioh_bits
 
     h<SignalDriverHandle> = new SignalDriverHandle
-    h.globals = g
+    h.gslot_bits = gbits
     lk<runtime.MutexInter> = drv.lock
     h.lock_bits = lk.(u64)
 
-    return 0, drv, h
+    LAST_SIGDRIVER = drv
+    LAST_SIGHANDLE = h
+    return 0
 }
 
-// Drain the signalfd. Called by the runtime after IoDriver::turn flagged
-// signal_ready. For each siginfo read, fan out via EventInfo::fire so
-// subscribers' Notify wakes up.
+// Drain the signalfd. Mother: park → process after consume_signal_ready.
+// V1: always attempt drain (nonblock). EPOLLET + padded token mismatch can
+// skip consume_signal_ready; skipping drain then hangs forever.
 SignalDriver::process(){
-    g<SignalGlobals> = this.globals
-    if g.signal_fd < 0 return
+    if this.park_iod_bits != 0 {
+        rtio.iodriver_consume_signal_ready_bits(this.park_iod_bits)
+    }
+    signal_driver_drain(this)
+}
 
-    // Temporarily empty drain: std.read(u64*) typing vs heap buffer is blocked
-    // in asmgen for this package. Mother drains signalfd_siginfo here and
-    // fires EventInfo; restore once a stable u8*/u64* cast path exists.
-    return
+// Cross-pkg park hook — Driver cannot reliably member-call process().
+fn signal_driver_process_bits(drv_bits<u64>) {
+    if drv_bits == 0 return
+    drv<SignalDriver> = null
+    drv = drv_bits
+    if drv.park_iod_bits != 0 {
+        rtio.iodriver_consume_signal_ready_bits(drv.park_iod_bits)
+    }
+    signal_driver_drain(drv)
 }
 
 // Tear down: close the signalfd. The runtime root drives this on shutdown.
 SignalDriver::shutdown(){
-    g<SignalGlobals> = this.globals
-    if g.signal_fd < 0 return
-    std.close(g.signal_fd)
-    g.signal_fd = -1
+    if this.gslot_bits == 0 return
+    gref<SignalGlobals> = null
+    gref = this.gslot_bits
+    if gref.sfd < 0 return
+    std.close(gref.sfd)
+    gref.sfd = -1
     this.reg_fd = -1
 }
 
+fn sg_bits_of(drv<SignalDriver>) u64 {
+    if drv == null return 0
+    return drv.gslot_bits
+}

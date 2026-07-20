@@ -10,10 +10,11 @@ use asyncio.runtime.time as rttime
 use asyncio.runtime.signal as rtsig
 
 // Strong-side aggregate held by Runtime.
+// sdriver not sig_drv — `.sig_*` is a type-assert trap in this package.
 mem Driver {
     rtio.IoDriver*       io_drv
     rttime.TimeDriver*   time_drv
-    rtsig.SignalDriver*  sig_drv
+    rtsig.SignalDriver*  sdriver
 }
 
 // Weak-side aggregate held by Handle / context. Cross-thread safe.
@@ -32,11 +33,11 @@ mem DriverPair {
 
 // Build a Driver pair. Caller passes already-created subsystems (or
 // null) so feature flags compose cleanly.
-const Driver::compose(io<rtio.IoDriver>, ioh<rtio.IoHandle>, time_drv<rttime.TimeDriver>, timeh<rttime.TimeHandle>, sig<rtsig.SignalDriver>, sigh<rtsig.SignalDriverHandle>) DriverPair {
+const Driver::compose(io<rtio.IoDriver>, ioh<rtio.IoHandle>, time_drv<rttime.TimeDriver>, timeh<rttime.TimeHandle>, sdriver<rtsig.SignalDriver>, sigh<rtsig.SignalDriverHandle>) DriverPair {
     d<Driver> = new Driver
     d.io_drv     = io
     d.time_drv   = time_drv
-    d.sig_drv    = sig
+    d.sdriver    = sdriver
 
     h<DriverHandle> = new DriverHandle
     h.ihandle       = ioh
@@ -70,10 +71,23 @@ DriverHandle::time_bits() u64 {
     return bits
 }
 
+// Raw SignalDriverHandle* bits for asyncio.signal (same cross-pkg rule).
+DriverHandle::sigh_bits() u64 {
+    if this.signal_handle == null return 0
+    bits<u64> = 0
+    bits = this.signal_handle
+    return bits
+}
+
 // Package bridge for foreign packages.
 fn driver_handle_time_bits(dh<DriverHandle>) u64 {
     if dh == null return 0
     return dh.time_bits()
+}
+
+fn driver_handle_sigh_bits(dh<DriverHandle>) u64 {
+    if dh == null return 0
+    return dh.sigh_bits()
 }
 
 // Park indefinitely. Time-aware: if the wheel has a near deadline we
@@ -93,21 +107,30 @@ fn driver_park_bits(drv_bits<u64>, handle_bits<u64>) i32 {
 
 // Park for at most d. Time wheel narrows the wait if its next deadline
 // is closer; IoDriver::turn handles signal events via TOKEN_SIGNAL.
+// Mother: signal::Driver::park — io.park then process().
 Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
+    err<i32> = 0
     if this.time_drv != null && handle.time_handle != null {
         ms<u64> = d.as_millis()
-        return this.time_drv.park_internal(handle.time_handle, ms, handle.ihandle)
+        err = this.time_drv.park_internal(handle.time_handle, ms, handle.ihandle)
+    } else if this.io_drv != null && handle.ihandle != null {
+        err = this.io_drv.turn(handle.ihandle, d)
     }
-    if this.io_drv != null && handle.ihandle != null {
-        return this.io_drv.turn(handle.ihandle, d)
+    // Fan out queued signals after every reactor turn (mother process()).
+    // Bridge via bits — avoid `.sdriver` member path edge cases.
+    sb<u64> = 0
+    sb = this.sdriver
+    if sb != 0 {
+        rtsig.signal_driver_process_bits(sb)
     }
-    return 0
+    return err
 }
 
 // Tear-down sequence: signal first (so signalfd is unregistered before
 // the IO driver closes its registry), then IO, then time.
 Driver::shutdown(handle<DriverHandle>){
-    if this.sig_drv != null this.sig_drv.shutdown()
+    sd<rtsig.SignalDriver> = this.sdriver
+    if sd != null sd.shutdown()
     if this.io_drv != null && handle.ihandle != null handle.ihandle.shutdown()
     // Time has no explicit shutdown — wheel just stops being polled.
 }

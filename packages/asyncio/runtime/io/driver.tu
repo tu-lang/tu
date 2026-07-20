@@ -12,6 +12,7 @@ use runtime
 use std.atomic
 use netio
 use netio.event as netevent
+use netio.sys as nsys
 use sys
 use fmt
 
@@ -131,6 +132,33 @@ IoHandle::wake_by_ref() i32 {
     return netio.waker_wake(wk)
 }
 
+// Register signalfd with TOKEN_SIGNAL (mother: register_signal_receiver).
+// Named register_sfd — callers in asyncio.runtime.signal must not write
+// `.register_signal_*` (type-assert trap on `signal` in that package).
+IoHandle::register_sfd(fd<i32>) i32 {
+    if this.registry_slot == 0 return 1
+    reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
+    sel<nsys.Selector> = netio.registry_selector(reg)
+    tok<u64> = TOKEN_SIGNAL
+    return sel.register_readable(fd, tok)
+}
+
+// Mother: Driver::consume_signal_ready — clear and return prior flag.
+IoDriver::consume_signal_ready() i32 {
+    if this.signal_ready == 0 return 0
+    this.signal_ready = 0
+    return 1
+}
+
+fn iodriver_consume_signal_ready_bits(iod_bits<u64>) i32 {
+    if iod_bits == 0 return 0
+    iod<IoDriver> = null
+    iod = iod_bits
+    if iod.signal_ready == 0 return 0
+    iod.signal_ready = 0
+    return 1
+}
+
 // Detach a previously registered source. Caller passes the original
 // netio.event.Source object (so netio can extract the fd) plus the
 // ScheduledIo* it received from add_source.
@@ -193,7 +221,10 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
 
         token<u64> = ev.token()
         if token == TOKEN_WAKEUP continue
-        if token == TOKEN_SIGNAL {
+        // Padded Event (u32+u64) makes epoll_ctl store TOKEN_SIGNAL as 1<<32;
+        // epoll_wait may surface either form depending on slot packing.
+        tok_sig_alt<u64> = 4294967296
+        if token == TOKEN_SIGNAL || token == tok_sig_alt {
             this.signal_ready = 1
             continue
         }

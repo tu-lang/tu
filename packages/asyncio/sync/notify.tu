@@ -5,6 +5,7 @@
 //                        already pending.
 
 use runtime
+use asyncio.task as task
 
 // notify_one permit accounting. Only NONE and ONE are used today; the
 // ALL flag is reserved for a future "broadcast" extension.
@@ -76,6 +77,7 @@ Notify::stash_permit(){
 // Hand off to one waiter, or stash a single permit when none are queued.
 // Returns NOTIFY_ONE when a permit was stashed, NOTIFY_NONE when a waiter
 // was woken (the wake itself happens after the lock drops).
+// Mother: waker.wake() after dequeue.
 Notify::notify_one() i32 {
     this.lock.lock()
     head_node<Pointers> = this.waiter_q.peek_head()
@@ -87,12 +89,17 @@ Notify::notify_one() i32 {
     this.waiter_q.remove(head_node)
     w<NotifyWaiter> = head_node.(NotifyWaiter)
     w.woke_flag = 1
+    ctx_bits<u64> = w.ctx_packed
     this.lock.unlock()
+    if ctx_bits != 0 {
+        task.wake_by_ctx(ctx_bits)
+    }
     return NOTIFY_NONE
 }
 
 // Wake every currently queued waiter; does NOT stash a permit. Waiters
 // added after this call wait for the next notify.
+// Mother: each waiter waker.wake().
 Notify::notify_waiters(){
     this.lock.lock()
     loop {
@@ -101,6 +108,12 @@ Notify::notify_waiters(){
         this.waiter_q.remove(h)
         w<NotifyWaiter> = h.(NotifyWaiter)
         w.woke_flag = 1
+        ctx_bits<u64> = w.ctx_packed
+        this.lock.unlock()
+        if ctx_bits != 0 {
+            task.wake_by_ctx(ctx_bits)
+        }
+        this.lock.lock()
     }
     this.lock.unlock()
 }
@@ -123,6 +136,11 @@ Notified::init(owner_notify<Notify>){
 // WAITING checks the wake flag; DONE re-poll is a logic error.
 Notified::poll(ctx){
     par<Notify> = this.owner_notify
+    // Harness Future::poll does not forward ctx; use ACTIVE_POLL_CTX.
+    packed<u64> = ctx.(u64)
+    if packed == 0 {
+        packed = task.active_poll_ctx()
+    }
     if this.stage == NOTIFIED_STAGE_INIT {
         par.lock.lock()
         if par.take_permit() != 0 {
@@ -131,12 +149,12 @@ Notified::poll(ctx){
             return runtime.PollReady, 0
         }
         // No permit; queue ourselves.
-        w<NotifyWaiter> = NotifyWaiter::new(ctx.(u64))
+        w<NotifyWaiter> = NotifyWaiter::new(packed)
         par.waiter_q.push_back(w.node)
         par.lock.unlock()
         this.waiter_node = w
         this.stage = NOTIFIED_STAGE_WAITING
-        return runtime.PollPending
+        return runtime.PollPending, 0
     }
     if this.stage == NOTIFIED_STAGE_WAITING {
         wk<NotifyWaiter> = this.waiter_node
@@ -145,8 +163,8 @@ Notified::poll(ctx){
             return runtime.PollReady, 0
         }
         // Refresh ctx so the most recent waker wins.
-        wk.ctx_packed = ctx.(u64)
-        return runtime.PollPending
+        wk.ctx_packed = packed
+        return runtime.PollPending, 0
     }
     // Already DONE; behaves like AlreadyConsumed.
     return runtime.PollReady, 0

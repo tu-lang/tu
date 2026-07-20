@@ -20,6 +20,14 @@ mem ExitStatus {
     i32 signum  // terminating signal, else 0
 }
 
+// Address of an i32 waitpid status out-param as the u64 slot std.waitpid expects.
+// Avoid `(&status).(u64)` — the cast parses as a type assertion (syntax).
+fn waitpid_status_addr(status_p<i32*>) u64 {
+    bits<u64> = 0
+    bits = status_p
+    return bits
+}
+
 // Decode a waitpid status word into an ExitStatus (WIFEXITED / WIFSIGNALED).
 // status & 0x7f == 0 means normal exit; low 7 bits otherwise are the signal
 // (0x7f marks a stop, which is not a termination and is reported as signum 0).
@@ -39,10 +47,10 @@ fn exit_status_from_wait(status<i32>) ExitStatus {
     return es
 }
 
-// True for a clean exit with code 0.
-ExitStatus::success() bool {
-    if this.code == 0 && this.signum == 0 return true
-    return false
+// True (1) for a clean exit with code 0 (mother: ExitStatus::success() -> bool).
+ExitStatus::success() i32 {
+    if this.code == 0 && this.signum == 0 return 1
+    return 0
 }
 
 // Exit code (-1 when the process was signalled).
@@ -68,24 +76,34 @@ mem Child {
 
 // The child's process id.
 Child::id() u32 {
-    return this.pid.(u32)
+    p<i32> = this.pid
+    out<u32> = 0
+    out = p
+    return out
 }
 
 // Send SIGKILL without waiting. Returns io.NotFound if the child was already
 // reaped, else the kill(2) result.
 Child::start_kill() i32 {
     if this.reaped == 1 return io.NotFound
-    err<i32>, _ = sys.cvt(sys_kill(this.pid, os.SIGKILL))
-    return err
+    // SIGKILL=9 as local — avoid passing os.SIGKILL const directly (2nd-arg
+    // literal/const corruption seen with dup2).
+    sig<i32> = 9
+    raw<i32> = sys.kill(this.pid, sig)
+    if raw < 0 {
+        err<i32>, _ = sys.cvt(raw)
+        return err
+    }
+    return io.Ok
 }
 
 // Block until the child exits and return its ExitStatus. Cached after the
-// first successful reap. V1: synchronous waitpid (blocking) on the calling
-// task; the reactor-driven reaper path is deferred.
-async Child::wait() i32, ExitStatus {
+// first successful reap. V1: synchronous waitpid (blocking) — mother awaits
+// SIGCHLD/pidfd; leaf WaitFut still exposes .await at the call site.
+Child::wait_sync() i32, ExitStatus {
     if this.reaped == 1 return io.Ok, this.status
     status<i32> = 0
-    r<i32> = std.waitpid(this.pid, (&status).(u64), 0)
+    r<i32> = std.waitpid(this.pid, waitpid_status_addr(&status), 0)
     if r < 0 return io.Other, null
     es<ExitStatus> = exit_status_from_wait(status)
     this.status = es
@@ -93,12 +111,28 @@ async Child::wait() i32, ExitStatus {
     return io.Ok, es
 }
 
+// Leaf future for Child::wait (tokio::process::Child::wait).
+mem WaitFut: async {
+    Child* child
+}
+
+WaitFut::poll(ctx) {
+    c<Child> = this.child
+    err<i32>, es<ExitStatus> = c.wait_sync()
+    return runtime.PollReady, err, es
+}
+
+// Mother: Child::wait — return WaitFut leaf (caller awaits; same as fs ReadFut).
+Child::wait() WaitFut {
+    return new WaitFut { child: this }
+}
+
 // Non-blocking reap. Returns (io.Ok, status) once exited, (io.WouldBlock, null)
 // while still running, or (io.Other, null) on a waitpid error.
 Child::try_wait() i32, ExitStatus {
     if this.reaped == 1 return io.Ok, this.status
     status<i32> = 0
-    r<i32> = std.waitpid(this.pid, (&status).(u64), std.WNOHANG)
+    r<i32> = std.waitpid(this.pid, waitpid_status_addr(&status), std.WNOHANG)
     if r < 0 return io.Other, null
     if r == 0 return io.WouldBlock, null
     es<ExitStatus> = exit_status_from_wait(status)
@@ -108,9 +142,9 @@ Child::try_wait() i32, ExitStatus {
 }
 
 // SIGKILL the child and reap it. Returns io.Ok once collected.
-async Child::kill() i32 {
+Child::kill() i32 {
     kerr<i32> = this.start_kill()
     if kerr != io.Ok return kerr
-    werr<i32>, _ = this.wait().await
+    werr<i32>, _ = this.wait_sync()
     return werr
 }

@@ -7,13 +7,14 @@ use io
 use asyncio.runtime.io as rtio
 use asyncio.task as task
 
-// Driver-side state. wheel + clock are owned here; io_park is borrowed
+// Driver-side state. wheel + clock are owned here; park_iod is borrowed
 // from the runtime's IoDriver so park_internal can delegate.
+// Field must not be named io_* — `.io_park` is a type-assert trap.
 mem TimeDriver {
     Wheel*          wheel
     TimeSource*     source
     Clock*          clock
-    rtio.IoDriver*  io_park       // borrowed; null when IO driver disabled
+    rtio.IoDriver*  park_iod      // borrowed; null when IO driver disabled
 }
 
 // Cross-thread companion. Anything that schedules a timer touches the
@@ -25,8 +26,24 @@ mem TimeHandle {
     Clock*              clock
 }
 
-// Build a paired (driver, handle).
-const TimeDriver::new(io_park<rtio.IoDriver>) (TimeDriver, TimeHandle) {
+// Last successful TimeDriver::new results. build_drivers uses last()
+// getters — (TimeDriver, TimeHandle) dual-ret drops park_iod (same trap as
+ // IoDriver / SignalDriver).
+LAST_TIMEDRIVER<TimeDriver> = null
+LAST_TIMEHANDLE<TimeHandle> = null
+
+fn timedriver_last() TimeDriver {
+    return LAST_TIMEDRIVER
+}
+fn timehandle_last() TimeHandle {
+    return LAST_TIMEHANDLE
+}
+
+// Build a paired (driver, handle). Publishes via timedriver_last / timehandle_last.
+const TimeDriver::new(park_iod<rtio.IoDriver>) i32 {
+    LAST_TIMEDRIVER = null
+    LAST_TIMEHANDLE = null
+
     src<TimeSource> = TimeSource::new()
     w<Wheel>        = Wheel::new()
     c<Clock>        = Clock::new(src)
@@ -35,7 +52,7 @@ const TimeDriver::new(io_park<rtio.IoDriver>) (TimeDriver, TimeHandle) {
     drv.wheel   = w
     drv.source  = src
     drv.clock   = c
-    drv.io_park = io_park
+    drv.park_iod = park_iod
 
     h<TimeHandle> = new TimeHandle
     h.source = src
@@ -44,13 +61,14 @@ const TimeDriver::new(io_park<rtio.IoDriver>) (TimeDriver, TimeHandle) {
     h.wheel = w
     h.clock = c
 
-    return drv, h
+    LAST_TIMEDRIVER = drv
+    LAST_TIMEHANDLE = h
+    return 0
 }
 
 // Cross-pkg factory — callers must not write rttime.TimeDriver::new(...).
-fn time_driver_new(io_park<rtio.IoDriver>) (TimeDriver, TimeHandle) {
-    drv<TimeDriver>, h<TimeHandle> = TimeDriver::new(io_park)
-    return drv, h
+fn time_driver_new(park_iod<rtio.IoDriver>) i32 {
+    return TimeDriver::new(park_iod)
 }
 
 // Compute the effective max-wait for the IO driver: min(limit, time to
@@ -98,14 +116,15 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>)
     eff_ms<u64> = compute_effective_ms(handle, limit_ms)
     handle.lock.unlock()
 
-    if this.io_park == null || ioh == null {
+    if this.park_iod == null || ioh == null {
         // No IO park path: still advance the wheel, then yield briefly.
         handle.process(handle.clock.now_ms())
         runtime.osyield()
         return 0
     }
 
-    err<i32> = this.io_park.turn(ioh, ms_to_duration(eff_ms))
+    iod<rtio.IoDriver> = this.park_iod
+    err<i32> = iod.turn(ioh, ms_to_duration(eff_ms))
     handle.process(handle.clock.now_ms())
     return err
 }

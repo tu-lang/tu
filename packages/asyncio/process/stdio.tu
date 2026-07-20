@@ -32,8 +32,12 @@ mem ChildStderr {
 // Close a stdio fd once (idempotent-ish; fd set to -1 afterwards).
 fn close_fd(fd<i32>) i32 {
     if fd < 0 return io.Ok
-    err<i32>, _ = sys.cvt(sys.close(fd))
-    return err
+    r<i32> = sys.close(fd)
+    if r < 0 {
+        err<i32>, _ = sys.cvt(r)
+        return err
+    }
+    return io.Ok
 }
 
 ChildStdin::close() i32 {
@@ -57,7 +61,8 @@ ChildStderr::close() i32 {
 impl aio.AsyncWrite for ChildStdin {
     fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
         buf<io.Buf> = io.buf_from_bits(buf_bits)
-        err<i32>, n<u64> = sys.cvt(sys.write(this.fd, buf.ptr(), buf.len()))
+        p<u8*> = io.buf_ptr(buf)
+        err<i32>, n<u64> = sys.cvt(sys.write(this.fd, p, io.buf_len(buf)))
         if err != io.Ok return runtime.PollError, 0
         return runtime.PollReady, n
     }
@@ -95,20 +100,29 @@ impl aio.AsyncRead for ChildStderr {
 }
 
 // Read every byte from `fd` into a freshly grown io.Buf (blocking, to EOF).
-// Returns (io.Ok, buf) with buf.len() == total bytes, or (err, null).
+// Returns (io.Ok, buf) with exact byte length, or (err, null).
 fn read_all_fd(fd<i32>) i32, io.Buf {
-    buf<io.Buf> = io.NewBuf(4096)
+    cap_i<i32> = 4096
+    buf<io.Buf> = io.NewBuf(cap_i)
     total<u64> = 0
     loop {
-        if total >= buf.len() {
-            grown<io.Buf> = io.NewBuf((buf.len() * 2).(i32))
-            std.memcpy(grown.ptr(), buf.ptr(), total)
+        blen<u64> = io.buf_len(buf)
+        if total >= blen {
+            // Grow capacity (mother drains stdout/stderr into a Vec).
+            next_u<u64> = blen + blen
+            next_i<i32> = next_u.(i32)
+            grown<io.Buf> = io.NewBuf(next_i)
+            std.memcpy(io.buf_ptr(grown), io.buf_ptr(buf), total)
             buf = grown
+            blen = io.buf_len(buf)
         }
-        err<i32>, n<u64> = sys.cvt(sys.read(fd, buf.ptr() + total, buf.len() - total))
+        rem<u64> = blen - total
+        base<u8*> = io.buf_ptr(buf)
+        dst<u8*> = base + total
+        err<i32>, n<u64> = sys.cvt(sys.read(fd, dst, rem))
         if err != io.Ok return err, null
         if n == 0 break
         total += n
     }
-    return io.Ok, new io.Buf { inner: buf.ptr(), len: total }
+    return io.Ok, io.buf_with_len(buf, total)
 }

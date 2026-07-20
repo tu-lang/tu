@@ -1,15 +1,37 @@
 // tokio::signal::ctrl_c — resolve on the first SIGINT.
 //
-// Equivalent to subscribing via signal(SignalKind_interrupt()) and awaiting a
-// single recv(); the SignalStream is dropped afterwards.
+// Mother: async fn ctrl_c() { os_impl::ctrl_c()?.recv().await; Ok(()) }
+// where unix::ctrl_c() is sync signal(SignalKind::interrupt()).
+// Tu: leaf future — register on first poll, then drive RecvFut (no package
+// async+await; that hits return-count parse errors).
 
 use io
+use runtime
 
-// Complete once the process receives its first SIGINT after this call.
-// Returns io.Ok on delivery, or the register error when no signal driver is
-// available (e.g. RuntimeShutdown).
-async ctrl_c() i32 {
-    serr<i32>, stream<SignalStream> = signal(SignalKind_interrupt()).await
-    if serr != io.Ok return serr
-    return stream.recv().await
+// Leaf for public ctrl_c() (mother async ctrl_c).
+mem CtrlCFut: async {
+    i32 stage
+    u64 recv_bits
+}
+
+CtrlCFut::poll(ctx) {
+    if this.stage == 0 {
+        serr<i32> = subscribe(kind_interrupt())
+        if serr != io.Ok return runtime.PollReady, serr
+        stream<SignalStream> = stream_last()
+        if stream == null return runtime.PollReady, io.Other
+        rfut<RecvFut> = stream.recv()
+        this.recv_bits = rfut.(u64)
+        this.stage = 1
+    }
+    rf<RecvFut> = this.recv_bits
+    return rf.poll(ctx)
+}
+
+// Mother: signal::ctrl_c — awaitable until first SIGINT after poll.
+fn ctrl_c() CtrlCFut {
+    return new CtrlCFut {
+        stage: 0,
+        recv_bits: 0
+    }
 }

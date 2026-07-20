@@ -19,7 +19,7 @@ mem PidfdReaper {
 
 // Open a pidfd for `pid`. Returns (io.Ok, reaper) or (err, null) when
 // pidfd_open is unavailable (fall back to SigchldReaper).
-const PidfdReaper::open(pid<i32>) (i32, PidfdReaper) {
+const PidfdReaper::open(pid<i32>) i32, PidfdReaper {
     err<i32>, fd<u64> = sys.cvt(std.pidfd_open(pid, 0))
     if err != io.Ok return err, null
     return io.Ok, new PidfdReaper { pidfd: fd.(i32), pid: pid }
@@ -31,12 +31,15 @@ PidfdReaper::as_raw_fd() i32 {
 }
 
 // Wait for the child to exit and return its ExitStatus. V1: blocking waitpid;
-// the pidfd-readiness await path lands with the IO driver.
-async PidfdReaper::wait() i32, ExitStatus {
+// mother (pidfd_reaper.rs) awaits pidfd readability then try_wait — readiness
+// wiring is deferred; waitpid on the pid preserves the same exit status.
+// V1 sync: blocks in waitpid (mother Future awaits pidfd readiness first).
+PidfdReaper::wait() i32, ExitStatus {
     status<i32> = 0
-    r<i32> = std.waitpid(this.pid, (&status).(u64), 0)
+    r<i32> = std.waitpid(this.pid, waitpid_status_addr(&status), 0)
     if r < 0 return io.Other, null
-    return io.Ok, exit_status_from_wait(status)
+    es<ExitStatus> = exit_status_from_wait(status)
+    return io.Ok, es
 }
 
 // Close the pidfd.

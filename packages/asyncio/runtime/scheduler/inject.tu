@@ -59,17 +59,20 @@ Inject::is_closed() i32 {
     return closed
 }
 
-// Lock-free snapshot via atomic len.
+// Lock-free snapshot via depth counter.
+// Prefer a typed u32 load over atomic.load (dynamic func) — `load(...) == 0`
+// trips `[binary-op] op:==` at runtime.
 Inject::is_empty() i32 {
     sh<InjectShared> = this.depth_atomic
-    if atomic.load(&sh.depth) == 0 return 1
+    d<u32> = sh.depth
+    if d == 0 return 1
     return 0
 }
 
 // Atomic load of the depth counter.
 Inject::len() u32 {
     sh<InjectShared> = this.depth_atomic
-    return atomic.load(&sh.depth)
+    return sh.depth
 }
 
 // Enqueue at the tail. Returns 0 on success, asyncio.error.Closed when shut.
@@ -103,7 +106,10 @@ Inject::close() i32 {
     return first
 }
 
-// Dequeue the head. Returns (0, Notified) or (io.NotFound, empty) when drained.
+// Dequeue the head. Returns (0, Notified) or (io.NotFound, null) when drained.
+// Empty path must not allocate a Notified — (NotFound, new Notified) multi-ret
+// hangs the dyn return ABI; callers treat the second value as meaningful
+// only when the i32 is 0 (mother: Option::None).
 Inject::pop() (i32, task.Notified) {
     m<runtime.MutexInter> = this.gate_lock
     m.lock()
@@ -111,7 +117,7 @@ Inject::pop() (i32, task.Notified) {
     raw<task.RawTask> = task.task_list_pop_front(&s.head, &s.tail)
     if raw == null {
         m.unlock()
-        empty<task.Notified> = task.notified_from_raw(null)
+        empty<task.Notified> = null
         return io.NotFound, empty
     }
     sh<InjectShared> = this.depth_atomic

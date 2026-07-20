@@ -37,16 +37,16 @@ SigchldReaper::reap_pending() i32 {
     n<i32> = 0
     loop {
         status<i32> = 0
-        r<i32> = std.waitpid(-1, (&status).(u64), std.WNOHANG)
+        r<i32> = std.waitpid(-1, waitpid_status_addr(&status), std.WNOHANG)
         if r <= 0 break
         n += 1
     }
     return n
 }
 
-// Reaper task body. V1: subscribe then sweep once. The continuous
-// notification-driven loop lands when the signal driver runs on the IO driver.
-async SigchldReaper::reap_loop() i32 {
+// Reaper task body. V1: subscribe then sweep once (sync). Mother loops on
+// SIGCHLD notifications; continuous await lands when the signal driver is wired.
+SigchldReaper::reap_loop() i32 {
     serr<i32> = this.start()
     if serr != io.Ok return serr
     this.reap_pending()
