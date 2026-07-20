@@ -1,26 +1,29 @@
 // fs_canonicalize (tokio::fs::canonicalize).
-//
-// V1 is a best-effort resolver: it readlinks a terminal symlink and otherwise
-// returns the input path unchanged. It does NOT normalize "."/".." components
-// or resolve to an absolute path (Linux has no realpath syscall; a full
-// component-by-component resolver is deferred). Callers needing true
-// canonicalization should treat this as a placeholder.
+// V1: readlink terminal symlink or return a copy of the input path.
 
 use io
 use string
 use sys
+use runtime
 
-// Resolve `path`. If it is a symlink, returns its target; if it is a regular
-// path (readlink EINVAL), returns a copy of the input. Returns (err, null) on
-// any other failure.
-async fs_canonicalize(path<string.String>) i32, string.String {
+mem CanonicalizeFut: async {
+    u64 path_bits
+}
+
+CanonicalizeFut::poll(ctx) {
+    pc<i8*> = string.cstr_from_bits(this.path_bits)
     buf<u8*> = new 4096
-    err<i32>, n<u64> = sys.cvt(sys.readlink(path.str(), buf, 4096))
+    err<i32>, n<u64> = sys.cvt(sys.readlink(pc, buf, 4096))
     if err == io.Ok {
-        return io.Ok, new string.String { inner: string.newlen(buf, n) }
+        return runtime.PollReady, io.Ok, new string.String { inner: string.newlen(buf, n) }
     }
     if err == io.InvalidInput {
-        return io.Ok, path.dup()
+        path_s<string.String> = string.string_from_bits(this.path_bits)
+        return runtime.PollReady, io.Ok, path_s.dup()
     }
-    return err, null
+    return runtime.PollReady, err, null
+}
+
+fn fs_canonicalize(path_bits<u64>) CanonicalizeFut {
+    return new CanonicalizeFut { path_bits: path_bits }
 }

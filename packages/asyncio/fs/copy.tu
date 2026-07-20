@@ -1,53 +1,56 @@
-// fs_copy (tokio::fs::copy): copy `from` to `to`, preserving permission bits,
-// and return the number of bytes copied.
+// fs_copy (tokio::fs::copy): copy `from` to `to`, preserving permission bits.
 
 use io
 use string
+use runtime
 
-// Copy the whole file. Returns (io.Ok, bytes_copied) or (err, 0). The
-// destination is created/truncated with the source's permission bits.
-async fs_copy(from<string.String>, to<string.String>) i32, u64 {
-    oerr<i32>, src<File> = fs_open_read(from).await
-    if oerr != io.Ok return oerr, 0
+mem CopyFut: async {
+    u64 from_bits
+    u64 to_bits
+}
 
-    merr<i32>, meta<Metadata> = src.metadata().await
+CopyFut::poll(ctx) {
+    oerr<i32>, src<File> = file_open_read_sync(this.from_bits)
+    if oerr != io.Ok return runtime.PollReady, oerr, 0.(u64)
+
+    merr<i32>, meta<Metadata> = file_metadata_sync(src)
     mode<u32> = 420
     if merr == io.Ok mode = meta.permissions()
 
     o<OpenOptions> = OpenOptions::new()
-    o = o.write(true)
-    o = o.create(true)
-    o = o.truncate(true)
+    o = o.write(1)
+    o = o.create(1)
+    o = o.truncate(1)
     o = o.mode(mode)
-    derr<i32>, dst<File> = fs_open(to, o).await
+    derr<i32>, dst<File> = file_open_sync(this.to_bits, o)
     if derr != io.Ok {
         src.close()
-        return derr, 0
+        return runtime.PollReady, derr, 0.(u64)
     }
 
     buf<io.Buf> = io.NewBuf(8192)
     total<u64> = 0
     loop {
-        rerr<i32>, n<u64> = src.read(buf).await
+        rerr<i32>, n<u64> = file_read_sync(src, buf)
         if rerr != io.Ok {
             src.close()
             dst.close()
-            return rerr, 0
+            return runtime.PollReady, rerr, 0.(u64)
         }
         if n == 0 break
         w<u64> = 0
         while w < n {
-            slice<io.Buf> = new io.Buf { inner: buf.ptr() + w, len: n - w }
-            werr<i32>, wn<u64> = dst.write(slice).await
+            slice<io.Buf> = io.buf_slice(buf, w, n - w)
+            werr<i32>, wn<u64> = file_write_sync(dst, slice)
             if werr != io.Ok {
                 src.close()
                 dst.close()
-                return werr, 0
+                return runtime.PollReady, werr, 0.(u64)
             }
             if wn == 0 {
                 src.close()
                 dst.close()
-                return io.WriteZero, 0
+                return runtime.PollReady, io.WriteZero, 0.(u64)
             }
             w += wn
         }
@@ -55,5 +58,9 @@ async fs_copy(from<string.String>, to<string.String>) i32, u64 {
     }
     src.close()
     dst.close()
-    return io.Ok, total
+    return runtime.PollReady, io.Ok, total
+}
+
+fn fs_copy(from_bits<u64>, to_bits<u64>) CopyFut {
+    return new CopyFut { from_bits: from_bits, to_bits: to_bits }
 }

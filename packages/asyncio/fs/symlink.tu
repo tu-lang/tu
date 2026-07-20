@@ -3,10 +3,20 @@
 use io
 use string
 use sys
+use runtime
 
-// Create a symlink `dst` whose target is `src` (symlink(2)). `src` is stored
-// verbatim and is not required to exist. Returns io.Ok / error.
-async fs_symlink(src<string.String>, dst<string.String>) i32 {
-    err<i32>, _ = sys.cvt(sys.symlink(src.str(), dst.str()))
-    return err
+mem SymlinkFut: async {
+    u64 src_bits
+    u64 dst_bits
+}
+
+SymlinkFut::poll(ctx) {
+    src_c<i8*> = string.cstr_from_bits(this.src_bits)
+    dst_c<i8*> = string.cstr_from_bits(this.dst_bits)
+    err<i32>, junk<u64> = sys.cvt(sys.symlink(src_c, dst_c))
+    return runtime.PollReady, err
+}
+
+fn fs_symlink(src_bits<u64>, dst_bits<u64>) SymlinkFut {
+    return new SymlinkFut { src_bits: src_bits, dst_bits: dst_bits }
 }

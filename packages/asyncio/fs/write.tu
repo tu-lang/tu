@@ -2,26 +2,45 @@
 
 use io
 use string
+use runtime
 
-// Write every byte of `data` to `path`, creating or truncating it (mode 0o644).
-// Returns io.Ok, or io.WriteZero if the file stops accepting bytes early.
-async fs_write(path<string.String>, data<io.Buf>) i32 {
-    oerr<i32>, f<File> = fs_create(path).await
-    if oerr != io.Ok return oerr
+// Leaf: create + write-all + close in one poll (V1 inline).
+// Only u64 slots in the async mem — String/Buf keepers live in the caller
+// across await (async locals + explicit path_bits refresh).
+mem WriteFut: async {
+    u64 path_bits
+    u64 data_bits
+}
+
+WriteFut::poll(ctx) {
+    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    oerr<i32>, f<File> = file_create_sync_cstr(pc)
+    if oerr != io.Ok return runtime.PollReady, oerr
     total<u64> = 0
-    while total < data.len() {
-        slice<io.Buf> = new io.Buf { inner: data.ptr() + total, len: data.len() - total }
-        werr<i32>, n<u64> = f.write(slice).await
+    bits<u64> = this.data_bits
+    data<io.Buf> = io.buf_from_bits(bits)
+    dlen<u64> = io.buf_len(data)
+    while total < dlen {
+        rem<u64> = dlen - total
+        slice<io.Buf> = io.buf_slice(data, total, rem)
+        werr<i32>, n<u64> = file_write_sync(f, slice)
         if werr != io.Ok {
             f.close()
-            return werr
+            return runtime.PollReady, werr
         }
         if n == 0 {
             f.close()
-            return io.WriteZero
+            return runtime.PollReady, io.WriteZero
         }
         total += n
     }
     f.close()
-    return io.Ok
+    return runtime.PollReady, io.Ok
+}
+
+fn fs_write(path_bits<u64>, data_bits<u64>) WriteFut {
+    return new WriteFut {
+        path_bits: path_bits,
+        data_bits: data_bits
+    }
 }

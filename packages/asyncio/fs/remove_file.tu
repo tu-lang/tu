@@ -3,9 +3,19 @@
 use io
 use string
 use sys
+use runtime
 
-// Remove the file `path` (unlink). Returns io.Ok / error.
-async fs_remove_file(path<string.String>) i32 {
-    err<i32>, _ = sys.cvt(sys_unlink(path.str()))
-    return err
+// Leaf: unlink(2) on first poll.
+mem RemoveFileFut: async {
+    u64 path_bits
+}
+
+RemoveFileFut::poll(ctx) {
+    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    err<i32>, junk<u64> = sys.cvt(sys.unlink(pc))
+    return runtime.PollReady, err
+}
+
+fn fs_remove_file(path_bits<u64>) RemoveFileFut {
+    return new RemoveFileFut { path_bits: path_bits }
 }

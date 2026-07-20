@@ -31,34 +31,34 @@ const OpenOptions::new() OpenOptions {
 }
 
 // Chained setters (return self so calls compose).
-OpenOptions::read(on<bool>) OpenOptions {
+OpenOptions::read(on<i32>) OpenOptions {
     this.read = 0
-    if on this.read = 1
+    if on != 0 this.read = 1
     return this
 }
-OpenOptions::write(on<bool>) OpenOptions {
+OpenOptions::write(on<i32>) OpenOptions {
     this.write = 0
-    if on this.write = 1
+    if on != 0 this.write = 1
     return this
 }
-OpenOptions::append(on<bool>) OpenOptions {
+OpenOptions::append(on<i32>) OpenOptions {
     this.append = 0
-    if on this.append = 1
+    if on != 0 this.append = 1
     return this
 }
-OpenOptions::truncate(on<bool>) OpenOptions {
+OpenOptions::truncate(on<i32>) OpenOptions {
     this.truncate = 0
-    if on this.truncate = 1
+    if on != 0 this.truncate = 1
     return this
 }
-OpenOptions::create(on<bool>) OpenOptions {
+OpenOptions::create(on<i32>) OpenOptions {
     this.create = 0
-    if on this.create = 1
+    if on != 0 this.create = 1
     return this
 }
-OpenOptions::create_new(on<bool>) OpenOptions {
+OpenOptions::create_new(on<i32>) OpenOptions {
     this.create_new = 0
-    if on this.create_new = 1
+    if on != 0 this.create_new = 1
     return this
 }
 OpenOptions::mode(m<u32>) OpenOptions {

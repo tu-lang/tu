@@ -1,37 +1,48 @@
 // fs_read (tokio::fs::read): read a whole file into a freshly allocated io.Buf.
-// Sizes the initial buffer from the file's metadata and grows on demand.
 
 use std
 use io
 use string
+use runtime
 
-// Read the entire contents of `path`. Returns (io.Ok, Buf) sized to the exact
-// byte count, or (err, null) on failure.
-async fs_read(path<string.String>) i32, io.Buf {
-    oerr<i32>, f<File> = fs_open_read(path).await
-    if oerr != io.Ok return oerr, null
+// Leaf: open + read-to-end + close in one poll (V1 inline).
+mem ReadFut: async {
+    u64 path_bits
+}
 
-    merr<i32>, meta<Metadata> = f.metadata().await
-    cap<u64> = 8192
-    if merr == io.Ok && meta.len() > 0 cap = meta.len()
+ReadFut::poll(ctx) {
+    bits<u64> = this.path_bits
+    oerr<i32>, f<File> = file_open_read_sync(bits)
+    if oerr != io.Ok return runtime.PollReady, oerr, null
 
-    buf<io.Buf> = io.NewBuf(cap.(i32))
+    cap_i<i32> = 8192
+    buf<io.Buf> = io.NewBuf(cap_i)
     total<u64> = 0
     loop {
-        if total >= buf.len() {
-            grown<io.Buf> = io.NewBuf((buf.len() * 2).(i32))
-            std.memcpy(grown.ptr(), buf.ptr(), total)
+        blen<u64> = io.buf_len(buf)
+        if total >= blen {
+            next_cap_u<u64> = blen * 2
+            next_cap_i<i32> = 0
+            next_cap_i = next_cap_u
+            grown<io.Buf> = io.NewBuf(next_cap_i)
+            std.memcpy(io.buf_ptr(grown), io.buf_ptr(buf), total)
             buf = grown
+            blen = io.buf_len(buf)
         }
-        slice<io.Buf> = new io.Buf { inner: buf.ptr() + total, len: buf.len() - total }
-        rerr<i32>, n<u64> = f.read(slice).await
+        rem<u64> = blen - total
+        slice<io.Buf> = io.buf_slice(buf, total, rem)
+        rerr<i32>, n<u64> = file_read_sync(f, slice)
         if rerr != io.Ok {
             f.close()
-            return rerr, null
+            return runtime.PollReady, rerr, null
         }
         if n == 0 break
         total += n
     }
     f.close()
-    return io.Ok, new io.Buf { inner: buf.ptr(), len: total }
+    return runtime.PollReady, io.Ok, io.buf_with_len(buf, total)
+}
+
+fn fs_read(path_bits<u64>) ReadFut {
+    return new ReadFut { path_bits: path_bits }
 }

@@ -4,14 +4,28 @@ use std
 use io
 use string
 use sys
+use runtime
 
-// Returns (io.Ok, true) if `path` exists, (io.Ok, false) if it definitively
-// does not (stat NotFound), and (err, false) for any other error (e.g.
-// permission denied on a parent) which the caller must not read as absence.
-async fs_try_exists(path<string.String>) i32, bool {
+// Leaf: stat(2); returns (err, exists_flag) with exists_flag i32 0/1.
+mem TryExistsFut: async {
+    u64 path_bits
+    u64 pad
+}
+
+TryExistsFut::poll(ctx) {
     s<std.Stat> = new std.Stat
-    err<i32>, _ = sys.cvt(sys_stat(path.str(), s))
-    if err == io.Ok return io.Ok, true
-    if err == io.NotFound return io.Ok, false
-    return err, false
+    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    err<i32>, junk<u64> = sys.cvt(sys.stat(pc, s.(u64)))
+    ok_code<i32> = 1
+    zero<i32> = 0
+    one<i32> = 1
+    not_found<i32> = 16908289
+    ready<i32> = runtime.PollReady
+    if err == ok_code return ready, ok_code, one
+    if err == not_found return ready, ok_code, zero
+    return ready, err, zero
+}
+
+fn fs_try_exists(path_bits<u64>) TryExistsFut {
+    return new TryExistsFut { path_bits: path_bits, pad: 0 }
 }

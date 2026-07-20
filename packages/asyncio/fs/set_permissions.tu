@@ -3,10 +3,20 @@
 use io
 use string
 use sys
+use runtime
 
-// Set the permission bits of `path` to `mode` (chmod(2)). Returns io.Ok /
-// error.
-async fs_set_permissions(path<string.String>, mode<u32>) i32 {
-    err<i32>, _ = sys.cvt(sys_chmod(path.str(), mode.(i64)))
-    return err
+mem SetPermissionsFut: async {
+    u64 path_bits
+    u32 mode
+}
+
+SetPermissionsFut::poll(ctx) {
+    mode_u<u32> = this.mode
+    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    err<i32>, junk<u64> = sys.cvt(sys.chmod(pc, mode_u.(i64)))
+    return runtime.PollReady, err
+}
+
+fn fs_set_permissions(path_bits<u64>, mode<u32>) SetPermissionsFut {
+    return new SetPermissionsFut { path_bits: path_bits, mode: mode }
 }
