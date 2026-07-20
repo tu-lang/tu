@@ -125,7 +125,10 @@ fn cvt(t<i32>) i32,u64 {
     if t < 0 {
         return decode_error_code(t), 0
     }
-    return Ok, t.(u64)
+    // Avoid `t.(u64)` — casting a zero i32 has tripped unary-op null.
+    v<u64> = 0
+    v = t
+    return Ok, v
 }
 
 // Mother: last_error() = decode_error_code(errno()). Without errno_location,

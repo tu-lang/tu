@@ -254,3 +254,10 @@ sys_getdents64:
 	mov $217, %rax
 	syscall
 	retq
+
+# kill(pid, sig)
+.global sys_kill
+sys_kill:
+	mov $62, %rax
+	syscall
+	retq

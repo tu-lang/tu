@@ -121,3 +121,5 @@ fn fsync(fd<i32>) (i32)
 fn fdatasync(fd<i32>) (i32)
 fn ftruncate(fd<i32>, length<i64>) (i32)
 fn getdents64(fd<i32>, dirp<u8*>, count<u64>) (i64)
+// kill 62 — used by asyncio.process Child::start_kill (mother: Child::kill).
+fn kill(pid<i32>, sig<i32>) (i32)
