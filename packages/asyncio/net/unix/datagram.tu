@@ -90,13 +90,13 @@ impl rtio.IoOp for UnixRecvOp {
 mem UnixSendFut: async {
     aio.PollEvented* io
     rtio.IoOp*       op
-    i64              size
+    i64              byte_count
 }
 
 UnixSendFut::poll(ctx){
     e<i32>, n<i64> = this.io.poll_write_io(ctx.(u64), this.op)
     if e == runtime.PollPending return runtime.PollPending
-    this.size = n
+    this.byte_count = n
     return runtime.PollReady, e
 }
 
@@ -104,13 +104,13 @@ UnixSendFut::poll(ctx){
 mem UnixRecvFut: async {
     aio.PollEvented* io
     rtio.IoOp*       op
-    i64              size
+    i64              byte_count
 }
 
 UnixRecvFut::poll(ctx){
     e<i32>, n<i64> = this.io.poll_read_io(ctx.(u64), this.op)
     if e == runtime.PollPending return runtime.PollPending
-    this.size = n
+    this.byte_count = n
     return runtime.PollReady, e
 }
 
@@ -119,9 +119,11 @@ UnixRecvFut::poll(ctx){
 async UnixDatagram::send_to(buf<io.Buf>, path<string.String>) i32, u64 {
     sock<netuds.UnixDatagram> = this.io.source()
     op<UnixSendToOp> = new UnixSendToOp { sock: sock, buf: buf, path: path }
-    f<UnixSendFut> = new UnixSendFut { io: this.io, op: op, size: 0 }
+    f<UnixSendFut> = new UnixSendFut { io: this.io, op: op, byte_count: 0 }
     err<i32> = f.await
-    return err, f.size.(u64)
+    nb_i64<i64> = f.byte_count
+    nb<u64> = nb_i64.(u64)
+    return err, nb
 }
 
 // Receive a datagram into `buf`, returning the peer address. Awaits readable
@@ -129,9 +131,11 @@ async UnixDatagram::send_to(buf<io.Buf>, path<string.String>) i32, u64 {
 async UnixDatagram::recv_from(buf<io.Buf>) i32, u64, udsaddr.SocketAddr {
     sock<netuds.UnixDatagram> = this.io.source()
     op<UnixRecvFromOp> = new UnixRecvFromOp { sock: sock, buf: buf, addr_out: null }
-    f<UnixRecvFut> = new UnixRecvFut { io: this.io, op: op, size: 0 }
+    f<UnixRecvFut> = new UnixRecvFut { io: this.io, op: op, byte_count: 0 }
     err<i32> = f.await
-    return err, f.size.(u64), op.addr_out
+    nb_i64<i64> = f.byte_count
+    nb<u64> = nb_i64.(u64)
+    return err, nb, op.addr_out
 }
 
 // Receive a datagram into `buf`, discarding the peer address. Returns
@@ -139,9 +143,11 @@ async UnixDatagram::recv_from(buf<io.Buf>) i32, u64, udsaddr.SocketAddr {
 async UnixDatagram::recv(buf<io.Buf>) i32, u64 {
     sock<netuds.UnixDatagram> = this.io.source()
     op<UnixRecvOp> = new UnixRecvOp { sock: sock, buf: buf }
-    f<UnixRecvFut> = new UnixRecvFut { io: this.io, op: op, size: 0 }
+    f<UnixRecvFut> = new UnixRecvFut { io: this.io, op: op, byte_count: 0 }
     err<i32> = f.await
-    return err, f.size.(u64)
+    nb_i64<i64> = f.byte_count
+    nb<u64> = nb_i64.(u64)
+    return err, nb
 }
 
 // Non-blocking send_to: one writable-readiness check + one syscall.
