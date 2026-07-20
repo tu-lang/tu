@@ -22,18 +22,25 @@ mem Interval {
 
 // Current runtime clock in ms, or 0 when no runtime/time driver is active.
 fn current_now_ms() u64 {
-    th<rttime.TimeHandle> = current_time_handle()
-    if th == null return 0
-    return th.clock.now_ms()
+    return rttime.time_handle_now_ms_bits(current_time_handle_bits())
 }
 
-// Build an Interval firing every `period`; first tick is one period out.
-// Defaults to the Burst missed-tick strategy (tokio's default).
-const interval(period<sys.Duration>) Interval {
+// Mother: time::interval(period) — first tick completes immediately
+// (interval_at(Instant::now(), period)); default MissedTickBehavior::Burst.
+fn interval(period<sys.Duration>) Interval {
     iv<Interval> = new Interval
     iv.period_ms       = period.as_millis()
     iv.missed_strategy = BURST
-    iv.deadline_ms     = current_now_ms() + iv.period_ms
+    iv.deadline_ms     = current_now_ms()
+    return iv
+}
+
+// Mother: time::interval_at(start, period).
+fn interval_at(start_ms<u64>, period<sys.Duration>) Interval {
+    iv<Interval> = new Interval
+    iv.period_ms       = period.as_millis()
+    iv.missed_strategy = BURST
+    iv.deadline_ms     = start_ms
     return iv
 }
 
@@ -62,11 +69,11 @@ Interval::advance(){
 // Await the next tick. Returns (err, fired_instant) where err is io.Ok once
 // the deadline fires. A fresh Sleep registers deadline_ms into the wheel;
 // advance() then reschedules for the following tick.
-async Interval::tick() (i32, rttime.Instant) {
-    e<rttime.TimerEntry> = rttime.TimerEntry::new(this.deadline_ms)
-    s<Sleep> = new Sleep { entry: e, registered: 0 }
-    err<i32> = s.await
-    fired<rttime.Instant> = rttime.Instant::now()
+// Mother: Interval::tick — await the deadline Sleep, then advance the schedule.
+async Interval::tick() {
+    sleep_f<rttime.Sleep> = rttime.sleep_new(this.deadline_ms)
+    err_code<i32>, _ = sleep_f.await
+    fired = now()
     this.advance()
-    return err, fired
+    return err_code, fired
 }

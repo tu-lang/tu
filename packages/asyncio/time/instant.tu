@@ -1,10 +1,10 @@
-// User-facing Instant, re-exporting asyncio.runtime.time's monotonic
-// Instant so callers `use asyncio.time` without reaching into runtime.time.
+// User-facing Instant bridges over asyncio.runtime.time's monotonic Instant.
+// Mother: tokio::time::Instant::now().
 
 use asyncio.runtime.time as rttime
 
 // Sample the current monotonic instant.
-const Instant::now() rttime.Instant {
+fn now() rttime.Instant {
     return rttime.Instant::now()
 }
 

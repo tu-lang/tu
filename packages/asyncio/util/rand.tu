@@ -36,3 +36,8 @@ FastRand::fastrand_n(n<u32>) u32 {
     hi<u64> = prod >> 32
     return hi.(u32)
 }
+
+// Cross-package bridge (member FastRand::fastrand_n is not a stable link symbol).
+fn fastrand_n(f<FastRand>, n<u32>) u32 {
+    return f.fastrand_n(n)
+}

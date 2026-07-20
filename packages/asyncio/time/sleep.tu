@@ -1,77 +1,59 @@
-// Sleep leaf future plus the package-level sleep / sleep_until entries.
-// Sleep registers a TimerEntry into the current runtime's time wheel on
-// first poll and resolves once the wheel fires the deadline.
+// User-facing sleep / sleep_until. Builds a runtime.time Sleep leaf (traced
+// TimerEntry*) and returns it for await / join / select.
+// Mother: tokio::time::sleep / sleep_until.
 
 use runtime
-use io
 use sys
 use asyncio.runtime as rt
 use asyncio.runtime.time as rttime
 
-// Resolve the current runtime's TimeHandle, or null when running outside a
-// runtime / with the time driver disabled.
-fn current_time_handle() rttime.TimeHandle {
+// Prefer context handle; fall back to bits published by builder_block_on.
+// Mother: scheduler::Handle::current() inside the runtime.
+fn current_time_handle_bits() u64 {
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return null
-    dh<rt.DriverHandle> = rt.context_driver_handle(rc)
-    if dh == null return null
-    return dh.time_handle
-}
-
-// Absolute deadline (ms since the time source origin) for a relative delay.
-// Falls back to a bare delay when no runtime clock is available.
-fn deadline_from_duration(d<sys.Duration>) u64 {
-    th<rttime.TimeHandle> = current_time_handle()
-    now<u64> = 0
-    if th != null now = th.clock.now_ms()
-    return now + d.as_millis()
-}
-
-// Absolute deadline (ms since origin) for an absolute Instant. Reads the
-// u64 ns fields directly to avoid passing embedded mem values by address.
-fn deadline_from_instant(when<rttime.Instant>) u64 {
-    th<rttime.TimeHandle> = current_time_handle()
-    if th == null return 0
-    when_ns<u64>   = when.ns_since_epoch
-    origin_ns<u64> = th.source.origin.ns_since_epoch
-    if when_ns <= origin_ns return 0
-    return (when_ns - origin_ns) / 1000000
-}
-
-// Async leaf future for a single deadline. registered flips 0 -> 1 the
-// first time poll links the entry into the wheel.
-mem Sleep: async {
-    rttime.TimerEntry* entry
-    i32                registered
-}
-
-// Link into the wheel on first poll, then defer to the entry's state cell.
-// Returns PollReady, io.Ok once fired; PollReady, TimerShutdown when the
-// entry was deregistered (driver gone / no runtime); PollPending otherwise.
-Sleep::poll(ctx){
-    if this.registered == 0 {
-        th<rttime.TimeHandle> = current_time_handle()
-        if th != null th.register(this.entry)
-        this.registered = 1
+    if rc != null {
+        dh<rt.DriverHandle> = rt.context_driver_handle(rc)
+        if dh != null {
+            bits<u64> = rt.driver_handle_time_bits(dh)
+            if bits != 0 return bits
+        }
     }
-    code<i32> = this.entry.poll_elapsed(ctx.(u64))
-    if code == rttime.RESULT_FIRED return runtime.PollReady, io.Ok
-    if code == rttime.RESULT_CANCELLED return runtime.PollReady, TimerShutdown
-    return runtime.PollPending
+    return rttime.sleep_active_handle_bits()
 }
 
-// Sleep for `d`. Resolves to io.Ok once the deadline fires.
-async sleep(d<sys.Duration>) i32 {
+fn deadline_from_duration(d<sys.Duration>) u64 {
+    rel_ms<u64> = d.as_millis()
+    th_bits<u64> = current_time_handle_bits()
+    if th_bits == 0 return rel_ms
+    now_ms<u64> = rttime.time_handle_now_ms_bits(th_bits)
+    return now_ms + rel_ms
+}
+
+fn deadline_from_instant(when<rttime.Instant>) u64 {
+    th_bits<u64> = current_time_handle_bits()
+    if th_bits == 0 return 0
+    when_ns<u64> = when.ns_since_epoch
+    now_ms<u64> = rttime.time_handle_now_ms_bits(th_bits)
+    now_ns<u64> = now_ms * 1000000
+    if when_ns <= now_ns return now_ms
+    return when_ns / 1000000
+}
+
+// Mother: time::sleep(duration) -> Sleep leaf (as Future for cross-pkg).
+fn sleep(d<sys.Duration>) runtime.Future {
+    // Refresh publish from context when available; never wipe with 0.
+    rttime.sleep_set_handle_bits(current_time_handle_bits())
     deadline<u64> = deadline_from_duration(d)
-    e<rttime.TimerEntry> = rttime.TimerEntry::new(deadline)
-    s<Sleep> = new Sleep { entry: e, registered: 0 }
-    return s.await
+    s = rttime.sleep_new(deadline)
+    fut<runtime.Future> = s
+    return fut
 }
 
-// Sleep until the absolute Instant `when`. Resolves to io.Ok once fired.
-async sleep_until(when<rttime.Instant>) i32 {
+// Mother: time::sleep_until(deadline) -> Sleep leaf (as Future).
+fn sleep_until(when<rttime.Instant>) runtime.Future {
+    rttime.sleep_set_handle_bits(current_time_handle_bits())
     deadline<u64> = deadline_from_instant(when)
-    e<rttime.TimerEntry> = rttime.TimerEntry::new(deadline)
-    s<Sleep> = new Sleep { entry: e, registered: 0 }
-    return s.await
+    s = rttime.sleep_new(deadline)
+    fut<runtime.Future> = s
+    return fut
 }
