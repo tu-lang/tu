@@ -80,12 +80,13 @@ fn send(fd<i32>, buff<u8*>, len<u64>, flags<i32>) (i64)
 fn sendto(fd<i32>, buff<u8*>, len<u64>, flags<i32>, addr<u64>, addrlen<i32>) (i64)
 // recvfrom 45
 fn recv(fd<i32>, buff<u8*>, len<u64>, flags<i32>) (i64)
-fn recvfrom(fd<i32>, buff<u8*>, len<u64>, flags<i32>, addr<u64>, addrlen<i32>) (i64)
+fn recvfrom(fd<i32>, buff<u8*>, len<u64>, flags<i32>, addr<u64>, addrlen<i32*>) (i64)
 // shutdown 48
 fn shutdown(fd<i32>, how<i32>) (i32)
 // setsockopt / getsockopt 54 / 55
+// optlen / addrlen are socklen_t* out-params (mother: libc).
 fn setsockopt(fd<i32>, level<i32>, optname<i32>, optval<u64>, optlen<u32>) (i32)
-fn getsockopt(fd<i32>, level<i32>, optname<i32>, optval<u64>, optlen<i32>) (i32)
+fn getsockopt(fd<i32>, level<i32>, optname<i32>, optval<u64>, optlen<i32*>) (i32)
 // getaddrinfo is libc (not a Linux syscall). Asm stub returns EAI_FAIL until a resolver exists.
 fn getaddrinfo(node<i8*>, service<u64>, hints<AddrInfo>, res<u64*>) (i32)
 // fcntl 72

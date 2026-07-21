@@ -95,14 +95,13 @@ Socket::recv_from_with_flags(
     addrlen<i32> = sizeof(SockaddrStorage)
 
     err<i32> , n<i64> = cvt(
-        //TODO:
         recvfrom(
             file_desc_raw(this.desc),
             buf.ptr(),
             buf.len(),
             flags,
             storage,
-            addrlen,
+            &addrlen,
         )
     )
     if err != Ok return err
@@ -143,7 +142,9 @@ Socket::shutdown(how<i32>) i32 {
 }
 
 Socket::take_error() i32 ,i32, i32 {
-    err<i32> , raw<i32>  = socket_getsockopt(this, SOL_SOCKET, SO_ERROR)
+    // Mother: getsockopt SOL_SOCKET/SO_ERROR → Option<i32>.
+    optlen<i32> = 4
+    err<i32> , raw<i32>  = socket_getsockopt_i32(this, SOL_SOCKET, SO_ERROR, optlen)
     if err != Ok return err, None, 0
 
     if raw == 0 { 
@@ -168,7 +169,6 @@ fn socket_setsockopt(
     option_value<u64>,
     len<u32>,
 ) i32 {
-    //TODO:
     err<i32> = cvt(setsockopt(
         sock.as_raw(),
         level,
@@ -179,18 +179,22 @@ fn socket_setsockopt(
     return err
 }
 
-fn socket_getsockopt(sock<Socket>, level<i32>, option_name<i32>,option_len<i32>) i32 ,u64 {
-    option_value<i8*> = new option_len
-    //TODO:
+// Mother getsockopt<T>: &mut optval + &mut optlen. Returns (err, value as i32).
+fn socket_getsockopt_i32(sock<Socket>, level<i32>, option_name<i32>, optlen_in<i32>) i32 ,i32 {
+    optval<i32> = 0
+    optlen<i32> = optlen_in
+    // Same pattern as netio set_reuseaddr_fd: &val via i32* then .(u64).
+    vp<i32*> = &optval
+    oval_bits<u64> = vp.(u64)
     err<i32> = cvt(getsockopt(
         sock.as_raw(),
         level,
         option_name,
-        option_value,
-        option_len,
+        oval_bits,
+        &optlen,
     ))
-    if err != Ok return err
-    return Ok , option_value
+    if err != Ok return err, 0
+    return Ok , optval
 }
 
 // Cross-pkg: bind/accept buffers are SockaddrStorage* held as u64.
@@ -367,12 +371,15 @@ TcpStream::write(buf<io.Buf>) i32, u64 {
 }
 
 TcpStream::shutdown(how<i32>) i32 {
-    return this.socket_hub.shutdown(how)
+    // Localize socket_hub — chaining this.socket_hub.method() returns garbage / segfaults.
+    sock<Socket> = this.socket_hub
+    return sock.shutdown(how)
 }
 
 TcpStream::take_error() i32,i32,i32 {
-    ok<i32>, has<i32> , ret<i32> = this.socket_hub.take_error()
-    return ok,has,ret
+    sock<Socket> = this.socket_hub
+    ok<i32>, has<i32>, ret<i32> = sock.take_error()
+    return ok, has, ret
 }
 
 mem TcpListener {
