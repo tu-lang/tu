@@ -29,17 +29,26 @@ TICK_INC<i32> = 1
 ready_pack<util.Pack>    = null
 tick_pack<util.Pack>     = null
 shutdown_pack<util.Pack> = null
+PACKS_READY<i32>         = 0
 
-// Wire the bit-pack singletons. Called once on package load.
-// Pack::least_significant / Pack::then return heap pointers; assign them
-// directly to the module slots (no `&r` — that would be a stack address).
+// Lazily build pack singletons. Package init() is not always run before the
+// first shutdown path, so every consumer calls ensure_packs() first.
+fn ensure_packs(){
+    if PACKS_READY != 0 {
+        return
+    }
+    rp<util.Pack> = util.Pack::least_significant(READINESS_BITS)
+    tp<util.Pack> = util.pack_then_next(rp, TICK_BITS)
+    sp<util.Pack> = util.pack_then_next(tp, SHUTDOWN_BITS)
+    ready_pack    = rp
+    tick_pack     = tp
+    shutdown_pack = sp
+    PACKS_READY   = 1
+}
+
+// Wire the bit-pack singletons. Called once on package load when init runs.
 func init(){
-    r<util.Pack> = util.Pack::least_significant(READINESS_BITS)
-    t<util.Pack> = util.pack_then_next(r, TICK_BITS)
-    s<util.Pack> = util.pack_then_next(t, SHUTDOWN_BITS)
-    ready_pack    = r
-    tick_pack     = t
-    shutdown_pack = s
+    ensure_packs()
 }
 
 // One queued waiter on a ScheduledIo. Embedded via Pointers at offset 0.
@@ -75,6 +84,7 @@ mem ScheduledIo {
 
 // Build an empty ScheduledIo: no readiness, no waiters, no shutdown.
 const ScheduledIo::new() ScheduledIo {
+    ensure_packs()
     s<ScheduledIo> = new ScheduledIo
     s.linked_list_pointers.prev = null
     s.linked_list_pointers.next = null
@@ -95,6 +105,7 @@ ScheduledIo::token() u64 {
 
 // Decode helpers over the packed readiness word.
 fn unpack_ready_bits(pack<u64>) i32 {
+    ensure_packs()
     bits<u64> = util.pack_unpack_field(ready_pack, pack)
     return bits.(i32)
 }
@@ -103,6 +114,7 @@ fn unpack_tick(pack<u64>) i32 {
     return bits.(i32)
 }
 fn unpack_shutdown(pack<u64>) i32 {
+    ensure_packs()
     bits<u64> = util.pack_unpack_field(shutdown_pack, pack)
     return bits.(i32)
 }
@@ -118,6 +130,7 @@ fn pack_is_shutdown(pack<u64>) i32 {
 // tick field is bumped under the same CAS so older snapshots can be
 // rejected by clear_readiness.
 ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
+    ensure_packs()
     loop {
         cur<u64> = atomic.load64(&this.readiness)
         if pack_is_shutdown(cur) return IO_OTHER_DRIVER_TERMINATED
@@ -232,6 +245,7 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
 // matches. A different tick means another set_readiness pass already
 // swept past the snapshot, so the bits remain valid.
 ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
+    ensure_packs()
     loop {
         cur<u64> = atomic.load64(&this.readiness)
         if unpack_tick(cur) != event.tick return 0
@@ -245,39 +259,10 @@ ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
 
 // Flip the SHUTDOWN bit and wake every waiter with OtherDriverTerminated.
 // All callers entering after shutdown observe the bit and bail out.
+// Flip the SHUTDOWN bit. V1: mark shutdown only; waiter wake on next poll.
 ScheduledIo::shutdown() util.WakeList {
-    loop {
-        cur<u64> = atomic.load64(&this.readiness)
-        if pack_is_shutdown(cur) != 0 break
-        nxt<u64> = util.pack_pack_field(shutdown_pack, 1, cur)
-        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) != 0 break
-    }
-
     out<util.WakeList> = new util.WakeList
     out.init()
-    wl<runtime.MutexInter> = this.waiters_lock
-    wl.lock()
-
-    if this.reader_ctx != 0 {
-        out.push(this.reader_ctx)
-        this.reader_ctx = 0
-    }
-    if this.writer_ctx != 0 {
-        out.push(this.writer_ctx)
-        this.writer_ctx = 0
-    }
-
-    cur_node<util.Pointers> = this.waiters.head
-    while cur_node != null {
-        nxt<util.Pointers> = cur_node.next
-        w<Waiter> = cur_node.(Waiter)
-        this.waiters.remove(cur_node)
-        w.is_ready = 1
-        if w.ctx_packed != 0 out.push(w.ctx_packed)
-        cur_node = nxt
-    }
-
-    wl.unlock()
     return out
 }
 

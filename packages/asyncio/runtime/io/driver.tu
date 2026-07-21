@@ -181,16 +181,25 @@ IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
 // Drain everything. Called on runtime shutdown; every waiter then observes
 // OtherDriverTerminated on its next poll_readiness or Readiness::poll.
 IoHandle::shutdown(){
+    if this.registrations == null || this.synced == null {
+        return
+    }
+    if this.synced_lock == null {
+        return
+    }
     lk<runtime.MutexInter> = this.synced_lock
     lk.lock()
     head<ScheduledIo> = this.registrations.shutdown(this.synced)
     lk.unlock()
     cur<ScheduledIo> = head
     while cur != null {
-        nxt_node<util.Pointers> = cur.linked_list_pointers.next
-        cur.shutdown()
-        if nxt_node == null break
-        cur = nxt_node.(ScheduledIo)
+        nxt_ptr<util.Pointers> = cur.linked_list_pointers.next
+        wakes<util.WakeList> = cur.shutdown()
+        util.wake_list_clear(wakes)
+        if nxt_ptr == null {
+            break
+        }
+        cur = nxt_ptr.(ScheduledIo)
     }
 }
 

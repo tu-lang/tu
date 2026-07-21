@@ -72,7 +72,7 @@ Interval::advance(){
 // Mother: Interval::tick — await the deadline Sleep, then advance the schedule.
 async Interval::tick() {
     sleep_f<rttime.Sleep> = rttime.sleep_new(this.deadline_ms)
-    err_code<i32>, _ = sleep_f.await
+    err_code<i32> = sleep_f.await
     fired = now()
     this.advance()
     return err_code, fired
