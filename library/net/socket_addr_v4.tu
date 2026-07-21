@@ -30,7 +30,7 @@ SocketAddrV4::set_port_num(new_port<u16>) {
 SocketAddrV4::into_inner() sys.SockaddrIn {
     return new sys.SockaddrIn{
         sin_family: sys.AF_INET,
-        sin_port: this.port_val,
+        sin_port: sys.u16_to_be(this.port_val),
         sin_addr: sys.InAddr{
             s_addr: this.host_v4.into_inner()
         }

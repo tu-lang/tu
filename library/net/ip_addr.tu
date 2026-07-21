@@ -35,7 +35,16 @@ Ipv4Addr::octets()  u8,u8,u8,u8 {
 }
 
 Ipv4Addr::into_inner() u32 {
-    return this.octets()
+    // Mother: u32::from_ne_bytes(self.octets()) — host endian pack.
+    o0<u8> = this.octets[0]
+    o1<u8> = this.octets[1]
+    o2<u8> = this.octets[2]
+    o3<u8> = this.octets[3]
+    a<u32> = o0.(u32)
+    b<u32> = o1.(u32)
+    c<u32> = o2.(u32)
+    d<u32> = o3.(u32)
+    return a | (b << 8) | (c << 16) | (d << 24)
 }
 
 Ipv4Addr::string() string.String {

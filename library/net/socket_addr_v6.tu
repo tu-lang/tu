@@ -44,7 +44,7 @@ SocketAddrV6::scope_id() u32 {
 SocketAddrV6::into_inner() sys.SockaddrIn6 {
     addr<sys.SockaddrIn6> = new sys.SockaddrIn6 {
         sin6_family: sys.AF_INET6,
-        sin6_port: this.port_val,
+        sin6_port: sys.u16_to_be(this.port_val),
         sin6_flowinfo: this.flow_bits,
         sin6_scope_id: this.scope_bits,
     }
