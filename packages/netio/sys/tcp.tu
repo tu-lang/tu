@@ -3,7 +3,6 @@ use io
 use net
 use runtime
 use sys as libsys
-use fmt
 
 fn new_for_addr(address<net.SocketAddr>) i32, i32 {
 	if net.socket_addr_is_v4(address) {
@@ -17,13 +16,8 @@ fn new_for_addr(address<net.SocketAddr>) i32, i32 {
 
 // Mother tcp::bind via as_raw_fd; fd variant avoids broken cross-pkg as_raw_fd.
 fn tcp_bind_fd(fd<i32>, addr<net.SocketAddr>) i32 {
-	fmt.println("tbf1")
 	ptr_bits<u64>, raw_len<i32> = socket_addr(addr)
-	fmt.println("tbf2")
-	fmt.println(int(raw_len))
 	err<i32>, junk<u64> = libsys.cvt(libsys.bind(fd, ptr_bits, raw_len))
-	fmt.println("tbf3")
-	fmt.println(int(err))
 	return err
 }
 

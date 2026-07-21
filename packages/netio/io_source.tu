@@ -45,32 +45,35 @@ IoSource::io_object_bits() u64 {
 	return this.io_bits
 }
 
-IoSource::register(registry<Registry>, t<Token>, interests<Interest>) i32 {
+// Mother: IoSource::register. Named enroll_fd so callers avoid `.register` trap.
+IoSource::enroll_fd(registry<Registry>, t<Token>, interests<Interest>) i32 {
 	sel<nsys.Selector> = registry_selector(registry)
 	if this.selector_id != 0 && this.selector_id != sel.id()
 		return io.AlreadyExists
 	this.selector_id = sel.id()
-	ret<i32> = sel.register(this.raw_fd, t.as_u64(), interest_as_u8(interests))
+	ret<i32> = nsys.selector_add_fd(sel, this.raw_fd, t.as_u64(), interest_as_u8(interests))
 	return ret
 }
 
-IoSource::reregister(registry<Registry>, t<Token>, interests<Interest>) i32 {
+// Mother: IoSource::reregister.
+IoSource::reenroll_fd(registry<Registry>, t<Token>, interests<Interest>) i32 {
 	sel2<nsys.Selector> = registry_selector(registry)
 	if this.selector_id == 0
 		return io.NotFound
 	if this.selector_id != sel2.id()
 		return io.AlreadyExists
-	return sel2.reregister(this.raw_fd, t.as_u64(), interest_as_u8(interests))
+	return nsys.selector_mod_fd(sel2, this.raw_fd, t.as_u64(), interest_as_u8(interests))
 }
 
-IoSource::deregister(registry<Registry>) i32 {
+// Mother: IoSource::deregister.
+IoSource::detach_fd(registry<Registry>) i32 {
 	sel3<nsys.Selector> = registry_selector(registry)
 	if this.selector_id == 0
 		return io.NotFound
 	if this.selector_id != sel3.id()
 		return io.AlreadyExists
 	this.selector_id = 0
-	return sel3.deregister(this.raw_fd)
+	return nsys.selector_del_fd(sel3, this.raw_fd)
 }
 
 // Mother IoSource::new(T): pass as_raw_fd() + object heap bits.
@@ -97,15 +100,15 @@ fn iosource_raw_fd(bits<u64>) i32 {
 
 fn iosource_register_bits(bits<u64>, registry<Registry>, t<Token>, interests<Interest>) i32 {
 	src<IoSource> = bits.(IoSource)
-	return src.register(registry, t, interests)
+	return src.enroll_fd(registry, t, interests)
 }
 
 fn iosource_reregister_bits(bits<u64>, registry<Registry>, t<Token>, interests<Interest>) i32 {
 	src<IoSource> = bits.(IoSource)
-	return src.reregister(registry, t, interests)
+	return src.reenroll_fd(registry, t, interests)
 }
 
 fn iosource_deregister_bits(bits<u64>, registry<Registry>) i32 {
 	src<IoSource> = bits.(IoSource)
-	return src.deregister(registry)
+	return src.detach_fd(registry)
 }

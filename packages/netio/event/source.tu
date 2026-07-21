@@ -1,14 +1,19 @@
 use io
 use netio
 
+// Mother mio::event::Source. Method names avoid `.register` / `.deregister`
+// type-assert traps (same class as register_sfd / park_iod).
 api Source {
-	fn register(registry<netio.Registry>, token<netio.Token>, interests<netio.Interest>) i32 {
+	// Mother: register.
+	fn enroll(registry<netio.Registry>, token<netio.Token>, interests<netio.Interest>) i32 {
 		return io.Uncategorized
 	}
-	fn reregister(registry<netio.Registry>, token<netio.Token>, interests<netio.Interest>) i32 {
+	// Mother: reregister.
+	fn reenroll(registry<netio.Registry>, token<netio.Token>, interests<netio.Interest>) i32 {
 		return io.Uncategorized
 	}
-	fn deregister(registry<netio.Registry>) i32 {
+	// Mother: deregister.
+	fn detach(registry<netio.Registry>) i32 {
 		return io.Uncategorized
 	}
 }

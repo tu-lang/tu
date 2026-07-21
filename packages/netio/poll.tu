@@ -3,7 +3,6 @@ use io
 use netio.sys as nsys
 use sys as libsys
 use runtime
-use fmt
 
 mem Poll {
 	Registry* reg_store // mother: registry
@@ -44,13 +43,19 @@ fn poll_poll(p<Poll>, events<event.Events>, timeout<libsys.Duration>) i32 {
     return p.poll(events, timeout)
 }
 
-fn registry_register(reg<Registry>, source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
-    r<i32> = reg.register(source_obj, t, interests)
-    return r
+fn registry_register(reg<Registry>, iosrc_bits<u64>, t<Token>, interests<Interest>) i32 {
+    // Bypass event.Source api dispatch (`.enroll` / `.register` segfault under
+    // current codegen). All netio Sources wrap IoSource; mother still goes
+    // Registry::register → Source::register → selector.
+    return iosource_register_bits(iosrc_bits, reg, t, interests)
 }
 
-fn registry_deregister(reg<Registry>, source_obj<event.Source>) i32 {
-    return reg.deregister(source_obj)
+fn registry_deregister(reg<Registry>, iosrc_bits<u64>) i32 {
+    return iosource_deregister_bits(iosrc_bits, reg)
+}
+
+fn registry_reregister(reg<Registry>, iosrc_bits<u64>, t<Token>, interests<Interest>) i32 {
+    return iosource_reregister_bits(iosrc_bits, reg, t, interests)
 }
 
 Poll::registry() Registry {
@@ -71,18 +76,6 @@ Poll::poll(events<event.Events>, timeout<libsys.Duration>) i32 {
 	}
 	sel<nsys.Selector> = registry_selector(this.reg_store)
 	return nsys.selector_select(sel, events.sys(), timeout_ms)
-}
-
-Registry::register(source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
-	return source_obj.register(this, t, interests)
-}
-
-Registry::reregister(source_obj<event.Source>, t<Token>, interests<Interest>) i32 {
-	return source_obj.reregister(this, t, interests)
-}
-
-Registry::deregister(source_obj<event.Source>) i32 {
-	return source_obj.deregister(this)
 }
 
 Registry::try_clone() i32, Registry {

@@ -2,6 +2,7 @@ use io
 use net
 use string
 use sys
+use netio.sys as nsys
 
 fn path_offset(sockaddr<sys.SockaddrUn>) i32 {
 	base<u64> = sockaddr
@@ -14,7 +15,7 @@ fn socket_addr(path<string.String>) i32, sys.SockaddrUn, i32 {
 	sockaddr.sun_family = sys.AF_UNIX
 	bytes<u8*> = path.str()
 	length<i32> = path.len()
-	if length >= sizeof(sockaddr.sun_path)
+	if length >= sys.SUN_PATH_LEN
 		return io.InvalidInputPathShorterSunLen, null, 0
 
 	i<i32> = 0
@@ -25,13 +26,37 @@ fn socket_addr(path<string.String>) i32, sys.SockaddrUn, i32 {
 
 	offset<i32> = path_offset(sockaddr)
 	socklen<i32> = offset + length + 1
-	return Ok, sockaddr, socklen
+	return nsys.Ok, sockaddr, socklen
 }
 
 fn socket_pair(flags<i32>) i32, net.UnixStream, net.UnixStream {
 	fds<i32*> = new 8
-	err<i32> = sys.cvt(sys.socketpair(sys.AF_UNIX, flags | sys.SOCK_NONBLOCK | sys.SOCK_CLOEXEC, 0, fds))
-	if err != Ok
+	err<i32> = sys.cvt(sys.socketpair(sys.AF_UNIX, flags | nsys.SOCK_NONBLOCK | nsys.SOCK_CLOEXEC, 0, fds))
+	if err != nsys.Ok
 		return err, null, null
-	return Ok, net.UnixStream::fromrawfd(fds[0]), net.UnixStream::fromrawfd(fds[1])
+	return nsys.Ok, stream_from_fd(fds[0]), stream_from_fd(fds[1])
+}
+
+fn stream_from_fd(fd<i32>) net.UnixStream {
+	return new net.UnixStream {
+		socket_hub: new sys.Socket {
+			desc: sys.FileDesc::from_raw_fd(fd)
+		}
+	}
+}
+
+fn listener_from_fd(fd<i32>) net.UnixListener {
+	return new net.UnixListener {
+		socket_hub: new sys.Socket {
+			desc: sys.FileDesc::from_raw_fd(fd)
+		}
+	}
+}
+
+fn datagram_from_fd(fd<i32>) net.UnixDatagram {
+	return new net.UnixDatagram {
+		socket_hub: new sys.Socket {
+			desc: sys.FileDesc::from_raw_fd(fd)
+		}
+	}
 }

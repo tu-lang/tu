@@ -3,22 +3,23 @@ use io
 use net
 use string
 use sys
+use netio.sys as nsys
 
 fn connect(path<string.String>) i32, net.UnixStream {
-	err<i32>, fd<i32> = netio.sys.new_socket(sys.AF_UNIX, sys.SOCK_STREAM)
-	if err != Ok
+	err<i32>, fd<i32> = nsys.new_socket(sys.AF_UNIX, sys.SOCK_STREAM)
+	if err != nsys.Ok
 		return err, null
 	err, sockaddr<sys.SockaddrUn>, socklen<i32> = socket_addr(path)
-	if err != Ok {
+	if err != nsys.Ok {
 		sys.close(fd)
 		return err, null
 	}
 	err = sys.cvt(sys.connect(fd, sockaddr, socklen))
-	if err != Ok && err != io.WouldBlock {
+	if err != nsys.Ok && err != io.WouldBlock {
 		sys.close(fd)
 		return err, null
 	}
-	return Ok, net.UnixStream::fromrawfd(fd)
+	return nsys.Ok, stream_from_fd(fd)
 }
 
 fn pair() i32, net.UnixStream, net.UnixStream {

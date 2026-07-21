@@ -1,12 +1,12 @@
 // epoll Selector (mother: netio/src/sys/epoll.rs).
+// Kernel epoll_event is packed 12 bytes (u32 events + u64 data at offset 4).
+// Tu mem cannot express packed layout, so Events store a raw packed buffer
+// and unpack on read; epoll_ctl packs into a 12-byte scratch.
 
 use netio
 use runtime
 use std
 use sys as libsys
-
-// Linux x86_64 epoll / fcntl / close — declared in library/sys (symbols sys_*).
-// Do not redeclare as sys_epoll_* here (package netio.sys → netio_sys_sys_epoll_*).
 
 LOWEST_FD<i32> = 3
 EPOLL_CLOEXEC<i32> = 0x80000
@@ -24,30 +24,32 @@ EPOLLET<u32> = 0x80000000
 
 NEXT_SELECTOR_ID<u64> = 1
 
-EVENT_SIZE<u64> = 16
+// Linux x86_64 sizeof(struct epoll_event) with __attribute__((packed)).
+KERNEL_EVENT_SIZE<u64> = 12
 
+// Unpacked logical event used by netio callers (not the kernel layout).
 mem Event {
 	u32 flags
 	u64 token
 }
 
 mem Events {
-	Event* store
-	u64 count
-	u64 capacity_val
+	u64  store_bits
+	u64  count
+	u64  capacity_val
 }
 
 const Events::with_capacity(capacity<u64>) Events {
-	ptr<u64> = std.malloc(EVENT_SIZE * capacity)
-	return new Events { store: ptr.(Event), count: 0, capacity_val: capacity }
+	ptr_bits<u64> = std.malloc(KERNEL_EVENT_SIZE * capacity)
+	return new Events { store_bits: ptr_bits, count: 0, capacity_val: capacity }
 }
 
 fn events_clear(evts<Events>) {
 	evts.count = 0
 }
 
-fn events_as_mut_ptr(evts<Events>) Event {
-	return evts.store
+fn events_as_mut_ptr(evts<Events>) u64 {
+	return evts.store_bits
 }
 
 fn events_get_capacity(evts<Events>) u64 {
@@ -62,17 +64,66 @@ fn events_slot_count(evts<Events>) u64 {
 	return evts.count
 }
 
+// Read little-endian u32 at aligned address bits.
+fn packed_read_u32(p_bits<u64>) u32 {
+	out<u32> = 0
+	dst<u8*> = null
+	src<u8*> = null
+	dst = &out
+	src = p_bits
+	std.memcpy(dst, src, 4)
+	return out
+}
+
+// Read little-endian u64 at possibly unaligned address bits.
+fn packed_read_u64(p_bits<u64>) u64 {
+	out<u64> = 0
+	dst<u8*> = null
+	src<u8*> = null
+	dst = &out
+	src = p_bits
+	std.memcpy(dst, src, 8)
+	return out
+}
+
+fn packed_write_u32(p_bits<u64>, v<u32>) {
+	dst<u8*> = null
+	src<u8*> = null
+	dst = p_bits
+	src = &v
+	std.memcpy(dst, src, 4)
+}
+
+fn packed_write_u64(p_bits<u64>, v<u64>) {
+	dst<u8*> = null
+	src<u8*> = null
+	dst = p_bits
+	src = &v
+	std.memcpy(dst, src, 8)
+}
+
+// Pack (flags, token) into a 12-byte heap buffer; returns pointer bits for epoll_ctl.
+fn pack_kernel_event(flags<u32>, token<u64>) u64 {
+	base_bits<u64> = std.malloc(KERNEL_EVENT_SIZE)
+	packed_write_u32(base_bits, flags)
+	packed_write_u64(base_bits + 4, token)
+	return base_bits
+}
+
 fn events_get(evts<Events>, pos<u64>) Event {
 	if pos >= evts.count
 		return null
-	return evts.store + pos
+	base_bits<u64> = evts.store_bits + (pos * KERNEL_EVENT_SIZE)
+	flags<u32> = packed_read_u32(base_bits)
+	token<u64> = packed_read_u64(base_bits + 4)
+	return new Event { flags: flags, token: token }
 }
 
 Events::clear() {
 	events_clear(this)
 }
 
-Events::as_mut_ptr() Event {
+Events::as_mut_ptr() u64 {
 	return events_as_mut_ptr(this)
 }
 
@@ -105,7 +156,6 @@ const Selector::new(_unused<i32>) i32, Selector {
 	return libsys.Ok, s
 }
 
-// Single-return constructor — avoids nested multi-return codegen dropping the pointer.
 fn selector_create() Selector {
 	ep<i32> = libsys.epoll_create1(EPOLL_CLOEXEC)
 	if ep == -1
@@ -118,7 +168,6 @@ fn selector_create() Selector {
 		has_waker: 0
 	}
 }
-
 
 fn selector_ep(sel<Selector>) i32 {
 	return sel.ep
@@ -152,60 +201,35 @@ fn selector_select_impl(sel<Selector>, evts<Events>, timeout_ms_in<i32>) i32 {
 	timeout_ms<i32> = timeout_ms_in
 
 	events_clear(evts)
-	ev_ptr<Event> = events_as_mut_ptr(evts)
+	raw_bits<u64> = events_as_mut_ptr(evts)
 	cap_u<u64> = events_get_capacity(evts)
 	cap_i<i32> = cap_u.(i32)
 	ep_fd<i32> = selector_ep(sel)
-	n_events<i32> = libsys.epoll_wait(ep_fd, ev_ptr.(u64), cap_i, timeout_ms)
+	n_events<i32> = libsys.epoll_wait(ep_fd, raw_bits, cap_i, timeout_ms)
 	if n_events == -1
 		return libsys.last_error()
 	events_set_count(evts, n_events.(u64))
 	return libsys.Ok
 }
 
-// timeout_ms: -1 forever; else millis (mother Option<Duration>).
 Selector::select(evts<Events>, timeout_ms_in<i32>) i32 {
 	return selector_select_impl(this, evts, timeout_ms_in)
 }
 
 Selector::register(fd<i32>, t_bits<u64>, interest_bits<u8>) i32 {
-	ev<Event> = new Event {
-		flags: interests_to_epoll(interest_bits),
-		token: t_bits
-	}
-	ret<i32> = libsys.epoll_ctl(selector_ep(this), EPOLL_CTL_ADD, fd, ev.(u64))
-	if ret == -1
-		return libsys.last_error()
-	return libsys.Ok
+	return selector_add_fd(this, fd, t_bits, interest_bits)
 }
 
 Selector::register_readable(fd<i32>, t_bits<u64>) i32 {
-	ev<Event> = new Event {
-		flags: interests_to_epoll(1),
-		token: t_bits
-	}
-	ret<i32> = libsys.epoll_ctl(selector_ep(this), EPOLL_CTL_ADD, fd, ev.(u64))
-	if ret == -1
-		return libsys.last_error()
-	return libsys.Ok
+	return selector_add_fd(this, fd, t_bits, 1)
 }
 
 Selector::reregister(fd<i32>, t_bits<u64>, interest_bits<u8>) i32 {
-	ev<Event> = new Event {
-		flags: interests_to_epoll(interest_bits),
-		token: t_bits
-	}
-	ret<i32> = libsys.epoll_ctl(selector_ep(this), EPOLL_CTL_MOD, fd, ev.(u64))
-	if ret == -1
-		return libsys.last_error()
-	return libsys.Ok
+	return selector_mod_fd(this, fd, t_bits, interest_bits)
 }
 
 Selector::deregister(fd<i32>) i32 {
-	ret<i32> = libsys.epoll_ctl(selector_ep(this), EPOLL_CTL_DEL, fd, 0)
-	if ret == -1
-		return libsys.last_error()
-	return libsys.Ok
+	return selector_del_fd(this, fd)
 }
 
 Selector::register_waker() i32 {
@@ -226,7 +250,6 @@ Selector::drop() {
 	libsys.close(selector_ep(this))
 }
 
-// Mother Interest::is_readable / is_writable, encoded as u8 bits.
 fn interests_to_epoll(interest_bits<u8>) u32 {
 	kind<u32> = EPOLLET
 	if (interest_bits & 1) != 0
@@ -264,7 +287,6 @@ fn event_is_priority(evt<Event>) i32 {
 	return (evt.flags & EPOLLPRI) != 0
 }
 
-// Raw-bits bridges for cross-package Registry storage (mother: selector field).
 fn selector_from_bits(bits<u64>) Selector {
 	return bits.(Selector)
 }
@@ -274,6 +296,30 @@ fn selector_to_bits(sel<Selector>) u64 {
 fn selector_select(sel<Selector>, evts<Events>, timeout_ms<i32>) i32 {
 	return selector_select_impl(sel, evts, timeout_ms)
 }
+
+// Package bridges — callers must not write `sel.register` / `.deregister`
+// (type-assert traps). Bodies inlined; do not call Selector::register by name.
+fn selector_add_fd(sel<Selector>, fd<i32>, t_bits<u64>, interest_bits<u8>) i32 {
+	ev_bits<u64> = pack_kernel_event(interests_to_epoll(interest_bits), t_bits)
+	ret<i32> = libsys.epoll_ctl(selector_ep(sel), EPOLL_CTL_ADD, fd, ev_bits)
+	if ret == -1
+		return libsys.last_error()
+	return libsys.Ok
+}
+fn selector_mod_fd(sel<Selector>, fd<i32>, t_bits<u64>, interest_bits<u8>) i32 {
+	ev_bits<u64> = pack_kernel_event(interests_to_epoll(interest_bits), t_bits)
+	ret<i32> = libsys.epoll_ctl(selector_ep(sel), EPOLL_CTL_MOD, fd, ev_bits)
+	if ret == -1
+		return libsys.last_error()
+	return libsys.Ok
+}
+fn selector_del_fd(sel<Selector>, fd<i32>) i32 {
+	ret<i32> = libsys.epoll_ctl(selector_ep(sel), EPOLL_CTL_DEL, fd, 0)
+	if ret == -1
+		return libsys.last_error()
+	return libsys.Ok
+}
+
 fn selector_register_waker_bit(sel<Selector>) i32 {
 	already<i32> = selector_has_waker(sel)
 	selector_set_has_waker(sel, 1)
@@ -281,7 +327,8 @@ fn selector_register_waker_bit(sel<Selector>) i32 {
 }
 fn selector_try_clone_bits(sel<Selector>) i32, u64 {
 	err<i32>, cloned<Selector> = sel.try_clone()
-	if err != libsys.Ok
-		return err, 0.(u64)
+	zero<u64> = 0
+	ok_code<i32> = 1
+	if err != ok_code return err, zero
 	return err, selector_to_bits(cloned)
 }

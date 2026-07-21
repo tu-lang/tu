@@ -1,5 +1,6 @@
 use string
 use sys
+use netio.sys as nsys
 
 mem SocketAddr {
 	sys.SockaddrUn sockaddr
@@ -14,9 +15,9 @@ const SocketAddr::new(builder) i32, SocketAddr {
 	sockaddr<sys.SockaddrUn> = new sys.SockaddrUn {}
 	socklen<i32> = sizeof(sys.SockaddrUn)
 	err<i32> = builder(sockaddr, &socklen)
-	if err != Ok
+	if err != nsys.Ok
 		return err, null
-	return Ok, SocketAddr::from_parts(sockaddr, socklen)
+	return nsys.Ok, SocketAddr::from_parts(sockaddr, socklen)
 }
 
 SocketAddr::as_pathname() string.String {
