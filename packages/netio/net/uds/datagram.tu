@@ -47,13 +47,13 @@ UnixDatagram::send_to(buf<io.Buf>, path<string.String>) i32, u64 {
 }
 
 impl event.Source for UnixDatagram {
-	fn register(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
+	fn enroll(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
 		return netio.iosource_register_bits(this.iosrc_bits, registry, t, interests)
 	}
-	fn reregister(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
+	fn reenroll(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
 		return netio.iosource_reregister_bits(this.iosrc_bits, registry, t, interests)
 	}
-	fn deregister(registry<netio.Registry>) i32 {
+	fn detach(registry<netio.Registry>) i32 {
 		return netio.iosource_deregister_bits(this.iosrc_bits, registry)
 	}
 }

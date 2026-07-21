@@ -47,6 +47,12 @@ const TcpStream::connect(addr<net.SocketAddr>) i32 {
 	return io.Ok
 }
 
+// Package bridge — asyncio member async connect must not call
+// nettcp.TcpStream::connect by static name (same leaf name corrupts the frame).
+fn tcp_stream_connect(addr<net.SocketAddr>) i32 {
+	return TcpStream::connect(addr)
+}
+
 TcpStream::std_stream() net.TcpStream {
 	bits<u64> = netio.iosource_fd_holder_bits(this.iosrc_bits)
 	return bits.(net.TcpStream)
@@ -87,13 +93,13 @@ impl io.Write for TcpStream {
 }
 
 impl event.Source for TcpStream {
-	fn register(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
+	fn enroll(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
 		return netio.iosource_register_bits(this.iosrc_bits, registry, t, interests)
 	}
-	fn reregister(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
+	fn reenroll(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
 		return netio.iosource_reregister_bits(this.iosrc_bits, registry, t, interests)
 	}
-	fn deregister(registry<netio.Registry>) i32 {
+	fn detach(registry<netio.Registry>) i32 {
 		return netio.iosource_deregister_bits(this.iosrc_bits, registry)
 	}
 }

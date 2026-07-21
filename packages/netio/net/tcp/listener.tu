@@ -4,7 +4,6 @@ use netio.event
 use netio.sys as nsys
 use net
 use sys as libsys
-use fmt
 
 // Mother: TcpListener { inner: IoSource<net::TcpListener> }.
 // Tu: IoSource lives in package netio; store raw bits + netio.*_bits bridges.
@@ -26,30 +25,18 @@ fn tcp_listener_last() TcpListener {
 const TcpListener::bind(addr<net.SocketAddr>) i32 {
 	LAST_TCP_LISTENER = null
 	err<i32>, fd<i32> = nsys.new_for_addr(addr)
-	fmt.println("b_sock")
 	if err != io.Ok
 		return err
 	listener<TcpListener> = TcpListener::fromrawfd(fd)
-	fd2<i32> = listener.raw_fd()
-	fmt.println("b_fd2")
-	fmt.println(int(fd))
-	fmt.println(int(fd2))
 	one<i32> = 1
 	err = nsys.set_reuseaddr_fd(fd, one)
-	fmt.println("b_reuse")
-	fmt.println(int(err))
 	if err != io.Ok
 		return err
-	fmt.println("b_pre_bind")
 	err = nsys.tcp_bind_fd(fd, addr)
-	fmt.println("b_bind")
-	fmt.println(int(err))
 	if err != io.Ok
 		return err
 	bl<u32> = 1024
 	err = nsys.listen_fd(fd, bl)
-	fmt.println("b_listen")
-	fmt.println(int(err))
 	if err != io.Ok
 		return err
 	LAST_TCP_LISTENER = listener
@@ -110,13 +97,14 @@ TcpListener::accept() i32 {
 }
 
 impl event.Source for TcpListener {
-	fn register(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
+	fn enroll(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
+		fmt.println("tl_enroll")
 		return netio.iosource_register_bits(this.iosrc_bits, registry, t, interests)
 	}
-	fn reregister(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
+	fn reenroll(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
 		return netio.iosource_reregister_bits(this.iosrc_bits, registry, t, interests)
 	}
-	fn deregister(registry<netio.Registry>) i32 {
+	fn detach(registry<netio.Registry>) i32 {
 		return netio.iosource_deregister_bits(this.iosrc_bits, registry)
 	}
 }
