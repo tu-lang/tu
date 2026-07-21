@@ -16,7 +16,7 @@ mem Runtime {
     i32           sched_kind
     Handle*       weak_handle
     DriverHandle* driver_handle
-    Driver*       driver
+    Driver*       agg_drv           // not `driver` — `.driver` is a type-assert trap
     rtblk.Spawner*      blocking_spawner
     rtblk.BlockingPool* blocking_pool
     u64           scheduler_handle    // raw bits of CtHandle* / MtHandle*
@@ -37,7 +37,7 @@ const Runtime::compose(
     r<Runtime> = new Runtime
     r.sched_kind       = kind
     r.weak_handle      = weak
-    r.driver           = drv
+    r.agg_drv          = drv
     r.driver_handle    = drv_h
     r.blocking_spawner = sp
     r.blocking_pool    = pool
@@ -140,7 +140,7 @@ Runtime::shutdown_timeout(d<sys.Duration>){
         scheduler.mt_inject_close(this.scheduler_handle)
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
-    if this.driver != null this.driver.shutdown(this.driver_handle)
+    if this.agg_drv != null this.agg_drv.shutdown(this.driver_handle)
     this.shutdown_state = 2
 }
 
@@ -154,6 +154,6 @@ Runtime::shutdown_background(){
         scheduler.mt_inject_close(this.scheduler_handle)
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
-    if this.driver != null this.driver.shutdown(this.driver_handle)
+    if this.agg_drv != null this.agg_drv.shutdown(this.driver_handle)
     this.shutdown_state = 2
 }

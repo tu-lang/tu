@@ -28,8 +28,11 @@ mem Registration {
 
 // Build a Registration: allocate the ScheduledIo and register the source
 // with netio. On failure leaves nothing behind.
-const Registration::new_with_interest_and_handle(io_obj<Source>, interest<netio.Interest>, handle<u64>, io_handle<IoHandle>) i32, Registration {
-    err<i32>, sio<ScheduledIo> = io_handle.add_source(io_obj, interest)
+// Build a Registration: allocate the ScheduledIo and register the IoSource
+// bits with netio. On failure leaves nothing behind.
+// iosrc_bits: IoSource* as u64 (avoids event.Source api dispatch segfault).
+const Registration::new_with_interest_and_handle(iosrc_bits<u64>, interest<netio.Interest>, handle<u64>, io_handle<IoHandle>) i32, Registration {
+    err<i32>, sio<ScheduledIo> = io_handle.add_source(iosrc_bits, interest)
     if err != 0 return err, null
     r<Registration> = new Registration
     r.sched_handle = handle
@@ -40,8 +43,8 @@ const Registration::new_with_interest_and_handle(io_obj<Source>, interest<netio.
 
 // Detach the source from netio and drop it from RegistrationSet. The
 // Registration is unusable afterwards.
-Registration::deregister(io_obj<Source>) i32 {
-    return this.io_handle.remove_source(io_obj, this.shared)
+Registration::deregister(iosrc_bits<u64>) i32 {
+    return this.io_handle.remove_source(iosrc_bits, this.shared)
 }
 
 // Poll for read readiness. Caller hands ctx so the driver can wake the task.

@@ -100,7 +100,11 @@ const IoDriver::new() i32 {
 // Register a source. Token is the new ScheduledIo* cast to u64; later
 // turn() reverses the cast to dispatch the event back.
 // Mother: allocate under synced.lock, then registry.register without the lock.
-IoHandle::add_source(io_obj<netevent.Source>, interest<netio.Interest>) i32, ScheduledIo {
+// Register a source by IoSource bits. Token is the new ScheduledIo* cast to
+// u64; later turn() reverses the cast to dispatch the event back.
+// Mother: allocate under synced.lock, then registry.register without the lock.
+// Tu: pass iosrc_bits — event.Source api method dispatch segfaults (layout).
+IoHandle::add_source(iosrc_bits<u64>, interest<netio.Interest>) i32, ScheduledIo {
     if this.registrations == null || this.synced == null {
         return 1, null
     }
@@ -114,7 +118,7 @@ IoHandle::add_source(io_obj<netevent.Source>, interest<netio.Interest>) i32, Sch
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
     tok<u64> = sio.token()
     t<netio.Token> = netio.token_from_u64(tok)
-    rerr<i32> = netio.registry_register(reg, io_obj, t, interest)
+    rerr<i32> = netio.registry_register(reg, iosrc_bits, t, interest)
     if rerr != LIBIO_OK {
         // Mother: remove under synced.lock on register failure.
         lk.lock()
@@ -159,13 +163,11 @@ fn iodriver_consume_signal_ready_bits(iod_bits<u64>) i32 {
     return 1
 }
 
-// Detach a previously registered source. Caller passes the original
-// netio.event.Source object (so netio can extract the fd) plus the
-// ScheduledIo* it received from add_source.
+// Detach a previously registered source by IoSource bits.
 // Mother: deregister OS first, then RegistrationSet::deregister under lock.
-IoHandle::remove_source(io_obj<netevent.Source>, sio<ScheduledIo>) i32 {
+IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
-    err<i32> = netio.registry_deregister(reg, io_obj)
+    err<i32> = netio.registry_deregister(reg, iosrc_bits)
     lk<runtime.MutexInter> = this.synced_lock
     lk.lock()
     need_wake<i32> = this.registrations.deregister(this.synced, sio)

@@ -132,9 +132,23 @@ SignalDriver::shutdown(){
     gref<SignalGlobals> = null
     gref = this.gslot_bits
     if gref.sfd < 0 return
-    std.close(gref.sfd)
+    sys.close(gref.sfd)
     gref.sfd = -1
     this.reg_fd = -1
+}
+
+// Cross-pkg shutdown — aggregate Driver must not member-call SignalDriver.
+fn signal_driver_shutdown_bits(drv_bits<u64>) {
+    if drv_bits == 0 return
+    drv<SignalDriver> = null
+    drv = drv_bits
+    if drv.gslot_bits == 0 return
+    gref<SignalGlobals> = null
+    gref = drv.gslot_bits
+    if gref.sfd < 0 return
+    sys.close(gref.sfd)
+    gref.sfd = -1
+    drv.reg_fd = -1
 }
 
 fn sg_bits_of(drv<SignalDriver>) u64 {
