@@ -12,29 +12,31 @@ use asyncio.runtime.io as rtio
 // io.Ok without `use io` (package short-name clash with library/io).
 IO_OK<i32> = 1
 
-// inner is the netio source (TcpStream / UdpSocket / pipe / ...). reg
-// owns the ScheduledIo that bridges into the IO Driver dispatch loop.
+// holder_bits: concrete netio socket/listener object (TcpStream*, …) as u64.
+// iosrc_bits: IoSource* as u64 used for epoll register (bypasses Source api).
+// reg owns the ScheduledIo that bridges into the IO Driver dispatch loop.
 mem PollEvented {
-    evsrc.Source* inner
+    u64                holder_bits
+    u64                iosrc_bits
     rtio.Registration* reg
 }
 
-// Build a PollEvented by registering `inner` with `io_handle` for the
-// supplied interest. Returns (err, evented); err != 0 signals the
-// underlying netio register call failed.
-const PollEvented::new(inner<evsrc.Source>, interest<netio.Interest>, sched<u64>, io_handle<rtio.IoHandle>) i32, PollEvented {
-    err<i32>, reg<rtio.Registration> = rtio.Registration::new_with_interest_and_handle(inner, interest, sched, io_handle)
+// Build a PollEvented by registering `iosrc_bits` with `io_handle`.
+// holder_bits is returned by source() for accept/read/write ops.
+const PollEvented::new(holder_bits<u64>, iosrc_bits<u64>, interest<netio.Interest>, sched<u64>, io_handle<rtio.IoHandle>) i32, PollEvented {
+    err<i32>, reg<rtio.Registration> = rtio.Registration::new_with_interest_and_handle(iosrc_bits, interest, sched, io_handle)
     if err != 0 return err, null
 
     p<PollEvented> = new PollEvented
-    p.inner = inner
-    p.reg   = reg
+    p.holder_bits = holder_bits
+    p.iosrc_bits  = iosrc_bits
+    p.reg         = reg
     return 0, p
 }
 
-// Borrow the inner netio source.
-PollEvented::source() evsrc.Source {
-    return this.inner
+// Borrow the inner netio source object bits (cast at call site to concrete type).
+PollEvented::source() u64 {
+    return this.holder_bits
 }
 
 // Poll for read readiness; ctx is the (sched, task_id) packed waker payload.
@@ -71,7 +73,7 @@ PollEvented::try_io(interest<netio.Interest>, op<rtio.IoOp>) i32, i64 {
 // Detach from the IO Driver. After deregister the PollEvented must not
 // be used; callers should drop their reference.
 PollEvented::deregister() i32 {
-    return this.reg.deregister(this.inner)
+    return this.reg.deregister(this.iosrc_bits)
 }
 
 // Poll the requested read/write readiness on `pe`, OR-ing whatever the driver

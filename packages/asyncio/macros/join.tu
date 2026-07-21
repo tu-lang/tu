@@ -7,8 +7,8 @@ use io
 mem Join2: async {
     runtime.Future* fut_a
     runtime.Future* fut_b
-    i64 ra
-    i64 rb
+    i64 res0
+    i64 res1
     i32 a_done
     i32 b_done
 }
@@ -20,7 +20,7 @@ Join2::step_a(packed<u64>){
     ready_i, val_i = poll_child(this.fut_a, packed)
     if ready_i == runtime.PollReady {
         this.a_done = 1
-        this.ra = val_i
+        this.res0 = val_i
     }
 }
 
@@ -31,7 +31,7 @@ Join2::step_b(packed<u64>){
     ready_i, val_i = poll_child(this.fut_b, packed)
     if ready_i == runtime.PollReady {
         this.b_done = 1
-        this.rb = val_i
+        this.res1 = val_i
     }
 }
 
@@ -47,7 +47,7 @@ Join2::poll(ctx){
     }
     ok_code<i32> = io.Ok
     if this.a_done == 1 && this.b_done == 1 {
-        return runtime.PollReady, ok_code, this.ra, this.rb
+        return runtime.PollReady, ok_code, this.res0, this.res1
     }
     return runtime.PollPending
 }
@@ -55,7 +55,15 @@ Join2::poll(ctx){
 fn join2(a<runtime.Future>, b<runtime.Future>) Join2 {
     return new Join2 {
         fut_a: a, fut_b: b,
-        ra: 0, rb: 0,
+        res0: 0, res1: 0,
         a_done: 0, b_done: 0
     }
+}
+
+fn join2_val_a(j<Join2>) i64 {
+    return j.res0
+}
+
+fn join2_val_b(j<Join2>) i64 {
+    return j.res1
 }

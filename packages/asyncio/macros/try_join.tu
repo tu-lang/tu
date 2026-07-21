@@ -7,8 +7,8 @@ use io
 mem TryJoin2: async {
     runtime.Future* fut_a
     runtime.Future* fut_b
-    i64 ra
-    i64 rb
+    i64 res0
+    i64 res1
     i32 a_done
     i32 b_done
 }
@@ -21,7 +21,7 @@ TryJoin2::poll(ctx){
         ready_i, val_i = poll_child(this.fut_a, packed)
         if ready_i == runtime.PollReady {
             this.a_done = 1
-            this.ra = val_i
+            this.res0 = val_i
             st_i32<i32> = 0
             st_i32 = val_i
             if st_i32 != io.Ok {
@@ -37,7 +37,7 @@ TryJoin2::poll(ctx){
         ready_j, val_j = poll_child(this.fut_b, packed)
         if ready_j == runtime.PollReady {
             this.b_done = 1
-            this.rb = val_j
+            this.res1 = val_j
             st2<i32> = 0
             st2 = val_j
             if st2 != io.Ok {
@@ -48,15 +48,38 @@ TryJoin2::poll(ctx){
         }
     }
     if this.a_done == 1 && this.b_done == 1 {
-        return runtime.PollReady, io.Ok, this.ra, this.rb
+        return runtime.PollReady, io.Ok, this.res0, this.res1
     }
     return runtime.PollPending
+}
+
+// Early error code when only one branch completed with st != io.Ok.
+TryJoin2::early_error_code() i32 {
+    if this.a_done == 1 && this.b_done == 0 {
+        bits0<i64> = this.res0
+        code_a<i32> = bits0.(i32)
+        if code_a != io.Ok return code_a
+    }
+    if this.b_done == 1 && this.a_done == 0 {
+        bits1<i64> = this.res1
+        code_b<i32> = bits1.(i32)
+        if code_b != io.Ok return code_b
+    }
+    return io.Ok
 }
 
 fn try_join2(a<runtime.Future>, b<runtime.Future>) TryJoin2 {
     return new TryJoin2 {
         fut_a: a, fut_b: b,
-        ra: 0, rb: 0,
+        res0: 0, res1: 0,
         a_done: 0, b_done: 0
     }
+}
+
+fn try_join2_val_b(tj<TryJoin2>) i64 {
+    return tj.res1
+}
+
+fn try_join2_short_status(tj<TryJoin2>) i32 {
+    return tj.early_error_code()
 }
