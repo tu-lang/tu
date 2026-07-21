@@ -20,10 +20,9 @@ use asyncio.runtime.io as rtio
 use asyncio.error as aerr
 
 // Async TCP stream: netio source + IO-driver registration via PollEvented.
-// `peer` caches the remote address (connect target / accept peer) since the
-// stack has no getpeername.
+// Field `poll_ev` not `io` — `.io` / `io:` hits type-assert trap under `use io`.
 mem TcpStream {
-    aio.PollEvented* io
+    aio.PollEvented* poll_ev
     net.SocketAddr*  peer
 }
 
@@ -31,16 +30,16 @@ mem TcpStream {
 // read + write readiness. `peer` is the remote address to cache. Returns
 // (io.Ok, stream) or an error with a null stream (RuntimeShutdown when there
 // is no active IO driver).
-const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32, TcpStream) {
+const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32, u64) {
     shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
     ok_code<i32> = 1           // io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return shut_err, null
+    if rc == null return shut_err, 0
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
-    if dh == null return shut_err, null
+    if dh == null return shut_err, 0
     // Avoid dh.io_handle — `use io` makes `.io_*` a type-assert trap.
     ioh_bits<u64> = dh.ioh_bits()
-    if ioh_bits == 0 return shut_err, null
+    if ioh_bits == 0 return shut_err, 0
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
@@ -48,13 +47,17 @@ const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32,
     holder<u64> = 0
     holder = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
-    if perr != 0 return perr, null
-    return ok_code, new TcpStream { io: pe, peer: peer }
+    if perr != 0 return perr, 0
+    if pe == null return shut_err, 0
+    out<TcpStream> = new TcpStream
+    out.poll_ev = pe
+    out.peer = peer
+    return ok_code, out.(u64)
 }
 
 // Borrow the underlying netio TcpStream (for issuing raw read/write syscalls).
 TcpStream::raw_sock() nettcp.TcpStream {
-    bits<u64> = this.io.source()
+    bits<u64> = this.poll_ev.source()
     s<nettcp.TcpStream> = null
     s = bits
     return s
@@ -77,7 +80,7 @@ TcpStream::local_addr() {
 // Async leaf: connect + register + write readiness + SO_ERROR.
 // poll returns (PollReady, err, stream) so connect().await matches tokio.
 mem ConnectFut: async {
-    aio.PollEvented* io
+    aio.PollEvented* poll_ev
     TcpStream*       stream
     i32              stage
 }
@@ -91,9 +94,9 @@ ConnectFut::poll(ctx){
     ready<i32> = runtime.PollReady
     if this.stage == -1 return ready, other_err, null
     if this.stage == -2 return ready, shut_err, null
-    if this.io == null return ready, other_err, null
+    if this.poll_ev == null return ready, other_err, null
     c<u64> = ctx.(u64)
-    werr<i32>, wev<rtio.ReadyEvent> = this.io.poll_write_ready(c)
+    werr<i32>, wev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(c)
     if werr == pend return pend
     if werr != 0 return ready, werr, null
     sock<nettcp.TcpStream> = this.stream.raw_sock()
@@ -105,85 +108,120 @@ ConnectFut::poll(ctx){
 
 // Mother: TcpStream::connect — sync setup + ConnectFut leaf (member async
 // calling nettcp.tcp_stream_connect corrupts the async frame).
-const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
+// Package fn tcp_connect() is the cross-pkg entry; const TcpStream::connect
+// delegates for same-package callers.
+// Package fn tcp_connect() is the cross-pkg entry (returns ConnectFut bits —
+// cross-pkg mem multi-ret drops pointer fields). Same-package TcpStream::connect
+// wraps the bits back into ConnectFut.
+// Cross-pkg bridge: register netio TcpStream with IO driver; returns TcpStream bits.
+fn from_netio_bits(inner<nettcp.TcpStream>, peer<net.SocketAddr>) u64 {
+    ok_code<i32> = 1
+    rerr<i32>, sbits<u64> = TcpStream::from_netio(inner, peer)
+    if rerr != ok_code return 0
+    return sbits
+}
+
+// Register-only connect step; returns TcpStream bits (cross-pkg safe).
+fn tcp_connect_reg(addr<net.SocketAddr>) u64 {
+    ok_code<i32> = 1
     cerr<i32> = nettcp.tcp_stream_connect(addr)
-    if cerr != io.Ok {
+    if cerr != ok_code return 0
+    inner<nettcp.TcpStream> = nettcp.tcp_stream_last()
+    if inner == null return 0
+    rerr<i32>, sbits<u64> = TcpStream::from_netio(inner, addr)
+    if rerr != ok_code return 0
+    return sbits
+}
+
+fn tcp_connect(addr<net.SocketAddr>) u64 {
+    ok_code<i32> = 1                // io.Ok
+    cerr<i32> = nettcp.tcp_stream_connect(addr)
+    if cerr != ok_code {
         f0<ConnectFut> = new ConnectFut
-        f0.io = null
+        f0.poll_ev = null
         f0.stream = null
         f0.stage = -1
-        return f0
+        return f0.(u64)
     }
     inner<nettcp.TcpStream> = nettcp.tcp_stream_last()
     if inner == null {
         f1<ConnectFut> = new ConnectFut
-        f1.io = null
+        f1.poll_ev = null
         f1.stream = null
         f1.stage = -1
-        return f1
+        return f1.(u64)
     }
-    rerr<i32>, s<TcpStream> = TcpStream::from_netio(inner, addr)
-    if rerr != io.Ok {
+    rerr<i32>, sbits<u64> = TcpStream::from_netio(inner, addr)
+    if rerr != ok_code {
         f2<ConnectFut> = new ConnectFut
-        f2.io = null
+        f2.poll_ev = null
         f2.stream = null
         f2.stage = -2
-        return f2
+        return f2.(u64)
     }
+    s<TcpStream> = sbits.(TcpStream)
     f<ConnectFut> = new ConnectFut
-    f.io = s.io
+    f.poll_ev = s.poll_ev
     f.stream = s
     f.stage = 0
-    return f
+    return f.(u64)
+}
+
+const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
+    bits<u64> = tcp_connect(addr)
+    cf<ConnectFut> = bits.(ConnectFut)
+    return cf
 }
 
 // ---- readiness -----------------------------------------------------------
 
-// Async leaf: park until any bit in the requested interest becomes ready. The
-// ready bits are stashed in `result`; poll returns io.Ok once non-empty.
+// Async leaf: park until any bit in the requested interest becomes ready.
 mem TcpReadyFut: async {
-    aio.PollEvented* io          // borrowed registration
-    i32              want_read   // 1 when the caller asked for read readiness
-    i32              want_write  // 1 when the caller asked for write readiness
-    aio.Ready*       result      // filled with the ready bits on completion
+    aio.PollEvented* poll_ev
+    i32              want_read
+    i32              want_write
+    aio.Ready*       result
 }
 
-// Poll read/write readiness per the requested interest, OR-ing whatever the
-// driver reports. Returns PollReady once any bit is set (result filled), a
-// driver error code verbatim, or PollPending while nothing is ready yet.
 TcpReadyFut::poll(ctx){
-    st<i32>, err<i32>, r<aio.Ready> = aio.poll_ready_bits(this.io, this.want_read, this.want_write, ctx.(u64))
+    st<i32>, err<i32>, r<aio.Ready> = aio.poll_ready_bits(this.poll_ev, this.want_read, this.want_write, ctx.(u64))
     if st == runtime.PollPending return runtime.PollPending
     if err != io.Ok return runtime.PollReady, err
     this.result = r
     return runtime.PollReady, io.Ok
 }
 
-// Mother: ready / readable / writable — return leaf futurs (no member await).
 TcpStream::ready(interest<netio.Interest>) TcpReadyFut {
-    f<TcpReadyFut> = new TcpReadyFut {
-        io: this.io,
-        want_read: 0,
-        want_write: 0,
-        result: null
-    }
+    f<TcpReadyFut> = new TcpReadyFut
+    f.poll_ev = this.poll_ev
+    f.want_read = 0
+    f.want_write = 0
+    f.result = null
     if netio.interest_is_readable(interest) == 1 f.want_read = 1
     if netio.interest_is_writable(interest) == 1 f.want_write = 1
     return f
 }
 
 TcpStream::readable() TcpReadyFut {
-    return new TcpReadyFut { io: this.io, want_read: 1, want_write: 0, result: null }
+    f<TcpReadyFut> = new TcpReadyFut
+    f.poll_ev = this.poll_ev
+    f.want_read = 1
+    f.want_write = 0
+    f.result = null
+    return f
 }
 
 TcpStream::writable() TcpReadyFut {
-    return new TcpReadyFut { io: this.io, want_read: 0, want_write: 1, result: null }
+    f<TcpReadyFut> = new TcpReadyFut
+    f.poll_ev = this.poll_ev
+    f.want_read = 0
+    f.want_write = 1
+    f.result = null
+    return f
 }
 
 // ---- read / write --------------------------------------------------------
 
-// IoOp for a single read syscall into `buf`. Returns (err, bytes); err ==
-// io.WouldBlock makes PollEvented retry after the next readable readiness.
 mem TcpReadOp {
     nettcp.TcpStream* sock
     io.Buf*           buf
@@ -196,7 +234,6 @@ impl rtio.IoOp for TcpReadOp {
     }
 }
 
-// IoOp for a single write syscall from `buf`.
 mem TcpWriteOp {
     nettcp.TcpStream* sock
     io.Buf*           buf
@@ -209,45 +246,35 @@ impl rtio.IoOp for TcpWriteOp {
     }
 }
 
-// Non-blocking read into `buf`: one readable-readiness check + one syscall.
-// Returns (io.Ok, bytes), (io.WouldBlock, 0) when not ready, or (err, 0).
 TcpStream::try_read(buf<io.Buf>) i32, u64 {
     sock<nettcp.TcpStream> = this.raw_sock()
     op<TcpReadOp> = new TcpReadOp { sock: sock, buf: buf }
-    err<i32>, val<i64> = this.io.try_io(netio.readable_interest(), op)
+    err<i32>, val<i64> = this.poll_ev.try_io(netio.readable_interest(), op)
     return err, val.(u64)
 }
 
-// Non-blocking write from `buf`: one writable-readiness check + one syscall.
-// Returns (io.Ok, bytes), (io.WouldBlock, 0) when not ready, or (err, 0).
 TcpStream::try_write(buf<io.Buf>) i32, u64 {
     sock<nettcp.TcpStream> = this.raw_sock()
     op<TcpWriteOp> = new TcpWriteOp { sock: sock, buf: buf }
-    err<i32>, val<i64> = this.io.try_io(netio.writable_interest(), op)
+    err<i32>, val<i64> = this.poll_ev.try_io(netio.writable_interest(), op)
     return err, val.(u64)
 }
 
-// Shut down the read/write half(s) per `how` (net.ShutdownRead/Write/Both).
 TcpStream::shutdown(how<i32>) i32 {
     sock<nettcp.TcpStream> = this.raw_sock()
     return sock.shutdown(how)
 }
 
-// AsyncRead: read into the unfilled tail of `buf`, driving the read IoOp
-// through PollEvented (retries on WouldBlock). Returns PollPending, PollReady
-// (buf.filled advanced by whatever landed), or PollError on syscall failure.
-// Mother: TcpStream::poll_read_priv -> PollEvented::poll_read.
 impl aio.AsyncRead for TcpStream {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
         rem<u64> = buf.remaining()
         if rem == 0 return runtime.PollReady
-        // Build a temporary io.Buf over the unfilled region (not owned).
         tail<io.Buf> = new io.Buf {
             data_ptr: buf.unfilled_ptr(),
             byte_len: rem
         }
         op<TcpReadOp> = new TcpReadOp { sock: this.raw_sock(), buf: tail }
-        e<i32>, n<i64> = this.io.poll_read_io(ctx, op)
+        e<i32>, n<i64> = this.poll_ev.poll_read_io(ctx, op)
         if e == runtime.PollPending return runtime.PollPending
         if e == io.Ok {
             if n > 0 buf.advance(n.(u64))
@@ -257,13 +284,11 @@ impl aio.AsyncRead for TcpStream {
     }
 }
 
-// AsyncWrite: write from `buf_bits` (io.Buf as u64), driving PollEvented.
-// Mother: poll_write_priv; poll_flush is a no-op; poll_shutdown closes write half.
 impl aio.AsyncWrite for TcpStream {
     fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
         b<io.Buf> = io.buf_from_bits(buf_bits)
         op<TcpWriteOp> = new TcpWriteOp { sock: this.raw_sock(), buf: b }
-        e<i32>, n<i64> = this.io.poll_write_io(ctx, op)
+        e<i32>, n<i64> = this.poll_ev.poll_write_io(ctx, op)
         if e == runtime.PollPending return runtime.PollPending, 0
         if e == io.Ok return runtime.PollReady, n.(u64)
         return runtime.PollError, 0

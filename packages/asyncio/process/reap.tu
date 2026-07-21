@@ -26,7 +26,7 @@ const SigchldReaper::new(sig<rtsig.SignalDriverHandle>) SigchldReaper {
 // the register result (io.Ok on success); a null handle is a no-op success.
 SigchldReaper::start() i32 {
     if this.sig == null return io.Ok
-    err<i32>, _ = this.sig.register(os.SIGCHLD)
+    err<i32> = this.sig.register(os.SIGCHLD)
     return err
 }
 

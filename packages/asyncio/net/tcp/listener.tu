@@ -6,7 +6,6 @@
 
 use net
 use io
-use fmt
 use runtime
 use netio
 use netio.net.tcp as nettcp
@@ -16,31 +15,33 @@ use asyncio.runtime.io as rtio
 use asyncio.error as aerr
 
 mem TcpListener {
-    aio.PollEvented* io
+    aio.PollEvented* poll_ev
 }
 
-const TcpListener::bind(addr<net.SocketAddr>) (i32, TcpListener) {
+const TcpListener::bind(addr<net.SocketAddr>) (i32, u64) {
     err<i32> = nettcp.TcpListener::bind(addr)
-    if err != io.Ok return err, null
+    if err != io.Ok return err, 0
     inner<nettcp.TcpListener> = nettcp.tcp_listener_last()
-    if inner == null return err, null
-    return TcpListener::from_netio(inner)
+    if inner == null return err, 0
+    lerr<i32>, lbits<u64> = TcpListener::from_netio(inner)
+    if lerr != io.Ok return lerr, 0
+    return io.Ok, lbits
 }
 
-const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
+const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, u64) {
     shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
     ok_code<i32> = 1           // io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null {
-        return shut_err, null
+        return shut_err, 0
     }
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
     if dh == null {
-        return shut_err, null
+        return shut_err, 0
     }
     ioh_bits<u64> = dh.ioh_bits()
     if ioh_bits == 0 {
-        return shut_err, null
+        return shut_err, 0
     }
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
@@ -50,13 +51,15 @@ const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
     holder = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 {
-        return perr, null
+        return perr, 0
     }
-    return ok_code, new TcpListener { io: pe }
+    out<TcpListener> = new TcpListener
+    out.poll_ev = pe
+    return ok_code, out.(u64)
 }
 
 TcpListener::raw_listener() nettcp.TcpListener {
-    bits<u64> = this.io.source()
+    bits<u64> = this.poll_ev.source()
     l<nettcp.TcpListener> = null
     l = bits
     return l
@@ -82,29 +85,31 @@ impl rtio.IoOp for AcceptOp {
     }
 }
 
-// Leaf future: poll_read_io accept + register accepted stream with IO driver.
 mem AcceptFut: async {
-    aio.PollEvented* io
+    aio.PollEvented* poll_ev
     AcceptOp*        op
 }
 
 AcceptFut::poll(ctx){
-    e<i32>, n<i64> = this.io.poll_read_io(ctx.(u64), this.op)
+    e<i32>, n<i64> = this.poll_ev.poll_read_io(ctx.(u64), this.op)
     if e == runtime.PollPending return runtime.PollPending
     if e != io.Ok return runtime.PollReady, e, null
-    rerr<i32>, s<TcpStream> = TcpStream::from_netio(this.op.out_stream, this.op.out_addr)
+    rerr<i32>, sbits<u64> = TcpStream::from_netio(this.op.out_stream, this.op.out_addr)
     if rerr != io.Ok return runtime.PollReady, rerr, null
+    s<TcpStream> = sbits.(TcpStream)
     return runtime.PollReady, io.Ok, s
 }
 
-// Mother: async accept — async entry returns AcceptFut leaf (no await body).
 async TcpListener::accept() {
     op<AcceptOp> = new AcceptOp {
         listener: this.raw_listener(),
         out_stream: null,
         out_addr: null
     }
-    return new AcceptFut { io: this.io, op: op }
+    f<AcceptFut> = new AcceptFut
+    f.poll_ev = this.poll_ev
+    f.op = op
+    return f
 }
 
 TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
@@ -113,10 +118,11 @@ TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
         out_stream: null,
         out_addr: null
     }
-    e<i32>, n<i64> = this.io.poll_read_io(ctx, op)
+    e<i32>, n<i64> = this.poll_ev.poll_read_io(ctx, op)
     if e == runtime.PollPending return runtime.PollPending, null
     if e != io.Ok return runtime.PollError, null
-    rerr<i32>, s<TcpStream> = TcpStream::from_netio(op.out_stream, op.out_addr)
+    rerr<i32>, sbits<u64> = TcpStream::from_netio(op.out_stream, op.out_addr)
     if rerr != io.Ok return runtime.PollError, null
+    s<TcpStream> = sbits.(TcpStream)
     return runtime.PollReady, s
 }

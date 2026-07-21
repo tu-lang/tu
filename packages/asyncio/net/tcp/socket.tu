@@ -10,7 +10,7 @@ fn tcp_set_reuseaddr(fd<i32>, on<i32>) i32 {
     if on != 0 val = 1
     vp<i32*> = &val
     opt_ptr<u64> = vp.(u64)
-    err<i32>, _ = sys.cvt(sys.setsockopt(fd, sys.SOL_SOCKET, sys.SO_REUSEADDR, opt_ptr, 4))
+    err<i32> = sys.cvt(sys.setsockopt(fd, sys.SOL_SOCKET, sys.SO_REUSEADDR, opt_ptr, 4))
     return err
 }
 
@@ -20,7 +20,7 @@ fn tcp_set_nodelay(fd<i32>, on<i32>) i32 {
     if on != 0 val = 1
     vp<i32*> = &val
     opt_ptr<u64> = vp.(u64)
-    err<i32>, _ = sys.cvt(sys.setsockopt(fd, sys.IPPROTO_TCP, sys.TCP_NODELAY, opt_ptr, 4))
+    err<i32> = sys.cvt(sys.setsockopt(fd, sys.IPPROTO_TCP, sys.TCP_NODELAY, opt_ptr, 4))
     return err
 }
 
@@ -31,6 +31,6 @@ fn tcp_set_keepalive(fd<i32>, secs<i32>) i32 {
     if secs > 0 val = 1
     vp<i32*> = &val
     opt_ptr<u64> = vp.(u64)
-    err<i32>, _ = sys.cvt(sys.setsockopt(fd, sys.SOL_SOCKET, sys.SO_KEEPALIVE, opt_ptr, 4))
+    err<i32> = sys.cvt(sys.setsockopt(fd, sys.SOL_SOCKET, sys.SO_KEEPALIVE, opt_ptr, 4))
     return err
 }

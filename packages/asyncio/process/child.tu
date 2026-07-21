@@ -91,7 +91,7 @@ Child::start_kill() i32 {
     sig<i32> = 9
     raw<i32> = sys.kill(this.pid, sig)
     if raw < 0 {
-        err<i32>, _ = sys.cvt(raw)
+        err<i32> = sys.cvt(raw)
         return err
     }
     return io.Ok
@@ -145,6 +145,6 @@ Child::try_wait() i32, ExitStatus {
 Child::kill() i32 {
     kerr<i32> = this.start_kill()
     if kerr != io.Ok return kerr
-    werr<i32>, _ = this.wait_sync()
+    werr<i32> = this.wait_sync()
     return werr
 }

@@ -34,7 +34,7 @@ fn close_fd(fd<i32>) i32 {
     if fd < 0 return io.Ok
     r<i32> = sys.close(fd)
     if r < 0 {
-        err<i32>, _ = sys.cvt(r)
+        err<i32> = sys.cvt(r)
         return err
     }
     return io.Ok
