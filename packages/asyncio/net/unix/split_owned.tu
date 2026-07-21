@@ -7,42 +7,45 @@ use asyncio.io as aio
 
 // Owned read half; movable across tasks.
 mem UnixOwnedReadHalf {
-    UnixStream* stream
+    UnixStream* backing
 }
 
 // Owned write half paired with a UnixOwnedReadHalf over the same stream.
 mem UnixOwnedWriteHalf {
-    UnixStream* stream
+    UnixStream* backing
 }
 
 const UnixOwnedReadHalf::new(s<UnixStream>) UnixOwnedReadHalf {
     h<UnixOwnedReadHalf> = new UnixOwnedReadHalf
-    h.stream = s
+    h.backing = s
     return h
 }
 
 const UnixOwnedWriteHalf::new(s<UnixStream>) UnixOwnedWriteHalf {
     h<UnixOwnedWriteHalf> = new UnixOwnedWriteHalf
-    h.stream = s
+    h.backing = s
     return h
 }
 
 // Forward via UnixStream static members (avoid broken api dyn-call lea).
 impl aio.AsyncRead for UnixOwnedReadHalf {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-        return this.stream.poll_read(ctx, buf)
+        return this.backing.poll_read(ctx, buf)
     }
 }
 
 impl aio.AsyncWrite for UnixOwnedWriteHalf {
     fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-        return this.stream.poll_write(ctx, buf_bits)
+        err<i32> = 0
+        n<u64> = 0
+        err, n = this.backing.poll_write(ctx, buf_bits)
+        return err, n
     }
     fn poll_flush(ctx<u64>) i32 {
-        return this.stream.poll_flush(ctx)
+        return this.backing.poll_flush(ctx)
     }
     fn poll_shutdown(ctx<u64>) i32 {
-        return this.stream.poll_shutdown(ctx)
+        return this.backing.poll_shutdown(ctx)
     }
 }
 
@@ -50,8 +53,8 @@ impl aio.AsyncWrite for UnixOwnedWriteHalf {
 // when both reference the same backing stream, or (io.OtherParse, null) when
 // they come from different splits.
 UnixOwnedReadHalf::reunite(w<UnixOwnedWriteHalf>) i32, UnixStream {
-    if this.stream != w.stream return io.OtherParse, null
-    return io.Ok, this.stream
+    if this.backing != w.backing return io.OtherParse, null
+    return io.Ok, this.backing
 }
 
 // Split into owned (read, write) halves sharing this stream.

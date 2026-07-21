@@ -7,42 +7,45 @@ use asyncio.io as aio
 
 // Read-side borrowed view over a shared UnixStream.
 mem UnixReadHalf {
-    UnixStream* stream
+    UnixStream* backing
 }
 
 // Write-side borrowed view over the same UnixStream.
 mem UnixWriteHalf {
-    UnixStream* stream
+    UnixStream* backing
 }
 
 const UnixReadHalf::new(s<UnixStream>) UnixReadHalf {
     h<UnixReadHalf> = new UnixReadHalf
-    h.stream = s
+    h.backing = s
     return h
 }
 
 const UnixWriteHalf::new(s<UnixStream>) UnixWriteHalf {
     h<UnixWriteHalf> = new UnixWriteHalf
-    h.stream = s
+    h.backing = s
     return h
 }
 
 // Forward via UnixStream static members (avoid broken api dyn-call lea).
 impl aio.AsyncRead for UnixReadHalf {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-        return this.stream.poll_read(ctx, buf)
+        return this.backing.poll_read(ctx, buf)
     }
 }
 
 impl aio.AsyncWrite for UnixWriteHalf {
     fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-        return this.stream.poll_write(ctx, buf_bits)
+        err<i32> = 0
+        n<u64> = 0
+        err, n = this.backing.poll_write(ctx, buf_bits)
+        return err, n
     }
     fn poll_flush(ctx<u64>) i32 {
-        return this.stream.poll_flush(ctx)
+        return this.backing.poll_flush(ctx)
     }
     fn poll_shutdown(ctx<u64>) i32 {
-        return this.stream.poll_shutdown(ctx)
+        return this.backing.poll_shutdown(ctx)
     }
 }
 

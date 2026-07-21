@@ -45,14 +45,19 @@ const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32,
     ioh = ioh_bits
 
     interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, ioh)
+    holder<u64> = 0
+    holder = inner
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 return perr, null
     return ok_code, new TcpStream { io: pe, peer: peer }
 }
 
 // Borrow the underlying netio TcpStream (for issuing raw read/write syscalls).
-TcpStream::netio_sock() nettcp.TcpStream {
-    return this.io.source()
+TcpStream::raw_sock() nettcp.TcpStream {
+    bits<u64> = this.io.source()
+    s<nettcp.TcpStream> = null
+    s = bits
+    return s
 }
 
 // Cached remote address. Returns (io.Ok, addr) or (io.Unsupported, null) when
@@ -91,28 +96,45 @@ ConnectFut::poll(ctx){
     werr<i32>, wev<rtio.ReadyEvent> = this.io.poll_write_ready(c)
     if werr == pend return pend
     if werr != 0 return ready, werr, null
-    sock<nettcp.TcpStream> = this.io.source()
+    sock<nettcp.TcpStream> = this.stream.raw_sock()
     ok<i32>, has<i32>, soerr<i32> = sock.take_error()
     if ok != ok_code return ready, ok, null
     if has == net.Has return ready, soerr, null
     return ready, ok_code, this.stream
 }
 
-// Mother: TcpStream::connect — async entry returns ConnectFut leaf (no await body).
-async TcpStream::connect(addr<net.SocketAddr>) {
-    cerr<i32> = nettcp.TcpStream::connect(addr)
+// Mother: TcpStream::connect — sync setup + ConnectFut leaf (member async
+// calling nettcp.tcp_stream_connect corrupts the async frame).
+const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
+    cerr<i32> = nettcp.tcp_stream_connect(addr)
     if cerr != io.Ok {
-        return new ConnectFut { io: null, stream: null, stage: -1 }
+        f0<ConnectFut> = new ConnectFut
+        f0.io = null
+        f0.stream = null
+        f0.stage = -1
+        return f0
     }
     inner<nettcp.TcpStream> = nettcp.tcp_stream_last()
     if inner == null {
-        return new ConnectFut { io: null, stream: null, stage: -1 }
+        f1<ConnectFut> = new ConnectFut
+        f1.io = null
+        f1.stream = null
+        f1.stage = -1
+        return f1
     }
     rerr<i32>, s<TcpStream> = TcpStream::from_netio(inner, addr)
     if rerr != io.Ok {
-        return new ConnectFut { io: null, stream: null, stage: -2 }
+        f2<ConnectFut> = new ConnectFut
+        f2.io = null
+        f2.stream = null
+        f2.stage = -2
+        return f2
     }
-    return new ConnectFut { io: s.io, stream: s, stage: 0 }
+    f<ConnectFut> = new ConnectFut
+    f.io = s.io
+    f.stream = s
+    f.stage = 0
+    return f
 }
 
 // ---- readiness -----------------------------------------------------------
@@ -190,7 +212,7 @@ impl rtio.IoOp for TcpWriteOp {
 // Non-blocking read into `buf`: one readable-readiness check + one syscall.
 // Returns (io.Ok, bytes), (io.WouldBlock, 0) when not ready, or (err, 0).
 TcpStream::try_read(buf<io.Buf>) i32, u64 {
-    sock<nettcp.TcpStream> = this.io.source()
+    sock<nettcp.TcpStream> = this.raw_sock()
     op<TcpReadOp> = new TcpReadOp { sock: sock, buf: buf }
     err<i32>, val<i64> = this.io.try_io(netio.readable_interest(), op)
     return err, val.(u64)
@@ -199,7 +221,7 @@ TcpStream::try_read(buf<io.Buf>) i32, u64 {
 // Non-blocking write from `buf`: one writable-readiness check + one syscall.
 // Returns (io.Ok, bytes), (io.WouldBlock, 0) when not ready, or (err, 0).
 TcpStream::try_write(buf<io.Buf>) i32, u64 {
-    sock<nettcp.TcpStream> = this.io.source()
+    sock<nettcp.TcpStream> = this.raw_sock()
     op<TcpWriteOp> = new TcpWriteOp { sock: sock, buf: buf }
     err<i32>, val<i64> = this.io.try_io(netio.writable_interest(), op)
     return err, val.(u64)
@@ -207,7 +229,7 @@ TcpStream::try_write(buf<io.Buf>) i32, u64 {
 
 // Shut down the read/write half(s) per `how` (net.ShutdownRead/Write/Both).
 TcpStream::shutdown(how<i32>) i32 {
-    sock<nettcp.TcpStream> = this.io.source()
+    sock<nettcp.TcpStream> = this.raw_sock()
     return sock.shutdown(how)
 }
 
@@ -224,7 +246,7 @@ impl aio.AsyncRead for TcpStream {
             data_ptr: buf.unfilled_ptr(),
             byte_len: rem
         }
-        op<TcpReadOp> = new TcpReadOp { sock: this.io.source(), buf: tail }
+        op<TcpReadOp> = new TcpReadOp { sock: this.raw_sock(), buf: tail }
         e<i32>, n<i64> = this.io.poll_read_io(ctx, op)
         if e == runtime.PollPending return runtime.PollPending
         if e == io.Ok {
@@ -240,7 +262,7 @@ impl aio.AsyncRead for TcpStream {
 impl aio.AsyncWrite for TcpStream {
     fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
         b<io.Buf> = io.buf_from_bits(buf_bits)
-        op<TcpWriteOp> = new TcpWriteOp { sock: this.io.source(), buf: b }
+        op<TcpWriteOp> = new TcpWriteOp { sock: this.raw_sock(), buf: b }
         e<i32>, n<i64> = this.io.poll_write_io(ctx, op)
         if e == runtime.PollPending return runtime.PollPending, 0
         if e == io.Ok return runtime.PollReady, n.(u64)
@@ -250,7 +272,7 @@ impl aio.AsyncWrite for TcpStream {
         return runtime.PollReady
     }
     fn poll_shutdown(ctx<u64>) i32 {
-        sock<nettcp.TcpStream> = this.io.source()
+        sock<nettcp.TcpStream> = this.raw_sock()
         sock.shutdown(net.ShutdownWrite)
         return runtime.PollReady
     }

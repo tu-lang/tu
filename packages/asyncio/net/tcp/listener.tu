@@ -46,15 +46,20 @@ const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
     ioh = ioh_bits
 
     interest<netio.Interest> = netio.readable_interest()
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, ioh)
+    holder<u64> = 0
+    holder = inner
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 {
         return perr, null
     }
     return ok_code, new TcpListener { io: pe }
 }
 
-TcpListener::netio_listener() nettcp.TcpListener {
-    return this.io.source()
+TcpListener::raw_listener() nettcp.TcpListener {
+    bits<u64> = this.io.source()
+    l<nettcp.TcpListener> = null
+    l = bits
+    return l
 }
 
 mem AcceptOp {
@@ -95,7 +100,7 @@ AcceptFut::poll(ctx){
 // Mother: async accept — async entry returns AcceptFut leaf (no await body).
 async TcpListener::accept() {
     op<AcceptOp> = new AcceptOp {
-        listener: this.io.source(),
+        listener: this.raw_listener(),
         out_stream: null,
         out_addr: null
     }
@@ -104,7 +109,7 @@ async TcpListener::accept() {
 
 TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
     op<AcceptOp> = new AcceptOp {
-        listener: this.io.source(),
+        listener: this.raw_listener(),
         out_stream: null,
         out_addr: null
     }

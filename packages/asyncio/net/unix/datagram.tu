@@ -16,6 +16,7 @@ use asyncio.error as aerr
 // Async unix datagram socket: netio source + IO-driver registration.
 mem UnixDatagram {
     aio.PollEvented* io
+    u64              last_peer_bits
 }
 
 // Bind to the socket path and register for read + write readiness. Returns
@@ -28,20 +29,31 @@ const UnixDatagram::bind(path<string.String>) (i32, UnixDatagram) {
 
 // Register an already-bound netio UnixDatagram with the IO driver.
 const UnixDatagram::from_netio(inner<netuds.UnixDatagram>) (i32, UnixDatagram) {
+    shut_err<i32> = 0x03020005
+    ok_code<i32> = 1
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return aerr.RuntimeShutdown, null
+    if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
-    if dh == null || dh.io_handle == null return aerr.RuntimeShutdown, null
+    if dh == null return shut_err, null
+    ioh_bits<u64> = dh.ioh_bits()
+    if ioh_bits == 0 return shut_err, null
+    ioh<rtio.IoHandle> = null
+    ioh = ioh_bits
 
     interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(inner, interest, rc.sched, dh.io_handle)
+    holder<u64> = 0
+    holder = inner
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 return perr, null
-    return io.Ok, new UnixDatagram { io: pe }
+    return ok_code, new UnixDatagram { io: pe, last_peer_bits: 0 }
 }
 
 // Borrow the underlying netio UnixDatagram.
-UnixDatagram::netio_sock() netuds.UnixDatagram {
-    return this.io.source()
+UnixDatagram::raw_sock() netuds.UnixDatagram {
+    bits<u64> = this.io.source()
+    s<netuds.UnixDatagram> = null
+    s = bits
+    return s
 }
 
 // IoOp for a single send_to syscall to `path`.
@@ -58,17 +70,17 @@ impl rtio.IoOp for UnixSendToOp {
     }
 }
 
-// IoOp for a single recv_from syscall. The peer address is stashed in addr_out.
+// IoOp for a single recv_from syscall. Peer address bits stashed in peer_bits.
 mem UnixRecvFromOp {
     netuds.UnixDatagram* sock
     io.Buf*              buf
-    udsaddr.SocketAddr*  addr_out
+    u64                  peer_bits
 }
 
 impl rtio.IoOp for UnixRecvFromOp {
     fn try_perform() i32, i64 {
         err<i32>, n<u64>, addr<udsaddr.SocketAddr> = this.sock.recv_from(this.buf)
-        this.addr_out = addr
+        this.peer_bits = addr.(u64)
         return err, n.(i64)
     }
 }
@@ -116,8 +128,8 @@ UnixRecvFut::poll(ctx){
 
 // Send `buf` to the socket at `path`. Awaits writable readiness as needed.
 // Returns (io.Ok, bytes_sent) or (err, 0).
-async UnixDatagram::send_to(buf<io.Buf>, path<string.String>) i32, u64 {
-    sock<netuds.UnixDatagram> = this.io.source()
+async UnixDatagram::send_to(buf<io.Buf>, path<string.String>) {
+    sock<netuds.UnixDatagram> = this.raw_sock()
     op<UnixSendToOp> = new UnixSendToOp { sock: sock, buf: buf, path: path }
     f<UnixSendFut> = new UnixSendFut { io: this.io, op: op, byte_count: 0 }
     err<i32> = f.await
@@ -126,22 +138,26 @@ async UnixDatagram::send_to(buf<io.Buf>, path<string.String>) i32, u64 {
     return err, nb
 }
 
-// Receive a datagram into `buf`, returning the peer address. Awaits readable
-// readiness as needed. Returns (io.Ok, bytes, peer_addr) or (err, 0, null).
-async UnixDatagram::recv_from(buf<io.Buf>) i32, u64, udsaddr.SocketAddr {
-    sock<netuds.UnixDatagram> = this.io.source()
-    op<UnixRecvFromOp> = new UnixRecvFromOp { sock: sock, buf: buf, addr_out: null }
+// Receive a datagram into `buf`. Peer address via last_peer() after success.
+async UnixDatagram::recv_from(buf<io.Buf>) {
+    sock<netuds.UnixDatagram> = this.raw_sock()
+    op<UnixRecvFromOp> = new UnixRecvFromOp { sock: sock, buf: buf, peer_bits: 0 }
     f<UnixRecvFut> = new UnixRecvFut { io: this.io, op: op, byte_count: 0 }
     err<i32> = f.await
     nb_i64<i64> = f.byte_count
     nb<u64> = nb_i64.(u64)
-    return err, nb, op.addr_out
+    this.last_peer_bits = op.peer_bits
+    return err, nb
+}
+
+UnixDatagram::last_peer() u64 {
+    return this.last_peer_bits
 }
 
 // Receive a datagram into `buf`, discarding the peer address. Returns
 // (io.Ok, bytes) or (err, 0).
-async UnixDatagram::recv(buf<io.Buf>) i32, u64 {
-    sock<netuds.UnixDatagram> = this.io.source()
+async UnixDatagram::recv(buf<io.Buf>) {
+    sock<netuds.UnixDatagram> = this.raw_sock()
     op<UnixRecvOp> = new UnixRecvOp { sock: sock, buf: buf }
     f<UnixRecvFut> = new UnixRecvFut { io: this.io, op: op, byte_count: 0 }
     err<i32> = f.await
@@ -152,16 +168,16 @@ async UnixDatagram::recv(buf<io.Buf>) i32, u64 {
 
 // Non-blocking send_to: one writable-readiness check + one syscall.
 UnixDatagram::try_send_to(buf<io.Buf>, path<string.String>) i32, u64 {
-    sock<netuds.UnixDatagram> = this.io.source()
+    sock<netuds.UnixDatagram> = this.raw_sock()
     op<UnixSendToOp> = new UnixSendToOp { sock: sock, buf: buf, path: path }
     err<i32>, val<i64> = this.io.try_io(netio.writable_interest(), op)
     return err, val.(u64)
 }
 
 // Non-blocking recv_from: one readable-readiness check + one syscall.
-UnixDatagram::try_recv_from(buf<io.Buf>) i32, u64, udsaddr.SocketAddr {
-    sock<netuds.UnixDatagram> = this.io.source()
-    op<UnixRecvFromOp> = new UnixRecvFromOp { sock: sock, buf: buf, addr_out: null }
+UnixDatagram::try_recv_from(buf<io.Buf>) i32, u64, u64 {
+    sock<netuds.UnixDatagram> = this.raw_sock()
+    op<UnixRecvFromOp> = new UnixRecvFromOp { sock: sock, buf: buf, peer_bits: 0 }
     err<i32>, val<i64> = this.io.try_io(netio.readable_interest(), op)
-    return err, val.(u64), op.addr_out
+    return err, val.(u64), op.peer_bits
 }
