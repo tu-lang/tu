@@ -106,7 +106,7 @@ ACTIVE_POOL<BlockingPool> = null
 
 fn blocking_worker_run(){
     p<BlockingPool> = ACTIVE_POOL
-    if p == null return
+    if p == null { return }
     loop {
         p.shared_lock.lock()
         // Drain any pending item before checking shutdown so mandatory

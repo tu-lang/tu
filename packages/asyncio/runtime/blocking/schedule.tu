@@ -28,3 +28,20 @@ impl task.Schedule for BlockingSchedule {
         // ephemeral submissions. Nothing to detach here.
     }
 }
+
+// Bridge fns installed into task Headers (api dispatch on raw Schedule
+// bits crashes codegen; the harness calls these plain fn pointers).
+fn blocking_schedule_bridge(hbits<u64>, nbits<u64>){
+    bs<BlockingSchedule> = hbits.(BlockingSchedule)
+    n<task.Notified> = nbits.(task.Notified)
+    bs.runtime_inject.push(n)
+}
+
+fn blocking_release_bridge(hbits<u64>, rbits<u64>){
+    // Blocking tasks are not owner-tracked; nothing to detach.
+}
+
+// Export the bridge addresses for cross-package raw_new callers.
+fn blocking_sched_bridge_fns() (u64, u64) {
+    return blocking_schedule_bridge.(u64), blocking_release_bridge.(u64)
+}
