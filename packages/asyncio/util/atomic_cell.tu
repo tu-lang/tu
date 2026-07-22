@@ -2,6 +2,10 @@
 
 use std.atomic
 
+// CAS success sentinel: std.atomic cas/cas64 return 1 on success;
+// comparing against an untyped literal 0 crashes codegen (binary-op trap).
+CAS_OK<i64> = 1
+
 // Atomic u64 storage; semantics align with crossbeam's AtomicCell<u64>.
 mem AtomicCell {
     u64 slot
@@ -21,7 +25,7 @@ fn atomic_cell_new(v<u64>) AtomicCell {
 AtomicCell::set(v<u64>){
     loop {
         old<u64> = atomic.load64(&this.slot)
-        if atomic.cas64(&this.slot, old, v) != 0 break
+        if atomic.cas64(&this.slot, old, v) == CAS_OK break
     }
 }
 
@@ -29,13 +33,13 @@ AtomicCell::set(v<u64>){
 AtomicCell::take() u64 {
     loop {
         old<u64> = atomic.load64(&this.slot)
-        if atomic.cas64(&this.slot, old, 0) != 0 return old
+        if atomic.cas64(&this.slot, old, 0) == CAS_OK return old
     }
     return 0
 }
 
 // Compare-and-swap. Returns true on success.
 AtomicCell::cas(old<u64>, nxt<u64>) i32 {
-    if atomic.cas64(&this.slot, old, nxt) != 0 return 1
+    if atomic.cas64(&this.slot, old, nxt) == CAS_OK return 1
     return 0
 }

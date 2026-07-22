@@ -108,40 +108,14 @@ ConnectFut::poll(ctx){
 
 // Mother: TcpStream::connect — sync setup + ConnectFut leaf (member async
 // calling nettcp.tcp_stream_connect corrupts the async frame).
-// Package fn tcp_connect() is the cross-pkg entry; const TcpStream::connect
-// delegates for same-package callers.
-// Package fn tcp_connect() is the cross-pkg entry (returns ConnectFut bits —
-// cross-pkg mem multi-ret drops pointer fields). Same-package TcpStream::connect
-// wraps the bits back into ConnectFut.
-// Cross-pkg bridge: register netio TcpStream with IO driver; returns TcpStream bits.
-fn from_netio_bits(inner<nettcp.TcpStream>, peer<net.SocketAddr>) u64 {
-    ok_code<i32> = 1
-    rerr<i32>, sbits<u64> = TcpStream::from_netio(inner, peer)
-    if rerr != ok_code return 0
-    return sbits
-}
-
-// Register-only connect step; returns TcpStream bits (cross-pkg safe).
-fn tcp_connect_reg(addr<net.SocketAddr>) u64 {
-    ok_code<i32> = 1
+const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
     cerr<i32> = nettcp.tcp_stream_connect(addr)
-    if cerr != ok_code return 0
-    inner<nettcp.TcpStream> = nettcp.tcp_stream_last()
-    if inner == null return 0
-    rerr<i32>, sbits<u64> = TcpStream::from_netio(inner, addr)
-    if rerr != ok_code return 0
-    return sbits
-}
-
-fn tcp_connect(addr<net.SocketAddr>) u64 {
-    ok_code<i32> = 1                // io.Ok
-    cerr<i32> = nettcp.tcp_stream_connect(addr)
-    if cerr != ok_code {
+    if cerr != io.Ok {
         f0<ConnectFut> = new ConnectFut
         f0.poll_ev = null
         f0.stream = null
         f0.stage = -1
-        return f0.(u64)
+        return f0
     }
     inner<nettcp.TcpStream> = nettcp.tcp_stream_last()
     if inner == null {
@@ -149,28 +123,22 @@ fn tcp_connect(addr<net.SocketAddr>) u64 {
         f1.poll_ev = null
         f1.stream = null
         f1.stage = -1
-        return f1.(u64)
+        return f1
     }
     rerr<i32>, sbits<u64> = TcpStream::from_netio(inner, addr)
-    if rerr != ok_code {
+    if rerr != io.Ok {
         f2<ConnectFut> = new ConnectFut
         f2.poll_ev = null
         f2.stream = null
         f2.stage = -2
-        return f2.(u64)
+        return f2
     }
     s<TcpStream> = sbits.(TcpStream)
     f<ConnectFut> = new ConnectFut
     f.poll_ev = s.poll_ev
     f.stream = s
     f.stage = 0
-    return f.(u64)
-}
-
-const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
-    bits<u64> = tcp_connect(addr)
-    cf<ConnectFut> = bits.(ConnectFut)
-    return cf
+    return f
 }
 
 // ---- readiness -----------------------------------------------------------

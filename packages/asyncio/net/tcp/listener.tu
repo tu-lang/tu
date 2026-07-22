@@ -18,14 +18,14 @@ mem TcpListener {
     aio.PollEvented* poll_ev
 }
 
-const TcpListener::bind(addr<net.SocketAddr>) (i32, u64) {
+const TcpListener::bind(addr<net.SocketAddr>) (i32, TcpListener) {
     err<i32> = nettcp.TcpListener::bind(addr)
-    if err != io.Ok return err, 0
+    if err != io.Ok return err, null
     inner<nettcp.TcpListener> = nettcp.tcp_listener_last()
-    if inner == null return err, 0
+    if inner == null return err, null
     lerr<i32>, lbits<u64> = TcpListener::from_netio(inner)
-    if lerr != io.Ok return lerr, 0
-    return io.Ok, lbits
+    if lerr != io.Ok return lerr, null
+    return io.Ok, lbits.(TcpListener)
 }
 
 const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, u64) {
