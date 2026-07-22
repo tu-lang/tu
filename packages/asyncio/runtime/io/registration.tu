@@ -95,9 +95,12 @@ Registration::poll_write_io(ctx<u64>, op<IoOp>) i32, i64 {
 fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) i32, i64 {
     loop {
         err<i32>, ev<ReadyEvent> = this.shared.poll_readiness(ctx, dir)
-        if err == runtime.PollPending return runtime.PollPending, 0
-        if err == IO_OTHER_DRIVER_TERMINATED return IO_OTHER_DRIVER_TERMINATED, 0
-        if err != 0 return err, 0
+        // Mother registration.rs poll_io: ready!(poll_ready) then run op.
+        // poll_readiness returns PollReady (=1) on hit — only Pending /
+        // shutdown short-circuit; Ready falls through to the syscall.
+        if err != runtime.PollReady {
+            return err, 0
+        }
 
         op_err<i32>, val<i64> = op.try_perform()
         if op_err == IO_WOULD_BLOCK {

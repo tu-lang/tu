@@ -9,6 +9,10 @@ use netio
 use asyncio.util
 use asyncio.task
 
+// CAS success sentinel: std.atomic cas/cas64 return 1 on success;
+// comparing against an untyped literal 0 crashes codegen (binary-op trap).
+CAS_OK<i64> = 1
+
 // readiness packing: [shutdown:1 | tick:15 | readiness:16].
 READINESS_BITS<i32> = 16
 TICK_BITS<i32>      = 15
@@ -70,11 +74,14 @@ const Waiter::new(ctx<u64>, interest_bits<u8>) Waiter {
     return w
 }
 
-// IO Driver shadow for one source. Lives on the RegistrationSet linked
-// list via linked_list_pointers. Tokens registered with netio.Registry
-// are ScheduledIo* cast to u64.
+// IO Driver shadow for one source. Lives on the RegistrationSet owning
+// list via typed prev_sio / next_sio links (GC-traced strong refs — mother
+// keeps Arc<ScheduledIo> in Synced; interior Pointers links are invisible
+// to the GC and caused use-after-free). Tokens registered with
+// netio.Registry are ScheduledIo* cast to u64 (weak; list keeps it alive).
 mem ScheduledIo {
-    util.Pointers           linked_list_pointers
+    ScheduledIo*       prev_sio         // owning list link (registration_set)
+    ScheduledIo*       next_sio         // owning list link (registration_set)
     u64                readiness        // atomic; packed bits above
     runtime.MutexInter* waiters_lock
     util.LinkedList*   waiters          // intrusive list of Waiter
@@ -86,8 +93,8 @@ mem ScheduledIo {
 const ScheduledIo::new() ScheduledIo {
     ensure_packs()
     s<ScheduledIo> = new ScheduledIo
-    s.linked_list_pointers.prev = null
-    s.linked_list_pointers.next = null
+    s.prev_sio = null
+    s.next_sio = null
     s.readiness = 0
     wl<runtime.MutexInter> = new runtime.MutexInter
     wl.init()
@@ -144,7 +151,7 @@ ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
 
         nxt<u64> = util.pack_pack_field(ready_pack, merged_ready.(u64), cur)
         nxt = util.pack_pack_field(tick_pack, next_tick.(u64), nxt)
-        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) != 0 return 0
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS_OK return 0
     }
     return 0
 }
@@ -218,52 +225,87 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
 // Single-direction poll: returns PollReady with a ReadyEvent on hit, or
 // PollPending after stashing ctx into the matching reader/writer slot.
 // Returns OtherDriverTerminated when the driver has shut down.
+// Mother scheduled_io.rs poll_readiness: on miss, store the waker under
+// the waiters lock, then RE-READ readiness — a wake landing between the
+// first load and the store would otherwise be lost (TOCTOU).
 ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
-    cur<u64> = atomic.load64(&this.readiness)
-    if pack_is_shutdown(cur) {
-        return IO_OTHER_DRIVER_TERMINATED, ReadyEvent::new(0, Ready::empty())
-    }
-    bits<i32> = unpack_ready_bits(cur)
     interest_mask<i32> = 0
     if dir == DIR_READ  interest_mask = READABLE | READ_CLOSED | ERROR | PRIORITY
     if dir == DIR_WRITE interest_mask = WRITABLE | WRITE_CLOSED | ERROR
 
-    hit<i32> = bits & interest_mask
-    if hit != 0 {
-        return runtime.PollReady, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(hit))
+    cur<u64> = atomic.load64(&this.readiness)
+    hit<i32> = unpack_ready_bits(cur) & interest_mask
+    is_sd<i32> = pack_is_shutdown(cur)
+
+    if hit == 0 && is_sd == 0 {
+        // Stash the task waker (mother: cx.waker().clone()). Prefer the
+        // harness-published RawTask* when dynstackcall null-padded the ctx.
+        wl<runtime.MutexInter> = this.waiters_lock
+        wl.lock()
+        wake_ctx<u64> = task.resolve_poll_ctx(ctx)
+        if dir == DIR_READ  this.reader_ctx = wake_ctx
+        if dir == DIR_WRITE this.writer_ctx = wake_ctx
+        // Re-read while holding the lock: wake() takes the same lock, so a
+        // concurrent readiness change is either visible here or will see
+        // the waker we just stored.
+        cur = atomic.load64(&this.readiness)
+        hit = unpack_ready_bits(cur) & interest_mask
+        is_sd = pack_is_shutdown(cur)
+        wl.unlock()
+        if is_sd == 0 && hit == 0 {
+            return runtime.PollPending, ReadyEvent::new(unpack_tick(cur), Ready::empty())
+        }
     }
 
-    // Stash the task waker (mother: cx.waker().clone()). Prefer the
-    // harness-published RawTask* when dynstackcall null-padded the poll ctx.
-    wake_ctx<u64> = task.resolve_poll_ctx(ctx)
-    if dir == DIR_READ  this.reader_ctx = wake_ctx
-    if dir == DIR_WRITE this.writer_ctx = wake_ctx
-    return runtime.PollPending, ReadyEvent::new(unpack_tick(cur), Ready::empty())
+    if is_sd != 0 {
+        // Mother returns Ready with direction.mask() + is_shutdown; Tu
+        // surfaces the terminated error code instead.
+        return IO_OTHER_DRIVER_TERMINATED, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(interest_mask))
+    }
+    return runtime.PollReady, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(hit))
 }
 
 // Clear `event.ready` from the readiness word, but only if tick still
 // matches. A different tick means another set_readiness pass already
 // swept past the snapshot, so the bits remain valid.
+// Mother clear_readiness: mask_no_closed = ready - READ_CLOSED - WRITE_CLOSED;
+// closed bits are permanent (EOF / half-close never un-happens) — clearing
+// them would leave the resource permanently Pending after EOF.
 ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
     ensure_packs()
+    mask_no_closed<i32> = event.ready.bits & (~(READ_CLOSED | WRITE_CLOSED))
     loop {
         cur<u64> = atomic.load64(&this.readiness)
         if unpack_tick(cur) != event.tick return 0
         cur_ready<i32> = unpack_ready_bits(cur)
-        next_ready<i32> = cur_ready & (~event.ready.bits)
+        next_ready<i32> = cur_ready & (~mask_no_closed)
         nxt<u64> = util.pack_pack_field(ready_pack, next_ready.(u64), cur)
-        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) != 0 return 0
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS_OK return 0
     }
     return 0
 }
 
 // Flip the SHUTDOWN bit and wake every waiter with OtherDriverTerminated.
 // All callers entering after shutdown observe the bit and bail out.
-// Flip the SHUTDOWN bit. V1: mark shutdown only; waiter wake on next poll.
+// Flip the SHUTDOWN bit and wake every waiter with OtherDriverTerminated.
+// Mother scheduled_io.rs shutdown(): fetch_or(SHUTDOWN) then wake(Ready::ALL).
+// KNOWN OPEN ISSUE: crashes at runtime when >=1 live registration exists at
+// Runtime::shutdown_background — suspected GC use-after-free on ScheduledIo
+// reachable only via interior Pointers / u64 token (see repair-plan §7.6).
 ScheduledIo::shutdown() util.WakeList {
-    out<util.WakeList> = new util.WakeList
-    out.init()
-    return out
+    ensure_packs()
+    loop {
+        cur<u64> = atomic.load64(&this.readiness)
+        if pack_is_shutdown(cur) != 0 {
+            break
+        }
+        nxt<u64> = util.pack_pack_field(shutdown_pack, 1, cur)
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS_OK {
+            break
+        }
+    }
+    all<Ready> = Ready::from_bits(0xFFFF)
+    return this.wake(all)
 }
 
 // Async leaf used by Registration::readiness(interest). Stays Pending

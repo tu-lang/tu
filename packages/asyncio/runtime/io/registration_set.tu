@@ -1,5 +1,7 @@
-// Owns every ScheduledIo allocated by the IO driver. Linked via
-// ScheduledIo.linked_list_pointers so shutdown can drain them all.
+// Owns every ScheduledIo allocated by the IO driver. Linked via typed
+// ScheduledIo.prev_sio / next_sio fields so the chain is a GC-traced strong
+// reference (mother: Synced owns Arc<ScheduledIo>; interior Pointers links
+// are invisible to the GC and freed live nodes).
 // Mother: tokio::runtime::io::registration_set — RegistrationSet itself is
 // lock-free (pending_release_count); Synced is guarded by Handle.synced.
 
@@ -74,11 +76,11 @@ RegistrationSet::allocate(synced<RegistrationSetSynced>) (i32, ScheduledIo) {
         return 1, null
     }
     sio<ScheduledIo> = ScheduledIo::new()
-    // push_front
+    // push_front on the owning typed chain
     if synced.head != null {
         old<ScheduledIo> = synced.head
-        sio.linked_list_pointers.next = &old.linked_list_pointers
-        old.linked_list_pointers.prev = &sio.linked_list_pointers
+        sio.next_sio = old
+        old.prev_sio = sio
     } else {
         synced.tail = sio
     }
@@ -90,31 +92,20 @@ RegistrationSet::allocate(synced<RegistrationSetSynced>) (i32, ScheduledIo) {
 // Unlink sio from the live list. Caller must hold synced_lock and guarantee
 // sio is on this set (mother: unsafe remove).
 RegistrationSet::remove(synced<RegistrationSetSynced>, sio<ScheduledIo>){
-    p<util.Pointers> = sio.linked_list_pointers
-    if p.prev != null {
-        prev_node<util.Pointers> = p.prev
-        prev_node.next = p.next
+    prv<ScheduledIo> = sio.prev_sio
+    nxt<ScheduledIo> = sio.next_sio
+    if prv != null {
+        prv.next_sio = nxt
     } else {
-        if p.next == null {
-            synced.head = null
-        } else {
-            nxt<util.Pointers> = p.next
-            synced.head = nxt.(ScheduledIo)
-        }
+        synced.head = nxt
     }
-    if p.next != null {
-        next_node<util.Pointers> = p.next
-        next_node.prev = p.prev
+    if nxt != null {
+        nxt.prev_sio = prv
     } else {
-        if p.prev == null {
-            synced.tail = null
-        } else {
-            prv<util.Pointers> = p.prev
-            synced.tail = prv.(ScheduledIo)
-        }
+        synced.tail = prv
     }
-    sio.linked_list_pointers.prev = null
-    sio.linked_list_pointers.next = null
+    sio.prev_sio = null
+    sio.next_sio = null
     if synced.live_count > 0 {
         synced.live_count -= 1
     }
@@ -157,7 +148,7 @@ RegistrationSet::release(synced<RegistrationSetSynced>){
 // Mark shutdown and detach every live ScheduledIo. Caller holds synced_lock;
 // must call ScheduledIo::shutdown on each returned node *without* the lock
 // (mother: Driver::shutdown).
-// Returns the old head; nodes remain linked via linked_list_pointers.next.
+// Returns the old head; nodes remain linked via next_sio for the caller walk.
 RegistrationSet::shutdown(synced<RegistrationSetSynced>) ScheduledIo {
     if synced.is_shutdown != 0 {
         return null

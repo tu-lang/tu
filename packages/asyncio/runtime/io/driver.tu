@@ -136,6 +136,14 @@ IoHandle::wake_by_ref() i32 {
     return netio.waker_wake(wk)
 }
 
+// Cross-pkg unpark: schedulers hold IoHandle only as u64 bits.
+// Mother: Handle::unpark → driver.unpark() after remote inject push.
+fn io_handle_wake_bits(ioh_bits<u64>) i32 {
+    if ioh_bits == 0 return 0
+    ih<IoHandle> = ioh_bits
+    return ih.wake_by_ref()
+}
+
 // Register signalfd with TOKEN_SIGNAL (mother: register_signal_receiver).
 // Named register_sfd — callers in asyncio.runtime.signal must not write
 // `.register_signal_*` (type-assert trap on `signal` in that package).
@@ -193,13 +201,10 @@ IoHandle::shutdown(){
     lk.unlock()
     cur<ScheduledIo> = head
     while cur != null {
-        nxt_ptr<util.Pointers> = cur.linked_list_pointers.next
+        nxt<ScheduledIo> = cur.next_sio
         wakes<util.WakeList> = cur.shutdown()
         util.wake_list_clear(wakes)
-        if nxt_ptr == null {
-            break
-        }
-        cur = nxt_ptr.(ScheduledIo)
+        cur = nxt
     }
 }
 
@@ -219,8 +224,11 @@ IoHandle::release_pending_registrations(){
 // waiters whose reason interest overlaps. Reserved tokens first.
 // Interrupted maps to a no-op turn so the caller can re-park as needed.
 IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
+    fmt.println("turn: enter")
     handle.release_pending_registrations()
     err<i32> = netio.poll_poll(netio.poll_from_bits(this.poll_slot), netevent.events_from_bits(this.events_slot), max_wait)
+    fmt.println("turn: poll err:")
+    fmt.println(int(err))
     if err == IO_INTERRUPTED return 0
     if err != LIBIO_OK return err
 
@@ -231,6 +239,8 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
         if ie != 0 break
 
         token<u64> = ev.token()
+        fmt.println("turn: raw token:")
+        fmt.println(int(token))
         if token == TOKEN_WAKEUP continue
         // Padded Event (u32+u64) makes epoll_ctl store TOKEN_SIGNAL as 1<<32;
         // epoll_wait may surface either form depending on slot packing.
@@ -242,12 +252,17 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
 
         sio<ScheduledIo> = token.(ScheduledIo)
         ready<Ready> = ready_from_event(ev)
+        fmt.println("turn: event token/bits:")
+        fmt.println(int(token))
+        fmt.println(int(ready.bits))
         sio.set_readiness(TICK_INC, ready.bits)
         wakes<util.WakeList> = sio.wake(ready)
         // Mother: WakeList::wake_all → Waker::wake → RawTask::wake_by_ref.
         // ctx slots hold RawTask* (see ct_task_ctx / mt_ctx).
         wi<i32> = 0
         wlen<i32> = wakes.len_count()
+        fmt.println("turn: wake count:")
+        fmt.println(int(wlen))
         while wi < wlen {
             task.wake_by_ctx(wakes.ctxs[wi])
             wi += 1
