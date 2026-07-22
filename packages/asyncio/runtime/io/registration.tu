@@ -48,7 +48,7 @@ Registration::deregister(iosrc_bits<u64>) i32 {
 }
 
 // Poll for read readiness. Caller hands ctx so the driver can wake the task.
-// PollReady -> (0, ReadyEvent); PollPending -> (PollPending, empty event);
+// Ready -> (0, ReadyEvent); Pending -> (PollPending, empty event);
 // shutdown -> (OtherDriverTerminated, empty event).
 Registration::poll_read_ready(ctx<u64>) i32, ReadyEvent {
     err<i32> = 0
@@ -96,9 +96,10 @@ fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) i3
     loop {
         err<i32>, ev<ReadyEvent> = this.shared.poll_readiness(ctx, dir)
         // Mother registration.rs poll_io: ready!(poll_ready) then run op.
-        // poll_readiness returns PollReady (=1) on hit — only Pending /
-        // shutdown short-circuit; Ready falls through to the syscall.
-        if err != runtime.PollReady {
+        // Ready is err==0 (not PollReady — that collides with io.Ok and
+        // made callers treat readiness as failure). Pending / shutdown /
+        // other errors short-circuit.
+        if err != 0 {
             return err, 0
         }
 

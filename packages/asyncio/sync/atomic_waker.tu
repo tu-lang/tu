@@ -9,8 +9,8 @@ use runtime
 
 // State machine over aw_state.
 WAITING<i32>     = 0          // no waker stored
-REGISTERING<i32> = 0b01       // register_by_ref is mid-flight
-WAKING<i32>      = 0b10       // wake observed before register finished
+REGISTERING<i32> = 0x01       // register_by_ref is mid-flight
+WAKING<i32>      = 0x02       // wake observed before register finished
 
 // Single-slot waker; wake_ctx is the (sched, task_id) value the driver
 // hands the leaf future. Field aw_state avoids `.state` asmgen traps.

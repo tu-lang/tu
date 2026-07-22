@@ -222,9 +222,12 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
     return out
 }
 
-// Single-direction poll: returns PollReady with a ReadyEvent on hit, or
-// PollPending after stashing ctx into the matching reader/writer slot.
-// Returns OtherDriverTerminated when the driver has shut down.
+// Single-direction poll. Return convention (repair-plan E2 / callers):
+//   0              — ready; ReadyEvent carries the hit bits
+//   PollPending    — parked; waker stored in reader/writer slot
+//   OtherDriverTerminated — driver shut down
+// Must NOT return PollReady(=1): callers use `err != 0` / `err == 0`, and
+// PollReady collides with io.Ok(=1) so readiness was treated as an error.
 // Mother scheduled_io.rs poll_readiness: on miss, store the waker under
 // the waiters lock, then RE-READ readiness — a wake landing between the
 // first load and the store would otherwise be lost (TOCTOU).
@@ -262,7 +265,7 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
         // surfaces the terminated error code instead.
         return IO_OTHER_DRIVER_TERMINATED, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(interest_mask))
     }
-    return runtime.PollReady, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(hit))
+    return 0, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(hit))
 }
 
 // Clear `event.ready` from the readiness word, but only if tick still

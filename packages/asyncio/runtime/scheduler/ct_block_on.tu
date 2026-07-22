@@ -4,7 +4,6 @@
 
 use runtime
 use io
-use fmt
 use sys
 use asyncio.task
 use asyncio.runtime as rt
@@ -65,7 +64,6 @@ fn block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
 // Mother: park via aggregate Driver (time-aware timeout + wheel process).
 fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     if shared.driver != 0 && shared.driver_handle != 0 {
-        fmt.println("park: aggregate")
         rt.driver_park_bits(shared.driver, shared.driver_handle)
         return
     }
@@ -73,7 +71,6 @@ fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     iod<u64> = shared.iod_bits
     ioh<u64> = shared.ioh_bits
     if iod == 0 || ioh == 0 {
-        fmt.println("park: osyield fallback")
         runtime.osyield()
         return
     }
@@ -148,9 +145,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             break
         }
 
-        fmt.println("bo: parking")
         ct_park_driver(shared, core_obj)
-        fmt.println("bo: unparked")
     }
 
     ct_exit(saved)

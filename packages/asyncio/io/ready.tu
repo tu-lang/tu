@@ -1,11 +1,12 @@
 // User-facing readiness bitset. Mirrors runtime.io.Ready but lives in the io package.
+// Decimal/hex only: Tu currently evaluates 0b… binary literals as 0.
 
-READABLE<i32>     = 0b00_0001
-WRITABLE<i32>     = 0b00_0010
-READ_CLOSED<i32>  = 0b00_0100
-WRITE_CLOSED<i32> = 0b00_1000
-ERROR<i32>        = 0b01_0000
-PRIORITY<i32>     = 0b10_0000
+READABLE<i32>     = 0x01
+WRITABLE<i32>     = 0x02
+READ_CLOSED<i32>  = 0x04
+WRITE_CLOSED<i32> = 0x08
+ERROR<i32>        = 0x10
+PRIORITY<i32>     = 0x20
 
 mem Ready {
     i32 bits

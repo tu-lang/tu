@@ -9,10 +9,10 @@ use runtime
 // comparing against an untyped literal 0 crashes codegen (binary-op trap).
 CAS_OK<i64> = 1
 
-VALUE_SET<i32>  = 0b00001
-TX_DROPPED<i32> = 0b00010
-RX_DROPPED<i32> = 0b00100
-CLOSED<i32>     = 0b01000
+VALUE_SET<i32>  = 0x01
+TX_DROPPED<i32> = 0x02
+RX_DROPPED<i32> = 0x04
+CLOSED<i32>     = 0x08
 
 OS_ERR_SEND_NO_RECEIVER<i32> = 0x0302000B
 OS_ERR_ALREADY_CONSUMED<i32> = 0x03020007
