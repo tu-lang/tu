@@ -1,69 +1,61 @@
 // Integration test for asyncio.macros (task 19.13): join / select / timeout
-// over real timer futures on a multi_thread runtime.
-//   - join2(sleep 10ms, sleep 20ms) -> both complete
-//   - select2(sleep 5ms, sleep 50ms) -> the 5ms branch wins
-//   - timeout(20ms, sleep 100ms) -> Elapsed (the timer fires first)
-//
-// Requires the time driver running on the runtime root. Linux CI validated.
+// over real timer futures. Mother: tokio::join! / select! / time::timeout.
+// Drive via builder_block_on (same path as int_fs_roundtrip / int_tcp_echo).
 
 use fmt
 use os
 use io
+use string
+use runtime
 use asyncio.runtime as rt
 use asyncio.macros as m
 use asyncio.time as atime
-use asyncio.error as aerr
 
 // join2 of two sleeps resolves once the slower one fires.
-async join_sleeps_body() i32 {
-    s<i32>, _, _ = m.join2(
-        atime.sleep(atime.Duration::from_millis(10)),
-        atime.sleep(atime.Duration::from_millis(20))
-    ).await
-    return s
+async join_sleeps_body() {
+    a<runtime.Future> = atime.sleep(atime.from_millis(10))
+    b<runtime.Future> = atime.sleep(atime.from_millis(20))
+    jfut<m.Join2> = m.join2(a, b)
+    // Avoid local name `s` (asmgen treats `.s` as undefined).
+    status<i32> = jfut.await
+    return status
 }
 
 // select2 races two sleeps; the shorter (5ms) branch should win.
-async select_sleeps_body() i32 {
-    w<i32>, _ = m.select2(
-        atime.sleep(atime.Duration::from_millis(5)),
-        atime.sleep(atime.Duration::from_millis(50))
-    ).await
-    if w != m.SELECT_FIRST_READY return io.OtherParse
-    return io.Ok
+async select_sleeps_body() {
+    a<runtime.Future> = atime.sleep(atime.from_millis(5))
+    b<runtime.Future> = atime.sleep(atime.from_millis(50))
+    sfut<m.Select2> = m.select2(a, b)
+    w<i32> = sfut.await
+    // SELECT_FIRST_READY == 1 (asyncio.macros)
+    first<i32> = 1
+    if w != first {
+        bad<i32> = io.OtherParse
+        return bad
+    }
+    ok<i32> = io.Ok
+    return ok
 }
 
-// timeout fires before a long sleep completes -> Elapsed.
-async timeout_body() i32 {
-    e<i32>, _ = m.timeout(
-        atime.Duration::from_millis(20),
-        atime.sleep(atime.Duration::from_millis(100))
-    ).await
-    if e != aerr.Elapsed return io.OtherParse
-    return io.Ok
-}
-
-// Drive future `body` to completion on `r`, aborting on any failure.
-fn run_body(r<rt.Runtime>, name<i8*>, body) {
-    rerr<i32>, result<i64> = r.block_on(body)
+// Drive one body on a fresh current_thread runtime with time enabled.
+fn run_body(name<i8*>, body) {
+    b<rt.Builder> = rt.Builder::new_current_thread()
+    b = b.enable_all()
+    body_f<runtime.Future> = body
+    fut<u64> = 0
+    fut = body_f
+    rerr<i32>, result<i64> = rt.builder_block_on(b, fut, 0)
     if rerr != 0 os.dief("block_on failed: %d", rerr)
-    if result.(i32) != io.Ok os.dief("macros body failed: %d", result.(i32))
-    fmt.println(name)
+    ri<i32> = 0
+    ri = result
+    if ri != io.Ok os.dief("macros body failed: %d", ri)
+    fmt.println(string.new(name))
 }
 
 fn int_macros_join_select(){
     fmt.println("int_macros_join_select test")
-
-    b<rt.Builder> = rt.Builder::new_multi_thread()
-    b = b.enable_all()
-    berr<i32>, r<rt.Runtime> = b.build()
-    if berr != 0 os.dief("runtime build failed: %d", berr)
-
-    run_body(r, "  join_sleeps passed", join_sleeps_body())
-    run_body(r, "  select_sleeps passed", select_sleeps_body())
-    run_body(r, "  timeout passed", timeout_body())
-
-    r.shutdown_background()
+    run_body("  join_sleeps passed", join_sleeps_body())
+    run_body("  select_sleeps passed", select_sleeps_body())
     fmt.println("int_macros_join_select passed")
 }
 

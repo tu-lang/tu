@@ -1,14 +1,4 @@
-// Property tests for asyncio.macros (tasks 19.10 / 19.11 / 19.12):
-//   - prop_select_fairness: select2 over two ready futures picks each branch
-//     first with near-equal frequency (FastRand start).
-//   - prop_join_all_complete: join2 resolves once both futures complete and
-//     returns both results in order.
-//   - prop_try_join_short_circuit: try_join2 short-circuits on an error branch
-//     without needing the other (pending) branch to complete.
-//
-// Uses immediate / never-ready futures so no timer driver is required; the
-// fairness property additionally relies on the runtime rng being wired. Linux
-// CI validated.
+// Property tests for asyncio.macros (tasks 19.10 / 19.11 / 19.12).
 
 use fmt
 use os
@@ -18,68 +8,130 @@ use asyncio.runtime as rt
 use asyncio.macros as m
 use asyncio.error as aerr
 
-// Resolve immediately to `x`.
-async ready_val(x<i64>) i64 {
-    return x
+mem ReadyVal: async {
+    i64 val
+}
+ReadyVal::poll(ctx) {
+    return runtime.PollReady, this.val
+}
+fn ready_val(x<i64>) runtime.Future {
+    f<ReadyVal> = new ReadyVal
+    f.val = x
+    fut<runtime.Future> = f
+    return fut
 }
 
-// A future that never resolves; used to prove try_join short-circuits.
 mem NeverFut: async {
     i32 dummy
 }
 NeverFut::poll(ctx){
     return runtime.PollPending
 }
-async never_fut() i64 {
-    n<NeverFut> = new NeverFut { dummy: 0 }
-    return n.await
+fn never_fut() NeverFut {
+    return new NeverFut { dummy: 0 }
 }
 
-// Feature: packages-asyncio-runtime, Property P: select2 fairness — over many
-// rounds neither branch is chosen first far more often than the other (R45.1).
-// task 19.10: over many rounds, neither select2 branch wins far more often.
-async fairness_body() i32 {
+mem SelectRound: async {
+    m.Select2* inner
+    i32       which
+}
+
+const SelectRound::new() SelectRound {
+    fa<runtime.Future> = ready_val(1)
+    fb<runtime.Future> = ready_val(2)
+    sf<m.Select2> = m.select2(fa, fb)
+    return new SelectRound { inner: sf, which: 0 }
+}
+
+SelectRound::poll(ctx) {
+    pst<i64> = this.inner.poll(ctx)
+    if pst == runtime.PollPending return runtime.PollPending
+    this.which = this.inner.which
+    return runtime.PollReady, this.which
+}
+
+fn fairness_check() i32 {
     first<i32>  = 0
     second<i32> = 0
     for i<i32> = 0 ; i < 400 ; i += 1 {
-        w<i32>, _ = m.select2(ready_val(1), ready_val(2)).await
-        if w == m.SELECT_FIRST_READY {
+        sr<SelectRound> = SelectRound::new()
+        w_val<i64> = runtime.block(sr)
+        w<i32> = w_val.(i32)
+        if w == 1 {
             first += 1
         } else {
             second += 1
         }
     }
-    // Both branches ready => winner is the rng-chosen start branch; expect a
-    // near 50/50 split. 5% target; allow 15% (60/400) slack for sample noise.
     diff<i32> = first - second
-    if diff < 0 diff = -diff
+    if diff < 0 {
+        diff = second - first
+    }
     if diff > 60 return io.OtherParse
     return io.Ok
 }
 
-// Feature: packages-asyncio-runtime, Property P: join completeness — joinN
-// resolves only after every branch completes, returning all results (R45.3).
-// task 19.11: join2 completes with both results once both futures resolve.
-async join_all_body() i32 {
-    s<i32>, ra<i64>, rb<i64> = m.join2(ready_val(11), ready_val(22)).await
-    if s != io.Ok return s
-    if ra != 11 return io.OtherParse
-    if rb != 22 return io.OtherParse
+mem JoinRound: async {
+    m.Join2* inner
+    i64     first_result
+    i64     second_result
+}
+
+const JoinRound::new() JoinRound {
+    ja<runtime.Future> = ready_val(11)
+    jb<runtime.Future> = ready_val(22)
+    jf<m.Join2> = m.join2(ja, jb)
+    return new JoinRound { inner: jf, first_result: 0, second_result: 0 }
+}
+
+JoinRound::poll(ctx) {
+    pst<i64> = this.inner.poll(ctx)
+    if pst == runtime.PollPending return runtime.PollPending
+    this.first_result = m.join2_val_a(this.inner)
+    this.second_result = m.join2_val_b(this.inner)
+    return runtime.PollReady, io.Ok
+}
+
+fn join_all_check() i32 {
+    jr<JoinRound> = JoinRound::new()
+    st_val<i64> = runtime.block(jr)
+    st<i32> = st_val.(i32)
+    if st != io.Ok return st
+    if jr.first_result != 11 return io.OtherParse
+    if jr.second_result != 22 return io.OtherParse
     return io.Ok
 }
 
-// Feature: packages-asyncio-runtime, Property P: try_join short-circuit — an
-// error branch resolves try_joinN immediately without the others completing (R45.4).
-// task 19.12: try_join2 short-circuits when a branch resolves to an error,
-// even though the other branch never completes.
-async try_short_body() i32 {
-    st<i32>, _, rb<i64> = m.try_join2(ready_val(aerr.Closed.(i64)), never_fut()).await
-    if st != aerr.Closed return io.OtherParse
-    if rb != 0 return io.OtherParse
+mem TryJoinRound: async {
+    m.TryJoin2* inner
+    i32         status_code
+    i64         second_result
+}
+
+const TryJoinRound::new() TryJoinRound {
+    closed_bits<i64> = 0x03020002.(i64)
+    tj<m.TryJoin2> = m.try_join2(ready_val(closed_bits), never_fut())
+    return new TryJoinRound { inner: tj, status_code: 0, second_result: 0 }
+}
+
+TryJoinRound::poll(ctx) {
+    pst<i64> = this.inner.poll(ctx)
+    if pst == runtime.PollPending return runtime.PollPending
+    if pst == runtime.PollError return runtime.PollError, 0.(i64)
+    this.second_result = m.try_join2_val_b(this.inner)
+    this.status_code = m.try_join2_short_status(this.inner)
+    return runtime.PollReady, this.status_code
+}
+
+fn try_short_check() i32 {
+    tjr<TryJoinRound> = TryJoinRound::new()
+    st_val<i64> = runtime.block(tjr)
+    st<i32> = st_val.(i32)
+    if st != 0x03020002 return io.OtherParse
+    if tjr.second_result != 0 return io.OtherParse
     return io.Ok
 }
 
-// Drive future `body` to completion on `r`, aborting on any failure.
 fn run_body(r<rt.Runtime>, name<i8*>, body) {
     rerr<i32>, result<i64> = r.block_on(body)
     if rerr != 0 os.dief("block_on failed: %d", rerr)
@@ -90,16 +142,13 @@ fn run_body(r<rt.Runtime>, name<i8*>, body) {
 fn prop_select(){
     fmt.println("prop_select test")
 
-    b<rt.Builder> = rt.Builder::new_current_thread()
-    b = b.enable_all()
-    berr<i32>, r<rt.Runtime> = b.build()
-    if berr != 0 os.dief("runtime build failed: %d", berr)
+    if fairness_check() != io.Ok os.dief("prop_select_fairness failed")
+    fmt.println("  prop_select_fairness passed")
+    if join_all_check() != io.Ok os.dief("prop_join_all_complete failed")
+    fmt.println("  prop_join_all_complete passed")
+    if try_short_check() != io.Ok os.dief("prop_try_join_short_circuit failed")
+    fmt.println("  prop_try_join_short_circuit passed")
 
-    run_body(r, "  prop_select_fairness passed", fairness_body())
-    run_body(r, "  prop_join_all_complete passed", join_all_body())
-    run_body(r, "  prop_try_join_short_circuit passed", try_short_body())
-
-    r.shutdown_background()
     fmt.println("prop_select passed")
 }
 
