@@ -42,9 +42,9 @@ const Unparker::new(p<Parker>) Unparker {
 // when a driver is wired in.
 Parker::wait_until_wake(handle_ptr<u64>) i32 {
     addr<i32*> = &this.state
-    if atomic.cas(addr, NOTIFIED, EMPTY) != 0 return 0
+    if atomic.cas(addr, NOTIFIED, EMPTY) == CAS_OK return 0
 
-    if atomic.cas(addr, EMPTY, PARKED) == 0 {
+    if atomic.cas(addr, EMPTY, PARKED) != CAS_OK {
         atomic.cas(addr, NOTIFIED, EMPTY)
         return 0
     }
@@ -67,8 +67,8 @@ Parker::park_timeout(handle_ptr<u64>, max<sys.Duration>) i32 {
 Unparker::unpark(){
     p<Parker> = this.owner
     addr<i32*> = &p.state
-    if atomic.cas(addr, EMPTY, NOTIFIED) != 0 return
-    if atomic.cas(addr, PARKED, NOTIFIED) != 0 {
+    if atomic.cas(addr, EMPTY, NOTIFIED) == CAS_OK { return }
+    if atomic.cas(addr, PARKED, NOTIFIED) == CAS_OK {
         p.park_note.Wake()
         return
     }

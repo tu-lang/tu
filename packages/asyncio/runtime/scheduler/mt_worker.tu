@@ -95,7 +95,7 @@ fn mt_finalize_shutdown(w<MtWorker>, core<WorkerCore>){
 // Take the WorkerCore hand-off, then enter the typed loop body.
 fn worker_run(w<MtWorker>){
     core_bits<u64> = w.core.take()
-    if core_bits == 0 return
+    if core_bits == 0 { return }
     worker_run_loop(w, core_bits.(WorkerCore))
 }
 
@@ -177,7 +177,7 @@ ACTIVE_WORKER<MtWorker> = null
 
 fn worker_entry(){
     w<MtWorker> = ACTIVE_WORKER
-    if w == null return
+    if w == null { return }
     worker_run(w)
 }
 

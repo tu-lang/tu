@@ -9,6 +9,10 @@ use std.atomic
 use io
 use asyncio.task
 
+// CAS success sentinel: std.atomic cas/cas64 return 1 on success;
+// comparing against an untyped literal 0 crashes codegen (binary-op trap).
+CAS_OK<i64> = 1
+
 // asyncio.error.SendFull
 SCHED_SEND_FULL<i32> = 0x0302000A
 
@@ -114,7 +118,7 @@ fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
     if steal != real return SCHED_SEND_FULL   // a stealer is already mid-flight
     new_real<u32> = real + n
     new_h<u64> = pack_head(new_real, new_real)
-    if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) == 0 {
+    if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) != CAS_OK {
         return SCHED_SEND_FULL
     }
 
@@ -144,7 +148,7 @@ Local::pop() (i32, task.Notified) {
         idx<u32> = real & LOCAL_QUEUE_MASK
         bits<u64> = qhub.buffer[idx]
         new_h<u64> = pack_head(steal, real + 1)
-        if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) != 0 {
+        if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) == CAS_OK {
             rt<task.RawTask> = bits.(task.RawTask)
             return 0, task.notified_from_raw(rt)
         }
@@ -203,7 +207,7 @@ Steal::steal_into(dst<Local>) (i32, task.Notified) {
         n<u32> = (size + 1) / 2
         new_steal<u32> = real + n
         new_h<u64> = pack_head(new_steal, real)
-        if atomic.cas64(&src.head, h.(i64), new_h.(i64)) != 0 {
+        if atomic.cas64(&src.head, h.(i64), new_h.(i64)) == CAS_OK {
             // We now own [real, real+n). Copy entries into dst.
             // Limit copy to dst's free capacity.
             avail<u32> = LOCAL_QUEUE_CAPACITY - ring_size(dst_inner.tail, head_real(atomic.load64(&dst_inner.head)))
@@ -222,7 +226,7 @@ Steal::steal_into(dst<Local>) (i32, task.Notified) {
                 h2<u64> = atomic.load64(&src.head)
                 new_real2<u32> = real + n
                 new_h2<u64> = pack_head(head_steal(h2), new_real2)
-                if atomic.cas64(&src.head, h2.(i64), new_h2.(i64)) != 0 break
+                if atomic.cas64(&src.head, h2.(i64), new_h2.(i64)) == CAS_OK break
             }
 
             // Return the first stolen entry directly to the caller.

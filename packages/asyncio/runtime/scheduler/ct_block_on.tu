@@ -65,6 +65,7 @@ fn block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
 // Mother: park via aggregate Driver (time-aware timeout + wheel process).
 fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     if shared.driver != 0 && shared.driver_handle != 0 {
+        fmt.println("park: aggregate")
         rt.driver_park_bits(shared.driver, shared.driver_handle)
         return
     }
@@ -72,6 +73,7 @@ fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     iod<u64> = shared.iod_bits
     ioh<u64> = shared.ioh_bits
     if iod == 0 || ioh == 0 {
+        fmt.println("park: osyield fallback")
         runtime.osyield()
         return
     }
@@ -86,7 +88,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
     shared<CtShared> = handle.shared
     fut_bits<u64> = 0
     fut_bits = fut
-    root<task.RawTask> = task.bind_root(fut_bits, handle)
+    root<task.RawTask> = task.bind_root(fut_bits, handle, ct_schedule_bridge.(u64), ct_release_bridge.(u64))
 
     // Mother: Core { driver: Some(driver), ... }
     core_obj<Core> = ct_core_new(shared.driver, DEFAULT_GLOBAL_QUEUE_INTERVAL)
@@ -146,7 +148,9 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             break
         }
 
+        fmt.println("bo: parking")
         ct_park_driver(shared, core_obj)
+        fmt.println("bo: unparked")
     }
 
     ct_exit(saved)

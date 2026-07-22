@@ -3,7 +3,9 @@
 // re-enqueue tasks without knowing which scheduler kind it is on.
 
 use asyncio.task
+use fmt
 use asyncio.sync as libsync
+use asyncio.runtime.io as rtio
 
 // Handle holds the shared state and implements task.Schedule.
 mem CtHandle {
@@ -31,8 +33,12 @@ impl task.Schedule for CtHandle {
             }
         }
         // Foreign thread or no active context: route through inject.
+        // Mother current_thread/mod.rs schedule(): inject.push then
+        // driver.unpark() — without the eventfd kick the main thread
+        // stays blocked in epoll_wait and never sees the new task.
         this.shared.inject.push(notif)
         libsync.notify_one_raw(this.shared.woken)
+        rtio.io_handle_wake_bits(this.shared.ioh_bits)
     }
 
     fn release(raw){
@@ -57,7 +63,7 @@ fn ct_handle_spawn_fut(h<CtHandle>, fut) task.JoinHandle {
     tid<task.TaskId> = task.alloc_id()
     fut_bits<u64> = 0
     fut_bits = fut
-    raw<task.RawTask> = task.raw_new(fut_bits, h, tid.v)
+    raw<task.RawTask> = task.raw_new(fut_bits, h, ct_schedule_bridge.(u64), ct_release_bridge.(u64), tid.v)
     err<i32> = h.shared.owned.bind(raw)
     if err != 0 {
         jh<task.JoinHandle> = new task.JoinHandle
@@ -80,3 +86,17 @@ CtHandle::spawn(fut) task.JoinHandle {
     return ct_handle_spawn_fut(this, fut)
 }
 
+
+// Bridge fns installed into task Headers; api dispatch on raw Schedule bits
+// crashes codegen, so the harness calls these plain fn pointers instead.
+fn ct_schedule_bridge(hbits<u64>, nbits<u64>){
+    ct<CtHandle> = hbits.(CtHandle)
+    n<task.Notified> = nbits.(task.Notified)
+    ct.schedule(n)
+}
+
+fn ct_release_bridge(hbits<u64>, rbits<u64>){
+    ct<CtHandle> = hbits.(CtHandle)
+    rtask<task.RawTask> = rbits.(task.RawTask)
+    ct.shared.owned.remove(rtask)
+}

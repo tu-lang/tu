@@ -70,7 +70,7 @@ fn mt_handle_spawn_fut(h<MtHandle>, fut) task.JoinHandle {
     tid<task.TaskId> = task.alloc_id()
     fut_bits<u64> = 0
     fut_bits = fut
-    raw<task.RawTask> = task.raw_new(fut_bits, h, tid.v)
+    raw<task.RawTask> = task.raw_new(fut_bits, h, mt_schedule_bridge.(u64), mt_release_bridge.(u64), tid.v)
     err<i32> = h.shared.owned.bind(raw)
     if err != 0 {
         jh<task.JoinHandle> = new task.JoinHandle
@@ -91,3 +91,16 @@ MtHandle::spawn(fut) task.JoinHandle {
     return mt_handle_spawn_fut(this, fut)
 }
 
+
+// Bridge fns installed into task Headers (see ct_handle counterpart).
+fn mt_schedule_bridge(hbits<u64>, nbits<u64>){
+    mh<MtHandle> = hbits.(MtHandle)
+    n<task.Notified> = nbits.(task.Notified)
+    mh.schedule(n)
+}
+
+fn mt_release_bridge(hbits<u64>, rbits<u64>){
+    mh<MtHandle> = hbits.(MtHandle)
+    rtask<task.RawTask> = rbits.(task.RawTask)
+    mh.shared.owned.remove(rtask)
+}

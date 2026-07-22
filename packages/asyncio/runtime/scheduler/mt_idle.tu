@@ -61,7 +61,7 @@ Idle::transition_worker_to_searching() i32 {
         if searching * 2 >= unparked return 0
         packed<u32> = idle_state_pack(unparked, searching + 1)
         new_state<i32> = packed.(i32)
-        if atomic.cas(addr, cur, new_state) != 0 return 1
+        if atomic.cas(addr, cur, new_state) == CAS_OK return 1
     }
     return 0
 }
@@ -77,7 +77,7 @@ Idle::transition_worker_from_searching() i32 {
         if searching == 0 return 0
         packed<u32> = idle_state_pack(unparked, searching - 1)
         new_state<i32> = packed.(i32)
-        if atomic.cas(addr, cur, new_state) != 0 {
+        if atomic.cas(addr, cur, new_state) == CAS_OK {
             if searching == 1 return 1
             return 0
         }
@@ -101,7 +101,7 @@ Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter>, 
         if searching > 0 new_searching = searching - 1
         packed<u32> = idle_state_pack(new_unparked, new_searching)
         new_state<i32> = packed.(i32)
-        if atomic.cas(addr, cur, new_state) != 0 break
+        if atomic.cas(addr, cur, new_state) == CAS_OK break
     }
 
     lock.lock()
@@ -122,7 +122,7 @@ Idle::transition_worker_from_parked(synced<IdleSynced>, lock<runtime.MutexInter>
         searching<u32> = idle_state_searching(cur.(u32))
         packed<u32> = idle_state_pack(unparked + 1, searching)
         new_state<i32> = packed.(i32)
-        if atomic.cas(addr, cur, new_state) != 0 break
+        if atomic.cas(addr, cur, new_state) == CAS_OK break
     }
 
     lock.lock()
