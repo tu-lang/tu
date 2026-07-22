@@ -149,7 +149,7 @@ AcquireFut::poll(ctx){
             sem.permits -= this.needed
             sem.lock.unlock()
             this.stage = ACQ_STAGE_DONE
-            return runtime.PollReady, 0
+            return runtime.PollReady, 0.(i64)
         }
         w<SemWaiter> = SemWaiter::new(this.needed, ctx.(u64))
         sem.waiters.push_back(w.node)
@@ -164,7 +164,7 @@ AcquireFut::poll(ctx){
         n<SemWaiter> = this.waiter_node
         if n.remaining_permits == 0 {
             this.stage = ACQ_STAGE_DONE
-            return runtime.PollReady, 0
+            return runtime.PollReady, 0.(i64)
         }
         if n.remaining_permits > MAX_PERMITS {
             this.stage = ACQ_STAGE_DONE
@@ -173,7 +173,7 @@ AcquireFut::poll(ctx){
         n.ctx_packed = ctx.(u64)
         return runtime.PollPending
     }
-    return runtime.PollReady, 0
+    return runtime.PollReady, 0.(i64)
 }
 
 // Public async entry: returns 0 on success, asyncio.error.Closed on close.

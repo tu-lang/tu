@@ -5,6 +5,10 @@
 use std.atomic
 use runtime
 
+// CAS success sentinel: std.atomic cas/cas64 return 1 on success;
+// comparing against an untyped literal 0 crashes codegen (binary-op trap).
+CAS_OK<i64> = 1
+
 VALUE_SET<i32>  = 0b00001
 TX_DROPPED<i32> = 0b00010
 RX_DROPPED<i32> = 0b00100
@@ -64,7 +68,7 @@ OneshotSender::send(v<i64>) i32 {
         if (cur & CLOSED) != 0     return OS_ERR_SEND_NO_RECEIVER
         if (cur & VALUE_SET) != 0  return OS_ERR_ALREADY_CONSUMED
         newv<i32> = cur | VALUE_SET
-        if atomic.cas(addr, cur, newv) != 0 {
+        if atomic.cas(addr, cur, newv) == CAS_OK {
             inner.data_i64 = v
             inner.rx_waker.wake()
             return 0
@@ -81,7 +85,7 @@ OneshotSender::drop_send(){
     loop {
         cur<i32> = atomic.load(addr)
         newv<i32> = cur | TX_DROPPED
-        if atomic.cas(addr, cur, newv) != 0 {
+        if atomic.cas(addr, cur, newv) == CAS_OK {
             inner.rx_waker.wake()
             return
         }
@@ -109,13 +113,13 @@ SenderClosedFut::poll(ctx){
     cur<i32> = atomic.load(&inner.state)
     if (cur & RX_DROPPED) != 0 || (cur & CLOSED) != 0 {
         this.stage = SC_STAGE_DONE
-        return runtime.PollReady, 0
+        return runtime.PollReady, 0.(i64)
     }
     inner.tx_waker.register_by_ref(ctx.(u64))
     cur2<i32> = atomic.load(&inner.state)
     if (cur2 & RX_DROPPED) != 0 || (cur2 & CLOSED) != 0 {
         this.stage = SC_STAGE_DONE
-        return runtime.PollReady, 0
+        return runtime.PollReady, 0.(i64)
     }
     this.stage = SC_STAGE_WAITING
     return runtime.PollPending
@@ -153,7 +157,7 @@ OneshotReceiver::drop_recv(){
     loop {
         cur<i32> = atomic.load(addr)
         newv<i32> = cur | RX_DROPPED
-        if atomic.cas(addr, cur, newv) != 0 {
+        if atomic.cas(addr, cur, newv) == CAS_OK {
             inner.tx_waker.wake()
             return
         }
@@ -184,7 +188,7 @@ RecvFut::poll(ctx){
     if this.poll_mode == 1 {
         if (st & TX_DROPPED) != 0 || (st & CLOSED) != 0 {
             this.stage = RV_STAGE_DONE
-            return runtime.PollReady, 0
+            return runtime.PollReady, 0.(i64)
         }
     } else {
         if (st & VALUE_SET) != 0 {
@@ -202,7 +206,7 @@ RecvFut::poll(ctx){
     if this.poll_mode == 1 {
         if (st2 & TX_DROPPED) != 0 || (st2 & CLOSED) != 0 {
             this.stage = RV_STAGE_DONE
-            return runtime.PollReady, 0
+            return runtime.PollReady, 0.(i64)
         }
     } else {
         if (st2 & VALUE_SET) != 0 {

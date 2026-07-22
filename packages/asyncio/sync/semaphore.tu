@@ -28,7 +28,7 @@ const Permit::new(owner_sem<Semaphore>, n<u32>) Permit {
 
 // Return the held permits to the owner semaphore.
 Permit::give_back(){
-    if this.owner_sem == null return
+    if this.owner_sem == null { return }
     batch_sem_release(this.owner_sem.sem, this.n)
     this.owner_sem = null
 }

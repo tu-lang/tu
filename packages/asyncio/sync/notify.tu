@@ -146,7 +146,7 @@ Notified::poll(ctx){
         if par.take_permit() != 0 {
             par.lock.unlock()
             this.stage = NOTIFIED_STAGE_DONE
-            return runtime.PollReady, 0
+            return runtime.PollReady, 0.(i64)
         }
         // No permit; queue ourselves.
         w<NotifyWaiter> = NotifyWaiter::new(packed)
@@ -154,20 +154,20 @@ Notified::poll(ctx){
         par.lock.unlock()
         this.waiter_node = w
         this.stage = NOTIFIED_STAGE_WAITING
-        return runtime.PollPending, 0
+        return runtime.PollPending, 0.(i64)
     }
     if this.stage == NOTIFIED_STAGE_WAITING {
         wk<NotifyWaiter> = this.waiter_node
         if wk.woke_flag == 1 {
             this.stage = NOTIFIED_STAGE_DONE
-            return runtime.PollReady, 0
+            return runtime.PollReady, 0.(i64)
         }
         // Refresh ctx so the most recent waker wins.
         wk.ctx_packed = packed
-        return runtime.PollPending, 0
+        return runtime.PollPending, 0.(i64)
     }
     // Already DONE; behaves like AlreadyConsumed.
-    return runtime.PollReady, 0
+    return runtime.PollReady, 0.(i64)
 }
 
 // Public entry point. Builds the future; caller must `await` it.

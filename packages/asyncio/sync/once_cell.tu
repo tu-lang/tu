@@ -37,7 +37,7 @@ OnceCell::is_initialized() i32 {
 // Set the value if the cell is still UNINIT. Returns 0 on success,
 // AlreadyConsumed if a value is already present.
 OnceCell::set(v<u64>) i32 {
-    if atomic.cas(&this.cell_state, UNINIT, INIT_DONE) == 0 {
+    if atomic.cas(&this.cell_state, UNINIT, INIT_DONE) != CAS_OK {
         return OnceErrAlreadyConsumed
     }
     this.slot_bits = v
@@ -74,12 +74,12 @@ OnceInitFut::poll(ctx){
     if cur == INIT_DONE {
         this.ready_bits = hub.slot_bits
         this.stage = 2
-        return runtime.PollReady, 0
+        return runtime.PollReady, 0.(i64)
     }
     if cur == UNINIT {
-        if atomic.cas(&hub.cell_state, UNINIT, INIT_RUN) != 0 {
+        if atomic.cas(&hub.cell_state, UNINIT, INIT_RUN) == CAS_OK {
             this.stage = 2
-            return runtime.PollReady, 1
+            return runtime.PollReady, 1.(i64)
         }
     }
     if this.pending_nf == null {

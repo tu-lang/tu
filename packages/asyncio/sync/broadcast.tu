@@ -85,7 +85,7 @@ BroadcastRecvFut::poll(ctx){
         this.cursor += 1
         this.ready_err = 0
         this.ready_val = hub.slot_store[idx]
-        return runtime.PollReady, 0
+        return runtime.PollReady, 0.(i64)
     }
     if this.notify_fut == null {
         this.notify_fut = notified_from_notify(hub.wake_notify)

@@ -57,7 +57,7 @@ BarrierWaitFut::init(hub<Barrier>){
 
 BarrierWaitFut::poll(ctx){
     if this.stage == 2 {
-        return runtime.PollReady, 0
+        return runtime.PollReady, 0.(i64)
     }
     hub<Barrier> = this.hub
     hub.gate_lock.lock()
@@ -65,7 +65,7 @@ BarrierWaitFut::poll(ctx){
     hub.gate_lock.unlock()
     if cur_gen != this.arrival_gen {
         this.stage = 2
-        return runtime.PollReady, 0
+        return runtime.PollReady, 0.(i64)
     }
     if this.pending_nf == null {
         this.pending_nf = notified_from_notify(hub.wake_hub)

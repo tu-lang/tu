@@ -91,7 +91,7 @@ WatchChangedFut::poll(ctx){
     cur_ver<u64> = atomic.load64(&hub.version)
     if cur_ver != rx.last_seen_version {
         rx.last_seen_version = cur_ver
-        return runtime.PollReady, 0
+        return runtime.PollReady, 0.(i64)
     }
     if this.pending_nf == null {
         this.pending_nf = notified_from_notify(hub.wake_notify)
@@ -125,7 +125,7 @@ WatchSenderClosedFut::init(hub<Watch>){
 WatchSenderClosedFut::poll(ctx){
     hub<Watch> = this.hub
     if hub.rx_live == 0 {
-        return runtime.PollReady, 0
+        return runtime.PollReady, 0.(i64)
     }
     if this.pending_nf == null {
         this.pending_nf = notified_from_notify(hub.tx_wake)
@@ -135,7 +135,7 @@ WatchSenderClosedFut::poll(ctx){
     if code == runtime.PollReady {
         this.pending_nf = null
         if hub.rx_live == 0 {
-            return runtime.PollReady, 0
+            return runtime.PollReady, 0.(i64)
         }
     }
     return runtime.PollPending
