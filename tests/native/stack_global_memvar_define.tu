@@ -100,6 +100,24 @@ func test_stack_addr(){
 	fmt.println("test stack addr success")
 }
 
+// Global struct initializer may also write nested members with the
+// `new Inner { ... }` form (regression: static data emission only handled
+// the bare `Inner { ... }` literal and crashed on NewStructExpr).
+G2<A:> = new A{
+	before : 34,
+	free : new B{ a:1,b:2,c:3,d:4},
+	next : new B{ a:5,b:6,c:7,d:8},
+	current : new B{a:9,b:10,c:11,d:12},
+	after: 445
+}
+func test_new_form_global(){
+	if G2.before == 34 {} else os.die("G2.before == 34")
+	if G2.free.a == 1 && G2.free.d == 4 {} else os.die("G2.free")
+	if G2.next.b == 6 && G2.next.c == 7 {} else os.die("G2.next")
+	if G2.current.a == 9 && G2.current.d == 12 {} else os.die("G2.current")
+	fmt.println("test new form global success")
+}
+
 mem RetT{
 	u64 a,b
 	u8  c[2000]
@@ -119,5 +137,6 @@ func main(){
 	test_global_stack_structvar()
 	pkg2.test()
 	test_stack_addr()
+	test_new_form_global()
 	gret.test_return()
 }

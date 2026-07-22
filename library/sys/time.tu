@@ -170,13 +170,16 @@ SECOND<Duration:> = new Duration{
     secs: 1,
     subsec_nano: new Nanoseconds { bits: 0 },
 }
+// Static data emission only accepts integer literals in global struct
+// initializers, so the mother's `NANOS_PER_MILLI % NANOS_PER_SEC` const
+// expressions are pre-folded here (both are < NANOS_PER_SEC, mod is no-op).
 MILLISECOND<Duration:> = new Duration{
     secs: 0,
-    subsec_nano: new Nanoseconds { bits: NANOS_PER_MILLI % NANOS_PER_SEC },
+    subsec_nano: new Nanoseconds { bits: 1000000 },
 }
 MICROSECOND<Duration:> = new Duration {
     secs: 0,
-    subsec_nano: new Nanoseconds { bits: NANOS_PER_MICRO % NANOS_PER_SEC },
+    subsec_nano: new Nanoseconds { bits: 1000 },
 }
 NANOSECOND<Duration:> = new Duration{
     secs: 0 ,

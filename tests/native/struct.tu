@@ -223,6 +223,77 @@ fn test6(){
 	if Demo::new2() == "new2" {} else os.die("neq new2")
 	fmt.println("test current static fn success")
 }
+// Multi-return const static members: values after the first must survive
+// multi-assign (regression: static_compile freed the return stack early and
+// a placeholder push shifted StackPosExpr reads onto garbage).
+const Demo::pair(a<i32>) (i32, u64, i32) {
+	bits<u64> = 8888
+	return a, bits, 42
+}
+fn test10(){
+	fmt.println("test static fn multi return")
+	e<i32>, b<u64>, c<i32> = Demo::pair(7)
+	if e == 7 {} else os.die("pair first != 7")
+	if b == 8888 {} else os.die("pair second != 8888")
+	if c == 42 {} else os.die("pair third != 42")
+	// heap pointer as second value must stay dereferenceable
+	f<f32> = 22.2
+	e2<i32>, d2<u64> = Demo::boxed(9,f)
+	if e2 == 1 {} else os.die("boxed first != 1")
+	dd<Demo> = d2.(Demo)
+	if dd.a == 9 {} else os.die("boxed .a != 9")
+	fmt.println("test static fn multi return success")
+}
+const Demo::boxed(a<i32>,b<f32>) (i32, u64) {
+	d<Demo> = new Demo { a: a, b: b }
+	return 1, d.(u64)
+}
+// Instance-member multi-return (obj / chain receiver): values after the
+// first must survive multi-assign too (regression: the parked receiver
+// slot sat under the return block and load was hardcoded true).
+Demo::ipair(x<i32>) (i32, u64) {
+	bits<u64> = 6666
+	return x, bits
+}
+// Receiver identity: with multi-return the reserved return slots sit between
+// the parked receiver and the args, so the ArgsPosExpr offset must count
+// them (regression: callee `this` pointed at the return-stack address).
+Demo::iself(x<i32>, y<u64>) (i32, u64) {
+	return this.a + x, y
+}
+mem DemoHolder {
+	Demo* held
+}
+DemoHolder::run() (i32, u64) {
+	e<i32> = 0
+	b<u64> = 0
+	e, b = this.held.ipair(5)
+	return e, b
+}
+DemoHolder::run2() (i32, u64) {
+	e<i32>, b<u64> = this.held.iself(20, 555)
+	return e, b
+}
+fn test11(){
+	fmt.println("test member fn multi return")
+	f<f32> = 1.5
+	dv<Demo> = Demo::new(3,f)
+	e<i32>, b<u64> = dv.ipair(4)
+	if e == 4 {} else os.die("ipair direct first != 4")
+	if b == 6666 {} else os.die("ipair direct second != 6666")
+	h<DemoHolder> = new DemoHolder { held: dv }
+	e2<i32>, b2<u64> = h.run()
+	if e2 == 5 {} else os.die("ipair chained first != 5")
+	if b2 == 6666 {} else os.die("ipair chained second != 6666")
+	// receiver fields must be readable inside a multi-return member fn
+	e3<i32>, b3<u64> = dv.iself(1, 777)
+	if e3 == 4 {} else os.die("iself direct first != 4")
+	if b3 == 777 {} else os.die("iself direct second != 777")
+	e4<i32>, b4<u64> = h.run2()
+	if e4 == 23 {} else os.die("iself chained first != 23")
+	if b4 == 555 {} else os.die("iself chained second != 555")
+	fmt.println("test member fn multi return success")
+}
 use pkg
 fn test7(){
 	fmt.println("test external static fn")
@@ -246,4 +317,6 @@ fn main(){
 	test5()
 	test6()
 	test7()
+	test10()
+	test11()
 }
