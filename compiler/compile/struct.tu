@@ -130,7 +130,15 @@ func InitStructVar(gvar , s , fields){
 			)
 			mfields = {}
 			if fields[m.name] != null {
-				mfields = fields[m.name].fields
+				// Nested member may be written as `Inner { ... }` (StructInitExpr)
+				// or `new Inner { ... }` (NewStructExpr holding the literal in init).
+				fe = fields[m.name]
+				if type(fe) == type(gen.NewStructExpr) {
+					gvar.check(fe.init != null,"new struct init missing fields")
+					mfields = fe.init.fields
+				}else{
+					mfields = fe.fields
+				}
 			} 
 			size += InitStructVar(gvar,sm,mfields)
 		}else{

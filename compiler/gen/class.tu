@@ -216,10 +216,11 @@ MemberCallExpr::toString() {
     return str
 }
 
-MemberCallExpr::static_compile(ctx,s){
+// load semantics follow Expression::compile: false keeps the multi-return
+// stack alive (multi-assign needs it), true lets stackcall free it.
+MemberCallExpr::static_compile(ctx,s,load){
 	utils.debugf("gen.MemberCallExpr::static_compile()")
     this.record()
-    compile.Push()
 
     fc = s.getFunc(this.membername)
     if fc == null this.check(false,"func not exist:" + this.membername)
@@ -231,9 +232,14 @@ MemberCallExpr::static_compile(ctx,s){
     if this.staticCall != null {
         if !fc.constdef
             this.check(false,"function not const,can't be static call")
-        call.compile(ctx,true)
+        // Type::method() has no receiver: no placeholder push, and load must
+        // be forwarded or multi-assign reads freed/shifted return slots.
+        call.compile(ctx,load)
         return call
     }
+
+    // obj / tyassert path: receiver is in %rax, park it for ArgsPosExpr.
+    compile.Push()
 
 	params = call.args
 	pos = new ArgsPosExpr(0,this.line,this.column)
@@ -241,13 +247,27 @@ MemberCallExpr::static_compile(ctx,s){
     call.args[] = pos
 	std.merge(call.args,params)
 
+    // Arg-count estimate only; PushStackArgs backfills the real depth
+    // (multi-return slots, padding, variadic packing) before arg0 is emitted.
     if std.len(fc.params_order_var) > std.len(call.args) {
         pos.pos = std.len(fc.params_order_var) - 1 
     }else{
         pos.pos = std.len(call.args)  - 1
     }
 
-    call.compile(ctx,true)
+    // obj / tyassert must forward load too (same defect family as the
+    // staticCall branch): with load=false stackcall keeps the return block
+    // and the parked receiver sits below it, so shift the block down 8
+    // bytes before reclaiming the receiver slot.
+    call.compile(ctx,load)
+    shift = 0
+    if !load && call.fcs != null && call.fcs.mcount > 1 {
+        shift = call.fcs.mcount - 1
+    }
+    for i = shift - 1 ; i >= 0 ; i -= 1 {
+        compile.writeln("    mov %d(%%rsp), %%rdi", i * 8)
+        compile.writeln("    mov %%rdi, %d(%%rsp)", (i + 1) * 8)
+    }
     compile.writeln("    add $8, %%rsp")
     return call
 }
@@ -261,19 +281,22 @@ MemberCallExpr::compile(ctx,load)
     }
 
     if this.staticCall != null {
-        return this.static_compile(ctx,this.staticCall)
+        // Forward load so multi-assign (load=false) keeps the return stack.
+        return this.static_compile(ctx,this.staticCall,load)
     }
 
     if this.obj != null {
         this.obj.check(this.obj.structname != "", "must be mem type in membercall")
-        this.obj.compile(ctx,load)
+        // Receiver is always loaded by value; outer load only controls
+        // whether the multi-return stack survives the call.
+        this.obj.compile(ctx,true)
         s = package.getStruct(this.obj.structpkg , this.obj.structname)
-        return this.static_compile(ctx,s)
+        return this.static_compile(ctx,s,load)
     }
     if this.tyassert != null {
         compile.Pop("%rax")
         s = this.tyassert.getStruct()
-        return this.static_compile(ctx,s)
+        return this.static_compile(ctx,s,load)
     }
     compile.Push()
 	params = this.call.args

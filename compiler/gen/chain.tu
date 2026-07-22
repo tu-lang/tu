@@ -217,7 +217,13 @@ ChainExpr::memgen(ctx,load)
 					else 
 						st = preStruct
 				}
-				mfc = mc.static_compile(ctx,st)
+				// Last node forwards load (multi-assign keeps the return
+				// stack); intermediate nodes need load=true for the next hop.
+				lastload = true
+				if islast {
+					lastload = load
+				}
+				mfc = mc.static_compile(ctx,st,lastload)
 				mc.check(mfc.fcs != null , "static funcall not signature")
 				if islast
 					return mfc

@@ -175,6 +175,16 @@ FunCallExpr::PushStackArgs(ctx,fc)
 			)
             continue
         }
+		// The receiver slot (ArgsPosExpr) was parked by static_compile before
+		// any args; between it and the stack top sit the pushed args/padding
+		// (counted in stack) plus the sub'ed multi-return slots (not counted).
+		// Backfill the real depth here; the static_compile value is only an
+		// arg-count estimate and misses the return slots.
+		if i == 0 && type(arg) == type(gen.ArgsPosExpr) {
+			depth = stack
+			if fc.mcount > 1 depth += fc.mcount - 1
+			arg.pos = depth
+		}
 		this.argGen(ctx,arg,i,fc)
 		// ret = arg.compile(ctx,true)
         // if ret != null {
