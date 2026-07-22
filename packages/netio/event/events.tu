@@ -1,5 +1,6 @@
 use io
 use netio.sys
+use fmt
 
 mem Events {
 	sys.Events* hub
@@ -33,17 +34,35 @@ Events::iter() Iter {
 	}
 }
 
-Events::sys() sys.Events {
+// Named hub_events — never Events::sys / .sys(): `sys` is a type-assert trap
+// under `use netio.sys`, so `.sys()` was casting the wrapper to sys.Events
+// (wrong layout). epoll_wait then wrote into the wrapper and set_count never
+// reached the real hub; Iter always saw count==0 and dropped every event.
+Events::hub_events() sys.Events {
 	return this.hub
+}
+
+// Package bridge for Poll / Driver (avoid MemberCall named sys).
+fn events_hub(ev<Events>) sys.Events {
+	return ev.hub
 }
 
 Iter::next() i32, Event {
 	wrap<Events> = this.events
-	hub_ev<sys.Events> = wrap.sys()
+	hub_ev<sys.Events> = events_hub(wrap)
+	fmt.println("iter pos/count")
+	fmt.println(int(this.pos))
+	fmt.println(int(hub_ev.slot_count()))
 	sys_event<sys.Event> = hub_ev.get(this.pos)
-	this.pos += 1
-	if sys_event == null
+	fmt.println("iter after get")
+	if sys_event == null {
+		fmt.println("iter null event")
+		this.pos += 1
 		return io.NotFound, null
+	}
+	this.pos += 1
+	fmt.println("iter token")
+	fmt.println(int(sys_event.token))
 	return io.Ok, Event::from_sys_event_ref(sys_event)
 }
 
@@ -65,6 +84,6 @@ fn events_iter_next(it<Iter>) i32, Event {
 
 Iter::count() u64 {
 	wrap<Events> = this.events
-	hub_ev<sys.Events> = wrap.sys()
+	hub_ev<sys.Events> = events_hub(wrap)
 	return hub_ev.slot_count()
 }

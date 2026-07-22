@@ -65,17 +65,26 @@ Poll::registry() Registry {
 Poll::poll(events<event.Events>, timeout<libsys.Duration>) i32 {
 	timeout_ms<i32> = -1
 	if timeout != null {
-		ms<u64> = timeout.as_millis()
-		imax<i32> = runtime.I32_MAX
-		imax_u<u64> = imax.(u64)
-		if ms > imax_u {
-			timeout_ms = imax
+		// Mother: Option::None → -1 (block forever). Duration::MAX must
+		// NOT go through as_millis — secs*1000 overflows u64 and the
+		// previous I32_MAX clamp left park hanging ~24 days instead of
+		// waiting for an actual IO event.
+		u64_max<u64> = 18446744073709551615
+		if timeout.as_secs() == u64_max {
+			timeout_ms = -1
 		} else {
-			timeout_ms = ms.(i32)
+			ms<u64> = timeout.as_millis()
+			imax<i32> = runtime.I32_MAX
+			imax_u<u64> = imax.(u64)
+			if ms > imax_u {
+				timeout_ms = imax
+			} else {
+				timeout_ms = ms.(i32)
+			}
 		}
 	}
 	sel<nsys.Selector> = registry_selector(this.reg_store)
-	return nsys.selector_select(sel, events.sys(), timeout_ms)
+	return nsys.selector_select(sel, event.events_hub(events), timeout_ms)
 }
 
 Registry::try_clone() i32, Registry {

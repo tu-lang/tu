@@ -1,8 +1,10 @@
 // Interest bitmask for register/reregister (mother netio::Interest).
 // Field is `flags` (not `bits`) to avoid typeassert parse traps on `.bits`.
+// Use decimal literals: Tu codegen currently evaluates 0b0001 / 0b0010 as 0,
+// which registered sockets with EPOLLET-only and starved all IO readiness.
 
-READABLE_BIT<u8> = 0b0001
-WRITABLE_BIT<u8> = 0b0010
+READABLE_BIT<u8> = 1
+WRITABLE_BIT<u8> = 2
 
 mem Interest {
 	u8 flags
