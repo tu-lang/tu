@@ -40,7 +40,7 @@ Map::poll(ctx){
     val_i<i64> = 0
     ready_i, val_i = poll_child(this.inner, ctx.(u64))
     if ready_i == runtime.PollPending return runtime.PollPending
-    if ready_i == runtime.PollError return runtime.PollError, 0
+    if ready_i == runtime.PollError return runtime.PollError, 0.(i64)
     this.done = 1
     return runtime.PollReady, val_i
 }
@@ -60,13 +60,13 @@ Then::poll(ctx){
     if this.stage == 0 {
         ready_i, val_i = poll_child(this.inner, packed)
         if ready_i == runtime.PollPending return runtime.PollPending
-        if ready_i == runtime.PollError return runtime.PollError, 0
+        if ready_i == runtime.PollError return runtime.PollError, 0.(i64)
         this.stage = 1
         return runtime.PollReady, val_i
     }
     ready_i, val_i = poll_child(this.next, packed)
     if ready_i == runtime.PollReady return runtime.PollReady, val_i
-    if ready_i == runtime.PollError return runtime.PollError, 0
+    if ready_i == runtime.PollError return runtime.PollError, 0.(i64)
     return runtime.PollPending
 }
 
@@ -86,7 +86,7 @@ Maybe::poll(ctx){
     val_i<i64> = 0
     ready_i, val_i = poll_child(this.inner, ctx.(u64))
     if ready_i == runtime.PollPending return runtime.PollPending
-    if ready_i == runtime.PollError return runtime.PollError, 0
+    if ready_i == runtime.PollError return runtime.PollError, 0.(i64)
     this.done = 1
     return runtime.PollReady, val_i
 }

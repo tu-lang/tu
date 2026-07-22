@@ -25,10 +25,10 @@ TryJoin2::poll(ctx){
             st_i32<i32> = 0
             st_i32 = val_i
             if st_i32 != io.Ok {
-                return runtime.PollReady, st_i32, val_i, 0
+                return runtime.PollReady, st_i32, val_i, 0.(i64)
             }
         } else if ready_i == runtime.PollError {
-            return runtime.PollError, 0, 0, 0
+            return runtime.PollError, 0.(i64), 0.(i64), 0.(i64)
         }
     }
     if this.b_done == 0 {
@@ -41,10 +41,10 @@ TryJoin2::poll(ctx){
             st2<i32> = 0
             st2 = val_j
             if st2 != io.Ok {
-                return runtime.PollReady, st2, 0, val_j
+                return runtime.PollReady, st2, 0.(i64), val_j
             }
         } else if ready_j == runtime.PollError {
-            return runtime.PollError, 0, 0, 0
+            return runtime.PollError, 0.(i64), 0.(i64), 0.(i64)
         }
     }
     if this.a_done == 1 && this.b_done == 1 {

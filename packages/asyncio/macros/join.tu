@@ -14,7 +14,7 @@ mem Join2: async {
 }
 
 Join2::step_a(packed<u64>){
-    if this.a_done == 1 return
+    if this.a_done == 1 { return }
     ready_i<i64> = 0
     val_i<i64> = 0
     ready_i, val_i = poll_child(this.fut_a, packed)
@@ -25,7 +25,7 @@ Join2::step_a(packed<u64>){
 }
 
 Join2::step_b(packed<u64>){
-    if this.b_done == 1 return
+    if this.b_done == 1 { return }
     ready_i<i64> = 0
     val_i<i64> = 0
     ready_i, val_i = poll_child(this.fut_b, packed)

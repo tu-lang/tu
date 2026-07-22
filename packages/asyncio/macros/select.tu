@@ -31,7 +31,7 @@ Select2::poll(ctx){
         }
         if ready_a == runtime.PollError {
             this.which = SELECT_FIRST_READY
-            return runtime.PollError, SELECT_FIRST_READY, 0
+            return runtime.PollError, SELECT_FIRST_READY, 0.(i64)
         }
         ready_b, val_b = poll_child(this.fut_b, packed)
         if ready_b == runtime.PollReady {
@@ -41,7 +41,7 @@ Select2::poll(ctx){
         }
         if ready_b == runtime.PollError {
             this.which = SELECT_SECOND_READY
-            return runtime.PollError, SELECT_SECOND_READY, 0
+            return runtime.PollError, SELECT_SECOND_READY, 0.(i64)
         }
     } else {
         ready_b, val_b = poll_child(this.fut_b, packed)
@@ -52,7 +52,7 @@ Select2::poll(ctx){
         }
         if ready_b == runtime.PollError {
             this.which = SELECT_SECOND_READY
-            return runtime.PollError, SELECT_SECOND_READY, 0
+            return runtime.PollError, SELECT_SECOND_READY, 0.(i64)
         }
         ready_a, val_a = poll_child(this.fut_a, packed)
         if ready_a == runtime.PollReady {
@@ -62,7 +62,7 @@ Select2::poll(ctx){
         }
         if ready_a == runtime.PollError {
             this.which = SELECT_FIRST_READY
-            return runtime.PollError, SELECT_FIRST_READY, 0
+            return runtime.PollError, SELECT_FIRST_READY, 0.(i64)
         }
     }
     return runtime.PollPending
