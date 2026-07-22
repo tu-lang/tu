@@ -9,7 +9,6 @@ use asyncio.runtime.signal as rtsig
 use asyncio.runtime.blocking as rtblk
 use asyncio.runtime.scheduler as sched
 use asyncio.util
-use fmt
 
 // Default cap for the blocking pool.
 DEFAULT_MAX_BLOCKING_THREADS<u32> = 512
@@ -17,7 +16,7 @@ DEFAULT_MAX_BLOCKING_THREADS<u32> = 512
 // OS thread entry for multi_thread workers (mirrors blocking_worker_run).
 fn mt_os_core_start(){
     w<sched.MtWorker> = sched.ACTIVE_WORKER
-    if w == null return
+    if w == null { return }
     sched.worker_run(w)
 }
 

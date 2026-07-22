@@ -21,7 +21,7 @@ ACTIVE_SLEEP_HANDLE_BITS<u64> = 0
 // Publish a non-zero TimeHandle. Never clear with 0 — factories that probe
 // context before enter would otherwise wipe the builder publish.
 fn sleep_set_handle_bits(bits<u64>) {
-    if bits == 0 return
+    if bits == 0 { return }
     ACTIVE_SLEEP_HANDLE_BITS = bits
 }
 

@@ -117,7 +117,7 @@ SignalDriver::process(){
 
 // Cross-pkg park hook — Driver cannot reliably member-call process().
 fn signal_driver_process_bits(drv_bits<u64>) {
-    if drv_bits == 0 return
+    if drv_bits == 0 { return }
     drv<SignalDriver> = null
     drv = drv_bits
     if drv.park_iod_bits != 0 {
@@ -128,10 +128,10 @@ fn signal_driver_process_bits(drv_bits<u64>) {
 
 // Tear down: close the signalfd. The runtime root drives this on shutdown.
 SignalDriver::shutdown(){
-    if this.gslot_bits == 0 return
+    if this.gslot_bits == 0 { return }
     gref<SignalGlobals> = null
     gref = this.gslot_bits
-    if gref.sfd < 0 return
+    if gref.sfd < 0 { return }
     sys.close(gref.sfd)
     gref.sfd = -1
     this.reg_fd = -1
@@ -139,13 +139,13 @@ SignalDriver::shutdown(){
 
 // Cross-pkg shutdown — aggregate Driver must not member-call SignalDriver.
 fn signal_driver_shutdown_bits(drv_bits<u64>) {
-    if drv_bits == 0 return
+    if drv_bits == 0 { return }
     drv<SignalDriver> = null
     drv = drv_bits
-    if drv.gslot_bits == 0 return
+    if drv.gslot_bits == 0 { return }
     gref<SignalGlobals> = null
     gref = drv.gslot_bits
-    if gref.sfd < 0 return
+    if gref.sfd < 0 { return }
     sys.close(gref.sfd)
     gref.sfd = -1
     drv.reg_fd = -1

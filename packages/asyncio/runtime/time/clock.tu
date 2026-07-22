@@ -26,7 +26,7 @@ const Clock::new(src<TimeSource>) Clock {
 // Freeze time at the current ms reading; subsequent now_ms calls observe
 // only the explicit advance() bumps until resume().
 Clock::pause(){
-    if this.paused == 1 return
+    if this.paused == 1 { return }
     this.frozen_ms   = this.src.now_ms()
     this.advanced_ms = 0
     this.paused      = 1
@@ -35,7 +35,7 @@ Clock::pause(){
 // Resume real time; the clock snaps to the live source so timers do not
 // see a backward step. Any pending advance is discarded.
 Clock::resume(){
-    if this.paused == 0 return
+    if this.paused == 0 { return }
     this.paused      = 0
     this.frozen_ms   = 0
     this.advanced_ms = 0
@@ -43,7 +43,7 @@ Clock::resume(){
 
 // Advance the frozen clock by d. Only meaningful while paused.
 Clock::advance(d<sys.Duration>){
-    if this.paused == 0 return
+    if this.paused == 0 { return }
     this.advanced_ms += d.as_millis()
 }
 

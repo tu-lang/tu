@@ -7,6 +7,10 @@ use runtime
 use asyncio.sync as libsync
 use asyncio.util
 
+// CAS success sentinel: std.atomic cas/cas64 return 1 on success;
+// comparing against an untyped literal 0 crashes codegen (binary-op trap).
+CAS_OK<i64> = 1
+
 // Sentinels packed into StateCell.state.
 //   STATE_DEREGISTERED — entry removed from the wheel; subsequent polls bail.
 //   STATE_PENDING_FIRE — wheel observed deadline; result is being delivered.
@@ -67,7 +71,7 @@ StateCell::mark_pending(not_after<u64>) i32 {
         if cur == STATE_DEREGISTERED return RESULT_CANCELLED
         if cur == STATE_PENDING_FIRE return RESULT_OK
         if cur > not_after return RESULT_CANCELLED
-        if atomic.cas64(&this.when_word, cur.(i64), STATE_PENDING_FIRE.(i64)) != 0 {
+        if atomic.cas64(&this.when_word, cur.(i64), STATE_PENDING_FIRE.(i64)) == CAS_OK {
             return RESULT_OK
         }
     }
@@ -88,8 +92,8 @@ StateCell::arm(deadline_ms<u64>) i32 {
 StateCell::deregister(){
     loop {
         cur<u64> = atomic.load64(&this.when_word)
-        if cur == STATE_DEREGISTERED return
-        if atomic.cas64(&this.when_word, cur.(i64), STATE_DEREGISTERED.(i64)) != 0 return
+        if cur == STATE_DEREGISTERED { return }
+        if atomic.cas64(&this.when_word, cur.(i64), STATE_DEREGISTERED.(i64)) == CAS_OK { return }
     }
 }
 

@@ -132,7 +132,7 @@ Runtime::spawn_blocking(op<u64>) task.JoinHandle {
 // queues, signals shutdown to the blocking pool, and tears down the
 // driver. Second call is a no-op so safe to invoke from Drop-like sites.
 Runtime::shutdown_timeout(d<sys.Duration>){
-    if this.shutdown_state == 2 return
+    if this.shutdown_state == 2 { return }
     this.shutdown_state = 1
     if this.sched_kind == KIND_CURRENT_THREAD {
         scheduler.ct_inject_close(this.scheduler_handle)
@@ -146,7 +146,7 @@ Runtime::shutdown_timeout(d<sys.Duration>){
 
 // Background variant: shutdown without a hard deadline. Same semantics.
 Runtime::shutdown_background(){
-    if this.shutdown_state == 2 return
+    if this.shutdown_state == 2 { return }
     this.shutdown_state = 1
     if this.sched_kind == KIND_CURRENT_THREAD {
         scheduler.ct_inject_close(this.scheduler_handle)
