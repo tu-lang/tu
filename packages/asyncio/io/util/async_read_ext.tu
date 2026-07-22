@@ -38,7 +38,7 @@ Read::poll(ctx) {
         return runtime.PollReady, other_err, zero
     }
     delta<u64> = this.buf.filled_len() - this.start
-    return runtime.PollReady, 0, delta
+    return runtime.PollReady, 0.(i64), delta
 }
 
 // Mother read(): sync factory returning Read leaf; callers `.await` for (err, n).

@@ -15,7 +15,7 @@ const CopyBidirectional::new(a<u64>, b<u64>) CopyBidirectional {
 }
 
 CopyBidirectional::poll(ctx) {
-    return runtime.PollReady, 0, 0.(u64), 0.(u64)
+    return runtime.PollReady, 0.(i64), 0.(u64), 0.(u64)
 }
 
 fn copy_bidirectional(a<u64>, b<u64>) CopyBidirectional {

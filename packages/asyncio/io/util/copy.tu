@@ -16,7 +16,7 @@ const Copy::new(r<u64>, w<u64>) Copy {
 }
 
 Copy::poll(ctx) {
-    return runtime.PollReady, 0, 0.(u64)
+    return runtime.PollReady, 0.(i64), 0.(u64)
 }
 
 fn copy(r<u64>, w<u64>) Copy {

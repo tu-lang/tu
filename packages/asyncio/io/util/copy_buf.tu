@@ -15,7 +15,7 @@ const CopyBuf::new(br<u64>, w<u64>) CopyBuf {
 }
 
 CopyBuf::poll(ctx) {
-    return runtime.PollReady, 0, 0.(u64)
+    return runtime.PollReady, 0.(i64), 0.(u64)
 }
 
 fn copy_buf(br<u64>, w<u64>) CopyBuf {

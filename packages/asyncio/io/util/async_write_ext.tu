@@ -145,7 +145,7 @@ WriteAll::poll(ctx) {
         rem = tail
     }
     this.remain = rem
-    return ready, 0
+    return ready, 0.(i64)
 }
 
 // Mother write_all(): sync factory returning WriteAll leaf.

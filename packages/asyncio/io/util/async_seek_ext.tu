@@ -14,7 +14,7 @@ const SeekComplete::new(s<u64>, pos<aio.SeekFrom>) SeekComplete {
 }
 
 SeekComplete::poll(ctx) {
-    return runtime.PollReady, 0, 0.(u64)
+    return runtime.PollReady, 0.(i64), 0.(u64)
 }
 
 fn seek(s<u64>, pos<aio.SeekFrom>) SeekComplete {
