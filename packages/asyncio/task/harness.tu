@@ -3,7 +3,6 @@
 // PollPending / PollReady / PollError to the right path.
 
 use runtime
-use fmt
 
 // Mother: Context carries the task waker. Dynstackcall Future::poll() does
 // not forward ctx, so the harness publishes the RawTask* waker here for
@@ -28,14 +27,32 @@ fn vtable_drop_join_handle_slow(rtask<RawTask>)
 fn vtable_shutdown(rtask<RawTask>)
 fn future_poll(fut, ctx<u64>) (i64, i64)
 
-// Run one polling round. ctx packs (scheduler_handle, task_id).
+// Run one polling round (mother harness.rs poll/poll_inner). ctx packs the
+// task waker (RawTask* bits). All lifecycle moves go through TaskState.
 RawTask::harness_poll(ctx<u64>){
+    life_st<TaskState> = this.life_st()
+    tr<i32> = life_st.transition_to_running()
+    if tr == TR_Cancelled {
+        // CANCELLED was set before this poll; RUNNING is held, finish now.
+        this.task_cell.force_stage(STAGE_RUNNING)
+        this.harness_complete(JoinErrorCancelled, 0)
+        return
+    }
+    if tr == TR_Dealloc {
+        this.harness_dealloc()
+        return
+    }
+    if tr != TR_Success {
+        return
+    }
 
     f<runtime.Future> = this.future_ptr
     if f == null {
         f = this.task_cell.fut_store
     }
     if f == null {
+        this.task_cell.force_stage(STAGE_RUNNING)
+        this.harness_complete(JoinErrorRuntimePollError, 0)
         return
     }
     // Future::poll dynstackcall sets up multi-return; passing ctx as an
@@ -45,54 +62,74 @@ RawTask::harness_poll(ctx<u64>){
     this.task_cell.force_stage(STAGE_RUNNING)
     prev_ctx<u64> = ACTIVE_POLL_CTX
     ACTIVE_POLL_CTX = ctx
-    ready<i64>, output<i64> = f.poll()
+    ready<i32>, output<i64> = f.poll()
     ACTIVE_POLL_CTX = prev_ctx
 
     if ready == runtime.PollPending {
+        ti<i32> = life_st.transition_to_idle()
+        if ti == TI_Cancelled {
+            // Cancelled during the poll; stage is still RUNNING.
+            this.harness_complete(JoinErrorCancelled, 0)
+            return
+        }
         this.task_cell.force_stage(STAGE_IDLE)
+        if ti == TI_OkNotified {
+            // Self-wake fired mid-poll: submit the fresh Notified ref taken
+            // by transition_to_idle, then drop our own poll ref.
+            n<Notified> = notified_from_raw(this)
+            this.task_header.sched_schedule(n)
+            if life_st.ref_dec() != 0 {
+                this.harness_dealloc()
+            }
+            return
+        }
+        if ti == TI_OkDealloc {
+            this.harness_dealloc()
+        }
         return
     }
-    // Bypass store_output CAS for now; write slot directly.
-    this.task_cell.force_stage(STAGE_FINISHED)
-    this.task_cell.write_output_raw(output)
-    life_st<TaskState> = this.life_st()
-    life_st.force_complete()
+    if ready == runtime.PollError {
+        this.harness_complete(JoinErrorRuntimePollError, output)
+        return
+    }
+    this.harness_complete(0, output)
 }
 
-// Finalise the task: write output, flip COMPLETE, wake join waker, drop ref.
+// Finalise the task (mother harness.rs complete): write output, flip
+// COMPLETE, wake the JoinHandle waker, release from the owner list, then
+// drop the poll ref. Assumes lifecycle RUNNING and cell stage RUNNING.
 RawTask::harness_complete(err<i32>, output<i64>){
     life_st<TaskState> = this.life_st()
     this.task_cell.store_output(output)
-    life_st.transition_to_complete()
-
     if err != 0 {
         this.task_cell.store_output_err(err)
     }
+    snap<i32> = life_st.transition_to_complete()
 
-    this.wake_join_waker()
+    if (snap & JOIN_INTEREST) != 0 {
+        this.wake_join_waker()
+    }
+
+    // Mother release(): detach from the scheduler's OwnedTasks.
+    this.task_header.sched_release(this)
 
     if life_st.ref_dec() != 0 {
         this.harness_dealloc()
     }
 }
 
-// Idempotent join-waker kick; re-enqueue when JOIN_WAKER was set.
+// Wake the JoinHandle waker registered in the cell (mother trailer.wake_join).
+// Must NOT re-schedule this (completed) task; it wakes the joining task.
 RawTask::wake_join_waker(){
     life_st<TaskState> = this.life_st()
     snap<i32> = life_st.load()
-    sched_bits<u64> = 0
-    sched<Schedule> = null
-    n<Notified> = null
-    if (snap & JOIN_WAKER) == 0 return
+    if (snap & JOIN_WAKER) == 0 { return }
 
     life_st.unset_join_waker()
 
-    sched_bits = this.task_header.sched_bits()
-    if sched_bits == 0 return
-    if this.join_bits() == 0 return
-    sched = sched_bits
-    n = notified_from_raw(this)
-    sched.schedule(n)
+    jb<u64> = this.join_bits()
+    if jb == 0 { return }
+    wake_by_ctx(jb)
 }
 
 // Null out cross references on dealloc.
@@ -117,12 +154,8 @@ RawTask::harness_shutdown(){
     life_st.set_cancelled()
     code<i32> = life_st.transition_to_notified_by_ref()
     if code == TN_Submit {
-        sched_bits<u64> = this.task_header.sched_bits()
-        if sched_bits != 0 {
-            sched<Schedule> = sched_bits
-            n<Notified> = notified_from_raw(this)
-            sched.schedule(n)
-        }
+        n<Notified> = notified_from_raw(this)
+        this.task_header.sched_schedule(n)
     }
 }
 

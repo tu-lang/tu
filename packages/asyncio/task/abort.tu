@@ -16,6 +16,6 @@ const AbortHandle::new(raw<RawTask>) AbortHandle {
 // Set CANCELLED (monotonic) and ensure exactly one schedule kick fires.
 AbortHandle::abort(){
     rtask<RawTask> = this.task_ptr
-    if rtask == null return
+    if rtask == null { return }
     rtask.abort_signal()
 }

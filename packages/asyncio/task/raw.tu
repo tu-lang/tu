@@ -85,12 +85,8 @@ RawTask::wake_by_ref(){
     life_st<TaskState> = this.life_st()
     code<i32> = life_st.transition_to_notified_by_ref()
     if code == TN_Submit {
-        sched_bits<u64> = this.task_header.sched_bits()
-        if sched_bits != 0 {
-            sched<Schedule> = sched_bits
-            n<Notified> = notified_from_raw(this)
-            sched.schedule(n)
-        }
+        n<Notified> = notified_from_raw(this)
+        this.task_header.sched_schedule(n)
     }
 }
 
@@ -144,13 +140,14 @@ fn raw_vtable_install(
 }
 
 // Allocate TaskState + Header + Cell + RawTask wired to the default vtable.
-fn raw_new(fut_bits<u64>, scheduler, task_id<u64>) RawTask {
+// sched_fn / rel_fn: scheduler bridge fn pointers (see Header).
+fn raw_new(fut_bits<u64>, scheduler, sched_fn<u64>, rel_fn<u64>, task_id<u64>) RawTask {
     fut<runtime.Future> = fut_bits.(runtime.Future)
     if fut == null {
     } else {
     }
     st<TaskState> = TaskState::new()
-    hdr<Header> = header_new(st, scheduler, fut, task_id)
+    hdr<Header> = header_new(st, scheduler, sched_fn, rel_fn, fut, task_id)
     cell<Cell> = Cell::new(hdr, fut)
 
     rtask<RawTask> = new RawTask

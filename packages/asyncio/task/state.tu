@@ -8,6 +8,10 @@
 use std.atomic
 use os
 
+// CAS success sentinel: std.atomic cas/cas64 return 1 on success;
+// comparing against an untyped literal 0 crashes codegen (binary-op trap).
+CAS_OK<i64> = 1
+
 // Lifecycle bits.
 RUNNING<i32>        = 0x01
 COMPLETE<i32>       = 0x02
@@ -85,58 +89,71 @@ fn st_ref_count(v<i32>) i32 {
     return (v & REF_COUNT_MASK) >> REF_COUNT_SHIFT.(u32)
 }
 
-// Acquire the RUNNING bit. Returns Cancelled / Failed / Dealloc / Success;
-// on Success the NOTIFIED bit is cleared in the same CAS.
+// Acquire the RUNNING bit (mother state.rs transition_to_running).
+// Not idle: the notification ref is consumed -> Failed / Dealloc.
+// Idle: set RUNNING + clear NOTIFIED in one CAS; report Cancelled when the
+// CANCELLED bit was already set (RUNNING is still taken, caller completes).
 TaskState::transition_to_running() i32 {
     loop {
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
-        if (cur & CANCELLED) != 0 return TR_Cancelled
-        if (cur & RUNNING) != 0   return TR_Failed
-        if (cur & COMPLETE) != 0  return TR_Failed
+        if (cur & LIFECYCLE_MASK) != 0 {
+            if (cur & REF_COUNT_MASK) == 0 {
+                os.die("task.state transition_to_running underflow")
+                return TR_Failed
+            }
+            new_state<i32> = cur - REF_ONE
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+                if (new_state & REF_COUNT_MASK) == 0 { return TR_Dealloc }
+                return TR_Failed
+            }
+            continue
+        }
         new_state<i32> = (cur | RUNNING) & 0xFFFFFFFB
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return TR_Success
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+            if (new_state & CANCELLED) != 0 { return TR_Cancelled }
+            return TR_Success
+        }
     }
     return TR_Failed
 }
 
-// Pending poll exit. Returns OkNotified when self-wake fired mid-poll,
-// Cancelled when CANCELLED appeared, Ok otherwise.
+// Pending poll exit (mother state.rs transition_to_idle).
+// Cancelled: state untouched, caller must cancel + complete.
+// Not notified: polling consumed the Notified ref -> ref_dec (Ok/OkDealloc).
+// Notified during poll: keep our ref + ref_inc for the new Notified the
+// caller will submit -> OkNotified.
 TaskState::transition_to_idle() i32 {
     loop {
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
-        if (cur & CANCELLED) != 0 {
-            new_state<i32> = cur & 0xFFFFFFFE
-            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return TI_Cancelled
+        if (cur & CANCELLED) != 0 { return TI_Cancelled }
+        if (cur & NOTIFIED) == 0 {
+            if (cur & REF_COUNT_MASK) == 0 {
+                os.die("task.state transition_to_idle underflow")
+                return TI_Ok
+            }
+            new_state<i32> = (cur & 0xFFFFFFFE) - REF_ONE
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+                if (new_state & REF_COUNT_MASK) == 0 { return TI_OkDealloc }
+                return TI_Ok
+            }
             continue
         }
-        notified<i32> = cur & NOTIFIED
-        new_state<i32> = cur & 0xFFFFFFFE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 {
-            if notified != 0 return TI_OkNotified
-            return TI_Ok
-        }
+        new_state<i32> = (cur & 0xFFFFFFFE) + REF_ONE
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TI_OkNotified }
     }
     return TI_Ok
 }
 
-// Non-atomic COMPLETE set for debug harness (avoids cas64 path).
-TaskState::force_complete(){
-    w<u64> = this.slot_word
-    cur<i32> = 0
-    cur = w
-    nv<i32> = (cur & 0xFFFFFFFE) | COMPLETE
-    this.slot_word = nv
-}
-
-// Ready poll exit. Single CAS clears RUNNING + sets COMPLETE.
+// Ready poll exit. Single CAS clears RUNNING + sets COMPLETE (mother XOR).
+// Returns the post-transition snapshot for join-waker checks.
 TaskState::transition_to_complete() i32 {
     loop {
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
         new_state<i32> = (cur & 0xFFFFFFFE) | COMPLETE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return 0
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return new_state }
     }
     return 0
 }
@@ -151,7 +168,7 @@ TaskState::ref_inc(){
             os.die("task.state ref_inc overflow")
             return
         }
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return }
     }
 }
 
@@ -166,7 +183,7 @@ TaskState::ref_dec() i32 {
             return 0
         }
         new_state<i32> = cur - REF_ONE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 {
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
             if (new_state & REF_COUNT_MASK) == 0 return 1
             return 0
         }
@@ -174,40 +191,56 @@ TaskState::ref_dec() i32 {
     return 0
 }
 
-// By-val notify: consumes one strong ref on the DoNothing/Dealloc path.
-// Returns Submit when NOTIFIED was just set (caller must enqueue).
+// By-val notify (mother state.rs transition_to_notified_by_val).
+// RUNNING: set NOTIFIED (poller re-enqueues on idle) and consume our ref.
+// COMPLETE/NOTIFIED: just consume the ref (may reach zero -> Dealloc).
+// Idle: set NOTIFIED + ref_inc for the new Notified -> Submit.
 TaskState::transition_to_notified_by_val() i32 {
     loop {
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
-        already<i32> = cur & (RUNNING | COMPLETE | NOTIFIED)
-        if already != 0 {
+        if (cur & RUNNING) != 0 {
             if (cur & REF_COUNT_MASK) == 0 {
-                os.die("task.state ref_dec underflow")
+                os.die("task.state notified_by_val underflow")
+                return TN_DoNothing
+            }
+            new_state<i32> = (cur | NOTIFIED) - REF_ONE
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TN_DoNothing }
+            continue
+        }
+        if (cur & (COMPLETE | NOTIFIED)) != 0 {
+            if (cur & REF_COUNT_MASK) == 0 {
+                os.die("task.state notified_by_val underflow")
                 return TN_DoNothing
             }
             new_state<i32> = cur - REF_ONE
-            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 {
-                if (new_state & REF_COUNT_MASK) == 0 return TN_Dealloc
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+                if (new_state & REF_COUNT_MASK) == 0 { return TN_Dealloc }
                 return TN_DoNothing
             }
             continue
         }
-        new_state<i32> = cur | NOTIFIED
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return TN_Submit
+        new_state<i32> = (cur | NOTIFIED) + REF_ONE
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TN_Submit }
     }
     return TN_DoNothing
 }
 
-// By-ref notify: caller's existing strong ref covers the queue entry.
+// By-ref notify (mother state.rs transition_to_notified_by_ref).
+// COMPLETE/NOTIFIED: nothing to do. RUNNING: set NOTIFIED only (the poller
+// re-enqueues on idle). Idle: set NOTIFIED + ref_inc -> Submit.
 TaskState::transition_to_notified_by_ref() i32 {
     loop {
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
-        already<i32> = cur & (RUNNING | COMPLETE | NOTIFIED)
-        if already != 0 return TN_DoNothing
-        new_state<i32> = cur | NOTIFIED
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return TN_Submit
+        if (cur & (COMPLETE | NOTIFIED)) != 0 { return TN_DoNothing }
+        if (cur & RUNNING) != 0 {
+            new_state<i32> = cur | NOTIFIED
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TN_DoNothing }
+            continue
+        }
+        new_state<i32> = (cur | NOTIFIED) + REF_ONE
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TN_Submit }
     }
     return TN_DoNothing
 }
@@ -219,7 +252,7 @@ TaskState::set_join_waker() i32 {
         cur<i32> = w.(i32)
         if (cur & JOIN_INTEREST) == 0 return -1
         new_state<i32> = cur | JOIN_WAKER
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return 0
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK return 0
     }
     return -1
 }
@@ -230,7 +263,7 @@ TaskState::unset_join_waker(){
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
         new_state<i32> = cur & 0xFFFFFFEF
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return }
     }
 }
 
@@ -240,6 +273,6 @@ TaskState::set_cancelled(){
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
         new_state<i32> = cur | CANCELLED
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) != 0 return
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return }
     }
 }

@@ -61,7 +61,7 @@ Cell::store_output_err(err<i32>){
 
 // STAGE_IDLE -> STAGE_RUNNING via CAS. Returns 1 on success, 0 otherwise.
 Cell::transition_to_running() i32 {
-    if atomic.cas(&this.stage, STAGE_IDLE, STAGE_RUNNING) != 0 return 1
+    if atomic.cas(&this.stage, STAGE_IDLE, STAGE_RUNNING) == CAS_OK return 1
     return 0
 }
 
@@ -79,7 +79,7 @@ Cell::peek_output() i64 {
 // Returns RuntimePollError when stage was not STAGE_RUNNING; slot is left
 // untouched on the error path.
 Cell::store_output(value<i64>) i32 {
-    if atomic.cas(&this.stage, STAGE_RUNNING, STAGE_FINISHED) != 0 {
+    if atomic.cas(&this.stage, STAGE_RUNNING, STAGE_FINISHED) == CAS_OK {
         this.output_slot = value
         return 0
     }
@@ -89,7 +89,7 @@ Cell::store_output(value<i64>) i32 {
 // STAGE_FINISHED -> STAGE_CONSUMED, returns (0, value) once. Subsequent
 // calls return (AlreadyConsumed, 0) without tripping runtime.futuredone().
 Cell::take_output() (i32, i64) {
-    if atomic.cas(&this.stage, STAGE_FINISHED, STAGE_CONSUMED) != 0 {
+    if atomic.cas(&this.stage, STAGE_FINISHED, STAGE_CONSUMED) == CAS_OK {
         return 0, this.output_slot
     }
     return JoinErrorAlreadyConsumed, 0
