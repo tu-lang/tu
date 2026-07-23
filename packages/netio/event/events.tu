@@ -1,6 +1,5 @@
 use io
 use netio.sys
-use fmt
 
 mem Events {
 	sys.Events* hub
@@ -50,19 +49,12 @@ fn events_hub(ev<Events>) sys.Events {
 Iter::next() i32, Event {
 	wrap<Events> = this.events
 	hub_ev<sys.Events> = events_hub(wrap)
-	fmt.println("iter pos/count")
-	fmt.println(int(this.pos))
-	fmt.println(int(hub_ev.slot_count()))
-	sys_event<sys.Event> = hub_ev.get(this.pos)
-	fmt.println("iter after get")
-	if sys_event == null {
-		fmt.println("iter null event")
-		this.pos += 1
+	// Bounds first: mem==null compares are unreliable for get() sentinel.
+	if this.pos >= hub_ev.slot_count() {
 		return io.NotFound, null
 	}
+	sys_event<sys.Event> = hub_ev.get(this.pos)
 	this.pos += 1
-	fmt.println("iter token")
-	fmt.println(int(sys_event.token))
 	return io.Ok, Event::from_sys_event_ref(sys_event)
 }
 
