@@ -95,5 +95,32 @@ fn main(){
     }
     sys.close(ufd)
 
+    // sockaddr_to_addr must accept kernel wire len (16), not Tu sizeof(SockaddrIn)=24.
+    stor2_bits<u64> = sys.sockaddr_storage_new_raw()
+    // Pack AF_INET sockaddr_in: family=2, port=34567 BE, 127.0.0.1
+    wire<u8*> = std.malloc(16)
+    i<i32> = 0
+    while i < 16 {
+        wire[i] = 0
+        i += 1
+    }
+    wire[0] = 2
+    wire[1] = 0
+    wire[2] = 0x87
+    wire[3] = 0x07
+    wire[4] = 127
+    wire[5] = 0
+    wire[6] = 0
+    wire[7] = 1
+    std.memcpy(stor2_bits, wire, 16)
+    wire_len<u64> = 16
+    sa_err<i32>, abits<u64> = sys.sockaddr_to_addr_raw(stor2_bits, wire_len)
+    if sa_err != io.Ok {
+        os.dief("sockaddr_to_addr_raw wire16 %d", sa_err)
+    }
+    if abits == 0 {
+        os.die("sockaddr_to_addr_raw null addr")
+    }
+
     fmt.println("test sys fs path success")
 }

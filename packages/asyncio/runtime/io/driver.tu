@@ -14,7 +14,6 @@ use netio
 use netio.event as netevent
 use netio.sys as nsys
 use sys
-use fmt
 
 // Mirrors library io.Ok (=1). This package's short name is also `io`, so
 // `use io as libio` conflicts with the self-import map.
@@ -233,11 +232,10 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
     fired<u64> = 0
     loop {
         ie<i32>, ev<netevent.Event> = netevent.events_iter_next(iter)
-        if ie != 0 break
+        // io.Ok is 1 — must not use `ie != 0` (that drops every successful event).
+        if ie != LIBIO_OK break
 
-        fmt.println("turn got event")
         token<u64> = ev.token()
-        fmt.println(int(token))
         if token == TOKEN_WAKEUP continue
         // Padded Event (u32+u64) makes epoll_ctl store TOKEN_SIGNAL as 1<<32;
         // epoll_wait may surface either form depending on slot packing.

@@ -3,24 +3,63 @@
 //
 // Package asyncio.io cannot `use io` (short-name clash with this package), so
 // the buffer is held as a raw byte pointer + capacity (layout adaptation of
-// mother ReadBuf over &[u8]). Callers owning an io.Buf construct via
-// ReadBuf::from_ptr(b.ptr(), b.len()).
+// mother ReadBuf over &[u8]).
+//
+// data_bits is u64 (not u8*): mem u8* field store/load truncates high pointer
+// bits under current codegen — verified by int_tcp_echo EFAULT / ptr mismatch.
 
 use std
 
 mem ReadBuf {
-    u8* data   // base of the byte region
-    u64 cap    // total capacity in bytes
-    u64 filled // bytes written into the buffer
+    u64 data_bits // base of the byte region as raw pointer bits
+    u64 cap       // total capacity in bytes
+    u64 filled    // bytes written into the buffer
+}
+
+// Build ReadBuf from raw pointer bits (caller widens i8*/u8* → u64).
+fn read_buf_from_bits_cap(data_bits<u64>, cap<u64>) ReadBuf {
+    rb<ReadBuf> = new ReadBuf
+    rb.data_bits = data_bits
+    rb.cap = cap
+    rb.filled = 0
+    return rb
+}
+
+// Alternate entry from i8* (io.Buf::ptr). Widens via local u64 first.
+fn read_buf_from_i8(data<i8*>, cap<u64>) ReadBuf {
+    bits<u64> = 0
+    bits = data
+    return read_buf_from_bits_cap(bits, cap)
 }
 
 // Mother: ReadBuf::new — start empty over an already-initialized region.
 const ReadBuf::from_ptr(data<u8*>, cap<u64>) ReadBuf {
     rb<ReadBuf> = new ReadBuf
-    rb.data = data
+    bits<u64> = 0
+    bits = data
+    rb.data_bits = bits
     rb.cap = cap
     rb.filled = 0
     return rb
+}
+
+// Cross-package ctor bridge (callers must not use pkg.ReadBuf::from_ptr).
+fn read_buf_from_ptr(data<u8*>, cap<u64>) ReadBuf {
+    return ReadBuf::from_ptr(data, cap)
+}
+
+// u64 bridges for async leaf fields (typed ReadBuf* slots zero under async mem).
+fn read_buf_to_bits(b<ReadBuf>) u64 {
+    return b.(u64)
+}
+
+fn read_buf_from_bits(bits<u64>) ReadBuf {
+    return bits.(ReadBuf)
+}
+
+// Expose stored pointer bits for diagnostics / cross-check.
+fn read_buf_data_bits(b<ReadBuf>) u64 {
+    return b.data_bits
 }
 
 ReadBuf::filled_len() u64 {
@@ -37,12 +76,14 @@ ReadBuf::remaining() u64 {
 
 // Base pointer of the whole buffer (filled region starts here).
 ReadBuf::data_ptr() u8* {
-    return this.data
+    p<u8*> = this.data_bits
+    return p
 }
 
 // Pointer to the first unfilled byte.
 ReadBuf::unfilled_ptr() u8* {
-    return this.data + this.filled
+    base<u8*> = this.data_bits
+    return base + this.filled
 }
 
 ReadBuf::advance(n<u64>) i32 {

@@ -64,6 +64,11 @@ PollEvented::poll_write_io(ctx<u64>, op<rtio.IoOp>) i32, i64 {
     return err, val
 }
 
+// Clear readiness bits from a prior poll_*_ready snapshot (mother clear_readiness).
+PollEvented::clear_readiness(event<rtio.ReadyEvent>) i32 {
+    return this.reg.clear_readiness(event)
+}
+
 // Single-shot try_io: one readiness check + one op invocation.
 PollEvented::try_io(interest<netio.Interest>, op<rtio.IoOp>) i32, i64 {
     err<i32>, val<i64> = this.reg.try_io(interest, op)

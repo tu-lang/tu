@@ -11,6 +11,7 @@
 
 use net
 use io
+use std
 use runtime
 use netio
 use netio.net.tcp as nettcp
@@ -53,6 +54,14 @@ const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32,
     out.poll_ev = pe
     out.peer = peer
     return ok_code, out.(u64)
+}
+
+// Package bridge for AcceptFut / poll_accept (Type::method illegal in async poll).
+fn tcp_stream_from_netio_bits(inner<nettcp.TcpStream>, peer<net.SocketAddr>) i32, u64 {
+    e<i32> = 0
+    bits<u64> = 0
+    e, bits = TcpStream::from_netio(inner, peer)
+    return e, bits
 }
 
 // Borrow the underlying netio TcpStream (for issuing raw read/write syscalls).
@@ -233,33 +242,113 @@ TcpStream::shutdown(how<i32>) i32 {
     return sock.shutdown(how)
 }
 
+// Concrete read path (avoid AsyncRead api default which returns PollError).
+// Ready → read_priv into NewBuf → copy into ReadBuf unfilled region.
+TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
+    rem<u64> = buf.remaining()
+    if rem == 0 return runtime.PollReady
+    pend<i32> = runtime.PollPending
+    ready<i32> = runtime.PollReady
+    would_block<i32> = 16908302
+    ok_code<i32> = 1
+    sock<nettcp.TcpStream> = this.raw_sock()
+    loop {
+        rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx)
+        if rerr == pend return pend
+        if rerr != 0 return runtime.PollError
+
+        rem2<u64> = buf.remaining()
+        tmp<io.Buf> = io.NewBuf(rem2.(i32))
+        e<i32>, n<u64> = nettcp.tcp_stream_read_priv(sock, tmp)
+        if e == would_block {
+            this.poll_ev.clear_readiness(ev)
+            continue
+        }
+        if e != ok_code return runtime.PollError
+        if n > 0 {
+            dst<u8*> = buf.unfilled_ptr()
+            src<i8*> = io.buf_ptr(tmp)
+            sp<u8*> = null
+            sp = src
+            std.memcpy(dst, sp, n)
+            buf.advance(n)
+        }
+        return ready
+    }
+}
+
+// Concrete write path (avoid AsyncWrite api dyn).
+TcpStream::poll_write_priv(ctx<u64>, buf_bits<u64>) i32, u64 {
+    b<io.Buf> = io.buf_from_bits(buf_bits)
+    pend<i32> = runtime.PollPending
+    ready<i32> = runtime.PollReady
+    would_block<i32> = 16908302
+    ok_code<i32> = 1
+    loop {
+        rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(ctx)
+        if rerr == pend return pend, 0
+        if rerr != 0 return runtime.PollError, 0
+
+        sock<nettcp.TcpStream> = this.raw_sock()
+        e<i32>, n<u64> = nettcp.tcp_stream_write_priv(sock, b)
+        if e == would_block {
+            this.poll_ev.clear_readiness(ev)
+            continue
+        }
+        if e != ok_code return runtime.PollError, 0
+        return ready, n
+    }
+}
+
+// Poll read into an io.Buf (bits). Avoids ReadBuf pointer-field truncation.
+// Returns PollPending / PollError / PollReady; on Ready, n is bytes read.
+fn stream_poll_read_buf(s<TcpStream>, ctx<u64>, buf_bits<u64>) i32, u64 {
+    b<io.Buf> = io.buf_from_bits(buf_bits)
+    rem<u64> = io.buf_len(b)
+    if rem == 0 return runtime.PollReady, 0
+    pend<i32> = runtime.PollPending
+    ready<i32> = runtime.PollReady
+    would_block<i32> = 16908302
+    ok_code<i32> = 1
+    sock<nettcp.TcpStream> = s.raw_sock()
+    loop {
+        rerr<i32>, ev<rtio.ReadyEvent> = s.poll_ev.poll_read_ready(ctx)
+        if rerr == pend return pend, 0
+        if rerr != 0 return runtime.PollError, 0
+
+        e<i32>, n<u64> = nettcp.tcp_stream_read_priv(sock, b)
+        if e == would_block {
+            s.poll_ev.clear_readiness(ev)
+            continue
+        }
+        if e != ok_code return runtime.PollError, 0
+        return ready, n
+    }
+}
+
+fn stream_poll_read(s<TcpStream>, ctx<u64>, buf<aio.ReadBuf>) i32 {
+    return s.poll_read_priv(ctx, buf)
+}
+
+fn stream_poll_write(s<TcpStream>, ctx<u64>, buf_bits<u64>) i32, u64 {
+    e<i32> = 0
+    n<u64> = 0
+    e, n = s.poll_write_priv(ctx, buf_bits)
+    return e, n
+}
+
 impl aio.AsyncRead for TcpStream {
     fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-        rem<u64> = buf.remaining()
-        if rem == 0 return runtime.PollReady
-        tail<io.Buf> = new io.Buf {
-            data_ptr: buf.unfilled_ptr(),
-            byte_len: rem
-        }
-        op<TcpReadOp> = new TcpReadOp { sock: this.raw_sock(), buf: tail }
-        e<i32>, n<i64> = this.poll_ev.poll_read_io(ctx, op)
-        if e == runtime.PollPending return runtime.PollPending
-        if e == io.Ok {
-            if n > 0 buf.advance(n.(u64))
-            return runtime.PollReady
-        }
-        return runtime.PollError
+        return this.poll_read_priv(ctx, buf)
     }
 }
 
 impl aio.AsyncWrite for TcpStream {
     fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-        b<io.Buf> = io.buf_from_bits(buf_bits)
-        op<TcpWriteOp> = new TcpWriteOp { sock: this.raw_sock(), buf: b }
-        e<i32>, n<i64> = this.poll_ev.poll_write_io(ctx, op)
-        if e == runtime.PollPending return runtime.PollPending, 0
-        if e == io.Ok return runtime.PollReady, n.(u64)
-        return runtime.PollError, 0
+        e<i32> = 0
+        n<u64> = 0
+        e, n = this.poll_write_priv(ctx, buf_bits)
+        return e, n
     }
     fn poll_flush(ctx<u64>) i32 {
         return runtime.PollReady
