@@ -14,7 +14,12 @@ use asyncio.io as aio
 
 fn make_read_buf(cap<i32>) aio.ReadBuf {
     b<io.Buf> = io.NewBuf(cap)
-    return aio.ReadBuf::from_ptr(b.ptr(), cap.(u64))
+    p<i8*> = b.ptr()
+    bits<u64> = 0
+    bits = p
+    // Keep Buf alive via bits in ReadBuf is insufficient for GC; unix path
+    // still needs the same io.Buf echo refactor as int_tcp_echo.
+    return aio.read_buf_from_bits_cap(bits, cap.(u64))
 }
 
 fn str_buf(s<string.String>) io.Buf {
