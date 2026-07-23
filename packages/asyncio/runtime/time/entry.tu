@@ -79,12 +79,15 @@ StateCell::mark_pending(not_after<u64>) i32 {
 }
 
 // Mother: StateCell::set_expiration — store deadline under driver lock.
-// Fresh cells start at STATE_DEREGISTERED; store is enough (no CAS loop).
+// Fresh cells start at STATE_DEREGISTERED; unconditional store is enough.
+// std_atomic_store64 only consumes (addr, value) — the 2nd arg is written.
+// Passing (addr, old, new) stored `old` (DEREGISTERED) and ignored `new`,
+// so every Sleep::poll saw CANCELLED immediately.
 StateCell::arm(deadline_ms<u64>) i32 {
     if deadline_ms >= MAX_SAFE_MILLIS return RESULT_CANCELLED
     old<u64> = atomic.load64(&this.when_word)
     if old == STATE_PENDING_FIRE return RESULT_OK
-    atomic.store64(&this.when_word, old, deadline_ms)
+    atomic.store64(&this.when_word, deadline_ms)
     return RESULT_OK
 }
 
@@ -116,24 +119,31 @@ StateCell::take_waker_ctx() u64 {
     return libsync.atomic_waker_wake_raw(this.waker_bits)
 }
 
-// Wheel-side handle. Sleeps reach the wheel through TimerShared, which is
-// embedded in TimerEntry; cached_when speeds up cancellation by skipping
-// the slot scan when the deadline has not changed since insert.
+// Wheel-side handle. Sleeps reach the wheel through TimerShared.
+// `pointers` MUST be the first field (offset 0): EntryList casts Pointers*
+// to TimerShared* the same way util.LinkedList does (see linked_list.tu).
+// Field is `scell` — `.state` / `.cell` are type-assert traps even in methods.
 mem TimerShared {
-    StateCell*    state
-    util.Pointers pointers      // intrusive prev/next on a wheel slot list
+    util.Pointers pointers      // intrusive prev/next — offset 0 required
+    StateCell*    scell
     u64           cached_when   // last deadline_ms seen by the wheel
 }
 
 // Build a wheel-side handle for cell.
 const TimerShared::new(cell<StateCell>) TimerShared {
     s<TimerShared> = new TimerShared
-    s.state              = cell
-    s.pointers.prev      = null
-    s.pointers.next      = null
-    s.cached_when        = STATE_DEREGISTERED
+    s.pointers.prev = null
+    s.pointers.next = null
+    s.scell         = cell
+    s.cached_when   = STATE_DEREGISTERED
     return s
 }
+
+// Read the StateCell*; callers must use this helper (not `.scell` cross-expr).
+TimerShared::get_cell() StateCell {
+    return this.scell
+}
+
 
 // Sleep-side counterpart. Sleep::poll funnels into TimerEntry::poll_elapsed.
 mem TimerEntry {
@@ -167,13 +177,13 @@ fn timer_entry_poll_elapsed_bits(entry_bits<u64>, ctx<u64>) i32 {
 
 // Mark deregistered so the wheel does not fire after Drop.
 TimerEntry::cancel(){
-    s<StateCell> = this.shared.state
+    s<StateCell> = this.shared.get_cell()
     s.deregister()
 }
 
 // True once the deadline has fired.
 TimerEntry::is_elapsed() i32 {
-    s<StateCell> = this.shared.state
+    s<StateCell> = this.shared.get_cell()
     return s.is_pending_fire()
 }
 
@@ -181,7 +191,7 @@ TimerEntry::is_elapsed() i32 {
 // RESULT_OK + 0 to keep waiting (waker armed), RESULT_CANCELLED when the
 // entry has been deregistered.
 TimerEntry::poll_elapsed(ctx<u64>) i32 {
-    s<StateCell> = this.shared.state
+    s<StateCell> = this.shared.get_cell()
     code<i32>, fired<i32> = s.poll(ctx)
     if fired != 0 return RESULT_FIRED
     return code

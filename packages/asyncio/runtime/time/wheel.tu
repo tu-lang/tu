@@ -118,11 +118,14 @@ Wheel::poll_at() (i32, u64) {
         sl<i32> = layer.next_occupied_slot(0)
         if sl >= 0 {
             sr<u64> = slot_range(lv)
-            // Slot covers [base, base + sr); the earliest deadline in the
-            // slot is at most one tick after base.
-            base<u64> = (this.elapsed / sr) * sr
-            base = base + sl.(u64) * sr
-            if base < this.elapsed base = this.elapsed
+            lr<u64> = level_range(lv)
+            mask<u64> = lr - 1
+            not_mask<u64> = 0xffffffffffffffff - mask
+            level_start<u64> = this.elapsed & not_mask
+            base<u64> = level_start + sl.(u64) * sr
+            if base <= this.elapsed {
+                base = base + lr
+            }
             return EXPIR_FOUND, base
         }
     }
@@ -133,8 +136,15 @@ Wheel::poll_at() (i32, u64) {
 // to pending. Higher levels demote to a lower level via re-insert below.
 Wheel::cascade_pending(list<EntryList>){
     loop {
+        if list.front_bits == 0 {
+            break
+        }
         e<TimerShared> = list.pop_front()
-        if e == null break
+        ebits<u64> = 0
+        ebits = e
+        if ebits == 0 {
+            break
+        }
         this.pending.push_back(e)
     }
 }
@@ -143,8 +153,15 @@ Wheel::cascade_pending(list<EntryList>){
 // whose deadline is now past elapsed move straight to pending.
 Wheel::cascade_level(list<EntryList>){
     loop {
+        if list.front_bits == 0 {
+            break
+        }
         e<TimerShared> = list.pop_front()
-        if e == null break
+        ebits<u64> = 0
+        ebits = e
+        if ebits == 0 {
+            break
+        }
         if e.cached_when <= this.elapsed {
             this.pending.push_back(e)
             continue
@@ -157,9 +174,9 @@ Wheel::cascade_level(list<EntryList>){
     }
 }
 
-// Advance the wheel to `now`, moving every elapsed entry to `pending` and
-// demoting higher-level slots that crossed a slot boundary. Caller invokes
-// take_pending to drain afterwards. Returns the new elapsed value.
+// Advance the wheel to `now`. Mother compares slot *deadlines* to `now`,
+// not raw slot indices — `sl <= target_slot` skips entries when now jumps
+// past the slot index without wrapping (elapsed=0, when=50, now=100).
 Wheel::poll(now<u64>) u64 {
     if now <= this.elapsed return this.elapsed
     target<u64> = now
@@ -167,32 +184,43 @@ Wheel::poll(now<u64>) u64 {
     loop {
         if this.elapsed >= target break
 
-        // Find the next non-empty slot at any level <= the slot covering
-        // target. Cascade from there until elapsed catches up.
         moved<i32> = 0
         for lv<i32> = 0 ; lv < NUM_LEVELS ; lv += 1 {
             layer<Level> = level_at(this.levels, lv)
             sr<u64> = slot_range(lv)
+            lr<u64> = level_range(lv)
             cur_idx<u64> = (this.elapsed / sr) & LEVEL_MASK
-            tgt_idx<u64> = (target / sr) & LEVEL_MASK
             cur_slot<i32> = cur_idx.(i32)
-            target_slot<i32> = tgt_idx.(i32)
-            // Walk every slot strictly between cur_slot (inclusive) and
-            // target_slot (inclusive). For now we scan one slot per loop
-            // and let the outer loop iterate.
             sl<i32> = layer.next_occupied_slot(cur_slot)
-            if sl >= 0 && sl <= target_slot {
-                list<EntryList> = layer.take_slot(sl)
-                if lv == 0 {
-                    this.cascade_pending(list)
-                } else {
-                    this.cascade_level(list)
-                }
-                this.elapsed = this.elapsed + sr
-                if this.elapsed > target this.elapsed = target
-                moved = 1
-                break
+            if sl < 0 {
+                // Wrapped: occupied bits only below cur_slot.
+                sl = layer.next_occupied_slot(0)
             }
+            if sl < 0 {
+                continue
+            }
+            mask<u64> = lr - 1
+            not_mask<u64> = 0xffffffffffffffff - mask
+            level_start<u64> = this.elapsed & not_mask
+            deadline<u64> = level_start + sl.(u64) * sr
+            if deadline <= this.elapsed {
+                deadline = deadline + lr
+            }
+            if deadline > target {
+                continue
+            }
+            list<EntryList> = layer.take_slot(sl)
+            if lv == 0 {
+                this.cascade_pending(list)
+            } else {
+                this.cascade_level(list)
+            }
+            this.elapsed = deadline
+            if this.elapsed > target {
+                this.elapsed = target
+            }
+            moved = 1
+            break
         }
         if moved == 0 {
             this.elapsed = target
@@ -207,10 +235,10 @@ Wheel::poll(now<u64>) u64 {
 // invoking the wakers; the wheel keeps no further references afterwards.
 Wheel::take_pending() EntryList {
     out<EntryList> = EntryList::new()
-    out.head = this.pending.head
-    out.tail = this.pending.tail
-    this.pending.head = null
-    this.pending.tail = null
+    out.front_bits = this.pending.front_bits
+    out.back_bits = this.pending.back_bits
+    this.pending.front_bits = 0
+    this.pending.back_bits = 0
     return out
 }
 

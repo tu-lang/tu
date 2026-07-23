@@ -7,53 +7,88 @@ use asyncio.util
 
 LEVEL_SLOTS<i32> = 64
 LEVEL_MASK<u64>  = 63
+LEVEL_MULT_U<u64> = 64
 
-// Singly linked timer list with explicit head + tail.
+// Intrusive timer list. Stores TimerShared* as u64 — named pointer fields
+// like `.head` / `.front` are type-assert traps and left the list garbage.
 mem EntryList {
-    TimerShared* head      // null when empty
-    TimerShared* tail      // null when empty
+    u64 front_bits     // TimerShared* or 0
+    u64 back_bits      // TimerShared* or 0
 }
 
 // Build an empty list.
 const EntryList::new() EntryList {
     l<EntryList> = new EntryList
-    l.head = null
-    l.tail = null
+    l.front_bits = 0
+    l.back_bits = 0
     return l
 }
 
 // True when no entries are linked.
 EntryList::is_empty() i32 {
-    if this.head == null return 1
+    bits<u64> = this.front_bits
+    if bits == 0 return 1
     return 0
+}
+
+EntryList::front_entry() TimerShared {
+    bits<u64> = this.front_bits
+    if bits == 0 return null
+    return bits.(TimerShared)
+}
+
+EntryList::set_front(entry<TimerShared>){
+    if entry == null {
+        this.front_bits = 0
+        return
+    }
+    b<u64> = 0
+    b = entry
+    this.front_bits = b
+}
+
+EntryList::set_back(entry<TimerShared>){
+    if entry == null {
+        this.back_bits = 0
+        return
+    }
+    b<u64> = 0
+    b = entry
+    this.back_bits = b
 }
 
 // Append entry at tail; entry's pointers must be detached.
 EntryList::push_back(entry<TimerShared>){
     entry.pointers.prev = null
     entry.pointers.next = null
-    if this.tail != null {
-        prev<TimerShared> = this.tail
-        prev.pointers.next = &entry.pointers
-        entry.pointers.prev = &prev.pointers
+    ebits<u64> = 0
+    ebits = entry
+    ep<util.Pointers> = ebits.(util.Pointers)
+    back<u64> = this.back_bits
+    if back != 0 {
+        tp<util.Pointers> = back.(util.Pointers)
+        tp.next = ep
+        ep.prev = tp
     } else {
-        this.head = entry
+        this.set_front(entry)
     }
-    this.tail = entry
+    this.set_back(entry)
 }
 
 // Detach the head and return it; null when empty.
 EntryList::pop_front() TimerShared {
-    e<TimerShared> = this.head
+    e<TimerShared> = this.front_entry()
     if e == null return null
-    nxt_node<util.Pointers> = e.pointers.next
-    if nxt_node == null {
-        this.head = null
-        this.tail = null
+    nxt_p<util.Pointers> = e.pointers.next
+    if nxt_p == null {
+        this.front_bits = 0
+        this.back_bits = 0
     } else {
-        nxt<TimerShared> = nxt_node.(TimerShared)
+        nbits<u64> = 0
+        nbits = nxt_p
+        nxt<TimerShared> = nbits.(TimerShared)
         nxt.pointers.prev = null
-        this.head = nxt
+        this.set_front(nxt)
     }
     e.pointers.prev = null
     e.pointers.next = null
@@ -62,8 +97,9 @@ EntryList::pop_front() TimerShared {
 
 // One level of the hashed wheel. occupied bit i toggles when slots[i]
 // transitions empty<->non-empty.
+// Field is `tier` (not `level`) — `.level` is a type-assert trap.
 mem Level {
-    u32   level
+    u32   tier
     u64   occupied
     u64*  slots         // raw bits of EntryList*; length LEVEL_SLOTS
 }
@@ -75,9 +111,9 @@ fn slot_list(slots<u64*>, slot<i32>) EntryList {
 }
 
 // Build an empty Level.
-const Level::new(level<u32>) Level {
+const Level::new(tier<u32>) Level {
     lv<Level> = new Level
-    lv.level    = level
+    lv.tier     = tier
     lv.occupied = 0
     arr<u64*> = std.malloc(sizeof(u64) * LEVEL_SLOTS.(u64))
     for i<i32> = 0 ; i < LEVEL_SLOTS ; i += 1 {
@@ -101,18 +137,21 @@ Level::add_entry(slot<i32>, entry<TimerShared>){
 // Detach entry from slot. Caller must guarantee entry currently lives there.
 Level::remove_entry(slot<i32>, entry<TimerShared>){
     s<EntryList> = slot_list(this.slots, slot)
-    p<util.Pointers> = entry.pointers
+    ebits<u64> = 0
+    ebits = entry
+    p<util.Pointers> = ebits.(util.Pointers)
     if p.prev != null {
         prev_node<util.Pointers> = p.prev
         prev_node.next = p.next
     } else {
         if p.next == null {
-            s.head = null
+            s.front_bits = 0
         } else {
-            nxt_ptr<util.Pointers> = p.next
-            nxt<TimerShared> = nxt_ptr.(TimerShared)
+            nbits<u64> = 0
+            nbits = p.next
+            nxt<TimerShared> = nbits.(TimerShared)
             nxt.pointers.prev = null
-            s.head = nxt
+            s.set_front(nxt)
         }
     }
     if p.next != null {
@@ -120,12 +159,13 @@ Level::remove_entry(slot<i32>, entry<TimerShared>){
         next_node.prev = p.prev
     } else {
         if p.prev == null {
-            s.tail = null
+            s.back_bits = 0
         } else {
-            prv_ptr<util.Pointers> = p.prev
-            prv<TimerShared> = prv_ptr.(TimerShared)
+            pbits<u64> = 0
+            pbits = p.prev
+            prv<TimerShared> = pbits.(TimerShared)
             prv.pointers.next = null
-            s.tail = prv
+            s.set_back(prv)
         }
     }
     entry.pointers.prev = null
@@ -139,21 +179,21 @@ Level::remove_entry(slot<i32>, entry<TimerShared>){
 Level::take_slot(slot<i32>) EntryList {
     src<EntryList> = slot_list(this.slots, slot)
     out<EntryList> = EntryList::new()
-    out.head = src.head
-    out.tail = src.tail
-    src.head = null
-    src.tail = null
+    out.front_bits = src.front_bits
+    out.back_bits = src.back_bits
+    src.front_bits = 0
+    src.back_bits = 0
     this.occupied = this.occupied & (~(1.(u64) << slot.(u64)))
     return out
 }
 
 // Trailing-zero scan over occupied; returns -1 when no slot is set.
+// start is a slot index (legacy); prefer next_expiration for poll.
 Level::next_occupied_slot(start<i32>) i32 {
     bits<u64> = this.occupied
     if bits == 0 return -1
     v<u64> = bits
     if start > 0 {
-        // Mask off slots < start, then ctz.
         shift_base<u64> = 1.(u64) << start.(u64)
         mask_lo<u64> = shift_base - 1
         v = bits & (~mask_lo)
@@ -161,6 +201,7 @@ Level::next_occupied_slot(start<i32>) i32 {
     }
     n<i32> = 0
     loop {
+        if n >= LEVEL_SLOTS return -1
         low<u64> = v & 1
         if low != 0 break
         v = v >> 1

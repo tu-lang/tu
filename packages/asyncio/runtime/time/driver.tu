@@ -7,13 +7,13 @@ use io
 use asyncio.runtime.io as rtio
 use asyncio.task as task
 
-// Driver-side state. wheel + clock are owned here; park_iod is borrowed
+// Driver-side state. wheel + clk are owned here; park_iod is borrowed
 // from the runtime's IoDriver so park_internal can delegate.
-// Field must not be named io_* — `.io_park` is a type-assert trap.
+// Field is `clk` (not `clock`) — `.clock` is a type-assert trap.
 mem TimeDriver {
     Wheel*          wheel
     TimeSource*     source
-    Clock*          clock
+    Clock*          clk
     rtio.IoDriver*  park_iod      // borrowed; null when IO driver disabled
 }
 
@@ -23,7 +23,7 @@ mem TimeHandle {
     TimeSource*         source
     runtime.MutexInter* lock     // serialises wheel mutations
     Wheel*              wheel
-    Clock*              clock
+    Clock*              clk      // not `clock` — type-assert trap
 }
 
 // Last successful TimeDriver::new results. build_drivers uses last()
@@ -39,6 +39,13 @@ fn timehandle_last() TimeHandle {
     return LAST_TIMEHANDLE
 }
 
+// Safe clock read — avoid `.clock` / chained field traps.
+TimeHandle::now_ms() u64 {
+    c<Clock> = this.clk
+    if c == null return 0
+    return c.now_ms()
+}
+
 // Build a paired (driver, handle). Publishes via timedriver_last / timehandle_last.
 const TimeDriver::new(park_iod<rtio.IoDriver>) i32 {
     LAST_TIMEDRIVER = null
@@ -49,9 +56,9 @@ const TimeDriver::new(park_iod<rtio.IoDriver>) i32 {
     c<Clock>        = Clock::new(src)
 
     drv<TimeDriver> = new TimeDriver
-    drv.wheel   = w
-    drv.source  = src
-    drv.clock   = c
+    drv.wheel    = w
+    drv.source   = src
+    drv.clk      = c
     drv.park_iod = park_iod
 
     h<TimeHandle> = new TimeHandle
@@ -59,7 +66,7 @@ const TimeDriver::new(park_iod<rtio.IoDriver>) i32 {
     h.lock = new runtime.MutexInter
     h.lock.init()
     h.wheel = w
-    h.clock = c
+    h.clk = c
 
     LAST_TIMEDRIVER = drv
     LAST_TIMEHANDLE = h
@@ -76,7 +83,7 @@ fn time_driver_new(park_iod<rtio.IoDriver>) i32 {
 fn compute_effective_ms(handle<TimeHandle>, limit_ms<u64>) u64 {
     found<i32>, deadline<u64> = handle.wheel.poll_at()
     if found != EXPIR_FOUND return limit_ms
-    now_ms<u64> = handle.clock.now_ms()
+    now_ms<u64> = handle.now_ms()
     if deadline <= now_ms return 0
     delta<u64> = deadline - now_ms
     if delta > limit_ms return limit_ms
@@ -97,15 +104,23 @@ TimeHandle::process(now_ms<u64>){
     pending<EntryList> = this.wheel.take_pending()
     this.lock.unlock()
 
-    cur<TimerShared> = pending.pop_front()
-    while cur != null {
-        s<StateCell> = cur.state
+    // Mem null compares are unreliable — drain while front_bits != 0.
+    loop {
+        if pending.front_bits == 0 {
+            break
+        }
+        cur<TimerShared> = pending.pop_front()
+        cbits<u64> = 0
+        cbits = cur
+        if cbits == 0 {
+            break
+        }
+        s<StateCell> = cur.get_cell()
         s.mark_pending(now_ms)
         wake_ctx<u64> = s.take_waker_ctx()
         if wake_ctx != 0 {
             task.wake_by_ctx(wake_ctx)
         }
-        cur = pending.pop_front()
     }
 }
 
@@ -117,15 +132,15 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>)
     handle.lock.unlock()
 
     if this.park_iod == null || ioh == null {
-        // No IO park path: still advance the wheel, then yield briefly.
-        handle.process(handle.clock.now_ms())
+        // No IO park path: advance the wheel, then yield briefly.
+        handle.process(handle.now_ms())
         runtime.osyield()
         return 0
     }
 
     iod<rtio.IoDriver> = this.park_iod
     err<i32> = iod.turn(ioh, ms_to_duration(eff_ms))
-    handle.process(handle.clock.now_ms())
+    handle.process(handle.now_ms())
     return err
 }
 
@@ -140,7 +155,7 @@ TimeHandle::register(entry<TimerEntry>) i32 {
         // Mother: InsertError::Elapsed → entry.fire(Ok(())).
         // mark_pending leaves PENDING_FIRE so poll_elapsed returns FIRED
         // on this same Sleep::poll (waker optional — caller is polling now).
-        s<StateCell> = entry.shared.state
+        s<StateCell> = entry.shared.get_cell()
         s.mark_pending(deadline)
         entry.registered = 1
     }
@@ -159,11 +174,10 @@ fn time_handle_register_bits(handle_bits<u64>, entry_bits<u64>) i32 {
 // Typed clock read used by the u64 bits bridge.
 fn time_handle_now_ms(th<TimeHandle>) u64 {
     if th == null return 0
-    if th.clock == null return 0
-    return th.clock.now_ms()
+    return th.now_ms()
 }
 
-// Cross-pkg clock read: foreign packages must not chain th.clock.now_ms().
+// Cross-pkg clock read: foreign packages must not chain th.clk.now_ms().
 fn time_handle_now_ms_bits(handle_bits<u64>) u64 {
     if handle_bits == 0 return 0
     th<TimeHandle> = handle_bits
@@ -178,7 +192,6 @@ TimeHandle::cancel(entry<TimerEntry>){
         entry.registered = 0
     }
     this.lock.unlock()
-    s<StateCell> = entry.shared.state
+    s<StateCell> = entry.shared.get_cell()
     s.deregister()
 }
-

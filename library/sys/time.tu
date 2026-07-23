@@ -69,7 +69,7 @@ const Duration::secs_raw(d<Duration>) u64 {
 }
 
 const Duration::subsec_bits(d<Duration>) u32 {
-    return d.subsec_nano.bits
+    return d.nanos
 }
 
 const Duration::secs_i64(d<Duration>) i64 {
@@ -161,38 +161,41 @@ mem Nanoseconds {
     u32 bits
 }
 
+// Mother: std::time::Duration — secs + subsec nanos as a plain u32.
+// Embedding `Nanoseconds` by value stored a heap pointer in the field slot
+// (same Instant/TimeSource trap), so as_millis() read garbage.
 mem Duration {
     u64 secs
-    Nanoseconds subsec_nano // Always 0 <= bits < NANOS_PER_SEC
+    u32 nanos // Always 0 <= nanos < NANOS_PER_SEC
 }
 
 SECOND<Duration:> = new Duration{
     secs: 1,
-    subsec_nano: new Nanoseconds { bits: 0 },
+    nanos: 0,
 }
 // Static data emission only accepts integer literals in global struct
 // initializers, so the mother's `NANOS_PER_MILLI % NANOS_PER_SEC` const
 // expressions are pre-folded here (both are < NANOS_PER_SEC, mod is no-op).
 MILLISECOND<Duration:> = new Duration{
     secs: 0,
-    subsec_nano: new Nanoseconds { bits: 1000000 },
+    nanos: 1000000,
 }
 MICROSECOND<Duration:> = new Duration {
     secs: 0,
-    subsec_nano: new Nanoseconds { bits: 1000 },
+    nanos: 1000,
 }
 NANOSECOND<Duration:> = new Duration{
     secs: 0 ,
-    subsec_nano: new Nanoseconds { bits: 1 },
+    nanos: 1,
 }
 ZERO<Duration:> = new Duration{
     secs: 0 ,
-    subsec_nano: new Nanoseconds { bits: 0 },
+    nanos: 0,
 }
 // Mother: Duration::new(u64::MAX, NANOS_PER_SEC - 1)
 MAX<Duration:> = new Duration {
     secs: 18446744073709551615,
-    subsec_nano: new Nanoseconds { bits: 999999999 },
+    nanos: 999999999,
 }
 
 U64_MAX_VAL<u64> = 18446744073709551615
@@ -209,7 +212,7 @@ const Duration::new(secs<u64>, nano_count<u32>)  Duration {
     // SAFETY: rem < NANOS_PER_SEC, therefore bits is within the valid range
     return new Duration {
         secs: secs,
-        subsec_nano: new Nanoseconds { bits: rem },
+        nanos: rem,
     }
 }
 const Duration::from_secs(secs<u64>) Duration {
@@ -221,8 +224,8 @@ const Duration::from_millis(millis<u64>) Duration {
 const Duration::from_micros(micros<u64>) Duration {
     return Duration::new(micros / MICROS_PER_SEC, (micros % MICROS_PER_SEC) * NANOS_PER_MICRO)
 }
-const Duration::from_nanos(nanos<u64>) Duration {
-    return Duration::new(nanos / NANOS_PER_SEC, nanos % NANOS_PER_SEC)
+const Duration::from_nanos(nanos_count<u64>) Duration {
+    return Duration::new(nanos_count / NANOS_PER_SEC, nanos_count % NANOS_PER_SEC)
 }
 
 Duration::as_secs() u64 {
@@ -230,13 +233,13 @@ Duration::as_secs() u64 {
 }
 
 Duration::subsec_nanos()  u32 {
-    return this.subsec_nano.bits
+    return this.nanos
 }
 Duration::as_millis()  u64 {
-    return this.secs  * MILLIS_PER_SEC + (this.subsec_nano.bits / NANOS_PER_MILLI)
+    return this.secs  * MILLIS_PER_SEC + (this.nanos / NANOS_PER_MILLI)
 }
 
 Duration::as_nanos() u64 {
-    return this.secs * NANOS_PER_SEC + this.subsec_nano.bits
+    return this.secs * NANOS_PER_SEC + this.nanos
 }
 
