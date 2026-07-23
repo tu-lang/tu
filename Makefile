@@ -51,6 +51,7 @@ INSTALL_ALL = install_all() {                              			\
 	cp release/tu $(prefix)/bin/tu;									\
 	cp -r runtime $(prefix)/lib/copkg/;								\
 	cp -r library/* $(prefix)/lib/copkg/;							\
+	cp -r packages/* $(prefix)/lib/copkg/;							\
 	cp -r syscall/* $(prefix)/lib/coasm/;							\
 	cd release;														\
 	ar -x tulang.a;													\
@@ -100,7 +101,8 @@ test_dev:
 	@$(TEST_COMPILER); test_compiler
 	@echo "test compiler success"
 
-cases = async mixed class common datastruct internalpkg memory native operator runtime statement
+# Directory-level suites. dirs with tests/<dir>/.make_tests only run allowlisted files.
+cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio
 
 # make test -j9
 tests_cases: $(cases)

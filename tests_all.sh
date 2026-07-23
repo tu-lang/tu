@@ -1,4 +1,16 @@
 #!/bin/bash
+# Run TuLang tests under tests/<dir>.
+#
+# Usage:
+#   sh tests_all.sh <dir>              # all *.tu, or only allowlisted if .make_tests exists
+#   sh tests_all.sh <dir> --all        # ignore .make_tests, run every *.tu
+#   sh tests_all.sh <dir> a.tu b.tu    # run only the named files
+#
+# Optional allowlist: tests/<dir>/.make_tests
+#   One basename per line (# comments and blank lines ignored).
+#   Present → make tests / bare dir invoke only listed files.
+#   Absent  → run all *.tu (legacy dirs).
+
 log(){
     str="$1"
     echo -e "\033[32m$str \033[0m "
@@ -16,13 +28,8 @@ failed(){
 }
 check(){
     if [  "$?" != 0 ]; then
-#        actual=`./a.out`
-#        if [  "$?" != 0 ]; then
         failed "exec failed"
-#        fi
-#        rm ./a.out
     fi
-
 }
 
 assert(){
@@ -49,25 +56,77 @@ assert(){
     echo "exec done..."
 
     return
-#    failed "[compile] $input failed"
 }
-read_dir(){
+
+# Collect basenames to run for $dir (cwd is tests/).
+# Sets global FILES as space-separated list.
+collect_files(){
     dir="$1"
-    cd $dir
-    for file in `ls *.tu`
-    do
-     echo $file
-     if [ -d $file ] ; then
-        read_dir $file
-     else
+    shift
+    FILES=""
+    force_all=0
+    explicit=""
+
+    for arg in "$@"; do
+        if [ "$arg" = "--all" ]; then
+            force_all=1
+        else
+            explicit="$explicit $arg"
+        fi
+    done
+
+    if [ -n "$explicit" ]; then
+        for f in $explicit; do
+            base=$(basename "$f")
+            if [ ! -f "$dir/$base" ]; then
+                failed "test file not found: $dir/$base"
+            fi
+            FILES="$FILES $base"
+        done
+        return
+    fi
+
+    if [ "$force_all" = "0" ] && [ -f "$dir/.make_tests" ]; then
+        while IFS= read -r line || [ -n "$line" ]; do
+            # strip comments and whitespace
+            line="${line%%#*}"
+            line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            [ -z "$line" ] && continue
+            base=$(basename "$line")
+            if [ ! -f "$dir/$base" ]; then
+                failed "allowlist entry missing: $dir/$base (from .make_tests)"
+            fi
+            FILES="$FILES $base"
+        done < "$dir/.make_tests"
+        if [ -z "$FILES" ]; then
+            log "[skip] $dir: .make_tests is empty (no files gated in)"
+        fi
+        return
+    fi
+
+    for f in $(ls "$dir"/*.tu 2>/dev/null); do
+        FILES="$FILES $(basename "$f")"
+    done
+}
+
+run_dir(){
+    dir="$1"
+    shift
+    collect_files "$dir" "$@"
+    if [ -z "$FILES" ]; then
+        return
+    fi
+    cd "$dir"
+    for file in $FILES; do
+        echo "$file"
         clean "*.s"
         clean "*.o"
-        assert "OK" $file
+        assert "OK" "$file"
         log "[compile] $file passed!\n"
-     fi
     done
     cd ..
 }
+
 install_env(){
     cd tests
     if [  "$?" != 0 ]; then
@@ -76,13 +135,15 @@ install_env(){
 }
 install_env
 if [ "$1" != "" ]; then
-    read_dir $1
+    dir="$1"
+    shift
+    run_dir "$dir" "$@"
     exit 0
 fi
 for dir in `ls`
 do
     if [ -d $dir ] ; then
-        read_dir $dir
+        run_dir "$dir"
         clean "$dir/*.o"
         clean "$dir/*.s"
     fi

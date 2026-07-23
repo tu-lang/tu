@@ -1,0 +1,10 @@
+# Allowlist for `make tests` / `sh tests_all.sh asyncio`.
+# One basename per line. Add a file here only after it passes end-to-end.
+# Full directory (ignore this file): sh tests_all.sh asyncio --all
+# Single file: sh tests_all.sh asyncio int_tcp_echo.tu
+int_clock_gettime.tu
+int_fs_roundtrip.tu
+int_macros_join_select.tu
+int_process_echo.tu
+int_tcp_echo.tu
+int_time_sleep.tu
