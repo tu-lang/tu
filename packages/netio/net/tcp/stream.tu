@@ -73,19 +73,71 @@ TcpStream::take_error() i32, i32, i32 {
 	return ok, has, ret
 }
 
+// Bypass io.Read/Write api dyn (defaults return Uncategorized).
+TcpStream::read_priv(buf<io.Buf>) i32, u64 {
+	std_s<net.TcpStream> = this.std_stream()
+	e<i32> = 0
+	n<u64> = 0
+	e, n = libsys.tcp_stream_read_bits(std_s.asinner_bits(), buf)
+	return e, n
+}
+
+TcpStream::write_priv(buf<io.Buf>) i32, u64 {
+	std_s<net.TcpStream> = this.std_stream()
+	e<i32> = 0
+	n<u64> = 0
+	e, n = libsys.tcp_stream_write_bits(std_s.asinner_bits(), buf)
+	return e, n
+}
+
+fn tcp_stream_read_priv(s<TcpStream>, buf<io.Buf>) i32, u64 {
+	e<i32> = 0
+	n<u64> = 0
+	e, n = s.read_priv(buf)
+	return e, n
+}
+
+fn tcp_stream_write_priv(s<TcpStream>, buf<io.Buf>) i32, u64 {
+	e<i32> = 0
+	n<u64> = 0
+	e, n = s.write_priv(buf)
+	return e, n
+}
+
+// Read into a raw pointer (avoids io.Buf view / .len traps in FileDesc::read_io).
+TcpStream::read_raw(dst<u8*>, len<u64>) i32, u64 {
+	fd<i32> = this.raw_fd()
+	raw<i64> = libsys.read(fd, dst, len)
+	ri<i32> = 0
+	ri = raw
+	err<i32>, n<u64> = libsys.cvt(ri)
+	ok_code<i32> = 1
+	if err != ok_code return err, 0
+	return ok_code, n
+}
+
+fn tcp_stream_read_raw(s<TcpStream>, dst<u8*>, len<u64>) i32, u64 {
+	e<i32> = 0
+	n<u64> = 0
+	e, n = s.read_raw(dst, len)
+	return e, n
+}
+
 impl io.Read for TcpStream {
 	fn read(buf<io.Buf>) i32, u64 {
-		std_s<net.TcpStream> = this.std_stream()
-		err<i32>, n<u64> = std_s.read(buf)
-		return err, n
+		e<i32> = 0
+		n<u64> = 0
+		e, n = this.read_priv(buf)
+		return e, n
 	}
 }
 
 impl io.Write for TcpStream {
 	fn write(buf<io.Buf>) i32, u64 {
-		std_s<net.TcpStream> = this.std_stream()
-		err<i32>, n<u64> = std_s.write(buf)
-		return err, n
+		e<i32> = 0
+		n<u64> = 0
+		e, n = this.write_priv(buf)
+		return e, n
 	}
 	fn flush() i32 {
 		return io.Ok

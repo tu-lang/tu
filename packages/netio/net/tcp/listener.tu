@@ -98,7 +98,6 @@ TcpListener::accept() i32 {
 
 impl event.Source for TcpListener {
 	fn enroll(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
-		fmt.println("tl_enroll")
 		return netio.iosource_register_bits(this.iosrc_bits, registry, t, interests)
 	}
 	fn reenroll(registry<netio.Registry>, t<netio.Token>, interests<netio.Interest>) i32 {
