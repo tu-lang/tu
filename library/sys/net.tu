@@ -210,11 +210,13 @@ fn sockaddr_to_addr_raw(storage_bits<u64>, len<u64>) i32, u64 {
 }
 
 fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
+    // Kernel wire sizes (Tu sizeof(SockaddrIn/In6) pads nested mem past these).
+    min_v4<u64> = 16
+    min_v6<u64> = 28
     match storage.ss_family {
         AF_INET : {
-            if len < sizeof(SockaddrIn) {
-                runtime.println("ss_family:%d sockaddrin:%d ",len,sizeof(SockaddrIn))
-                os.exit(-1)
+            if len < min_v4 {
+                return io.InvalidInputArgument, null
             }
             addr<SockaddrIn> = storage
             sinaddr<InAddr> = addr.sin_addr
@@ -223,9 +225,8 @@ fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
             return Ok, net.socket_addr_from_v4(saddr)
         }
         AF_INET6 : {
-            if len < sizeof(SockaddrIn6) {
-                runtime.println("ss_family:%d sockaddrin6:%d ",len,sizeof(SockaddrIn6))
-                os.exit(-1)
+            if len < min_v6 {
+                return io.InvalidInputArgument, null
             }
             addr<SockaddrIn6> = storage
             saddr<In6Addr> = addr.sin6_addr
@@ -241,7 +242,7 @@ fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
             return Ok, net.socket_addr_from_v6(sockaddr)
         }
         _ : {
-            return io.InvalidInputArgument
+            return io.InvalidInputArgument, null
         }
     }
 }

@@ -40,6 +40,9 @@ mem SockaddrStorage {
 
 // Layout size of SockaddrStorage (2 + 118 + 8); for cross-pkg sizeof avoidance.
 SOCKADDR_STORAGE_LEN<i32> = 128
+// Kernel sockaddr_in / sockaddr_in6 wire sizes (Tu mem sizeof pads nested fields).
+SOCKADDR_IN_LEN<i32> = 16
+SOCKADDR_IN6_LEN<i32> = 28
 
 
 mem SockAddr {
