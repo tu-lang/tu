@@ -117,6 +117,7 @@ ConnectFut::poll(ctx){
 
 // Mother: TcpStream::connect — sync setup + ConnectFut leaf (member async
 // calling nettcp.tcp_stream_connect corrupts the async frame).
+// Return ConnectFut (not erased Future): multi-return poll needs concrete leaf.
 const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
     cerr<i32> = nettcp.tcp_stream_connect(addr)
     if cerr != io.Ok {

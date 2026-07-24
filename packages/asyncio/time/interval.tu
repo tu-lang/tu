@@ -5,6 +5,7 @@
 // milliseconds to avoid value-embedding another mem.
 
 use sys
+use runtime
 use asyncio.runtime.time as rttime
 
 // Missed-tick strategies.
@@ -67,12 +68,13 @@ Interval::advance(){
 }
 
 // Await the next tick. Returns (err, fired_instant) where err is io.Ok once
-// the deadline fires. A fresh Sleep registers deadline_ms into the wheel;
-// advance() then reschedules for the following tick.
+// the deadline fires. Registers deadline_ms on the wheel via runtime Sleep,
+// then advance() reschedules for the following tick.
 // Mother: Interval::tick — await the deadline Sleep, then advance the schedule.
 async Interval::tick() {
-    sleep_f<rttime.Sleep> = rttime.sleep_new(this.deadline_ms)
-    err_code<i32> = sleep_f.await
+    s = rttime.sleep_new(this.deadline_ms)
+    fut<runtime.Future> = s
+    err_code<i32> = fut.await
     fired = now()
     this.advance()
     return err_code, fired
