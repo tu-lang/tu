@@ -1,123 +1,126 @@
 <div align="center">
 <h1>The Tu Programming Language</h1>
 
-[文档手册:筹备中](tu-lang.cn) 
+[文档手册 · 筹备中](https://tu-lang.cn)
 
-</div>
-<div align="center">
 <p>
-<!--<img alt="GitHub" src="https://img.shields.io/github/license/tu-lang/tu">-->
 <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/tu-lang/tu">
 <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/tu-lang/tu?include_prereleases">
-<img alt="GitHub top language" src="https://img.shields.io/github/languages/top/tu-lang/tu">    
+<img alt="GitHub top language" src="https://img.shields.io/github/languages/top/tu-lang/tu">
 </p>
 
 ![logo](./assets/logo.svg)
+
+**零依赖 · 动静同构 · 全静态链接 · 已自举**
+
+`compiler` 纯动态 · `asmer` 纯静态 · `linker` 动静混合 —— 整条工具链用 Tu 自己写成。
+
 </div>
 
-tu-lang(凸）是一种编程语言，旨在创造一种非常简单的零依赖、支持动态&&静态语法的编译型语言,全静态链接，目前已自举完成: `compiler纯动态语法，asmer纯静态语法，linker动静混合语法`.
+---
+
+Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态 `mem` / 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现。
+
 ```
-tu  [options] file.tu        
-    build *.tu              编译成汇编后进行链接生成二进制可执行文件
-    -s  *.tu|dir            编译为tulang代码为linux-amd64汇编文件
-    -c  *.s |dir            编译汇编为elf&pecoff跨平台可重定向cpu指令集文件
-    -o  *.o |dir            链接elf&pecofff可重定向文件生成最终执行程序
-    -d                      开启trace日志打印编译详细过程
-    -gcc                    支持通过gcc链接生成最终可执行程序
-    -g                      编译tu文件时带上debug段信息,支持栈回溯
-    -std                    编译runtime&std相关内置库代码
+tu  [options] file.tu
+    build *.tu              编译 → 汇编 → 链接 → 可执行文件
+    -s  *.tu|dir            编译为 linux-amd64 汇编
+    -c  *.s |dir            汇编 → ELF / PE-COFF 可重定位目标
+    -o  *.o |dir            链接生成最终程序
+    -d                      trace：打印详细编译过程
+    -gcc                    经 gcc 链接
+    -g                      带 debug 段，支持栈回溯
+    -std                    编译 runtime & std 内置库
 ```
-## demo
+
+## Demo
+
 ![gif](./assets/tulang.gif)
-  
-## env & install
-`linux`: 环境安装
-```asciidoc
-$ git clone https://github.com/tu-lang/tu.git
-$ cd tu
-$ sudo make install
-```
-## compiler&asmer&linker测试
-更多语法测试用例在`/tests`目录下，包含了各种数据结构、运算、gc、demo测试
-- 单元测试
-```
-$ cd tu
-$ sudo make install
-$ make tests
+
+## Install
+
+```bash
+git clone https://github.com/tu-lang/tu.git
+cd tu
+sudo make install
 ```
 
-## @基础类型
-- [x] 动态类型 int float string bool null array map closure object
-- [x] 原生类型 pointer i8 u8 i16 u16 i32 u32 i64 i64 f32 f64 struct
-- [x] func,goto,class,mem
-- [x] return,type,use,if,continue,break
-- [x] while,for|range for,loop,match
-- [x] async await api impl
+## Tests
 
-### @动态写法
-更多用例请看`/tests`
+语法与运行时用例都在 `tests/`（数据结构、运算符、GC、async、asyncio 集成等）。
+
+```bash
+sudo make install
+make tests
 ```
-use fmt
-class Http {
-    request
-}
-Http::closure(){
-    return fn(){
-        return ["arr1","arr2",3,4]
-    }
-}
-fn factory(){
-    a = ["1",2,"some string word"]     // array
-    b = {1:2,"sdfds":3,"a":a}          // map
-    return a,b
-}
-fn main(){
-    a = "this is a string"             // string
-    b,c = 1000,200.33                  // number
-    fmt.println(a,b,c)
 
-    a,b = factory()
-    fmt.print(a[0],a[1],a[2])
-    fmt.print(b["a"],b["sdfds"])
+## Language surface
 
-    obj = new Http()                    // object
-    obj.request = {"method":"POST"}
-    cfunc = obj.closure()               // member
-    fmt.println(cfunc())
-}
-```
+| 层 | 能力 |
+|----|------|
+| 动态 | `int` `float` `string` `bool` `null` `array` `map` `closure` `object` |
+| 静态 | `i8`…`u64` `f32` `f64` `pointer` `mem` |
+| 控制与模块 | `func`/`fn` `goto` `class` `return` `type` `use` `if` `while` `for`/`range` `loop` `match` |
+| 现代抽象 | `async`/`await` · `api`/`impl` |
+
+---
+
+### Dynamic — 异构数据一把梭
+
+Map、数组、闭包、对象可以塞进同一条流水线；`match` 直接吃表达式，不需要先拆成一堆 if。
+
 ```
 use fmt
 use os
-fn main(){
-    map = { "1":'a' , "hello":"world" , 3:5.11 , "arr": [ 0,1,2,3,4] }
-    for k,v : map {
-        if k == "arr" {
-            for v2 : v {}
-        }
-        fmt.println(k,v)
-    }
 
-    match map["hello"] {
-        map    : os.die("not this one!")
-        999    : os.die("not this one!")
-        "hello" | "world": {
-            fmt.println("got it",map["hello"])
-        }
-        _      : {
-            os.die("not default")
+class Hub {
+    routes
+}
+Hub::handler(){
+    return fn(path){
+        return {
+            "path": path,
+            "ok":   true,
+            "tags": ["api", "v1", path]
         }
     }
 }
+
+fn bootstrap(){
+    table = {
+        "GET /":     "index",
+        "POST /run": [200, "accepted"],
+        "meta":      { "lang": "tu", "zero_dep": true }
+    }
+    hub = new Hub()
+    return table, hub.handler()
+}
+
+fn main(){
+    routes, handle = bootstrap()
+    fmt.println(routes["meta"])
+
+    hit = handle("/run")
+    match hit["path"] {
+        "/run" | "/exec" : fmt.println("dispatch", hit["tags"])
+        _                : os.die("unknown route")
+    }
+}
 ```
-### @静态写法
-更多用例请看`/tests`
+
+---
+
+### Static — 结构体就是布局
+
+`mem` + 原生整数/指针：红黑树节点这种东西可以直接按字段布局写，没有「先装箱再猜」。
+
 ```
 use runtime
+
 Null<i64> = 0
 enum {
     Insert,
-    Update
+    Update,
     Conflict,
 }
 
@@ -132,32 +135,37 @@ mem RbtreeNode {
     RbtreeNode* left
     RbtreeNode* right
     RbtreeNode* parent
-
     runtime.Value* k
     runtime.Value* v[Conflict]
 }
-Rbtree::find(hk<u64>){
 
+Rbtree::find(hk<u64>){
     node<RbtreeNode>     = this.root
     sentinel<RbtreeNode> = this.sentinel
-
-    while node != sentinel 
-    {
-        if  hk != node.key  {
-            if  hk < node.key {
+    while node != sentinel {
+        if hk != node.key {
+            if hk < node.key {
                 node = node.left
-            }else{
+            } else {
                 node = node.right
             }
             continue
         }
+        break
     }
-    return Null
+    if node == sentinel return Null
+    return node
 }
+
 fn main(){}
 ```
-### @特性相关
-async(无栈协程) 
+
+---
+
+### Async — 无栈协程，工厂直接 `.await`
+
+叶子 future 用 `mem … : async` + `poll`；调用侧可以 `factory().await`，不必先塞进中间变量。
+
 ```
 use fmt
 use runtime
@@ -168,76 +176,72 @@ mem ReadStream: async {
     i32 readn
     i32 fd
 }
-ReadStream::poll(){
+ReadStream::poll(ctx){
     if this.readn != this.bytes {
-	this.readn += 1
-	return runtime.PollPending
-    }	
+        this.readn += 1
+        return runtime.PollPending
+    }
     match this.fd {
-	1 : return runtime.PollReady , "hello "
-	2 : return runtime.PollReady , "world"
-	_ : os.die("")
+        1 : return runtime.PollReady, "hello "
+        2 : return runtime.PollReady, "world"
+        _ : os.die("")
     }
 }
-async read(){
-    fut<ReadStream> = new ReadStream  { fd: 1, bytes: 5 }
-    buf += fut.await
 
-    fut2<ReadStream> = new ReadStream { fd: 2, bytes: 5 }
-    buf += fut2.await
+fn open_stream(fd<i32>) ReadStream {
+    return new ReadStream { fd: fd, bytes: 5, readn: 0 }
+}
+
+async read(){
+    buf = ""
+    buf += open_stream(1).await
+    buf += open_stream(2).await
     return buf
 }
 
 fn main(){
     body = runtime.block(read())
-    fmt.println(body)
+    fmt.println(body)   // hello world
 }
 ```
 
-- api + mem 实现多态动态分发
+---
+
+### Api + Impl — 静态类型上的多态
+
+接口带默认方法，`impl` 只补差异；同一个 `Animal` 槽可以先后挂 `Cat` / `Dog`。
+
 ```
+use fmt
+
 api Animal {
     fn name()
-    fn do(){
-        fmt.printf(
-            "%s can %s\n",
-            this.name(),
-            this.talk()
-        )
-    }
     fn talk()
-} 
+    fn do(){
+        fmt.printf("%s can %s\n", this.name(), this.talk())
+    }
+}
 
 mem Dog {}
-
 impl Animal for Dog {
-    fn name(){
-        return "dog"
-    }
-    fn talk() {
-        return "wowo!"
-    }
+    fn name(){ return "dog" }
+    fn talk(){ return "wowo!" }
 }
 
 mem Cat {}
-
 impl Animal for Cat {
-    fn name(){
-        return "cat"
-    }
-    fn talk() {
-        return "miao!"
-    }
+    fn name(){ return "cat" }
+    fn talk(){ return "miao!" }
 }
+
 fn main(){
     ani<Animal> = new Cat{}
-    ani.do()
-
+    ani.do()        // cat can miao!
     ani = new Dog{}
-    ani.do()
+    ani.do()        // dog can wowo!
 }
-
-
 ```
+
 ## License
-Copyright @2016-2024 The tu-lang author. All rights reserved.
+
+Copyright © 2016–2026 The tu-lang authors. All rights reserved.
