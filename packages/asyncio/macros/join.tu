@@ -52,12 +52,14 @@ Join2::poll(ctx){
     return runtime.PollPending
 }
 
-fn join2(a<runtime.Future>, b<runtime.Future>) Join2 {
-    return new Join2 {
+fn join2(a<runtime.Future>, b<runtime.Future>) runtime.Future {
+    j<Join2> = new Join2 {
         fut_a: a, fut_b: b,
         res0: 0, res1: 0,
         a_done: 0, b_done: 0
     }
+    fut<runtime.Future> = j
+    return fut
 }
 
 fn join2_val_a(j<Join2>) i64 {

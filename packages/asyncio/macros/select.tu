@@ -68,9 +68,11 @@ Select2::poll(ctx){
     return runtime.PollPending
 }
 
-fn select2(a<runtime.Future>, b<runtime.Future>) Select2 {
-    return new Select2 {
+fn select2(a<runtime.Future>, b<runtime.Future>) runtime.Future {
+    s<Select2> = new Select2 {
         fut_a: a, fut_b: b,
         a_done: 0, b_done: 0, which: 0
     }
+    fut<runtime.Future> = s
+    return fut
 }
