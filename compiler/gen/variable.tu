@@ -61,7 +61,11 @@ VarExpr::toString() {
 VarExpr::isMemtype(ctx){
     v = this.getVar(ctx,this)
     if v != null && v.structtype {
+        // getImport only resolves aliases; full package keys pass through
         acualPkg = compile.currentParser.getImport(v.structpkg)
+        if acualPkg == null || acualPkg == "" {
+            acualPkg = v.structpkg
+        }
         dst = package.getStruct(acualPkg,v.structname)
         
         if (dst == null && v.structtype && v.structname != ""){

@@ -109,6 +109,32 @@ Parser::parseClassFunc(var, constdef){
     } else{
         this.pkg.addClassFunc(var,f,this)
     }
+    // GlobalPhase keeps fctype=ClassFunc; still index sync factories on local Struct.
+    // Use this.pkg lookups only — Package.getStruct needs GP().pkg (unsafe during nested import).
+    parent = st
+    if parent == null
+        parent = this.pkg.getStruct(var)
+    if parent != null && std.len(f.returnTypes) > 0 {
+        rt = f.returnTypes[0]
+        if rt != null && rt.memType() {
+            retSt = null
+            if rt.pkg == null || rt.pkg == "" {
+                retSt = this.pkg.getStruct(rt.name)
+            }else if package.packages[rt.pkg] != null {
+                retSt = package.packages[rt.pkg].getStruct(rt.name)
+            }else if this.pkg.imports[rt.pkg] != null {
+                full = this.pkg.imports[rt.pkg]
+                if package.packages[full] != null
+                    retSt = package.packages[full].getStruct(rt.name)
+            }
+            if retSt != null {
+                is_fut = retSt.name == "Future" && (retSt.pkg == "runtime" || rt.pkg == "runtime")
+                if retSt.isasync || is_fut {
+                    parent.syncFactoryLeaves[f.name] = retSt
+                }
+            }
+        }
+    }
     
     this.addFunc(var + f.name,f)
     return

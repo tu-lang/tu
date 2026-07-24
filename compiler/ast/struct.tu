@@ -28,6 +28,8 @@ class Struct {
 	order_funcs = [] // funcs
 	// GlobalPhase leaf index: method name -> async future struct; survives parse2 funcs clear
 	asyncMemberLeaves = {}
+	// Sync member factory: method name -> returned awaitable (mem:async / Future); parse2 keeps
+	syncFactoryLeaves = {}
 }
 
 class Member
