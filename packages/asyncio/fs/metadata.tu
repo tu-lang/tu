@@ -69,8 +69,10 @@ MetadataFut::poll(ctx) {
     return runtime.PollReady, io.Ok, metadata_from_stat(s)
 }
 
-fn fs_metadata(path_bits<u64>) MetadataFut {
-    return new MetadataFut { path_bits: path_bits }
+fn fs_metadata(path_bits<u64>) runtime.Future {
+    f<MetadataFut> = new MetadataFut { path_bits: path_bits }
+    fut<runtime.Future> = f
+    return fut
 }
 
 mem SymlinkMetadataFut: async {

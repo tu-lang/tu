@@ -104,6 +104,8 @@ RemoveDirAllFut::poll(ctx) {
     return ready, err
 }
 
-fn fs_remove_dir_all(path_bits<u64>) RemoveDirAllFut {
-    return new RemoveDirAllFut { path_bits: path_bits, pad: 0 }
+fn fs_remove_dir_all(path_bits<u64>) runtime.Future {
+    f<RemoveDirAllFut> = new RemoveDirAllFut { path_bits: path_bits, pad: 0 }
+    fut<runtime.Future> = f
+    return fut
 }

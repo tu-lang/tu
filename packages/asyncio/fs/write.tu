@@ -38,9 +38,11 @@ WriteFut::poll(ctx) {
     return runtime.PollReady, io.Ok
 }
 
-fn fs_write(path_bits<u64>, data_bits<u64>) WriteFut {
-    return new WriteFut {
+fn fs_write(path_bits<u64>, data_bits<u64>) runtime.Future {
+    f<WriteFut> = new WriteFut {
         path_bits: path_bits,
         data_bits: data_bits
     }
+    fut<runtime.Future> = f
+    return fut
 }

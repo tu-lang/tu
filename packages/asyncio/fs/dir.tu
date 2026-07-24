@@ -201,8 +201,10 @@ ReadDirFut::poll(ctx) {
     return ready, err, r
 }
 
-fn fs_read_dir(path_bits<u64>) ReadDirFut {
-    return new ReadDirFut { path_bits: path_bits, pad: 0 }
+fn fs_read_dir(path_bits<u64>) runtime.Future {
+    f<ReadDirFut> = new ReadDirFut { path_bits: path_bits, pad: 0 }
+    fut<runtime.Future> = f
+    return fut
 }
 
 mem NextEntryFut: async {
@@ -218,9 +220,11 @@ NextEntryFut::poll(ctx) {
     return ready, err, nb
 }
 
-fn fs_next_entry(rd<ReadDir>) NextEntryFut {
+fn fs_next_entry(rd<ReadDir>) runtime.Future {
     bits<u64> = rd.(u64)
-    return new NextEntryFut { rd_bits: bits }
+    f<NextEntryFut> = new NextEntryFut { rd_bits: bits }
+    fut<runtime.Future> = f
+    return fut
 }
 
 // Cross-package close (member close from outside can mis-dispatch).

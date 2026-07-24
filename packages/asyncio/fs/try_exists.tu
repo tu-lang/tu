@@ -26,6 +26,8 @@ TryExistsFut::poll(ctx) {
     return ready, err, zero
 }
 
-fn fs_try_exists(path_bits<u64>) TryExistsFut {
-    return new TryExistsFut { path_bits: path_bits, pad: 0 }
+fn fs_try_exists(path_bits<u64>) runtime.Future {
+    f<TryExistsFut> = new TryExistsFut { path_bits: path_bits, pad: 0 }
+    fut<runtime.Future> = f
+    return fut
 }

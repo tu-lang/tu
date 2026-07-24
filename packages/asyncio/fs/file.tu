@@ -2,7 +2,7 @@
 //
 // V1 runs each syscall synchronously inline on the calling task. tokio routes
 // these through spawn_mandatory_blocking; public surface stays awaitable via
-// leaf futures (tcp ConnectFut pattern: factory returns leaf, no await body).
+// leaf futures (sync factory returns runtime.Future for direct `.await`).
 
 use std
 use io

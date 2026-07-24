@@ -19,7 +19,9 @@ RenameFut::poll(ctx) {
     return runtime.PollReady, err
 }
 
-// Mother: async fn rename — returns RenameFut for `.await`.
-fn fs_rename(from_bits<u64>, to_bits<u64>) RenameFut {
-    return new RenameFut { from_bits: from_bits, to_bits: to_bits }
+// Mother: async fn rename — returns erased Future for `.await`.
+fn fs_rename(from_bits<u64>, to_bits<u64>) runtime.Future {
+    f<RenameFut> = new RenameFut { from_bits: from_bits, to_bits: to_bits }
+    fut<runtime.Future> = f
+    return fut
 }
