@@ -13,7 +13,7 @@ Package::parse2()
         st.funcs = {}
         st.order_funcs = []
         st.apis        = []
-        // asyncMemberLeaves kept across parse2 for resolveAsyncMember during parse3
+        // asyncMemberLeaves / syncFactoryLeaves kept across parse2 for await rewrite
     }
 
     this.initid = 0

@@ -1,7 +1,9 @@
 use string
 use std
+use fmt
 use compiler.ast
 use compiler.parser.scanner
+use compiler.parser.package
 use compiler.utils
 use runtime
 use compiler.gen
@@ -83,9 +85,136 @@ AsyncBlock::getstruct(expr){
     }
 }
 
+AsyncBlock::isRuntimeFutureStruct(s){
+    // Erased runtime.Future: not mem:async, poll via FutureCall / get_future_poll
+    if s == null return false
+    if s.name != "Future" return false
+    if s.pkg == "runtime" return true
+    if (s.pkg == "" || s.pkg == null) && this.root.curp != null &&
+       this.root.curp.getpkgname() == "runtime" {
+        return true
+    }
+    return false
+}
+
+// Sync callee return: runtime.Future or mem X: async leaf
+AsyncBlock::awaitableFromReturnTypes(callee){
+    if callee == null return null
+    if callee.fntype == ast.AsyncFunc || callee.isasync() return null
+    if std.len(callee.returnTypes) == 0 return null
+    rt = callee.returnTypes[0]
+    if rt == null || !rt.memType() return null
+    // Bare return type resolves in callee's package (cross-pkg await)
+    st = null
+    if rt.pkg != null && rt.pkg != "" {
+        st = package.getStruct(rt.pkg, rt.name)
+    }else if callee.package != null {
+        st = callee.package.getStruct(rt.name)
+    }
+    if st == null {
+        st = package.getStruct(rt.pkg, rt.name)
+    }
+    if st == null return null
+    if this.isRuntimeFutureStruct(st) || st.isasync
+        return st
+    return null
+}
+
+// Package-level sync fn returning awaitable; skip object / Type::method FunCall shape
+AsyncBlock::pkgCallAwaitableLeaf(fc){
+    if fc == null return null
+    p = this.root.curp
+    curf = this.root.fc
+
+    if fc.package != null && fc.package != "" {
+        var = ast.GP().getGlobalVar("", fc.package)
+        if var == null {
+            var = curf.FindLocalVar(fc.package)
+        }
+        if var != null return null
+        parent = p.getStruct("", fc.package)
+        if parent != null return null
+    }
+
+    pkgname = fc.package
+    if pkgname != null && pkgname != "" && p.pkg.imports[pkgname] != null {
+        pkgname = p.pkg.imports[pkgname]
+    }
+    if pkgname == null || pkgname == "" {
+        pkgname = p.getpkgname()
+    }
+    if package.packages[pkgname] == null return null
+    callee = package.packages[pkgname].getFunc(fc.funcname, false)
+    return this.awaitableFromReturnTypes(callee)
+}
+
+// Type::method / obj.method sync factory returning awaitable leaf
+AsyncBlock::memberCallAwaitableLeaf(mc){
+    if mc == null return null
+    p = this.root.curp
+    curf = this.root.fc
+
+    parent = null
+    if mc.staticCall != null {
+        parent = mc.staticCall
+    }else if mc.obj != null {
+        opkg = p.pkg.getPackage(mc.obj.structpkg)
+        if opkg != null
+            parent = opkg.getStruct(mc.obj.structname)
+        if parent == null
+            parent = package.getStruct(mc.obj.structpkg, mc.obj.structname)
+    }else if mc.tyassert != null {
+        parent = mc.tyassert.getStruct()
+    }else if curf.thisvar != null && curf.thisvar.structname != "" {
+        parent = p.getStruct(curf.thisvar.structpkg, curf.thisvar.structname)
+    }
+    if parent == null return null
+
+    asyncfn = parent.resolveAsyncMember(mc.membername)
+    if asyncfn != null && asyncfn.fntype == ast.AsyncFunc
+        return null
+
+    memfn = parent.getFunc(mc.membername)
+    fromRet = this.awaitableFromReturnTypes(memfn)
+    if fromRet != null return fromRet
+    if parent.syncFactoryLeaves[mc.membername] != null
+        return parent.syncFactoryLeaves[mc.membername]
+    return null
+}
+
 AsyncBlock::genawait(stmt , recvs){
     if type(stmt) == type(gen.FunCallExpr) {
         fc = stmt
+        // Instance sync factory: obj.method() as FunCall(package=obj, funcname=method)
+        if fc.package != null && fc.package != "" {
+            var = ast.GP().getGlobalVar("", fc.package)
+            if var == null {
+                var = this.root.fc.FindLocalVar(fc.package)
+            }
+            if var != null && var.structtype && var.structname != "" {
+                parent = null
+                opkg = this.root.curp.pkg.getPackage(var.structpkg)
+                if opkg != null
+                    parent = opkg.getStruct(var.structname)
+                if parent == null
+                    parent = package.getStruct(var.structpkg, var.structname)
+                if parent != null {
+                    asyncfn = parent.resolveAsyncMember(fc.funcname)
+                    if asyncfn == null || asyncfn.fntype != ast.AsyncFunc {
+                        memfn = parent.getFunc(fc.funcname)
+                        leaf = this.awaitableFromReturnTypes(memfn)
+                        if leaf == null && parent.syncFactoryLeaves[fc.funcname] != null
+                            leaf = parent.syncFactoryLeaves[fc.funcname]
+                        if leaf != null
+                            return this.leafawait(fc, leaf, recvs)
+                    }
+                }
+            }
+        }
+        leaf = this.pkgCallAwaitableLeaf(fc)
+        if leaf != null {
+            return this.leafawait(fc, leaf, recvs)
+        }
         s = this.getstruct(stmt)
         if s == null {
             return this.dynawait(fc,recvs)
@@ -120,7 +249,11 @@ AsyncBlock::genawait(stmt , recvs){
 
         call.args[] = rv
         call.args[] = this.fc.ctxvar
-        stmt.check(astruct.isasync,"not future var,can't be await")
+        if astruct == null {
+            stmt.check(false,"not future var,can't be await")
+        }
+        awaitable = astruct.isasync || this.isRuntimeFutureStruct(astruct)
+        stmt.check(awaitable,"not future var,can't be await")
 
         retvar  = this.genawait3(rv,astruct,call,recvs)
         return retvar
@@ -129,11 +262,62 @@ AsyncBlock::genawait(stmt , recvs){
         fc = mc.call
         if fc == null
             stmt.check(false,"membercall await missing call expr")
+        syncLeaf = this.memberCallAwaitableLeaf(mc)
+        if syncLeaf != null {
+            // Assign whole MemberCallExpr: inner FunCall funcname is often empty
+            return this.leafawait(mc, syncLeaf, recvs)
+        }
         s = this.getstruct(stmt)
         return this.genawait2(s, fc, recvs, false)
     }else {
         stmt.check(false,"unknown await stmt type")
     }        
+}
+
+// Sync factory already returned awaitable: assign then poll (no genawait2 rebuild).
+// rhs may be FunCallExpr or MemberCallExpr.
+AsyncBlock::leafawait(rhs, leaf, recvs){
+    if leaf == null {
+        rhs.check(false, "leafawait missing leaf struct")
+    }
+    casevar = this.gencasevar()
+    casevar.structname = leaf.name
+    // Prefer consumer import alias (proc) over short pkg / full_package key
+    full = leaf.pkg
+    if leaf.parser != null {
+        g = leaf.parser.getpkgname()
+        if g != null && g != "" {
+            full = g
+        }
+    }
+    casevar.structpkg = full
+    cur = this.root.curp
+    if cur != null && cur.pkg != null && full != null && full != "" {
+        for alias, path : cur.pkg.imports {
+            if path == full {
+                casevar.structpkg = alias
+                break
+            }
+        }
+    }
+
+    assignExpr = new gen.AssignExpr(0, 0)
+    assignExpr.opt = ast.ASSIGN
+    assignExpr.lhs = casevar
+    assignExpr.rhs = rhs
+    this.push(assignExpr)
+
+    call = new gen.FunCallExpr(rhs.line, rhs.column)
+    if type(rhs) == type(gen.FunCallExpr) {
+        call.p = rhs.p
+    }else if type(rhs) == type(gen.MemberCallExpr) {
+        if rhs.call != null
+            call.p = rhs.call.p
+    }
+    call.args[] = casevar
+    call.args[] = this.fc.ctxvar
+
+    return this.genawait3(casevar, leaf, call, recvs)
 }
 
 AsyncBlock::dynawait(fc , recvs){
@@ -269,7 +453,8 @@ AsyncBlock::genawait3(sv, s, callargs, recvs){
         pollassign = this.genpollrecv2(casevar,recvs,callargs)
         retvar = null
     }else{
-        retvar = this.genretvar(true)
+        // Concrete async leaf: static ret slot; erased Future: dynamic like dynawait
+        retvar = this.genretvar(s != null && s.isasync)
         pollassign = this.genpollrecv(
             casevar,retvar,callargs
         )
