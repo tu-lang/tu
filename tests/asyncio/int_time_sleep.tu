@@ -1,9 +1,6 @@
 // Integration test: asyncio coroutine Sleep (TimeDriver park wake).
-// Awaits a concrete runtime.time.Sleep leaf on current_thread + enable_time.
+// Awaits erased runtime.Future from atime.sleep on current_thread + enable_time.
 // Mother: tokio::time::sleep — Pending until the wheel fires the deadline.
-//
-// Await the Sleep mem directly (runtime.Future cannot .await). Same pattern
-// as asyncio.time.Interval::tick.
 
 use fmt
 use os
@@ -11,7 +8,6 @@ use io
 use std
 use runtime
 use asyncio.runtime as rt
-use asyncio.runtime.time as rttime
 use asyncio.time as atime
 
 fn mono_ns() i64 {
@@ -20,13 +16,11 @@ fn mono_ns() i64 {
     return ts.sec * 1000000000 + ts.nsec
 }
 
-// One ~50ms Sleep via public atime.sleep + await as Sleep leaf.
+// One ~50ms Sleep via public atime.sleep().await (erased Future).
 async sleep_once_body() {
     hold_ms<u64> = 50
-    fut<runtime.Future> = atime.sleep(atime.from_millis(hold_ms))
-    delay_f<rttime.Sleep> = fut
     before<i64> = mono_ns()
-    delay_err<i32> = delay_f.await
+    delay_err<i32> = atime.sleep(atime.from_millis(hold_ms)).await
     after<i64> = mono_ns()
     fmt.println("sleep_err")
     fmt.println(int(delay_err))
@@ -45,14 +39,10 @@ async sleep_once_body() {
 
 // Two consecutive sleeps (re-register on the wheel).
 async sleep_twice_body() {
-    fut1<runtime.Future> = atime.sleep(atime.from_millis(20))
-    d1<rttime.Sleep> = fut1
-    e1<i32> = d1.await
+    e1<i32> = atime.sleep(atime.from_millis(20)).await
     if e1 != io.Ok return e1
 
-    fut2<runtime.Future> = atime.sleep(atime.from_millis(20))
-    d2<rttime.Sleep> = fut2
-    e2<i32> = d2.await
+    e2<i32> = atime.sleep(atime.from_millis(20)).await
     if e2 != io.Ok return e2
     return io.Ok
 }

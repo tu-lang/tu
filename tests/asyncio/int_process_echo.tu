@@ -38,8 +38,7 @@ async proc_echo_body() {
     c<proc.Command> = proc.Command::new(string.S(*"/bin/echo"))
     c = c.arg(string.S(*"hi"))
 
-    ofut<proc.OutputFut> = c.output()
-    oerr<i32>, out<proc.Output> = ofut.await
+    oerr<i32>, out<proc.Output> = c.output().await
     if oerr != ok_code return oerr
     // Avoid ExitStatus::success() bool (type-info trap); mother success = code 0.
     scode<i32> = out.status.code()
@@ -65,8 +64,7 @@ async proc_kill_body() {
     kerr<i32> = child.start_kill()
     if kerr != ok_code return kerr
 
-    wfut<proc.WaitFut> = child.wait()
-    werr<i32>, es<proc.ExitStatus> = wfut.await
+    werr<i32>, es<proc.ExitStatus> = child.wait().await
     if werr != ok_code return werr
     if es.signal() != 9 return bad
 

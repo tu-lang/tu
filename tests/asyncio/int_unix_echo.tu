@@ -110,25 +110,21 @@ async unix_echo_body() {
     msg<string.String> = string.S(*"ping")
     mlen<i32> = std.strlen(msg.str())
 
-    wfut<EchoWriteAll> = EchoWriteAll::new(client, str_buf(msg))
-    werr<i32> = wfut.await
+    werr<i32> = EchoWriteAll::new(client, str_buf(msg)).await
     if werr != io.Ok return werr
 
     rbuf<aio.ReadBuf> = make_read_buf(16)
-    rfut<EchoRead> = EchoRead::new(server, rbuf)
-    rerr<i32>, n<u64> = rfut.await
+    rerr<i32>, n<u64> = EchoRead::new(server, rbuf).await
     if rerr != io.Ok return rerr
     if n != mlen.(u64) return io.OtherParse
 
     echo<io.Buf> = io.NewBuf(int(n))
     std.memcpy(echo.ptr(), rbuf.data_ptr(), n)
-    wfut2<EchoWriteAll> = EchoWriteAll::new(server, echo)
-    werr2<i32> = wfut2.await
+    werr2<i32> = EchoWriteAll::new(server, echo).await
     if werr2 != io.Ok return werr2
 
     rbuf2<aio.ReadBuf> = make_read_buf(16)
-    rfut2<EchoRead> = EchoRead::new(client, rbuf2)
-    rerr2<i32>, n2<u64> = rfut2.await
+    rerr2<i32>, n2<u64> = EchoRead::new(client, rbuf2).await
     if rerr2 != io.Ok return rerr2
     if n2 != mlen.(u64) return io.OtherParse
 

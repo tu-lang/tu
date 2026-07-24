@@ -45,8 +45,7 @@ async sig_usr1_body() {
     kerr<i32> = sys.kill(pid_i, sigusr1)
     if kerr < 0 return bad
 
-    rfut<sig.RecvFut> = usr_stream.recv()
-    rerr<i32> = rfut.await
+    rerr<i32> = usr_stream.recv().await
     if rerr != ok_code return rerr
 
     // We never raised SIGINT, so its stream must have nothing pending.

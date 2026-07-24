@@ -175,18 +175,16 @@ async tcp_echo_body() {
 
     step(3)
     fmt.println("client connect BEFORE accept (fills listen backlog)")
-    cfut<tcp.ConnectFut> = tcp.TcpStream::connect(addr)
     fmt.println("connect_await_start")
-    cerr<i32>, client<tcp.TcpStream> = cfut.await
+    cerr<i32>, client<tcp.TcpStream> = tcp.TcpStream::connect(addr).await
     fmt.println("connect_done_err")
     fmt.println(int(cerr))
     if cerr != io.Ok return cerr
 
     step(4)
     fmt.println("server accept (pending connection already in backlog)")
-    afut<tcp.AcceptFut> = listener.accept()
     fmt.println("accept_await_start")
-    aerr2<i32>, server<tcp.TcpStream> = afut.await
+    aerr2<i32>, server<tcp.TcpStream> = listener.accept().await
     fmt.println("accept_done_err")
     fmt.println(int(aerr2))
     if aerr2 != io.Ok return aerr2
@@ -203,8 +201,7 @@ async tcp_echo_body() {
     wp = wbuf.ptr()
     dump_bytes_u8(1, wp, mlen.(u64))
     // write_tag=1 client→server
-    wfut<EchoWriteAll> = EchoWriteAll::new(client, wbuf, 1)
-    werr<i32> = wfut.await
+    werr<i32> = EchoWriteAll::new(client, wbuf, 1).await
     fmt.println("client_write_err")
     fmt.println(int(werr))
     if werr != io.Ok return werr
@@ -214,8 +211,7 @@ async tcp_echo_body() {
     own1<io.Buf> = io.NewBuf(16)
     PIN_OWN1 = own1
     // read_tag=2 server recv
-    rfut<EchoRead> = EchoRead::new(server, own1, 2)
-    rerr<i32>, rn<u64> = rfut.await
+    rerr<i32>, rn<u64> = EchoRead::new(server, own1, 2).await
     fmt.println("server_read_err")
     fmt.println(int(rerr))
     fmt.println("server_read_n")
@@ -241,8 +237,7 @@ async tcp_echo_body() {
     ep8 = ep
     dump_bytes_u8(3, ep8, rn)
     // write_tag=3 server→client
-    wfut2<EchoWriteAll> = EchoWriteAll::new(server, echo, 3)
-    werr2<i32> = wfut2.await
+    werr2<i32> = EchoWriteAll::new(server, echo, 3).await
     fmt.println("server_echo_write_err")
     fmt.println(int(werr2))
     if werr2 != io.Ok return werr2
@@ -252,8 +247,7 @@ async tcp_echo_body() {
     own2<io.Buf> = io.NewBuf(16)
     PIN_OWN2 = own2
     // read_tag=4 client recv echo
-    rfut2<EchoRead> = EchoRead::new(client, own2, 4)
-    rerr2<i32>, n2<u64> = rfut2.await
+    rerr2<i32>, n2<u64> = EchoRead::new(client, own2, 4).await
     fmt.println("client_read_err")
     fmt.println(int(rerr2))
     fmt.println("client_read_n")

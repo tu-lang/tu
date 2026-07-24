@@ -13,20 +13,19 @@ use asyncio.time as atime
 
 // join2 of two sleeps resolves once the slower one fires.
 async join_sleeps_body() {
-    a<runtime.Future> = atime.sleep(atime.from_millis(10))
-    b<runtime.Future> = atime.sleep(atime.from_millis(20))
-    jfut<m.Join2> = m.join2(a, b)
-    // Avoid local name `s` (asmgen treats `.s` as undefined).
-    status<i32> = jfut.await
+    status<i32> = m.join2(
+        atime.sleep(atime.from_millis(10)),
+        atime.sleep(atime.from_millis(20))
+    ).await
     return status
 }
 
 // select2 races two sleeps; the shorter (5ms) branch should win.
 async select_sleeps_body() {
-    a<runtime.Future> = atime.sleep(atime.from_millis(5))
-    b<runtime.Future> = atime.sleep(atime.from_millis(50))
-    sfut<m.Select2> = m.select2(a, b)
-    w<i32> = sfut.await
+    w<i32> = m.select2(
+        atime.sleep(atime.from_millis(5)),
+        atime.sleep(atime.from_millis(50))
+    ).await
     // SELECT_FIRST_READY == 1 (asyncio.macros)
     first<i32> = 1
     if w != first {
