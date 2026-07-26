@@ -434,7 +434,8 @@ UdpSocket::bind(ret<i32> , addr<net.SocketAddr>) i32, UdpSocket {
     if ret != Ok return ret, null
 
     addr_repr<SocketAddrCRepr>, len<i32> = net.socket_addr_into_inner(addr)
-    addr_bits<u64> = addr_repr
+    // Mother: sockaddr pointer is crepr.as_ptr(), not the wrapper object itself.
+    addr_bits<u64> = addr_repr.as_ptr()
     ret = cvt(bind(sock.as_raw(), addr_bits, len))
     if ret != Ok return ret, null
 
@@ -456,7 +457,8 @@ UdpSocket::send_to(buf<io.Buf> , dst<net.SocketAddr>) i32, u64 {
     // Mother: min(buf.len(), wrlen_t::MAX); wrlen_t = size_t → just buf.len().
     len<u64> = buf.len()
     dst_repr<SocketAddrCRepr>, dstlen<i32> = net.socket_addr_into_inner(dst)
-    addr_bits<u64> = dst_repr
+    // sendto requires sockaddr*; SocketAddrCRepr is a v4/v6 store wrapper.
+    addr_bits<u64> = dst_repr.as_ptr()
     ok<i32> , ret<u64> = cvt(
         sendto(
             this.socket_hub.as_raw(),
