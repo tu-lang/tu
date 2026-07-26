@@ -94,6 +94,31 @@ mem T2P:pack {
 	i8* b
 	i8 c
 }
+
+// Preserves full native pointer bits in typed and raw mem fields.
+mem PointerFieldRoundTrip {
+	u8* ptr_slot
+	u64 bits_slot
+}
+
+// Guards against narrowing a 64-bit pointer through signed 32-bit codegen.
+fn test_pointer_field_roundtrip(){
+	fmt.println("test pointer field roundtrip")
+	raw<u64> = std.malloc(64)
+	if raw == 0 os.die("pointer field malloc failed")
+	p<u8*> = raw
+	h<PointerFieldRoundTrip> = new PointerFieldRoundTrip
+	h.ptr_slot = p
+	h.bits_slot = p
+
+	back_ptr<u8*> = h.ptr_slot
+	back_ptr_bits<u64> = back_ptr
+	back_bits<u64> = h.bits_slot
+	if back_ptr_bits != raw os.die("pointer field truncated")
+	if back_bits != raw os.die("u64 field truncated")
+	fmt.println("test pointer field roundtrip success")
+}
+
 fn test2(){
 	fmt.println("test 2")
 
@@ -319,4 +344,5 @@ fn main(){
 	test7()
 	test10()
 	test11()
+	test_pointer_field_roundtrip()
 }

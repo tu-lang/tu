@@ -1,6 +1,6 @@
 // Integration test (task 15.17): Unix-domain stream echo round-trip over
 // asyncio.net.unix. Uses local leaf futures (static member dispatch) like
-// int_tcp_echo; avoids IoOp api dyn and ReadBuf pointer truncation.
+// int_tcp_echo; avoids the unsupported IoOp api dynamic path.
 
 use fmt
 use os

@@ -5,8 +5,8 @@
 // the buffer is held as a raw byte pointer + capacity (layout adaptation of
 // mother ReadBuf over &[u8]).
 //
-// data_bits is u64 (not u8*): mem u8* field store/load truncates high pointer
-// bits under current codegen — verified by int_tcp_echo EFAULT / ptr mismatch.
+// data_bits keeps the package bridge and async adapters representation-neutral.
+// Native pointer and u64 mem fields preserve all 64 bits (struct.tu regression).
 
 use std
 

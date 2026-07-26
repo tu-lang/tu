@@ -4,8 +4,7 @@
 // which currently codegen's a lea of the missing api-method symbol instead
 // of vtable dyn-dispatch.
 //
-// Reads use io.Buf bits (stream_poll_read_buf) rather than aio.ReadBuf —
-// mem u8*/u64 pointer slots in ReadBuf currently truncate high pointer bits.
+// Reads use the direct io.Buf bits bridge (stream_poll_read_buf).
 
 use fmt
 use os

@@ -301,7 +301,7 @@ TcpStream::poll_write_priv(ctx<u64>, buf_bits<u64>) i32, u64 {
     }
 }
 
-// Poll read into an io.Buf (bits). Avoids ReadBuf pointer-field truncation.
+// Poll read directly into an io.Buf represented by raw package-bridge bits.
 // Returns PollPending / PollError / PollReady; on Ready, n is bytes read.
 fn stream_poll_read_buf(s<TcpStream>, ctx<u64>, buf_bits<u64>) i32, u64 {
     b<io.Buf> = io.buf_from_bits(buf_bits)
