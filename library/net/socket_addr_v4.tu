@@ -1,6 +1,6 @@
 use sys
 
-// IPv4 socket endpoint (tokio SocketAddrV4).
+// IPv4 socket endpoint.
 
 mem SocketAddrV4 {
     Ipv4Addr* host_v4

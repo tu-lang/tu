@@ -5,7 +5,7 @@ mem File {
     FileDesc* fd_slot
 }
 
-// Mother: File::fromrawfd — const for Type::method static calls.
+// Const for Type::method static calls.
 const File::fromrawfd(fd_val<i32>) File {
     return new File{
         fd_slot: new FileDesc{

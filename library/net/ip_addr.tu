@@ -14,7 +14,6 @@ const Ipv4Addr::new(a<u8>, b<u8>, c<u8>, d<u8>) Ipv4Addr {
     }
 }
 
-// Mother: Ipv4Addr::LOCALHOST / UNSPECIFIED / BROADCAST (associated consts).
 LOCALHOST<Ipv4Addr:> = new Ipv4Addr{
     octets: [127,0,0,1]
 }
@@ -35,7 +34,7 @@ Ipv4Addr::octets()  u8,u8,u8,u8 {
 }
 
 Ipv4Addr::into_inner() u32 {
-    // Mother: u32::from_ne_bytes(self.octets()) — host endian pack.
+    // Host endian pack.
     o0<u8> = this.octets[0]
     o1<u8> = this.octets[1]
     o2<u8> = this.octets[2]
@@ -78,7 +77,7 @@ mem Ipv6Addr {
     u8 octets[16]
 }
 
-// Mother: Ipv6Addr::new — eight host u16 segments, each to_be, laid out as [u8;16].
+// Eight host u16 segments, each to_be, laid out as [u8;16].
 const Ipv6Addr::new(a<u16>, b<u16>, c<u16>, d<u16>, e<u16>, f<u16>, g<u16>, h<u16>) Ipv6Addr {
     addr<Ipv6Addr> = new Ipv6Addr{}
     segs<u16*> = &addr.octets
@@ -93,7 +92,6 @@ const Ipv6Addr::new(a<u16>, b<u16>, c<u16>, d<u16>, e<u16>, f<u16>, g<u16>, h<u1
     return addr
 }
 
-// Mother: Ipv6Addr::LOCALHOST = new(0,0,0,0,0,0,0,1) → octet[15]=1 on wire.
 IPV6_LOCALHOST<Ipv6Addr:> = new Ipv6Addr {
     octets: [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -101,7 +99,6 @@ IPV6_LOCALHOST<Ipv6Addr:> = new Ipv6Addr {
     ]
 }
 
-// Mother: Ipv6Addr::UNSPECIFIED.
 IPV6_UNSPECIFIED<Ipv6Addr:> = new Ipv6Addr{
     octets: [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -112,7 +109,7 @@ IPV6_UNSPECIFIED<Ipv6Addr:> = new Ipv6Addr{
 // Scratch for host-order segments(); valid until the next segments() call.
 IPV6_SEGS_HOST<u16:8> = null
 
-// Mother: Ipv6Addr::segments — eight host-endian u16 groups (from_be of wire).
+// Eight host-endian u16 groups (from_be of wire).
 Ipv6Addr::segments() u16* {
     be<u16*> = &this.octets
     i<i32> = 0

@@ -1,6 +1,6 @@
 use sys
 
-// IPv6 socket endpoint (tokio SocketAddrV6).
+// IPv6 socket endpoint.
 
 mem SocketAddrV6 {
     Ipv6Addr* host_v6

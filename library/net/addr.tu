@@ -14,7 +14,7 @@ fn bytes_contain_zero(str<string.String>) i32 {
     return false
 }
 
-// Mother tustd::net::addr::sockaddr_un — build AF_UNIX sockaddr from path bytes.
+// The design tustd::net::addr::sockaddr_un — build AF_UNIX sockaddr from path bytes.
 fn sockaddr_un(path<string.String>) i32, sys.SockaddrUn, u32 {
     // SAFETY: All zeros is a valid representation for sockaddr_un.
     addr<sys.SockaddrUn> = new sys.SockaddrUn{}
@@ -35,7 +35,6 @@ fn sockaddr_un(path<string.String>) i32, sys.SockaddrUn, u32 {
     offs<i64> = addr.sun_offset()
     offs_i32<i32> = offs.(i32)
     len<i32> = offs_i32 + plen
-    // Mother: Some(nonzero first byte) => include trailing NUL in socklen.
     p<i8*> = path.str()
     if plen != 0 && p[0] != 0 {
         len += 1

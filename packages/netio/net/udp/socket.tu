@@ -1,4 +1,3 @@
-// Mother: netio::net::udp::UdpSocket (IoSource<net::UdpSocket>).
 // Lives in package netio.net.udp (short-name `udp`) so `use net as libnet`
 // does not poison getPackage for local mem types (parent short-name is `net`).
 
@@ -9,7 +8,7 @@ use netio.sys as nsys
 use net as libnet
 use sys as libsys
 
-// Mother: UdpSocket { inner: IoSource<net::UdpSocket> }. Tu: u64 + bridges.
+// Tu: u64 + bridges.
 // Linux do_io is identity — call through fd_holder / from_std socket.
 
 mem UdpSocket {

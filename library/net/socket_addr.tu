@@ -6,7 +6,7 @@ use sys
 ADDR_V4_KIND<i32> = 4
 ADDR_V6_KIND<i32> = 6
 
-// tokio SocketAddr tagged union; V4/V6 payloads are SocketAddrV4 / SocketAddrV6.
+// SocketAddr tagged union; V4/V6 payloads are SocketAddrV4 / SocketAddrV6.
 
 mem SocketAddr {
     i32 kind
