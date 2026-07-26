@@ -15,12 +15,13 @@ BUILD_LIBA = build_install_liba() {                              	\
 		use std.map	use std.atomic	use std.regex					\
 		use runtime	use runtime.debug	use time					\
 	" > a.tu;														\
-	tu -s a.tu -std;												\
-	rm a.tu.s;														\
+	tu -s a.tu -std --workdir-cwd;									\
+	rm -f a.tu.s;													\
 	tu -c . -c $(prefix)/lib/coasm;									\
-	ar -rc tulang.a *.o;											\
+	ar -rc tulang.a *.o $(prefix)/lib/coasm/*.o;					\
 	mv tulang.a ../release/;										\
-	mv *.o $(prefix)/lib/colib;										\
+	mv *.o $(prefix)/lib/colib/;									\
+	mv $(prefix)/lib/coasm/*.o $(prefix)/lib/colib/;				\
 	cd ..;															\
 	rm -rf _tmp;													\
 }
@@ -76,8 +77,15 @@ release: install build-liba install
 # NOTICE: don't use this
 .PHONEY: release
 dev_release: install
-	tuc run tulang.tu 
-	mv a.out release/tu
+	@ERR=$$(mktemp); \
+	tuc run tulang.tu 2>$$ERR; \
+	STATUS=$$?; \
+	cat $$ERR; \
+	WD=$$(sed -n 's/^\[tuc\] workdir: //p' $$ERR | tail -1); \
+	rm -f $$ERR; \
+	if [ $$STATUS -ne 0 ]; then exit $$STATUS; fi; \
+	if [ -z "$$WD" ] || [ "$$WD" = "(cwd)" ]; then WD=.; fi; \
+	mv $$WD/a.out release/tu; \
 	cp release/tu $(prefix)/bin/tu
 
 .PHONY: install

@@ -1,4 +1,5 @@
 #!/bin/bash
+# compiler self-tests; artifacts live under $TMPDIR/tu-build-* ([tu] workdir:)
 log(){
     str="$1"
     echo -e "\033[32m$str \033[0m "
@@ -16,45 +17,45 @@ clean() {
 }
 check(){
     if [  "$?" != 0 ]; then
-#        actual=`./a.out`
-#        if [  "$?" != 0 ]; then
         failed "exec failed"
-#        fi
-#        rm ./a.out
     fi
-
 }
 
 assert(){
     log "[compile] tu -s compiler/$1 "
-    tu -s "$1"
+    ERR=$(mktemp)
+    tu -s "$1" >"$ERR" 2>&1
     check
-    tu -c .
-    tu -o . -o /usr/local/lib/colib/
+    cat "$ERR"
+    WD=$(sed -n 's/^\[tu\] workdir: //p' "$ERR" | tail -1 | tr -d '\t\r ')
+    rm -f "$ERR"
+    if [ -z "$WD" ]; then
+        failed "missing [tu] workdir line"
+    fi
+    if [ "$WD" = "(cwd)" ]; then
+        WD="."
+    fi
+    echo "[test] workdir=$WD"
+    tu -c "$WD"
     check
-    chmod 777 a.out
-    ./a.out
+    tu -o "$WD" -o /usr/local/lib/colib/
     check
-    clean "a.out"
-    clean "*.s"
-    clean "*.o"
+    OUT="$WD/a.out"
+    chmod 777 "$OUT"
+    "$OUT"
+    check
+    if [ "$WD" != "." ]; then
+        rm -rf "$WD"
+    else
+        clean "a.out"
+        clean "*.s"
+        clean "*.o"
+    fi
     echo "exec done..."
-
     return
-#    failed "[compile] $input failed"
 }
-clean "./*.s"
-clean "./*.o"
 assert compiler/test_scanner.tu
-clean "./*.s"
-clean "./*.o"
 assert compiler/main.tu
-clean "./*.s"
-clean "./*.o"
 assert compiler/test_scaner2.tu
-clean "./*.s"
-clean "./*.o"
 assert compiler/test_static_token.tu
-clean "./*.s"
-clean "./*.o"
 log "all passing...."

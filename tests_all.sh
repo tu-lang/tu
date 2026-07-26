@@ -10,6 +10,8 @@
 #   One basename per line (# comments and blank lines ignored).
 #   Present → make tests / bare dir invoke only listed files.
 #   Absent  → run all *.tu (legacy dirs).
+#
+# Intermediate artifacts live under $TMPDIR/tu-build-* (printed as [tu] workdir:).
 
 log(){
     str="$1"
@@ -36,23 +38,38 @@ assert(){
     expected="$1"
     input="$2"
     log "[compile] tu -s $input"
-    clean "*.s"
-    clean "*.o"
-    tu -s $input 
+    ERR=$(mktemp)
+    tu -s $input >"$ERR" 2>&1
     check
-    log "[asmer] tu -c ."
-    tu -c . 
+    cat "$ERR"
+    WD=$(sed -n 's/^\[tu\] workdir: //p' "$ERR" | tail -1 | tr -d '\t\r ')
+    rm -f "$ERR"
+    if [ -z "$WD" ]; then
+        failed "missing [tu] workdir line"
+    fi
+    if [ "$WD" = "(cwd)" ]; then
+        WD="."
+    fi
+    echo "[test] workdir=$WD"
+    log "[asmer] tu -c $WD"
+    tu -c "$WD"
+    check
     echo "start linking..."
-    echo "tu -o . -o /usr/local/lib/colib"
-    tu -o . -o /usr/local/lib/colib
-    chmod 777 a.out
+    echo "tu -o $WD -o /usr/local/lib/colib"
+    tu -o "$WD" -o /usr/local/lib/colib
     check
-    echo "exec a.out..."
-    ./a.out
+    OUT="$WD/a.out"
+    chmod 777 "$OUT"
+    echo "exec $OUT..."
+    "$OUT"
     check
-    rm ./a.out
-    clean "*.s"
-    clean "*.o"
+    if [ "$WD" != "." ]; then
+        rm -rf "$WD"
+    else
+        rm -f ./a.out
+        clean "*.s"
+        clean "*.o"
+    fi
     echo "exec done..."
 
     return
@@ -119,8 +136,6 @@ run_dir(){
     cd "$dir"
     for file in $FILES; do
         echo "$file"
-        clean "*.s"
-        clean "*.o"
         assert "OK" "$file"
         log "[compile] $file passed!\n"
     done
@@ -144,8 +159,6 @@ for dir in `ls`
 do
     if [ -d $dir ] ; then
         run_dir "$dir"
-        clean "$dir/*.o"
-        clean "$dir/*.s"
     fi
 done 
 log "all passing...."
