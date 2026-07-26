@@ -26,6 +26,11 @@ class Compiler {
     flag_gcc  = false
     //default executeable name
     out       = "a.out"
+    // workdir: default TMPDIR/tu-build-*; --workdir-cwd or --workdir DIR
+    workdir_cwd = false
+    workdir_explicit = ""
+    // like go build -work: keep .s/.o after build
+    flag_work = false
 }
 Compiler::print_help(){
     fmt.println("usage: ./tu [options|file.tu...|dir]\n" +
@@ -37,6 +42,9 @@ Compiler::print_help(){
             "  -gcc         支持通过gcc链接生成可执行程序\n" +
             "  -g           编译tu文件时带上debug段信息,支持栈回溯\n" +
             "  -std         编译runtime&std相关内置库代码\n" +
+            "  --workdir DIR     中间产物写到 DIR（.s/.o/a.out）\n" +
+            "  --workdir-cwd     中间产物写当前目录（旧行为）\n" +
+            "  --work            保留中间产物（类似 go -work；默认 build 后删 .s/.o）\n" +
             "  -v           version\n"
     )
 }
@@ -74,6 +82,12 @@ Compiler::commadparse(){
             "-std" : compile.nostd = false
             "-gcc" : this.flag_gcc = true
             "-lat" : printlat = true
+            "--workdir-cwd" : this.workdir_cwd = true
+            "--work" : this.flag_work = true
+            "--workdir" : {
+                this.workdir_explicit = os.argv()[i + 1]
+                i += 1
+            }
             "-v"   : {
                 fmt.printf(
                     "tu-lang version: %s\n" +
@@ -122,37 +136,48 @@ Compiler::compiler(file){
     if compile.nostd && !this.flag_gcc {
         compile.nostd = true
     }
+    compile.initWorkdir(file, this.workdir_cwd, this.workdir_explicit)
     compile.genast(file)
     compile.editast()
     compile.compile()
     utils.msg(30,"Compiler generate all Passed")
+    wd = utils.workdir
+    if wd == null || wd == "" {
+        wd = "."
+    }
     if this.flag_run {
         //By Gcc Link
         if this.flag_gcc {
             compile.gcclink()
-            os.shell("rm *.s")
-            os.shell("chmod 777 a.out")
+            if !this.flag_work {
+                os.shell("rm -f '" + wd + "'/*.s")
+            }
+            os.shell("chmod 777 '" + utils.pathInWorkdir("a.out") + "'")
         }else {
         //Self Asmer && Linker
             this.code_files = []
-            this.scandir(".",".s")
+            this.scandir(wd,".s")
             if !compile.nostd 
                 this.scandir(root + "/coasm/",".s")
             this.asmer()
 
             this.code_files = []
-            this.scandir(".",".o")
+            this.scandir(wd,".o")
             if compile.nostd 
                 this.scandir(root + "/colib/",".o")
+            this.out = utils.pathInWorkdir("a.out")
             this.linker()
-            os.shell("rm *.o *.s")
+            if !this.flag_work {
+                os.shell("rm -f '" + wd + "'/*.o '" + wd + "'/*.s")
+            }
         }
-        os.shell("chmod 777 a.out")
-        // args = "./a.out"
-        // os.shell(args)
+        os.shell("chmod 777 '" + utils.pathInWorkdir("a.out") + "'")
+        if this.flag_work {
+            fmt.printf("[tu] work: keeping %s\n", wd)
+        }
     }
     utils.msg2(100,"Finished",fmt.sprintf(
-        "%s target(a.out)",file
+        "%s target(%s)",file, utils.pathInWorkdir("a.out")
     ))
 }
 Compiler::asmer(){
@@ -176,6 +201,12 @@ Compiler::linker(){
     linker = new link.Linker()
     total = std.len(this.code_files)
     if total <= 0 utils.error("please provide at lease one .o file")
+
+    // a.out 默认落在首个 .o 同目录（与母版 tul 一致）
+    if this.out == "a.out" && total > 0 {
+        this.out = utils.path_join(utils.path_dirname(this.code_files[0]), "a.out")
+    }
+    fmt.printf("[tu] outfile: %s\n", this.out)
 
     i = 1
     for f : this.code_files {
