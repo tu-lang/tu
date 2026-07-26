@@ -1,6 +1,7 @@
 use io
 use net
 use string
+use std
 use sys
 use netio.sys as nsys
 
@@ -14,7 +15,7 @@ fn socket_addr(path<string.String>) i32, sys.SockaddrUn, i32 {
 	sockaddr<sys.SockaddrUn> = new sys.SockaddrUn {}
 	sockaddr.sun_family = sys.AF_UNIX
 	bytes<u8*> = path.str()
-	length<i32> = path.len()
+	length<i32> = std.strlen(bytes)
 	if length >= sys.SUN_PATH_LEN
 		return io.InvalidInputPathShorterSunLen, null, 0
 
@@ -31,7 +32,9 @@ fn socket_addr(path<string.String>) i32, sys.SockaddrUn, i32 {
 
 fn socket_pair(flags<i32>) i32, net.UnixStream, net.UnixStream {
 	fds<i32*> = new 8
-	err<i32> = sys.cvt(sys.socketpair(sys.AF_UNIX, flags | nsys.SOCK_NONBLOCK | nsys.SOCK_CLOEXEC, 0, fds))
+	nb<i32> = 0x800
+	ce<i32> = 0x80000
+	err<i32> = sys.cvt(sys.socketpair(sys.AF_UNIX, flags | nb | ce, 0, fds))
 	if err != nsys.Ok
 		return err, null, null
 	return nsys.Ok, stream_from_fd(fds[0]), stream_from_fd(fds[1])

@@ -12,7 +12,7 @@ mem UnixListener {
 }
 
 const UnixListener::bind(path<string.String>) i32, UnixListener {
-	err<i32>, listener<net.UnixListener> = sysuds.bind(path)
+	err<i32>, listener<net.UnixListener> = sysuds.listener_bind(path)
 	if err != io.Ok
 		return err, null
 	return io.Ok, UnixListener::from_std(listener)

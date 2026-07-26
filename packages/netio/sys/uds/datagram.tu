@@ -5,7 +5,7 @@ use string
 use sys
 use netio.sys as nsys
 
-fn bind(path<string.String>) i32, net.UnixDatagram {
+fn datagram_bind(path<string.String>) i32, net.UnixDatagram {
 	err<i32>, fd<i32> = nsys.new_socket(sys.AF_UNIX, sys.SOCK_DGRAM)
 	if err != nsys.Ok
 		return err, null

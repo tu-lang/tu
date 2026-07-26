@@ -11,7 +11,7 @@ mem UnixDatagram {
 }
 
 const UnixDatagram::bind(path<string.String>) i32, UnixDatagram {
-	err<i32>, socket<net.UnixDatagram> = sysuds.bind(path)
+	err<i32>, socket<net.UnixDatagram> = sysuds.datagram_bind(path)
 	if err != io.Ok
 		return err, null
 	return io.Ok, UnixDatagram::from_std(socket)

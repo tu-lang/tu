@@ -4,7 +4,7 @@ use string
 use sys
 use netio.sys as nsys
 
-fn bind(path<string.String>) i32, net.UnixListener {
+fn listener_bind(path<string.String>) i32, net.UnixListener {
 	err<i32>, fd<i32> = nsys.new_socket(sys.AF_UNIX, sys.SOCK_STREAM)
 	if err != nsys.Ok
 		return err, null
@@ -30,7 +30,10 @@ fn bind(path<string.String>) i32, net.UnixListener {
 fn accept(listener<net.UnixListener>) i32, net.UnixStream, SocketAddr {
 	sockaddr<sys.SockaddrUn> = new sys.SockaddrUn {}
 	socklen<i32> = sizeof(sys.SockaddrUn)
-	flags<i32> = nsys.SOCK_NONBLOCK | nsys.SOCK_CLOEXEC
+	// netio.sys SOCK_NONBLOCK/CLOEXEC — avoid nsys.SOCK_* cross-pkg symbol miss.
+	nb<i32> = 0x800
+	ce<i32> = 0x80000
+	flags<i32> = nb | ce
 	err<i32>, fd<i32> = sys.cvt(sys.accept4(listener.as_raw_fd(), sockaddr, &socklen, flags))
 	if err != nsys.Ok
 		return err, null, null
