@@ -31,15 +31,20 @@ fn genStruct(s)
 				)
 			}
         
-			m.align = 8
 			if !dst.iscomputed && !m.pointer {
 				genStruct(dst)
 				if !dst.iscomputed os.panic("dst is not computed")
-				m.align = dst.align
 			}
-			// TODO: mem.size  = mem.pointer ? 8 : dst.size
-			if m.pointer != null m.size = 8
-			else                   m.size = dst.size
+			// Always take align/size from the (now computed) inner struct.
+			// Leaving align=8 when the inner was already computed breaks pack nesting
+			// (T5 sizeof 16 -> 24 when NestedOuter is also in the package).
+			if m.pointer != null {
+				m.align = 8
+				m.size = 8
+			} else {
+				m.align = dst.align
+				m.size = dst.size
+			}
 			
 			m.structref = dst
 			compile.currentParser = p

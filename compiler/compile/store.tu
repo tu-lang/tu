@@ -61,3 +61,37 @@ func StoreNoPop(size)
         _ : writeln("   mov %%rax, (%%rdi)")
     }
 }
+
+// Copy mem layout from %rax (src heap object) into (%rdi) (dst field).
+// Used for by-value nested mem assignment; asmer has no rep movsb.
+fn StoreStructPayload(size) {
+	Pop("%rdi")
+	StoreStructPayloadNoPop(size)
+}
+
+fn StoreStructPayloadNoPop(size) {
+	if size <= 0 {
+		utils.error("StoreStructPayload: invalid size")
+		return null
+	}
+	off = 0
+	while size - off >= 8 {
+		writeln("   mov %d(%%rax), %%rcx", off)
+		writeln("   mov %%rcx, %d(%%rdi)", off)
+		off += 8
+	}
+	if size - off >= 4 {
+		writeln("   mov %d(%%rax), %%ecx", off)
+		writeln("   mov %%ecx, %d(%%rdi)", off)
+		off += 4
+	}
+	if size - off >= 2 {
+		writeln("   movzwl %d(%%rax), %%ecx", off)
+		writeln("   mov %%cx, %d(%%rdi)", off)
+		off += 2
+	}
+	if size - off >= 1 {
+		writeln("   movzb %d(%%rax), %%ecx", off)
+		writeln("   mov %%cl, %d(%%rdi)", off)
+	}
+}

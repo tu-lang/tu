@@ -141,6 +141,19 @@ OperatorHelper::assign()
 		return null
 	}
 
+	// By-value nested mem: copy payload from heap RHS; scalar RHS stores into slot start.
+	if this.lmember && this.lmember.isstruct && !this.lmember.pointer && this.rhs != null {
+		scalar_rhs = type(this.rhs) == type(IntExpr) ||
+			type(this.rhs) == type(FloatExpr) ||
+			type(this.rhs) == type(CharExpr) ||
+			type(this.rhs) == type(BoolExpr) ||
+			type(this.rhs) == type(NullExpr)
+		if !scalar_rhs {
+			compile.StoreStructPayload(this.lmember.size)
+			return null
+		}
+	}
+
 	compile.Store(this.ltypesize)
 	return null
 }

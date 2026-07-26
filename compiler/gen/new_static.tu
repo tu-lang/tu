@@ -112,6 +112,14 @@ StructInitExpr::compile_field(ctx,load,s,value,field){
 		compile.writeln("	mov (%%rsp) , %%rax")
 		compile.writeln("	add $%d , %%rax",field.offset)
 		ret = ie.compile(ctx,true)
+	}else if type(value) == type(NewStructExpr) && field.isstruct && !field.pointer {
+		// By-value nested: init in place (same as StructInitExpr), do not allocate then store a pointer.
+		ne = value
+		if ne.init == null this.panic("new struct init missing fields")
+		if field.structname != ne.init.name this.panic("type sould be same")
+		compile.writeln("	mov (%%rsp) , %%rax")
+		compile.writeln("	add $%d , %%rax",field.offset)
+		ret = ne.init.compile(ctx,true)
 	}else if type(value) == type(ArrayExpr) {
 		ie = value
 		if !field.isarr 
@@ -155,6 +163,9 @@ StructInitExpr::compile(ctx,load){
 		if s.asyncfn == null {
 			if type(value) == type(StructInitExpr) continue
 			if type(value) == type(ArrayExpr) continue
+			if type(value) == type(NewStructExpr) && field.isstruct && !field.pointer {
+				continue
+			}
 		}
 
 		compile.writeln(" mov (%%rsp) , %%rdi")
@@ -164,6 +175,18 @@ StructInitExpr::compile(ctx,load){
 		compile.Cast(rtok,ltok) 
 		size = field.size
 		if field.pointer size = 8
+
+		if field.isstruct && !field.pointer {
+			scalar_rhs = type(value) == type(IntExpr) ||
+				type(value) == type(FloatExpr) ||
+				type(value) == type(CharExpr) ||
+				type(value) == type(BoolExpr) ||
+				type(value) == type(NullExpr)
+			if !scalar_rhs {
+				compile.StoreStructPayloadNoPop(size)
+				continue
+			}
+		}
 
 		if ast.isfloattk(field.type)
 			compile.StorefNoPop(field.type)
