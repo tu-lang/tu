@@ -119,6 +119,67 @@ fn test_pointer_field_roundtrip(){
 	fmt.println("test pointer field roundtrip success")
 }
 
+// By-value nested mem: payload must be copied into the outer layout,
+// not stored as a heap pointer in the field slot (optimize debt §9).
+mem NestedInner {
+	u64 bits
+	u32 tag
+}
+mem NestedOuter {
+	NestedInner nest
+	u64 marker
+}
+
+fn test_nested_mem_value_copy(){
+	fmt.println("test nested mem value copy")
+
+	// Baseline: scalar writes into the embedded layout.
+	o0<NestedOuter> = new NestedOuter
+	o0.nest.bits = 1111.(u64)
+	o0.nest.tag = 7.(u32)
+	o0.marker = 9.(u64)
+	if o0.nest.bits != 1111.(u64) os.die("scalar nest.bits != 1111")
+	if o0.nest.tag != 7.(u32) os.die("scalar nest.tag != 7")
+	if o0.marker != 9.(u64) os.die("scalar marker != 9")
+
+	// Assign `new Inner{...}` into a by-value nested field.
+	o1<NestedOuter> = new NestedOuter
+	o1.nest = new NestedInner { bits: 2222.(u64), tag: 8.(u32) }
+	o1.marker = 1.(u64)
+	if o1.nest.bits != 2222.(u64) os.die("assign-new nest.bits != 2222")
+	if o1.nest.tag != 8.(u32) os.die("assign-new nest.tag != 8")
+	if o1.marker != 1.(u64) os.die("assign-new marker != 1")
+
+	// Struct literal with nested `new Inner{...}`.
+	o2<NestedOuter> = new NestedOuter {
+		nest: new NestedInner { bits: 3333.(u64), tag: 9.(u32) },
+		marker: 2.(u64),
+	}
+	if o2.nest.bits != 3333.(u64) os.die("literal nest.bits != 3333")
+	if o2.nest.tag != 9.(u32) os.die("literal nest.tag != 9")
+	if o2.marker != 2.(u64) os.die("literal marker != 2")
+
+	// Copy from an existing Inner heap object into the nested slot.
+	inn<NestedInner> = new NestedInner { bits: 4444.(u64), tag: 10.(u32) }
+	o3<NestedOuter> = new NestedOuter
+	o3.nest = inn
+	o3.marker = 3.(u64)
+	if o3.nest.bits != 4444.(u64) os.die("copy-var nest.bits != 4444")
+	if o3.nest.tag != 10.(u32) os.die("copy-var nest.tag != 10")
+	if o3.marker != 3.(u64) os.die("copy-var marker != 3")
+
+	// In-place nested StructInitExpr (no `new` on the inner literal).
+	o4<NestedOuter> = new NestedOuter {
+		nest: NestedInner { bits: 5555.(u64), tag: 11.(u32) },
+		marker: 4.(u64),
+	}
+	if o4.nest.bits != 5555.(u64) os.die("inplace nest.bits != 5555")
+	if o4.nest.tag != 11.(u32) os.die("inplace nest.tag != 11")
+	if o4.marker != 4.(u64) os.die("inplace marker != 4")
+
+	fmt.println("test nested mem value copy success")
+}
+
 fn test2(){
 	fmt.println("test 2")
 
@@ -345,4 +406,5 @@ fn main(){
 	test10()
 	test11()
 	test_pointer_field_roundtrip()
+	test_nested_mem_value_copy()
 }
