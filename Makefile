@@ -1,29 +1,26 @@
 prefix = /usr/local
 TIMEFORMAT = "\nTime elapsed: %E"
+# Build stdlib/runtime/coasm objects into $TMPDIR, pack tulang.a, then wipe WD.
+# Stub a.tu.s is dropped on purpose: gc.ms.entry belongs to each user main, not colib.
 BUILD_LIBA = build_install_liba() {                              	\
     if [ ! -d $(prefix)/lib/colib ]; then                        	\
         mkdir -p $(prefix)/lib/colib;                            	\
     fi;                                                     	 	\
-    if [ ! -d _tmp ]; then                         					\
-        mkdir -p _tmp;                             					\
-    fi;                                                          	\
 	rm -rf $(prefix)/lib/colib/*;									\
-	rm -rf _tmp/*;													\
-	cd _tmp;														\
-	echo "															\
-		use fmt	use os	use string	use std							\
-		use std.map	use std.atomic	use std.regex					\
-		use runtime	use runtime.debug	use time					\
-	" > a.tu;														\
-	tu -s a.tu -std --workdir-cwd;									\
-	rm -f a.tu.s;													\
-	tu -c . -c $(prefix)/lib/coasm;									\
-	ar -rc tulang.a *.o $(prefix)/lib/coasm/*.o;					\
-	mv tulang.a ../release/;										\
-	mv *.o $(prefix)/lib/colib/;									\
-	mv $(prefix)/lib/coasm/*.o $(prefix)/lib/colib/;				\
-	cd ..;															\
-	rm -rf _tmp;													\
+	WD=$$(mktemp -d "$${TMPDIR:-/tmp}/tu-build-liba-XXXXXX");		\
+	echo "[build-liba] workdir=$$WD";								\
+	printf '%s\n'													\
+		'use fmt	use os	use string	use std'					\
+		'use std.map	use std.atomic	use std.regex'				\
+		'use runtime	use runtime.debug	use time'					\
+		> "$$WD/a.tu";												\
+	tu -s "$$WD/a.tu" -std --workdir "$$WD";						\
+	rm -f "$$WD/a.tu" "$$WD/a.tu.s";								\
+	cp $(prefix)/lib/coasm/*.s "$$WD"/;								\
+	tu -c "$$WD";													\
+	ar -rc release/tulang.a "$$WD"/*.o;								\
+	cp "$$WD"/*.o $(prefix)/lib/colib/;								\
+	rm -rf "$$WD";													\
 }
 CLEAN_ALL = clean_all() {											\
     if [ -d $(prefix)/lib/colib ]; then                        		\
@@ -54,9 +51,12 @@ INSTALL_ALL = install_all() {                              			\
 	cp -r library/* $(prefix)/lib/copkg/;							\
 	cp -r packages/* $(prefix)/lib/copkg/;							\
 	cp -r syscall/* $(prefix)/lib/coasm/;							\
-	cd release;														\
-	ar -x tulang.a;													\
-	mv *.o $(prefix)/lib/colib/;									\
+	if [ -f release/tulang.a ]; then								\
+		XD=$$(mktemp -d "$${TMPDIR:-/tmp}/tu-extract-liba-XXXXXX");	\
+		(cd "$$XD" && ar -x "$(CURDIR)/release/tulang.a");			\
+		mv "$$XD"/*.o $(prefix)/lib/colib/;							\
+		rm -rf "$$XD";												\
+	fi;																\
 }
 TEST_COMPILER = test_compiler() {									\
 	sh compiler/test.sh;											\
