@@ -1,5 +1,5 @@
 // Library-function form of select!: race futures and return (which, value)
-// for the first that resolves. Mother: tokio::select!.
+// for the first that resolves.
 
 use runtime
 use io

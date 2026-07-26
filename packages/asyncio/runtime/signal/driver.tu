@@ -4,7 +4,7 @@
 // arrives. process() is invoked from the runtime root after every IO
 // turn to drain the signalfd and fan signals out to subscribers.
 //
-// Mother: tokio::runtime::signal::Driver (pipe + broadcast). Tu V1 uses
+// Tu V1 uses
 // signalfd per design §15 — same park → process → fan-out shape.
 
 use runtime
@@ -52,7 +52,6 @@ SIG_WOULD_BLOCK<i32> = 16908302
 
 // Initialise globals + open the signalfd with an empty mask, register it
 // on the IO driver as TOKEN_SIGNAL. Publishes via last() getters.
-// Mother: runtime::signal::Driver::new + register_signal_receiver.
 const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
     LAST_SIGDRIVER = null
     LAST_SIGHANDLE = null
@@ -73,7 +72,7 @@ const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
 
     g.sfd = fd
 
-    // Mother: io_handle.register_signal_receiver — epoll ADD TOKEN_SIGNAL.
+    // Epoll ADD TOKEN_SIGNAL.
     // register_sfd returns sys.Ok (=1) on success (netio Selector convention).
     if ioh_bits != 0 {
         ioh<rtio.IoHandle> = null
@@ -107,7 +106,7 @@ const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
     return 0
 }
 
-// Drain the signalfd. Mother: park → process after consume_signal_ready.
+// Drain the signalfd (park, then process after consume_signal_ready).
 // V1: always attempt drain (nonblock). EPOLLET + padded token mismatch can
 // skip consume_signal_ready; skipping drain then hangs forever.
 // After a successful drain, wake the IO eventfd so Pending recv futures

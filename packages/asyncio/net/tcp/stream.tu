@@ -87,7 +87,7 @@ TcpStream::local_addr() {
 // ---- connect -------------------------------------------------------------
 
 // Async leaf: connect + register + write readiness + SO_ERROR.
-// poll returns (PollReady, err, stream) so connect().await matches tokio.
+// poll returns (PollReady, err, stream) so connect().await yields both.
 mem ConnectFut: async {
     aio.PollEvented* poll_ev
     TcpStream*       stream
@@ -115,7 +115,7 @@ ConnectFut::poll(ctx){
     return ready, ok_code, this.stream
 }
 
-// Mother: TcpStream::connect — sync setup + ConnectFut leaf (member async
+// Sync setup + ConnectFut leaf (member async
 // calling nettcp.tcp_stream_connect corrupts the async frame).
 // Return ConnectFut (not erased Future): multi-return poll needs concrete leaf.
 const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {

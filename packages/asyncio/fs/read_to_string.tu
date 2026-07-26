@@ -1,4 +1,4 @@
-// fs_read_to_string (tokio::fs::read_to_string): read a file and validate UTF-8.
+// fs_read_to_string: read a file and validate UTF-8.
 
 use std
 use io

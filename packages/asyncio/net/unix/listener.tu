@@ -76,7 +76,7 @@ UnixListener::raw_listener() netuds.UnixListener {
     return s
 }
 
-// Leaf future for accept().await — mother poll_accept loop (no IoOp).
+// Leaf future for accept().await — the design poll_accept loop (no IoOp).
 mem UnixAcceptFut: async {
     aio.PollEvented*      poll_ev
     netuds.UnixListener*  listener

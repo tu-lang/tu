@@ -1,5 +1,5 @@
-// fs_rename (tokio::fs::rename): rename/move a path.
-// Leaf future pattern (mother tcp ConnectFut): sync factory + poll, no await body.
+// fs_rename: rename/move a path.
+// Leaf future pattern: sync factory + poll, no await body.
 
 use io
 use string
@@ -19,7 +19,7 @@ RenameFut::poll(ctx) {
     return runtime.PollReady, err
 }
 
-// Mother: async fn rename — returns erased Future for `.await`.
+// Returns erased Future for `.await`.
 fn fs_rename(from_bits<u64>, to_bits<u64>) runtime.Future {
     f<RenameFut> = new RenameFut { from_bits: from_bits, to_bits: to_bits }
     fut<runtime.Future> = f

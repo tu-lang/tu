@@ -1,4 +1,4 @@
-// fs_set_permissions (tokio::fs::set_permissions): chmod a path.
+// fs_set_permissions: chmod a path.
 
 use io
 use string

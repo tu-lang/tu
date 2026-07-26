@@ -1,4 +1,4 @@
-// fs_remove_file (tokio::fs::remove_file): unlink a file.
+// fs_remove_file: unlink a file.
 
 use io
 use string

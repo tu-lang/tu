@@ -11,7 +11,7 @@ mem Barrier {
     i32         n             // total participants per round
     i32         arrived       // current round arrival count
     i32         generation    // monotonic round counter
-    Notify*     wake_hub      // tokio: notify
+    Notify*     wake_hub
 }
 
 // Build a Barrier expecting n participants per round.

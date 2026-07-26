@@ -3,7 +3,6 @@
 //
 // Buffer args are u64 bits of library io.Buf — package asyncio.io cannot
 // `use io` (short-name clash with this package). Call sites pass buf.(u64).
-// Mother: tokio::io::AsyncWrite (default poll_write_vectored -> poll_write).
 
 use runtime
 

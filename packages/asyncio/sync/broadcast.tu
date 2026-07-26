@@ -1,4 +1,4 @@
-// Multi-producer multi-receiver fan-out (tokio sync::broadcast).
+// Multi-producer multi-receiver fan-out.
 use std
 use std.atomic
 use runtime
@@ -6,11 +6,11 @@ use runtime
 BCAST_LAGGED<i32> = 0x03020003
 
 mem Broadcast {
-    i64*    slot_store   // tokio: ring buffer
+    i64*    slot_store
     u64     cap
     u64     tail         // atomic; messages sent
     u64     lapped       // atomic; full laps
-    Notify* wake_notify  // tokio: notify_waiters on send
+    Notify* wake_notify
 }
 
 const Broadcast::new(cap<u64>) Broadcast {
@@ -50,7 +50,7 @@ BroadcastSender::send(v<i64>) i32 {
     return broadcast_publish(this.backing, v)
 }
 
-// Async leaf for recv (tokio Receiver::recv).
+// Async leaf for recv.
 mem BroadcastRecvFut: async {
     Broadcast* owner
     u64        cursor

@@ -8,7 +8,7 @@ use io
 use asyncio.task
 use asyncio.util as util
 
-// Pack task pointer as future ctx (mother: waker data = Header*).
+// Pack task pointer as future ctx.
 fn mt_task_ctx(t<task.RawTask>) u64 {
     return t.(u64)
 }

@@ -1,4 +1,4 @@
-// Child stdio handles (tokio::process::ChildStdin / ChildStdout / ChildStderr).
+// Child stdio handles.
 //
 // Design note (task 17.1): the spec models these as `class X { PollEvented* io }`
 // wrapping a pipe registered with the IO driver. Per library-static-only these
@@ -108,7 +108,7 @@ fn read_all_fd(fd<i32>) i32, io.Buf {
     loop {
         blen<u64> = io.buf_len(buf)
         if total >= blen {
-            // Grow capacity (mother drains stdout/stderr into a Vec).
+            // Grow capacity.
             next_u<u64> = blen + blen
             next_i<i32> = next_u.(i32)
             grown<io.Buf> = io.NewBuf(next_i)

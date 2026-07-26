@@ -1,5 +1,4 @@
 // Library-function form of try_join!: short-circuit on first error branch.
-// Mother: tokio::try_join!
 
 use runtime
 use io

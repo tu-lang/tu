@@ -90,7 +90,7 @@ UnixConnectFut::poll(ctx){
     return ready, ok_code, this.stream
 }
 
-// Mother: UnixStream::connect — sync setup + leaf (no member async+await).
+// Sync setup + leaf (no member async+await).
 const UnixStream::connect(path<string.String>) UnixConnectFut {
     cerr<i32>, inner<netuds.UnixStream> = netuds.UnixStream::connect(path)
     if cerr != io.Ok || inner == null {

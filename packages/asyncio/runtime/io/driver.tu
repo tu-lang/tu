@@ -3,7 +3,6 @@
 // matching ScheduledIo, and clears the readiness slot.
 // Token reservations: 0 = wakeup (cross-thread eventfd), 1 = signal driver.
 // All other tokens are ScheduledIo* cast to u64.
-// Mother: tokio::runtime::io::Driver / mio Poll.
 
 use asyncio.util
 use asyncio.task
@@ -34,11 +33,10 @@ mem IoDriver {
 
 // Cross-thread companion to IoDriver. Owns the registry view + waker so
 // schedulers and Registration can register sources / kick the reactor.
-// Mother: Handle { registry, registrations, synced: Mutex<Synced>, waker, metrics }.
 mem IoHandle {
     u64                     registry_slot  // Registry* raw bits
     RegistrationSet*        registrations
-    RegistrationSetSynced*  synced         // mother Synced; guarded by synced_lock
+    RegistrationSetSynced*  synced         // the design Synced; guarded by synced_lock
     runtime.MutexInter*     synced_lock
     u64                     waker_slot     // Waker* raw bits
     Metrics*                metrics
@@ -98,10 +96,8 @@ const IoDriver::new() i32 {
 
 // Register a source. Token is the new ScheduledIo* cast to u64; later
 // turn() reverses the cast to dispatch the event back.
-// Mother: allocate under synced.lock, then registry.register without the lock.
 // Register a source by IoSource bits. Token is the new ScheduledIo* cast to
 // u64; later turn() reverses the cast to dispatch the event back.
-// Mother: allocate under synced.lock, then registry.register without the lock.
 // Tu: pass iosrc_bits — event.Source api method dispatch segfaults (layout).
 IoHandle::add_source(iosrc_bits<u64>, interest<netio.Interest>) i32, ScheduledIo {
     if this.registrations == null || this.synced == null {
@@ -119,7 +115,6 @@ IoHandle::add_source(iosrc_bits<u64>, interest<netio.Interest>) i32, ScheduledIo
     t<netio.Token> = netio.token_from_u64(tok)
     rerr<i32> = netio.registry_register(reg, iosrc_bits, t, interest)
     if rerr != LIBIO_OK {
-        // Mother: remove under synced.lock on register failure.
         lk.lock()
         this.registrations.remove(this.synced, sio)
         lk.unlock()
@@ -136,14 +131,13 @@ IoHandle::wake_by_ref() i32 {
 }
 
 // Cross-pkg unpark: schedulers hold IoHandle only as u64 bits.
-// Mother: Handle::unpark → driver.unpark() after remote inject push.
 fn io_handle_wake_bits(ioh_bits<u64>) i32 {
     if ioh_bits == 0 return 0
     ih<IoHandle> = ioh_bits
     return ih.wake_by_ref()
 }
 
-// Register signalfd with TOKEN_SIGNAL (mother: register_signal_receiver).
+// Register signalfd with TOKEN_SIGNAL.
 // Named register_sfd — callers in asyncio.runtime.signal must not write
 // `.register_signal_*` (type-assert trap on `signal` in that package).
 IoHandle::register_sfd(fd<i32>) i32 {
@@ -154,7 +148,7 @@ IoHandle::register_sfd(fd<i32>) i32 {
     return sel.register_readable(fd, tok)
 }
 
-// Mother: Driver::consume_signal_ready — clear and return prior flag.
+// Clear and return prior flag.
 IoDriver::consume_signal_ready() i32 {
     if this.signal_ready == 0 return 0
     this.signal_ready = 0
@@ -171,7 +165,6 @@ fn iodriver_consume_signal_ready_bits(iod_bits<u64>) i32 {
 }
 
 // Detach a previously registered source by IoSource bits.
-// Mother: deregister OS first, then RegistrationSet::deregister under lock.
 IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
     err<i32> = netio.registry_deregister(reg, iosrc_bits)
@@ -207,7 +200,6 @@ IoHandle::shutdown(){
     }
 }
 
-// Mother: release_pending_registrations before each turn.
 IoHandle::release_pending_registrations(){
     if this.registrations.needs_release() == 0 {
         return
@@ -249,7 +241,6 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
         ready<Ready> = ready_from_event(ev)
         sio.set_readiness(TICK_INC, ready.bits)
         wakes<util.WakeList> = sio.wake(ready)
-        // Mother: WakeList::wake_all → Waker::wake → RawTask::wake_by_ref.
         // ctx slots hold RawTask* (see ct_task_ctx / mt_ctx).
         wi<i32> = 0
         wlen<i32> = wakes.len_count()

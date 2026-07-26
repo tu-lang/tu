@@ -13,7 +13,7 @@ mem CtShared {
     Inject*           inject
     task.OwnedTasks*  owned
     u64          woken           // Notify* bits; use notify_*_raw bridges
-    u64          driver             // raw bits of runtime.driver.Driver* (mother: Core.driver)
+    u64          driver             // raw bits of runtime.driver.Driver*
     u64          driver_handle      // raw bits of runtime.driver.DriverHandle*
     u64          iod_bits           // raw bits of IoDriver*
     u64          ioh_bits           // raw bits of IoHandle*

@@ -1,5 +1,5 @@
 // Async UDP socket. Wraps netio UdpSocket via PollEvented (bind + readiness
-// + send_to / recv_from). Mother: tokio::net::UdpSocket.
+// + send_to / recv_from).
 //
 // Package asyncio.net.udp (short-name `udp`) so library `net` can be imported
 // without poisoning asyncio.net. Leaf futures call poll_*_ready + raw
@@ -75,7 +75,7 @@ UdpSocket::raw_sock() netudp.UdpSocket {
     return s
 }
 
-// Leaf for send_to (mother: async_io WRITABLE + send_to).
+// Leaf for send_to.
 mem UdpSendFut: async {
     aio.PollEvented*   poll_ev
     netudp.UdpSocket*  sock
@@ -106,7 +106,7 @@ UdpSendFut::poll(ctx) {
     return ready, ok_code, 0.(i64)
 }
 
-// Leaf for recv_from (mother: async_io READABLE + recv_from).
+// Leaf for recv_from.
 mem UdpRecvFut: async {
     aio.PollEvented*   poll_ev
     netudp.UdpSocket*  sock
@@ -140,7 +140,7 @@ UdpRecvFut::poll(ctx) {
     return ready, ok_code, 0.(i64), 0.(u64)
 }
 
-// Mother: UdpSocket::send_to — return leaf for caller await.
+// Return leaf for caller await.
 UdpSocket::send_to(buf<io.Buf>, target<net.SocketAddr>) UdpSendFut {
     sock<netudp.UdpSocket> = this.raw_sock()
     return new UdpSendFut {
@@ -152,7 +152,7 @@ UdpSocket::send_to(buf<io.Buf>, target<net.SocketAddr>) UdpSendFut {
     }
 }
 
-// Mother: UdpSocket::recv_from — return leaf for caller await.
+// Return leaf for caller await.
 UdpSocket::recv_from(buf<io.Buf>) UdpRecvFut {
     sock<netudp.UdpSocket> = this.raw_sock()
     return new UdpRecvFut {

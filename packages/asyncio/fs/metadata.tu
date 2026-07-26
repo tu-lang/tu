@@ -1,4 +1,4 @@
-// File metadata (tokio::fs::Metadata) and the fs_metadata entry point.
+// File metadata and the fs_metadata entry point.
 
 use std
 use io

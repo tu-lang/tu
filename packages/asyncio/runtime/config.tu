@@ -14,7 +14,7 @@ mem Config {
     u32  nevents
 }
 
-// Build a Config with Tokio-style defaults.
+// Build a Config with default defaults.
 const Config::default() Config {
     return new Config {
         disable_lifo_slot:     0,

@@ -1,4 +1,4 @@
-// pidfd-based child reaper (tokio's preferred wait path on Linux >= 5.3).
+// pidfd-based child reaper.
 //
 // Design note (task 17.3): open() acquires a pidfd; wait() would register the
 // pidfd for read-readiness on the IO driver and reap once it fires. V1: the
@@ -31,9 +31,9 @@ PidfdReaper::as_raw_fd() i32 {
 }
 
 // Wait for the child to exit and return its ExitStatus. V1: blocking waitpid;
-// mother (pidfd_reaper.rs) awaits pidfd readability then try_wait — readiness
+// the design (pidfd_reaper.rs) awaits pidfd readability then try_wait — readiness
 // wiring is deferred; waitpid on the pid preserves the same exit status.
-// V1 sync: blocks in waitpid (mother Future awaits pidfd readiness first).
+// V1 sync: blocks in waitpid.
 PidfdReaper::wait() i32, ExitStatus {
     status<i32> = 0
     r<i32> = std.waitpid(this.pid, waitpid_status_addr(&status), 0)

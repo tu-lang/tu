@@ -75,7 +75,7 @@ const Waiter::new(ctx<u64>, interest_bits<u8>) Waiter {
 }
 
 // IO Driver shadow for one source. Lives on the RegistrationSet owning
-// list via typed prev_sio / next_sio links (GC-traced strong refs — mother
+// list via typed prev_sio / next_sio links (GC-traced strong refs — the design
 // keeps Arc<ScheduledIo> in Synced; interior Pointers links are invisible
 // to the GC and caused use-after-free). Tokens registered with
 // netio.Registry are ScheduledIo* cast to u64 (weak; list keeps it alive).
@@ -133,7 +133,7 @@ fn pack_is_shutdown(pack<u64>) i32 {
 }
 
 // CAS retry that combines new_ready bits with the previous ready bits via
-// OR (matches tokio Tick::Set semantics). When tick_op == TICK_INC the
+// OR. When tick_op == TICK_INC the
 // tick field is bumped under the same CAS so older snapshots can be
 // rejected by clear_readiness.
 ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
@@ -228,7 +228,7 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
 //   OtherDriverTerminated — driver shut down
 // Must NOT return PollReady(=1): callers use `err != 0` / `err == 0`, and
 // PollReady collides with io.Ok(=1) so readiness was treated as an error.
-// Mother scheduled_io.rs poll_readiness: on miss, store the waker under
+// The design scheduled_io.rs poll_readiness: on miss, store the waker under
 // the waiters lock, then RE-READ readiness — a wake landing between the
 // first load and the store would otherwise be lost (TOCTOU).
 ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
@@ -241,7 +241,7 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
     is_sd<i32> = pack_is_shutdown(cur)
 
     if hit == 0 && is_sd == 0 {
-        // Stash the task waker (mother: cx.waker().clone()). Prefer the
+        // Stash the task waker. Prefer the
         // harness-published RawTask* when dynstackcall null-padded the ctx.
         wl<runtime.MutexInter> = this.waiters_lock
         wl.lock()
@@ -261,7 +261,7 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
     }
 
     if is_sd != 0 {
-        // Mother returns Ready with direction.mask() + is_shutdown; Tu
+        // The design returns Ready with direction.mask() + is_shutdown; Tu
         // surfaces the terminated error code instead.
         return IO_OTHER_DRIVER_TERMINATED, ReadyEvent::new(unpack_tick(cur), Ready::from_bits(interest_mask))
     }
@@ -271,7 +271,7 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
 // Clear `event.ready` from the readiness word, but only if tick still
 // matches. A different tick means another set_readiness pass already
 // swept past the snapshot, so the bits remain valid.
-// Mother clear_readiness: mask_no_closed = ready - READ_CLOSED - WRITE_CLOSED;
+// The design clear_readiness: mask_no_closed = ready - READ_CLOSED - WRITE_CLOSED;
 // closed bits are permanent (EOF / half-close never un-happens) — clearing
 // them would leave the resource permanently Pending after EOF.
 ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
@@ -291,7 +291,7 @@ ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
 // Flip the SHUTDOWN bit and wake every waiter with OtherDriverTerminated.
 // All callers entering after shutdown observe the bit and bail out.
 // Flip the SHUTDOWN bit and wake every waiter with OtherDriverTerminated.
-// Mother scheduled_io.rs shutdown(): fetch_or(SHUTDOWN) then wake(Ready::ALL).
+// The design scheduled_io.rs shutdown(): fetch_or(SHUTDOWN) then wake(Ready::ALL).
 // KNOWN OPEN ISSUE: crashes at runtime when >=1 live registration exists at
 // Runtime::shutdown_background — suspected GC use-after-free on ScheduledIo
 // reachable only via interior Pointers / u64 token (see repair-plan §7.6).

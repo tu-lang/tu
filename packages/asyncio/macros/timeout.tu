@@ -1,4 +1,4 @@
-// timeout / timeout_at. Mother: tokio::time::timeout — poll value first,
+// timeout / timeout_at: poll the value future first,
 // then the Sleep delay; delay Ready yields Elapsed.
 //
 // Returns (err, value): err==io.Ok with value on success; err==TIMEOUT_ELAPSED
@@ -10,7 +10,7 @@ use sys
 use asyncio.time as atime
 use asyncio.runtime.time as rttime
 
-// Mother / asyncio.error.Elapsed.
+// The design / asyncio.error.Elapsed.
 TIMEOUT_ELAPSED<i32> = 0x03020004
 
 mem Timeout: async {
@@ -18,7 +18,7 @@ mem Timeout: async {
     runtime.Future* delay
 }
 
-// Mother: Timeout::poll — value first, then delay.
+// Value first, then delay.
 Timeout::poll(ctx){
     packed<u64> = ctx.(u64)
     ready_i<i64> = 0
@@ -45,13 +45,11 @@ Timeout::poll(ctx){
     return runtime.PollPending
 }
 
-// Mother: time::timeout(duration, future).
 fn timeout(d<sys.Duration>, fut<runtime.Future>) Timeout {
     delay_f<runtime.Future> = atime.sleep(d)
     return new Timeout { value: fut, delay: delay_f }
 }
 
-// Mother: time::timeout_at(deadline, future).
 fn timeout_at(when<rttime.Instant>, fut<runtime.Future>) Timeout {
     delay_f<runtime.Future> = atime.sleep_until(when)
     return new Timeout { value: fut, delay: delay_f }

@@ -1,4 +1,4 @@
-// Directory reading (tokio::fs::read_dir): ReadDir stream + DirEntry.
+// Directory reading: ReadDir stream + DirEntry.
 // Backed by getdents64 over a directory fd; "." and ".." are filtered out.
 // Path args use owned cstr bits (string.string_to_bits); dirent parse uses memcpy.
 

@@ -1,4 +1,4 @@
-// fs_try_exists (tokio::fs::try_exists): test whether a path exists.
+// fs_try_exists: test whether a path exists.
 
 use std
 use io

@@ -1,9 +1,9 @@
 // Owns every ScheduledIo allocated by the IO driver. Linked via typed
 // ScheduledIo.prev_sio / next_sio fields so the chain is a GC-traced strong
-// reference (mother: Synced owns Arc<ScheduledIo>; interior Pointers links
-// are invisible to the GC and freed live nodes).
-// Mother: tokio::runtime::io::registration_set — RegistrationSet itself is
-// lock-free (pending_release_count); Synced is guarded by Handle.synced.
+// reference (interior raw-pointer links would be invisible to the GC and
+// freed live nodes).
+// RegistrationSet itself is lock-free (pending_release_count); Synced is
+// guarded by Handle.synced.
 
 use runtime
 use netio
@@ -12,7 +12,7 @@ use asyncio.util
 NOTIFY_AFTER<u32> = 16
 PENDING_CAP<u32>  = 32
 
-// Mother Synced: list of live registrations + pending drops + shutdown flag.
+// The design Synced: list of live registrations + pending drops + shutdown flag.
 // Guarded exclusively by IoHandle.synced_lock (not stored here).
 mem RegistrationSetSynced {
     i32          is_shutdown
@@ -23,7 +23,7 @@ mem RegistrationSetSynced {
     u32          pending_count
 }
 
-// Mother RegistrationSet: only the pending-release counter.
+// The design RegistrationSet: only the pending-release counter.
 mem RegistrationSet {
     u64 pending_release_count
 }
@@ -56,12 +56,12 @@ const RegistrationSet::new() i32 {
     return 0
 }
 
-// True when the driver has shut down (mother: is_shutdown).
+// True when the driver has shut down.
 RegistrationSet::is_shutdown(synced<RegistrationSetSynced>) i32 {
     return synced.is_shutdown
 }
 
-// True when pending drops need a release pass (mother: needs_release).
+// True when pending drops need a release pass.
 RegistrationSet::needs_release() i32 {
     if this.pending_release_count != 0 {
         return 1
@@ -70,7 +70,7 @@ RegistrationSet::needs_release() i32 {
 }
 
 // Allocate a ScheduledIo and push_front onto synced. Caller must hold
-// IoHandle.synced_lock (mother: allocate(&mut synced.lock())).
+// IoHandle.synced_lock.
 RegistrationSet::allocate(synced<RegistrationSetSynced>) (i32, ScheduledIo) {
     if synced.is_shutdown != 0 {
         return 1, null
@@ -90,7 +90,7 @@ RegistrationSet::allocate(synced<RegistrationSetSynced>) (i32, ScheduledIo) {
 }
 
 // Unlink sio from the live list. Caller must hold synced_lock and guarantee
-// sio is on this set (mother: unsafe remove).
+// sio is on this set.
 RegistrationSet::remove(synced<RegistrationSetSynced>, sio<ScheduledIo>){
     prv<ScheduledIo> = sio.prev_sio
     nxt<ScheduledIo> = sio.next_sio
@@ -112,7 +112,7 @@ RegistrationSet::remove(synced<RegistrationSetSynced>, sio<ScheduledIo>){
 }
 
 // Queue for later drop; returns 1 if the driver should unpark to purge
-// (mother: deregister → notify when count == NOTIFY_AFTER).
+//.
 RegistrationSet::deregister(synced<RegistrationSetSynced>, sio<ScheduledIo>) i32 {
     if synced.pending_count >= PENDING_CAP {
         // Cap full: remove immediately so we never leak.
@@ -129,7 +129,7 @@ RegistrationSet::deregister(synced<RegistrationSetSynced>, sio<ScheduledIo>) i32
     return 0
 }
 
-// Drain pending_release via remove (mother: release).
+// Drain pending_release via remove.
 RegistrationSet::release(synced<RegistrationSetSynced>){
     i<u32> = 0
     while i < synced.pending_count {
@@ -147,7 +147,7 @@ RegistrationSet::release(synced<RegistrationSetSynced>){
 
 // Mark shutdown and detach every live ScheduledIo. Caller holds synced_lock;
 // must call ScheduledIo::shutdown on each returned node *without* the lock
-// (mother: Driver::shutdown).
+//.
 // Returns the old head; nodes remain linked via next_sio for the caller walk.
 RegistrationSet::shutdown(synced<RegistrationSetSynced>) ScheduledIo {
     if synced.is_shutdown != 0 {

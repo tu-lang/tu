@@ -1,6 +1,5 @@
 // AsyncRead extension helpers. `Read` is a leaf future for one
 // poll_read call. Package-level async must only return the leaf (no await).
-// Mother: tokio::io::util::read / Read.
 
 use runtime
 use asyncio.io as aio
@@ -41,7 +40,7 @@ Read::poll(ctx) {
     return runtime.PollReady, 0.(i64), delta
 }
 
-// Mother read(): sync factory returning Read leaf; callers `.await` for (err, n).
+// The design read(): sync factory returning Read leaf; callers `.await` for (err, n).
 fn read(r<u64>, buf<aio.ReadBuf>) Read {
     return Read::new(r, buf)
 }

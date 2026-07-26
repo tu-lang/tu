@@ -26,7 +26,7 @@ fn current_now_ms() u64 {
     return rttime.time_handle_now_ms_bits(current_time_handle_bits())
 }
 
-// Mother: time::interval(period) — first tick completes immediately
+// First tick completes immediately
 // (interval_at(Instant::now(), period)); default MissedTickBehavior::Burst.
 fn interval(period<sys.Duration>) Interval {
     iv<Interval> = new Interval
@@ -36,7 +36,6 @@ fn interval(period<sys.Duration>) Interval {
     return iv
 }
 
-// Mother: time::interval_at(start, period).
 fn interval_at(start_ms<u64>, period<sys.Duration>) Interval {
     iv<Interval> = new Interval
     iv.period_ms       = period.as_millis()
@@ -70,7 +69,7 @@ Interval::advance(){
 // Await the next tick. Returns (err, fired_instant) where err is io.Ok once
 // the deadline fires. Registers deadline_ms on the wheel via runtime Sleep,
 // then advance() reschedules for the following tick.
-// Mother: Interval::tick — await the deadline Sleep, then advance the schedule.
+// Await the deadline Sleep, then advance the schedule.
 async Interval::tick() {
     s = rttime.sleep_new(this.deadline_ms)
     fut<runtime.Future> = s

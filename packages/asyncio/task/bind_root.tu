@@ -6,7 +6,7 @@
 fn bind_root(fut_bits<u64>, sched, sched_fn<u64>, rel_fn<u64>) RawTask {
     tid<TaskId> = alloc_id()
     rtask<RawTask> = raw_new(fut_bits, sched, sched_fn, rel_fn, tid.v)
-    // Root has no JoinHandle: mother drops one ref here. Temporarily
+    // Root has no JoinHandle: the design drops one ref here. Temporarily
     // deferred — TaskState::ref_dec via life_slot still under investigation.
     // rtask.bind_root_unref()
     return rtask

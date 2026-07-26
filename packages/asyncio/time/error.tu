@@ -1,5 +1,4 @@
 // Timer error codes surfaced by asyncio.time.
-// Mother: tokio::time::error::{Elapsed, ...}.
 
 // Deadline elapsed before the awaited future resolved.
 // Same numeric code as asyncio.error.Elapsed.

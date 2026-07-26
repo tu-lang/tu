@@ -1,7 +1,6 @@
 // Thread-local park used during runtime construction. CachedParkThread
 // wraps library runtime.Note so the current_thread block_on path can park
 // while waiting for cross-thread schedule notifications.
-// Mother: tokio::runtime::park (EMPTY / PARKED / NOTIFIED + unpark).
 
 use std.atomic
 use sys
@@ -15,7 +14,7 @@ EMPTY_PARK<i32>    = 0
 PARKED_PARK<i32>   = 1
 NOTIFIED_PARK<i32> = 2
 
-// Per-thread park slot. park_state is mother's `state` (Tu rename: `state`
+// Per-thread park slot. park_state is the design's `state` (Tu rename: `state`
 // collides with typeassert / mem State). note_bits is Note* raw bits.
 mem CachedParkThread {
     i32  park_state // atomic

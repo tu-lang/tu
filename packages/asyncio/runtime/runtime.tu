@@ -68,7 +68,6 @@ Runtime::handle() Handle {
     return this.weak_handle
 }
 
-// Mother: runtime::context::enter_runtime before driving the future so
 // Handle::current / PollEvented registration see the active driver.
 // FastRand is required for select! fairness (select_start); null rng
 // makes every select always start at branch 0.

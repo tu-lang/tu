@@ -1,4 +1,4 @@
-// Process builder + launch (tokio::process::Command).
+// Process builder + launch.
 //
 // Design note (task 17.6-17.8): `class Command` becomes a `mem` per
 // library-static-only. argv / envp are fixed-capacity pointer arrays
@@ -168,12 +168,12 @@ Command::spawn() i32, Child {
     // NUL-terminate argv / envp for execve.
     this.argv[this.argc] = 0
 
-    // Mother: Command::current_dir → chdir(2) in the child. V1: no sys.chdir
+    // V1: no sys.chdir
     // in library/sys yet; reject before fork rather than call a missing symbol.
     if this.has_cwd == 1 return io.Unsupported, null
 
     // Resolve path/argv/envp pointers in the parent before fork. argv slots
-    // already hold owned cstr copies from string_to_bits (mother owns OsString).
+    // already hold owned cstr copies from string_to_bits.
     prog_bits<u64> = this.argv[0]
     prog_p<i8*> = string.cstr_from_bits(prog_bits)
     argv_bytes<i32> = (this.argc + 1) * 8
@@ -266,14 +266,14 @@ Command::spawn() i32, Child {
     return io.Ok, child
 }
 
-// Captured output of a finished command (tokio::process::Output).
+// Captured output of a finished command.
 mem Output {
     ExitStatus* status
     io.Buf*     stdout
     io.Buf*     stderr
 }
 
-// Leaf: spawn + drain pipes + wait (V1 inline). Mother: Command::output Future.
+// Leaf future for Command::output: spawn + drain pipes + wait (V1 inline).
 mem OutputFut: async {
     Command* cmd
 }
@@ -303,12 +303,12 @@ OutputFut::poll(ctx) {
     return runtime.PollReady, io.Ok, out
 }
 
-// Mother: Command::output — return OutputFut leaf (tcp connect / fs_read pattern).
+// Return OutputFut leaf (tcp connect / fs_read pattern).
 Command::output() OutputFut {
     return new OutputFut { cmd: this }
 }
 
-// Leaf: spawn + wait (mother: Command::status).
+// Leaf: spawn + wait.
 mem StatusFut: async {
     Command* cmd
 }

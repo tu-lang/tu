@@ -84,7 +84,6 @@ fn handle_blocking_impl(h<Handle>, op<u64>, mandatory<i32>) task.JoinHandle {
     brf<u64> = 0
     bsf, brf = rtblk.blocking_sched_bridge_fns()
     raw<task.RawTask> = task.raw_new(jh_bits, bsched, bsf, brf, tid.v)
-    // Mother: header().state.ref_dec() after wiring JoinHandle
     life_st<task.TaskState> = raw.life_st()
     life_st.ref_dec()
     jh2.init(raw)

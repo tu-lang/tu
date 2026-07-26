@@ -2,7 +2,6 @@
 // because the WAITING/REGISTERING/WAKING state machine forces wake to either
 // fire immediately or hand off to the in-flight register so it kicks the
 // task itself.
-// Mother: tokio::sync::task::AtomicWaker.
 
 use std.atomic
 use runtime
@@ -30,7 +29,6 @@ const AtomicWaker::new() AtomicWaker {
 // Install ctx as the pending waker. Concurrent wake() during the
 // REGISTERING window flips the state to WAKING; we honour that by waking
 // immediately so the task does not stall behind a stale ctx.
-// Mother: AtomicWaker::register_by_ref.
 // V1 current_thread: store ctx; full REGISTERING/WAKING CAS handshake is
 // deferred — atomic.cas after member `this` use has been observed to fault
 // in this mem (wake drain-without-cas is reliable).
@@ -47,7 +45,7 @@ AtomicWaker::take_ctx() u64 {
 
 // Notify the registered waker. Returns the wake_ctx that was armed (0
 // when nothing was). The caller is responsible for actually scheduling.
-// Mother: AtomicWaker::take_waker — drain the slot for the driver to wake.
+// Drain the slot for the driver to wake.
 AtomicWaker::wake() u64 {
     ctx<u64> = this.wake_ctx
     this.wake_ctx = 0

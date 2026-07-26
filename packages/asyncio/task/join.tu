@@ -29,7 +29,7 @@ JoinHandle::poll(ctx){
     if (snap & COMPLETE) == 0 {
         // Register the harness-published task waker (ctx arg is null-padded
         // by the dynstackcall poll path), then re-check COMPLETE to close
-        // the register-vs-complete race (mother JOIN_WAKER protocol).
+        // the register-vs-complete race.
         packed<u64> = resolve_poll_ctx(ctx.(u64))
         rtask.register_join_waker(packed)
         snap = rtask.life_load()

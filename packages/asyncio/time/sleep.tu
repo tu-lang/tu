@@ -1,6 +1,5 @@
 // User-facing sleep / sleep_until. Builds a runtime.time Sleep leaf (traced
 // TimerEntry*) and returns it for await / join / select.
-// Mother: tokio::time::sleep / sleep_until.
 
 use runtime
 use sys
@@ -8,7 +7,6 @@ use asyncio.runtime as rt
 use asyncio.runtime.time as rttime
 
 // Prefer context handle; fall back to bits published by builder_block_on.
-// Mother: scheduler::Handle::current() inside the runtime.
 fn current_time_handle_bits() u64 {
     rc<rt.RuntimeContext> = rt.current_context()
     if rc != null {
@@ -39,7 +37,6 @@ fn deadline_from_instant(when<rttime.Instant>) u64 {
     return when_ns / 1000000
 }
 
-// Mother: time::sleep(duration) -> Sleep leaf (as Future for cross-pkg).
 fn sleep(d<sys.Duration>) runtime.Future {
     // Refresh publish from context when available; never wipe with 0.
     rttime.sleep_set_handle_bits(current_time_handle_bits())
@@ -49,7 +46,6 @@ fn sleep(d<sys.Duration>) runtime.Future {
     return fut
 }
 
-// Mother: time::sleep_until(deadline) -> Sleep leaf (as Future).
 fn sleep_until(when<rttime.Instant>) runtime.Future {
     rttime.sleep_set_handle_bits(current_time_handle_bits())
     deadline<u64> = deadline_from_instant(when)

@@ -1,6 +1,6 @@
-// File open options (tokio::fs::OpenOptions). Collects the read/write/create
+// File open options. Collects the read/write/create
 // flags a caller wants, then lowers them to a Linux open(2) flag word. The
-// access + creation validation mirrors Rust's std OpenOptions.
+// access + creation combinations are validated before open.
 
 use std
 use io

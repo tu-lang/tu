@@ -1,4 +1,4 @@
-// fs_create_dir (tokio::fs::create_dir): create a single directory (mkdir).
+// fs_create_dir: create a single directory (mkdir).
 
 use io
 use string

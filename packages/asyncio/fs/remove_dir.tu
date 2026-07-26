@@ -1,4 +1,4 @@
-// fs_remove_dir (tokio::fs::remove_dir): remove an empty directory.
+// fs_remove_dir: remove an empty directory.
 
 use io
 use string

@@ -1,4 +1,4 @@
-// fs_hard_link (tokio::fs::hard_link): create a hard link.
+// fs_hard_link: create a hard link.
 
 use io
 use string

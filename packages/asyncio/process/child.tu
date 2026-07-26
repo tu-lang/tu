@@ -1,4 +1,4 @@
-// Spawned child handle + exit status (tokio::process::Child / ExitStatus).
+// Spawned child handle + exit status.
 //
 // Design note (task 17.4/17.5): the spec pairs Child with a
 // sync.oneshot.Receiver fed by a reaper task. Since the reactor-driven
@@ -47,7 +47,7 @@ fn exit_status_from_wait(status<i32>) ExitStatus {
     return es
 }
 
-// True (1) for a clean exit with code 0 (mother: ExitStatus::success() -> bool).
+// True (1) for a clean exit with code 0.
 ExitStatus::success() i32 {
     if this.code == 0 && this.signum == 0 return 1
     return 0
@@ -98,7 +98,7 @@ Child::start_kill() i32 {
 }
 
 // Block until the child exits and return its ExitStatus. Cached after the
-// first successful reap. V1: synchronous waitpid (blocking) — mother awaits
+// first successful reap. V1: synchronous waitpid (blocking) — the design awaits
 // SIGCHLD/pidfd; leaf WaitFut still exposes .await at the call site.
 Child::wait_sync() i32, ExitStatus {
     if this.reaped == 1 return io.Ok, this.status
@@ -111,7 +111,7 @@ Child::wait_sync() i32, ExitStatus {
     return io.Ok, es
 }
 
-// Leaf future for Child::wait (tokio::process::Child::wait).
+// Leaf future for Child::wait.
 mem WaitFut: async {
     Child* child
 }
@@ -122,7 +122,7 @@ WaitFut::poll(ctx) {
     return runtime.PollReady, err, es
 }
 
-// Mother: Child::wait — return WaitFut leaf (caller awaits; same as fs ReadFut).
+// Return WaitFut leaf (caller awaits; same as fs ReadFut).
 Child::wait() WaitFut {
     return new WaitFut { child: this }
 }

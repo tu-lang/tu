@@ -90,14 +90,13 @@ fn compute_effective_ms(handle<TimeHandle>, limit_ms<u64>) u64 {
     return delta
 }
 
-// Convert ms to sys.Duration (mother: Duration::from_millis).
+// Convert ms to sys.Duration.
 fn ms_to_duration(ms<u64>) sys.Duration {
     return sys.Duration::from_millis(ms)
 }
 
 // Advance the wheel up to `now` and wake every fired timer. Wakes are
 // performed outside the wheel lock to avoid waker re-entry.
-// Mother: entry fire delivers AtomicWaker → task wake.
 TimeHandle::process(now_ms<u64>){
     this.lock.lock()
     this.wheel.poll(now_ms)
@@ -125,7 +124,7 @@ TimeHandle::process(now_ms<u64>){
 }
 
 // Park the IO driver up to `limit_ms`, but no longer than the next wheel
-// deadline. Mother: time driver computes timeout, then process() after turn.
+// deadline. Computes the timeout first, then process() after the turn.
 TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>) i32 {
     handle.lock.lock()
     eff_ms<u64> = compute_effective_ms(handle, limit_ms)
@@ -145,14 +144,12 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>)
 }
 
 // Schedule an entry. Returns INSERT_* from Wheel::insert.
-// Mother: InsertError::Elapsed → fire immediately (mark pending).
 TimeHandle::register(entry<TimerEntry>) i32 {
     this.lock.lock()
     err<i32>, deadline<u64> = this.wheel.insert(entry.shared, entry.deadline_ms)
     if err == INSERT_OK {
         entry.registered = 1
     } else if err == INSERT_ELAPSED {
-        // Mother: InsertError::Elapsed → entry.fire(Ok(())).
         // mark_pending leaves PENDING_FIRE so poll_elapsed returns FIRED
         // on this same Sleep::poll (waker optional — caller is polling now).
         s<StateCell> = entry.shared.get_cell()

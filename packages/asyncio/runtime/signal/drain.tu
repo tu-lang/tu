@@ -1,4 +1,4 @@
-// Drain signalfd into EventInfo fired_count (mother: signal Driver::process).
+// Drain signalfd into EventInfo fired_count.
 // Returns 1 if at least one siginfo was applied (caller should unpark).
 
 use std
@@ -37,7 +37,7 @@ fn signal_driver_drain(drv<SignalDriver>) i32 {
             if signum < NUM_SIGNALS {
                 ev<EventInfo> = signal_globals_event(glob_ref, signum)
                 if ev != null {
-                    // Mother: EventInfo::fire — bump + wake Notify waiters.
+                    // Bump + wake Notify waiters.
                     ev.fire()
                 }
             }

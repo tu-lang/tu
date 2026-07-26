@@ -109,7 +109,7 @@ fn driver_park_bits(drv_bits<u64>, handle_bits<u64>) i32 {
 
 // Park for at most d. Time wheel narrows the wait if its next deadline
 // is closer; IoDriver::turn handles signal events via TOKEN_SIGNAL.
-// Mother: signal::Driver::park — io.park then process().
+// Io.park then process().
 //
 // signalfd is registered EPOLLET. If a signal arrives while the reactor is
 // not in epoll_wait, the edge is lost and a subsequent park would block

@@ -80,7 +80,7 @@ RawTask::list_take_next() RawTask {
     return this.task_header.queue_next_out()
 }
 
-// Mother: RawTask::wake_by_ref — set NOTIFIED and enqueue when needed.
+// Set NOTIFIED and enqueue when needed.
 RawTask::wake_by_ref(){
     raw_wake_by_ref_bits(this.(u64))
 }
@@ -100,7 +100,7 @@ fn raw_wake_by_ref_bits(ctx<u64>) {
     }
 }
 
-// Wake from a packed ctx that holds RawTask* (mother waker data = Header*).
+// Wake from a packed ctx that holds RawTask*.
 fn wake_by_ctx(ctx<u64>){
     raw_wake_by_ref_bits(ctx)
 }

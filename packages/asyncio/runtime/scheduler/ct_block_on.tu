@@ -1,6 +1,6 @@
 // block_on main loop. Wraps the user's future as a root task, then spins
 // through Defer / Inject / Local until the root completes. When all
-// queues are empty we ask the driver to park (mother: Context::park).
+// queues are empty we ask the driver to park.
 
 use runtime
 use io
@@ -12,7 +12,7 @@ use asyncio.runtime.io as rtio
 // asyncio.error.RuntimeShutdown
 SCHED_RUNTIME_SHUTDOWN<i32> = 0x03020005
 
-// Mother: waker data is the task Header*. Tu passes RawTask* as ctx so
+// Tu passes RawTask* as ctx so
 // ScheduledIo wake can RawTask::wake_by_ref without a (handle,id) lookup.
 fn ct_task_ctx(t<task.RawTask>) u64 {
     return t.(u64)
@@ -61,7 +61,6 @@ fn block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
     return err, val
 }
 
-// Mother: park via aggregate Driver (time-aware timeout + wheel process).
 fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     if shared.driver != 0 && shared.driver_handle != 0 {
         rt.driver_park_bits(shared.driver, shared.driver_handle)
@@ -87,7 +86,6 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
     fut_bits = fut
     root<task.RawTask> = task.bind_root(fut_bits, handle, ct_schedule_bridge.(u64), ct_release_bridge.(u64))
 
-    // Mother: Core { driver: Some(driver), ... }
     core_obj<Core> = ct_core_new(shared.driver, DEFAULT_GLOBAL_QUEUE_INTERVAL)
     defer<Defer>   = Defer::new()
     ctx_obj<CtContext> = CtContext::new(handle, core_obj, defer)
@@ -113,7 +111,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
 
         core_obj.tick = core_obj.tick + 1
         // Skip Inject::pop when empty: empty (NotFound, Notified) multi-ret
-        // hangs / corrupts the dyn return ABI (layout). Mother Option::None.
+        // hangs / corrupts the dyn return ABI (layout). The design Option::None.
         if (core_obj.tick % core_obj.global_queue_interval) == 0 {
             if shared.inject.is_empty() == 0 {
                 ierr<i32>, ti<task.Notified> = shared.inject.pop()

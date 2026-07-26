@@ -1,4 +1,4 @@
-// fs_read (tokio::fs::read): read a whole file into a freshly allocated io.Buf.
+// fs_read: read a whole file into a freshly allocated io.Buf.
 
 use std
 use io

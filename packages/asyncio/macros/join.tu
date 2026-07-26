@@ -1,5 +1,5 @@
 // Library-function form of join!: drive futures concurrently until all resolve.
-// Mother: tokio::join! — fair poll start via FastRand; completed branches skipped.
+// Fair poll start via FastRand; completed branches skipped.
 
 use runtime
 use io

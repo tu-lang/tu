@@ -77,7 +77,6 @@ Notify::stash_permit(){
 // Hand off to one waiter, or stash a single permit when none are queued.
 // Returns NOTIFY_ONE when a permit was stashed, NOTIFY_NONE when a waiter
 // was woken (the wake itself happens after the lock drops).
-// Mother: waker.wake() after dequeue.
 Notify::notify_one() i32 {
     this.lock.lock()
     head_node<Pointers> = this.waiter_q.peek_head()
@@ -99,7 +98,6 @@ Notify::notify_one() i32 {
 
 // Wake every currently queued waiter; does NOT stash a permit. Waiters
 // added after this call wait for the next notify.
-// Mother: each waiter waker.wake().
 Notify::notify_waiters(){
     this.lock.lock()
     loop {
@@ -213,7 +211,7 @@ fn notified_from_bits(bits<u64>) Notified {
 }
 
 // Cross-pkg poll — foreign packages must not member-call Notified::poll
-// (codegen null-dispatch → SIGSEGV). Uses ACTIVE_POLL_CTX like mother.
+// (codegen null-dispatch → SIGSEGV). Uses ACTIVE_POLL_CTX like the design.
 fn notified_poll_bits(nf_bits<u64>) i32 {
     if nf_bits == 0 {
         return runtime.PollPending

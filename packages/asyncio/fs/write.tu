@@ -1,4 +1,4 @@
-// fs_write (tokio::fs::write): create/truncate `path` and write all of `data`.
+// fs_write: create/truncate `path` and write all of `data`.
 
 use io
 use string

@@ -4,7 +4,7 @@
 //
 // Filled-slice is returned as (state, data_bits, len) because this package
 // cannot `use io` (short-name clash). Call sites rebuild io.Buf via
-// io.buf_from_bits / io.NewBuf as needed. Mother AsyncBufRead returns &[u8].
+// io.buf_from_bits / io.NewBuf as needed. The design AsyncBufRead returns &[u8].
 
 use runtime
 

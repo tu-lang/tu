@@ -2,7 +2,7 @@
 // RUNNING and COMPLETE are mutually exclusive; CANCELLED is monotonic.
 // Initial state has refcount=3 (task + JoinHandle + queue), JOIN_INTEREST + NOTIFIED.
 // All transitions go through std.atomic.cas in a load/CAS retry loop.
-// Mother: tokio::runtime::task::state::State — Tu name is TaskState because
+// Tu name is TaskState because
 // bare `State` corrupted the stack on new/return under current codegen.
 
 use std.atomic
@@ -48,7 +48,7 @@ TN_DoNothing<i32> = 0
 TN_Submit<i32>    = 1
 TN_Dealloc<i32>   = 2
 
-// Atomic packed lifecycle + refcount slot (mother: State).
+// Atomic packed lifecycle + refcount slot.
 mem TaskState {
     u64 slot_word // packed: [refcount:26 | bits:6]
 }
@@ -89,7 +89,7 @@ fn st_ref_count(v<i32>) i32 {
     return (v & REF_COUNT_MASK) >> REF_COUNT_SHIFT.(u32)
 }
 
-// Acquire the RUNNING bit (mother state.rs transition_to_running).
+// Acquire the RUNNING bit.
 // Not idle: the notification ref is consumed -> Failed / Dealloc.
 // Idle: set RUNNING + clear NOTIFIED in one CAS; report Cancelled when the
 // CANCELLED bit was already set (RUNNING is still taken, caller completes).
@@ -118,7 +118,7 @@ TaskState::transition_to_running() i32 {
     return TR_Failed
 }
 
-// Pending poll exit (mother state.rs transition_to_idle).
+// Pending poll exit.
 // Cancelled: state untouched, caller must cancel + complete.
 // Not notified: polling consumed the Notified ref -> ref_dec (Ok/OkDealloc).
 // Notified during poll: keep our ref + ref_inc for the new Notified the
@@ -146,7 +146,7 @@ TaskState::transition_to_idle() i32 {
     return TI_Ok
 }
 
-// Ready poll exit. Single CAS clears RUNNING + sets COMPLETE (mother XOR).
+// Ready poll exit. Single CAS clears RUNNING + sets COMPLETE.
 // Returns the post-transition snapshot for join-waker checks.
 TaskState::transition_to_complete() i32 {
     loop {
@@ -191,7 +191,7 @@ TaskState::ref_dec() i32 {
     return 0
 }
 
-// By-val notify (mother state.rs transition_to_notified_by_val).
+// By-val notify.
 // RUNNING: set NOTIFIED (poller re-enqueues on idle) and consume our ref.
 // COMPLETE/NOTIFIED: just consume the ref (may reach zero -> Dealloc).
 // Idle: set NOTIFIED + ref_inc for the new Notified -> Submit.
@@ -226,7 +226,7 @@ TaskState::transition_to_notified_by_val() i32 {
     return TN_DoNothing
 }
 
-// By-ref notify (mother state.rs transition_to_notified_by_ref).
+// By-ref notify.
 // COMPLETE/NOTIFIED: nothing to do. RUNNING: set NOTIFIED only (the poller
 // re-enqueues on idle). Idle: set NOTIFIED + ref_inc -> Submit.
 TaskState::transition_to_notified_by_ref() i32 {

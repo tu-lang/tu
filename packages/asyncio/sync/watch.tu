@@ -1,4 +1,4 @@
-// Single-slot value with version counter (tokio sync::watch).
+// Single-slot value with version counter.
 use std.atomic
 use runtime
 
@@ -8,8 +8,8 @@ WATCH_CHAN_CLOSED<i32> = 0x03020002
 mem Watch {
     u64     slot_bits
     u64     version       // atomic; monotonic on send
-    Notify* wake_notify   // tokio: notify_rx
-    Notify* tx_wake       // tokio: notify_tx for Sender::closed
+    Notify* wake_notify
+    Notify* tx_wake
     i32     rx_live       // live receiver count
     i32     tx_dropped    // sender dropped flag
 }

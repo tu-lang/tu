@@ -1,4 +1,4 @@
-// Runtime builder. Mirrors tokio::runtime::Builder so user code can
+// Runtime builder. Lets user code
 // dial in worker count, IO/time toggles, and queue depths without
 // touching the runtime internals directly.
 
@@ -115,7 +115,7 @@ fn build_drivers(b<Builder>) i32, DriverPair, i32 {
         io_h   = rtio.iohandle_last()
         if io_drv == null || io_h == null return 1, null, 0
 
-        // Signal driver lives on top of the IO driver (mother: runtime signal).
+        // Signal driver lives on top of the IO driver.
         // Use last() getters — SignalDriver::new triple-ret drops the handle.
         iod_bits<u64> = 0
         ioh_bits<u64> = 0
@@ -154,7 +154,7 @@ fn build_current_thread(b<Builder>) Runtime {
     spawner<rtblk.Spawner>   = rtblk.Spawner::new(pool)
 
     shared<sched.CtShared>   = sched.CtShared::new()
-    // Mother: Core owns Driver; Handle holds driver::Handle. Wire both so
+    // Wire both so
     // current_thread block_on can park the reactor (not just osyield).
     if drv != null {
         shared.driver = drv.(u64)
@@ -208,7 +208,7 @@ fn build_multi_thread(b<Builder>) Runtime {
     return Runtime::compose(KIND_MULTI_THREAD, weak, drv, drv_h, spawner, pool, handle.(u64))
 }
 
-// Package-internal build (mother: Builder::build). Runtime stays in-package.
+// Package-internal build. Runtime stays in-package.
 fn builder_build_rt(b<Builder>) Runtime {
     if b.sched_kind == KIND_MULTI_THREAD {
         return build_multi_thread(b)
@@ -218,7 +218,6 @@ fn builder_build_rt(b<Builder>) Runtime {
 
 // Build + block_on + shutdown_background in one package call.
 // Avoids cross-pkg Runtime returns (codegen drops/corrupts mem with u64 fields).
-// Mother: Builder::build()?.block_on(fut) then drop/shutdown.
 // fut_bits: raw Future* as u64 — cross-pkg dynamic fut args arrive null.
 // Dummy arg keeps multi-return second value (same trap as netio.make_poll).
 fn builder_block_on(b<Builder>, fut_bits<u64>, _unused<i32>) i32, i64 {
@@ -236,7 +235,7 @@ fn publish_sleep_time_handle(rtv<Runtime>) {
     rttime.sleep_set_handle_bits(runtime_sleep_time_bits(rtv))
 }
 
-// Member sugar matching mother Builder::build — returns Runtime only for
+// Member sugar matching the design Builder::build — returns Runtime only for
 // same-package callers; cross-pkg tests should use builder_block_on.
 Builder::build(_unused<i32>) Runtime {
     return builder_build_rt(this)

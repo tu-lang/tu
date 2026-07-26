@@ -25,7 +25,6 @@ RESULT_CANCELLED<i32>   = 1
 RESULT_FIRED<i32>       = 2
 
 // Atomic deadline word + waker slot for one Sleep.
-// Mother: StateCell { state: AtomicU64, result, waker }.
 // Field is when_word (not `state`) to avoid asmgen `.state` traps.
 mem StateCell {
     u64                 when_word // atomic; deadline_ms or sentinel
@@ -64,7 +63,7 @@ StateCell::is_pending_fire() i32 {
 
 // Mark the entry as ready to deliver. The wheel calls this just before
 // firing the waker. Returns 0 on success, RESULT_CANCELLED when state was
-// already DEREGISTERED. Mother: StateCell::mark_pending.
+// already DEREGISTERED.
 StateCell::mark_pending(not_after<u64>) i32 {
     loop {
         cur<u64> = atomic.load64(&this.when_word)
@@ -78,7 +77,7 @@ StateCell::mark_pending(not_after<u64>) i32 {
     return RESULT_OK
 }
 
-// Mother: StateCell::set_expiration — store deadline under driver lock.
+// Store deadline under driver lock.
 // Fresh cells start at STATE_DEREGISTERED; unconditional store is enough.
 // std_atomic_store64 only consumes (addr, value) — the 2nd arg is written.
 // Passing (addr, old, new) stored `old` (DEREGISTERED) and ignored `new`,
@@ -101,9 +100,9 @@ StateCell::deregister(){
 }
 
 // Poll the cell. Returns (RESULT_*, fired) where fired==1 means the wheel
-// already produced the result. Mother: register waker then read state.
+// already produced the result. Registers the waker, then reads state.
 StateCell::poll(ctx<u64>) (i32, i32) {
-    // Mother registers the waker first so a racing fire observes it.
+    // The design registers the waker first so a racing fire observes it.
     this.waker_lock.lock()
     libsync.atomic_waker_register_raw(this.waker_bits, ctx)
     this.waker_lock.unlock()
@@ -156,7 +155,7 @@ mem TimerEntry {
 const TimerEntry::new(deadline_ms<u64>) TimerEntry {
     e<TimerEntry> = new TimerEntry
     cell<StateCell> = StateCell::new()
-    // Arm the cell with the deadline (mother: set_expiration before insert).
+    // Arm the cell with the deadline.
     cell.arm(deadline_ms)
     e.shared      = TimerShared::new(cell)
     e.deadline_ms = deadline_ms

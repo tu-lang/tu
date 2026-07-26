@@ -64,7 +64,7 @@ PollEvented::poll_write_io(ctx<u64>, op<rtio.IoOp>) i32, i64 {
     return err, val
 }
 
-// Clear readiness bits from a prior poll_*_ready snapshot (mother clear_readiness).
+// Clear readiness bits from a prior poll_*_ready snapshot.
 PollEvented::clear_readiness(event<rtio.ReadyEvent>) i32 {
     return this.reg.clear_readiness(event)
 }

@@ -109,7 +109,7 @@ Inject::close() i32 {
 // Dequeue the head. Returns (0, Notified) or (io.NotFound, null) when drained.
 // Empty path must not allocate a Notified — (NotFound, new Notified) multi-ret
 // hangs the dyn return ABI; callers treat the second value as meaningful
-// only when the i32 is 0 (mother: Option::None).
+// only when the i32 is 0.
 Inject::pop() (i32, task.Notified) {
     m<runtime.MutexInter> = this.gate_lock
     m.lock()

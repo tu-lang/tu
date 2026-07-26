@@ -1,4 +1,4 @@
-// fs_create_dir_all (tokio::fs::create_dir_all): create `path` and every
+// fs_create_dir_all: create `path` and every
 // missing parent, treating already-existing components as success.
 
 use std

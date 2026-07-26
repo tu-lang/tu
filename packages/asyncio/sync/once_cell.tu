@@ -15,7 +15,7 @@ OnceErrCancelled<i32>       = 0x03020001
 // Cross-thread one-shot init container.
 mem OnceCell {
     i32     cell_state    // atomic; UNINIT / INIT_RUN / INIT_DONE
-    u64     slot_bits     // tokio: value payload as raw bits
+    u64     slot_bits
     Notify* ready_notify
 }
 

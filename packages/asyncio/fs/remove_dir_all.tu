@@ -1,4 +1,4 @@
-// fs_remove_dir_all (tokio::fs::remove_dir_all): recursively delete a directory
+// fs_remove_dir_all: recursively delete a directory
 // and everything under it.
 
 use std

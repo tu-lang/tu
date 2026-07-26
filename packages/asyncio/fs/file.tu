@@ -1,8 +1,8 @@
-// Async file handle (tokio::fs::File) plus open helpers.
+// Async file handle plus open helpers.
 //
-// V1 runs each syscall synchronously inline on the calling task. tokio routes
-// these through spawn_mandatory_blocking; public surface stays awaitable via
-// leaf futures (sync factory returns runtime.Future for direct `.await`).
+// V1 runs each syscall synchronously inline on the calling task; a later
+// version can route these through spawn_mandatory_blocking. Public surface
+// stays awaitable via leaf futures (sync factory returns runtime.Future).
 
 use std
 use io
@@ -15,7 +15,7 @@ mem File {
     i32 fd
 }
 
-// Sync open used by leaf futures (mother OpenOptions::open).
+// Sync open used by leaf futures.
 fn file_open_sync(path_bits<u64>, opts<OpenOptions>) i32, File {
     err<i32>, f<File> = file_open_sync_cstr(string.cstr_from_bits(path_bits), opts)
     return err, f
@@ -131,7 +131,7 @@ fn fs_create(path_bits<u64>) CreateFut {
     return new CreateFut { path_bits: path_bits }
 }
 
-// ---- File member leaf futures (tokio File::read / write / …) -------------
+// ---- File member leaf futures -------------
 
 mem FileReadFut: async {
     File* file

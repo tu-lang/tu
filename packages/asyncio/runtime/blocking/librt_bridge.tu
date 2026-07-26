@@ -5,16 +5,16 @@
 // import table; getPackage then treats structpkg "runtime" as the library and
 // local mem types (Builder, CachedParkThread, …) stop resolving. Subpackages
 // (short-name `blocking`) can safely `use runtime` and re-export the few
-// entrypoints the parent needs — same Note / newcore primitives mother uses.
+// entrypoints the parent needs — same Note / newcore primitives the design uses.
 
 use runtime
 
-// Spawn an OS thread for entry (mother: std::thread / tokio worker spawn).
+// Spawn an OS thread for entry.
 fn librt_newcore(entry<u64>) {
     runtime.newcore(entry)
 }
 
-// Note helpers as raw u64 bits (cross-package; mother park uses Notify/Atomic).
+// Note helpers as raw u64 bits.
 fn librt_note_new_raw() u64 {
     return runtime.note_new_raw()
 }

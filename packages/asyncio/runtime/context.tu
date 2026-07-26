@@ -18,7 +18,7 @@ ACTIVE_RT<RuntimeContext> = null
 // Field `drv_bits` avoids `.driver` clashing with type Driver (type-assert trap).
 mem RuntimeContext {
     u64        sched          // raw bits of scheduler handle
-    u64        drv_bits       // raw bits of DriverHandle* (tokio: Handle driver)
+    u64        drv_bits       // raw bits of DriverHandle*
     util.FastRand*  rng
     i32        coop_budget    // remaining budget in this poll round
     i32        enter_kind     // ENTER_*

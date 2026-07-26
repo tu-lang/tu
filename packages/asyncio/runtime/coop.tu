@@ -2,7 +2,6 @@
 // real work. When the budget hits zero we return PollPending so the
 // scheduler gets a chance to run other tasks, preventing one ready
 // future from monopolising the worker.
-// Mother: tokio::task::coop / budget (rough equivalent).
 
 DEFAULT_BUDGET<i32> = 128
 

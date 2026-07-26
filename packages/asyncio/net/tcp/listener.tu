@@ -4,7 +4,7 @@
 // accept() returns AcceptFut (sync), same pattern as TcpStream::connect →
 // ConnectFut. An `async` wrapper would make one `.await` only construct the
 // leaf and never poll it (call sites use accept().await for the result).
-// AcceptFut::poll mirrors mother poll_accept (ready + accept + clear on
+// AcceptFut::poll mirrors the design poll_accept (ready + accept + clear on
 // WouldBlock) without IoOp api dispatch.
 
 use net
@@ -68,7 +68,7 @@ TcpListener::raw_listener() nettcp.TcpListener {
     return l
 }
 
-// Leaf future for accept().await — mother poll_accept loop.
+// Leaf future for accept().await — the design poll_accept loop.
 mem AcceptFut: async {
     aio.PollEvented*     poll_ev
     nettcp.TcpListener*  listener
@@ -112,7 +112,7 @@ TcpListener::accept() AcceptFut {
     return f
 }
 
-// Mother: poll_accept — same ready/accept/clear loop as AcceptFut::poll.
+// Same ready/accept/clear loop as AcceptFut::poll.
 TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
     ok_code<i32> = 1
     pend<i32> = runtime.PollPending

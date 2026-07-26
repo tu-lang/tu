@@ -33,7 +33,7 @@ impl task.Schedule for CtHandle {
             }
         }
         // Foreign thread or no active context: route through inject.
-        // Mother current_thread/mod.rs schedule(): inject.push then
+        // The design current_thread/mod.rs schedule(): inject.push then
         // driver.unpark() — without the eventfd kick the main thread
         // stays blocked in epoll_wait and never sees the new task.
         this.shared.inject.push(notif)

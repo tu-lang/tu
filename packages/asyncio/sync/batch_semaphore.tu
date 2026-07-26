@@ -119,7 +119,7 @@ ACQ_STAGE_DONE<i32>    = 2
 
 // Async leaf used by acquire().
 mem AcquireFut: async {
-    BatchSemaphore* owner_sem   // tokio: parent semaphore
+    BatchSemaphore* owner_sem
     u32             needed
     i32             stage
     SemWaiter*      waiter_node

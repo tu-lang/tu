@@ -4,7 +4,7 @@
 
 use runtime
 
-// Mother: Context carries the task waker. Dynstackcall Future::poll() does
+// Dynstackcall Future::poll() does
 // not forward ctx, so the harness publishes the RawTask* waker here for
 // ScheduledIo / sync waiters to register (see resolve_poll_ctx).
 ACTIVE_POLL_CTX<u64> = 0
@@ -27,7 +27,7 @@ fn vtable_drop_join_handle_slow(rtask<RawTask>)
 fn vtable_shutdown(rtask<RawTask>)
 fn future_poll(fut, ctx<u64>) (i64, i64)
 
-// Run one polling round (mother harness.rs poll/poll_inner). ctx packs the
+// Run one polling round. ctx packs the
 // task waker (RawTask* bits). All lifecycle moves go through TaskState.
 RawTask::harness_poll(ctx<u64>){
     life_st<TaskState> = this.life_st()
@@ -56,7 +56,7 @@ RawTask::harness_poll(ctx<u64>){
         return
     }
     // Future::poll dynstackcall sets up multi-return; passing ctx as an
-    // arg corrupts that ABI. Mother still has a Context waker for the
+    // arg corrupts that ABI. The design still has a Context waker for the
     // task — expose it via ACTIVE_POLL_CTX for IO registration.
     // Stage must be RUNNING for store_output's CAS (IDLE->FINISHED is rejected).
     this.task_cell.force_stage(STAGE_RUNNING)
@@ -95,7 +95,7 @@ RawTask::harness_poll(ctx<u64>){
     this.harness_complete(0, output)
 }
 
-// Finalise the task (mother harness.rs complete): write output, flip
+// Finalise the task: write output, flip
 // COMPLETE, wake the JoinHandle waker, release from the owner list, then
 // drop the poll ref. Assumes lifecycle RUNNING and cell stage RUNNING.
 RawTask::harness_complete(err<i32>, output<i64>){
@@ -110,7 +110,7 @@ RawTask::harness_complete(err<i32>, output<i64>){
         this.wake_join_waker()
     }
 
-    // Mother release(): detach from the scheduler's OwnedTasks.
+    // The design release(): detach from the scheduler's OwnedTasks.
     this.task_header.sched_release(this)
 
     if life_st.ref_dec() != 0 {
@@ -118,7 +118,7 @@ RawTask::harness_complete(err<i32>, output<i64>){
     }
 }
 
-// Wake the JoinHandle waker registered in the cell (mother trailer.wake_join).
+// Wake the JoinHandle waker registered in the cell.
 // Must NOT re-schedule this (completed) task; it wakes the joining task.
 RawTask::wake_join_waker(){
     life_st<TaskState> = this.life_st()

@@ -1,4 +1,4 @@
-// fs_symlink (tokio::fs::symlink): create a symbolic link.
+// fs_symlink: create a symbolic link.
 
 use io
 use string

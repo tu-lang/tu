@@ -1,9 +1,9 @@
 // Borrowed read buffer surfaced to AsyncRead implementors.
-// Mother: tokio::io::ReadBuf — filled/initialized cursor over a byte slice.
+// Filled/initialized cursor over a byte slice.
 //
 // Package asyncio.io cannot `use io` (short-name clash with this package), so
 // the buffer is held as a raw byte pointer + capacity (layout adaptation of
-// mother ReadBuf over &[u8]).
+// the design ReadBuf over &[u8]).
 //
 // data_bits keeps the package bridge and async adapters representation-neutral.
 // Native pointer and u64 mem fields preserve all 64 bits (struct.tu regression).
@@ -32,7 +32,7 @@ fn read_buf_from_i8(data<i8*>, cap<u64>) ReadBuf {
     return read_buf_from_bits_cap(bits, cap)
 }
 
-// Mother: ReadBuf::new — start empty over an already-initialized region.
+// Start empty over an already-initialized region.
 const ReadBuf::from_ptr(data<u8*>, cap<u64>) ReadBuf {
     rb<ReadBuf> = new ReadBuf
     bits<u64> = 0

@@ -1,4 +1,4 @@
-// tokio::signal::unix — SignalKind plus a stream of delivered signals.
+// Unix signal surface — SignalKind plus a stream of delivered signals.
 //
 // SignalStream subscribes through the runtime signal driver. The driver hands
 // back an EventInfo (a sync.Notify plus a monotonic fired_count that
@@ -15,7 +15,7 @@ use asyncio.runtime as rt
 use asyncio.runtime.signal as rtsig
 use asyncio.sync as sync
 
-// A Unix signal number (tokio::signal::unix::SignalKind).
+// A Unix signal number.
 mem SignalKind {
     i32 num
 }
@@ -74,7 +74,7 @@ mem SignalStream {
     u64        last_seen
 }
 
-// Mother: tokio::signal::unix::signal — sync Result<Signal>, not async.
+// Sync Result<Signal>, not async.
 // Publishes via stream_last — dual-ret (i32, SignalStream) drops mem.
 LAST_SIGNAL_STREAM<SignalStream> = null
 
@@ -82,7 +82,6 @@ fn stream_last() SignalStream {
     return LAST_SIGNAL_STREAM
 }
 
-// Mother: unix::signal(kind).
 fn subscribe(kind<SignalKind>) i32 {
     LAST_SIGNAL_STREAM = null
     shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
@@ -116,7 +115,7 @@ fn subscribe(kind<SignalKind>) i32 {
 }
 
 // Non-blocking poll: 1 and consume one delivery if a signal has fired since
-// last_seen, else 0. Mother: Signal ready/pending as Tu i32.
+// last_seen, else 0 (ready/pending as Tu i32).
 SignalStream::try_recv() i32 {
     cur<u64> = rtsig.event_info_fired_count(this.ev_bits)
     if cur > this.last_seen {
@@ -126,7 +125,7 @@ SignalStream::try_recv() i32 {
     return 0
 }
 
-// Leaf future for SignalStream::recv (mother: Signal::recv / poll_recv).
+// Leaf future for SignalStream::recv.
 // Parks on EventInfo's Notify; drain calls EventInfo::fire which wakes us.
 // pending_nf is Notified* as u64 (cross-pkg mem field cannot be sync.Notified*).
 mem RecvFut: async {
@@ -164,7 +163,7 @@ RecvFut::poll(ctx) {
     return runtime.PollPending
 }
 
-// Mother: Signal::recv. Erase to runtime.Future so foreign packages can
+// Erase to runtime.Future so foreign packages can
 // `.await` safely (concrete cross-pkg async mem await SIGSEGVs).
 SignalStream::recv() runtime.Future {
     f<RecvFut> = new RecvFut {

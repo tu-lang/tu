@@ -1,5 +1,5 @@
 // Small array buffer used to batch ctx values for later wake-up.
-// NUM_WAKERS=32 matches the tokio batch limit; on overflow callers should
+// NUM_WAKERS=32 matches the batch limit; on overflow callers should
 // drop the lock, wake_all, then continue collecting under the lock again.
 
 NUM_WAKERS<i32> = 32

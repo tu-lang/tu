@@ -99,12 +99,12 @@ Shutdown::poll(ctx) {
     return runtime.PollReady, 0.(u64)
 }
 
-// Mother write(): sync factory returning Write leaf (await at call site).
+// The design write(): sync factory returning Write leaf (await at call site).
 fn write(w<u64>, buf<iobuf.Buf>) Write {
     return Write::new(w, buf)
 }
 
-// Leaf future: write every byte of `buf` (mother tokio::io::WriteAll).
+// Leaf future: write every byte of `buf`.
 mem WriteAll: async {
     u64       writer_bits
     iobuf.Buf remain
@@ -119,7 +119,7 @@ const WriteAll::new(w<u64>, buf<iobuf.Buf>) WriteAll {
     return f
 }
 
-// Mother WriteAll::poll — keep issuing poll_write until remain is empty.
+// The design WriteAll::poll — keep issuing poll_write until remain is empty.
 WriteAll::poll(ctx) {
     ready<i32> = runtime.PollReady
     pend<i32> = runtime.PollPending
@@ -148,7 +148,7 @@ WriteAll::poll(ctx) {
     return ready, 0.(i64)
 }
 
-// Mother write_all(): sync factory returning WriteAll leaf.
+// The design write_all(): sync factory returning WriteAll leaf.
 fn write_all(w<u64>, buf<iobuf.Buf>) WriteAll {
     return WriteAll::new(w, buf)
 }

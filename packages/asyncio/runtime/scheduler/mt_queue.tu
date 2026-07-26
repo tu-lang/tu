@@ -2,7 +2,7 @@
 // into the upper 32 bits and the real consumer position into the lower
 // 32 bits, so steal_into can advance the steal half via CAS while the
 // owner pops from the real half independently.
-// LOCAL_QUEUE_CAPACITY=256 matches tokio.
+// LOCAL_QUEUE_CAPACITY is fixed at 256.
 
 use std
 use std.atomic

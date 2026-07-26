@@ -38,7 +38,7 @@ fn block_on(fut) (i32, i64) {
 }
 
 // Build a default multi_thread runtime with all drivers enabled.
-// Returns BuildResult (mother: Result<Runtime>).
+// Returns BuildResult.
 fn runtime_default() rt.Runtime {
     b<rt.Builder> = rt.Builder::new_multi_thread()
     b = b.enable_all()

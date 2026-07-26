@@ -1,4 +1,4 @@
-// fs_copy (tokio::fs::copy): copy `from` to `to`, preserving permission bits.
+// fs_copy: copy `from` to `to`, preserving permission bits.
 
 use io
 use string

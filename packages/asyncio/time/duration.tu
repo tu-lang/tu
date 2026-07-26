@@ -4,7 +4,7 @@
 use sys
 
 // Package bridges — callers cannot write `time.Duration::from_*` (static call
-// path). Mother: tokio::time::Duration::from_*.
+// path), so package-level from_* functions are provided instead.
 
 fn from_secs(secs<u64>) sys.Duration {
     return sys.Duration::from_secs(secs)

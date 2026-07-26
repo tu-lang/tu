@@ -1,7 +1,7 @@
-// Host resolution — mirrors tokio::net::lookup_host → addr::to_socket_addrs.
+// Host resolution — lookup_host delegating to addr::to_socket_addrs.
 //
 // Fast path: parse_ascii_bytes (tustd SocketAddr::parse_ascii). Slow path:
-// mother uses spawn_blocking(strto_socket_addrs); Tu leaf future polls that.
+// the design uses spawn_blocking(strto_socket_addrs); Tu leaf future polls that.
 // Package-level async+await is unavailable — expose LookupHostFut instead.
 //
 // Library `net` is reached only via asyncio.util bridges (short-name clash).
@@ -32,7 +32,7 @@ fn blocking_strto_socket_addrs(host<string.String>) u64 {
 }
 
 // Leaf future for lookup_host. poll_stage: 0=start, 1=await join, 2=done.
-// Field renamed from mother-style `stage` to avoid typeassert / package traps.
+// Field renamed from the design-style `stage` to avoid typeassert / package traps.
 mem LookupHostFut: async {
     string.String host
     i32 poll_stage
@@ -65,7 +65,6 @@ LookupHostFut::poll(ctx){
             return runtime.PollReady, NET_IO_UNSUPPORTED
         }
 
-        // Mother: spawn_blocking(|| to_socket_addrs(host)).
         JOB_HOST = this.host
         jh_slot<task.JoinHandle> = h.spawn_mandatory_blocking(blocking_dns_trampoline.(u64))
         this.jh = jh_slot
@@ -96,7 +95,7 @@ fn blocking_dns_trampoline() u64 {
     return blocking_strto_socket_addrs(JOB_HOST)
 }
 
-// User entry matching tokio::net::lookup_host — returns a leaf future.
+// User entry point for host lookup — returns a leaf future.
 fn lookup_host(host<string.String>) LookupHostFut {
     return new LookupHostFut {
         host: host,

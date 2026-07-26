@@ -1,5 +1,4 @@
 // User-facing Instant bridges over asyncio.runtime.time's monotonic Instant.
-// Mother: tokio::time::Instant::now().
 
 use asyncio.runtime.time as rttime
 

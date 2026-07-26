@@ -95,7 +95,7 @@ Registration::poll_write_io(ctx<u64>, op<IoOp>) i32, i64 {
 fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) i32, i64 {
     loop {
         err<i32>, ev<ReadyEvent> = this.shared.poll_readiness(ctx, dir)
-        // Mother registration.rs poll_io: ready!(poll_ready) then run op.
+        // The design registration.rs poll_io: ready!(poll_ready) then run op.
         // Ready is err==0 (not PollReady — that collides with io.Ok and
         // made callers treat readiness as failure). Pending / shutdown /
         // other errors short-circuit.

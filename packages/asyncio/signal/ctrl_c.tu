@@ -1,14 +1,12 @@
-// tokio::signal::ctrl_c — resolve on the first SIGINT.
-//
-// Mother: async fn ctrl_c() { os_impl::ctrl_c()?.recv().await; Ok(()) }
-// where unix::ctrl_c() is sync signal(SignalKind::interrupt()).
+// ctrl_c — resolve on the first SIGINT, built on sync
+// signal(SignalKind::interrupt()) plus an awaited recv.
 // Tu: leaf future — register on first poll, then drive erased recv Future
 // (no package async+await; that hits return-count parse errors).
 
 use io
 use runtime
 
-// Leaf for public ctrl_c() (mother async ctrl_c).
+// Leaf for public ctrl_c().
 mem CtrlCFut: async {
     i32 stage
     u64 recv_bits
@@ -28,7 +26,7 @@ CtrlCFut::poll(ctx) {
     return rf.poll()
 }
 
-// Mother: signal::ctrl_c — awaitable until first SIGINT after poll.
+// Awaitable until first SIGINT after poll.
 fn ctrl_c() runtime.Future {
     return new CtrlCFut {
         stage: 0,

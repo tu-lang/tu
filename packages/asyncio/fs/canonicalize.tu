@@ -1,4 +1,4 @@
-// fs_canonicalize (tokio::fs::canonicalize).
+// fs_canonicalize.
 // V1: readlink terminal symlink or return a copy of the input path.
 
 use io

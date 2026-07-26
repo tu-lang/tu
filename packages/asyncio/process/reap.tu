@@ -1,4 +1,4 @@
-// SIGCHLD reaper (tokio orphan/child reaping fallback).
+// SIGCHLD reaper.
 //
 // Design note (task 17.2): subscribes to SIGCHLD through the signal driver and
 // reaps exited children with waitpid(WNOHANG). V1: the signal-driven wakeup
@@ -44,7 +44,7 @@ SigchldReaper::reap_pending() i32 {
     return n
 }
 
-// Reaper task body. V1: subscribe then sweep once (sync). Mother loops on
+// Reaper task body. V1: subscribe then sweep once (sync). The design loops on
 // SIGCHLD notifications; continuous await lands when the signal driver is wired.
 SigchldReaper::reap_loop() i32 {
     serr<i32> = this.start()

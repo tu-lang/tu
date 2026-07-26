@@ -174,7 +174,7 @@ Wheel::cascade_level(list<EntryList>){
     }
 }
 
-// Advance the wheel to `now`. Mother compares slot *deadlines* to `now`,
+// Advance the wheel to `now`. The design compares slot *deadlines* to `now`,
 // not raw slot indices — `sl <= target_slot` skips entries when now jumps
 // past the slot index without wrapping (elapsed=0, when=50, now=100).
 Wheel::poll(now<u64>) u64 {
