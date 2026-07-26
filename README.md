@@ -22,15 +22,32 @@
 Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态 `mem` / 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现。
 
 ```
-tu  [options] file.tu
-    build *.tu              编译 → 汇编 → 链接 → 可执行文件
-    -s  *.tu|dir            编译为 linux-amd64 汇编
-    -c  *.s |dir            汇编 → ELF / PE-COFF 可重定位目标
-    -o  *.o |dir            链接生成最终程序
-    -d                      trace：打印详细编译过程
-    -gcc                    经 gcc 链接
-    -g                      带 debug 段，支持栈回溯
-    -std                    编译 runtime & std 内置库
+Usage: tu <command|option> [arguments]
+
+Commands:
+  run   <file.tu> [args...]  编译、链接并运行
+  build <file.tu>            编译并链接生成可执行文件
+
+Options:
+  -s   <file.tu|dir>         编译为 amd64 汇编（.s）
+  -c   <file.s|dir>          汇编为可重定位目标文件（.o）
+  -o   <file.o|dir>          链接目标文件生成可执行程序
+  -d                         开启 trace 日志
+  -g                         带 debug 段（支持栈回溯）
+  -gcc                       使用 gcc 链接
+  -std                       同时编译 runtime/std 内置库
+  --workdir DIR              中间产物写到 DIR（.s/.o/a.out）
+  --workdir-cwd              中间产物写当前目录（旧行为）
+  --work                     保留中间产物
+  -v                         打印版本
+
+Default workdir: $TMPDIR/tu-build-<stem>-...
+```
+
+一行跑起来：
+
+```bash
+tu run hello.tu
 ```
 
 ## Demo
@@ -61,7 +78,7 @@ make tests
 | 动态 | `int` `float` `string` `bool` `null` `array` `map` `closure` `object` |
 | 静态 | `i8`…`u64` `f32` `f64` `pointer` `mem` |
 | 控制与模块 | `func`/`fn` `goto` `class` `return` `type` `use` `if` `while` `for`/`range` `loop` `match` |
-| 现代抽象 | `async`/`await` · `api`/`impl` |
+| 现代抽象 | `async`/`await` · `api`/`impl` · `asyncio`（timer / net / fs / process / signal / select / join）|
 
 ---
 
@@ -204,6 +221,55 @@ fn main(){
     fmt.println(body)   // hello world
 }
 ```
+
+---
+
+### Asyncio — 异步运行时：定时器竞速与并发
+
+`packages/asyncio` 提供 Builder、时间轮、IO/信号 driver，以及 `select` / `join` / `timeout`。下面这段真实可跑（`tu run demo.tu`）——两个定时器 `select` 竞速，再 `join` 并发等待：
+
+```
+use fmt
+use io
+use os
+use runtime
+use asyncio.runtime as rt
+use asyncio.macros as m
+use asyncio.time as atime
+
+// Race two timers: the 10ms one wins the select.
+async race() {
+    winner<i32> = m.select2(
+        atime.sleep(atime.from_millis(10)),
+        atime.sleep(atime.from_millis(1000))
+    ).await
+    fmt.println("select: fast timer won, branch =", int(winner))
+
+    // Run two sleeps concurrently; total wait is max(20,30), not the sum.
+    st<i32> = m.join2(
+        atime.sleep(atime.from_millis(20)),
+        atime.sleep(atime.from_millis(30))
+    ).await
+    fmt.println("join: both timers fired")
+    return st
+}
+
+fn main() {
+    b<rt.Builder> = rt.Builder::new_current_thread()
+    b = b.enable_all()
+    err<i32>, ret<i64> = rt.builder_block_on(b, race(), 0)
+    if err != 0 || ret != io.Ok os.die("runtime failed")
+    fmt.println("done")
+}
+```
+
+```text
+select: fast timer won, branch = 1
+join: both timers fired
+done
+```
+
+TCP/UDP/Unix echo、fs、process、signal 的完整用例见 `tests/asyncio/`。
 
 ---
 
