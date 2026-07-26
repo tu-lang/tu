@@ -48,14 +48,18 @@ Ipv4Addr::into_inner() u32 {
 }
 
 Ipv4Addr::string() string.String {
+    // catfmt supports %i/%u, not %d (%d prints the letter 'd').
+    // Promote octets to i64 so %i / stringll2str see full integer args.
+    a<i64> = 0
+    b<i64> = 0
+    c<i64> = 0
+    d<i64> = 0
+    a = this.octets[0]
+    b = this.octets[1]
+    c = this.octets[2]
+    d = this.octets[3]
     strl<string.Str> = string.empty()
-	strl = strl.catfmt(
-        "%d.%d.%d.%d".(i8),
-        this.octets[0],
-        this.octets[1],
-        this.octets[2],
-        this.octets[3],
-    )
+    strl = strl.catfmt(*"%i.%i.%i.%i", a, b, c, d)
     return string.S(strl)
 }
 
@@ -105,8 +109,18 @@ IPV6_UNSPECIFIED<Ipv6Addr:> = new Ipv6Addr{
     ]
 }
 
-Ipv6Addr::segments()  u16* {
-    return &this.octets
+// Scratch for host-order segments(); valid until the next segments() call.
+IPV6_SEGS_HOST<u16:8> = null
+
+// Mother: Ipv6Addr::segments — eight host-endian u16 groups (from_be of wire).
+Ipv6Addr::segments() u16* {
+    be<u16*> = &this.octets
+    i<i32> = 0
+    while i < 8 {
+        IPV6_SEGS_HOST[i] = sys.u16_from_be(be[i])
+        i += 1
+    }
+    return &IPV6_SEGS_HOST
 }
 
 Ipv6Addr::octets() u8* {

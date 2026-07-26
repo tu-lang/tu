@@ -617,11 +617,159 @@ fn try_parse_simple_ipv4_socket(b<u8*>, len<i32>) i32 {
     return io.Ok
 }
 
+// Parse up to 4 hex digits into a host-order u16; returns (ok, value, consumed).
+fn parse_hex_u16(b<u8*>, start<i32>, end_len<i32>) i32, u16, i32 {
+    if start >= end_len {
+        return 0, 0.(u16), 0
+    }
+    idx<i32> = start
+    acc<u32> = 0
+    dig_n<i32> = 0
+    zero_b<u8> = 48
+    nine_b<u8> = 57
+    a_lo<u8> = 97
+    f_lo<u8> = 102
+    a_up<u8> = 65
+    f_up<u8> = 70
+    loop {
+        if idx >= end_len {
+            break
+        }
+        if dig_n >= 4 {
+            break
+        }
+        ch<u8> = b[idx]
+        dv<u32> = 0
+        got<i32> = 0
+        if ch >= zero_b {
+            if ch <= nine_b {
+                off<u32> = 0
+                off = ch - zero_b
+                dv = off
+                got = 1
+            }
+        }
+        if got == 0 {
+            if ch >= a_lo {
+                if ch <= f_lo {
+                    off2<u32> = 0
+                    off2 = ch - a_lo
+                    dv = off2 + 10
+                    got = 1
+                }
+            }
+        }
+        if got == 0 {
+            if ch >= a_up {
+                if ch <= f_up {
+                    off3<u32> = 0
+                    off3 = ch - a_up
+                    dv = off3 + 10
+                    got = 1
+                }
+            }
+        }
+        if got == 0 {
+            break
+        }
+        acc = (acc << 4) + dv
+        dig_n = dig_n + 1
+        idx = idx + 1
+    }
+    if dig_n == 0 {
+        return 0, 0.(u16), 0
+    }
+    return 1, acc.(u16), idx - start
+}
+
+// Closure-free full-form IPv6 "[h:h:h:h:h:h:h:h]:port" (no :: compression).
+// Enough for SocketAddr to_string/parse round-trip; avoids Parser closures.
+fn try_parse_simple_ipv6_socket(b<u8*>, len<i32>) i32 {
+    if b == null || len <= 0 {
+        return io.OtherParse
+    }
+    lb<u8> = 91
+    rb<u8> = 93
+    colon_b<u8> = 58
+    if b[0] != lb {
+        return io.OtherParse
+    }
+    i<i32> = 1
+    g0<u16> = 0
+    g1<u16> = 0
+    g2<u16> = 0
+    g3<u16> = 0
+    g4<u16> = 0
+    g5<u16> = 0
+    g6<u16> = 0
+    g7<u16> = 0
+    ok<i32> = 0
+    used<i32> = 0
+
+    ok, g0, used = parse_hex_u16(b, i, len)
+    if ok == 0 return io.OtherParse
+    i += used
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+    ok, g1, used = parse_hex_u16(b, i, len)
+    if ok == 0 return io.OtherParse
+    i += used
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+    ok, g2, used = parse_hex_u16(b, i, len)
+    if ok == 0 return io.OtherParse
+    i += used
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+    ok, g3, used = parse_hex_u16(b, i, len)
+    if ok == 0 return io.OtherParse
+    i += used
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+    ok, g4, used = parse_hex_u16(b, i, len)
+    if ok == 0 return io.OtherParse
+    i += used
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+    ok, g5, used = parse_hex_u16(b, i, len)
+    if ok == 0 return io.OtherParse
+    i += used
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+    ok, g6, used = parse_hex_u16(b, i, len)
+    if ok == 0 return io.OtherParse
+    i += used
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+    ok, g7, used = parse_hex_u16(b, i, len)
+    if ok == 0 return io.OtherParse
+    i += used
+    if i >= len || b[i] != rb return io.OtherParse
+    i += 1
+    if i >= len || b[i] != colon_b return io.OtherParse
+    i += 1
+
+    port_u<u32> = 0
+    ok, port_u, used = parse_dec_u32(b, i, len, 5)
+    if ok == 0 || port_u > 65535 return io.OtherParse
+    i += used
+    if i != len return io.OtherParse
+
+    ip6<Ipv6Addr> = Ipv6Addr::new(g0, g1, g2, g3, g4, g5, g6, g7)
+    v6<SocketAddrV6> = SocketAddrV6::new(ip6, port_u.(u16), 0, 0)
+    LAST_PARSE_ADDR = socket_addr_from_v6(v6)
+    return io.Ok
+}
+
 fn parse_ascii_bytes(b<u8*>, len<i32>) i32 {
     LAST_PARSE_ADDR = null
-    // Prefer closure-free dotted-quad path (avoids Parser fn-literal object-func).
+    // Prefer closure-free paths (avoids Parser fn-literal object-func).
     serr<i32> = try_parse_simple_ipv4_socket(b, len)
     if serr == io.Ok {
+        return io.Ok
+    }
+    serr6<i32> = try_parse_simple_ipv6_socket(b, len)
+    if serr6 == io.Ok {
         return io.Ok
     }
     return io.OtherParse
