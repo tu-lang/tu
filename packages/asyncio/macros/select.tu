@@ -69,10 +69,13 @@ Select2::poll(ctx){
 }
 
 fn select2(a<runtime.Future>, b<runtime.Future>) runtime.Future {
-    s<Select2> = new Select2 {
-        fut_a: a, fut_b: b,
-        a_done: 0, b_done: 0, which: 0
-    }
+    // Plain new T{} — struct literals can leave async virf null.
+    s<Select2> = new Select2{}
+    s.fut_a = a
+    s.fut_b = b
+    s.a_done = 0
+    s.b_done = 0
+    s.which = 0
     fut<runtime.Future> = s
     return fut
 }

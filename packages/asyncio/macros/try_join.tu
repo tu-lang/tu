@@ -69,11 +69,14 @@ TryJoin2::early_error_code() i32 {
 }
 
 fn try_join2(a<runtime.Future>, b<runtime.Future>) TryJoin2 {
-    return new TryJoin2 {
-        fut_a: a, fut_b: b,
-        res0: 0, res1: 0,
-        a_done: 0, b_done: 0
-    }
+    tj<TryJoin2> = new TryJoin2{}
+    tj.fut_a = a
+    tj.fut_b = b
+    tj.res0 = 0
+    tj.res1 = 0
+    tj.a_done = 0
+    tj.b_done = 0
+    return tj
 }
 
 fn try_join2_val_b(tj<TryJoin2>) i64 {

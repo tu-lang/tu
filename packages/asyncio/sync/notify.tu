@@ -136,11 +136,10 @@ Notified::init(owner_notify<Notify>){
 // WAITING checks the wake flag; DONE re-poll is a logic error.
 Notified::poll(ctx){
     par<Notify> = this.owner_notify
-    // Harness Future::poll does not forward ctx; use ACTIVE_POLL_CTX.
-    packed<u64> = ctx.(u64)
-    if packed == 0 {
-        packed = task.active_poll_ctx()
-    }
+    // Harness Future::poll does not forward ctx; always prefer ACTIVE_POLL_CTX.
+    // Passing a literal 0 into poll makes ctx.(u64) a dyn-int bit pattern
+    // (non-zero garbage), which then crashes wake_by_ref on life_st().
+    packed<u64> = task.resolve_poll_ctx(0)
     if this.stage == NOTIFIED_STAGE_INIT {
         par.lock.lock()
         if par.take_permit() != 0 {
@@ -150,7 +149,9 @@ Notified::poll(ctx){
         }
         // No permit; queue ourselves.
         w<NotifyWaiter> = NotifyWaiter::new(packed)
-        par.waiter_q.push_back(w.node)
+        // Intrusive: pass address of embedded Pointers (offset 0), same as
+        // ScheduledIo waiters — plain `w.node` is the wrong pointer shape.
+        par.waiter_q.push_back(&w.node)
         par.lock.unlock()
         this.waiter_node = w
         this.stage = NOTIFIED_STAGE_WAITING
@@ -197,15 +198,30 @@ fn notify_one_raw(bits<u64>) {
 }
 
 fn notify_waiters_raw(bits<u64>) {
+    if bits == 0 {
+        return
+    }
     par<Notify> = bits.(Notify)
     par.notify_waiters()
 }
 
 // Factory for await at the call site (no package-level async).
 fn notified_from_bits(bits<u64>) Notified {
-    fut<Notified> = new Notified
+    fut<Notified> = new Notified{}
     fut.init_from_bits(bits)
     return fut
+}
+
+// Cross-pkg poll — foreign packages must not member-call Notified::poll
+// (codegen null-dispatch → SIGSEGV). Uses ACTIVE_POLL_CTX like mother.
+fn notified_poll_bits(nf_bits<u64>) i32 {
+    if nf_bits == 0 {
+        return runtime.PollPending
+    }
+    nfy<Notified> = null
+    nfy = nf_bits
+    code<i32> = nfy.poll(0)
+    return code
 }
 
 // Same-package helper: build Notified from a Notify heap pointer.

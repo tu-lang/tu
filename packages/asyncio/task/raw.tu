@@ -82,20 +82,27 @@ RawTask::list_take_next() RawTask {
 
 // Mother: RawTask::wake_by_ref — set NOTIFIED and enqueue when needed.
 RawTask::wake_by_ref(){
-    life_st<TaskState> = this.life_st()
+    raw_wake_by_ref_bits(this.(u64))
+}
+
+// Package-fn wake used by wake_by_ctx.
+fn raw_wake_by_ref_bits(ctx<u64>) {
+    if ctx == 0 {
+        return
+    }
+    rtask<RawTask> = null
+    rtask = ctx
+    life_st<TaskState> = rtask.life_st()
     code<i32> = life_st.transition_to_notified_by_ref()
     if code == TN_Submit {
-        n<Notified> = notified_from_raw(this)
-        this.task_header.sched_schedule(n)
+        n<Notified> = notified_from_raw(rtask)
+        rtask.task_header.sched_schedule(n)
     }
 }
 
 // Wake from a packed ctx that holds RawTask* (mother waker data = Header*).
 fn wake_by_ctx(ctx<u64>){
-    if ctx != 0 {
-        rtask<RawTask> = ctx.(RawTask)
-        rtask.wake_by_ref()
-    }
+    raw_wake_by_ref_bits(ctx)
 }
 
 // Set CANCELLED and enqueue one wake if needed.

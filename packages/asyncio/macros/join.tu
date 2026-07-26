@@ -52,12 +52,19 @@ Join2::poll(ctx){
     return runtime.PollPending
 }
 
+fn join2_inner(a<runtime.Future>, b<runtime.Future>) Join2 {
+    j<Join2> = new Join2{}
+    j.fut_a = a
+    j.fut_b = b
+    j.res0 = 0
+    j.res1 = 0
+    j.a_done = 0
+    j.b_done = 0
+    return j
+}
+
 fn join2(a<runtime.Future>, b<runtime.Future>) runtime.Future {
-    j<Join2> = new Join2 {
-        fut_a: a, fut_b: b,
-        res0: 0, res1: 0,
-        a_done: 0, b_done: 0
-    }
+    j<Join2> = join2_inner(a, b)
     fut<runtime.Future> = j
     return fut
 }

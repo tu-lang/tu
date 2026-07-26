@@ -5,7 +5,6 @@
 // getPackage for local mem types. Call these from asyncio.util instead.
 
 use net as libnet
-use fmt
 use string
 use std
 
@@ -27,7 +26,18 @@ fn net_socket_addr_to_bits(addr<libnet.SocketAddr>) u64 {
     return addr.(u64)
 }
 
-// Format SocketAddr as dotted-quad or full IPv6 bracket form for round-trip tests.
+// Append lowercase hex for a host-order u16 (catfmt has no %x).
+fn cat_hex_u16(strl<string.Str>, val<u16>) string.Str {
+    buf_o<i8:8> = null
+    buf<i8*> = &buf_o
+    n<i64> = 0
+    n = val
+    std.itoa(n, buf, 16.(i32))
+    return strl.cat(buf)
+}
+
+// Format SocketAddr for parse round-trip tests.
+// catfmt: use %i (not %d — literal 'd'; not %u — empty for zero).
 fn net_socket_addr_to_string_bits(bits<u64>) string.String {
     addr<libnet.SocketAddr> = bits.(libnet.SocketAddr)
     if libnet.socket_addr_is_v4(addr) {
@@ -35,13 +45,44 @@ fn net_socket_addr_to_string_bits(bits<u64>) string.String {
         ip<libnet.Ipv4Addr> = v4.ip()
         a<u8>, b<u8>, c<u8>, d<u8> = ip.octets()
         port<u16> = v4.port_num()
-        return fmt.sprintf("%u.%u.%u.%u:%u", int(a), int(b), int(c), int(d), int(port))
+        ai<i64> = 0
+        bi<i64> = 0
+        ci<i64> = 0
+        di<i64> = 0
+        pi<i64> = 0
+        ai = a
+        bi = b
+        ci = c
+        di = d
+        pi = port
+        strl<string.Str> = string.empty()
+        strl = strl.catfmt(*"%i.%i.%i.%i:%i", ai, bi, ci, di, pi)
+        return string.S(strl)
     }
     v6<libnet.SocketAddrV6> = libnet.socket_addr_v6_store(addr)
     ip6<libnet.Ipv6Addr> = v6.ip()
     segs<u16*> = ip6.segments()
     port6<u16> = v6.port_num()
-    return fmt.sprintf("[%x:%x:%x:%x:%x:%x:%x:%x]:%u",
-        int(segs[0]), int(segs[1]), int(segs[2]), int(segs[3]),
-        int(segs[4]), int(segs[5]), int(segs[6]), int(segs[7]), int(port6))
+    strl6<string.Str> = string.empty()
+    strl6 = strl6.cat(*"[")
+    strl6 = cat_hex_u16(strl6, segs[0])
+    strl6 = strl6.cat(*":")
+    strl6 = cat_hex_u16(strl6, segs[1])
+    strl6 = strl6.cat(*":")
+    strl6 = cat_hex_u16(strl6, segs[2])
+    strl6 = strl6.cat(*":")
+    strl6 = cat_hex_u16(strl6, segs[3])
+    strl6 = strl6.cat(*":")
+    strl6 = cat_hex_u16(strl6, segs[4])
+    strl6 = strl6.cat(*":")
+    strl6 = cat_hex_u16(strl6, segs[5])
+    strl6 = strl6.cat(*":")
+    strl6 = cat_hex_u16(strl6, segs[6])
+    strl6 = strl6.cat(*":")
+    strl6 = cat_hex_u16(strl6, segs[7])
+    strl6 = strl6.cat(*"]:")
+    pi6<i64> = 0
+    pi6 = port6
+    strl6 = strl6.catfmt(*"%i", pi6)
+    return string.S(strl6)
 }
