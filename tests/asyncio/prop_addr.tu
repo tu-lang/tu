@@ -3,6 +3,9 @@
 // For random IPv4 and IPv6 addresses, format via socket_addr_to_string then
 // parse back via parse_socket_addr and assert the octets / segments / port are
 // preserved. Uses a deterministic LCG so failures are reproducible.
+//
+// Note: do not pass stack `u16:8` as `u16*` — that pointer decay segfaults.
+// Carry IPv6 segments in a heap mem instead.
 
 use fmt
 use os
@@ -13,6 +16,18 @@ use net
 use asyncio.net as anet
 
 ITERS<i32> = 256
+
+// Eight host-order IPv6 segments for the LCG round-trip loop.
+mem Seg8 {
+    u16 v0
+    u16 v1
+    u16 v2
+    u16 v3
+    u16 v4
+    u16 v5
+    u16 v6
+    u16 v7
+}
 
 // LCG step (Knuth MMIX constants); returns the updated state.
 fn lcg_next(s<u64>) u64 {
@@ -39,8 +54,8 @@ fn check_v4(a<u8>, b<u8>, c<u8>, d<u8>, port_num<u16>) {
 }
 
 // Build a v6 SocketAddr, round-trip it, and assert segment / port equality.
-fn check_v6(seg<u16*>, port_num<u16>) {
-    ip6<net.Ipv6Addr> = net.Ipv6Addr::new(seg[0], seg[1], seg[2], seg[3], seg[4], seg[5], seg[6], seg[7])
+fn check_v6(seg<Seg8>, port_num<u16>) {
+    ip6<net.Ipv6Addr> = net.Ipv6Addr::new(seg.v0, seg.v1, seg.v2, seg.v3, seg.v4, seg.v5, seg.v6, seg.v7)
     v6<net.SocketAddrV6> = net.SocketAddrV6::new(ip6, port_num, 0, 0)
     addr<net.SocketAddr> = net.socket_addr_from_v6(v6)
 
@@ -52,9 +67,14 @@ fn check_v6(seg<u16*>, port_num<u16>) {
 
     a6<net.SocketAddrV6> = net.socket_addr_v6_store(back)
     rseg<u16*> = a6.ip().segments()
-    for i<i32> = 0 ; i < 8 ; i += 1 {
-        if rseg[i] != seg[i] os.dief("v6 segment mismatch")
-    }
+    if rseg[0] != seg.v0 os.dief("v6 segment mismatch")
+    if rseg[1] != seg.v1 os.dief("v6 segment mismatch")
+    if rseg[2] != seg.v2 os.dief("v6 segment mismatch")
+    if rseg[3] != seg.v3 os.dief("v6 segment mismatch")
+    if rseg[4] != seg.v4 os.dief("v6 segment mismatch")
+    if rseg[5] != seg.v5 os.dief("v6 segment mismatch")
+    if rseg[6] != seg.v6 os.dief("v6 segment mismatch")
+    if rseg[7] != seg.v7 os.dief("v6 segment mismatch")
     if a6.port_num() != port_num os.dief("v6 port mismatch")
 }
 
@@ -82,15 +102,34 @@ fn prop_addr_parse_roundtrip(){
         port_v4<u16> = port_bits.(u16)
         check_v4(b0, b1, b2, b3, port_v4)
 
-        seg<u16:8> = null
-        for j<i32> = 0 ; j < 8 ; j += 1 {
+        seg<Seg8> = new Seg8
         st = lcg_next(st)
-        seg_bits<u64> = (st >> 24) & 0xFFFF
-        seg[j] = seg_bits.(u16)
-    }
-    st = lcg_next(st)
-    port6_bits<u64> = st & 0xFFFF
-    check_v6(seg, port6_bits.(u16))
+        sb0<u64> = (st >> 24) & 0xFFFF
+        seg.v0 = sb0.(u16)
+        st = lcg_next(st)
+        sb1<u64> = (st >> 24) & 0xFFFF
+        seg.v1 = sb1.(u16)
+        st = lcg_next(st)
+        sb2<u64> = (st >> 24) & 0xFFFF
+        seg.v2 = sb2.(u16)
+        st = lcg_next(st)
+        sb3<u64> = (st >> 24) & 0xFFFF
+        seg.v3 = sb3.(u16)
+        st = lcg_next(st)
+        sb4<u64> = (st >> 24) & 0xFFFF
+        seg.v4 = sb4.(u16)
+        st = lcg_next(st)
+        sb5<u64> = (st >> 24) & 0xFFFF
+        seg.v5 = sb5.(u16)
+        st = lcg_next(st)
+        sb6<u64> = (st >> 24) & 0xFFFF
+        seg.v6 = sb6.(u16)
+        st = lcg_next(st)
+        sb7<u64> = (st >> 24) & 0xFFFF
+        seg.v7 = sb7.(u16)
+        st = lcg_next(st)
+        port6_bits<u64> = st & 0xFFFF
+        check_v6(seg, port6_bits.(u16))
     }
 
     fmt.println("prop_addr_parse_roundtrip passed")

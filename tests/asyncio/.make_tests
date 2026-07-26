@@ -6,5 +6,10 @@ int_clock_gettime.tu
 int_fs_roundtrip.tu
 int_macros_join_select.tu
 int_process_echo.tu
+int_signal_usr1.tu
 int_tcp_echo.tu
 int_time_sleep.tu
+int_udp_recv.tu
+int_unix_echo.tu
+prop_addr.tu
+prop_select.tu

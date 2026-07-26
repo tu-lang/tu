@@ -1,6 +1,7 @@
 // Formal tests for library/sys path syscalls and socket ABI used by asyncio/netio:
 // mkdir / openat / write / close / unlink / rmdir, kill, cvt,
 // getsockopt(optlen i32*), recvfrom(addrlen i32*).
+// UdpSocket::send_to sockaddr as_ptr fix covered by tests/asyncio/int_udp_recv.tu.
 
 use fmt
 use os
@@ -28,7 +29,7 @@ fn main(){
     }
     msg_s<string.String> = string.S(*"hi-sys")
     wbuf<u8*> = string.cstr(msg_s)
-    wn<i64> = sys.write(fd, wbuf, 6)
+    wrote_n<i64> = sys.write(fd, wbuf, 6)
     sys.close(fd)
     sys.unlink(filep)
     sys.rmdir(dirp)
