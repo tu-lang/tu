@@ -5,6 +5,7 @@
 
 use sys
 use io as libio
+use asyncio.util as util
 use asyncio.runtime.io as rtio
 use asyncio.runtime.time as rttime
 use asyncio.runtime.signal as rtsig
@@ -109,7 +110,22 @@ fn driver_park_bits(drv_bits<u64>, handle_bits<u64>) i32 {
 // Park for at most d. Time wheel narrows the wait if its next deadline
 // is closer; IoDriver::turn handles signal events via TOKEN_SIGNAL.
 // Mother: signal::Driver::park — io.park then process().
+//
+// signalfd is registered EPOLLET. If a signal arrives while the reactor is
+// not in epoll_wait, the edge is lost and a subsequent park would block
+// forever. Pre-drain before turn; if any siginfo was applied, skip the
+// blocking wait (RecvFut watches fired_count and will Ready on re-poll).
 Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
+    sd<rtsig.SignalDriver> = this.sigd
+    if sd != null {
+        sb<u64> = 0
+        sb = sd
+        rtsig.signal_driver_process_bits(sb)
+        // Same-pkg take — do not read sd.park_skip across packages.
+        if rtsig.signal_driver_take_park_skip(sb) != 0 {
+            return 0
+        }
+    }
     err<i32> = 0
     if this.time_drv != null && handle.time_handle != null {
         ms<u64> = d.as_millis()
@@ -117,11 +133,14 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
     } else if this.reactor != null && handle.ihandle != null {
         err = this.reactor.turn(handle.ihandle, d)
     }
-    // Fan out queued signals after every reactor turn (mother process()).
-    sb<u64> = 0
-    sb = this.sigd
-    if sb != 0 {
-        rtsig.signal_driver_process_bits(sb)
+    if sd != null {
+        sb2<u64> = 0
+        sb2 = sd
+        rtsig.signal_driver_process_bits(sb2)
+        // Drain-after-turn can wake signal waiters; skip another block.
+        if rtsig.signal_driver_take_park_skip(sb2) != 0 {
+            return 0
+        }
     }
     return err
 }

@@ -1,41 +1,52 @@
-// Drain signalfd into EventInfo::fire (mother: signal Driver::process).
+// Drain signalfd into EventInfo fired_count (mother: signal Driver::process).
+// Returns 1 if at least one siginfo was applied (caller should unpark).
 
 use std
 use sys
-use asyncio.sync as libsync
+use asyncio.util as util
 
 SIGINFO_BYTES<u64> = 128
-DRAIN_WOULD_BLOCK<i32> = 16908302
 
-fn signal_driver_drain(drv<SignalDriver>) {
-    if drv == null { return }
+fn signal_driver_drain(drv<SignalDriver>) i32 {
+    if drv == null { return 0 }
     slot<u64> = 0
     slot = drv.gslot_bits
-    if slot == 0 { return }
+    if slot == 0 { return 0 }
     glob_ref<SignalGlobals> = null
     glob_ref = slot
     drain_fd<i32> = globals_sfd(glob_ref)
-    if drain_fd < 0 { return }
+    if drain_fd < 0 { return 0 }
     nbytes<u64> = SIGINFO_BYTES
     buf<u8*> = std.malloc(nbytes)
-    if buf == null { return }
+    if buf == null { return 0 }
+    fired_any<i32> = 0
     loop {
+        // Prefer raw < 0 over sys.cvt(i64→i32) which can drop success paths.
         raw<i64> = sys.read(drain_fd, buf, nbytes)
-        cerr<i32>, nread<u64> = sys.cvt(raw)
-        if cerr == DRAIN_WOULD_BLOCK break
-        if cerr != 0 break
-        if nread == 0 break
-        signo_p<u32*> = buf.(u64)
-        signum_u<u32> = *signo_p
+        if raw < 0 {
+            break
+        }
+        if raw == 0 {
+            break
+        }
+        signum_u<u32> = 0
+        std.memcpy(&signum_u, buf, 4)
         signum<i32> = 0
         signum = signum_u
-        ev<EventInfo> = signal_globals_event(glob_ref, signum)
-        if ev != null {
-            ev.fired_count += 1
-            nbits<u64> = ev.notify_bits
-            if nbits != 0 {
-                libsync.notify_waiters_raw(nbits)
+        if signum >= 1 {
+            if signum < NUM_SIGNALS {
+                ev<EventInfo> = signal_globals_event(glob_ref, signum)
+                if ev != null {
+                    // Mother: EventInfo::fire — bump + wake Notify waiters.
+                    ev.fire()
+                }
             }
         }
+        util.signal_deliveries_bump()
+        fired_any = 1
     }
+    if fired_any != 0 {
+        drv.park_skip = 1
+    }
+    return fired_any
 }

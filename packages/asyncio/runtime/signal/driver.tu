@@ -23,6 +23,7 @@ mem SignalDriver {
     runtime.MutexInter* lock
     u64                park_iod_bits // IoDriver* bits for consume_signal_ready
     u64                park_ioh_bits // IoHandle* bits for register_sfd
+    i32                park_skip     // 1 after drain applied work (park reads this field)
 }
 
 // Cross-call-face handle backing the signal-subscription API.
@@ -94,6 +95,7 @@ const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
     drv.lock.init()
     drv.park_iod_bits = iod_bits
     drv.park_ioh_bits = ioh_bits
+    drv.park_skip = 0
 
     h<SignalDriverHandle> = new SignalDriverHandle
     h.gslot_bits = gbits
@@ -108,11 +110,18 @@ const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
 // Drain the signalfd. Mother: park → process after consume_signal_ready.
 // V1: always attempt drain (nonblock). EPOLLET + padded token mismatch can
 // skip consume_signal_ready; skipping drain then hangs forever.
+// After a successful drain, wake the IO eventfd so Pending recv futures
+// are re-polled (RecvFut watches fired_count only).
 SignalDriver::process(){
     if this.park_iod_bits != 0 {
         rtio.iodriver_consume_signal_ready_bits(this.park_iod_bits)
     }
-    signal_driver_drain(this)
+    fired<i32> = signal_driver_drain(this)
+    if fired != 0 {
+        if this.park_ioh_bits != 0 {
+            rtio.io_handle_wake_bits(this.park_ioh_bits)
+        }
+    }
 }
 
 // Cross-pkg park hook — Driver cannot reliably member-call process().
@@ -123,7 +132,24 @@ fn signal_driver_process_bits(drv_bits<u64>) {
     if drv.park_iod_bits != 0 {
         rtio.iodriver_consume_signal_ready_bits(drv.park_iod_bits)
     }
-    signal_driver_drain(drv)
+    fired<i32> = signal_driver_drain(drv)
+    if fired != 0 {
+        drv.park_skip = 1
+        if drv.park_ioh_bits != 0 {
+            rtio.io_handle_wake_bits(drv.park_ioh_bits)
+        }
+    }
+}
+
+// Take-and-clear park_skip. Aggregate Driver must not read SignalDriver
+// fields across packages (codegen drops the load → always 0 → EPOLLET hang).
+fn signal_driver_take_park_skip(drv_bits<u64>) i32 {
+    if drv_bits == 0 { return 0 }
+    drv<SignalDriver> = null
+    drv = drv_bits
+    if drv.park_skip == 0 { return 0 }
+    drv.park_skip = 0
+    return 1
 }
 
 // Tear down: close the signalfd. The runtime root drives this on shutdown.

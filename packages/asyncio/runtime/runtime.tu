@@ -5,6 +5,7 @@
 use sys
 use fmt
 use asyncio.task
+use asyncio.util as util
 use asyncio.runtime.scheduler
 use asyncio.runtime.blocking as rtblk
 
@@ -69,6 +70,8 @@ Runtime::handle() Handle {
 
 // Mother: runtime::context::enter_runtime before driving the future so
 // Handle::current / PollEvented registration see the active driver.
+// FastRand is required for select! fairness (select_start); null rng
+// makes every select always start at branch 0.
 fn runtime_enter_block_on(wh<Handle>) RtSavedSlot {
     drv_bits<u64> = 0
     sched_bits<u64> = 0
@@ -79,10 +82,11 @@ fn runtime_enter_block_on(wh<Handle>) RtSavedSlot {
             drv_bits = d
         }
     }
+    rng<util.FastRand> = util.FastRand::new(0xc0ffee)
     ctx<RuntimeContext> = RuntimeContext::new(
         sched_bits,
         drv_bits,
-        null,
+        rng,
         ENTER_BLOCK_ON
     )
     return rt_enter(ctx)
