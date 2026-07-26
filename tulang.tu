@@ -18,7 +18,7 @@ class Compiler {
     scan_dirs  = []
     // After -s codegen: also asmer+link (used by build / run)
     flag_link = false
-    // After link: execute a.out (tu run / go run style)
+    // After link: execute a.out (tu run)
     flag_exec = false
     // Args forwarded to the linked binary when flag_exec
     args = []
@@ -31,7 +31,7 @@ class Compiler {
     // workdir: default TMPDIR/tu-build-*; --workdir-cwd or --workdir DIR
     workdir_cwd = false
     workdir_explicit = ""
-    // like go build -work: keep .s/.o after build
+    // Keep .s/.o after build when --work is set
     flag_work = false
 }
 Compiler::print_help(){
@@ -53,7 +53,7 @@ Compiler::print_help(){
         "  -std                       同时编译 runtime/std 内置库\n" +
         "  --workdir DIR              中间产物写到 DIR（.s/.o/a.out）\n" +
         "  --workdir-cwd              中间产物写当前目录（旧行为）\n" +
-        "  --work                     保留中间产物（类似 go -work）\n" +
+        "  --work                     保留中间产物\n" +
         "  -v                         打印版本\n" +
         "\n" +
         "Default workdir: $TMPDIR/tu-build-<stem>-...\n"
@@ -115,7 +115,7 @@ Compiler::commadparse(){
                 os.exit(0)
             }
             _     : {
-                // After `run <file.tu>`, leftover tokens are program argv (go run style).
+                // After `run <file.tu>`, leftover tokens are program argv.
                 if this.flag_exec {
                     this.args[] = os.argv()[i]
                 }else{
@@ -203,7 +203,7 @@ Compiler::compiler(file){
     utils.msg2(100,"Finished",fmt.sprintf(
         "%s target(%s)",file, exe
     ))
-    // `tu run`: execute linked binary (mother tuc run / go run)
+    // `tu run`: execute linked binary
     if this.flag_exec {
         cmd = "'" + exe + "'"
         for a : this.args {
