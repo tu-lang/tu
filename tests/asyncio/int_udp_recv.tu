@@ -10,7 +10,6 @@ use io
 use string
 use std
 use net
-use runtime
 use asyncio.runtime as rt
 use asyncio.net as anet
 use asyncio.net.udp as audp
@@ -98,10 +97,7 @@ fn int_udp_echo(){
 
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
-    body_f<runtime.Future> = udp_echo_body()
-    fut_bits<u64> = 0
-    fut_bits = body_f
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut_bits, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, udp_echo_body(), 0)
     if rerr != 0 os.dief("block_on failed: %d", rerr)
     ri<i32> = 0
     ri = result

@@ -1,12 +1,11 @@
 // Integration test for asyncio.macros (task 19.13): join / select / timeout
-// over real timer futures. Mother: tokio::join! / select! / time::timeout.
+// over real timer futures.
 // Drive via builder_block_on (same path as int_fs_roundtrip / int_tcp_echo).
 
 use fmt
 use os
 use io
 use string
-use runtime
 use asyncio.runtime as rt
 use asyncio.macros as m
 use asyncio.time as atime
@@ -40,10 +39,7 @@ async select_sleeps_body() {
 fn run_body(name<i8*>, body) {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
-    body_f<runtime.Future> = body
-    fut<u64> = 0
-    fut = body_f
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
     if rerr != 0 os.dief("block_on failed: %d", rerr)
     ri<i32> = 0
     ri = result

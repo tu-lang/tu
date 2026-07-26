@@ -7,7 +7,6 @@ use os
 use io
 use string
 use std
-use runtime
 use asyncio.runtime as rt
 use asyncio.fs as afs
 
@@ -188,10 +187,7 @@ fn int_fs_roundtrip(){
 
     b1<rt.Builder> = rt.Builder::new_current_thread()
     b1 = b1.enable_all()
-    body1<runtime.Future> = fs_roundtrip_body()
-    fut1<u64> = 0
-    fut1 = body1
-    e1<i32>, r1<i64> = rt.builder_block_on(b1, fut1, 0)
+    e1<i32>, r1<i64> = rt.builder_block_on(b1, fs_roundtrip_body(), 0)
     if e1 != 0 os.die("block_on failed")
     ri1<i32> = 0
     ri1 = r1
@@ -204,10 +200,7 @@ fn int_fs_roundtrip(){
 
     b2<rt.Builder> = rt.Builder::new_current_thread()
     b2 = b2.enable_all()
-    body2<runtime.Future> = fs_create_remove_dir_body()
-    fut2<u64> = 0
-    fut2 = body2
-    e2<i32>, r2<i64> = rt.builder_block_on(b2, fut2, 0)
+    e2<i32>, r2<i64> = rt.builder_block_on(b2, fs_create_remove_dir_body(), 0)
     if e2 != 0 os.die("block_on failed")
     ri2<i32> = 0
     ri2 = r2
@@ -220,10 +213,7 @@ fn int_fs_roundtrip(){
 
     b3<rt.Builder> = rt.Builder::new_current_thread()
     b3 = b3.enable_all()
-    body3<runtime.Future> = fs_metadata_rename_body()
-    fut3<u64> = 0
-    fut3 = body3
-    e3<i32>, r3<i64> = rt.builder_block_on(b3, fut3, 0)
+    e3<i32>, r3<i64> = rt.builder_block_on(b3, fs_metadata_rename_body(), 0)
     if e3 != 0 os.die("block_on failed")
     ri3<i32> = 0
     ri3 = r3
@@ -236,10 +226,7 @@ fn int_fs_roundtrip(){
 
     b4<rt.Builder> = rt.Builder::new_current_thread()
     b4 = b4.enable_all()
-    body4<runtime.Future> = fs_read_dir_body()
-    fut4<u64> = 0
-    fut4 = body4
-    e4<i32>, r4<i64> = rt.builder_block_on(b4, fut4, 0)
+    e4<i32>, r4<i64> = rt.builder_block_on(b4, fs_read_dir_body(), 0)
     if e4 != 0 os.die("block_on failed")
     ri4<i32> = 0
     ri4 = r4

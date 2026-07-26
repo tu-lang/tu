@@ -7,7 +7,6 @@
 // EventInfo::fire after each IO turn). Linux-only; validated on Linux CI, not
 // the Windows host.
 //
-// Mother: tokio::signal::unix::signal is sync; recv().await is async.
 // Call sites use sig.subscribe / sig.kind_* — not sig.signal* (type-assert trap).
 
 use fmt
@@ -15,7 +14,6 @@ use os
 use io
 use sys
 use string
-use runtime
 use asyncio.runtime as rt
 use asyncio.signal as sig
 
@@ -60,10 +58,7 @@ fn run_body(name<i8*>, body) {
     // enable_io only: enable_all's TimeDriver + outer await Pending currently
     // SIGSEGV on the await return path; IO park is enough for signalfd.
     b = b.enable_io()
-    body_f<runtime.Future> = body
-    fut<u64> = 0
-    fut = body_f
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
     if rerr != 0 os.dief("block_on failed: %d", rerr)
     ri<i32> = 0
     ri = result

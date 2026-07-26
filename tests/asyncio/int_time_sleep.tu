@@ -1,12 +1,11 @@
 // Integration test: asyncio coroutine Sleep (TimeDriver park wake).
 // Awaits erased runtime.Future from atime.sleep on current_thread + enable_time.
-// Mother: tokio::time::sleep — Pending until the wheel fires the deadline.
+// Pending until the wheel fires the deadline.
 
 use fmt
 use os
 use io
 use std
-use runtime
 use asyncio.runtime as rt
 use asyncio.time as atime
 
@@ -50,10 +49,7 @@ async sleep_twice_body() {
 fn run_sleep_once() {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_time()
-    body_f<runtime.Future> = sleep_once_body()
-    fut_bits<u64> = 0
-    fut_bits = body_f
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut_bits, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, sleep_once_body(), 0)
     if rerr != 0 {
         fmt.println("block_on failed")
         fmt.println(int(rerr))
@@ -72,10 +68,7 @@ fn run_sleep_once() {
 fn run_sleep_twice() {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_time()
-    body_f<runtime.Future> = sleep_twice_body()
-    fut_bits<u64> = 0
-    fut_bits = body_f
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut_bits, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, sleep_twice_body(), 0)
     if rerr != 0 {
         fmt.println("block_on failed")
         fmt.println(int(rerr))

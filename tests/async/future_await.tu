@@ -1,5 +1,5 @@
 // Await erased runtime.Future and sync factories returning mem:async leaves.
-// Mother: AsyncBlock leafawait / syncFactoryLeaves — assign factory then poll.
+// Assign factory then poll.
 
 use fmt
 use os

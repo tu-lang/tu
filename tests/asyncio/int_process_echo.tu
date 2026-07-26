@@ -10,7 +10,6 @@ use os
 use io
 use string
 use std
-use runtime
 use asyncio.runtime as rt
 use asyncio.process as proc
 
@@ -31,7 +30,6 @@ fn buf_equals(buf<io.Buf>, expect<string.String>) i32 {
 }
 
 // task 17.9: /bin/echo hi writes "hi\n" to stdout and exits 0.
-// Mother: tokio::process::Command::output (tests/docs examples with echo).
 async proc_echo_body() {
     ok_code<i32> = io.Ok
     bad<i32> = io.OtherParse
@@ -40,7 +38,7 @@ async proc_echo_body() {
 
     oerr<i32>, out<proc.Output> = c.output().await
     if oerr != ok_code return oerr
-    // Avoid ExitStatus::success() bool (type-info trap); mother success = code 0.
+    // Avoid ExitStatus::success() bool (type-info trap); the design success = code 0.
     scode<i32> = out.status.code()
     ssig<i32> = out.status.signal()
     if scode != 0 return bad
@@ -51,7 +49,7 @@ async proc_echo_body() {
 }
 
 // task 17.10: spawn a long sleep, SIGKILL it, and confirm wait reports the
-// terminating signal (SIGKILL = 9). Mother: Child::start_kill + wait.
+// terminating signal (SIGKILL = 9) via Child::start_kill + wait.
 async proc_kill_body() {
     ok_code<i32> = io.Ok
     bad<i32> = io.OtherParse
@@ -75,10 +73,7 @@ async proc_kill_body() {
 fn run_body(name<i8*>, body) {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
-    body_f<runtime.Future> = body
-    fut<u64> = 0
-    fut = body_f
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
     if rerr != 0 os.dief("block_on failed: %d", rerr)
     ri<i32> = 0
     ri = result

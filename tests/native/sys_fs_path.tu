@@ -34,7 +34,7 @@ fn main(){
     sys.unlink(filep)
     sys.rmdir(dirp)
 
-    // kill(pid, 0) existence probe (mother: libc kill).
+    // kill(pid, 0) existence probe.
     k0<i32> = sys.kill(1, 0)
     if k0 > 0 {
         os.dief("kill(1,0) unexpected %d", k0)
@@ -47,7 +47,7 @@ fn main(){
         os.dief("cvt(0) err %d", cerr)
     }
 
-    // getsockopt SOL_SOCKET/SO_ERROR with socklen_t* optlen (mother libc).
+    // getsockopt SOL_SOCKET/SO_ERROR with socklen_t* optlen.
     fam<i32> = 2
     sty<i32> = 1
     proto<i32> = 0

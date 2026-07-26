@@ -24,7 +24,7 @@ fn str_buf(s<string.String>) io.Buf {
     return b
 }
 
-// WriteAll leaf over a concrete UnixStream (mother: tokio::io::WriteAll).
+// WriteAll leaf over a concrete UnixStream.
 mem EchoWriteAll: async {
     unix.UnixStream* stream
     u64              remain_bits
@@ -157,10 +157,7 @@ fn int_unix_echo(){
 
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
-    body<runtime.Future> = unix_echo_body()
-    fut_bits<u64> = 0
-    fut_bits = body
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut_bits, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, unix_echo_body(), 0)
     if rerr != 0 os.dief("block_on failed: %d", rerr)
     ri<i32> = 0
     ri = result

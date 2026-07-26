@@ -39,10 +39,7 @@ fn never_fut() runtime.Future {
 fn run_body(body) i32, i64 {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
-    body_f<runtime.Future> = body
-    fut_bits<u64> = 0
-    fut_bits = body_f
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut_bits, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
     return rerr, result
 }
 

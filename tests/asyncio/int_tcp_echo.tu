@@ -61,7 +61,7 @@ fn step(n<i32>) {
     fmt.println(int(n))
 }
 
-// WriteAll leaf over a concrete TcpStream (mother: tokio::io::WriteAll).
+// WriteAll leaf over a concrete TcpStream.
 // remain_bits: async mem cannot hold io.Buf fields (assignment zeros len).
 mem EchoWriteAll: async {
     tcp.TcpStream* stream
@@ -283,13 +283,13 @@ async tcp_echo_body() {
         i += 1
     }
     fmt.println("bytes_match_ok")
-    // Hold with sockets still open so ss/tcpdump can observe ESTABLISHED.
+    // Brief hold with sockets still open so ss/tcpdump can observe ESTABLISHED.
     // Prefer asyncio Sleep, but enable_time()+TCP connect currently segfaults;
     // use blocking time.sleep so the pause is usable for inspection.
     step(10)
-    fmt.println("hold 10s (blocking time.sleep) — inspect TCP now")
+    fmt.println("hold 4s (blocking time.sleep) — inspect TCP now")
     fmt.println("hint: ss -tn sport = :34567 or dport = :34567")
-    time.sleep(10)
+    time.sleep(4)
     fmt.println("hold_done")
     PIN_OWN1 = null
     PIN_OWN2 = null
@@ -307,10 +307,8 @@ fn int_tcp_echo(){
     if body == null {
         os.die("tcp_echo_body returned null future")
     }
-    fut_bits<u64> = 0
-    fut_bits = body
     fmt.println("block_on start")
-    rerr<i32>, result<i64> = rt.builder_block_on(b, fut_bits, 0)
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
     fmt.println("block_on returned")
     fmt.println(int(rerr))
     if rerr != 0 {
