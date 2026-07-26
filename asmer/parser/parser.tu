@@ -40,9 +40,25 @@ Parser::init(filepath,elf<elf.ElfFile>)
 
     fullname = std.pop(string.split(filepath,"/"))
     fullname = string.split(fullname,".s")
-    this.filename = fullname[0]
-    outname  = fullname[0] + ".o"
-    this.outname = outname
+    base = fullname[0]
+    this.filename = base
+    parts = string.split(filepath,"/")
+    pn = std.len(parts)
+    if pn <= 1 {
+        this.outname = base + ".o"
+    }else{
+        dir = parts[0]
+        pi = 1
+        while pi < pn - 1 {
+            dir = dir + "/" + parts[pi]
+            pi += 1
+        }
+        if dir == "" {
+            this.outname = "/" + base + ".o"
+        }else{
+            this.outname = dir + "/" + base + ".o"
+        }
+    }
 }
 Parser::parse() {
     this.parseLex()

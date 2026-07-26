@@ -43,13 +43,13 @@ func compile(){
 }
 func gcclink(){
     utils.debug("compile.gcclink()")
-    // TODO: genearte assembly by self
-    // args = "tc -p . -p /usr/local/lib/coasm/"
+    sglob = utils.pathInWorkdir("*.s")
+    outfile = utils.pathInWorkdir("a.out")
     links = ""
     if debug 
-        links = "gcc  *.s /usr/local/lib/colib/*.o -rdynamic -static -nostdlib -e main"
+        links = "gcc  " + sglob + " /usr/local/lib/colib/*.o -rdynamic -static -nostdlib -e main -o " + outfile
     else 
-        links = "gcc -g *.s /usr/local/lib/colib/*.o -rdynamic -static -nostdlib -e main"
+        links = "gcc -g " + sglob + " /usr/local/lib/colib/*.o -rdynamic -static -nostdlib -e main -o " + outfile
     for(pkg : package.packages){
         for(p : pkg.parsers){
             //add external library

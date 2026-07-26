@@ -1,4 +1,7 @@
-
+use fmt
+use os
+use std
+use string
 use compiler.ast
 use compiler.utils
 use compiler.parser
@@ -15,6 +18,13 @@ debug  = false
 sdebug = false
 nostd  = true
 trace  = false
+
+func pathInWorkdir(basename){
+    return utils.pathInWorkdir(basename)
+}
+func initWorkdir(code_file, use_cwd, explicit_dir){
+    utils.initWorkdir(code_file, use_cwd, explicit_dir)
+}
 
 func genast(filename)
 {

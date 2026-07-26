@@ -68,6 +68,7 @@ Parser::init(filepath,pkg) {
     this.asmfile  = this.filename + ".s"
     if pkg.package != "main"
         this.asmfile  = "co_" + pkg.getFullName() + "_" + this.asmfile
+    this.asmfile = utils.pathInWorkdir(this.asmfile)
     
     this.scanner = new scanner.ScannerStatic(filepath,this)
     this.filenameid = this.label() + ".L.filename." +  ast.incr_labelid()
