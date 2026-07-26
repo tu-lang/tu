@@ -16,9 +16,11 @@ class Compiler {
     // origin file
     code_files = []
     scan_dirs  = []
-    // need asm compile and linker to generate executable file
-    flag_run  = false
-    // pass args to binary executor
+    // After -s codegen: also asmer+link (used by build / run)
+    flag_link = false
+    // After link: execute a.out (tu run / go run style)
+    flag_exec = false
+    // Args forwarded to the linked binary when flag_exec
     args = []
     // compiler || asmer || linker  
     // default compiler
@@ -33,28 +35,44 @@ class Compiler {
     flag_work = false
 }
 Compiler::print_help(){
-    fmt.println("usage: ./tu [options|file.tu...|dir]\n" +
-            "  build        编译成汇编后进行链接生成二进制可执行文件\n" +
-            "  -s  *.tu|dir 编译为tulang代码为linux-amd64汇编文件\n" +
-            "  -c  *.s |dir 编译汇编为elf&pecoff跨平台可重定向文件\n" +
-            "  -o  *.o |dir 链接elf&pecofff可重定向文件生成最终执行程序\n" +
-            "  -d           开启trace日志打印编译详细过程\n" +
-            "  -gcc         支持通过gcc链接生成可执行程序\n" +
-            "  -g           编译tu文件时带上debug段信息,支持栈回溯\n" +
-            "  -std         编译runtime&std相关内置库代码\n" +
-            "  --workdir DIR     中间产物写到 DIR（.s/.o/a.out）\n" +
-            "  --workdir-cwd     中间产物写当前目录（旧行为）\n" +
-            "  --work            保留中间产物（类似 go -work；默认 build 后删 .s/.o）\n" +
-            "  -v           version\n"
+    // Column-aligned help (avoid fmt.println: it appends a trailing tab).
+    fmt.printf(
+        "Usage: tu <command|option> [arguments]\n" +
+        "\n" +
+        "Commands:\n" +
+        "  run   <file.tu> [args...]  编译、链接并运行\n" +
+        "  build <file.tu>            编译并链接生成可执行文件\n" +
+        "\n" +
+        "Options:\n" +
+        "  -s   <file.tu|dir>         编译为 amd64 汇编（.s）\n" +
+        "  -c   <file.s|dir>          汇编为可重定位目标文件（.o）\n" +
+        "  -o   <file.o|dir>          链接目标文件生成可执行程序\n" +
+        "  -d                         开启 trace 日志\n" +
+        "  -g                         带 debug 段（支持栈回溯）\n" +
+        "  -gcc                       使用 gcc 链接\n" +
+        "  -std                       同时编译 runtime/std 内置库\n" +
+        "  --workdir DIR              中间产物写到 DIR（.s/.o/a.out）\n" +
+        "  --workdir-cwd              中间产物写当前目录（旧行为）\n" +
+        "  --work                     保留中间产物（类似 go -work）\n" +
+        "  -v                         打印版本\n" +
+        "\n" +
+        "Default workdir: $TMPDIR/tu-build-<stem>-...\n"
     )
 }
 Compiler::commadparse(){
     i = 0
     while i < std.len(os.argv())  {
         match os.argv()[i] {
+            "run" : {
+                this.type = "compiler"
+                this.flag_link = true
+                this.flag_exec = true
+                this.code_files[] = os.argv()[i + 1]
+                i += 1
+            }
             "build" : {
                 this.type = "compiler" 
-                this.flag_run = true
+                this.flag_link = true
                 this.code_files[] = os.argv()[i + 1]
                 i += 1
             }
@@ -97,11 +115,16 @@ Compiler::commadparse(){
                 os.exit(0)
             }
             _     : {
-                this.print_help()
-                fmt.println(utils.print_red(
-                    fmt.sprintf("unkown option [%s]",os.argv()[i])
-                ))
-                os.exit(-1)
+                // After `run <file.tu>`, leftover tokens are program argv (go run style).
+                if this.flag_exec {
+                    this.args[] = os.argv()[i]
+                }else{
+                    this.print_help()
+                    fmt.println(utils.print_red(
+                        fmt.sprintf("unkown option [%s]",os.argv()[i])
+                    ))
+                    os.exit(-1)
+                }
             }
         }
         i += 1
@@ -145,7 +168,7 @@ Compiler::compiler(file){
     if wd == null || wd == "" {
         wd = "."
     }
-    if this.flag_run {
+    if this.flag_link {
         //By Gcc Link
         if this.flag_gcc {
             compile.gcclink()
@@ -176,9 +199,19 @@ Compiler::compiler(file){
             fmt.printf("[tu] work: keeping %s\n", wd)
         }
     }
+    exe = utils.pathInWorkdir("a.out")
     utils.msg2(100,"Finished",fmt.sprintf(
-        "%s target(%s)",file, utils.pathInWorkdir("a.out")
+        "%s target(%s)",file, exe
     ))
+    // `tu run`: execute linked binary (mother tuc run / go run)
+    if this.flag_exec {
+        cmd = "'" + exe + "'"
+        for a : this.args {
+            cmd += " '" + a + "'"
+        }
+        fmt.println(cmd)
+        os.shell(cmd)
+    }
 }
 Compiler::asmer(){
     total = std.len(this.code_files)
