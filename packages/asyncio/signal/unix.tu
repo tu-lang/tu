@@ -13,7 +13,7 @@ use io
 use os
 use asyncio.runtime as rt
 use asyncio.runtime.signal as rtsig
-use asyncio.sync
+use asyncio.sync as sync
 
 // A Unix signal number (tokio::signal::unix::SignalKind).
 mem SignalKind {
@@ -106,9 +106,10 @@ fn subscribe(kind<SignalKind>) i32 {
 
     ev_bits<u64> = 0
     ev_bits = ev
-    s<SignalStream> = new SignalStream
+    s<SignalStream> = new SignalStream{}
     s.ev_bits   = ev_bits
     s.kind      = kind
+    // Only deliveries after subscribe are visible (per-signum fired_count).
     s.last_seen = rtsig.event_info_fired_count(ev_bits)
     LAST_SIGNAL_STREAM = s
     return ok_code
@@ -126,43 +127,50 @@ SignalStream::try_recv() i32 {
 }
 
 // Leaf future for SignalStream::recv (mother: Signal::recv / poll_recv).
+// Parks on EventInfo's Notify; drain calls EventInfo::fire which wakes us.
+// pending_nf is Notified* as u64 (cross-pkg mem field cannot be sync.Notified*).
 mem RecvFut: async {
     SignalStream* stream
     u64           pending_nf
 }
 
-// Mother: poll_recv — check fired_count, else park on EventInfo Notify.
 RecvFut::poll(ctx) {
     s<SignalStream> = this.stream
-    ev_bits<u64> = s.ev_bits
-    cur<u64> = rtsig.event_info_fired_count(ev_bits)
+    if s == null {
+        return runtime.PollReady, io.Other
+    }
+    cur<u64> = rtsig.event_info_fired_count(s.ev_bits)
     if cur > s.last_seen {
         s.last_seen = cur
+        this.pending_nf = 0
         return runtime.PollReady, io.Ok
     }
     if this.pending_nf == 0 {
-        nbits<u64> = rtsig.event_info_notify_bits(ev_bits)
-        nf<sync.Notified> = sync.notified_from_bits(nbits)
+        nb<u64> = rtsig.event_info_notify_bits(s.ev_bits)
+        nf<sync.Notified> = sync.notified_from_bits(nb)
         this.pending_nf = nf.(u64)
     }
-    nfy<sync.Notified> = this.pending_nf
-    ready_i<i64>, _out<i64> = nfy.poll(ctx)
-    if ready_i == runtime.PollReady {
+    code<i32> = sync.notified_poll_bits(this.pending_nf)
+    if code == runtime.PollReady {
         this.pending_nf = 0
-        cur2<u64> = rtsig.event_info_fired_count(ev_bits)
+        cur2<u64> = rtsig.event_info_fired_count(s.ev_bits)
         if cur2 > s.last_seen {
             s.last_seen = cur2
             return runtime.PollReady, io.Ok
         }
+        // Notified without a matching delivery — re-arm next poll.
         return runtime.PollPending
     }
     return runtime.PollPending
 }
 
-// Mother: Signal::recv — return RecvFut leaf for caller await.
-SignalStream::recv() RecvFut {
-    return new RecvFut {
+// Mother: Signal::recv. Erase to runtime.Future so foreign packages can
+// `.await` safely (concrete cross-pkg async mem await SIGSEGVs).
+SignalStream::recv() runtime.Future {
+    f<RecvFut> = new RecvFut {
         stream: this,
         pending_nf: 0
     }
+    fut<runtime.Future> = f
+    return fut
 }
