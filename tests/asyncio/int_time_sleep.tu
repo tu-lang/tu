@@ -1,6 +1,4 @@
 // Integration test: asyncio coroutine Sleep (TimeDriver park wake).
-// Awaits erased runtime.Future from atime.sleep on current_thread + enable_time.
-// Pending until the wheel fires the deadline.
 
 use fmt
 use os
@@ -15,28 +13,21 @@ fn mono_ns() i64 {
     return ts.sec * 1000000000 + ts.nsec
 }
 
-// One ~50ms Sleep via public atime.sleep().await (erased Future).
 async sleep_once_body() {
     hold_ms<u64> = 50
     before<i64> = mono_ns()
     delay_err<i32> = atime.sleep(atime.from_millis(hold_ms)).await
     after<i64> = mono_ns()
-    fmt.println("sleep_err")
-    fmt.println(int(delay_err))
     if delay_err != io.Ok return delay_err
 
     elapsed_ns<i64> = after - before
     min_ns<i64> = 30000000
-    fmt.println("elapsed_ms")
-    fmt.println(int(elapsed_ns / 1000000))
     if elapsed_ns < min_ns {
-        fmt.println("sleep too short")
         return io.OtherParse
     }
     return io.Ok
 }
 
-// Two consecutive sleeps (re-register on the wheel).
 async sleep_twice_body() {
     e1<i32> = atime.sleep(atime.from_millis(20)).await
     if e1 != io.Ok return e1
@@ -51,18 +42,12 @@ fn run_sleep_once() {
     b = b.enable_time()
     rerr<i32>, result<i64> = rt.builder_block_on(b, sleep_once_body(), 0)
     if rerr != 0 {
-        fmt.println("block_on failed")
-        fmt.println(int(rerr))
-        os.exit(1)
+        os.dief("sleep_once block_on failed: %d", rerr)
     }
-    ri<i32> = 0
-    ri = result
+    ri<i32> = result
     if ri != io.Ok {
-        fmt.println("sleep_once body failed")
-        fmt.println(int(ri))
-        os.exit(1)
+        os.dief("sleep_once body failed: %d", ri)
     }
-    fmt.println("  sleep_once passed")
 }
 
 fn run_sleep_twice() {
@@ -70,22 +55,15 @@ fn run_sleep_twice() {
     b = b.enable_time()
     rerr<i32>, result<i64> = rt.builder_block_on(b, sleep_twice_body(), 0)
     if rerr != 0 {
-        fmt.println("block_on failed")
-        fmt.println(int(rerr))
-        os.exit(1)
+        os.dief("sleep_twice block_on failed: %d", rerr)
     }
-    ri<i32> = 0
-    ri = result
+    ri<i32> = result
     if ri != io.Ok {
-        fmt.println("sleep_twice body failed")
-        fmt.println(int(ri))
-        os.exit(1)
+        os.dief("sleep_twice body failed: %d", ri)
     }
-    fmt.println("  sleep_twice passed")
 }
 
 fn int_time_sleep() {
-    fmt.println("int_time_sleep test")
     run_sleep_once()
     run_sleep_twice()
     fmt.println("int_time_sleep passed")

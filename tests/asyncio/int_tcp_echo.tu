@@ -1,10 +1,6 @@
 // Integration test (task 15.16): TCP echo round-trip over asyncio.net.tcp.
-// Uses TcpStream::poll_read / poll_write via local leaf futures (static
-// member dispatch). Avoids asyncio.io.util's `u64.(AsyncRead).poll_*` path,
-// which currently codegen's a lea of the missing api-method symbol instead
-// of vtable dyn-dispatch.
-//
-// Reads use the direct io.Buf bits bridge (stream_poll_read_buf).
+// Leaf futures use static member dispatch (stream_poll_*). Conventions: see
+// co/docs/optimize/2026-07-27-asyncio-conventions.md.
 
 use fmt
 use os
@@ -18,10 +14,6 @@ use asyncio.net as anet
 use asyncio.net.tcp as tcp
 use asyncio.time as atime
 
-// Pin GC roots across await (u64 bits are not traced as pointers).
-PIN_OWN1<io.Buf> = null
-PIN_OWN2<io.Buf> = null
-
 fn str_buf(s<string.String>) io.Buf {
     slen<i32> = std.strlen(s.str())
     b<io.Buf> = io.NewBuf(slen)
@@ -30,303 +22,151 @@ fn str_buf(s<string.String>) io.Buf {
     return b
 }
 
-// Print buffer length only (per-byte dump at package level hits ptr-arith traps).
-fn dump_len(tag_id<i32>, n<u64>) {
-    fmt.println("dump_tag")
-    fmt.println(int(tag_id))
-    fmt.println("  nbytes")
-    fmt.println(int(n))
-}
-
-// Print n bytes from u8* in the async body (indexing works here).
-fn dump_bytes_u8(tag_id<i32>, p<u8*>, n<u64>) {
-    fmt.println("dump_bytes_tag")
-    fmt.println(int(tag_id))
-    fmt.println("  nbytes")
-    fmt.println(int(n))
+// Compare first nbytes of buf to string (caller must verify nbytes).
+fn cmp_buf_eq(got<io.Buf>, want_s<string.String>, nbytes<u64>) i32 {
+    src<u8*> = want_s.str()
+    gp<i8*> = got.ptr()
+    g<u8*> = null
+    g = gp
     i<u64> = 0
-    while i < n {
-        b<i32> = 0
-        b = p[i]
-        fmt.println("  byte_idx")
-        fmt.println(int(i))
-        fmt.println("  byte_val")
-        fmt.println(int(b & 255))
+    while i < nbytes {
+        if g[i] != src[i] return io.OtherParse
         i += 1
     }
-}
-
-fn step(n<i32>) {
-    fmt.println("--- step")
-    fmt.println(int(n))
+    return io.Ok
 }
 
 // WriteAll leaf over a concrete TcpStream.
-// remain_bits: async mem cannot hold io.Buf fields (assignment zeros len).
 mem EchoWriteAll: async {
     tcp.TcpStream* stream
     u64            remain_bits
     i32            done_code
-    i32            tag
 }
 
-const EchoWriteAll::new(s<tcp.TcpStream>, buf<io.Buf>, tag<i32>) EchoWriteAll {
+const EchoWriteAll::new(s<tcp.TcpStream>, buf<io.Buf>) EchoWriteAll {
     f<EchoWriteAll> = new EchoWriteAll
     f.stream = s
     f.remain_bits = io.buf_to_bits(buf)
     f.done_code = 0
-    f.tag = tag
     return f
 }
 
 EchoWriteAll::poll(ctx) {
-    ready<i32> = runtime.PollReady
-    pend<i32> = runtime.PollPending
-    ok_code<i32> = 1
-    wz<i32> = 16908312
     if this.done_code != 0 {
-        return ready, this.done_code
+        return runtime.PollReady, this.done_code
     }
     rem<io.Buf> = io.buf_from_bits(this.remain_bits)
     while io.buf_len(rem) > 0 {
         bits<u64> = io.buf_to_bits(rem)
         st<i32>, n<u64> = tcp.stream_poll_write(this.stream, ctx, bits)
-        if st == pend {
-            fmt.println("write_pending")
-            fmt.println(int(this.tag))
-            fmt.println(int(io.buf_len(rem)))
+        if st == runtime.PollPending {
             this.remain_bits = bits
-            return pend
+            return runtime.PollPending
         }
         if st == runtime.PollError || n == 0 {
-            fmt.println("write_error")
-            fmt.println(int(this.tag))
-            fmt.println(int(st))
-            fmt.println(int(n))
-            this.done_code = wz
-            return ready, wz
+            this.done_code = io.WriteZero
+            return runtime.PollReady, io.WriteZero
         }
-        fmt.println("write_chunk")
-        fmt.println(int(this.tag))
-        fmt.println(int(n))
-        fmt.println(int(io.buf_len(rem)))
         head<io.Buf>, tail<io.Buf> = rem.split_at(n)
         rem = tail
         this.remain_bits = io.buf_to_bits(rem)
     }
-    fmt.println("write_done")
-    fmt.println(int(this.tag))
-    return ready, ok_code.(i64)
+    return runtime.PollReady, io.Ok
 }
 
-// Read leaf over a concrete TcpStream into an io.Buf (bits).
+// Read leaf into io.Buf (bits); await yields (err, nbytes).
 mem EchoRead: async {
     tcp.TcpStream* stream
     u64            buf_bits
-    i32            tag
 }
 
-const EchoRead::new(s<tcp.TcpStream>, buf<io.Buf>, tag<i32>) EchoRead {
+const EchoRead::new(s<tcp.TcpStream>, buf<io.Buf>) EchoRead {
     f<EchoRead> = new EchoRead
     f.stream = s
     f.buf_bits = io.buf_to_bits(buf)
-    f.tag = tag
     return f
 }
 
 EchoRead::poll(ctx) {
-    ok_code<i32> = 1
-    fail_code<i32> = 16908329
     st<i32>, n<u64> = tcp.stream_poll_read_buf(this.stream, ctx, this.buf_bits)
     if st == runtime.PollPending {
-        fmt.println("read_pending")
-        fmt.println(int(this.tag))
         return runtime.PollPending
     }
     if st == runtime.PollError {
-        fmt.println("read_error")
-        fmt.println(int(this.tag))
-        return runtime.PollReady, fail_code.(i64), 0.(u64)
+        return runtime.PollReady, io.Uncategorized, 0.(u64)
     }
-    fmt.println("read_ready")
-    fmt.println(int(this.tag))
-    fmt.println(int(n))
-    return runtime.PollReady, ok_code.(i64), n
+    return runtime.PollReady, io.Ok, n
 }
 
 async tcp_echo_body() {
-    step(1)
-    fmt.println("parse addr 127.0.0.1:34567")
     addr_s<string.String> = string.S(*"127.0.0.1:34567")
     slen<i32> = std.strlen(addr_s.str())
     perr<i32>, addr_bits<u64> = anet.parse_socket_addr(addr_s.str(), slen)
-    fmt.println("parse_err")
-    fmt.println(int(perr))
     if perr != io.Ok return perr
     addr<net.SocketAddr> = addr_bits.(net.SocketAddr)
 
-    step(2)
-    fmt.println("bind listener")
     berr<i32>, listener<tcp.TcpListener> = tcp.TcpListener::bind(addr)
-    fmt.println("bind_err")
-    fmt.println(int(berr))
     if berr != io.Ok return berr
 
-    step(3)
-    fmt.println("client connect BEFORE accept (fills listen backlog)")
-    fmt.println("connect_await_start")
     cerr<i32>, client<tcp.TcpStream> = tcp.TcpStream::connect(addr).await
-    fmt.println("connect_done_err")
-    fmt.println(int(cerr))
     if cerr != io.Ok return cerr
 
-    step(4)
-    fmt.println("server accept (pending connection already in backlog)")
-    fmt.println("accept_await_start")
-    aerr2<i32>, server<tcp.TcpStream> = listener.accept().await
-    fmt.println("accept_done_err")
-    fmt.println(int(aerr2))
-    if aerr2 != io.Ok return aerr2
+    aerr<i32>, server<tcp.TcpStream> = listener.accept().await
+    if aerr != io.Ok return aerr
 
-    step(5)
-    fmt.println("client write payload ping")
     msg<string.String> = string.S(*"ping")
     mlen<i32> = std.strlen(msg.str())
-    fmt.println("payload_len")
-    fmt.println(int(mlen))
+    mlen_u<u64> = mlen.(u64)
     wbuf<io.Buf> = str_buf(msg)
-    dump_len(1, mlen.(u64))
-    wp<u8*> = null
-    wp = wbuf.ptr()
-    dump_bytes_u8(1, wp, mlen.(u64))
-    // write_tag=1 client→server
-    werr<i32> = EchoWriteAll::new(client, wbuf, 1).await
-    fmt.println("client_write_err")
-    fmt.println(int(werr))
+
+    werr<i32> = EchoWriteAll::new(client, wbuf).await
     if werr != io.Ok return werr
 
-    step(6)
-    fmt.println("server read expect ping")
     own1<io.Buf> = io.NewBuf(16)
-    PIN_OWN1 = own1
-    // read_tag=2 server recv
-    rerr<i32>, rn<u64> = EchoRead::new(server, own1, 2).await
-    fmt.println("server_read_err")
-    fmt.println(int(rerr))
-    fmt.println("server_read_n")
-    fmt.println(int(rn))
+    rerr<i32>, rn<u64> = EchoRead::new(server, own1).await
     if rerr != io.Ok return rerr
-    dump_len(2, rn)
-    rp1<u8*> = null
-    rp1 = own1.ptr()
-    dump_bytes_u8(2, rp1, rn)
-    if rn != mlen.(u64) {
-        fmt.println("server_read_len_mismatch")
-        return io.OtherParse
-    }
+    if rn != mlen_u return io.OtherParse
+    cmp_err<i32> = cmp_buf_eq(own1, msg, rn)
+    if cmp_err != io.Ok return cmp_err
 
-    step(7)
-    fmt.println("server echo write same bytes back")
     echo<io.Buf> = io.NewBuf(rn.(i32))
     ep<i8*> = echo.ptr()
     sp1<i8*> = own1.ptr()
     std.memcpy(ep, sp1, rn)
-    dump_len(3, rn)
-    ep8<u8*> = null
-    ep8 = ep
-    dump_bytes_u8(3, ep8, rn)
-    // write_tag=3 server→client
-    werr2<i32> = EchoWriteAll::new(server, echo, 3).await
-    fmt.println("server_echo_write_err")
-    fmt.println(int(werr2))
+    werr2<i32> = EchoWriteAll::new(server, echo).await
     if werr2 != io.Ok return werr2
 
-    step(8)
-    fmt.println("client read echo expect ping")
     own2<io.Buf> = io.NewBuf(16)
-    PIN_OWN2 = own2
-    // read_tag=4 client recv echo
-    rerr2<i32>, n2<u64> = EchoRead::new(client, own2, 4).await
-    fmt.println("client_read_err")
-    fmt.println(int(rerr2))
-    fmt.println("client_read_n")
-    fmt.println(int(n2))
+    rerr2<i32>, n2<u64> = EchoRead::new(client, own2).await
     if rerr2 != io.Ok return rerr2
-    dump_len(4, n2)
-    rp2<u8*> = null
-    rp2 = own2.ptr()
-    dump_bytes_u8(4, rp2, n2)
-    if n2 != mlen.(u64) {
-        fmt.println("client_read_len_mismatch")
-        return io.OtherParse
-    }
+    if n2 != mlen_u return io.OtherParse
+    cmp_err2<i32> = cmp_buf_eq(own2, msg, n2)
+    if cmp_err2 != io.Ok return cmp_err2
 
-    step(9)
-    fmt.println("byte compare")
-    src<u8*> = msg.str()
-    got_i8<i8*> = own2.ptr()
-    got<u8*> = null
-    got = got_i8
-    i<u64> = 0
-    while i < n2 {
-        if got[i] != src[i] {
-            fmt.println("byte_mismatch_at")
-            fmt.println(int(i))
-            g<i32> = 0
-            g = got[i]
-            s0<i32> = 0
-            s0 = src[i]
-            fmt.println(int(g & 255))
-            fmt.println(int(s0 & 255))
-            return io.OtherParse
-        }
-        i += 1
-    }
-    fmt.println("bytes_match_ok")
-    // Brief asyncio Sleep with sockets still open — also covers enable_all
-    // (IO + TimeDriver) on the same runtime.
-    step(10)
-    fmt.println("hold asyncio sleep 50ms")
     hold_err<i32> = atime.sleep(atime.from_millis(50)).await
-    fmt.println("hold_err")
-    fmt.println(int(hold_err))
     if hold_err != io.Ok return hold_err
-    fmt.println("hold_done")
-    PIN_OWN1 = null
-    PIN_OWN2 = null
-    step(11)
-    fmt.println("body done io.Ok")
+
     return io.Ok
 }
 
-fn int_tcp_echo(){
-    fmt.println("int_tcp_echo test")
-    fmt.println("build runtime (current_thread + enable_all)")
+fn int_tcp_echo() {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
     body<runtime.Future> = tcp_echo_body()
     if body == null {
         os.die("tcp_echo_body returned null future")
     }
-    fmt.println("block_on start")
     rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
-    fmt.println("block_on returned")
-    fmt.println(int(rerr))
     if rerr != 0 {
-        fmt.println("block_on failed")
-        os.exit(1)
+        os.dief("block_on failed: %d", rerr)
     }
-    ri<i32> = 0
-    ri = result
-    fmt.println("body_result")
-    fmt.println(int(ri))
+    ri<i32> = result
     if ri != io.Ok {
-        fmt.println("body failed")
-        os.exit(1)
+        os.dief("tcp_echo body failed: %d", ri)
     }
     fmt.println("int_tcp_echo passed")
 }
 
-fn main(){
+fn main() {
     int_tcp_echo()
 }

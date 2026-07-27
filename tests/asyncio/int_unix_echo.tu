@@ -1,6 +1,5 @@
-// Integration test (task 15.17): Unix-domain stream echo round-trip over
-// asyncio.net.unix. Uses local leaf futures (static member dispatch) like
-// int_tcp_echo; avoids the unsupported IoOp api dynamic path.
+// Integration test (task 15.17): Unix-domain stream echo round-trip.
+// Leaf futures + io.* error conventions; see asyncio-conventions optimize doc.
 
 use fmt
 use os
@@ -12,10 +11,6 @@ use runtime
 use asyncio.runtime as rt
 use asyncio.net.unix as unix
 
-// Pin GC roots across await (u64 bits are not traced as pointers).
-PIN_OWN1<io.Buf> = null
-PIN_OWN2<io.Buf> = null
-
 fn str_buf(s<string.String>) io.Buf {
     slen<i32> = std.strlen(s.str())
     b<io.Buf> = io.NewBuf(slen)
@@ -24,7 +19,6 @@ fn str_buf(s<string.String>) io.Buf {
     return b
 }
 
-// WriteAll leaf over a concrete UnixStream.
 mem EchoWriteAll: async {
     unix.UnixStream* stream
     u64              remain_bits
@@ -40,57 +34,48 @@ const EchoWriteAll::new(s<unix.UnixStream>, buf<io.Buf>) EchoWriteAll {
 }
 
 EchoWriteAll::poll(ctx) {
-    ready<i32> = runtime.PollReady
-    pend<i32> = runtime.PollPending
-    ok_code<i32> = 1
     if this.done_code != 0 {
-        return ready, this.done_code
+        return runtime.PollReady, this.done_code
     }
     rem<io.Buf> = io.buf_from_bits(this.remain_bits)
     while io.buf_len(rem) > 0 {
         bits<u64> = io.buf_to_bits(rem)
         st<i32>, n<u64> = unix.stream_poll_write(this.stream, ctx, bits)
-        if st == pend {
+        if st == runtime.PollPending {
             this.remain_bits = bits
-            return pend
+            return runtime.PollPending
         }
         if st == runtime.PollError || n == 0 {
-            this.done_code = st
-            return ready, st
+            this.done_code = io.WriteZero
+            return runtime.PollReady, io.WriteZero
         }
         rem = io.buf_slice(rem, n)
         this.remain_bits = io.buf_to_bits(rem)
     }
-    this.done_code = ok_code
-    return ready, ok_code
+    return runtime.PollReady, io.Ok
 }
 
-// Read leaf into a pinned io.Buf (bits), returns (err, nbytes).
 mem EchoRead: async {
     unix.UnixStream* stream
     u64              buf_bits
-    i32              tag
 }
 
-const EchoRead::new(s<unix.UnixStream>, buf<io.Buf>, tag<i32>) EchoRead {
+const EchoRead::new(s<unix.UnixStream>, buf<io.Buf>) EchoRead {
     f<EchoRead> = new EchoRead
     f.stream = s
     f.buf_bits = io.buf_to_bits(buf)
-    f.tag = tag
     return f
 }
 
 EchoRead::poll(ctx) {
-    ok_code<i32> = 1
-    fail_code<i32> = 16908329
     st<i32>, n<u64> = unix.stream_poll_read_buf(this.stream, ctx, this.buf_bits)
     if st == runtime.PollPending {
         return runtime.PollPending
     }
     if st == runtime.PollError {
-        return runtime.PollReady, fail_code.(i64), 0.(u64)
+        return runtime.PollReady, io.Uncategorized, 0.(u64)
     }
-    return runtime.PollReady, ok_code.(i64), n
+    return runtime.PollReady, io.Ok, n
 }
 
 async unix_echo_body() {
@@ -105,8 +90,8 @@ async unix_echo_body() {
     cerr<i32>, client<unix.UnixStream> = unix.UnixStream::connect(path).await
     if cerr != io.Ok return cerr
 
-    aerr2<i32>, server<unix.UnixStream> = listener.accept().await
-    if aerr2 != io.Ok return aerr2
+    aerr<i32>, server<unix.UnixStream> = listener.accept().await
+    if aerr != io.Ok return aerr
 
     msg<string.String> = string.S(*"ping")
     mlen<i32> = std.strlen(msg.str())
@@ -116,16 +101,11 @@ async unix_echo_body() {
     if werr != io.Ok return werr
 
     own1<io.Buf> = io.NewBuf(16)
-    PIN_OWN1 = own1
-    rret<i64>, rn<u64> = EchoRead::new(server, own1, 1).await
-    rerr<i32> = 0
-    rerr = rret
+    rerr<i32>, rn<u64> = EchoRead::new(server, own1).await
     if rerr != io.Ok return rerr
     if rn != mlen_u return io.OtherParse
 
-    echo_len<i32> = 0
-    echo_len = rn
-    echo<io.Buf> = io.NewBuf(echo_len)
+    echo<io.Buf> = io.NewBuf(rn.(i32))
     ep<i8*> = echo.ptr()
     sp1<i8*> = own1.ptr()
     std.memcpy(ep, sp1, rn)
@@ -133,10 +113,7 @@ async unix_echo_body() {
     if werr2 != io.Ok return werr2
 
     own2<io.Buf> = io.NewBuf(16)
-    PIN_OWN2 = own2
-    rret2<i64>, n2<u64> = EchoRead::new(client, own2, 2).await
-    rerr2<i32> = 0
-    rerr2 = rret2
+    rerr2<i32>, n2<u64> = EchoRead::new(client, own2).await
     if rerr2 != io.Ok return rerr2
     if n2 != mlen_u return io.OtherParse
 
@@ -152,19 +129,20 @@ async unix_echo_body() {
     return io.Ok
 }
 
-fn int_unix_echo(){
-    fmt.println("int_unix_echo test")
-
+fn int_unix_echo() {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
     rerr<i32>, result<i64> = rt.builder_block_on(b, unix_echo_body(), 0)
-    if rerr != 0 os.dief("block_on failed: %d", rerr)
-    ri<i32> = 0
-    ri = result
-    if ri != io.Ok os.dief("unix echo body failed: %d", ri)
+    if rerr != 0 {
+        os.dief("block_on failed: %d", rerr)
+    }
+    ri<i32> = result
+    if ri != io.Ok {
+        os.dief("unix echo body failed: %d", ri)
+    }
     fmt.println("int_unix_echo passed")
 }
 
-fn main(){
+fn main() {
     int_unix_echo()
 }
