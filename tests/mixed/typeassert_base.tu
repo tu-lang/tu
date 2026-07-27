@@ -87,10 +87,27 @@ func test_member_call(){
 	if ret == 12 {} else os.die("obj.inner.test != 12")
 	fmt.println("test member call success")
 }
+
+// Struct literal field: dyn.(u64) must match bits<u64> = dyn.(u64) for Cast in init.
+mem LitBox {
+	i32 tag
+}
+mem LitHold {
+	u64 bits
+}
+func test_struct_init_typeassert(){
+	b1 = new LitBox { tag: 7 }
+	bits2<u64> = b1.(u64)
+	h1<LitHold> = new LitHold { bits: b1.(u64) }
+	bits3<u64> = h1.bits
+	if bits3 != bits2 os.die("struct init typeassert bits mismatch")
+	fmt.println("test struct init typeassert success")
+}
 func main(){
 	test_funcall()
 	test_index()
 	test_member()
 	test_struct_member()
-	test_member_call()	
+	test_member_call()
+	test_struct_init_typeassert()
 }

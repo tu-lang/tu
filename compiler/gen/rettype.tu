@@ -2,6 +2,12 @@ use compiler.ast
 use compiler.utils 
 use std
 
+// 类型断言在 getType 中的统一表象：mem → 指针宽 U64，基元 → base。
+fn typeAssertGetType(ta) {
+	if ta.memType() return ast.U64
+	return ta.base
+}
+
 ClosPosExpr::getType(ctx){
 	this.panic("getType: unsupport closposexpr")
 }
@@ -16,18 +22,23 @@ NullExpr::getType(ctx){
 	return ast.U8
 }
 BoolExpr::getType(ctx){
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	return ast.U8
 }
 CharExpr::getType(ctx){
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	return ast.I8
 }
 IntExpr::getType(ctx){
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	return ast.I64
 }
 FloatExpr::getType(ctx){
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	return ast.F64
 }
 StringExpr::getType(ctx){
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	return ast.U64
 }
 ArrayExpr::getType(ctx){
@@ -42,6 +53,7 @@ KVExpr::getType(ctx){
 }
 
 VarExpr::getType(ctx){
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	this.getVarType(ctx,this)
 	if this.ret.pointer return ast.U64
 
@@ -101,6 +113,7 @@ BinaryExpr::getType(ctx){
 	return utils.max(l,r)
 }
 FunCallExpr::getType(ctx){
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	this.geninit(ctx)
 	this.check(this.fcs != null,"must compile first")
 	if std.len(this.fcs.returnTypes) != 0 {
@@ -188,12 +201,7 @@ LabelExpr::getType(ctx){
 
 ChainExpr::getType(ctx){
 	// chain-end type assert a.b.(T) decides the whole chain result type first
-	if this.tyassert != null {
-		// mem assert: result is a heap pointer, treat as u64
-		if this.tyassert.memType() return ast.U64
-		// base type assert: return the target base type
-		return this.tyassert.base
-	}
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	if !this.ismem(ctx) return ast.U64
 	preMember = null
 	preStruct = null
