@@ -761,6 +761,10 @@ OperatorHelper::staticCompile(expr)
 
 OperatorHelper::apiCompile(paramType, expr)
 {
+	if type(expr) == type(NullExpr) {
+		compile.writeln("    mov $0, %%rax")
+		return null
+	}
 	st = package.getStruct(paramType.structpkg,paramType.structname)
 	this.lstruct = null
 	if st != null && st.isapi {

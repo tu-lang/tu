@@ -180,6 +180,45 @@ fn test_nested_mem_value_copy(){
 	fmt.println("test nested mem value copy success")
 }
 
+mem NullBox {
+	i32 tag
+}
+
+mem NullList {
+	u64 front_bits
+	u64 back_bits
+}
+
+NullList::front_entry() NullBox {
+	bits<u64> = this.front_bits
+	if bits == 0 return null
+	return bits.(NullBox)
+}
+
+fn take_null_box(b<NullBox>){
+	if b != null os.die("take_null_box should receive null")
+}
+
+fn test_mem_return_null(){
+	fmt.println("test mem return null")
+
+	l<NullList> = new NullList
+	l.front_bits = 0
+	l.back_bits = 0
+	if l.front_entry() != null os.die("empty front_entry should be null")
+
+	t<NullBox> = new NullBox { tag: 9 }
+	bits<u64> = 0
+	bits = t
+	l.front_bits = bits
+	e<NullBox> = l.front_entry()
+	if e == null os.die("nonempty front_entry should not be null")
+	if e.tag != 9 os.die("front_entry tag != 9")
+
+	take_null_box(null)
+	fmt.println("test mem return null passed")
+}
+
 fn test2(){
 	fmt.println("test 2")
 
@@ -407,4 +446,5 @@ fn main(){
 	test11()
 	test_pointer_field_roundtrip()
 	test_nested_mem_value_copy()
+	test_mem_return_null()
 }

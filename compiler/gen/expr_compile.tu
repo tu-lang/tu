@@ -72,6 +72,12 @@ FunCallExpr::argCast(ctx , arg, i,fc){
 	if i < std.len(fc.params_order_var)
 		paramVar = fc.params_order_var[i]
 
+	// static mem arg null: heap pointer slot is 0
+	if paramVar != null && paramVar.structtype && type(arg) == type(NullExpr) {
+		compile.writeln("    mov $0, %%rax")
+		return null
+	}
+
 	if paramVar != null && paramVar.structtype && ast.isbase(paramVar.type) {
         op = new OperatorHelper()
         op.ltoken = paramVar.type

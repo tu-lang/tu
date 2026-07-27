@@ -44,6 +44,11 @@ ReturnStmt::exprCast(ctx , expr, i){
         op.lstruct = null
         op.ctx    = ctx
         if defineType.memType() {
+            // mem heap pointer null is 0; not runtime_internal_null (breaks == null)
+            if type(expr) == type(NullExpr) {
+                compile.writeln("    mov $0, %%rax")
+                return defineType
+            }
             var = new VarExpr(defineType.name,0,0)
             var.structpkg = defineType.pkg
             var.structname = defineType.name
