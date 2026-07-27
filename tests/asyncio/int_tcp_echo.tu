@@ -12,11 +12,11 @@ use io
 use string
 use std
 use net
-use time
 use runtime
 use asyncio.runtime as rt
 use asyncio.net as anet
 use asyncio.net.tcp as tcp
+use asyncio.time as atime
 
 // Pin GC roots across await (u64 bits are not traced as pointers).
 PIN_OWN1<io.Buf> = null
@@ -283,13 +283,14 @@ async tcp_echo_body() {
         i += 1
     }
     fmt.println("bytes_match_ok")
-    // Brief hold with sockets still open so ss/tcpdump can observe ESTABLISHED.
-    // Prefer asyncio Sleep, but enable_time()+TCP connect currently segfaults;
-    // use blocking time.sleep so the pause is usable for inspection.
+    // Brief asyncio Sleep with sockets still open — also covers enable_all
+    // (IO + TimeDriver) on the same runtime.
     step(10)
-    fmt.println("hold 4s (blocking time.sleep) — inspect TCP now")
-    fmt.println("hint: ss -tn sport = :34567 or dport = :34567")
-    time.sleep(4)
+    fmt.println("hold asyncio sleep 50ms")
+    hold_err<i32> = atime.sleep(atime.from_millis(50)).await
+    fmt.println("hold_err")
+    fmt.println(int(hold_err))
+    if hold_err != io.Ok return hold_err
     fmt.println("hold_done")
     PIN_OWN1 = null
     PIN_OWN2 = null
@@ -300,9 +301,9 @@ async tcp_echo_body() {
 
 fn int_tcp_echo(){
     fmt.println("int_tcp_echo test")
-    fmt.println("build runtime (current_thread + enable_io)")
+    fmt.println("build runtime (current_thread + enable_all)")
     b<rt.Builder> = rt.Builder::new_current_thread()
-    b = b.enable_io()
+    b = b.enable_all()
     body<runtime.Future> = tcp_echo_body()
     if body == null {
         os.die("tcp_echo_body returned null future")
