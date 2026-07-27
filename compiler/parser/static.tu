@@ -16,6 +16,9 @@ Parser::parseTypeAssert(lastdot){
 		ta.name = reader.curLex.dyn()
 		if reader.curToken == ast.VAR {
 			ta.setMemType()
+		}else{
+			// base type assert .(i8-f64): record target Token for getType / dstCastType
+			ta.base = reader.curToken
 		}
 		reader.scan()//eat first var
 		if reader.curToken == ast.DOT {

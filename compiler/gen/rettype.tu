@@ -187,6 +187,13 @@ LabelExpr::getType(ctx){
 }
 
 ChainExpr::getType(ctx){
+	// chain-end type assert a.b.(T) decides the whole chain result type first
+	if this.tyassert != null {
+		// mem assert: result is a heap pointer, treat as u64
+		if this.tyassert.memType() return ast.U64
+		// base type assert: return the target base type
+		return this.tyassert.base
+	}
 	if !this.ismem(ctx) return ast.U64
 	preMember = null
 	preStruct = null

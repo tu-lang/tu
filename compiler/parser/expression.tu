@@ -50,7 +50,16 @@ Parser::parseChainExpr(first){
                 reader.scan() //eat.
                 ta = null
                 if reader.curToken == ast.LPAREN {
-                    ta = this.parseTypeAssert(true)
+                    // assert as chain suffix: don't force a trailing . after it
+                    ta = this.parseTypeAssert(false)
+                    // chain-end assert a.b.(T): no member access follows,
+                    // the assert applies to the accumulated chain value itself
+                    if reader.curToken != ast.DOT {
+                        chainExpr.tyassert = ta
+                        break
+                    }
+                    // assert followed by member access a.b.(T).x: eat the . and continue
+                    reader.scan()
                 }
                 this.expect(ast.VAR)
                 membername = reader.curLex.dyn()
@@ -89,7 +98,8 @@ Parser::parseChainExpr(first){
             _ : break
         }
     }
-    if std.len(chainExpr.fields) == 1 {
+    // chain-end assert (chainExpr.tyassert) must be carried by ChainExpr, don't collapse
+    if std.len(chainExpr.fields) == 1 && chainExpr.tyassert == null {
         f = chainExpr.fields[0]
         if type(f) == type(gen.MemberCallExpr) {
             f.checkawait()
