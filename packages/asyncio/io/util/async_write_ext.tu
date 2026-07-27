@@ -123,8 +123,7 @@ const WriteAll::new(w<u64>, buf<iobuf.Buf>) WriteAll {
 WriteAll::poll(ctx) {
     ready<i32> = runtime.PollReady
     pend<i32> = runtime.PollPending
-    // io.WriteZero = 16908312
-    wz<i32> = 16908312
+    wz<i32> = iobuf.WriteZero
     code<i32> = this.done_code
     if code != 0 {
         return ready, code

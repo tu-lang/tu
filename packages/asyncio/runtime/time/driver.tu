@@ -103,15 +103,10 @@ TimeHandle::process(now_ms<u64>){
     pending<EntryList> = this.wheel.take_pending()
     this.lock.unlock()
 
-    // Mem null compares are unreliable — drain while front_bits != 0.
+    // Drain fired entries; pop_front() returns null when the list is empty.
     loop {
-        if pending.front_bits == 0 {
-            break
-        }
         cur<TimerShared> = pending.pop_front()
-        cbits<u64> = 0
-        cbits = cur
-        if cbits == 0 {
+        if cur == null {
             break
         }
         s<StateCell> = cur.get_cell()

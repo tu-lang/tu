@@ -136,13 +136,8 @@ Wheel::poll_at() (i32, u64) {
 // to pending. Higher levels demote to a lower level via re-insert below.
 Wheel::cascade_pending(list<EntryList>){
     loop {
-        if list.front_bits == 0 {
-            break
-        }
         e<TimerShared> = list.pop_front()
-        ebits<u64> = 0
-        ebits = e
-        if ebits == 0 {
+        if e == null {
             break
         }
         this.pending.push_back(e)
@@ -153,13 +148,8 @@ Wheel::cascade_pending(list<EntryList>){
 // whose deadline is now past elapsed move straight to pending.
 Wheel::cascade_level(list<EntryList>){
     loop {
-        if list.front_bits == 0 {
-            break
-        }
         e<TimerShared> = list.pop_front()
-        ebits<u64> = 0
-        ebits = e
-        if ebits == 0 {
+        if e == null {
             break
         }
         if e.cached_when <= this.elapsed {

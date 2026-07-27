@@ -9,8 +9,8 @@ LEVEL_SLOTS<i32> = 64
 LEVEL_MASK<u64>  = 63
 LEVEL_MULT_U<u64> = 64
 
-// Intrusive timer list. Stores TimerShared* as u64 — named pointer fields
-// like `.head` / `.front` are type-assert traps and left the list garbage.
+// Intrusive timer list. TimerShared* stored as u64 — avoid `.head` / `.front`
+// field names (type-assert traps). Use is_empty() / front_entry() at boundaries.
 mem EntryList {
     u64 front_bits     // TimerShared* or 0
     u64 back_bits      // TimerShared* or 0
