@@ -18,7 +18,7 @@ mem UnixListener {
     aio.PollEvented* poll_ev
 }
 
-// Last bind result when dual-ret mem drops across pkgs.
+// Last bind result (debug / fallback handle).
 LAST_UNIX_LISTENER<UnixListener> = null
 
 fn unix_listener_last() UnixListener {
@@ -26,33 +26,31 @@ fn unix_listener_last() UnixListener {
 }
 
 // Bind to the socket path and register for read readiness.
-const UnixListener::bind(path<string.String>) (i32, u64) {
+const UnixListener::bind(path<string.String>) (i32, UnixListener) {
     LAST_UNIX_LISTENER = null
     err<i32>, inner<netuds.UnixListener> = netuds.UnixListener::bind(path)
-    if inner == null return err, 0
-    e<i32> = 0
-    bits<u64> = 0
-    e, bits = UnixListener::from_netio(inner)
-    return e, bits
+    if inner == null return err, null
+    e<i32>, listener<UnixListener> = UnixListener::from_netio(inner)
+    return e, listener
 }
 
-fn unix_listener_bind_bits(path<string.String>) i32, u64 {
+fn unix_listener_bind(path<string.String>) i32, UnixListener {
     e<i32> = 0
-    bits<u64> = 0
-    e, bits = UnixListener::bind(path)
-    return e, bits
+    l<UnixListener> = null
+    e, l = UnixListener::bind(path)
+    return e, l
 }
 
 // Register an already-bound netio UnixListener with the IO driver.
-const UnixListener::from_netio(inner<netuds.UnixListener>) (i32, u64) {
+const UnixListener::from_netio(inner<netuds.UnixListener>) (i32, UnixListener) {
     shut_err<i32> = 0x03020005
     ok_code<i32> = 1
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return shut_err, 0
+    if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
-    if dh == null return shut_err, 0
+    if dh == null return shut_err, null
     ioh_bits<u64> = dh.ioh_bits()
-    if ioh_bits == 0 return shut_err, 0
+    if ioh_bits == 0 return shut_err, null
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
@@ -60,12 +58,12 @@ const UnixListener::from_netio(inner<netuds.UnixListener>) (i32, u64) {
     holder<u64> = 0
     holder = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
-    if perr != 0 return perr, 0
-    if pe == null return shut_err, 0
+    if perr != 0 return perr, null
+    if pe == null return shut_err, null
     out<UnixListener> = new UnixListener
     out.poll_ev = pe
     LAST_UNIX_LISTENER = out
-    return ok_code, out.(u64)
+    return ok_code, out
 }
 
 // Borrow the underlying netio UnixListener.
@@ -101,10 +99,9 @@ UnixAcceptFut::poll(ctx){
         }
         if acc_err != ok_code return ready, acc_err, null
         if inner == null return ready, other_err, null
-        rerr2<i32>, sbits<u64> = unix_stream_from_netio_bits(inner)
+        rerr2<i32>, s<UnixStream> = unix_stream_from_netio(inner)
         if rerr2 != ok_code return ready, rerr2, null
-        if sbits == 0 return ready, other_err, null
-        s<UnixStream> = sbits.(UnixStream)
+        if s == null return ready, other_err, null
         return ready, ok_code, s
     }
 }

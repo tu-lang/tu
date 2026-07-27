@@ -31,16 +31,16 @@ mem TcpStream {
 // read + write readiness. `peer` is the remote address to cache. Returns
 // (io.Ok, stream) or an error with a null stream (RuntimeShutdown when there
 // is no active IO driver).
-const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32, u64) {
+const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32, TcpStream) {
     shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
     ok_code<i32> = 1           // io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return shut_err, 0
+    if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
-    if dh == null return shut_err, 0
+    if dh == null return shut_err, null
     // Avoid dh.io_handle — `use io` makes `.io_*` a type-assert trap.
     ioh_bits<u64> = dh.ioh_bits()
-    if ioh_bits == 0 return shut_err, 0
+    if ioh_bits == 0 return shut_err, null
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
@@ -48,20 +48,20 @@ const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32,
     holder<u64> = 0
     holder = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
-    if perr != 0 return perr, 0
-    if pe == null return shut_err, 0
+    if perr != 0 return perr, null
+    if pe == null return shut_err, null
     out<TcpStream> = new TcpStream
     out.poll_ev = pe
     out.peer = peer
-    return ok_code, out.(u64)
+    return ok_code, out
 }
 
 // Package bridge for AcceptFut / poll_accept (Type::method illegal in async poll).
-fn tcp_stream_from_netio_bits(inner<nettcp.TcpStream>, peer<net.SocketAddr>) i32, u64 {
+fn tcp_stream_from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) i32, TcpStream {
     e<i32> = 0
-    bits<u64> = 0
-    e, bits = TcpStream::from_netio(inner, peer)
-    return e, bits
+    s<TcpStream> = null
+    e, s = TcpStream::from_netio(inner, peer)
+    return e, s
 }
 
 // Borrow the underlying netio TcpStream (for issuing raw read/write syscalls).
@@ -135,7 +135,7 @@ const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
         f1.stage = -1
         return f1
     }
-    rerr<i32>, sbits<u64> = TcpStream::from_netio(inner, addr)
+    rerr<i32>, s<TcpStream> = TcpStream::from_netio(inner, addr)
     if rerr != io.Ok {
         f2<ConnectFut> = new ConnectFut
         f2.poll_ev = null
@@ -143,7 +143,6 @@ const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
         f2.stage = -2
         return f2
     }
-    s<TcpStream> = sbits.(TcpStream)
     f<ConnectFut> = new ConnectFut
     f.poll_ev = s.poll_ev
     f.stream = s

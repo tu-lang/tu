@@ -20,29 +20,29 @@ mem UdpSocket {
     aio.PollEvented* poll_ev
 }
 
-// Last bind result — dual-ret mem across pkgs can drop; bits bridge preferred.
+// Last bind result (debug / fallback handle).
 LAST_UDP_SOCK<UdpSocket> = null
 
 fn udp_socket_last() UdpSocket {
     return LAST_UDP_SOCK
 }
 
-// Bind and register for read+write readiness. Returns (io.Ok, socket bits).
-const UdpSocket::bind(addr<net.SocketAddr>) (i32, u64) {
+// Bind and register for read+write readiness. Returns (io.Ok, socket).
+const UdpSocket::bind(addr<net.SocketAddr>) (i32, UdpSocket) {
     LAST_UDP_SOCK = null
     shut_err<i32> = 0x03020005
     ok_code<i32> = 1
 
     err<i32>, inner<netudp.UdpSocket> = netudp.UdpSocket::bind(addr)
-    if err != ok_code return err, 0
-    if inner == null return shut_err, 0
+    if err != ok_code return err, null
+    if inner == null return shut_err, null
 
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return shut_err, 0
+    if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
-    if dh == null return shut_err, 0
+    if dh == null return shut_err, null
     ioh_bits<u64> = dh.ioh_bits()
-    if ioh_bits == 0 return shut_err, 0
+    if ioh_bits == 0 return shut_err, null
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
@@ -50,21 +50,21 @@ const UdpSocket::bind(addr<net.SocketAddr>) (i32, u64) {
     holder<u64> = 0
     holder = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
-    if perr != 0 return perr, 0
-    if pe == null return shut_err, 0
+    if perr != 0 return perr, null
+    if pe == null return shut_err, null
 
     out<UdpSocket> = new UdpSocket
     out.poll_ev = pe
     LAST_UDP_SOCK = out
-    return ok_code, out.(u64)
+    return ok_code, out
 }
 
-// Package bridge for bind (Type::method + dual-ret mem traps in async bodies).
-fn udp_bind_bits(addr<net.SocketAddr>) i32, u64 {
+// Package bridge for bind (Type::method illegal inside async poll bodies).
+fn udp_bind(addr<net.SocketAddr>) i32, UdpSocket {
     e<i32> = 0
-    bits<u64> = 0
-    e, bits = UdpSocket::bind(addr)
-    return e, bits
+    s<UdpSocket> = null
+    e, s = UdpSocket::bind(addr)
+    return e, s
 }
 
 // Borrow the underlying netio UdpSocket.

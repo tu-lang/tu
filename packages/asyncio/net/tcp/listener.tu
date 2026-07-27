@@ -26,25 +26,24 @@ const TcpListener::bind(addr<net.SocketAddr>) (i32, TcpListener) {
     if err != io.Ok return err, null
     inner<nettcp.TcpListener> = nettcp.tcp_listener_last()
     if inner == null return err, null
-    lerr<i32>, lbits<u64> = TcpListener::from_netio(inner)
-    if lerr != io.Ok return lerr, null
-    return io.Ok, lbits.(TcpListener)
+    lerr<i32>, listener<TcpListener> = TcpListener::from_netio(inner)
+    return lerr, listener
 }
 
-const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, u64) {
+const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
     shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
     ok_code<i32> = 1           // io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null {
-        return shut_err, 0
+        return shut_err, null
     }
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
     if dh == null {
-        return shut_err, 0
+        return shut_err, null
     }
     ioh_bits<u64> = dh.ioh_bits()
     if ioh_bits == 0 {
-        return shut_err, 0
+        return shut_err, null
     }
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
@@ -54,11 +53,11 @@ const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, u64) {
     holder = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 {
-        return perr, 0
+        return perr, null
     }
     out<TcpListener> = new TcpListener
     out.poll_ev = pe
-    return ok_code, out.(u64)
+    return ok_code, out
 }
 
 TcpListener::raw_listener() nettcp.TcpListener {
@@ -96,10 +95,9 @@ AcceptFut::poll(ctx){
         peer<net.SocketAddr> = nettcp.tcp_accept_addr_last()
         if inner == null return ready, 16908328, null // io.Other
         // Package bridge: Type::method static call fails inside async poll.
-        rerr2<i32>, sbits<u64> = tcp_stream_from_netio_bits(inner, peer)
+        rerr2<i32>, s<TcpStream> = tcp_stream_from_netio(inner, peer)
         if rerr2 != ok_code return ready, rerr2, null
-        if sbits == 0 return ready, 16908328, null
-        s<TcpStream> = sbits.(TcpStream)
+        if s == null return ready, 16908328, null
         return ready, ok_code, s
     }
 }
@@ -133,9 +131,8 @@ TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
 
         inner<nettcp.TcpStream> = nettcp.tcp_accept_stream_last()
         peer<net.SocketAddr> = nettcp.tcp_accept_addr_last()
-        rerr2<i32>, sbits<u64> = tcp_stream_from_netio_bits(inner, peer)
+        rerr2<i32>, s<TcpStream> = tcp_stream_from_netio(inner, peer)
         if rerr2 != ok_code return runtime.PollError, null
-        s<TcpStream> = sbits.(TcpStream)
         return ready, s
     }
 }

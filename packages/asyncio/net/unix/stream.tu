@@ -22,16 +22,16 @@ mem UnixStream {
 }
 
 // Register an already-connected netio UnixStream with the IO driver.
-// Returns (io.Ok, stream bits) — dual-ret mem can drop across pkgs.
-const UnixStream::from_netio(inner<netuds.UnixStream>) (i32, u64) {
+// Returns (io.Ok, stream) or an error with null.
+const UnixStream::from_netio(inner<netuds.UnixStream>) (i32, UnixStream) {
     shut_err<i32> = 0x03020005
     ok_code<i32> = 1
     rc<rt.RuntimeContext> = rt.current_context()
-    if rc == null return shut_err, 0
+    if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
-    if dh == null return shut_err, 0
+    if dh == null return shut_err, null
     ioh_bits<u64> = dh.ioh_bits()
-    if ioh_bits == 0 return shut_err, 0
+    if ioh_bits == 0 return shut_err, null
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
@@ -39,18 +39,18 @@ const UnixStream::from_netio(inner<netuds.UnixStream>) (i32, u64) {
     holder<u64> = 0
     holder = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
-    if perr != 0 return perr, 0
-    if pe == null return shut_err, 0
+    if perr != 0 return perr, null
+    if pe == null return shut_err, null
     out<UnixStream> = new UnixStream
     out.poll_ev = pe
-    return ok_code, out.(u64)
+    return ok_code, out
 }
 
-fn unix_stream_from_netio_bits(inner<netuds.UnixStream>) i32, u64 {
+fn unix_stream_from_netio(inner<netuds.UnixStream>) i32, UnixStream {
     e<i32> = 0
-    bits<u64> = 0
-    e, bits = UnixStream::from_netio(inner)
-    return e, bits
+    s<UnixStream> = null
+    e, s = UnixStream::from_netio(inner)
+    return e, s
 }
 
 // Borrow the underlying netio UnixStream.
@@ -100,7 +100,7 @@ const UnixStream::connect(path<string.String>) UnixConnectFut {
         f0.stage = -1
         return f0
     }
-    rerr<i32>, sbits<u64> = UnixStream::from_netio(inner)
+    rerr<i32>, s<UnixStream> = UnixStream::from_netio(inner)
     if rerr != io.Ok {
         f1<UnixConnectFut> = new UnixConnectFut
         f1.poll_ev = null
@@ -108,7 +108,6 @@ const UnixStream::connect(path<string.String>) UnixConnectFut {
         f1.stage = -2
         return f1
     }
-    s<UnixStream> = sbits.(UnixStream)
     f<UnixConnectFut> = new UnixConnectFut
     f.poll_ev = s.poll_ev
     f.stream = s

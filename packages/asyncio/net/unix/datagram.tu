@@ -24,7 +24,8 @@ mem UnixDatagram {
 const UnixDatagram::bind(path<string.String>) (i32, UnixDatagram) {
     err<i32>, inner<netuds.UnixDatagram> = netuds.UnixDatagram::bind(path)
     if inner == null return err, null
-    return UnixDatagram::from_netio(inner)
+    e<i32>, sock<UnixDatagram> = UnixDatagram::from_netio(inner)
+    return e, sock
 }
 
 // Register an already-bound netio UnixDatagram with the IO driver.
