@@ -238,6 +238,13 @@ MemberCallExpr::static_compile(ctx,s,load){
         return call
     }
 
+    // Heap receiver + api interface method: vtable dispatch, not api default stub.
+    if s.isapi {
+        concrete = null
+        if this.obj != null concrete = package.getStruct(this.obj.structpkg, this.obj.structname)
+        return this.api_static_compile(ctx, s, concrete, load)
+    }
+
     // obj / tyassert path: receiver is in %rax, park it for ArgsPosExpr.
     compile.Push()
 
@@ -272,6 +279,80 @@ MemberCallExpr::static_compile(ctx,s,load){
     return call
 }
 
+// Heap receiver + api: InitApiVptr when concrete is known, then vtable slot call.
+// Caller must leave the mem heap pointer in %%rax (Chain / obj->compile).
+MemberCallExpr::api_static_compile(ctx, apiSt, concrete, load) {
+    this.record()
+    compile.writeln("    # api_static_compile")
+
+    apiFn = apiSt.getFunc(this.membername)
+    if apiFn == null this.check(false, "func not exist:" + this.membername)
+
+    call = this.call
+    call.st = apiSt
+    call.funcname = this.membername
+    call.fcs = apiFn
+
+    if concrete != null && !concrete.isapi {
+        concReg = null
+        for pkg : package.packages {
+            if pkg == null continue
+            concReg = pkg.getStruct(concrete.name)
+            if concReg != null break
+        }
+        if concReg == null concReg = concrete
+        apiVtableptr = concReg.apiname(apiSt.name)
+        ooplabel = "oop." + ast.incr_labelid()
+        compile.writeln("    cmpq $0 , %%rax")
+        compile.writeln("    je %s", ooplabel)
+        compile.writeln("    lea %s(%%rip), %%rdi", apiVtableptr)
+        compile.writeln("    mov %%rdi , (%%rax)")
+        compile.writeln("%s:", ooplabel)
+    }
+
+    compile.Push()
+    params = call.args
+    pos = new ArgsPosExpr(0, this.line, this.column)
+    call.args = []
+    call.args[] = pos
+    std.merge(call.args, params)
+
+    if std.len(apiFn.params_order_var) > std.len(call.args) {
+        pos.pos = std.len(apiFn.params_order_var) - 1
+    } else {
+        pos.pos = std.len(call.args) - 1
+    }
+
+    call.is_dyn = false
+    stack_args = call.PushStackArgs(ctx, apiFn)
+
+    recv_off = stack_args * 8
+    if apiFn.mcount > 1 recv_off = recv_off + (apiFn.mcount - 1) * 8
+    compile.writeln("    mov %d(%%rsp), %%rax", recv_off)
+    compile.Load()
+    if apiFn.vid != 0 compile.writeln("   add $%d , %%rax", apiFn.vid * 8)
+    compile.Load()
+    compile.writeln("    call *%%rax")
+
+    paramsize = apiFn.argscount()
+    if stack_args > paramsize {
+        delta = stack_args - paramsize
+        compile.writeln("    add $%d, %%rsp", delta * 8)
+    }
+    if apiFn.mcount > 1 {
+        if load compile.writeln("    add $%d, %%rsp", (apiFn.mcount - 1) * 8)
+    }
+
+    shift = 0
+    if !load && apiFn.mcount > 1 shift = apiFn.mcount - 1
+    for i = shift - 1 ; i >= 0 ; i -= 1 {
+        compile.writeln("    mov %d(%%rsp), %%rdi", i * 8)
+        compile.writeln("    mov %%rdi, %d(%%rsp)", (i + 1) * 8)
+    }
+    compile.writeln("    add $8, %%rsp")
+    return call
+}
+
 MemberCallExpr::compile(ctx,load)
 {
 	this.record()
@@ -296,6 +377,7 @@ MemberCallExpr::compile(ctx,load)
     if this.tyassert != null {
         compile.Pop("%rax")
         s = this.tyassert.getStruct()
+        if s.isapi return this.api_static_compile(ctx, s, null, load)
         return this.static_compile(ctx,s,load)
     }
     compile.Push()

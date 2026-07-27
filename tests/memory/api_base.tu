@@ -8,6 +8,32 @@ fn main(){
 	case3()
 	case4()
 	case_cross_pkg()
+	case_member_tyassert()
+}
+
+// Chain + tyassert + api member call (h.w.(WriteApi).write) must hit impl vtable.
+api WriteApi {
+	fn write() i32 {
+		return 0
+	}
+}
+mem Writer {
+	i32 n
+}
+impl WriteApi for Writer {
+	fn write() i32 {
+		return this.n
+	}
+}
+mem Holder {
+	Writer* w
+}
+fn case_member_tyassert(){
+	fmt.println("test member tyassert api dispatch")
+	h<Holder> = new Holder { w: new Writer { n: 55 } }
+	v<i32> = h.w.(WriteApi).write()
+	if v != 55 os.die("member tyassert api dispatch expected impl")
+	fmt.println("test member tyassert api dispatch success")
 }
 
 api ApiCase4 {
