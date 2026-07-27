@@ -43,7 +43,8 @@ const ReadBuf::from_ptr(data<u8*>, cap<u64>) ReadBuf {
     return rb
 }
 
-// Cross-package ctor bridge (callers must not use pkg.ReadBuf::from_ptr).
+// Package-level bridge. Cross-pkg `aio.ReadBuf::from_ptr` also works when the
+// result is typed (`rb<aio.ReadBuf>`); this fn remains for untyped call sites.
 fn read_buf_from_ptr(data<u8*>, cap<u64>) ReadBuf {
     return ReadBuf::from_ptr(data, cap)
 }

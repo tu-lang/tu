@@ -73,7 +73,7 @@ const TimeDriver::new(park_iod<rtio.IoDriver>) i32 {
     return 0
 }
 
-// Cross-pkg factory — callers must not write rttime.TimeDriver::new(...).
+// Cross-pkg factory bridge. `rttime.TimeDriver::new` also works when typed.
 fn time_driver_new(park_iod<rtio.IoDriver>) i32 {
     return TimeDriver::new(park_iod)
 }

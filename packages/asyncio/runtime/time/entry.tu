@@ -163,7 +163,7 @@ const TimerEntry::new(deadline_ms<u64>) TimerEntry {
     return e
 }
 
-// Cross-pkg factory: consumers must not call TimerEntry::new via pkg.Type::.
+// Cross-pkg factory bridge. `rttime.TimerEntry::new` also works when typed.
 fn timer_entry_new(deadline_ms<u64>) TimerEntry {
     return TimerEntry::new(deadline_ms)
 }

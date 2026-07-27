@@ -14,6 +14,7 @@ use string
 use std
 use net
 use asyncio.net as anet
+use asyncio.io as aio
 
 ITERS<i32> = 256
 
@@ -135,6 +136,18 @@ fn prop_addr_parse_roundtrip(){
     fmt.println("prop_addr_parse_roundtrip passed")
 }
 
+// Nested package alias + const static: aio.ReadBuf::from_ptr (optimize §4).
+fn test_nested_pkg_static_call(){
+    fmt.println("test nested pkg static call")
+    cap<u64> = 8
+    p<u8*> = null
+    rb<aio.ReadBuf> = aio.ReadBuf::from_ptr(p, cap)
+    if rb.cap != 8 os.die("aio.ReadBuf::from_ptr cap != 8")
+    if rb.filled != 0 os.die("aio.ReadBuf::from_ptr filled != 0")
+    fmt.println("test nested pkg static call passed")
+}
+
 fn main(){
     prop_addr_parse_roundtrip()
+    test_nested_pkg_static_call()
 }
