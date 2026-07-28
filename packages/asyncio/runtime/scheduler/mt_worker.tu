@@ -8,6 +8,10 @@ use io
 use asyncio.task
 use asyncio.util as util
 
+// Fn-ptr signatures for RuntimeContext enter/exit installed by Builder.
+fn mt_enter_sig(sched_bits<u64>, wh_bits<u64>, drv_bits<u64>, rng_bits<u64>) (u64)
+fn mt_exit_sig(saved_bits<u64>) (i32)
+
 // Pack task pointer as future ctx.
 fn mt_task_ctx(t<task.RawTask>) u64 {
     return t.(u64)
@@ -15,6 +19,9 @@ fn mt_task_ctx(t<task.RawTask>) u64 {
 
 // Periodic inject pull keeps fairness vs. the local queue.
 fn mt_next_global_task(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
+    if w.handle.shared.block_on_exclusive == 1 {
+        return io.NotFound, task.notified_from_raw(null)
+    }
     err<i32> = 0
     t<task.Notified> = task.notified_from_raw(null)
     err, t = w.handle.shared.inject.pop()
@@ -34,7 +41,9 @@ fn mt_steal_work(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
         idx<u32> = (start + i) % n
         if idx == w.worker_idx continue
         bits<u64> = shared.remotes[idx]
+        if bits == 0 continue
         r<Remote> = bits.(Remote)
+        if r.steal_end == null continue
         err<i32> = 0
         t<task.Notified> = task.notified_from_raw(null)
         err, t = r.steal_end.steal_into(core.run_queue)
@@ -49,7 +58,6 @@ fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
         core.is_searching = 0
         last<i32> = w.handle.shared.idle.transition_worker_from_searching()
         if last == 1 {
-            // Last searcher: keep the pipeline filled by waking another peer.
             sn<MtSynced> = w.handle.shared.lock_hub
             found<i32>, idx<u32> = w.handle.shared.idle.notify_one(sn.idle_synced, w.handle.shared.synced_lock)
             if found == 1 && idx < w.handle.shared.num_workers {
@@ -92,6 +100,22 @@ fn mt_finalize_shutdown(w<MtWorker>, core<WorkerCore>){
     shared.shutdown_cores_lock.unlock()
 }
 
+// Block until every worker OS thread has left worker_entry.
+fn mt_wait_workers(bits<u64>) {
+    mh<MtHandle> = bits.(MtHandle)
+    shared<MtShared> = mh.shared
+    loop {
+        shared.shutdown_cores_lock.lock()
+        n<i32> = shared.workers_alive
+        shared.shutdown_cores_lock.unlock()
+        if n <= 0 {
+            return
+        }
+        mt_notify_all_workers(shared)
+        runtime.osyield()
+    }
+}
+
 // Take the WorkerCore hand-off, then enter the typed loop body.
 fn worker_run(w<MtWorker>){
     core_bits<u64> = w.core.take()
@@ -100,11 +124,25 @@ fn worker_run(w<MtWorker>){
 }
 
 // Loop body takes WorkerCore as a parameter so member access is typed.
-// A local `core = bits.(WorkerCore)` does not (asmgen: undefined variable core.*).
 fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     shared<MtShared> = w.handle.shared
+    saved_bits<u64> = 0
+    enter_fc<u64> = shared.worker_enter_fc
+    exit_fc<u64> = shared.worker_exit_fc
+    if enter_fc != 0 {
+        op_enter<mt_enter_sig> = enter_fc.(u64)
+        saved_bits = op_enter(
+            w.handle.(u64),
+            w.handle.rt_handle,
+            w.handle.driver_handle,
+            core.rand.(u64)
+        )
+    }
 
     loop {
+        if shared.inject.is_closed() {
+            core.is_shutdown = 1
+        }
         if core.is_shutdown == 1 break
         core.tick = core.tick + 1
 
@@ -147,20 +185,34 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             }
         }
 
-        // 5) Park. Drop searching state first so other workers can
-        // start new searches on our behalf.
-        is_last_searcher<i32> = 0
-        if core.is_searching == 1 {
-            is_last_searcher = shared.idle.transition_worker_from_searching()
-            core.is_searching = 0
+        if shared.block_on_exclusive == 0 && shared.inject.is_empty() == 0 {
+            ierr2<i32>, ti2<task.Notified> = mt_next_global_task(w, core)
+            if ierr2 == 0 {
+                run_task(w, core, ti2)
+                continue
+            }
         }
+
+        // 5) Park. Matches Core::transition_to_parked.
+        if shared.shutting_down == 1 {
+            core.is_shutdown = 1
+            continue
+        }
+        was_searching<i32> = core.is_searching
         sn<MtSynced> = shared.lock_hub
-        will_park<i32> = shared.idle.transition_worker_to_parked(
-            sn.idle_synced, shared.synced_lock, w.worker_idx, is_last_searcher
+        is_last_searcher<i32> = shared.idle.transition_worker_to_parked(
+            sn.idle_synced, shared.synced_lock, w.worker_idx, was_searching
         )
-        if will_park == 0 continue
+        core.is_searching = 0
+        if is_last_searcher == 1 {
+            mt_notify_if_work_pending(w)
+        }
 
         core.parker.wait_until_wake(w.handle.driver_handle)
+        if shared.shutting_down == 1 {
+            core.is_shutdown = 1
+            continue
+        }
         shared.idle.transition_worker_from_parked(sn.idle_synced, shared.synced_lock, w.worker_idx)
         if shared.idle.transition_worker_to_searching() == 1 {
             core.is_searching = 1
@@ -169,15 +221,116 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
 
     mt_pre_shutdown(w, core)
     mt_finalize_shutdown(w, core)
+    if exit_fc != 0 && saved_bits != 0 {
+        op_exit<mt_exit_sig> = exit_fc.(u64)
+        op_exit(saved_bits)
+    }
 }
 
-// runtime.newcore entry-point. ACTIVE_WORKER is set by Builder before
-// spawning the new core; the worker reads it on entry.
-ACTIVE_WORKER<MtWorker> = null
+// Last searcher leaving search: if inject still has work, wake one sleeper.
+fn mt_notify_if_work_pending(w<MtWorker>){
+    shared<MtShared> = w.handle.shared
+    if shared.inject.is_empty() != 0 {
+        return
+    }
+    sn<MtSynced> = shared.lock_hub
+    found<i32>, idx<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
+    if found == 1 && idx < shared.num_workers {
+        bits2<u64> = shared.remotes[idx]
+        r<Remote> = bits2.(Remote)
+        if r.unparker != null r.unparker.unpark()
+    }
+}
 
+// Handoff so each newcore claims exactly one MtWorker (avoids the
+// ACTIVE_WORKER overwrite race when spawning N workers in a loop).
+// Heap hub — package-level MutexInter* globals poison codegen.
+mem WorkerHandoffHub {
+    runtime.MutexInter* lock
+    MtWorker* slot
+}
+
+WORKER_HANDOFF<WorkerHandoffHub> = null
+
+fn worker_handoff_ensure(){
+    if WORKER_HANDOFF != null {
+        return
+    }
+    // Only the builder thread may create the hub (before any newcore).
+    h<WorkerHandoffHub> = new WorkerHandoffHub
+    h.lock = new runtime.MutexInter
+    h.lock.init()
+    h.slot = null
+    WORKER_HANDOFF = h
+}
+
+// Must be called from the builder thread before the first newcore.
+fn worker_handoff_init(){
+    worker_handoff_ensure()
+}
+
+// Builder publishes the next worker then waits until the OS thread claims it.
+fn worker_handoff_publish(w<MtWorker>){
+    worker_handoff_ensure()
+    h<WorkerHandoffHub> = WORKER_HANDOFF
+    loop {
+        h.lock.lock()
+        if h.slot == null {
+            h.slot = w
+            h.lock.unlock()
+            return
+        }
+        h.lock.unlock()
+        runtime.osyield()
+    }
+}
+
+// Block until the published worker has been claimed by worker_entry.
+fn worker_handoff_wait_claimed(){
+    worker_handoff_ensure()
+    h<WorkerHandoffHub> = WORKER_HANDOFF
+    loop {
+        h.lock.lock()
+        done<i32> = 0
+        if h.slot == null {
+            done = 1
+        }
+        h.lock.unlock()
+        if done == 1 {
+            return
+        }
+        runtime.osyield()
+    }
+}
+
+// runtime.newcore entry-point: claim the published MtWorker.
 fn worker_entry(){
-    w<MtWorker> = ACTIVE_WORKER
-    if w == null { return }
+    h<WorkerHandoffHub> = WORKER_HANDOFF
+    if h == null {
+        return
+    }
+    w<MtWorker> = null
+    loop {
+        h.lock.lock()
+        if h.slot != null {
+            w = h.slot
+            h.slot = null
+            h.lock.unlock()
+            break
+        }
+        h.lock.unlock()
+        runtime.osyield()
+    }
+    if w == null {
+        return
+    }
+    shared0<MtShared> = w.handle.shared
+    shared0.shutdown_cores_lock.lock()
+    shared0.workers_alive += 1
+    shared0.shutdown_cores_lock.unlock()
     worker_run(w)
+    shared0.shutdown_cores_lock.lock()
+    shared0.workers_alive -= 1
+    shared0.shutdown_cores_lock.unlock()
 }
 

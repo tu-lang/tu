@@ -11,6 +11,7 @@ mem MtHandle {
     u64       driver_handle      // raw bits of runtime.driver.Handle*
     u64       blocking_spawner   // raw bits of runtime.blocking.Spawner*
     u64       config             // raw bits of runtime.Config*
+    u64       rt_handle          // raw bits of weak runtime.Handle*
 }
 
 // Build a handle around shared.
@@ -20,17 +21,41 @@ const MtHandle::new(shared<MtShared>) MtHandle {
     h.driver_handle    = 0
     h.blocking_spawner = 0
     h.config           = 0
+    h.rt_handle        = 0
     return h
 }
 
-// Schedule a Notified task. If the calling thread is a worker we push to
-// its Local queue; otherwise we inject + notify_one. The "is current
-// worker" check piggybacks on context.current_mt() once the runtime
-// root is in place; for the first pass we always go through inject.
+// Schedule a Notified task. Workers push local / steal; foreign and
+// non-worker callers inject + wake one sleeper. The block_on root is
+// special: CachedParkThread owns it — wake only unparks the caller,
+// never puts root on inject for a worker to poll.
 impl task.Schedule for MtHandle {
     fn schedule(t){
         notif<task.Notified> = t
+        raw_bits<u64> = 0
+        raw_bits = notif.raw()
+
+        // block_on root wake: park.unpark only (do not inject).
+        if this.shared.block_on_root_bits != 0 {
+            if raw_bits == this.shared.block_on_root_bits {
+                up0<Unparker> = this.shared.block_on_unparker
+                if up0 != null {
+                    up0.unpark()
+                }
+                return
+            }
+        }
+
         this.shared.inject.push(notif)
+
+        // V1 exclusive: caller drains inject; wake the block_on thread.
+        if this.shared.block_on_exclusive == 1 {
+            up1<Unparker> = this.shared.block_on_unparker
+            if up1 != null {
+                up1.unpark()
+            }
+            return
+        }
 
         // Wake one parked worker if any are sleeping.
         sn<MtSynced> = this.shared.lock_hub
@@ -47,10 +72,28 @@ impl task.Schedule for MtHandle {
     }
 }
 
-// Close the runtime inject queue via raw MtHandle bits.
+// Close the runtime inject queue via raw MtHandle bits and wake every
+// worker so they observe is_closed and exit (Handle::close + notify_all).
 fn mt_inject_close(bits<u64>) {
     mh<MtHandle> = bits.(MtHandle)
+    mh.shared.shutting_down = 1
     mh.shared.inject.close()
+    mt_notify_all_workers(mh.shared)
+}
+
+// Unpark every remote worker (shutdown / inject close).
+fn mt_notify_all_workers(shared<MtShared>) {
+    i<u32> = 0
+    while i < shared.num_workers {
+        rb<u64> = shared.remotes[i]
+        if rb != 0 {
+            r<Remote> = rb.(Remote)
+            if r.unparker != null {
+                r.unparker.unpark()
+            }
+        }
+        i += 1
+    }
 }
 
 // Raw-bits inject lookup for callers outside this package.

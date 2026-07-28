@@ -1,6 +1,6 @@
-// Worker park / unpark. Three states (EMPTY/PARKED/NOTIFIED) on top of
-// runtime.Note. Park yields control to the IO/time driver (when
-// driver_slot is set) and unblocks via Note::Sleep otherwise.
+// Worker park / unpark. Three states (EMPTY/PARKED/NOTIFIED).
+// wait_until_wake yield-polls NOTIFIED — Note::Sleep over clone() worker
+// threads has hit futex SEGV; driver park_timeout still TODO.
 
 use runtime
 use std.atomic
@@ -38,8 +38,8 @@ const Unparker::new(p<Parker>) Unparker {
     return u
 }
 
-// Park indefinitely. Returns 0 on a normal wake, surfaces driver errors
-// when a driver is wired in.
+// Park indefinitely. Yield-poll on NOTIFIED to avoid Note/futex races
+// across clone() worker threads (Note::Sleep has SEGV under N workers).
 Parker::wait_until_wake(handle_ptr<u64>) i32 {
     addr<i32*> = &this.state
     if atomic.cas(addr, NOTIFIED, EMPTY) == CAS_OK return 0
@@ -49,10 +49,19 @@ Parker::wait_until_wake(handle_ptr<u64>) i32 {
         return 0
     }
 
-    this.park_note.Sleep()
-    this.park_note.Clear()
-    atomic.cas(addr, PARKED, EMPTY)
-    atomic.cas(addr, NOTIFIED, EMPTY)
+    loop {
+        if atomic.cas(addr, NOTIFIED, EMPTY) == CAS_OK {
+            atomic.cas(addr, PARKED, EMPTY)
+            return 0
+        }
+        cur<i32> = *addr
+        if cur != PARKED {
+            atomic.cas(addr, PARKED, EMPTY)
+            atomic.cas(addr, NOTIFIED, EMPTY)
+            return 0
+        }
+        runtime.osyield()
+    }
     return 0
 }
 
@@ -69,7 +78,6 @@ Unparker::unpark(){
     addr<i32*> = &p.state
     if atomic.cas(addr, EMPTY, NOTIFIED) == CAS_OK { return }
     if atomic.cas(addr, PARKED, NOTIFIED) == CAS_OK {
-        p.park_note.Wake()
         return
     }
 }

@@ -85,20 +85,27 @@ Idle::transition_worker_from_searching() i32 {
     return 0
 }
 
-// Move the worker out of unparked. is_searching tells us whether the
-// caller was the last searcher; if not we refuse to park (caller
-// continues spinning) so we don't lose work-stealing momentum.
+// Move the worker into parked: push onto sleepers and decrement unparked.
+// is_searching: whether this worker was searching (also dec searching count).
+// Returns 1 when this was the last searcher — caller must notify_if_work_pending.
 Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter>, worker<u32>, is_searching<i32>) i32 {
-    if is_searching == 0 return 0
     addr<i32*> = &this.state
+    last_searcher<i32> = 0
     loop {
         cur<i32> = *addr
         unparked<u32>  = idle_state_unparked(cur.(u32))
         searching<u32> = idle_state_searching(cur.(u32))
-        if unparked == 0 return 0
-        new_unparked<u32> = unparked - 1
+        new_unparked<u32> = unparked
+        if unparked > 0 {
+            new_unparked = unparked - 1
+        }
         new_searching<u32> = searching
-        if searching > 0 new_searching = searching - 1
+        if is_searching == 1 && searching > 0 {
+            new_searching = searching - 1
+            if searching == 1 {
+                last_searcher = 1
+            }
+        }
         packed<u32> = idle_state_pack(new_unparked, new_searching)
         new_state<i32> = packed.(i32)
         if atomic.cas(addr, cur, new_state) == CAS_OK break
@@ -110,7 +117,7 @@ Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter>, 
         synced.sleepers_len += 1
     }
     lock.unlock()
-    return 1
+    return last_searcher
 }
 
 // Worker just woke — update unparked counter and remove from sleepers.
