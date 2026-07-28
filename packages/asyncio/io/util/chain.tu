@@ -21,7 +21,7 @@ impl aio.AsyncRead for Chain {
     fn poll_read(ctx<u64>, dst<aio.ReadBuf>) i32 {
         if this.on_second == 0 {
             before<u64> = dst.filled_len()
-            err<i32> = this.first.(aio.AsyncRead).poll_read(ctx, dst)
+        err<i32> = this.first.(aio.AsyncRead).poll_read(ctx, dst)
             if err == runtime.PollPending return runtime.PollPending
             if err == runtime.PollError return runtime.PollError
             if dst.filled_len() == before {

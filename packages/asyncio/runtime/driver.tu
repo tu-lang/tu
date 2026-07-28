@@ -146,10 +146,14 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
 }
 
 // Tear-down sequence: signal first (so signalfd is unregistered before
-// the IO driver closes its registry), then IO, then time.
+// the IO driver closes its registry), then IO. Time driver has no fd to close.
 Driver::shutdown(handle<DriverHandle>){
-    // Signal teardown deferred: SignalDriver field access via u64 bits still
-    // traps under enable_all; IO registry close is enough for block_on exit.
+    sd<rtsig.SignalDriver> = this.sigd
+    if sd != null {
+        sb<u64> = 0
+        sb = sd
+        rtsig.signal_driver_shutdown_bits(sb)
+    }
     ioh_bits<u64> = handle.ioh_bits()
     if ioh_bits != 0 {
         ih<rtio.IoHandle> = null

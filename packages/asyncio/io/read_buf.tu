@@ -1,50 +1,54 @@
 // Borrowed read buffer surfaced to AsyncRead implementors.
 // Filled/initialized cursor over a byte slice.
 //
-// Package asyncio.io cannot `use io` (short-name clash with this package), so
-// the buffer is held as a raw byte pointer + capacity (layout adaptation of
-// the design ReadBuf over &[u8]).
+// This package must not `use io` (short-name clash with asyncio.io). Callers
+// with an io.Buf should use `asyncio.io.util.read_buf_over`, or pass
+// `read_buf_from_i8(buf.ptr(), n)` from a package that may import io.
 //
-// data_bits keeps the package bridge and async adapters representation-neutral.
-// Native pointer and u64 mem fields preserve all 64 bits (struct.tu regression).
+// `start` is a real `u8*` so GC scans it (a former `u64 data_bits` left the
+// byte region unrooted across gc_malloc).
 
 use std
 
+// Borrowed byte cursor. `start` must outlive this ReadBuf (caller-owned).
 mem ReadBuf {
-    u64 data_bits // base of the byte region as raw pointer bits
-    u64 cap       // total capacity in bytes
-    u64 filled    // bytes written into the buffer
+    u8* start  // GC-rooted base of the byte region
+    u64 cap    // total capacity in bytes
+    u64 filled // bytes written into the buffer
 }
 
 // Build ReadBuf from raw pointer bits (caller widens i8*/u8* → u64).
 fn read_buf_from_bits_cap(data_bits<u64>, cap<u64>) ReadBuf {
     rb<ReadBuf> = new ReadBuf
-    rb.data_bits = data_bits
+    p<u8*> = null
+    p = data_bits
+    rb.start = p
     rb.cap = cap
     rb.filled = 0
     return rb
 }
 
-// Alternate entry from i8* (io.Buf::ptr). Widens via local u64 first.
+// Build ReadBuf from i8* (nested call args like from_i8(buf.ptr(), n) are OK).
 fn read_buf_from_i8(data<i8*>, cap<u64>) ReadBuf {
-    bits<u64> = 0
-    bits = data
-    return read_buf_from_bits_cap(bits, cap)
+    rb<ReadBuf> = new ReadBuf
+    p<u8*> = null
+    p = data
+    rb.start = p
+    rb.cap = cap
+    rb.filled = 0
+    return rb
 }
 
 // Start empty over an already-initialized region.
 const ReadBuf::from_ptr(data<u8*>, cap<u64>) ReadBuf {
     rb<ReadBuf> = new ReadBuf
-    bits<u64> = 0
-    bits = data
-    rb.data_bits = bits
+    rb.start = data
     rb.cap = cap
     rb.filled = 0
     return rb
 }
 
-// Package-level bridge. Cross-pkg `aio.ReadBuf::from_ptr` also works when the
-// result is typed (`rb<aio.ReadBuf>`); this fn remains for untyped call sites.
+// Package-level bridge for untyped call sites.
 fn read_buf_from_ptr(data<u8*>, cap<u64>) ReadBuf {
     return ReadBuf::from_ptr(data, cap)
 }
@@ -60,7 +64,9 @@ fn read_buf_from_bits(bits<u64>) ReadBuf {
 
 // Expose stored pointer bits for diagnostics / cross-check.
 fn read_buf_data_bits(b<ReadBuf>) u64 {
-    return b.data_bits
+    bits<u64> = 0
+    bits = b.start
+    return bits
 }
 
 ReadBuf::filled_len() u64 {
@@ -77,14 +83,12 @@ ReadBuf::remaining() u64 {
 
 // Base pointer of the whole buffer (filled region starts here).
 ReadBuf::data_ptr() u8* {
-    p<u8*> = this.data_bits
-    return p
+    return this.start
 }
 
 // Pointer to the first unfilled byte.
 ReadBuf::unfilled_ptr() u8* {
-    base<u8*> = this.data_bits
-    return base + this.filled
+    return this.start + this.filled
 }
 
 ReadBuf::advance(n<u64>) i32 {

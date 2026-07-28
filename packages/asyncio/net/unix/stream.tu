@@ -117,6 +117,41 @@ const UnixStream::connect(path<string.String>) UnixConnectFut {
 
 // ---- read / write (no IoOp) ----------------------------------------------
 
+// Concrete read into ReadBuf (mirrors TcpStream::poll_read_priv).
+UnixStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
+    rem<u64> = buf.remaining()
+    if rem == 0 return runtime.PollReady
+    pend<i32> = runtime.PollPending
+    ready<i32> = runtime.PollReady
+    would_block<i32> = 16908302
+    ok_code<i32> = 1
+    sock<netuds.UnixStream> = this.raw_sock()
+    loop {
+        rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx)
+        if rerr == pend return pend
+        if rerr != 0 return runtime.PollError
+
+        rem2<u64> = buf.remaining()
+        if rem2 == 0 return ready
+        tmp<io.Buf> = io.NewBuf(rem2.(i32))
+        e<i32>, n<u64> = sock.read(tmp)
+        if e == would_block {
+            this.poll_ev.clear_readiness(ev)
+            continue
+        }
+        if e != ok_code return runtime.PollError
+        if n > 0 {
+            dst<u8*> = buf.unfilled_ptr()
+            src<i8*> = io.buf_ptr(tmp)
+            sp<u8*> = null
+            sp = src
+            std.memcpy(dst, sp, n)
+            buf.advance(n)
+        }
+        return ready
+    }
+}
+
 UnixStream::poll_write_priv(ctx<u64>, buf_bits<u64>) i32, u64 {
     b<io.Buf> = io.buf_from_bits(buf_bits)
     pend<i32> = runtime.PollPending
@@ -139,75 +174,30 @@ UnixStream::poll_write_priv(ctx<u64>, buf_bits<u64>) i32, u64 {
     }
 }
 
-fn stream_poll_read_buf(s<UnixStream>, ctx<u64>, buf_bits<u64>) i32, u64 {
-    b<io.Buf> = io.buf_from_bits(buf_bits)
-    rem<u64> = io.buf_len(b)
-    if rem == 0 return runtime.PollReady, 0
-    pend<i32> = runtime.PollPending
-    ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
-    ok_code<i32> = 1
-    sock<netuds.UnixStream> = s.raw_sock()
-    loop {
-        rerr<i32>, ev<rtio.ReadyEvent> = s.poll_ev.poll_read_ready(ctx)
-        if rerr == pend return pend, 0
-        if rerr != 0 return runtime.PollError, 0
-
-        e<i32>, n<u64> = sock.read(b)
-        if e == would_block {
-            s.poll_ev.clear_readiness(ev)
-            continue
-        }
-        if e != ok_code return runtime.PollError, 0
-        return ready, n
-    }
-}
-
-fn stream_poll_write(s<UnixStream>, ctx<u64>, buf_bits<u64>) i32, u64 {
-    e<i32> = 0
-    n<u64> = 0
-    e, n = s.poll_write_priv(ctx, buf_bits)
-    return e, n
-}
-
 UnixStream::shutdown(how<i32>) i32 {
     sock<netuds.UnixStream> = this.raw_sock()
     return sock.shutdown(how)
 }
 
-// AsyncRead/AsyncWrite surface for split halves (concrete, no IoOp).
-UnixStream::poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
-    rem<u64> = buf.remaining()
-    if rem == 0 return runtime.PollReady
-    tmp<io.Buf> = io.NewBuf(rem.(i32))
-    bits<u64> = io.buf_to_bits(tmp)
-    st<i32>, n<u64> = stream_poll_read_buf(this, ctx, bits)
-    if st == runtime.PollPending return runtime.PollPending
-    if st != runtime.PollReady return runtime.PollError
-    if n > 0 {
-        dst<u8*> = buf.unfilled_ptr()
-        src<i8*> = io.buf_ptr(tmp)
-        sp<u8*> = null
-        sp = src
-        std.memcpy(dst, sp, n)
-        buf.advance(n)
+impl aio.AsyncRead for UnixStream {
+    fn poll_read(ctx<u64>, buf<aio.ReadBuf>) i32 {
+        return this.poll_read_priv(ctx, buf)
     }
-    return runtime.PollReady
 }
 
-UnixStream::poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-    e<i32> = 0
-    n<u64> = 0
-    e, n = this.poll_write_priv(ctx, buf_bits)
-    return e, n
-}
-
-UnixStream::poll_flush(ctx<u64>) i32 {
-    return runtime.PollReady
-}
-
-UnixStream::poll_shutdown(ctx<u64>) i32 {
-    sock<netuds.UnixStream> = this.raw_sock()
-    sock.shutdown(net.ShutdownWrite)
-    return runtime.PollReady
+impl aio.AsyncWrite for UnixStream {
+    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+        e<i32> = 0
+        n<u64> = 0
+        e, n = this.poll_write_priv(ctx, buf_bits)
+        return e, n
+    }
+    fn poll_flush(ctx<u64>) i32 {
+        return runtime.PollReady
+    }
+    fn poll_shutdown(ctx<u64>) i32 {
+        sock<netuds.UnixStream> = this.raw_sock()
+        sock.shutdown(net.ShutdownWrite)
+        return runtime.PollReady
+    }
 }

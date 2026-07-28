@@ -242,8 +242,8 @@ TcpStream::shutdown(how<i32>) i32 {
     return sock.shutdown(how)
 }
 
-// Concrete read path (avoid AsyncRead api default which returns PollError).
-// Ready → read_priv into NewBuf → copy into ReadBuf unfilled region.
+// Concrete read path. Ready → temp Buf → copy into ReadBuf unfilled.
+// ReadBuf.start is u8* (GC root); temp NewBuf must not orphan the caller buffer.
 TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
     rem<u64> = buf.remaining()
     if rem == 0 return runtime.PollReady
@@ -258,6 +258,7 @@ TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
         if rerr != 0 return runtime.PollError
 
         rem2<u64> = buf.remaining()
+        if rem2 == 0 return ready
         tmp<io.Buf> = io.NewBuf(rem2.(i32))
         e<i32>, n<u64> = nettcp.tcp_stream_read_priv(sock, tmp)
         if e == would_block {
@@ -298,43 +299,6 @@ TcpStream::poll_write_priv(ctx<u64>, buf_bits<u64>) i32, u64 {
         if e != ok_code return runtime.PollError, 0
         return ready, n
     }
-}
-
-// Poll read directly into an io.Buf represented by raw package-bridge bits.
-// Returns PollPending / PollError / PollReady; on Ready, n is bytes read.
-fn stream_poll_read_buf(s<TcpStream>, ctx<u64>, buf_bits<u64>) i32, u64 {
-    b<io.Buf> = io.buf_from_bits(buf_bits)
-    rem<u64> = io.buf_len(b)
-    if rem == 0 return runtime.PollReady, 0
-    pend<i32> = runtime.PollPending
-    ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
-    ok_code<i32> = 1
-    sock<nettcp.TcpStream> = s.raw_sock()
-    loop {
-        rerr<i32>, ev<rtio.ReadyEvent> = s.poll_ev.poll_read_ready(ctx)
-        if rerr == pend return pend, 0
-        if rerr != 0 return runtime.PollError, 0
-
-        e<i32>, n<u64> = nettcp.tcp_stream_read_priv(sock, b)
-        if e == would_block {
-            s.poll_ev.clear_readiness(ev)
-            continue
-        }
-        if e != ok_code return runtime.PollError, 0
-        return ready, n
-    }
-}
-
-fn stream_poll_read(s<TcpStream>, ctx<u64>, buf<aio.ReadBuf>) i32 {
-    return s.poll_read_priv(ctx, buf)
-}
-
-fn stream_poll_write(s<TcpStream>, ctx<u64>, buf_bits<u64>) i32, u64 {
-    e<i32> = 0
-    n<u64> = 0
-    e, n = s.poll_write_priv(ctx, buf_bits)
-    return e, n
 }
 
 impl aio.AsyncRead for TcpStream {
