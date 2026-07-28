@@ -39,8 +39,7 @@ Handle::spawn_blocking(op<u64>) JoinHandle {
     return this.inner.spawn_blocking(op)
 }
 
-// Run a future to completion (current_thread only; multi_thread surfaces
-// RuntimeShutdown, matching runtime.Handle::block_on).
+// Run a future to completion on the active runtime.
 Handle::block_on(fut) (i32, i64) {
     return this.inner.block_on(fut)
 }
@@ -54,8 +53,10 @@ Handle::enter() EnterGuard {
     if this.inner.drv_h != null {
         bits = this.inner.drv_h
     }
+    inner_bits<u64> = this.inner.(u64)
     ctx<rt.RuntimeContext> = rt.RuntimeContext::new(
         this.inner.sched_handle,
+        inner_bits,
         bits,
         null,
         rt.ENTER_RUNTIME
