@@ -207,31 +207,20 @@ ChainExpr::memgen(ctx,load)
 				mc = expr
 				mfc = null
 				st = null
-				concreteSt = null
 				if mc.staticCall != null
 					st = mc.staticCall
 				else if mc.tyassert != null {
 					st = mc.tyassert.getStruct()
-					concreteSt = preStruct
-					// h.w.(Api).m: concrete from pointer field structname (Writer* -> Writer)
-					if preMember != null && preMember.structname != "" {
-						pt = package.getStruct(preMember.structpkg, preMember.structname)
-						if pt != null concreteSt = pt
-					}
 				}else {
 					if preMember != null
 						st = preMember.structref
 					else 
 						st = preStruct
-					if st != null && st.isapi && preStruct != null && !preStruct.isapi
-						concreteSt = preStruct
-					else
-						concreteSt = st
 				}
 				lastload = true
 				if islast lastload = load
 				if st != null && st.isapi
-					mfc = mc.api_static_compile(ctx, st, concreteSt, lastload)
+					mfc = mc.api_static_compile(ctx, st, null, lastload)
 				else
 					mfc = mc.static_compile(ctx,st,lastload)
 				mc.check(mfc.fcs != null , "static funcall not signature")

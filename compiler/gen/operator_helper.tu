@@ -443,7 +443,10 @@ OperatorHelper::genRight(isleft,expr)
 			if std.len(fc.fcs.returnTypes) > 0 {
 				ti = fc.fcs.returnTypes[0]
 			}
-			if ti != null && ti.baseType(){
+			// pointer/mem returns need ABI-wide U64 (never pointee base -> movsxd)
+			if ti != null && (ti.pointer || ti.memType()) {
+				this.initcond(isleft,8,ast.U64,true)
+			}else if ti != null && ti.baseType(){
 				size = parser.typesize[int(ti.base)]
 				this.initcond(isleft,size,ti.base,false)
 			}else if isleft && ast.isfloattk(trtoken) {
@@ -490,7 +493,10 @@ OperatorHelper::genRight(isleft,expr)
 		if std.len(fc.fcs.returnTypes) > 0 {
 			ti = fc.fcs.returnTypes[0]
 		}
-		if ti != null && ti.baseType(){
+		// pointer/mem returns need ABI-wide U64 (never pointee base -> movsxd)
+		if ti != null && (ti.pointer || ti.memType()) {
+			this.initcond(isleft,8,ast.U64,true)
+		}else if ti != null && ti.baseType(){
 			size = parser.typesize[int(ti.base)]
 			this.initcond(isleft,size,ti.base,false)
 		}else if isleft && ast.isfloattk(trtoken) {
@@ -697,7 +703,10 @@ OperatorHelper::staticCompile(expr)
 			if std.len(fc.fcs.returnTypes) > 0 {
 				ti = fc.fcs.returnTypes[0]
 			}
-			if ti != null && ti.baseType(){
+			// pointer/mem returns need ABI-wide U64 (never pointee base -> movsxd)
+			if ti != null && (ti.pointer || ti.memType()) {
+				this.initcond(isleft,8,ast.U64,true)
+			}else if ti != null && ti.baseType(){
 				size = parser.typesize[int(ti.base)]
 				this.initcond(isleft,size,ti.base,false)
 			}else if isleft && ast.isfloattk(trtoken) {
@@ -742,7 +751,10 @@ OperatorHelper::staticCompile(expr)
 		if std.len(fc.fcs.returnTypes) > 0 {
 			ti = fc.fcs.returnTypes[0]
 		}
-		if ti != null && ti.baseType(){
+		// pointer/mem returns need ABI-wide U64 (never pointee base -> movsxd)
+		if ti != null && (ti.pointer || ti.memType()) {
+			this.initcond(isleft,8,ast.U64,true)
+		}else if ti != null && ti.baseType(){
 			size = parser.typesize[int(ti.base)]
 			this.initcond(isleft,size,ti.base,false)
 		}else if isleft && ast.isfloattk(trtoken) {

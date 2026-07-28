@@ -279,8 +279,9 @@ MemberCallExpr::static_compile(ctx,s,load){
     return call
 }
 
-// Heap receiver + api: InitApiVptr when concrete is known, then vtable slot call.
-// Caller must leave the mem heap pointer in %%rax (Chain / obj->compile).
+// Heap receiver + api: ApiDispatch only (load vptr@0 → call slot). No InitApiVptr at call site.
+// InitApiVptr runs on assign/new/param coerce and single-api new.
+// Caller must leave mem heap pointer in %%rax with target api vptr already at offset 0.
 MemberCallExpr::api_static_compile(ctx, apiSt, concrete, load) {
     this.record()
     compile.writeln("    # api_static_compile")
@@ -292,23 +293,6 @@ MemberCallExpr::api_static_compile(ctx, apiSt, concrete, load) {
     call.st = apiSt
     call.funcname = this.membername
     call.fcs = apiFn
-
-    if concrete != null && !concrete.isapi {
-        concReg = null
-        for pkg : package.packages {
-            if pkg == null continue
-            concReg = pkg.getStruct(concrete.name)
-            if concReg != null break
-        }
-        if concReg == null concReg = concrete
-        apiVtableptr = concReg.apiname(apiSt.name)
-        ooplabel = "oop." + ast.incr_labelid()
-        compile.writeln("    cmpq $0 , %%rax")
-        compile.writeln("    je %s", ooplabel)
-        compile.writeln("    lea %s(%%rip), %%rdi", apiVtableptr)
-        compile.writeln("    mov %%rdi , (%%rax)")
-        compile.writeln("%s:", ooplabel)
-    }
 
     compile.Push()
     params = call.args

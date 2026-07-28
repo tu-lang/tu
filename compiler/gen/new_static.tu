@@ -204,6 +204,10 @@ NewStructExpr::compile(ctx,load){
 		this.check(false,"interface can't be new")
 	internal.gc_malloc(s.size)
 	this.init.compile(ctx,true)
+	// Single-api impl: embed vptr at alloc so tyassert/direct dispatch need no call-site init.
+	if std.len(s.apis) == 1 {
+		compile.InitApiVptr(s, s.apis[0].name, this)
+	}
 	return this
 }
 
