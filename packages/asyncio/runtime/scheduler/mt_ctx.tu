@@ -39,6 +39,12 @@ fn ctx_hub_ensure() {
     CTX_HUB = h
 }
 
+// Builder calls this before spawning worker OS threads so workers never
+// race on lazy hub creation.
+fn mt_ctx_hub_init() {
+    ctx_hub_ensure()
+}
+
 fn ctx_tid_find(h<CtxTlsHub>, tid<u64>) i32 {
     i<i32> = 0
     while i < CTX_TID_CAP {
@@ -88,9 +94,9 @@ fn mt_ctx_exit(saved_bits<u64>) {
     if saved_bits == 0 {
         return
     }
-    saved<MtCtxSaved> = saved_bits.(MtCtxSaved)
     ctx_hub_ensure()
     h<CtxTlsHub> = CTX_HUB
+    saved<MtCtxSaved> = saved_bits.(MtCtxSaved)
     h.lock.lock()
     idx<i32> = saved.slot_idx
     if idx >= 0 && idx < CTX_TID_CAP {

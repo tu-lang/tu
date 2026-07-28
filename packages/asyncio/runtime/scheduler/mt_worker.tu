@@ -19,9 +19,6 @@ fn mt_task_ctx(t<task.RawTask>) u64 {
 
 // Periodic inject pull keeps fairness vs. the local queue.
 fn mt_next_global_task(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
-    if w.handle.shared.block_on_exclusive == 1 {
-        return io.NotFound, task.notified_from_raw(null)
-    }
     err<i32> = 0
     t<task.Notified> = task.notified_from_raw(null)
     err, t = w.handle.shared.inject.pop()
@@ -104,15 +101,19 @@ fn mt_finalize_shutdown(w<MtWorker>, core<WorkerCore>){
 fn mt_wait_workers(bits<u64>) {
     mh<MtHandle> = bits.(MtHandle)
     shared<MtShared> = mh.shared
+    spins<i32> = 0
     loop {
-        shared.shutdown_cores_lock.lock()
         n<i32> = shared.workers_alive
-        shared.shutdown_cores_lock.unlock()
         if n <= 0 {
             return
         }
         mt_notify_all_workers(shared)
         runtime.osyield()
+        spins += 1
+        // Safety valve: avoid hanging forever if a worker is stuck.
+        if spins > 1000000 {
+            return
+        }
     }
 }
 
@@ -126,18 +127,9 @@ fn worker_run(w<MtWorker>){
 // Loop body takes WorkerCore as a parameter so member access is typed.
 fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     shared<MtShared> = w.handle.shared
-    saved_bits<u64> = 0
-    enter_fc<u64> = shared.worker_enter_fc
-    exit_fc<u64> = shared.worker_exit_fc
-    if enter_fc != 0 {
-        op_enter<mt_enter_sig> = enter_fc.(u64)
-        saved_bits = op_enter(
-            w.handle.(u64),
-            w.handle.rt_handle,
-            w.handle.driver_handle,
-            core.rand.(u64)
-        )
-    }
+    // Worker RuntimeContext enter is deferred: mt_ctx MutexInter on clone()
+    // threads SEGV'd under N workers (see optimize debt). block_on caller
+    // still publishes Handle via runtime_enter_block_on.
 
     loop {
         if shared.inject.is_closed() {
@@ -150,8 +142,11 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
         if (core.tick % core.global_queue_interval) == 0 {
             err<i32>, t<task.Notified> = mt_next_global_task(w, core)
             if err == 0 {
-                run_task(w, core, t)
-                continue
+                raw0<task.RawTask> = t.raw()
+                if shared.block_on_root_bits == 0 || raw0.(u64) != shared.block_on_root_bits {
+                    run_task(w, core, t)
+                    continue
+                }
             }
         }
 
@@ -185,9 +180,16 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             }
         }
 
-        if shared.block_on_exclusive == 0 && shared.inject.is_empty() == 0 {
+        if shared.inject.is_empty() == 0 {
             ierr2<i32>, ti2<task.Notified> = mt_next_global_task(w, core)
             if ierr2 == 0 {
+                raw_skip<task.RawTask> = ti2.raw()
+                // Caller owns the block_on root — never poll it on a worker.
+                if shared.block_on_root_bits != 0 {
+                    if raw_skip.(u64) == shared.block_on_root_bits {
+                        continue
+                    }
+                }
                 run_task(w, core, ti2)
                 continue
             }
@@ -221,10 +223,6 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
 
     mt_pre_shutdown(w, core)
     mt_finalize_shutdown(w, core)
-    if exit_fc != 0 && saved_bits != 0 {
-        op_exit<mt_exit_sig> = exit_fc.(u64)
-        op_exit(saved_bits)
-    }
 }
 
 // Last searcher leaving search: if inject still has work, wake one sleeper.
@@ -325,12 +323,9 @@ fn worker_entry(){
         return
     }
     shared0<MtShared> = w.handle.shared
-    shared0.shutdown_cores_lock.lock()
+    // Increment before run; builder's wait_claimed already saw the claim.
     shared0.workers_alive += 1
-    shared0.shutdown_cores_lock.unlock()
     worker_run(w)
-    shared0.shutdown_cores_lock.lock()
     shared0.workers_alive -= 1
-    shared0.shutdown_cores_lock.unlock()
 }
 

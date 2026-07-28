@@ -1,9 +1,7 @@
-// multi_thread block_on. V1: poll root on the calling thread and drain
-// inject for spawn traffic while block_on_exclusive is set. Parks via
-// Parker/Note; schedule unparks via MtShared.block_on_unparker.
-//
-// Mother uses CachedParkThread only (workers own inject). Enabling that
-// path currently hits worker Note/futex SEGV under N>1; see optimize debt.
+// multi_thread block_on. Matches multi_thread/mod.rs:
+// CachedParkThread::block_on — poll the root on the calling thread only;
+// spawned tasks run on the worker pool. When the root is woken, schedule
+// unparks this thread and does not push the root onto inject.
 
 use runtime
 use asyncio.task
@@ -29,6 +27,7 @@ fn mt_block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
     return err, val
 }
 
+// CachedParkThread::block_on stand-in: poll root / park until COMPLETE.
 fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
     fut_bits<u64> = 0
     fut_bits = fut
@@ -46,11 +45,9 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
     root_bits<u64> = 0
     root_bits = root
     shared.block_on_root_bits = root_bits
-    shared.block_on_exclusive = 1
 
     err_out<i32> = 0
     val_out<i64> = 0
-    inj<Inject> = shared.inject
     root_ctx<u64> = mt_block_on_task_ctx(root)
 
     loop {
@@ -61,11 +58,12 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
             break
         }
 
-        if inj.is_closed() {
+        if shared.inject.is_closed() {
             err_out = 0x03020005 // asyncio.error.RuntimeShutdown
             break
         }
 
+        // Poll root only — workers own spawn / inject.
         task.harness_poll(root, root_ctx)
 
         snap2<i32> = root.life_load()
@@ -75,25 +73,9 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
             break
         }
 
-        did_work<i32> = 0
-        if inj.is_empty() == 0 {
-            ierr<i32>, ti<task.Notified> = inj.pop()
-            if ierr == 0 {
-                raw_t<task.RawTask> = ti.raw()
-                // Never poll the block_on root from inject — caller owns it.
-                if raw_t.(u64) != root_bits {
-                    task.harness_poll(raw_t, mt_block_on_task_ctx(raw_t))
-                    did_work = 1
-                }
-            }
-        }
-
-        if did_work == 0 {
-            park.wait_until_wake(0)
-        }
+        park.wait_until_wake(0)
     }
 
-    shared.block_on_exclusive = 0
     shared.block_on_root_bits = 0
     shared.block_on_unparker = null
     return err_out, val_out

@@ -48,15 +48,6 @@ impl task.Schedule for MtHandle {
 
         this.shared.inject.push(notif)
 
-        // V1 exclusive: caller drains inject; wake the block_on thread.
-        if this.shared.block_on_exclusive == 1 {
-            up1<Unparker> = this.shared.block_on_unparker
-            if up1 != null {
-                up1.unpark()
-            }
-            return
-        }
-
         // Wake one parked worker if any are sleeping.
         sn<MtSynced> = this.shared.lock_hub
         found<i32>, idx<u32> = this.shared.idle.notify_one(sn.idle_synced, this.shared.synced_lock)
