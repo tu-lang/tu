@@ -1,7 +1,6 @@
 // ctrl_c — resolve on the first SIGINT, built on sync
 // signal(SignalKind::interrupt()) plus an awaited recv.
-// Tu: leaf future — register on first poll, then drive erased recv Future
-// (no package async+await; that hits return-count parse errors).
+// Tu: leaf future — register on first poll, then drive RecvFut directly.
 
 use io
 use runtime
@@ -9,7 +8,7 @@ use runtime
 // Leaf for public ctrl_c().
 mem CtrlCFut: async {
     i32 stage
-    u64 recv_bits
+    RecvFut* recv_fut
 }
 
 CtrlCFut::poll(ctx) {
@@ -18,18 +17,18 @@ CtrlCFut::poll(ctx) {
         if serr != io.Ok return runtime.PollReady, serr
         stream<SignalStream> = stream_last()
         if stream == null return runtime.PollReady, io.Other
-        rfut<runtime.Future> = stream.recv()
-        this.recv_bits = rfut.(u64)
+        this.recv_fut = stream.recv()
         this.stage = 1
     }
-    rf<runtime.Future> = this.recv_bits
-    return rf.poll()
+    return this.recv_fut.poll(ctx)
 }
 
 // Awaitable until first SIGINT after poll.
 fn ctrl_c() runtime.Future {
-    return new CtrlCFut {
+    f<CtrlCFut> = new CtrlCFut {
         stage: 0,
-        recv_bits: 0
+        recv_fut: null
     }
+    fut<runtime.Future> = f
+    return fut
 }

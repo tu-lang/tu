@@ -163,13 +163,11 @@ RecvFut::poll(ctx) {
     return runtime.PollPending
 }
 
-// Erase to runtime.Future so foreign packages can
-// `.await` safely (concrete cross-pkg async mem await SIGSEGVs).
-SignalStream::recv() runtime.Future {
-    f<RecvFut> = new RecvFut {
+// Return RecvFut for await in-package; cross-package callers may still erase
+// if concrete cross-pkg async mem await regresses (see optimize debt TODO-5).
+SignalStream::recv() RecvFut {
+    return new RecvFut {
         stream: this,
         pending_nf: 0
     }
-    fut<runtime.Future> = f
-    return fut
 }

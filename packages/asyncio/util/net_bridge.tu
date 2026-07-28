@@ -5,12 +5,24 @@
 // getPackage for local mem types. Call these from asyncio.util instead.
 
 use net as libnet
+use io
 use string
 use std
 
 fn net_parse_ascii_bytes_bits(b<u8*>, len<i32>) i32, u64 {
     err<i32>, bits<u64> = libnet.parse_ascii_bytes_bits(b, len)
     return err, bits
+}
+
+// Typed parse (Pillar B cross-pkg Mem return). On error returns null SocketAddr.
+fn net_parse_ascii_bytes(b<u8*>, len<i32>) i32, libnet.SocketAddr {
+    err<i32>, bits<u64> = libnet.parse_ascii_bytes_bits(b, len)
+    if err != io.Ok {
+        empty<libnet.SocketAddr> = null
+        return err, empty
+    }
+    addr<libnet.SocketAddr> = bits.(libnet.SocketAddr)
+    return err, addr
 }
 
 fn net_strto_socket_addrs(host<string.String>) i32, std.Array {
@@ -37,6 +49,10 @@ fn cat_hex_u16(strl<string.Str>, val<u16>) string.Str {
 }
 
 // Format SocketAddr for parse round-trip tests.
+fn net_socket_addr_to_string(addr<libnet.SocketAddr>) string.String {
+    return net_socket_addr_to_string_bits(addr.(u64))
+}
+
 // catfmt: use %i (not %d — literal 'd'; not %u — empty for zero).
 fn net_socket_addr_to_string_bits(bits<u64>) string.String {
     addr<libnet.SocketAddr> = bits.(libnet.SocketAddr)

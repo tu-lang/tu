@@ -13,6 +13,7 @@ use io
 use std
 use sys
 use asyncio.io as aio
+use asyncio.io.util as ioutil
 
 // Write half connected to the child's stdin. Holds the parent's write end.
 mem ChildStdin {
@@ -58,9 +59,8 @@ ChildStderr::close() i32 {
 
 // AsyncWrite over the stdin pipe: one blocking write, resolve immediately.
 // poll_flush is a no-op; poll_shutdown closes the write end (EOF for the child).
-impl aio.AsyncWrite for ChildStdin {
-    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-        buf<io.Buf> = io.buf_from_bits(buf_bits)
+impl ioutil.AsyncWrite for ChildStdin {
+    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
         p<u8*> = io.buf_ptr(buf)
         err<i32>, n<u64> = sys.cvt(sys.write(this.fd, p, io.buf_len(buf)))
         if err != io.Ok return runtime.PollError, 0
