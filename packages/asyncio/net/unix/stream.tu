@@ -13,6 +13,7 @@ use runtime
 use netio
 use netio.net.uds as netuds
 use asyncio.io as aio
+use asyncio.io.util as ioutil
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
 
@@ -152,8 +153,7 @@ UnixStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
     }
 }
 
-UnixStream::poll_write_priv(ctx<u64>, buf_bits<u64>) i32, u64 {
-    b<io.Buf> = io.buf_from_bits(buf_bits)
+UnixStream::poll_write_priv(ctx<u64>, b<io.Buf>) i32, u64 {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302
@@ -185,11 +185,11 @@ impl aio.AsyncRead for UnixStream {
     }
 }
 
-impl aio.AsyncWrite for UnixStream {
-    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+impl ioutil.AsyncWrite for UnixStream {
+    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
         e<i32> = 0
         n<u64> = 0
-        e, n = this.poll_write_priv(ctx, buf_bits)
+        e, n = this.poll_write_priv(ctx, buf)
         return e, n
     }
     fn poll_flush(ctx<u64>) i32 {

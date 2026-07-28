@@ -48,9 +48,9 @@ LookupHostFut::poll(ctx){
     if this.poll_stage == 0 {
         empty<std.Array> = std.NewArray()
         n<i32> = std.strlen(this.host.str())
-        perr<i32>, addr_bits<u64> = parse_socket_addr(this.host.str(), n)
+        perr<i32>, addr = util.net_parse_ascii_bytes(this.host.str(), n)
         if perr == NET_IO_OK {
-            empty.push(addr_bits)
+            empty.push(addr.(u64))
             this.err_code = NET_IO_OK
             this.addrs = empty
             this.poll_stage = 2

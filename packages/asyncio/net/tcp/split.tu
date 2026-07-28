@@ -5,6 +5,7 @@
 use net
 use io
 use asyncio.io as aio
+use asyncio.io.util as ioutil
 
 // Read-side borrowed view over a shared TcpStream.
 mem TcpReadHalf {
@@ -48,9 +49,9 @@ impl aio.AsyncRead for TcpReadHalf {
     }
 }
 
-impl aio.AsyncWrite for TcpWriteHalf {
-    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-        err<i32>, n<u64> = this.stream.poll_write(ctx, buf_bits)
+impl ioutil.AsyncWrite for TcpWriteHalf {
+    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
+        err<i32>, n<u64> = this.stream.poll_write(ctx, buf)
         return err, n
     }
     fn poll_flush(ctx<u64>) i32 {

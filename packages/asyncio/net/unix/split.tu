@@ -4,6 +4,7 @@
 
 use io
 use asyncio.io as aio
+use asyncio.io.util as ioutil
 
 // Read-side borrowed view over a shared UnixStream.
 mem UnixReadHalf {
@@ -34,11 +35,11 @@ impl aio.AsyncRead for UnixReadHalf {
     }
 }
 
-impl aio.AsyncWrite for UnixWriteHalf {
-    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+impl ioutil.AsyncWrite for UnixWriteHalf {
+    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
         err<i32> = 0
         n<u64> = 0
-        err, n = this.backing.poll_write(ctx, buf_bits)
+        err, n = this.backing.poll_write(ctx, buf)
         return err, n
     }
     fn poll_flush(ctx<u64>) i32 {

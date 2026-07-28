@@ -16,6 +16,7 @@ use runtime
 use netio
 use netio.net.tcp as nettcp
 use asyncio.io as aio
+use asyncio.io.util as ioutil
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
 use asyncio.error as aerr
@@ -279,8 +280,7 @@ TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
 }
 
 // Concrete write path (avoid AsyncWrite api dyn).
-TcpStream::poll_write_priv(ctx<u64>, buf_bits<u64>) i32, u64 {
-    b<io.Buf> = io.buf_from_bits(buf_bits)
+TcpStream::poll_write_priv(ctx<u64>, b<io.Buf>) i32, u64 {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302
@@ -307,11 +307,11 @@ impl aio.AsyncRead for TcpStream {
     }
 }
 
-impl aio.AsyncWrite for TcpStream {
-    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
+impl ioutil.AsyncWrite for TcpStream {
+    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
         e<i32> = 0
         n<u64> = 0
-        e, n = this.poll_write_priv(ctx, buf_bits)
+        e, n = this.poll_write_priv(ctx, buf)
         return e, n
     }
     fn poll_flush(ctx<u64>) i32 {
