@@ -1,35 +1,25 @@
-// Per-thread runtime context. The current_thread / multi_thread schedulers
-// (and block_on / spawn_blocking entry points) push a context with
-// rt_enter and pop it with rt_exit. current_context() returns null
-// outside any runtime, which lets `Handle::current()` surface the
-// canonical "no runtime" error code.
+// Per-thread RuntimeContext (tid table in scheduler/mt_ctx.tu).
 
 use asyncio.util
+use asyncio.runtime.scheduler as rtsched
 
-// Enter-kind tags so coop / signal can adjust their behaviour.
 ENTER_RUNTIME<i32> = 0
 ENTER_BLOCK_ON<i32> = 1
 ENTER_BLOCKING<i32> = 2
 
-// Active context for the current OS thread; null when nothing is running.
-ACTIVE_RT<RuntimeContext> = null
-
-// Combined view used by hot-path helpers (coop, signal handlers).
-// Field `drv_bits` avoids `.driver` clashing with type Driver (type-assert trap).
 mem RuntimeContext {
-    u64        sched          // raw bits of scheduler handle
-    u64        drv_bits       // raw bits of DriverHandle*
+    u64        sched
+    u64        wh_bits
+    u64        drv_bits
     util.FastRand*  rng
-    i32        coop_budget    // remaining budget in this poll round
-    i32        enter_kind     // ENTER_*
+    i32        coop_budget
+    i32        enter_kind
 }
 
-// Build a context for a given enter point. coop_budget defaults to 128
-// (matches DEFAULT_BUDGET in coop.tu but kept duplicated to avoid the
-// circular import).
-const RuntimeContext::new(sched_ptr<u64>, driver_ptr<u64>, rng<util.FastRand>, kind<i32>) RuntimeContext {
+const RuntimeContext::new(sched_ptr<u64>, handle_ptr<u64>, driver_ptr<u64>, rng<util.FastRand>, kind<i32>) RuntimeContext {
     c<RuntimeContext> = new RuntimeContext
     c.sched       = sched_ptr
+    c.wh_bits     = handle_ptr
     c.drv_bits    = driver_ptr
     c.rng         = rng
     c.coop_budget = 128
@@ -37,7 +27,6 @@ const RuntimeContext::new(sched_ptr<u64>, driver_ptr<u64>, rng<util.FastRand>, k
     return c
 }
 
-// DriverHandle* stored in this context, or null when IO is disabled.
 RuntimeContext::drv_handle() DriverHandle {
     if this.drv_bits == 0 return null
     dh<DriverHandle> = null
@@ -45,32 +34,41 @@ RuntimeContext::drv_handle() DriverHandle {
     return dh
 }
 
-// Save+swap snapshot. rt_exit takes one back to restore the previous
-// (or null) context.
 mem RtSavedSlot {
-    RuntimeContext* prev
+    u64 prev_bits
+    i64 tid
+    i32 slot_idx
 }
 
-// Push ctx as the active context; return the previous slot for restoration.
 fn rt_enter(ctx<RuntimeContext>) RtSavedSlot {
-    saved<RtSavedSlot> = new RtSavedSlot
-    saved.prev = ACTIVE_RT
-    ACTIVE_RT  = ctx
-    return saved
+    bits<u64> = rtsched.mt_ctx_enter(ctx.(u64))
+    return bits.(RtSavedSlot)
 }
 
-// Restore the previous context; pairs with rt_enter.
 fn rt_exit(saved<RtSavedSlot>){
-    ACTIVE_RT = saved.prev
+    rtsched.mt_ctx_exit(saved.(u64))
 }
 
-// Currently active context; null outside a runtime.
 fn current_context() RuntimeContext {
-    return ACTIVE_RT
+    bits<u64> = rtsched.mt_ctx_current_bits()
+    if bits == 0 return null
+    return bits.(RuntimeContext)
 }
 
-// Package bridge: DriverHandle* from an active context (avoids .driver trap).
 fn context_driver_handle(rc<RuntimeContext>) DriverHandle {
     if rc == null return null
     return rc.drv_handle()
+}
+
+// Worker loop enter export (Builder stores fn ptr bits).
+fn mt_worker_enter_export(sched_bits<u64>, wh_bits<u64>, drv_bits<u64>, rng_bits<u64>) u64 {
+    rng<util.FastRand> = rng_bits.(util.FastRand)
+    ctx<RuntimeContext> = RuntimeContext::new(
+        sched_bits,
+        wh_bits,
+        drv_bits,
+        rng,
+        ENTER_RUNTIME
+    )
+    return rtsched.mt_ctx_enter(ctx.(u64))
 }

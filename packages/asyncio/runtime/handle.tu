@@ -30,11 +30,8 @@ const Handle::current() i32, Handle {
     rc<RuntimeContext> = current_context()
     if rc == null return io.OtherRuntime1XNotFound, null
 
-    // The runtime root stores the Handle pointer in sched_handle for
-    // first-pass simplicity; later phases may split scheduler-only ops
-    // out behind a thinner interface.
-    sched_bits<u64> = rc.sched
-    h<Handle> = sched_bits.(Handle)
+    if rc.wh_bits == 0 return io.OtherRuntime1XNotFound, null
+    h<Handle> = rc.wh_bits.(Handle)
     return 0, h
 }
 
@@ -51,12 +48,12 @@ Handle::spawn(fut) task.JoinHandle {
     return handle_spawn_impl(this, fut)
 }
 
-// Package-level block_on dispatch (avoids weak_handle.block_on parser trap).
-fn handle_block_on_impl(h<Handle>, fut) i32, i64 {
-    if h.sched_kind == 1 {
-        return RT_RUNTIME_SHUTDOWN, 0
-    }
-    return scheduler.block_on_raw(h.sched_handle, fut)
+// Run fut to completion via the active scheduler's block_on.
+Handle::block_on(fut) i32, i64 {
+    err<i32> = 0
+    val<i64> = 0
+    err, val = handle_block_on_bridge(this, fut)
+    return err, val
 }
 
 // Shared blocking-pool spawn wiring (keeps cross-package assertions out of methods).
@@ -68,14 +65,9 @@ fn handle_blocking_impl(h<Handle>, op<u64>, mandatory<i32>) task.JoinHandle {
         return jh
     }
 
-    inject<scheduler.Inject> = null
-    if h.sched_kind == 1 {
-        inject = scheduler.mt_sched_inject(h.sched_handle)
-    } else {
-        inject = scheduler.ct_sched_inject(h.sched_handle)
-    }
-
-    bsched<rtblk.BlockingSchedule> = rtblk.BlockingSchedule::new(inject)
+    // unowned(fut, BlockingSchedule::new()) — Schedule is Noop for re-poll;
+    // JoinHandle wake uses the awaiter's CtHandle/MtHandle.
+    bsched<rtblk.BlockingSchedule> = rtblk.BlockingSchedule::new()
     tid<task.TaskId> = task.alloc_id()
     jh2<task.JoinHandle> = new task.JoinHandle
     jh_bits<u64> = 0
@@ -111,15 +103,4 @@ Handle::spawn_blocking(op<u64>) task.JoinHandle {
 // Spawn a mandatory blocking closure (DNS / fs flush paths).
 Handle::spawn_mandatory_blocking(op<u64>) task.JoinHandle {
     return handle_blocking_impl(this, op, 1)
-}
-
-// Run fut to completion via the active scheduler's block_on.
-Handle::block_on(fut) i32, i64 {
-    if this.sched_kind == 1 {
-        // multi_thread does not own block_on directly; route through the
-        // current_thread's caller. The runtime root's block_on shim
-        // handles this dispatch.
-        return RT_RUNTIME_SHUTDOWN, 0
-    }
-    return handle_block_on_impl(this, fut)
 }

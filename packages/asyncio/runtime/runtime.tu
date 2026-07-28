@@ -51,6 +51,31 @@ fn runtime_from_bits(bits<u64>) Runtime {
     return bits.(Runtime)
 }
 
+// Package-level block_on dispatch (handle.tu cannot call mt_block_on_bits
+// directly — parser return-count mismatch; route through here).
+fn runtime_block_on_dispatch(h<Handle>, fut) i32, i64 {
+    if h.sched_kind == KIND_MULTI_THREAD {
+        fut_bits<u64> = 0
+        fut_bits = fut
+        err<i32> = 0
+        val<i64> = 0
+        err, val = scheduler.mt_block_on_bits(h.sched_handle, fut_bits)
+        return err, val
+    }
+    err2<i32> = 0
+    val2<i64> = 0
+    err2, val2 = scheduler.block_on_raw(h.sched_handle, fut)
+    return err2, val2
+}
+
+// Bridge for Handle::block_on (parser rejects direct runtime_block_on_dispatch delegate in handle.tu).
+fn handle_block_on_bridge(h<Handle>, fut) i32, i64 {
+    err<i32> = 0
+    val<i64> = 0
+    err, val = runtime_block_on_dispatch(h, fut)
+    return err, val
+}
+
 // TimeHandle bits for Sleep registration (package fn avoids member-call traps).
 fn runtime_sleep_time_bits(rtv<Runtime>) u64 {
     if rtv == null return 0
@@ -82,8 +107,13 @@ fn runtime_enter_block_on(wh<Handle>) RtSavedSlot {
         }
     }
     rng<util.FastRand> = util.FastRand::new(0xc0ffee)
+    handle_bits<u64> = 0
+    if wh != null {
+        handle_bits = wh.(u64)
+    }
     ctx<RuntimeContext> = RuntimeContext::new(
         sched_bits,
+        handle_bits,
         drv_bits,
         rng,
         ENTER_BLOCK_ON
@@ -100,7 +130,7 @@ Runtime::block_on(fut) i32, i64 {
     if this.sched_kind == KIND_CURRENT_THREAD {
         err2, val2 = scheduler.block_on_raw(this.scheduler_handle, fut)
     } else {
-        err2, val2 = handle_block_on_impl(this.weak_handle, fut)
+        err2, val2 = runtime_block_on_dispatch(this.weak_handle, fut)
     }
     rt_exit(saved)
     return err2, val2
@@ -115,7 +145,7 @@ Runtime::block_on_bits(fut_bits<u64>) i32, i64 {
     if this.sched_kind == KIND_CURRENT_THREAD {
         err, val = scheduler.block_on_bits(this.scheduler_handle, fut_bits)
     } else {
-        err, val = scheduler.block_on_bits(this.weak_handle.sched_handle, fut_bits)
+        err, val = scheduler.mt_block_on_bits(this.scheduler_handle, fut_bits)
     }
     rt_exit(saved)
     return err, val

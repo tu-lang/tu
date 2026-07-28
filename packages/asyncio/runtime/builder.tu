@@ -15,9 +15,7 @@ DEFAULT_MAX_BLOCKING_THREADS<u32> = 512
 
 // OS thread entry for multi_thread workers (mirrors blocking_worker_run).
 fn mt_os_core_start(){
-    w<sched.MtWorker> = sched.ACTIVE_WORKER
-    if w == null { return }
-    sched.worker_run(w)
+    sched.worker_entry()
 }
 
 // Build-time configuration. sched_kind chooses current_thread vs multi_thread;
@@ -183,28 +181,35 @@ fn build_multi_thread(b<Builder>) Runtime {
     spawner<rtblk.Spawner>   = rtblk.Spawner::new(pool)
 
     shared<sched.MtShared>   = sched.MtShared::new(b.worker_threads)
+    shared.worker_enter_fc   = mt_worker_enter_export.(u64)
+    shared.worker_exit_fc    = scheduler.mt_worker_exit_export.(u64)
     handle<sched.MtHandle>   = sched.MtHandle::new(shared)
     handle.driver_handle    = drv_h.(u64)
     handle.blocking_spawner = spawner.(u64)
 
-    for i<u32> = 0 ; i < b.worker_threads ; i += 1 {
-        steal_a<sched.Steal>, local_b<sched.Local> = sched.queue_local()
-        rng<util.FastRand>     = util.FastRand::new(0xdeadbeef + i.(u64))
-        park<sched.Parker>      = sched.Parker::new(drv_h.(u64))
-        unparker<sched.Unparker> = sched.Unparker::new(park)
-        core<sched.WorkerCore>  = sched.WorkerCore::new(local_b, park, rng, b.global_queue_interval)
-        worker<sched.MtWorker>  = sched.MtWorker::new(handle, i, core)
+    weak<Handle> = Handle::new(handle.(u64), KIND_MULTI_THREAD, drv_h, spawner.(u64))
+    handle.rt_handle = weak.(u64)
 
-        r<sched.Remote> = new sched.Remote
-        r.steal_end = steal_a
-        r.unparker = unparker
-        shared.remotes[i] = r.(u64)
+    if b.worker_threads > 0 {
+        // V1: allocate remotes/queues for schedule topology, but do not
+        // spawn OS worker threads yet. block_on_exclusive drains inject on
+        // the caller (CachedParkThread + worker pool is optimize debt —
+        // clone()+Note worker threads currently SEGV on shutdown).
+        for i<u32> = 0 ; i < b.worker_threads ; i += 1 {
+            steal_a<sched.Steal>, local_b<sched.Local> = sched.queue_local()
+            rng<util.FastRand>     = util.FastRand::new(0xdeadbeef + i.(u64))
+            park<sched.Parker>      = sched.Parker::new(drv_h.(u64))
+            unparker<sched.Unparker> = sched.Unparker::new(park)
+            core<sched.WorkerCore>  = sched.WorkerCore::new(local_b, park, rng, b.global_queue_interval)
+            worker<sched.MtWorker>  = sched.MtWorker::new(handle, i, core)
 
-        ACTIVE_WORKER = worker
-        rtblk.librt_newcore(mt_os_core_start.(u64))
+            r<sched.Remote> = new sched.Remote
+            r.steal_end = steal_a
+            r.unparker = unparker
+            shared.remotes[i] = r.(u64)
+        }
     }
 
-    weak<Handle> = Handle::new(handle.(u64), KIND_MULTI_THREAD, drv_h, spawner.(u64))
     return Runtime::compose(KIND_MULTI_THREAD, weak, drv, drv_h, spawner, pool, handle.(u64))
 }
 
@@ -214,6 +219,14 @@ fn builder_build_rt(b<Builder>) Runtime {
         return build_multi_thread(b)
     }
     return build_current_thread(b)
+}
+
+// Build + block_on without shutdown (integration tests that manage teardown).
+fn builder_block_on_no_shutdown(b<Builder>, fut_bits<u64>, _unused<i32>) i32, i64 {
+    rt<Runtime> = builder_build_rt(b)
+    publish_sleep_time_handle(rt)
+    err<i32>, val<i64> = rt.block_on_bits(fut_bits)
+    return err, val
 }
 
 // Build + block_on + shutdown_background in one package call.
