@@ -39,11 +39,12 @@ async unix_echo_body() {
     mlen<i32> = std.strlen(msg.str())
     mlen_u<u64> = mlen.(u64)
 
-    werr<i32> = ioutil.write_all(client, str_buf(msg)).await
+    wclient<ioutil.AsyncWrite> = client
+    werr<i32> = ioutil.write_all(wclient, str_buf(msg)).await
     if werr != io.Ok return werr
 
     own1<io.Buf> = io.NewBuf(16)
-    rb1<aio.ReadBuf> = ioutil.read_buf_over(own1)
+    rb1<aio.ReadBuf> = aio.read_buf_from_i8(own1.ptr(), 16)
     rerr<i32>, rn<u64> = ioutil.read(server, rb1).await
     if rerr != io.Ok return rerr
     if rn != mlen_u return io.OtherParse
@@ -52,11 +53,12 @@ async unix_echo_body() {
     ep<i8*> = echo.ptr()
     sp1<i8*> = own1.ptr()
     std.memcpy(ep, sp1, rn)
-    werr2<i32> = ioutil.write_all(server, echo).await
+    wserver<ioutil.AsyncWrite> = server
+    werr2<i32> = ioutil.write_all(wserver, echo).await
     if werr2 != io.Ok return werr2
 
     own2<io.Buf> = io.NewBuf(16)
-    rb2<aio.ReadBuf> = ioutil.read_buf_over(own2)
+    rb2<aio.ReadBuf> = aio.read_buf_from_i8(own2.ptr(), 16)
     rerr2<i32>, n2<u64> = ioutil.read(client, rb2).await
     if rerr2 != io.Ok return rerr2
     if n2 != mlen_u return io.OtherParse
@@ -75,7 +77,7 @@ async unix_echo_body() {
 
 fn int_unix_echo() {
     b<rt.Builder> = rt.Builder::new_current_thread()
-    b = b.enable_io()
+    b = b.enable_all()
     rerr<i32>, result<i64> = rt.builder_block_on(b, unix_echo_body(), 0)
     if rerr != 0 {
         os.dief("block_on failed: %d", rerr)

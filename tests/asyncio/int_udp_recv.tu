@@ -13,6 +13,7 @@ use net
 use asyncio.runtime as rt
 use asyncio.net as anet
 use asyncio.net.udp as audp
+use asyncio.util
 
 // Owned copy of String bytes as io.Buf (avoid new io.Buf { inner/len } traps).
 fn str_buf(s<string.String>) io.Buf {
@@ -26,11 +27,9 @@ fn str_buf(s<string.String>) io.Buf {
 // Parse a loopback "ip:port" literal, aborting on failure.
 fn addr_of(lit<string.String>) net.SocketAddr {
     slen<i32> = std.strlen(lit.str())
-    err<i32>, bits<u64> = anet.parse_socket_addr(lit.str(), slen)
+    err<i32>, addr<net.SocketAddr> = util.net_parse_ascii_bytes(lit.str(), slen)
     if err != io.Ok os.dief("parse addr failed: %d", err)
-    a<net.SocketAddr> = null
-    a = bits
-    return a
+    return addr
 }
 
 // Drive the full echo exchange. Returns io.Ok on success or first error code.

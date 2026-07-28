@@ -14,6 +14,7 @@ use asyncio.net.tcp as tcp
 use asyncio.time as atime
 use asyncio.io as aio
 use asyncio.io.util as ioutil
+use asyncio.util
 
 fn str_buf(s<string.String>) io.Buf {
     slen<i32> = std.strlen(s.str())
@@ -40,9 +41,8 @@ fn cmp_buf_eq(got<io.Buf>, want_s<string.String>, nbytes<u64>) i32 {
 async tcp_echo_body() {
     addr_s<string.String> = string.S(*"127.0.0.1:34567")
     slen<i32> = std.strlen(addr_s.str())
-    perr<i32>, addr_bits<u64> = anet.parse_socket_addr(addr_s.str(), slen)
+    perr<i32>, addr<net.SocketAddr> = util.net_parse_ascii_bytes(addr_s.str(), slen)
     if perr != io.Ok return perr
-    addr<net.SocketAddr> = addr_bits.(net.SocketAddr)
 
     berr<i32>, listener<tcp.TcpListener> = tcp.TcpListener::bind(addr)
     if berr != io.Ok return berr
@@ -58,11 +58,14 @@ async tcp_echo_body() {
     mlen_u<u64> = mlen.(u64)
     wbuf<io.Buf> = str_buf(msg)
 
-    werr<i32> = ioutil.write_all(client, wbuf).await
+    // Multi-api concrete must bind AsyncWrite view before write_all
+    // (InitApiVptr on assign; TcpStream also implements AsyncRead).
+    wclient<ioutil.AsyncWrite> = client
+    werr<i32> = ioutil.write_all(wclient, wbuf).await
     if werr != io.Ok return werr
 
     own1<io.Buf> = io.NewBuf(16)
-    rb1<aio.ReadBuf> = ioutil.read_buf_over(own1)
+    rb1<aio.ReadBuf> = aio.read_buf_from_i8(own1.ptr(), 16)
     rerr<i32>, rn<u64> = ioutil.read(server, rb1).await
     if rerr != io.Ok return rerr
     if rn != mlen_u return io.OtherParse
@@ -73,11 +76,12 @@ async tcp_echo_body() {
     ep<i8*> = echo.ptr()
     sp1<i8*> = own1.ptr()
     std.memcpy(ep, sp1, rn)
-    werr2<i32> = ioutil.write_all(server, echo).await
+    wserver<ioutil.AsyncWrite> = server
+    werr2<i32> = ioutil.write_all(wserver, echo).await
     if werr2 != io.Ok return werr2
 
     own2<io.Buf> = io.NewBuf(16)
-    rb2<aio.ReadBuf> = ioutil.read_buf_over(own2)
+    rb2<aio.ReadBuf> = aio.read_buf_from_i8(own2.ptr(), 16)
     rerr2<i32>, n2<u64> = ioutil.read(client, rb2).await
     if rerr2 != io.Ok return rerr2
     if n2 != mlen_u return io.OtherParse

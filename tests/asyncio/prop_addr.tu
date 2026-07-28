@@ -15,6 +15,7 @@ use std
 use net
 use asyncio.net as anet
 use asyncio.io as aio
+use asyncio.util
 
 ITERS<i32> = 256
 
@@ -41,10 +42,9 @@ fn check_v4(a<u8>, b<u8>, c<u8>, d<u8>, port_num<u16>) {
     v4<net.SocketAddrV4> = net.SocketAddrV4::new(ip, port_num)
     addr<net.SocketAddr> = net.socket_addr_from_v4(v4)
 
-    s<string.String> = anet.socket_addr_to_string(addr.(u64))
-    err<i32>, back_bits<u64> = anet.parse_socket_addr(s.str(), std.strlen(s.str()))
+    s<string.String> = util.net_socket_addr_to_string(addr)
+    err<i32>, back<net.SocketAddr> = util.net_parse_ascii_bytes(s.str(), std.strlen(s.str()))
     if err != io.Ok os.dief("v4 parse failed for round-trip")
-    back<net.SocketAddr> = back_bits.(net.SocketAddr)
     if net.socket_addr_is_v4(back) == false os.die("v4 round-trip lost the v4 tag")
 
     a4<net.SocketAddrV4> = net.socket_addr_v4_store(back)
@@ -60,10 +60,9 @@ fn check_v6(seg<Seg8>, port_num<u16>) {
     v6<net.SocketAddrV6> = net.SocketAddrV6::new(ip6, port_num, 0, 0)
     addr<net.SocketAddr> = net.socket_addr_from_v6(v6)
 
-    s<string.String> = anet.socket_addr_to_string(addr.(u64))
-    err<i32>, back_bits<u64> = anet.parse_socket_addr(s.str(), std.strlen(s.str()))
+    s<string.String> = util.net_socket_addr_to_string(addr)
+    err<i32>, back<net.SocketAddr> = util.net_parse_ascii_bytes(s.str(), std.strlen(s.str()))
     if err != io.Ok os.dief("v6 parse failed for round-trip")
-    back<net.SocketAddr> = back_bits.(net.SocketAddr)
     if net.socket_addr_is_v4(back) os.die("v6 round-trip gained a v4 tag")
 
     a6<net.SocketAddrV6> = net.socket_addr_v6_store(back)

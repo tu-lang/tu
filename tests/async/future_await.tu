@@ -167,6 +167,43 @@ fn test_nest_io_buf_field() {
 	fmt.println("test async nest io.Buf field success")
 }
 
+// Api* field on async leaf: store via u64→tyassert, dispatch without bits.
+api FutWriter {
+	fn poll_write(ctx) i32, u64 {
+		return 0, 0.(u64)
+	}
+}
+mem FutSink {
+	i32 n
+}
+impl FutWriter for FutSink {
+	fn poll_write(ctx) i32, u64 {
+		return runtime.PollReady, 7.(u64)
+	}
+}
+mem ApiPtrWriteFut: async {
+	FutWriter* w
+}
+ApiPtrWriteFut::poll(ctx) {
+	err<i32>, n<u64> = this.w.poll_write(ctx)
+	if err == runtime.PollPending {
+		return runtime.PollPending
+	}
+	return runtime.PollReady, n
+}
+fn test_async_api_ptr_field() {
+	fmt.println("test async api ptr field")
+	s<FutSink> = new FutSink { n: 0 }
+	aw<FutWriter> = s
+	bits<u64> = 0
+	bits = aw
+	// Literal bind only — `f.w = ...` after new overwrites async virf.
+	f<ApiPtrWriteFut> = new ApiPtrWriteFut { w: bits.(FutWriter) }
+	n<u64> = runtime.block(f)
+	if n != 7 os.dief("async api* expected 7 got %d", int(n))
+	fmt.println("test async api ptr field success")
+}
+
 fn main() {
     fmt.println("test future_await")
     run_one("var", test_var_await(), 4)
@@ -175,5 +212,6 @@ fn main() {
     run_one("leaf_static", test_leaf_static_await(), 9)
     test_nest_typed_field()
     test_nest_io_buf_field()
+    test_async_api_ptr_field()
     fmt.println("future_await passed")
 }

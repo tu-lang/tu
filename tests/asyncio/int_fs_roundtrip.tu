@@ -1,6 +1,6 @@
 // Integration tests for asyncio.fs (tasks 16.5 / 16.16 / 16.17 / 16.18).
 // Sync fs_* factories return leaf futures; await inline via factory().await.
-// Paths cross into asyncio.fs as u64 bits (string.string_to_bits).
+// Paths are string.String (Pillar B / TODO-8 debt cleanup).
 
 use fmt
 use os
@@ -37,44 +37,38 @@ async fs_roundtrip_body() {
     path<string.String> = string.S(*"/tmp/asyncio_fs_rt.txt")
     msg<string.String>  = string.S(*"hello fs roundtrip")
     data<io.Buf> = str_buf(msg)
-    pb<u64> = string.string_to_bits(path)
     ok<i32> = io.Ok
 
-    werr<i32> = afs.fs_write(pb, io.buf_to_bits(data)).await
+    werr<i32> = afs.fs_write(path, io.buf_to_bits(data)).await
     if werr != ok return werr
-    pb = string.string_to_bits(path)
-    rerr<i32>, buf<io.Buf> = afs.fs_read(pb).await
+    rerr<i32>, buf<io.Buf> = afs.fs_read(path).await
     if rerr != ok return rerr
     if buf_equals(buf, msg) == 0 {
         bad<i32> = io.OtherParse
         return bad
     }
-    pb = string.string_to_bits(path)
-    return afs.fs_remove_file(pb).await
+    return afs.fs_remove_file(path).await
 }
 
 async fs_create_remove_dir_body() {
     root<string.String> = string.S(*"/tmp/asyncio_fs_dir")
     nested<string.String> = string.S(*"/tmp/asyncio_fs_dir/a/b")
-    rb<u64> = string.string_to_bits(root)
-    nb<u64> = string.string_to_bits(nested)
     ok<i32> = io.Ok
 
-    cerr<i32> = afs.fs_create_dir_all(nb).await
+    cerr<i32> = afs.fs_create_dir_all(nested).await
     if cerr != ok return cerr
 
-    e1err<i32>, exists1<i32> = afs.fs_try_exists(nb).await
+    e1err<i32>, exists1<i32> = afs.fs_try_exists(nested).await
     if e1err != ok return e1err
     if exists1 == 0 {
         bad<i32> = io.OtherParse
         return bad
     }
 
-    rerr<i32> = afs.fs_remove_dir_all(rb).await
+    rerr<i32> = afs.fs_remove_dir_all(root).await
     if rerr != ok return rerr
 
-    rb = string.string_to_bits(root)
-    e2err<i32>, exists2<i32> = afs.fs_try_exists(rb).await
+    e2err<i32>, exists2<i32> = afs.fs_try_exists(root).await
     if e2err != ok return e2err
     if exists2 != 0 {
         bad2<i32> = io.OtherParse
@@ -89,56 +83,45 @@ async fs_metadata_rename_body() {
     dst<string.String> = string.S(*"/tmp/asyncio_fs_meta_renamed.txt")
     msg<string.String> = string.S(*"0123456789")
     data<io.Buf> = str_buf(msg)
-    sb<u64> = string.string_to_bits(src)
-    db<u64> = string.string_to_bits(dst)
     ok<i32> = io.Ok
 
-    werr<i32> = afs.fs_write(sb, io.buf_to_bits(data)).await
+    werr<i32> = afs.fs_write(src, io.buf_to_bits(data)).await
     if werr != ok return werr
 
-    sb = string.string_to_bits(src)
-    merr<i32>, meta<afs.Metadata> = afs.fs_metadata(sb).await
+    merr<i32>, meta<afs.Metadata> = afs.fs_metadata(src).await
     if merr != ok return merr
     mlen<u64> = afs.metadata_len(meta)
-    msg_bits<u64> = string.string_to_bits(msg)
-    msg_c<i8*> = string.cstr_from_bits(msg_bits)
-    elen_u<u64> = std.strlen(msg_c)
+    elen_u<u64> = std.strlen(string.cstr(msg))
     if mlen != elen_u {
         bad<i32> = io.OtherParse
         return bad
     }
 
-    sb = string.string_to_bits(src)
-    db = string.string_to_bits(dst)
-    rnerr<i32> = afs.fs_rename(sb, db).await
+    rnerr<i32> = afs.fs_rename(src, dst).await
     if rnerr != ok return rnerr
 
-    sb = string.string_to_bits(src)
-    e1err<i32>, has_old<i32> = afs.fs_try_exists(sb).await
+    e1err<i32>, has_old<i32> = afs.fs_try_exists(src).await
     if e1err != ok return e1err
     if has_old != 0 {
         bad2<i32> = io.OtherParse
         return bad2
     }
 
-    db = string.string_to_bits(dst)
-    e2err<i32>, has_new<i32> = afs.fs_try_exists(db).await
+    e2err<i32>, has_new<i32> = afs.fs_try_exists(dst).await
     if e2err != ok return e2err
     if has_new == 0 {
         bad3<i32> = io.OtherParse
         return bad3
     }
 
-    db = string.string_to_bits(dst)
-    return afs.fs_remove_file(db).await
+    return afs.fs_remove_file(dst).await
 }
 
 async fs_read_dir_body() {
     dir<string.String> = string.S(*"/tmp/asyncio_fs_rd")
-    dbits<u64> = string.string_to_bits(dir)
     ok<i32> = io.Ok
 
-    cerr<i32> = afs.fs_create_dir_all(dbits).await
+    cerr<i32> = afs.fs_create_dir_all(dir).await
     if cerr != ok return cerr
 
     p1<string.String> = string.S(*"/tmp/asyncio_fs_rd/f1")
@@ -147,18 +130,14 @@ async fs_read_dir_body() {
     d1<io.Buf> = str_buf(string.S(*"a"))
     d2<io.Buf> = str_buf(string.S(*"b"))
     d3<io.Buf> = str_buf(string.S(*"c"))
-    pb1<u64> = string.string_to_bits(p1)
-    pb2<u64> = string.string_to_bits(p2)
-    pb3<u64> = string.string_to_bits(p3)
-    werr1<i32> = afs.fs_write(pb1, io.buf_to_bits(d1)).await
+    werr1<i32> = afs.fs_write(p1, io.buf_to_bits(d1)).await
     if werr1 != ok return werr1
-    werr2<i32> = afs.fs_write(pb2, io.buf_to_bits(d2)).await
+    werr2<i32> = afs.fs_write(p2, io.buf_to_bits(d2)).await
     if werr2 != ok return werr2
-    werr3<i32> = afs.fs_write(pb3, io.buf_to_bits(d3)).await
+    werr3<i32> = afs.fs_write(p3, io.buf_to_bits(d3)).await
     if werr3 != ok return werr3
 
-    dbits = string.string_to_bits(dir)
-    rderr<i32>, rd<afs.ReadDir> = afs.fs_read_dir(dbits).await
+    rderr<i32>, rd<afs.ReadDir> = afs.fs_read_dir(dir).await
     if rderr != ok return rderr
 
     count<i32> = 0
@@ -178,8 +157,7 @@ async fs_read_dir_body() {
         return bad
     }
 
-    dbits = string.string_to_bits(dir)
-    return afs.fs_remove_dir_all(dbits).await
+    return afs.fs_remove_dir_all(dir).await
 }
 
 fn int_fs_roundtrip(){
