@@ -55,9 +55,8 @@ async sig_usr1_body() {
 // Drive one body via builder_block_on (same path as int_process_echo / macros).
 fn run_body(name<i8*>, body) {
     b<rt.Builder> = rt.Builder::new_current_thread()
-    // enable_io only: enable_all's TimeDriver + outer await Pending currently
-    // SIGSEGV on the await return path; IO park is enough for signalfd.
-    b = b.enable_io()
+    // IO + time + signal: signalfd parks through the aggregate Driver.
+    b = b.enable_all()
     rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
     if rerr != 0 os.dief("block_on failed: %d", rerr)
     ri<i32> = 0

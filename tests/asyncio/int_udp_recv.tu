@@ -38,14 +38,12 @@ async udp_echo_body() {
     saddr<net.SocketAddr> = addr_of(string.S(*"127.0.0.1:34568"))
     caddr<net.SocketAddr> = addr_of(string.S(*"127.0.0.1:34569"))
 
-    serr<i32>, server_bits<u64> = audp.udp_bind_bits(saddr)
+    serr<i32>, server<audp.UdpSocket> = audp.udp_bind(saddr)
     if serr != io.Ok return serr
-    server<audp.UdpSocket> = server_bits.(audp.UdpSocket)
     if server == null return io.Other
 
-    cerr<i32>, client_bits<u64> = audp.udp_bind_bits(caddr)
+    cerr<i32>, client<audp.UdpSocket> = audp.udp_bind(caddr)
     if cerr != io.Ok return cerr
-    client<audp.UdpSocket> = client_bits.(audp.UdpSocket)
     if client == null return io.Other
 
     msg<string.String> = string.S(*"ping")
