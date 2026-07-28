@@ -1,6 +1,8 @@
 use os
 use std
+use fmt
 use apicross
+use memret_owner
 
 fn main(){
 	case1()
@@ -8,6 +10,7 @@ fn main(){
 	case3()
 	case4()
 	case_cross_pkg()
+	case_cross_pkg_mem_return()
 	case_member_tyassert()
 	case_tyassert_dispatch()
 	case_u64_tyassert_dispatch()
@@ -305,4 +308,28 @@ fn case_cross_pkg(){
 	a<apicross.CrossApi> = f
 	if a.get_fd() != 9 os.die("cross-pkg api vtable empty")
 	fmt.println("test cross-pkg api impl success")
+}
+
+// Cross-package (i32, Mem) multi-return must preserve pointer fields
+// (pkg fn + Type::method; TcpStream::from_netio shape). Owner: memret_owner/.
+fn case_cross_pkg_mem_return(){
+	fmt.println("test cross-pkg mem multi-return")
+	err<i32>, head<memret_owner.Box> = memret_owner.make_linked(7)
+	if err != 1 os.die("make_linked err")
+	if head == null os.die("head null")
+	if head.tag != 7 os.die("head.tag")
+	if head.next == null os.die("head.next null after cross-pkg multi-return")
+	n<memret_owner.Box> = head.next
+	if n.tag != 8 os.die("head.next.tag")
+
+	err2<i32>, h2<memret_owner.Box> = memret_owner.Box::make_linked(11)
+	if err2 != 1 os.die("Box::make_linked err")
+	if h2 == null os.die("head null Type::method")
+	if h2.tag != 11 os.die("Type::method tag")
+	if h2.next == null os.die("Type::method next null")
+	n2<memret_owner.Box> = h2.next
+	if n2.tag != 12 os.die("Type::method next.tag")
+	if h2.pe == null os.die("Type::method pe null")
+	if h2.pe.tag != 111 os.die("Type::method pe.tag")
+	fmt.println("test cross-pkg mem multi-return success")
 }
