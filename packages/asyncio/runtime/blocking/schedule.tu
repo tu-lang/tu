@@ -1,40 +1,34 @@
-// Schedule impl that hands BlockingTask completion notifications back to
-// the runtime's main scheduler via its inject queue.
+// Schedule impl for blocking-pool tasks. schedule() is never used
+// (blocking tasks are not futures re-polled by the runtime); release()
+// is a no-op outside test-util clock bookkeeping.
 
 use asyncio.task
-use asyncio.runtime.scheduler as sched
 
-// BlockingSchedule routes JoinHandle wakes into the runtime's inject.
+// NoopSchedule — unowned blocking task scheduler.
 mem BlockingSchedule {
-    sched.Inject* runtime_inject     // back-edge into the main scheduler
+    i32 _pad
 }
 
-// Build a BlockingSchedule pointing at runtime_inject.
-const BlockingSchedule::new(runtime_inject<sched.Inject>) BlockingSchedule {
-    s<BlockingSchedule> = new BlockingSchedule
-    s.runtime_inject = runtime_inject
-    return s
+// Build a NoopSchedule stand-in for unowned blocking tasks.
+const BlockingSchedule::new() BlockingSchedule {
+    return new BlockingSchedule
 }
 
-// Implement the Schedule contract: forward Notified into the runtime's
-// inject queue, and let release() detach from any owner-tracking layer.
+// Schedule for BlockingSchedule: schedule is unreachable — joining
+// waiters wake via the awaiter's own Schedule (CtHandle/MtHandle).
 impl task.Schedule for BlockingSchedule {
     fn schedule(t){
-        notif<task.Notified> = t
-        this.runtime_inject.push(notif)
+        // Blocking tasks are not re-scheduled by the runtime.
     }
     fn release(raw){
-        // Blocking tasks are not tracked by an OwnedTasks list — they're
-        // ephemeral submissions. Nothing to detach here.
+        // No owned-list detach; test-util may unpark clock.
     }
 }
 
 // Bridge fns installed into task Headers (api dispatch on raw Schedule
 // bits crashes codegen; the harness calls these plain fn pointers).
 fn blocking_schedule_bridge(hbits<u64>, nbits<u64>){
-    bs<BlockingSchedule> = hbits.(BlockingSchedule)
-    n<task.Notified> = nbits.(task.Notified)
-    bs.runtime_inject.push(n)
+    // NoopSchedule::schedule is never invoked.
 }
 
 fn blocking_release_bridge(hbits<u64>, rbits<u64>){
