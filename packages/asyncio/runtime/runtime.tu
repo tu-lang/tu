@@ -171,6 +171,7 @@ Runtime::shutdown_timeout(d<sys.Duration>){
         scheduler.ct_inject_close(this.scheduler_handle)
     } else {
         scheduler.mt_inject_close(this.scheduler_handle)
+        scheduler.mt_wait_workers(this.scheduler_handle)
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
     if this.agg_drv != null this.agg_drv.shutdown(this.driver_handle)
@@ -185,6 +186,7 @@ Runtime::shutdown_background(){
         scheduler.ct_inject_close(this.scheduler_handle)
     } else {
         scheduler.mt_inject_close(this.scheduler_handle)
+        scheduler.mt_wait_workers(this.scheduler_handle)
     }
     if this.blocking_pool != null this.blocking_pool.shutdown()
     if this.agg_drv != null this.agg_drv.shutdown(this.driver_handle)

@@ -191,10 +191,9 @@ fn build_multi_thread(b<Builder>) Runtime {
     handle.rt_handle = weak.(u64)
 
     if b.worker_threads > 0 {
-        // V1: allocate remotes/queues for schedule topology, but do not
-        // spawn OS worker threads yet. block_on_exclusive drains inject on
-        // the caller (CachedParkThread + worker pool is optimize debt —
-        // clone()+Note worker threads currently SEGV on shutdown).
+        // Init hubs on the builder thread before any clone() worker runs.
+        sched.worker_handoff_init()
+        sched.mt_ctx_hub_init()
         for i<u32> = 0 ; i < b.worker_threads ; i += 1 {
             steal_a<sched.Steal>, local_b<sched.Local> = sched.queue_local()
             rng<util.FastRand>     = util.FastRand::new(0xdeadbeef + i.(u64))
@@ -207,6 +206,10 @@ fn build_multi_thread(b<Builder>) Runtime {
             r.steal_end = steal_a
             r.unparker = unparker
             shared.remotes[i] = r.(u64)
+
+            sched.worker_handoff_publish(worker)
+            rtblk.librt_newcore(mt_os_core_start.(u64))
+            sched.worker_handoff_wait_claimed()
         }
     }
 
