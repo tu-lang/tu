@@ -6,7 +6,6 @@
 use runtime
 use std
 use io as iobuf
-use asyncio.io as aio
 
 // Default buffer size when callers do not specify one.
 DEFAULT_WBUF_CAP<u64> = 8192
@@ -58,7 +57,7 @@ fn buf_writer_push(bw<BufWriter>, ctx<u64>) i32 {
     store_buf<iobuf.Buf> = bw.buf.store_buf()
     base<u8*> = store_buf.ptr() + bw.pos
     slice<iobuf.Buf> = new iobuf.Buf { data_ptr: base, byte_len: bw.pending() }
-    err<i32>, n<u64> = bw.inner.(aio.AsyncWrite).poll_write(ctx, iobuf.buf_to_bits(slice))
+    err<i32>, n<u64> = bw.inner.(AsyncWrite).poll_write(ctx, slice)
     if err == runtime.PollPending return runtime.PollPending
     if err == runtime.PollError   return runtime.PollError
     if n == 0 {
@@ -76,9 +75,8 @@ fn buf_writer_push(bw<BufWriter>, ctx<u64>) i32 {
 
 // AsyncWrite: small writes land in `buf`; oversize writes drain the
 // buffer first, then delegate straight to the sink.
-impl aio.AsyncWrite for BufWriter {
-    fn poll_write(ctx<u64>, buf_bits<u64>) i32, u64 {
-        src<iobuf.Buf> = iobuf.buf_from_bits(buf_bits)
+impl AsyncWrite for BufWriter {
+    fn poll_write(ctx<u64>, src<iobuf.Buf>) i32, u64 {
         // If the caller's slice would not fit, flush the buffer first.
         if src.len() > this.room() {
             err<i32> = buf_writer_push(this, ctx)
@@ -86,7 +84,7 @@ impl aio.AsyncWrite for BufWriter {
             if err == runtime.PollError   return runtime.PollError, 0.(u64)
             // After a successful flush, large writes bypass the buffer.
             if src.len() >= this.buf.capacity() {
-                err2<i32>, n2<u64> = this.inner.(aio.AsyncWrite).poll_write(ctx, buf_bits)
+                err2<i32>, n2<u64> = this.inner.(AsyncWrite).poll_write(ctx, src)
                 return err2, n2
             }
         }
@@ -104,7 +102,7 @@ impl aio.AsyncWrite for BufWriter {
             err<i32> = buf_writer_push(this, ctx)
             if err != runtime.PollReady return err
         }
-        return this.inner.(aio.AsyncWrite).poll_flush(ctx)
+        return this.inner.(AsyncWrite).poll_flush(ctx)
     }
     fn poll_shutdown(ctx<u64>) i32 {
         loop {
@@ -112,6 +110,6 @@ impl aio.AsyncWrite for BufWriter {
             err<i32> = buf_writer_push(this, ctx)
             if err != runtime.PollReady return err
         }
-        return this.inner.(aio.AsyncWrite).poll_shutdown(ctx)
+        return this.inner.(AsyncWrite).poll_shutdown(ctx)
     }
 }

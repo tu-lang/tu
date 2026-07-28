@@ -1,38 +1,40 @@
 // AsyncRead extension helpers. `Read` is a leaf future for one
 // poll_read call. Package-level async must only return the leaf (no await).
 //
-// Factories take typed `aio.AsyncRead` (vtable dispatch). Leaf futures
-// store the implementor and ReadBuf as u64 bits so async frames stay
-// GC-safe and avoid `pkg.Type*` mem-body / value-nest traps.
-// Poll paths use u64 bits + tyassert dispatch (InitApiVptr only on assign/new).
+// Leaf futures hold `aio.AsyncRead*` / `aio.ReadBuf*` (RFC: api members
+// must be pointers). Bind via `new Read { ... }` literal — post-new
+// field assign to Api* overwrites the async poll virf.
 
 use runtime
 use io as iobuf
 use asyncio.io as aio
 
 mem Read: async {
-    u64 r
-    u64 buf_bits
+    aio.AsyncRead* r
+    aio.ReadBuf* buf
     u64 start
     i32 started
 }
 
-const Read::new(r<u64>, buf<aio.ReadBuf>) Read {
-    f<Read> = new Read
-    f.r = r
-    f.buf_bits = aio.read_buf_to_bits(buf)
-    f.start = 0
-    f.started = 0
-    return f
+const Read::new(r<aio.AsyncRead>, buf<aio.ReadBuf>) Read {
+    rbits<u64> = 0
+    rbits = r
+    bbits<u64> = aio.read_buf_to_bits(buf)
+    return new Read {
+        r: rbits.(aio.AsyncRead),
+        buf: bbits.(aio.ReadBuf),
+        start: 0.(u64),
+        started: 0
+    }
 }
 
 Read::poll(ctx) {
-    rb<aio.ReadBuf> = aio.read_buf_from_bits(this.buf_bits)
+    rb<aio.ReadBuf> = this.buf
     if this.started == 0 {
         this.start = rb.filled_len()
         this.started = 1
     }
-    err<i32> = this.r.(aio.AsyncRead).poll_read(ctx, rb)
+    err<i32> = this.r.poll_read(ctx, rb)
     if err == runtime.PollPending {
         return runtime.PollPending
     }
@@ -46,14 +48,8 @@ Read::poll(ctx) {
     return runtime.PollReady, ok_code, delta
 }
 
-fn reader_bits(r<aio.AsyncRead>) u64 {
-    bits<u64> = 0
-    bits = r
-    return bits
-}
-
 fn read(r<aio.AsyncRead>, buf<aio.ReadBuf>) Read {
-    return Read::new(reader_bits(r), buf)
+    return Read::new(r, buf)
 }
 
 // Build ReadBuf over an io.Buf (this package may use io; asyncio.io must not).

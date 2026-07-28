@@ -5,6 +5,7 @@ use std
 use io as iobuf
 use runtime
 use asyncio.io as aio
+use asyncio.io.util as ioutil
 
 mem Stderr {
     i32 fd
@@ -16,9 +17,8 @@ fn stderr() Stderr {
     return s
 }
 
-impl aio.AsyncWrite for Stderr {
-    fn poll_write(ctx<u64>, buf_bits<u64>) (i32, u64) {
-        buf<iobuf.Buf> = iobuf.buf_from_bits(buf_bits)
+impl ioutil.AsyncWrite for Stderr {
+    fn poll_write(ctx<u64>, buf<iobuf.Buf>) (i32, u64) {
         len<u64> = buf.len()
         ptr<i8*> = buf.ptr()
         if len == 0 return runtime.PollReady, 0

@@ -2,8 +2,8 @@
 // Filled/initialized cursor over a byte slice.
 //
 // This package must not `use io` (short-name clash with asyncio.io). Callers
-// with an io.Buf should use `asyncio.io.util.read_buf_over`, or pass
-// `read_buf_from_i8(buf.ptr(), n)` from a package that may import io.
+// with an io.Buf may use `asyncio.io.util.read_buf_over`, or
+// `read_buf_from_i8(buf.ptr(), n)` from a package that imports io.
 //
 // `start` is a real `u8*` so GC scans it (a former `u64 data_bits` left the
 // byte region unrooted across gc_malloc).

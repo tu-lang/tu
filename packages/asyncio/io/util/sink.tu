@@ -2,7 +2,6 @@
 
 use runtime
 use io as iobuf
-use asyncio.io as aio
 
 mem Sink {
     i32 _pad
@@ -18,9 +17,8 @@ fn sink() Sink {
     return Sink::new()
 }
 
-impl aio.AsyncWrite for Sink {
-    fn poll_write(ctx<u64>, buf_bits<u64>) (i32, u64) {
-        src<iobuf.Buf> = iobuf.buf_from_bits(buf_bits)
+impl AsyncWrite for Sink {
+    fn poll_write(ctx<u64>, src<iobuf.Buf>) (i32, u64) {
         return runtime.PollReady, src.len()
     }
     fn poll_flush(ctx<u64>) i32 {
