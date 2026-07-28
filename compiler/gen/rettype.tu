@@ -2,10 +2,15 @@ use compiler.ast
 use compiler.utils 
 use std
 
-// 类型断言在 getType 中的统一表象：mem → 指针宽 U64，基元 → base。
+// TypeInfo ABI token for getType/Cast: delegate to TypeInfo.abiToken.
+fn typeInfoAbiToken(ti) {
+	if ti == null return ast.U64
+	return ti.abiToken()
+}
+
+// Type assert surface in getType: reuse ABI token (incl. .(i8*)).
 fn typeAssertGetType(ta) {
-	if ta.memType() return ast.U64
-	return ta.base
+	return typeInfoAbiToken(ta)
 }
 
 ClosPosExpr::getType(ctx){
@@ -117,10 +122,7 @@ FunCallExpr::getType(ctx){
 	this.geninit(ctx)
 	this.check(this.fcs != null,"must compile first")
 	if std.len(this.fcs.returnTypes) != 0 {
-		dr = this.fcs.returnTypes[0]
-		if dr.baseType() {
-			return dr.base
-		}
+		return typeInfoAbiToken(this.fcs.returnTypes[0])
 	}
 	return ast.I64
 }
@@ -182,10 +184,7 @@ MemberCallExpr::getType(ctx){
 	}
 	this.check(fc != null, "fc == null")
 	if std.len(fc.returnTypes) != 0 {
-		dr = fc.returnTypes[0]
-		if dr.baseType() {
-			return dr.base
-		}
+		return typeInfoAbiToken(fc.returnTypes[0])
 	}
 	return ast.U64
 }
@@ -318,7 +317,7 @@ ChainExpr::getType(ctx){
 					curStruct = ti.st
 					curMember = null
 				}else if islast
-					return ti.base
+					return typeInfoAbiToken(ti)
 			}else {
 				curStruct = null
 				curMember = null

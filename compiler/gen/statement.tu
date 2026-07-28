@@ -77,8 +77,8 @@ ReturnStmt::genExpr(ctx , i){
     stackpointer = fc.ret_stack
 
     ty = expr.getType(ctx)
-    if fType != null && fType.baseType() {
-        ty = fType.base
+    if fType != null && (fType.baseType() || fType.pointer) {
+        ty = fType.abiToken()
     }
     compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
     if fType != null && ( fType.base == ast.F32 || fType.base == ast.F64){
@@ -100,8 +100,8 @@ ReturnStmt::genDefault(ctx , i){
     if i == 0 {
         if defineType != null{
             compile.writeln(" mov $0 , %%rax")
-            if defineType.baseType() {
-                compile.Cast(ast.I64,defineType.base)
+            if defineType.baseType() || defineType.pointer {
+                compile.Cast(ast.I64,defineType.dstCastType())
             }
         }else if ast.cfg_static()
                 compile.writeln(" mov $0 , %%rax")
@@ -113,8 +113,11 @@ ReturnStmt::genDefault(ctx , i){
     stackpointer = fc.ret_stack
     compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
     if defineType != null {
+        // pointer defaults to full-width zero; do not Cast to pointee I8
         compile.writeln(" mov $0 , %%rax")
-        if defineType.baseType() {
+        if defineType.pointer {
+            compile.writeln(" movq $0 , %d(%%rdi)",cur)
+        }else if defineType.baseType() {
             compile.Cast(ast.I64,defineType.base)
             if ast.isfloattk(defineType.base)
                 compile.PushfDst(defineType.base,"%rdi",cur)
@@ -323,8 +326,8 @@ MultiAssignStmt::assign(ctx, fce){
         ty = firstexpr.getType(ctx)
         if std.len(fc.returnTypes) != 0 {
             ti = fc.returnTypes[0]
-            if ti.baseType()
-                ty = ti.base
+            if ti.baseType() || ti.pointer
+                ty = ti.abiToken()
         }
         if ast.isfloattk(ty) {
             compile.Pushf(ty)
@@ -343,8 +346,8 @@ MultiAssignStmt::assign(ctx, fce){
         rexpr.dstType = lexpr.getType(ctx)
         if std.len(fc.returnTypes) > i {
             rt = fc.returnTypes[i]
-            if rt.baseType()
-                rexpr.dstType = rt.base
+            if rt.pointer || rt.baseType()
+                rexpr.dstType = rt.abiToken()
             else{
                 rexpr.dstType = ast.I64
                 rexpr.st = package.getStruct(rt.pkg,rt.name)

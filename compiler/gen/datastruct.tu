@@ -30,6 +30,12 @@ class TypeInfo  {
         if this.pointer return ast.I64
         return this.base
     }
+    // getType/Cast ABI width: pointer|mem → U64, else base
+    fn abiToken() {
+        if this.pointer return ast.U64
+        if this.memType() return ast.U64
+        return this.base
+    }
 }
 
 class ClosPosExpr : ast.Ast {
