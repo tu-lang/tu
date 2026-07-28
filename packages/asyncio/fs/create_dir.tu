@@ -22,6 +22,6 @@ CreateDirFut::poll(ctx) {
     return ready, err
 }
 
-fn fs_create_dir(path_bits<u64>) CreateDirFut {
-    return new CreateDirFut { path_bits: path_bits }
+fn fs_create_dir(path<string.String>) CreateDirFut {
+    return new CreateDirFut { path_bits: string.string_to_bits(path) }
 }

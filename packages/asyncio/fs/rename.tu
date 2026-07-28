@@ -20,8 +20,11 @@ RenameFut::poll(ctx) {
 }
 
 // Returns erased Future for `.await`.
-fn fs_rename(from_bits<u64>, to_bits<u64>) runtime.Future {
-    f<RenameFut> = new RenameFut { from_bits: from_bits, to_bits: to_bits }
+fn fs_rename(from<string.String>, to<string.String>) runtime.Future {
+    f<RenameFut> = new RenameFut {
+        from_bits: string.string_to_bits(from),
+        to_bits: string.string_to_bits(to)
+    }
     fut<runtime.Future> = f
     return fut
 }

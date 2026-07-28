@@ -46,7 +46,7 @@ fn fs_sys_ret(raw<i32>) i32 {
     return err
 }
 
-// Sync recursive remove. Prefer path_bits for open (i8* args corrupt across calls).
+// Sync recursive remove.
 fn remove_dir_all_sync(path_bits<u64>) i32 {
     ok_code<i32> = 1
     pc<i8*> = string.cstr_from_bits(path_bits)
@@ -68,7 +68,6 @@ fn remove_dir_all_sync(path_bits<u64>) i32 {
         }
         name_c<i8*> = string.cstr_from_bits(name_bits)
         child_c<i8*> = join_path_cstr(pc, name_c)
-        // Owned cstr bits (child_c is already a GC buffer).
         child_bits<u64> = child_c.(u64)
         if path_is_dir_cstr(child_c) != 0 {
             cerr<i32> = remove_dir_all_sync(child_bits)
@@ -98,14 +97,13 @@ mem RemoveDirAllFut: async {
 }
 
 RemoveDirAllFut::poll(ctx) {
-    bits<u64> = this.path_bits
-    err<i32> = remove_dir_all_sync(bits)
+    err<i32> = remove_dir_all_sync(this.path_bits)
     ready<i32> = runtime.PollReady
     return ready, err
 }
 
-fn fs_remove_dir_all(path_bits<u64>) runtime.Future {
-    f<RemoveDirAllFut> = new RemoveDirAllFut { path_bits: path_bits, pad: 0 }
+fn fs_remove_dir_all(path<string.String>) runtime.Future {
+    f<RemoveDirAllFut> = new RemoveDirAllFut { path_bits: string.string_to_bits(path), pad: 0 }
     fut<runtime.Future> = f
     return fut
 }

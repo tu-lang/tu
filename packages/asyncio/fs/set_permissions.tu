@@ -17,6 +17,6 @@ SetPermissionsFut::poll(ctx) {
     return runtime.PollReady, err
 }
 
-fn fs_set_permissions(path_bits<u64>, mode<u32>) SetPermissionsFut {
-    return new SetPermissionsFut { path_bits: path_bits, mode: mode }
+fn fs_set_permissions(path<string.String>, mode<u32>) SetPermissionsFut {
+    return new SetPermissionsFut { path_bits: string.string_to_bits(path), mode: mode }
 }

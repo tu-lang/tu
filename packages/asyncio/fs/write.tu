@@ -5,8 +5,7 @@ use string
 use runtime
 
 // Leaf: create + write-all + close in one poll (V1 inline).
-// Only u64 slots in the async mem — String/Buf keepers live in the caller
-// across await (async locals + explicit path_bits refresh).
+// Public API takes string.String; async mem stores owned cstr bits.
 mem WriteFut: async {
     u64 path_bits
     u64 data_bits
@@ -38,9 +37,9 @@ WriteFut::poll(ctx) {
     return runtime.PollReady, io.Ok
 }
 
-fn fs_write(path_bits<u64>, data_bits<u64>) runtime.Future {
+fn fs_write(path<string.String>, data_bits<u64>) runtime.Future {
     f<WriteFut> = new WriteFut {
-        path_bits: path_bits,
+        path_bits: string.string_to_bits(path),
         data_bits: data_bits
     }
     fut<runtime.Future> = f

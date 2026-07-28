@@ -17,6 +17,9 @@ HardLinkFut::poll(ctx) {
     return runtime.PollReady, err
 }
 
-fn fs_hard_link(src_bits<u64>, dst_bits<u64>) HardLinkFut {
-    return new HardLinkFut { src_bits: src_bits, dst_bits: dst_bits }
+fn fs_hard_link(src<string.String>, dst<string.String>) HardLinkFut {
+    return new HardLinkFut {
+        src_bits: string.string_to_bits(src),
+        dst_bits: string.string_to_bits(dst)
+    }
 }

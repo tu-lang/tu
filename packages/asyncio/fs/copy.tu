@@ -61,6 +61,9 @@ CopyFut::poll(ctx) {
     return runtime.PollReady, io.Ok, total
 }
 
-fn fs_copy(from_bits<u64>, to_bits<u64>) CopyFut {
-    return new CopyFut { from_bits: from_bits, to_bits: to_bits }
+fn fs_copy(from<string.String>, to<string.String>) CopyFut {
+    return new CopyFut {
+        from_bits: string.string_to_bits(from),
+        to_bits: string.string_to_bits(to)
+    }
 }

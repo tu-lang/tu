@@ -20,6 +20,6 @@ RemoveDirFut::poll(ctx) {
     return ready, err
 }
 
-fn fs_remove_dir(path_bits<u64>) RemoveDirFut {
-    return new RemoveDirFut { path_bits: path_bits }
+fn fs_remove_dir(path<string.String>) RemoveDirFut {
+    return new RemoveDirFut { path_bits: string.string_to_bits(path) }
 }

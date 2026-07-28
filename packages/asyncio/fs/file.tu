@@ -45,7 +45,6 @@ fn file_open_read_sync(path_bits<u64>) i32, File {
 }
 
 fn file_create_sync(path_bits<u64>) i32, File {
-    // Cross-pkg String params are unsafe; take bits and recover cstr in string pkg.
     err<i32>, f<File> = file_create_sync_cstr(string.cstr_from_bits(path_bits))
     return err, f
 }
@@ -101,8 +100,8 @@ OpenFut::poll(ctx) {
     return runtime.PollReady, err, f
 }
 
-fn fs_open(path_bits<u64>, opts<OpenOptions>) OpenFut {
-    return new OpenFut { path_bits: path_bits, opts: opts }
+fn fs_open(path<string.String>, opts<OpenOptions>) OpenFut {
+    return new OpenFut { path_bits: string.string_to_bits(path), opts: opts }
 }
 
 mem OpenReadFut: async {
@@ -114,8 +113,8 @@ OpenReadFut::poll(ctx) {
     return runtime.PollReady, err, f
 }
 
-fn fs_open_read(path_bits<u64>) OpenReadFut {
-    return new OpenReadFut { path_bits: path_bits }
+fn fs_open_read(path<string.String>) OpenReadFut {
+    return new OpenReadFut { path_bits: string.string_to_bits(path) }
 }
 
 mem CreateFut: async {
@@ -127,8 +126,8 @@ CreateFut::poll(ctx) {
     return runtime.PollReady, err, f
 }
 
-fn fs_create(path_bits<u64>) CreateFut {
-    return new CreateFut { path_bits: path_bits }
+fn fs_create(path<string.String>) CreateFut {
+    return new CreateFut { path_bits: string.string_to_bits(path) }
 }
 
 // ---- File member leaf futures -------------

@@ -11,8 +11,7 @@ mem ReadFut: async {
 }
 
 ReadFut::poll(ctx) {
-    bits<u64> = this.path_bits
-    oerr<i32>, f<File> = file_open_read_sync(bits)
+    oerr<i32>, f<File> = file_open_read_sync(this.path_bits)
     if oerr != io.Ok return runtime.PollReady, oerr, null
 
     cap_i<i32> = 8192
@@ -43,8 +42,8 @@ ReadFut::poll(ctx) {
     return runtime.PollReady, io.Ok, io.buf_with_len(buf, total)
 }
 
-fn fs_read(path_bits<u64>) runtime.Future {
-    f<ReadFut> = new ReadFut { path_bits: path_bits }
+fn fs_read(path<string.String>) runtime.Future {
+    f<ReadFut> = new ReadFut { path_bits: string.string_to_bits(path) }
     fut<runtime.Future> = f
     return fut
 }

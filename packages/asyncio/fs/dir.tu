@@ -1,6 +1,6 @@
 // Directory reading: ReadDir stream + DirEntry.
 // Backed by getdents64 over a directory fd; "." and ".." are filtered out.
-// Path args use owned cstr bits (string.string_to_bits); dirent parse uses memcpy.
+// Path args use string.String; dirent parse uses memcpy.
 
 use std
 use io
@@ -59,7 +59,7 @@ fn is_dot_name_cstr(name_c<i8*>) i32 {
     return 0
 }
 
-// Sync open of a directory stream. Convert bits→cstr inside (same as file_open_read_sync).
+// Sync open of a directory stream.
 fn read_dir_open_sync(path_bits<u64>) i32, ReadDir {
     ok_code<i32> = 1
     pc<i8*> = string.cstr_from_bits(path_bits)
@@ -81,7 +81,6 @@ fn read_dir_open_sync(path_bits<u64>) i32, ReadDir {
 }
 
 fn read_dir_open_sync_cstr(path_cstr<i8*>) i32, ReadDir {
-    // path_cstr is already an owned cstr; bits are the pointer itself.
     bits<u64> = path_cstr.(u64)
     err<i32>, r<ReadDir> = read_dir_open_sync(bits)
     return err, r
@@ -195,14 +194,13 @@ mem ReadDirFut: async {
 }
 
 ReadDirFut::poll(ctx) {
-    bits<u64> = this.path_bits
-    err<i32>, r<ReadDir> = read_dir_open_sync(bits)
+    err<i32>, r<ReadDir> = read_dir_open_sync(this.path_bits)
     ready<i32> = runtime.PollReady
     return ready, err, r
 }
 
-fn fs_read_dir(path_bits<u64>) runtime.Future {
-    f<ReadDirFut> = new ReadDirFut { path_bits: path_bits, pad: 0 }
+fn fs_read_dir(path<string.String>) runtime.Future {
+    f<ReadDirFut> = new ReadDirFut { path_bits: string.string_to_bits(path), pad: 0 }
     fut<runtime.Future> = f
     return fut
 }

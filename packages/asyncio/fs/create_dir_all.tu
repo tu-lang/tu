@@ -63,8 +63,8 @@ CreateDirAllFut::poll(ctx) {
     return ready, ok_code
 }
 
-fn fs_create_dir_all(path_bits<u64>) runtime.Future {
-    f<CreateDirAllFut> = new CreateDirAllFut { path_bits: path_bits, pad: 0 }
+fn fs_create_dir_all(path<string.String>) runtime.Future {
+    f<CreateDirAllFut> = new CreateDirAllFut { path_bits: string.string_to_bits(path), pad: 0 }
     fut<runtime.Future> = f
     return fut
 }

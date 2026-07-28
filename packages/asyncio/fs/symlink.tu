@@ -17,6 +17,9 @@ SymlinkFut::poll(ctx) {
     return runtime.PollReady, err
 }
 
-fn fs_symlink(src_bits<u64>, dst_bits<u64>) SymlinkFut {
-    return new SymlinkFut { src_bits: src_bits, dst_bits: dst_bits }
+fn fs_symlink(src<string.String>, dst<string.String>) SymlinkFut {
+    return new SymlinkFut {
+        src_bits: string.string_to_bits(src),
+        dst_bits: string.string_to_bits(dst)
+    }
 }

@@ -74,6 +74,6 @@ ReadToStringFut::poll(ctx) {
     return runtime.PollReady, io.Ok, s
 }
 
-fn fs_read_to_string(path_bits<u64>) ReadToStringFut {
-    return new ReadToStringFut { path_bits: path_bits }
+fn fs_read_to_string(path<string.String>) ReadToStringFut {
+    return new ReadToStringFut { path_bits: string.string_to_bits(path) }
 }

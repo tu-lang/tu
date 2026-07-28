@@ -69,8 +69,8 @@ MetadataFut::poll(ctx) {
     return runtime.PollReady, io.Ok, metadata_from_stat(s)
 }
 
-fn fs_metadata(path_bits<u64>) runtime.Future {
-    f<MetadataFut> = new MetadataFut { path_bits: path_bits }
+fn fs_metadata(path<string.String>) runtime.Future {
+    f<MetadataFut> = new MetadataFut { path_bits: string.string_to_bits(path) }
     fut<runtime.Future> = f
     return fut
 }
@@ -87,6 +87,6 @@ SymlinkMetadataFut::poll(ctx) {
     return runtime.PollReady, io.Ok, metadata_from_stat(s)
 }
 
-fn fs_symlink_metadata(path_bits<u64>) SymlinkMetadataFut {
-    return new SymlinkMetadataFut { path_bits: path_bits }
+fn fs_symlink_metadata(path<string.String>) SymlinkMetadataFut {
+    return new SymlinkMetadataFut { path_bits: string.string_to_bits(path) }
 }

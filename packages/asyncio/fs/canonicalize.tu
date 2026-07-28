@@ -24,6 +24,6 @@ CanonicalizeFut::poll(ctx) {
     return runtime.PollReady, err, null
 }
 
-fn fs_canonicalize(path_bits<u64>) CanonicalizeFut {
-    return new CanonicalizeFut { path_bits: path_bits }
+fn fs_canonicalize(path<string.String>) CanonicalizeFut {
+    return new CanonicalizeFut { path_bits: string.string_to_bits(path) }
 }
