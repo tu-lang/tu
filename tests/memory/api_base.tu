@@ -9,6 +9,65 @@ fn main(){
 	case4()
 	case_cross_pkg()
 	case_member_tyassert()
+	case_tyassert_dispatch()
+	case_u64_tyassert_dispatch()
+	case_api_ptr_field_dispatch()
+	case_assign_repeat_dispatch()
+}
+
+// Local tyassert on concrete mem must hit api vtable (not default stub).
+api Counter {
+	fn get() i32 {
+		return 0
+	}
+}
+mem Inc {
+	i32 v
+}
+impl Counter for Inc {
+	fn get() i32 {
+		return this.v
+	}
+}
+fn case_tyassert_dispatch(){
+	fmt.println("test tyassert api dispatch")
+	i<Inc> = new Inc { v: 99 }
+	n<i32> = i.(Counter).get()
+	if n != 99 os.die("tyassert api dispatch expected 99 from impl, got default stub")
+	fmt.println("test tyassert api dispatch success")
+}
+
+// u64 opaque heap bits + .(Api) must dispatch impl (vptr from assign/new).
+fn case_u64_tyassert_dispatch(){
+	fmt.println("test u64 tyassert api dispatch")
+	inc<Inc> = new Inc { v: 42 }
+	bits<u64> = inc
+	n<i32> = bits.(Counter).get()
+	if n != 42 os.die("u64 tyassert api dispatch expected 42 from impl")
+	fmt.println("test u64 tyassert api dispatch success")
+}
+
+// Api* field one-line call must dispatch without rewriting outer holder vptr.
+mem ApiPtrHold {
+	Counter* inner
+}
+fn case_api_ptr_field_dispatch(){
+	fmt.println("test api ptr field dispatch")
+	inc<Inc> = new Inc { v: 77 }
+	h<ApiPtrHold> = new ApiPtrHold { inner: inc }
+	n<i32> = h.inner.get()
+	if n != 77 os.die("api ptr field dispatch expected impl value")
+	fmt.println("test api ptr field dispatch success")
+}
+
+// Assign/new binds vptr once; repeated calls stay on impl.
+fn case_assign_repeat_dispatch(){
+	fmt.println("test assign api repeat dispatch")
+	c<Counter> = new Inc { v: 11 }
+	n1<i32> = c.get()
+	n2<i32> = c.get()
+	if n1 != 11 || n2 != 11 os.die("repeat api dispatch after assign expected stable impl")
+	fmt.println("test assign api repeat dispatch success")
 }
 
 // Chain + tyassert + api member call (h.w.(WriteApi).write) must hit impl vtable.
