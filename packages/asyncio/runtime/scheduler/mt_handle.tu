@@ -25,10 +25,55 @@ const MtHandle::new(shared<MtShared>) MtHandle {
     return h
 }
 
-// Schedule a Notified task. Workers push local / steal; foreign and
-// non-worker callers inject + wake one sleeper. The block_on root is
-// special: CachedParkThread owns it — wake only unparks the caller,
-// never puts root on inject for a worker to poll.
+// Push onto this worker's LIFO / Local (mother schedule_local).
+// is_yield != 0 forces FIFO push (no LIFO).
+fn mt_schedule_local(core<WorkerCore>, shared<MtShared>, notif<task.Notified>, is_yield<i32>) {
+    should_notify<i32> = 0
+    if is_yield != 0 || core.lifo_enabled == 0 {
+        core.run_queue.push_back_or_overflow(notif, shared.inject)
+        should_notify = 1
+    } else {
+        prev<u64> = core.lifo_slot
+        if prev != 0 {
+            should_notify = 1
+            core.run_queue.push_back_or_overflow(
+                task.notified_from_raw(prev.(task.RawTask)),
+                shared.inject
+            )
+        }
+        raw_bits<u64> = 0
+        raw_bits = notif.raw()
+        core.lifo_slot = raw_bits
+    }
+    if should_notify == 1 {
+        sn<MtSynced> = shared.lock_hub
+        found<i32>, idx<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
+        if found == 1 && idx < shared.num_workers {
+            rb<u64> = shared.remotes[idx]
+            r<Remote> = rb.(Remote)
+            if r.unparker != null {
+                r.unparker.unpark()
+            }
+        }
+    }
+}
+
+// Inject + wake one sleeper (mother push_remote_task + notify_parked_remote).
+fn mt_schedule_remote(shared<MtShared>, notif<task.Notified>) {
+    shared.inject.push(notif)
+    sn<MtSynced> = shared.lock_hub
+    found<i32>, idx<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
+    if found == 1 && idx < shared.num_workers {
+        rb<u64> = shared.remotes[idx]
+        r<Remote> = rb.(Remote)
+        if r.unparker != null {
+            r.unparker.unpark()
+        }
+    }
+}
+
+// Schedule a Notified task. Workers push local / LIFO; foreign callers
+// inject + wake. block_on root wake only unparks the caller.
 impl task.Schedule for MtHandle {
     fn schedule(t){
         notif<task.Notified> = t
@@ -46,16 +91,9 @@ impl task.Schedule for MtHandle {
             }
         }
 
-        this.shared.inject.push(notif)
-
-        // Wake one parked worker if any are sleeping.
-        sn<MtSynced> = this.shared.lock_hub
-        found<i32>, idx<u32> = this.shared.idle.notify_one(sn.idle_synced, this.shared.synced_lock)
-        if found == 1 && idx < this.shared.num_workers {
-            rb<u64> = this.shared.remotes[idx]
-            r<Remote> = rb.(Remote)
-            if r.unparker != null r.unparker.unpark()
-        }
+        // schedule_local deferred — enabling LIFO/local under nested spawn
+        // SEGV'd flakily even with lock-free mt_core_current_bits (see optimize).
+        mt_schedule_remote(this.shared, notif)
     }
 
     fn release(raw){
@@ -119,14 +157,10 @@ fn mt_handle_spawn_fut(h<MtHandle>, fut) task.JoinHandle {
     return jh2
 }
 
-// Spawn a future. Returns a JoinHandle; the first Notified is enqueued
-// via schedule(). raw_new returns a heap RawTask; pass it through.
 MtHandle::spawn(fut) task.JoinHandle {
     return mt_handle_spawn_fut(this, fut)
 }
 
-
-// Bridge fns installed into task Headers (see ct_handle counterpart).
 fn mt_schedule_bridge(hbits<u64>, nbits<u64>){
     mh<MtHandle> = hbits.(MtHandle)
     n<task.Notified> = nbits.(task.Notified)

@@ -30,13 +30,11 @@ mem MtShared {
     runtime.MutexInter* shutdown_cores_lock
     u64*              shutdown_cores       // raw bits of WorkerCore*; len == num_workers
     u32               shutdown_cores_len
-    i32               block_on_exclusive   // 1 while caller drains inject (V1)
     u64               block_on_root_bits   // RawTask* of block_on root; 0 = none
     Unparker*         block_on_unparker    // wakes block_on caller
     i32               shutting_down        // 1 after inject close; park loops exit
-    u64               worker_enter_fc      // mt_worker_enter_export bits
-    u64               worker_exit_fc       // mt_worker_exit_export bits
     i32               workers_alive        // OS threads still in worker_entry
+    ParkDriverHub*    park_hub             // shared driver TryLock for PARKED_DRIVER
 }
 
 // Allocate empty MtShared sized for num_workers. remotes are filled in
@@ -60,13 +58,11 @@ const MtShared::new(num_workers<u32>) MtShared {
     s.shutdown_cores_lock.init()
     s.shutdown_cores     = std.malloc(bytes)
     s.shutdown_cores_len = 0
-    s.block_on_exclusive = 0
     s.block_on_root_bits = 0
     s.block_on_unparker  = null
     s.shutting_down      = 0
-    s.worker_enter_fc    = 0
-    s.worker_exit_fc     = 0
     s.workers_alive      = 0
+    s.park_hub           = null
     return s
 }
 

@@ -39,7 +39,7 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
     )
 
     shared<MtShared> = handle.shared
-    park<Parker> = Parker::new(0)
+    park<Parker> = Parker::new(null)
     up<Unparker> = Unparker::new(park)
     shared.block_on_unparker = up
     root_bits<u64> = 0

@@ -40,6 +40,7 @@ mem MtWorker {
     MtHandle*    handle
     u32          worker_idx
     util.AtomicCell*  core      // single-slot u64 for WorkerCore* hand-off
+    u64          ctx_bits       // prebuilt RuntimeContext* (builder thread)
 }
 
 // Build a worker for the given index.
@@ -48,6 +49,7 @@ const MtWorker::new(handle<MtHandle>, worker_idx<u32>, core<WorkerCore>) MtWorke
     w.handle = handle
     w.worker_idx  = worker_idx
     w.core   = util.atomic_cell_new(core.(u64))
+    w.ctx_bits = 0
     return w
 }
 

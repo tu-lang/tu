@@ -8,10 +8,6 @@ use io
 use asyncio.task
 use asyncio.util as util
 
-// Fn-ptr signatures for RuntimeContext enter/exit installed by Builder.
-fn mt_enter_sig(sched_bits<u64>, wh_bits<u64>, drv_bits<u64>, rng_bits<u64>) (u64)
-fn mt_exit_sig(saved_bits<u64>) (i32)
-
 // Pack task pointer as future ctx.
 fn mt_task_ctx(t<task.RawTask>) u64 {
     return t.(u64)
@@ -125,11 +121,16 @@ fn worker_run(w<MtWorker>){
 }
 
 // Loop body takes WorkerCore as a parameter so member access is typed.
+// Mother: enter_runtime around the worker run loop. Context is prebuilt on
+// the builder thread — cross-package multi-arg fn-ptr enter SEGV'd on workers.
 fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     shared<MtShared> = w.handle.shared
-    // Worker RuntimeContext enter is deferred: mt_ctx MutexInter on clone()
-    // threads SEGV'd under N workers (see optimize debt). block_on caller
-    // still publishes Handle via runtime_enter_block_on.
+    saved_ctx<u64> = 0
+    if w.ctx_bits != 0 {
+        saved_ctx = mt_ctx_enter(w.ctx_bits)
+    }
+    // Bind core for future schedule_local; schedule still injects today.
+    mt_core_bind(core.(u64))
 
     loop {
         if shared.inject.is_closed() {
@@ -223,6 +224,11 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
 
     mt_pre_shutdown(w, core)
     mt_finalize_shutdown(w, core)
+
+    mt_core_unbind()
+    if saved_ctx != 0 {
+        mt_ctx_exit(saved_ctx)
+    }
 }
 
 // Last searcher leaving search: if inject still has work, wake one sleeper.
