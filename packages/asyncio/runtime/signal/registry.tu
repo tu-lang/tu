@@ -3,6 +3,7 @@
 // SignalDriver::new and looked up from the syscall handler.
 
 use std
+use runtime
 use asyncio.util
 use asyncio.sync as libsync
 
@@ -43,7 +44,7 @@ fn signal_globals_get_or_init() (i32, SignalGlobals) {
 
     g<SignalGlobals> = new SignalGlobals
     g.sfd = -1
-    g.events    = std.malloc(sizeof(u64) * NUM_SIGNALS.(u64))
+    g.events    = runtime.malloc(sizeof(u64) * NUM_SIGNALS.(u64), 0.(i8), 1.(i8))
     for i<i32> = 0 ; i < NUM_SIGNALS ; i += 1 {
         g.events[i] = 0
     }

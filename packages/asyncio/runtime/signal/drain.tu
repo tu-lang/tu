@@ -3,6 +3,7 @@
 
 use std
 use sys
+use runtime
 use asyncio.util as util
 
 SIGINFO_BYTES<u64> = 128
@@ -17,7 +18,7 @@ fn signal_driver_drain(drv<SignalDriver>) i32 {
     drain_fd<i32> = globals_sfd(glob_ref)
     if drain_fd < 0 { return 0 }
     nbytes<u64> = SIGINFO_BYTES
-    buf<u8*> = std.malloc(nbytes)
+    buf<u8*> = runtime.malloc(nbytes, 0.(i8), 1.(i8))
     if buf == null { return 0 }
     fired_any<i32> = 0
     loop {

@@ -4,6 +4,7 @@
 // by level, demoting entries until they reach level 0.
 
 use std
+use runtime
 
 NUM_LEVELS<i32>    = 6
 LEVEL_MULT<u64>    = 64
@@ -62,7 +63,7 @@ mem Wheel {
 const Wheel::new() Wheel {
     w<Wheel> = new Wheel
     w.elapsed = 0
-    arr<u64*> = std.malloc(sizeof(u64) * NUM_LEVELS.(u64))
+    arr<u64*> = runtime.malloc(sizeof(u64) * NUM_LEVELS.(u64), 0.(i8), 1.(i8))
     for i<i32> = 0 ; i < NUM_LEVELS ; i += 1 {
         lv<Level> = Level::new(i.(u32))
         arr[i] = lv.(u64)

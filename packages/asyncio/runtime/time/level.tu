@@ -3,6 +3,7 @@
 // TimerShared via the embedded Pointers.
 
 use std
+use runtime
 use asyncio.util
 
 LEVEL_SLOTS<i32> = 64
@@ -115,7 +116,7 @@ const Level::new(tier<u32>) Level {
     lv<Level> = new Level
     lv.tier     = tier
     lv.occupied = 0
-    arr<u64*> = std.malloc(sizeof(u64) * LEVEL_SLOTS.(u64))
+    arr<u64*> = runtime.malloc(sizeof(u64) * LEVEL_SLOTS.(u64), 0.(i8), 1.(i8))
     for i<i32> = 0 ; i < LEVEL_SLOTS ; i += 1 {
         el<EntryList> = EntryList::new()
         arr[i] = el.(u64)

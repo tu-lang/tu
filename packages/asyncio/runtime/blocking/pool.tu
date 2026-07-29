@@ -27,7 +27,7 @@ mem Shared {
 // Build empty Shared with the given capacity.
 const Shared::new(queue_cap<u32>) Shared {
     s<Shared> = new Shared
-    s.queue       = std.malloc(sizeof(u64) * queue_cap.(u64))
+    s.queue       = runtime.malloc(sizeof(u64) * queue_cap.(u64), 0.(i8), 1.(i8))
     s.queue_head  = 0
     s.queue_tail  = 0
     s.queue_cap   = queue_cap
