@@ -40,7 +40,7 @@ mem Events {
 }
 
 const Events::with_capacity(capacity<u64>) Events {
-	ptr_bits<u64> = std.malloc(KERNEL_EVENT_SIZE * capacity)
+	ptr_bits<u64> = runtime.malloc(KERNEL_EVENT_SIZE * capacity, 0.(i8), 1.(i8))
 	return new Events { store_bits: ptr_bits, count: 0, capacity_val: capacity }
 }
 
@@ -104,7 +104,7 @@ fn packed_write_u64(p_bits<u64>, v<u64>) {
 
 // Pack (flags, token) into a 12-byte heap buffer; returns pointer bits for epoll_ctl.
 fn pack_kernel_event(flags<u32>, token<u64>) u64 {
-	base_bits<u64> = std.malloc(KERNEL_EVENT_SIZE)
+	base_bits<u64> = runtime.malloc(KERNEL_EVENT_SIZE, 0.(i8), 1.(i8))
 	packed_write_u32(base_bits, flags)
 	packed_write_u64(base_bits + 4, token)
 	return base_bits

@@ -1,6 +1,7 @@
 use fmt
 use os
 use std
+use runtime
 
 fn offsetof(ptr1<i64> , ptr2<i64>){
 	return ptr2  - ptr1
@@ -48,11 +49,11 @@ fn test9(){
 	if sizeof(SizeProbe) != 16 os.die("sizeof SizeProbe")
 	if sizeof(Demo) != 8 os.die("sizeof Demo")
 
-	p<u64> = std.malloc(sizeof(u64) * n)
+	p<u64> = runtime.malloc(sizeof(u64) * n, 0.(i8), 1.(i8))
 	if p == 0 os.die("malloc sizeof u64 scale")
-	q<u64> = std.malloc(sizeof(SizeProbe) * 2)
+	q<u64> = runtime.malloc(sizeof(SizeProbe) * 2, 0.(i8), 1.(i8))
 	if q == 0 os.die("malloc sizeof mem scale")
-	r<u64> = std.malloc(sizeof(Demo) + sizeof(u32))
+	r<u64> = runtime.malloc(sizeof(Demo) + sizeof(u32), 0.(i8), 1.(i8))
 	if r == 0 os.die("malloc sizeof mixed add")
 
 	// Mem sizeof still works in the same function as primitive sizeof.
@@ -104,7 +105,7 @@ mem PointerFieldRoundTrip {
 // Guards against narrowing a 64-bit pointer through signed 32-bit codegen.
 fn test_pointer_field_roundtrip(){
 	fmt.println("test pointer field roundtrip")
-	raw<u64> = std.malloc(64)
+	raw<u64> = runtime.malloc(64, 0.(i8), 1.(i8))
 	if raw == 0 os.die("pointer field malloc failed")
 	p<u8*> = raw
 	h<PointerFieldRoundTrip> = new PointerFieldRoundTrip

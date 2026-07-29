@@ -9,6 +9,7 @@ use std
 use sys
 use string
 use io
+use runtime
 
 fn main(){
     fmt.println("test sys fs path")
@@ -83,7 +84,7 @@ fn main(){
     onb<i32> = 2048
     sys.fcntl(ufd, fcntl_cmd, onb)
     b<io.Buf> = io.NewBuf(64)
-    stor<u64> = std.malloc(128)
+    stor<u64> = runtime.malloc(128, 0.(i8), 1.(i8))
     addrlen<i32> = 128
     fl<i32> = 0
     nlen<u64> = 64
@@ -99,7 +100,7 @@ fn main(){
     // sockaddr_to_addr must accept kernel wire len (16), not Tu sizeof(SockaddrIn)=24.
     stor2_bits<u64> = sys.sockaddr_storage_new_raw()
     // Pack AF_INET sockaddr_in: family=2, port=34567 BE, 127.0.0.1
-    wire<u8*> = std.malloc(16)
+    wire<u8*> = runtime.malloc(16, 0.(i8), 1.(i8))
     i<i32> = 0
     while i < 16 {
         wire[i] = 0

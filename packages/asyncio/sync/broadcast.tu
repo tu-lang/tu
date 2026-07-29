@@ -15,7 +15,7 @@ mem Broadcast {
 
 const Broadcast::new(cap<u64>) Broadcast {
     b<Broadcast> = new Broadcast
-    b.slot_store = std.malloc(sizeof(i64) * cap)
+    b.slot_store = runtime.malloc(sizeof(i64) * cap, 0.(i8), 1.(i8))
     b.cap = cap
     b.tail = 0
     b.lapped = 0

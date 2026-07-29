@@ -1,3 +1,6 @@
+// Deprecated debug heap — not for application code.
+// Production allocation: runtime.malloc (mcache) or `new`. Keep this file
+// only to compare against mcache when hunting allocator bugs.
 use fmt
 use os
 
