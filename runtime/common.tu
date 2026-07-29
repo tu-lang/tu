@@ -68,11 +68,27 @@ TimeSpec::init(ns<i64>){
 fn type_sched_debug()
 fn type_core_start()
 
-// impl by asm
-fn osyield()
+// Asm sched_yield; OS threads that only spin here must still join GC STW.
+fn osyield_sys()
 fn procyield(cnt<i64>)
 fn futex(addr<u32*>,op<i32> ,val<u32>,ts<u64> ,addr2<u64>,val3<u32>)
 fn settls(tls<i64*>)
+
+// Yield to the OS; if GC is waiting and this Core is eligible, join STW.
+// Guards: must be CoreRun (not already CoreStop from nested STW),
+// locks == 0 (holding runtime locks → gcstopworld would deadlock on sched.lock),
+// mallocing == 0 (malloc path must not re-enter GC).
+fn osyield() {
+	c<Core> = core()
+	if c != null {
+		if sched.gcwaiting != 0 {
+			if c.status == CoreRun && c.locks == 0 && c.mallocing == 0 {
+				schedule()
+			}
+		}
+	}
+	osyield_sys()
+}
 fn ALIGNUP(x<i64> , a<i64>) { return ( x + (a - 1) ) & ( ~ (a - 1)) }
 fn bool2int(x<u8>){return x}
 fn sizeclass(sc<u8>){

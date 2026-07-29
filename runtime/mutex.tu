@@ -100,7 +100,7 @@ Sema::trylock(){
     }
 }
 Sema::lock(){
-    s<SemaWaiter> = std.malloc(sizeof(SemaWaiter))
+    s<SemaWaiter> = malloc(sizeof(SemaWaiter), 0.(i8), 1.(i8))
     if this.trylock() != Null return Null
     reduce<i32> = -1
 

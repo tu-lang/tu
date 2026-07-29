@@ -116,8 +116,8 @@ rsp1:
     jne rsp1
     ret
 
-.globl runtime_osyield
-runtime_osyield:
+.globl runtime_osyield_sys
+runtime_osyield_sys:
     mov $24 , %rax
     syscall
     ret

@@ -157,23 +157,34 @@ fn corestart(c<Core>){
 fn stopworld(){
     c<Core> = core()
 retry:
-    c.park.Sleep()
-    c.park.Clear()
-
-	if c.helpmark {
+	// Help before sleeping so a Wake that raced ahead of Sleep is not lost
+	// after Clear; also bail out once STW is finished.
+	if c.helpmark != 0 {
         dgc(*"follwer start marking")
         gcmarkhelper()
 		c.helpmark = 0
         dgc(*"follwer end marking")
 		goto retry
 	}
-    if c.helpsweep {
+    if c.helpsweep != 0 {
         dgc(*"follwer start sweeping")
         gcsweephelper()
         c.helpsweep = 0
         dgc(*"follwer end   sweeping")
         goto retry
     }
+	if sched.gcwaiting == 0 {
+		return
+	}
+    c.park.Sleep()
+    c.park.Clear()
+	// startSTW sets status back to CoreRun before waking us.
+	// If status is CoreRun, a new GC round may be starting — return
+	// so schedule() → gcstopworld() can re-register as CoreStop.
+	if c.status == CoreRun {
+		return
+	}
+	goto retry
 }
 fn gcstopworld(){
     c<Core> = core()
