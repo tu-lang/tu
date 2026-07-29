@@ -25,8 +25,10 @@ Parser::parseStatement()
             node = this.parseWhileStmt(false)
         }
         ast.RETURN: {
+            // Record return keyword line before scan(); next token may be on a later line.
+            ret_line<i32> = reader.line
             reader.scan()
-            node = this.parseReturnStmt()
+            node = this.parseReturnStmt(ret_line)
         }
         ast.BREAK: {
             reader.scan()
@@ -278,7 +280,7 @@ Parser::parseWhileStmt(dead) {
     this.ctx.destroy()
     return node
 }
-Parser::parseReturnStmt() {
+Parser::parseReturnStmt(ret_line<i32>) {
     reader<scanner.ScannerStatic> = this.scanner
     utils.debug("parser.Parser::parseReturnStmt()")
     node = new gen.ReturnStmt(this.line, this.column)
@@ -286,6 +288,19 @@ Parser::parseReturnStmt() {
     ret = [] 
     if this.currentFunc.isasync() 
         ret[] = new gen.VarExpr("",0,0)
+
+    // Bare return if the first return-expr token is on a later line than
+    // the return keyword. Same-line `return expr` / `return a,\n b` keep working
+    // (only the first expression's line is gated).
+    if reader.line > ret_line {
+        fc = this.currentFunc
+        this.check(fc != null)
+        if fc.mcount < std.len(ret)
+            fc.mcount = std.len(ret)
+        node.ret = ret
+        return node
+    }
+
     loop {
         retexpr = this.parseExpression(1)
         if retexpr != null{
