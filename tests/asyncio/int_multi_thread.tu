@@ -1,6 +1,5 @@
 // Integration test for multi_thread block_on (task 9.41).
-// 4 workers; Handle::current on worker tasks; sum=2.
-// Nested/batch/local-LIFO deferred (schedule_local flaky — optimize debt).
+// 4 workers; Handle::current; nested spawn uses schedule_local LIFO.
 
 use fmt
 use os
@@ -39,6 +38,27 @@ async mt_spawn_join_body() {
     return sum.(i64)
 }
 
+// Nested spawn: worker polls outer, spawn goes schedule_local LIFO.
+async mt_nested_inner() {
+    err<i32>, h<rt.Handle> = rt.Handle::current()
+    if err != 0 return 0.(i64)
+    jh<task.JoinHandle> = h.spawn(current_ok_fut())
+    v<i64> = jh.await
+    return v
+}
+
+fn nested_inner_fut() runtime.Future {
+    return mt_nested_inner()
+}
+
+async mt_nested_body() {
+    err<i32>, h<rt.Handle> = rt.Handle::current()
+    if err != 0 return err.(i64)
+    jh<task.JoinHandle> = h.spawn(nested_inner_fut())
+    v<i64> = jh.await
+    return v
+}
+
 fn int_multi_thread(){
     fmt.println("int_multi_thread test")
     b<rt.Builder> = rt.Builder::new_multi_thread()
@@ -50,6 +70,17 @@ fn int_multi_thread(){
     fmt.println("int_multi_thread passed")
 }
 
+fn int_multi_thread_nested(){
+    fmt.println("int_multi_thread_nested test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    err<i32>, val<i64> = rt.builder_block_on(b, mt_nested_body(), 0)
+    if err != 0 os.dief("nested block_on failed: %d", err)
+    if val.(i32) != 1 os.dief("expected nested 1, got %d", val.(i32))
+    fmt.println("int_multi_thread_nested passed")
+}
+
 fn main(){
     int_multi_thread()
+    int_multi_thread_nested()
 }

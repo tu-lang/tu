@@ -1,4 +1,6 @@
 use fmt
+use os
+use runtime
 
 mem Test {
 	i32 a,b,c
@@ -103,6 +105,53 @@ func test_struct_init_typeassert(){
 	if bits3 != bits2 os.die("struct init typeassert bits mismatch")
 	fmt.println("test struct init typeassert success")
 }
+
+// u64→mem cast + field write in api impl and package fn, under GC noise.
+api TaSch {
+	fn bump()
+}
+mem TaHolder {
+	i32 pad
+}
+mem TaCore {
+	i32 flag
+}
+TA_CORE_BITS<u64> = 0
+fn ta_pkg_bump() {
+	b<u64> = TA_CORE_BITS
+	c<TaCore> = b.(TaCore)
+	c.flag = c.flag + 1
+}
+impl TaSch for TaHolder {
+	fn bump() {
+		b<u64> = TA_CORE_BITS
+		c<TaCore> = b.(TaCore)
+		c.flag = c.flag + 1
+	}
+}
+func test_u64_mem_cast_api_impl(){
+	c<TaCore> = new TaCore
+	c.flag = 0
+	TA_CORE_BITS = c.(u64)
+	ta_pkg_bump()
+	h<TaHolder> = new TaHolder
+	h.pad = 0
+	s<TaSch> = h
+	s.bump()
+	if c.flag != 2 os.die("u64 mem cast before GC")
+	i<i32> = 0
+	while i < 50 {
+		p<u64*> = runtime.malloc(32.(u64), 0.(i8), 1.(i8))
+		p[0] = i.(u64)
+		i = i + 1
+	}
+	runtime.GC()
+	TA_CORE_BITS = c.(u64)
+	ta_pkg_bump()
+	s.bump()
+	if c.flag != 4 os.die("u64 mem cast after GC")
+	fmt.println("test u64 mem cast api impl success")
+}
 func main(){
 	test_funcall()
 	test_index()
@@ -110,4 +159,5 @@ func main(){
 	test_struct_member()
 	test_member_call()
 	test_struct_init_typeassert()
+	test_u64_mem_cast_api_impl()
 }
