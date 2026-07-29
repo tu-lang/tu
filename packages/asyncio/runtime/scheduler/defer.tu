@@ -2,7 +2,7 @@
 // RawTasks here; the worker drains into inject after the round finishes.
 // Single-threaded by construction.
 
-use std
+use runtime
 use asyncio.task
 
 INITIAL_CAP<i32> = 16
@@ -35,7 +35,8 @@ Defer::grow(){
         new_cap = this.cap * 2
     }
     nc<u64> = new_cap.(u64)
-    new_slots<u64*> = std.malloc(8 * nc)
+    // GC-scanned: slots hold RawTask* bits.
+    new_slots<u64*> = runtime.malloc(8 * nc, 0.(i8), 1.(i8))
     n<i32> = this.len
     if n > 0 {
         old<u64*> = this.slots

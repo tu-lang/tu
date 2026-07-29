@@ -46,9 +46,8 @@ fn mt_steal_work(w<MtWorker>, core<WorkerCore>) (i32, task.Notified) {
 }
 
 // Run one task via the harness. Must be called outside any worker lock.
-// Publishes &lifo_slot so spawn-during-poll can schedule_local (mother
-// with_current); writes go into the typed core field (GC-safe).
-// Wakes still use Schedule→inject.
+// WorkerCore is already bound via mt_core_bind for the loop lifetime;
+// spawn/schedule_local reads it through mt_core_current_bits.
 fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
     if core.is_searching == 1 {
         core.is_searching = 0
@@ -65,12 +64,7 @@ fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
     }
     raw<task.RawTask> = t.raw()
     ctx<u64> = mt_task_ctx(raw)
-    slotp<u64*> = &core.lifo_slot
-    ptr_bits<u64> = 0
-    ptr_bits = slotp
-    mt_poll_sched_enter(ptr_bits)
     task.harness_poll(raw, ctx)
-    mt_poll_sched_exit()
 }
 
 // Push the worker's Local FIFO back to inject so other workers can pick

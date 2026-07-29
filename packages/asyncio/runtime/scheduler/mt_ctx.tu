@@ -1,13 +1,12 @@
-// Per-OS-thread active RuntimeContext + poll-scoped lifo_slot address.
-// Mother with_current: while a worker polls, spawn may push LIFO.
-// Wake/Schedule stays inject — deferring wakes SEGV'd (optimize 2026-07-29h).
-// TLS holds &WorkerCore.lifo_slot (interior ptr), NOT RawTask* values —
-// RawTask* in unscanned TLS is GC-unsafe (SEGV under concurrent GC).
-// Never cast WorkerCore from TLS (SEGV; optimize 2026-07-29e).
+// Per-OS-thread active RuntimeContext + bound WorkerCore bits.
+// Mother with_current: while a worker holds the core, spawn may
+// schedule_local via mt_core_current_bits → typed WorkerCore.
+// Wake/Schedule stays inject — casting WorkerCore inside api Schedule
+// still SEGV's under load (optimize 2026-07-29e/j).
+// cores[] is runtime.malloc(noscan=0) so WorkerCore* bits stay GC roots.
 
 use runtime
 use std
-use std.atomic
 
 CTX_TID_CAP<i32> = 64
 
@@ -16,7 +15,6 @@ mem CtxTlsHub {
     u64* tids
     u64* ctxs
     u64* cores              // WorkerCore* bits while worker holds the core
-    u64* poll_lifo_ptrs     // &WorkerCore.lifo_slot as u64* bits during poll
 }
 
 CTX_HUB<CtxTlsHub> = null
@@ -36,16 +34,15 @@ fn ctx_hub_ensure() {
     h.lock = new runtime.MutexInter
     h.lock.init()
     n<u64> = CTX_TID_CAP.(u64)
+    // noscan=0: ctxs/cores hold heap pointer bits that must be scanned.
     h.tids = runtime.malloc(8 * n, 0.(i8), 1.(i8))
     h.ctxs = runtime.malloc(8 * n, 0.(i8), 1.(i8))
     h.cores = runtime.malloc(8 * n, 0.(i8), 1.(i8))
-    h.poll_lifo_ptrs = runtime.malloc(8 * n, 0.(i8), 1.(i8))
     i<i32> = 0
     while i < CTX_TID_CAP {
         h.tids[i] = 0
         h.ctxs[i] = 0
         h.cores[i] = 0
-        h.poll_lifo_ptrs[i] = 0
         i += 1
     }
     CTX_HUB = h
@@ -79,30 +76,13 @@ fn ctx_tid_claim(h<CtxTlsHub>, tid<u64>) i32 {
             h.tids[j] = tid
             h.ctxs[j] = 0
             h.cores[j] = 0
-            h.poll_lifo_ptrs[j] = 0
             return j
         }
         j += 1
     }
     h.tids[0] = tid
     h.cores[0] = 0
-    h.poll_lifo_ptrs[0] = 0
     return 0
-}
-
-fn ctx_tid_slot_lockfree(tid<u64>) i32 {
-    h<CtxTlsHub> = CTX_HUB
-    if h == null {
-        return -1
-    }
-    i<i32> = 0
-    while i < CTX_TID_CAP {
-        if h.tids[i] == tid {
-            return i
-        }
-        i += 1
-    }
-    return -1
 }
 
 // Saved slot layout matches asyncio.runtime.RtSavedSlot (u64 prev_bits).
@@ -132,7 +112,6 @@ fn mt_ctx_exit(saved_bits<u64>) {
     idx<i32> = saved.slot_idx
     if idx >= 0 && idx < CTX_TID_CAP {
         h.cores[idx] = 0
-        h.poll_lifo_ptrs[idx] = 0
         if saved.prev_bits == 0 {
             h.ctxs[idx] = 0
             h.tids[idx] = 0
@@ -178,11 +157,11 @@ fn mt_core_unbind() {
     idx<i32> = ctx_tid_find(h, tid)
     if idx >= 0 {
         h.cores[idx] = 0
-        h.poll_lifo_ptrs[idx] = 0
     }
     h.lock.unlock()
 }
 
+// Lock-free: WorkerCore* bits for this tid, or 0.
 fn mt_core_current_bits() u64 {
     h<CtxTlsHub> = CTX_HUB
     if h == null {
@@ -197,65 +176,4 @@ fn mt_core_current_bits() u64 {
         i += 1
     }
     return 0
-}
-
-// ---- poll-scoped lifo_slot address (mother with_current while polling) ----
-
-// Publish &core.lifo_slot for spawn_local this poll only.
-// ptr_bits is u64* bits from &WorkerCore.lifo_slot (typed core in run_task).
-fn mt_poll_sched_enter(ptr_bits<u64>) {
-    ctx_hub_ensure()
-    h<CtxTlsHub> = CTX_HUB
-    tid<u64> = std.gettid()
-    idx<i32> = ctx_tid_slot_lockfree(tid)
-    if idx < 0 {
-        h.lock.lock()
-        idx = ctx_tid_claim(h, tid)
-        h.lock.unlock()
-    }
-    if idx >= 0 && idx < CTX_TID_CAP {
-        h.poll_lifo_ptrs[idx] = ptr_bits
-    }
-}
-
-fn mt_poll_sched_exit() {
-    h<CtxTlsHub> = CTX_HUB
-    if h == null {
-        return
-    }
-    tid<u64> = std.gettid()
-    idx<i32> = ctx_tid_slot_lockfree(tid)
-    if idx >= 0 {
-        h.poll_lifo_ptrs[idx] = 0
-    }
-}
-
-// &lifo_slot bits if inside run_task, else 0.
-fn mt_poll_lifo_ptr_bits() u64 {
-    h<CtxTlsHub> = CTX_HUB
-    if h == null {
-        return 0
-    }
-    tid<u64> = std.gettid()
-    i<i32> = 0
-    while i < CTX_TID_CAP {
-        if h.tids[i] == tid {
-            return h.poll_lifo_ptrs[i]
-        }
-        i += 1
-    }
-    return 0
-}
-
-// Mother LIFO take+set via interior pointer. Returns prev RawTask* bits.
-fn mt_poll_lifo_swap(new_bits<u64>) u64 {
-    ptr_bits<u64> = mt_poll_lifo_ptr_bits()
-    if ptr_bits == 0 {
-        return 0
-    }
-    slotp<u64*> = null
-    slotp = ptr_bits
-    prev<u64> = atomic.load64(slotp)
-    atomic.store64(slotp, new_bits)
-    return prev
 }

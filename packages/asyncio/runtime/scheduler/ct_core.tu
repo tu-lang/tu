@@ -2,7 +2,7 @@
 // RawTask raw bits (u64) so the local FIFO matches the steering ban on
 // double-pointer types; entries are cast back via slot.(RawTask).
 
-use std
+use runtime
 use io
 use asyncio.task
 
@@ -27,7 +27,8 @@ fn ct_core_new(driver_ptr<u64>, global_interval<u32>) Core {
     c.ring_cap = INITIAL_CAPACITY
     tc<u32> = c.ring_cap
     cap<u64> = tc.(u64)
-    c.ring_slots     = std.malloc(8 * cap)
+    // GC-scanned: slots hold RawTask* bits.
+    c.ring_slots     = runtime.malloc(8 * cap, 0.(i8), 1.(i8))
     c.ring_head = 0
     c.ring_tail = 0
     c.tick       = 0
@@ -53,7 +54,8 @@ Core::has_local() i32 {
 Core::grow(){
     new_cap<u32> = this.ring_cap * 2
     nc<u64> = new_cap.(u64)
-    new_buf<u64*> = std.malloc(8 * nc)
+    // GC-scanned: slots hold RawTask* bits.
+    new_buf<u64*> = runtime.malloc(8 * nc, 0.(i8), 1.(i8))
     n<u32> = (this.ring_tail - this.ring_head)
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (this.ring_head + i) & (this.ring_cap - 1)

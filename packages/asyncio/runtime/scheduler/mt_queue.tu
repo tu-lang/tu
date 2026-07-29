@@ -4,8 +4,8 @@
 // owner pops from the real half independently.
 // LOCAL_QUEUE_CAPACITY is fixed at 256.
 
-use std
 use std.atomic
+use runtime
 use io
 use asyncio.task
 
@@ -52,7 +52,8 @@ const QueueInner::new() QueueInner {
     q<QueueInner> = new QueueInner
     q.head   = 0
     q.tail   = 0
-    q.buffer = std.malloc(8 * LOCAL_QUEUE_CAPACITY.(u64))
+    // GC-scanned: slots hold RawTask* bits.
+    q.buffer = runtime.malloc(8 * LOCAL_QUEUE_CAPACITY.(u64), 0.(i8), 1.(i8))
     return q
 }
 

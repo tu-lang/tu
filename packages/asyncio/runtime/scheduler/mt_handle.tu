@@ -25,20 +25,24 @@ const MtHandle::new(shared<MtShared>) MtHandle {
     return h
 }
 
-// Spawn-during-poll schedule_local (mother Handle::schedule_local).
-// LIFO via interior &lifo_slot (atomic); spilled prev → inject (Local from
-// TLS cast SEGV'd). Spawn path always is_yield=0.
-fn mt_schedule_local(shared<MtShared>, notif<task.Notified>, is_yield<i32>) {
+// Push onto this worker's LIFO / Local (mother schedule_local).
+// is_yield != 0 forces FIFO push (no LIFO).
+// Caller must pass a typed WorkerCore (from stack / current_bits after GC-scanned bind).
+fn mt_schedule_local(core<WorkerCore>, shared<MtShared>, notif<task.Notified>, is_yield<i32>) {
     should_notify<i32> = 0
-    if is_yield != 0 {
-        shared.inject.push(notif)
+    if is_yield != 0 || core.lifo_enabled == 0 {
+        core.run_queue.push_back_or_overflow(notif, shared.inject)
         should_notify = 1
     } else {
-        prev<u64> = mt_poll_lifo_swap(notif.raw().(u64))
+        prev<u64> = core.lifo_slot
         if prev != 0 {
             should_notify = 1
-            shared.inject.push(task.notified_from_raw(prev.(task.RawTask)))
+            core.run_queue.push_back_or_overflow(
+                task.notified_from_raw(prev.(task.RawTask)),
+                shared.inject
+            )
         }
+        core.lifo_slot = notif.raw().(u64)
     }
     // Mother: notify only when work was spilled / FIFO push. Same-worker LIFO
     // with empty prev does not wake peers — this worker runs lifo next.
@@ -69,27 +73,39 @@ fn mt_schedule_remote(shared<MtShared>, notif<task.Notified>) {
     }
 }
 
-// Schedule a Notified task. Workers push local / LIFO; foreign callers
-// inject + wake. block_on root wake only unparks the caller.
+// Prefer schedule_local when this OS thread holds a WorkerCore
+// (mother with_current). Else inject.
+// allow_local=0 forces inject (wake path — local wake raised SEGV under load).
+fn mt_schedule_any(h<MtHandle>, notif<task.Notified>, is_yield<i32>, allow_local<i32>) {
+    raw_bits<u64> = notif.raw().(u64)
+
+    // block_on root wake: park.unpark only (do not inject).
+    if h.shared.block_on_root_bits != 0 {
+        if raw_bits == h.shared.block_on_root_bits {
+            up0<Unparker> = h.shared.block_on_unparker
+            if up0 != null {
+                up0.unpark()
+            }
+            return
+        }
+    }
+
+    if allow_local != 0 {
+        core_bits<u64> = mt_core_current_bits()
+        if core_bits != 0 {
+            core<WorkerCore> = core_bits.(WorkerCore)
+            mt_schedule_local(core, h.shared, notif, is_yield)
+            return
+        }
+    }
+    mt_schedule_remote(h.shared, notif)
+}
+
+// Schedule a Notified task. Wakes inject (allow_local=0); spawn uses local.
 impl task.Schedule for MtHandle {
     fn schedule(t){
         notif<task.Notified> = t
-        raw_bits<u64> = notif.raw().(u64)
-
-        // block_on root wake: park.unpark only (do not inject).
-        if this.shared.block_on_root_bits != 0 {
-            if raw_bits == this.shared.block_on_root_bits {
-                up0<Unparker> = this.shared.block_on_unparker
-                if up0 != null {
-                    up0.unpark()
-                }
-                return
-            }
-        }
-
-        // Wakes / remote: inject. Spawn-during-poll uses mt_spawn_schedule
-        // (schedule_local) — never cast WorkerCore inside this api method.
-        mt_schedule_remote(this.shared, notif)
+        mt_schedule_any(this, notif, 0, 0)
     }
 
     fn release(raw){
@@ -133,15 +149,9 @@ fn mt_handle_spawn_raw(bits<u64>, fut) task.JoinHandle {
     return mt_handle_spawn_fut(mh, fut)
 }
 
-// Enqueue a freshly spawned Notified.
-// If this OS thread is inside run_task (poll-scoped &lifo_slot), mother
-// schedule_local; otherwise inject (block_on thread / foreign).
+// Enqueue a freshly spawned Notified (local when worker holds a core).
 fn mt_spawn_schedule(h<MtHandle>, notif<task.Notified>) {
-    if mt_poll_lifo_ptr_bits() != 0 {
-        mt_schedule_local(h.shared, notif, 0)
-        return
-    }
-    h.schedule(notif)
+    mt_schedule_any(h, notif, 0, 1)
 }
 
 // Package-level spawn entry (avoids mh.spawn parser trap).
@@ -171,7 +181,8 @@ MtHandle::spawn(fut) task.JoinHandle {
 fn mt_schedule_bridge(hbits<u64>, nbits<u64>){
     mh<MtHandle> = hbits.(MtHandle)
     n<task.Notified> = nbits.(task.Notified)
-    mh.schedule(n)
+    // Wake path: inject only. Local wake still raises SEGV under load.
+    mt_schedule_any(mh, n, 0, 0)
 }
 
 fn mt_release_bridge(hbits<u64>, rbits<u64>){

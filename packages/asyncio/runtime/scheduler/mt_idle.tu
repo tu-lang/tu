@@ -32,7 +32,8 @@ fn idle_new(num<u32>) (Idle, IdleSynced) {
 
     s<IdleSynced> = new IdleSynced
     nc<u64> = num.(u64)
-    s.sleepers     = std.malloc(4 * nc)
+    // Worker indices only (not GC pointers); noscan=1.
+    s.sleepers     = runtime.malloc(4 * nc, 1.(i8), 1.(i8))
     s.sleepers_len = 0
     s.sleepers_cap = num
     return i, s
