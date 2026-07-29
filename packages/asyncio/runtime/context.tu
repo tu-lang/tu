@@ -60,9 +60,14 @@ fn context_driver_handle(rc<RuntimeContext>) DriverHandle {
     return rc.drv_handle()
 }
 
-// Worker loop enter export (Builder stores fn ptr bits).
-fn mt_worker_enter_export(sched_bits<u64>, wh_bits<u64>, drv_bits<u64>, rng_bits<u64>) u64 {
-    rng<util.FastRand> = rng_bits.(util.FastRand)
+// Build RuntimeContext for a worker on the builder thread (no enter yet).
+// Workers call mt_ctx_enter(ctx_bits) directly — cross-package multi-arg
+// fn-ptr enter from clone() threads SEGV'd under current codegen.
+fn mt_worker_ctx_prebuild(sched_bits<u64>, wh_bits<u64>, drv_bits<u64>, rng_bits<u64>) u64 {
+    rng<util.FastRand> = null
+    if rng_bits != 0 {
+        rng = rng_bits.(util.FastRand)
+    }
     ctx<RuntimeContext> = RuntimeContext::new(
         sched_bits,
         wh_bits,
@@ -70,5 +75,5 @@ fn mt_worker_enter_export(sched_bits<u64>, wh_bits<u64>, drv_bits<u64>, rng_bits
         rng,
         ENTER_RUNTIME
     )
-    return rtsched.mt_ctx_enter(ctx.(u64))
+    return ctx.(u64)
 }

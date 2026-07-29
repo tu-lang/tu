@@ -181,14 +181,21 @@ fn build_multi_thread(b<Builder>) Runtime {
     spawner<rtblk.Spawner>   = rtblk.Spawner::new(pool)
 
     shared<sched.MtShared>   = sched.MtShared::new(b.worker_threads)
-    shared.worker_enter_fc   = mt_worker_enter_export.(u64)
-    shared.worker_exit_fc    = scheduler.mt_worker_exit_export.(u64)
     handle<sched.MtHandle>   = sched.MtHandle::new(shared)
     handle.driver_handle    = drv_h.(u64)
     handle.blocking_spawner = spawner.(u64)
 
     weak<Handle> = Handle::new(handle.(u64), KIND_MULTI_THREAD, drv_h, spawner.(u64))
     handle.rt_handle = weak.(u64)
+
+    // Shared driver TryLock for PARKED_DRIVER (mother park Shared).
+    if drv != null && drv_h != null {
+        shared.park_hub = sched.ParkDriverHub::new(
+            drv.(u64),
+            drv_h.(u64),
+            drv_h.ioh_bits()
+        )
+    }
 
     if b.worker_threads > 0 {
         // Init hubs on the builder thread before any clone() worker runs.
@@ -197,10 +204,17 @@ fn build_multi_thread(b<Builder>) Runtime {
         for i<u32> = 0 ; i < b.worker_threads ; i += 1 {
             steal_a<sched.Steal>, local_b<sched.Local> = sched.queue_local()
             rng<util.FastRand>     = util.FastRand::new(0xdeadbeef + i.(u64))
-            park<sched.Parker>      = sched.Parker::new(drv_h.(u64))
+            park<sched.Parker>      = sched.Parker::new(shared.park_hub)
             unparker<sched.Unparker> = sched.Unparker::new(park)
             core<sched.WorkerCore>  = sched.WorkerCore::new(local_b, park, rng, b.global_queue_interval)
             worker<sched.MtWorker>  = sched.MtWorker::new(handle, i, core)
+            // Prebuild RuntimeContext here; worker only mt_ctx_enter(bits).
+            worker.ctx_bits = mt_worker_ctx_prebuild(
+                handle.(u64),
+                weak.(u64),
+                drv_h.(u64),
+                rng.(u64)
+            )
 
             r<sched.Remote> = new sched.Remote
             r.steal_end = steal_a
