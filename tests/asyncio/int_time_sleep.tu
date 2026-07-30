@@ -1,4 +1,5 @@
 // Integration test: asyncio coroutine Sleep (TimeDriver park wake).
+// Includes multi_thread + enable_time to exercise PARKED_DRIVER.
 
 use fmt
 use os
@@ -63,9 +64,43 @@ fn run_sleep_twice() {
     }
 }
 
+fn run_sleep_mt() {
+    fmt.println("sleep_mt test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_time()
+    rerr<i32>, result<i64> = rt.builder_block_on(b, sleep_once_body(), 0)
+    if rerr != 0 {
+        os.dief("sleep_mt block_on failed: %d", rerr)
+    }
+    ri<i32> = result
+    if ri != io.Ok {
+        os.dief("sleep_mt body failed: %d", ri)
+    }
+    fmt.println("sleep_mt passed")
+}
+
+fn run_sleep_mt_all() {
+    fmt.println("sleep_mt_all test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    rerr<i32>, result<i64> = rt.builder_block_on(b, sleep_once_body(), 0)
+    if rerr != 0 {
+        os.dief("sleep_mt_all block_on failed: %d", rerr)
+    }
+    ri<i32> = result
+    if ri != io.Ok {
+        os.dief("sleep_mt_all body failed: %d", ri)
+    }
+    fmt.println("sleep_mt_all passed")
+}
+
 fn int_time_sleep() {
     run_sleep_once()
     run_sleep_twice()
+    run_sleep_mt()
+    run_sleep_mt_all()
     fmt.println("int_time_sleep passed")
 }
 

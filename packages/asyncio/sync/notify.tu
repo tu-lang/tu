@@ -134,7 +134,7 @@ Notified::init(owner_notify<Notify>){
 // WAITING checks the wake flag; DONE re-poll is a logic error.
 Notified::poll(ctx){
     par<Notify> = this.owner_notify
-    // Harness Future::poll does not forward ctx; always prefer ACTIVE_POLL_CTX.
+    // Harness Future::poll does not forward ctx; always prefer per-thread poll ctx.
     // Passing a literal 0 into poll makes ctx.(u64) a dyn-int bit pattern
     // (non-zero garbage), which then crashes wake_by_ref on life_st().
     packed<u64> = task.resolve_poll_ctx(0)
@@ -211,7 +211,7 @@ fn notified_from_bits(bits<u64>) Notified {
 }
 
 // Cross-pkg poll — foreign packages must not member-call Notified::poll
-// (codegen null-dispatch → SIGSEGV). Uses ACTIVE_POLL_CTX like the design.
+// (codegen null-dispatch → SIGSEGV). Uses per-thread poll ctx like the design.
 fn notified_poll_bits(nf_bits<u64>) i32 {
     if nf_bits == 0 {
         return runtime.PollPending

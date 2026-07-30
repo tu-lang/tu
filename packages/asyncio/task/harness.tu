@@ -4,19 +4,18 @@
 
 use runtime
 
-// Dynstackcall Future::poll() does
-// not forward ctx, so the harness publishes the RawTask* waker here for
-// ScheduledIo / sync waiters to register (see resolve_poll_ctx).
-ACTIVE_POLL_CTX<u64> = 0
-
 // Prefer the harness-published task waker when the poll arg was null-padded.
+// Per-Core slot (poll_ctx.tu) — process-global ACTIVE_POLL_CTX races under MT.
 fn resolve_poll_ctx(ctx<u64>) u64 {
-    if ACTIVE_POLL_CTX != 0 return ACTIVE_POLL_CTX
+    active<u64> = poll_ctx_get()
+    if active != 0 {
+        return active
+    }
     return ctx
 }
 
 fn active_poll_ctx() u64 {
-    return ACTIVE_POLL_CTX
+    return poll_ctx_get()
 }
 
 // Signature aliases used to cast the u64 vtable slots back to callables.
@@ -56,14 +55,13 @@ RawTask::harness_poll(ctx<u64>){
         return
     }
     // Future::poll dynstackcall sets up multi-return; passing ctx as an
-    // arg corrupts that ABI. The design still has a Context waker for the
-    // task — expose it via ACTIVE_POLL_CTX for IO registration.
+    // arg corrupts that ABI. Publish per-Core so MT workers do not clobber
+    // each other (global ACTIVE_POLL_CTX caused hang via wrong join waker).
     // Stage must be RUNNING for store_output's CAS (IDLE->FINISHED is rejected).
     this.task_cell.force_stage(STAGE_RUNNING)
-    prev_ctx<u64> = ACTIVE_POLL_CTX
-    ACTIVE_POLL_CTX = ctx
+    prev_ctx<u64> = poll_ctx_set(ctx)
     ready<i32>, output<i64> = f.poll()
-    ACTIVE_POLL_CTX = prev_ctx
+    poll_ctx_set(prev_ctx)
 
     if ready == runtime.PollPending {
         ti<i32> = life_st.transition_to_idle()

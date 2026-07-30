@@ -12,7 +12,7 @@ use asyncio.util as util
 // Poll `f` one round. Must use Future::poll dynstackcall (same as
 // task.harness_poll) — calling VObjFunc.entry(f, ctx) directly corrupts
 // the multi-return ABI. `ctx` is unused here; the harness publishes the
-// task waker via task.ACTIVE_POLL_CTX for leaves that need it.
+// task waker via task.poll_ctx (per-OS-thread) for leaves that need it.
 fn poll_child(f<runtime.Future>, ctx<u64>) (i64, i64) {
     ready_i<i64> = 0
     val_i<i64> = 0

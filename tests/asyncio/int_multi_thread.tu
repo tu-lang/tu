@@ -1,5 +1,6 @@
 // Integration test for multi_thread block_on (task 9.41).
-// 4 workers; Handle::current; nested spawn uses schedule_local LIFO.
+// 4 workers; Handle::current; nested spawn / wake use schedule_local.
+// Fan-out stresses wake-local LIFO + steal across workers.
 
 use fmt
 use os
@@ -59,6 +60,35 @@ async mt_nested_body() {
     return v
 }
 
+// Burst spawn then join: children race across workers (steal); each join
+// completion wakes via Schedule → wake-side schedule_local.
+async mt_fanout_body() {
+    err<i32>, h<rt.Handle> = rt.Handle::current()
+    if err != 0 return err.(i64)
+    sum<i64> = 0
+    wave<i32> = 0
+    while wave < 4 {
+        j0<task.JoinHandle> = h.spawn(current_ok_fut())
+        j1<task.JoinHandle> = h.spawn(current_ok_fut())
+        j2<task.JoinHandle> = h.spawn(current_ok_fut())
+        j3<task.JoinHandle> = h.spawn(current_ok_fut())
+        j4<task.JoinHandle> = h.spawn(current_ok_fut())
+        j5<task.JoinHandle> = h.spawn(current_ok_fut())
+        j6<task.JoinHandle> = h.spawn(current_ok_fut())
+        j7<task.JoinHandle> = h.spawn(current_ok_fut())
+        sum = sum + j0.await
+        sum = sum + j1.await
+        sum = sum + j2.await
+        sum = sum + j3.await
+        sum = sum + j4.await
+        sum = sum + j5.await
+        sum = sum + j6.await
+        sum = sum + j7.await
+        wave += 1
+    }
+    return sum
+}
+
 fn int_multi_thread(){
     fmt.println("int_multi_thread test")
     b<rt.Builder> = rt.Builder::new_multi_thread()
@@ -80,7 +110,18 @@ fn int_multi_thread_nested(){
     fmt.println("int_multi_thread_nested passed")
 }
 
+fn int_multi_thread_fanout(){
+    fmt.println("int_multi_thread_fanout test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    err<i32>, val<i64> = rt.builder_block_on(b, mt_fanout_body(), 0)
+    if err != 0 os.dief("fanout block_on failed: %d", err)
+    if val.(i32) != 32 os.dief("expected fanout sum 32, got %d", val.(i32))
+    fmt.println("int_multi_thread_fanout passed")
+}
+
 fn main(){
     int_multi_thread()
     int_multi_thread_nested()
+    int_multi_thread_fanout()
 }
