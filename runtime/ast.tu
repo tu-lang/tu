@@ -10,6 +10,7 @@ THREAD_TLS_SIZE<i64>   = 1024
 // clone
 SIGCHLD<i64>      		  = 0x11
 CLONE_CHILD_CLEARTID<i64> = 0x00200000
+CLONE_CHILD_SETTID<i64>   = 0x01000000
 CLONE_VM<i64>             = 0x100
 CLONE_FS<i64>             = 0x200
 CLONE_FILES<i64>          = 0x400

@@ -1,10 +1,12 @@
 use std
 use runtime
+use std.atomic
 
-// impl by asm
+// impl by asm — see syscall/sys_runtime_amd64.s
+// Args: flags, stack, child_tid*, fn, arg, tls (userspace settls; kernel tls unused).
 fn core()
 fn setcore()
-fn clone(cloneflags<u64> , newsp<u64> , tls<u64> , funcp<u64> , args<u64> , args2<u64>)
+fn clone(cloneflags<u64> , newsp<u64> , ctid<u64> , funcp<u64> , args<u64> , tls<u64>)
 
 enum {
 	CoreRun ,
@@ -26,6 +28,8 @@ mem Core {
 	u64*    cfn
 	u64* 	stk,stk_hi
 	u64* 	tls,tls_hi
+	u32     clear_tid           // SETTID/CLEARTID futex word; non-zero while alive, 0 after exit
+	i32     join_tracked        // legacy counter path; prefer core_join on clear_tid
 }
 
 mem Sched {
@@ -61,6 +65,10 @@ Sched::addcore(c<Core>){
 	sched.lock.unlock()
 }
 Sched::rmcore(c<Core>){  
+	// Serialize with Gc::start: GC walks allcores without sched.lock while
+	// holding worldSeam (stopSTW / mark*). Unlink under the same seam so a
+	// concurrent walker cannot follow a freed link (SEGV on newcore exit).
+	gc.worldSeam.lock()
 	sched.lock.lock()
 	if c == sched.allcores {
 		sched.allcores = c.link
@@ -78,6 +86,45 @@ Sched::rmcore(c<Core>){
 	}
 	atomic.xadd(&sched.cores,-1.(i8))
 	sched.lock.unlock()
+	gc.worldSeam.unlock()
+}
+
+// Join counter for OS threads that opt in via core_join_inc (legacy).
+// Prefer core_join(core_bits) on clear_tid for true OS-thread join.
+CORE_JOIN_CNT<i32> = 0
+
+fn core_join_reset() {
+	CORE_JOIN_CNT = 0
+}
+
+fn core_join_inc() {
+	c<Core> = core()
+	// Do not compare mem to null — unreliable; worker_entry always has a Core.
+	c.join_tracked = 1
+	atomic.xadd(&CORE_JOIN_CNT, 1.(u32))
+}
+
+fn core_join_count() i32 {
+	return CORE_JOIN_CNT
+}
+
+// Block until the OS thread for this Core has exited (CLEARTID zeros clear_tid).
+// clear_tid is seeded non-zero before clone so a join racing SETTID never
+// mistakes "not started yet" for "already exited".
+fn core_join(core_bits<u64>) {
+	if core_bits == 0 {
+		return
+	}
+	c<Core> = core_bits.(Core)
+	addr<u32*> = &c.clear_tid
+	loop {
+		v<u32> = atomic.load(addr)
+		if v == 0 {
+			return
+		}
+		// Kernel CLEARTID wakes with FUTEX_WAKE (not PRIVATE); match that op.
+		futex(addr, FUTEX_WAIT, v, Null, Null, Null)
+	}
 }
 
 fn type_unlock_callback(lk<MutexInter>)
@@ -95,29 +142,34 @@ fn parkunlock(lk<MutexInter>){
 	park(unlock_callback.(i64),lk)
 }
 
-func newcore(fc<u64>){
+// Spawn an OS thread running fc; returns Core* bits for core_join.
+// Callers that never join may ignore the return (fire-and-forget).
+func newcore(fc<u64>) u64 {
 	c<Core> = new Core()
     c.init()
 	c.cfn = fc
+	// Non-zero before clone: core_join must not see 0 until CLEARTID on exit.
+	// SETTID overwrites with the real tid; CLEARTID zeros on thread exit.
+	c.clear_tid = 0xFFFFFFFF
 	c.stk = malloc(THREAD_STACK_SIZE,1.(i8) , 1.(i8))
     c.stk_hi = c.stk + THREAD_STACK_SIZE
     c.tls = malloc(THREAD_TLS_SIZE,1.(i8),1.(i8))
     c.tls_hi = c.tls + THREAD_TLS_SIZE
 
-
-    cid<i32> = newosthread(corestart.(u64),c,c.stk_hi,c.tls_hi)
+    cid<i32> = newosthread(corestart.(u64),c,c.stk_hi,c.tls_hi,&c.clear_tid)
 
 	if cid <= 0
         dief("pthread create faild %d".(i8),cid)
+	return c.(u64)
 }
 
-func newosthread(fc<u64> , arg<i64*> , stk<i64*>, tls<i64*>){
+func newosthread(fc<u64> , arg<i64*> , stk<i64*>, tls<i64*>, ctid<u32*>){
 	cloneFlags<u32> = 
-        SIGCHLD  | CLONE_CHILD_CLEARTID |
+        SIGCHLD  | CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID |
         CLONE_VM | CLONE_FS | 
 		CLONE_FILES | CLONE_SIGHAND | 
 		CLONE_SYSVSEM | CLONE_THREAD 
-	newpid<i32> = clone(cloneFlags, stk ,tls,fc,arg,0.(i8))
+	newpid<i32> = clone(cloneFlags, stk ,ctid.(u64),fc,arg,tls.(u64))
 
 	if newpid < 0 {
 		debug("failed to create new OS thread ( errno=%d)\n".(i8),newpid)
@@ -135,6 +187,9 @@ Core::init(){
     this.status = CoreStop
     this.helpmark = 0
     this.helpsweep = 0
+    this.join_tracked = 0
+    // Seeded again in newcore before clone; 0 here only for zeroed Core layout.
+    this.clear_tid = 0
 }
 
 fn corestart(c<Core>){
@@ -151,6 +206,14 @@ fn corestart(c<Core>){
     startfn()
     schedule()
     sched.rmcore(c)
+    // After rmcore: safe for Runtime teardown. Only cores that opted in
+    // via core_join_inc decrement CORE_JOIN_CNT.
+    if c.join_tracked == 1 {
+        c.join_tracked = 0
+        // Explicit u32 all-bits: -1.(i8) zero-extends wrong; a-b in arg may miscompile.
+        dec<u32> = 4294967295
+        atomic.xadd(&CORE_JOIN_CNT, dec)
+    }
     debug(*"thread exit done")
     return Null
 }

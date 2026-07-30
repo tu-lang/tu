@@ -19,6 +19,8 @@ func segsegvrecv()
 func execve(filename<i8*>,argv<i8*>,envp<i8*>)
 
 func sigreturn()
+# Raw PC of std_sigreturn for sa_restorer (not a Tu func descriptor).
+func sigreturn_pc()
 //sig %rdi
 //act %rsi
 //oact %rdx

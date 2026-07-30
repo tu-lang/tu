@@ -75,11 +75,18 @@ runtime_settls:
 runtime_settls_ret:
     retq   
 
+# clone(flags, stack, ctid, fn, arg, tls)
+# SysV args: rdi=flags rsi=stack rdx=ctid rcx=fn r8=arg r9=tls
+# Kernel clone: rdi=flags rsi=stack rdx=parent_tid r10=child_tid r8=tls
+# Tu fn args arrive on the stack — child must push arg before call *fn.
 .globl runtime_clone
-runtime_clone: 
-    mov    %rdx , %r12
+runtime_clone:
     mov    %rcx , %r13
     mov    %r8 , %r14
+    mov    %r9 , %r12
+    mov    %rdx , %r10
+    xor    %rdx , %rdx
+    xor    %r8 , %r8
     mov    $56, %rax
     syscall
     cmp    $0x0,%rax

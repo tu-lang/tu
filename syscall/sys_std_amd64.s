@@ -93,6 +93,13 @@ std_sigreturn:
      syscall
      retq
 
+# Return the raw PC of std_sigreturn for sigaction.sa_restorer.
+# Tu `std.sigreturn.(u64)` yields a heap func descriptor, not this address.
+.globl std_sigreturn_pc
+std_sigreturn_pc:
+     lea std_sigreturn(%rip), %rax
+     retq
+
 .globl std_rt_sigaction
 std_rt_sigaction:
      mov %rcx, %r10

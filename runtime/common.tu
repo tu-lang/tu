@@ -173,6 +173,16 @@ fn dief(str<i8*>,args<i64*>...){
 	std.die(-1.(i8))
 }
 
+// Unique id of the calling OS thread's Core, or -1 if unset.
+// Used by asyncio task poll_ctx TLS without importing Core across packages.
+fn core_cid() i32 {
+	c<Core> = core()
+	if c == null {
+		return -1
+	}
+	return c.cid
+}
+
 fn tracef(str<i8*>,args<i64>...){
 	if enable_trace {
 		fmt.vfprintf(std.STDOUT,str,args)
