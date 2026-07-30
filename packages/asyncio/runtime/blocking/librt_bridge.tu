@@ -9,9 +9,13 @@
 
 use runtime
 
-// Spawn an OS thread for entry.
-fn librt_newcore(entry<u64>) {
-    runtime.newcore(entry)
+// Spawn an OS thread for entry; returns runtime.Core* bits for librt_core_join.
+fn librt_newcore(entry<u64>) u64 {
+    return runtime.newcore(entry)
+}
+
+fn librt_core_join(core_bits<u64>) {
+    runtime.core_join(core_bits)
 }
 
 // Note helpers as raw u64 bits.

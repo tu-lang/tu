@@ -107,6 +107,15 @@ fn driver_park_bits(drv_bits<u64>, handle_bits<u64>) i32 {
     return drv.park(h)
 }
 
+// Cross-pkg bounded park; millis avoids cross-pkg Duration arg traps.
+fn driver_park_timeout_ms_bits(drv_bits<u64>, handle_bits<u64>, ms<u64>) i32 {
+    if drv_bits == 0 || handle_bits == 0 return -1
+    drv<Driver> = drv_bits
+    h<DriverHandle> = handle_bits
+    d<sys.Duration> = sys.Duration::from_millis(ms)
+    return drv.park_timeout(h, d)
+}
+
 // Park for at most d. Time wheel narrows the wait if its next deadline
 // is closer; IoDriver::turn handles signal events via TOKEN_SIGNAL.
 // Io.park then process().
@@ -132,6 +141,7 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
         err = this.time_drv.park_internal(handle.time_handle, ms, handle.ihandle)
     } else if this.reactor != null && handle.ihandle != null {
         err = this.reactor.turn(handle.ihandle, d)
+    } else {
     }
     if sd != null {
         sb2<u64> = 0

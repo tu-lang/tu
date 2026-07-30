@@ -8,6 +8,7 @@ use asyncio.runtime.time as rttime
 use asyncio.runtime.signal as rtsig
 use asyncio.runtime.blocking as rtblk
 use asyncio.runtime.scheduler as sched
+use asyncio.task as task
 use asyncio.util
 
 // Default cap for the blocking pool.
@@ -166,6 +167,7 @@ fn build_current_thread(b<Builder>) Runtime {
     handle<sched.CtHandle>   = sched.CtHandle::new(shared)
 
     weak<Handle> = Handle::new(handle.(u64), KIND_CURRENT_THREAD, drv_h, spawner.(u64))
+    task.poll_ctx_hub_init()
     return Runtime::compose(KIND_CURRENT_THREAD, weak, drv, drv_h, spawner, pool, handle.(u64))
 }
 
@@ -193,7 +195,8 @@ fn build_multi_thread(b<Builder>) Runtime {
         shared.park_hub = sched.ParkDriverHub::new(
             drv.(u64),
             drv_h.(u64),
-            drv_h.ioh_bits()
+            drv_h.ioh_bits(),
+            drv_h.time_bits()
         )
     }
 
@@ -201,6 +204,7 @@ fn build_multi_thread(b<Builder>) Runtime {
         // Init hubs on the builder thread before any clone() worker runs.
         sched.worker_handoff_init()
         sched.mt_ctx_hub_init()
+        task.poll_ctx_hub_init()
         for i<u32> = 0 ; i < b.worker_threads ; i += 1 {
             steal_a<sched.Steal>, local_b<sched.Local> = sched.queue_local()
             rng<util.FastRand>     = util.FastRand::new(0xdeadbeef + i.(u64))
@@ -222,7 +226,9 @@ fn build_multi_thread(b<Builder>) Runtime {
             shared.remotes[i] = r.(u64)
 
             sched.worker_handoff_publish(worker)
-            rtblk.librt_newcore(mt_os_core_start.(u64))
+            core_bits<u64> = rtblk.librt_newcore(mt_os_core_start.(u64))
+            shared.os_cores[i] = core_bits
+            shared.os_cores_len = i + 1
             sched.worker_handoff_wait_claimed()
         }
     }

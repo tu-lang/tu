@@ -4,8 +4,12 @@
 use runtime
 use sys
 use io
+use std
 use asyncio.runtime.io as rtio
 use asyncio.task as task
+
+// Bounded nanosleep slice when IO park is unavailable (time-only MT).
+PARK_SLICE_MS<u64> = 50
 
 // Driver-side state. wheel + clk are owned here; park_iod is borrowed
 // from the runtime's IoDriver so park_internal can delegate.
@@ -79,9 +83,11 @@ fn time_driver_new(park_iod<rtio.IoDriver>) i32 {
 }
 
 // Compute the effective max-wait for the IO driver: min(limit, time to
-// next deadline). Called with the handle lock held by park_internal.
+// next deadline). Holds the handle lock while reading the wheel.
 fn compute_effective_ms(handle<TimeHandle>, limit_ms<u64>) u64 {
+    handle.lock.lock()
     found<i32>, deadline<u64> = handle.wheel.poll_at()
+    handle.lock.unlock()
     if found != EXPIR_FOUND return limit_ms
     now_ms<u64> = handle.now_ms()
     if deadline <= now_ms return 0
@@ -96,8 +102,9 @@ fn ms_to_duration(ms<u64>) sys.Duration {
 }
 
 // Advance the wheel up to `now` and wake every fired timer. Wakes are
-// performed outside the wheel lock to avoid waker re-entry.
-TimeHandle::process(now_ms<u64>){
+// performed outside any wheel lock to avoid waker re-entry.
+TimeHandle::drive_wheel(now_ms<u64>){
+    // Named drive_wheel — `.process` is a type-assert trap.
     this.lock.lock()
     this.wheel.poll(now_ms)
     pending<EntryList> = this.wheel.take_pending()
@@ -119,22 +126,37 @@ TimeHandle::process(now_ms<u64>){
 }
 
 // Park the IO driver up to `limit_ms`, but no longer than the next wheel
-// deadline. Computes the timeout first, then process() after the turn.
+// deadline. Computes the timeout first, then drive_wheel() after the turn.
 TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>) i32 {
-    handle.lock.lock()
     eff_ms<u64> = compute_effective_ms(handle, limit_ms)
-    handle.lock.unlock()
 
     if this.park_iod == null || ioh == null {
-        // No IO park path: advance the wheel, then yield briefly.
-        handle.process(handle.now_ms())
-        runtime.osyield()
+        // No IoHandle: mother still advances the wheel then waits until the
+        // next deadline (or limit). nanosleep is the timed wait; STW join
+        // happens after hub unlock in Parker::park_driver / mt_block_on —
+        // do not osyield while the driver TryLock is held.
+        now<u64> = handle.now_ms()
+        handle.drive_wheel(now)
+        eff_ms = compute_effective_ms(handle, limit_ms)
+        if eff_ms > PARK_SLICE_MS {
+            eff_ms = PARK_SLICE_MS
+        }
+        if eff_ms == 0 {
+            eff_ms = 1
+        }
+        req<std.TimeSpec:> = null
+        rem<std.TimeSpec:> = null
+        req.sec = 0
+        nsec_v<u64> = eff_ms * 1000000
+        req.nsec = nsec_v.(i64)
+        std.nanosleep(&req, &rem)
+        handle.drive_wheel(handle.now_ms())
         return 0
     }
 
     iod<rtio.IoDriver> = this.park_iod
     err<i32> = iod.turn(ioh, ms_to_duration(eff_ms))
-    handle.process(handle.now_ms())
+    handle.drive_wheel(handle.now_ms())
     return err
 }
 
@@ -142,6 +164,7 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>)
 TimeHandle::register(entry<TimerEntry>) i32 {
     this.lock.lock()
     err<i32>, deadline<u64> = this.wheel.insert(entry.shared, entry.deadline_ms)
+    this.lock.unlock()
     if err == INSERT_OK {
         entry.registered = 1
     } else if err == INSERT_ELAPSED {
@@ -151,7 +174,6 @@ TimeHandle::register(entry<TimerEntry>) i32 {
         s.mark_pending(deadline)
         entry.registered = 1
     }
-    this.lock.unlock()
     return err
 }
 
