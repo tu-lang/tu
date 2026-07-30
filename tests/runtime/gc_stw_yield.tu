@@ -1,10 +1,10 @@
 // newcore workers that only osyield must still join GC STW.
 // Without osyield checking gcwaiting, runtime.GC() hangs forever.
+// Teardown uses core_join (CLEARTID), not sleep.
 
 use fmt
 use os
 use runtime
-use time
 
 ready_cnt<i32> = 0
 done_flag<i32> = 0
@@ -21,11 +21,12 @@ fn worker_spin() {
 
 fn test_gc_stw_with_osyield_workers() {
     fmt.println("test_gc_stw_with_osyield_workers")
-    i<i32> = 0
-    while i < 4 {
-        runtime.newcore(worker_spin.(u64))
-        i += 1
-    }
+    ready_cnt = 0
+    done_flag = 0
+    c0<u64> = runtime.newcore(worker_spin.(u64))
+    c1<u64> = runtime.newcore(worker_spin.(u64))
+    c2<u64> = runtime.newcore(worker_spin.(u64))
+    c3<u64> = runtime.newcore(worker_spin.(u64))
     spins<i32> = 0
     while ready_cnt < 4 {
         runtime.osyield()
@@ -36,8 +37,10 @@ fn test_gc_stw_with_osyield_workers() {
     }
     runtime.GC()
     done_flag = 1
-    // Give workers a moment to observe done_flag.
-    time.sleep(1)
+    runtime.core_join(c0)
+    runtime.core_join(c1)
+    runtime.core_join(c2)
+    runtime.core_join(c3)
     fmt.println("test_gc_stw_with_osyield_workers passed")
 }
 
