@@ -9,9 +9,11 @@ use runtime
 use io
 use asyncio.task
 
-// CAS success sentinel: std.atomic cas/cas64 return 1 on success;
-// comparing against an untyped literal 0 crashes codegen (binary-op trap).
-CAS_OK<i64> = 1
+// CAS success sentinels. i32 atomic.cas and i64 cas64 both return 1 on
+// success; keep typed constants (bare 0/1 literals break binary-op).
+// Do not compare i32 cas against CAS64_OK — use CAS_OK for i32.
+CAS_OK<i32>   = 1
+CAS64_OK<i64> = 1
 
 // asyncio.error.SendFull
 SCHED_SEND_FULL<i32> = 0x0302000A
@@ -52,8 +54,10 @@ const QueueInner::new() QueueInner {
     q<QueueInner> = new QueueInner
     q.head   = 0
     q.tail   = 0
-    // GC-scanned: slots hold RawTask* bits.
-    q.buffer = runtime.malloc(8 * LOCAL_QUEUE_CAPACITY.(u64), 0.(i8), 1.(i8))
+    // noscan: slots are opaque RawTask* bits. Lifetime while queued is
+    // OwnedTasks (+ Notified). Leaving stale bits GC-scanned after pop
+    // caused mark SEGV once the task completed and was freed.
+    q.buffer = runtime.malloc(8 * LOCAL_QUEUE_CAPACITY.(u64), 1.(i8), 1.(i8))
     return q
 }
 
@@ -119,7 +123,7 @@ fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
     if steal != real return SCHED_SEND_FULL   // a stealer is already mid-flight
     new_real<u32> = real + n
     new_h<u64> = pack_head(new_real, new_real)
-    if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) != CAS_OK {
+    if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) != CAS64_OK {
         return SCHED_SEND_FULL
     }
 
@@ -127,6 +131,7 @@ fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (real + i) & LOCAL_QUEUE_MASK
         bits<u64> = qhub.buffer[idx]
+        qhub.buffer[idx] = 0
         stolen<task.RawTask> = bits.(task.RawTask)
         notif<task.Notified> = task.notified_from_raw(stolen)
         overflow.push(notif)
@@ -137,6 +142,9 @@ fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
 }
 
 // Owner pop from head.real. CAS-bumps real on success.
+// When no stealer is mid-flight (steal == real), advance both halves —
+// mother queue.rs Local::pop. Leaving steal behind permanently blocks
+// steal_into / overflow (steal != real) and desyncs capacity vs real depth.
 Local::pop() (i32, task.Notified) {
     qhub<QueueInner> = this.queue_hub
     loop {
@@ -146,10 +154,17 @@ Local::pop() (i32, task.Notified) {
         if real == qhub.tail {
             return io.NotFound, task.notified_from_raw(null)
         }
-        idx<u32> = real & LOCAL_QUEUE_MASK
-        bits<u64> = qhub.buffer[idx]
-        new_h<u64> = pack_head(steal, real + 1)
-        if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) == CAS_OK {
+        next_real<u32> = real + 1
+        new_h<u64> = 0
+        if steal == real {
+            new_h = pack_head(next_real, next_real)
+        } else {
+            new_h = pack_head(steal, next_real)
+        }
+        if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) == CAS64_OK {
+            idx<u32> = real & LOCAL_QUEUE_MASK
+            bits<u64> = qhub.buffer[idx]
+            qhub.buffer[idx] = 0
             rt<task.RawTask> = bits.(task.RawTask)
             return 0, task.notified_from_raw(rt)
         }
@@ -208,7 +223,7 @@ Steal::steal_into(dst<Local>) (i32, task.Notified) {
         n<u32> = (size + 1) / 2
         new_steal<u32> = real + n
         new_h<u64> = pack_head(new_steal, real)
-        if atomic.cas64(&src.head, h.(i64), new_h.(i64)) == CAS_OK {
+        if atomic.cas64(&src.head, h.(i64), new_h.(i64)) == CAS64_OK {
             // We now own [real, real+n). Copy entries into dst.
             // Limit copy to dst's free capacity.
             avail<u32> = LOCAL_QUEUE_CAPACITY - ring_size(dst_inner.tail, head_real(atomic.load64(&dst_inner.head)))
@@ -217,6 +232,7 @@ Steal::steal_into(dst<Local>) (i32, task.Notified) {
             for i<u32> = 1 ; i < n ; i += 1 {
                 src_idx<u32> = (real + i) & LOCAL_QUEUE_MASK
                 bits<u64>    = src.buffer[src_idx]
+                src.buffer[src_idx] = 0
                 dst_idx<u32> = (dst_inner.tail + i - 1) & LOCAL_QUEUE_MASK
                 dst_inner.buffer[dst_idx] = bits
             }
@@ -227,12 +243,13 @@ Steal::steal_into(dst<Local>) (i32, task.Notified) {
                 h2<u64> = atomic.load64(&src.head)
                 new_real2<u32> = real + n
                 new_h2<u64> = pack_head(head_steal(h2), new_real2)
-                if atomic.cas64(&src.head, h2.(i64), new_h2.(i64)) == CAS_OK break
+                if atomic.cas64(&src.head, h2.(i64), new_h2.(i64)) == CAS64_OK break
             }
 
             // Return the first stolen entry directly to the caller.
             first_idx<u32> = real & LOCAL_QUEUE_MASK
             first_bits<u64> = src.buffer[first_idx]
+            src.buffer[first_idx] = 0
             first_raw<task.RawTask> = first_bits.(task.RawTask)
             return 0, task.notified_from_raw(first_raw)
         }

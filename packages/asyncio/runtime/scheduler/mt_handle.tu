@@ -75,7 +75,6 @@ fn mt_schedule_remote(shared<MtShared>, notif<task.Notified>) {
 
 // Prefer schedule_local when this OS thread holds a WorkerCore
 // (mother with_current). Else inject.
-// allow_local=0 forces inject (wake path — local wake raised SEGV under load).
 fn mt_schedule_any(h<MtHandle>, notif<task.Notified>, is_yield<i32>, allow_local<i32>) {
     raw_bits<u64> = notif.raw().(u64)
 
@@ -101,11 +100,11 @@ fn mt_schedule_any(h<MtHandle>, notif<task.Notified>, is_yield<i32>, allow_local
     mt_schedule_remote(h.shared, notif)
 }
 
-// Schedule a Notified task. Wakes inject (allow_local=0); spawn uses local.
+// Schedule a Notified task. Same as mother: local when on a worker, else inject.
 impl task.Schedule for MtHandle {
     fn schedule(t){
         notif<task.Notified> = t
-        mt_schedule_any(this, notif, 0, 0)
+        mt_schedule_any(this, notif, 0, 1)
     }
 
     fn release(raw){
@@ -123,14 +122,19 @@ fn mt_inject_close(bits<u64>) {
 }
 
 // Unpark every remote worker (shutdown / inject close).
+// Snapshot unparker then call — avoid chasing a field cleared mid-call.
 fn mt_notify_all_workers(shared<MtShared>) {
+    if shared == null {
+        return
+    }
     i<u32> = 0
     while i < shared.num_workers {
         rb<u64> = shared.remotes[i]
         if rb != 0 {
             r<Remote> = rb.(Remote)
-            if r.unparker != null {
-                r.unparker.unpark()
+            up<Unparker> = r.unparker
+            if up != null {
+                up.unpark()
             }
         }
         i += 1
@@ -181,8 +185,8 @@ MtHandle::spawn(fut) task.JoinHandle {
 fn mt_schedule_bridge(hbits<u64>, nbits<u64>){
     mh<MtHandle> = hbits.(MtHandle)
     n<task.Notified> = nbits.(task.Notified)
-    // Wake path: inject only. Local wake still raises SEGV under load.
-    mt_schedule_any(mh, n, 0, 0)
+    // Wake path: local when on a worker (same as Schedule::schedule).
+    mt_schedule_any(mh, n, 0, 1)
 }
 
 fn mt_release_bridge(hbits<u64>, rbits<u64>){

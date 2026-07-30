@@ -29,6 +29,8 @@ mem MtShared {
     runtime.MutexInter* shutdown_cores_lock
     u64*              shutdown_cores       // raw bits of WorkerCore*; len == num_workers
     u32               shutdown_cores_len
+    u64*              os_cores             // runtime.Core* bits for CLEARTID join; len == num_workers
+    u32               os_cores_len
     u64               block_on_root_bits   // RawTask* of block_on root; 0 = none
     Unparker*         block_on_unparker    // wakes block_on caller
     i32               shutting_down        // 1 after inject close; park loops exit
@@ -59,6 +61,9 @@ const MtShared::new(num_workers<u32>) MtShared {
     // GC-scanned: slots hold WorkerCore* bits.
     s.shutdown_cores     = runtime.malloc(bytes, 0.(i8), 1.(i8))
     s.shutdown_cores_len = 0
+    // GC-scanned: keep Core* alive until CLEARTID join completes.
+    s.os_cores           = runtime.malloc(bytes, 0.(i8), 1.(i8))
+    s.os_cores_len       = 0
     s.block_on_root_bits = 0
     s.block_on_unparker  = null
     s.shutting_down      = 0

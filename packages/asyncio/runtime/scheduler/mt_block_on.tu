@@ -39,7 +39,9 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
     )
 
     shared<MtShared> = handle.shared
-    park<Parker> = Parker::new(null)
+    // Share ParkDriverHub with workers (mother Parker clone shares TryLock<Driver>).
+    // null hub only when the runtime was built without drivers.
+    park<Parker> = Parker::new(shared.park_hub)
     up<Unparker> = Unparker::new(park)
     shared.block_on_unparker = up
     root_bits<u64> = 0
@@ -73,7 +75,8 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
             break
         }
 
-        park.wait_until_wake(0)
+        mt_park_block_on(park, shared)
+        runtime.osyield()
     }
 
     shared.block_on_root_bits = 0

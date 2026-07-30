@@ -86,13 +86,15 @@ fn ctx_tid_claim(h<CtxTlsHub>, tid<u64>) i32 {
 }
 
 // Saved slot layout matches asyncio.runtime.RtSavedSlot (u64 prev_bits).
+// Allocate MtCtxSaved before taking hub.lock — malloc under MutexInter can
+// start GC while locks>0 and deadlock waiters that cannot join STW.
 fn mt_ctx_enter(ctx_bits<u64>) u64 {
     ctx_hub_ensure()
     h<CtxTlsHub> = CTX_HUB
     tid<u64> = std.gettid()
+    saved<MtCtxSaved> = new MtCtxSaved
     h.lock.lock()
     idx<i32> = ctx_tid_claim(h, tid)
-    saved<MtCtxSaved> = new MtCtxSaved
     saved.prev_bits = h.ctxs[idx]
     saved.tid = tid.(i64)
     saved.slot_idx = idx
@@ -161,7 +163,9 @@ fn mt_core_unbind() {
     h.lock.unlock()
 }
 
-// Lock-free: WorkerCore* bits for this tid, or 0.
+// Optimistic tid→core lookup. Block_on / inject path must not take hub.lock
+// when cores[tid]==0 — locking every spawn contended with enter/bind and
+// raised flat SEGV vs allow_local=0. Non-zero cores revalidated under lock.
 fn mt_core_current_bits() u64 {
     h<CtxTlsHub> = CTX_HUB
     if h == null {
@@ -171,7 +175,17 @@ fn mt_core_current_bits() u64 {
     i<i32> = 0
     while i < CTX_TID_CAP {
         if h.tids[i] == tid {
-            return h.cores[i]
+            bits<u64> = h.cores[i]
+            if bits == 0 {
+                return 0
+            }
+            h.lock.lock()
+            out<u64> = 0
+            if h.tids[i] == tid {
+                out = h.cores[i]
+            }
+            h.lock.unlock()
+            return out
         }
         i += 1
     }

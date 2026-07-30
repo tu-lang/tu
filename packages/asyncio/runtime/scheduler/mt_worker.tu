@@ -4,9 +4,11 @@
 // wake-up: the last searcher always notifies one peer.
 
 use runtime
+use std.atomic
 use io
 use asyncio.task
 use asyncio.util as util
+
 
 // Pack task pointer as future ctx.
 fn mt_task_ctx(t<task.RawTask>) u64 {
@@ -95,24 +97,24 @@ fn mt_finalize_shutdown(w<MtWorker>, core<WorkerCore>){
     shared.shutdown_cores_lock.unlock()
 }
 
-// Block until every worker OS thread has left worker_entry.
-fn mt_wait_workers(bits<u64>) {
-    mh<MtHandle> = bits.(MtHandle)
-    shared<MtShared> = mh.shared
-    spins<i32> = 0
-    loop {
-        n<i32> = shared.workers_alive
-        if n <= 0 {
-            return
+// Block until every MT worker OS thread has exited (CLEARTID on Core.clear_tid).
+// mt_inject_close already notified; do not re-notify here.
+fn mt_join_os_workers(bits<u64>) {
+    handle<MtHandle> = bits.(MtHandle)
+    shared<MtShared> = handle.shared
+    i<u32> = 0
+    while i < shared.os_cores_len {
+        cb<u64> = shared.os_cores[i]
+        if cb != 0 {
+            runtime.core_join(cb)
+            shared.os_cores[i] = 0
         }
-        mt_notify_all_workers(shared)
-        runtime.osyield()
-        spins += 1
-        // Safety valve: avoid hanging forever if a worker is stuck.
-        if spins > 1000000 {
-            return
-        }
+        i += 1
     }
+}
+
+fn mt_wait_workers(bits<u64>) {
+    mt_join_os_workers(bits)
 }
 
 // Take the WorkerCore hand-off, then enter the typed loop body.
@@ -131,15 +133,22 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     if w.ctx_bits != 0 {
         saved_ctx = mt_ctx_enter(w.ctx_bits)
     }
-    // Bind core for future schedule_local; schedule still injects today.
+    // Bind WorkerCore so spawn and wake both prefer schedule_local.
     mt_core_bind(core.(u64))
 
     loop {
-        if shared.inject.is_closed() {
+        // Prefer unlocked shutting_down — inject.is_closed() takes gate_lock
+        // every iteration and contended with push/pop under load.
+        if shared.shutting_down == 1 {
             core.is_shutdown = 1
         }
         if core.is_shutdown == 1 break
         core.tick = core.tick + 1
+
+        // Cooperative GC while busy (park path already osyields).
+        if (core.tick % core.global_queue_interval) == 0 {
+            runtime.osyield()
+        }
 
         // 1) Periodic inject pull.
         if (core.tick % core.global_queue_interval) == 0 {
@@ -332,8 +341,8 @@ fn worker_entry(){
     }
     shared0<MtShared> = w.handle.shared
     // Increment before run; builder's wait_claimed already saw the claim.
-    shared0.workers_alive += 1
+    atomic.xadd(&shared0.workers_alive, 1)
     worker_run(w)
-    shared0.workers_alive -= 1
+    atomic.xadd(&shared0.workers_alive, -1.(i8))
 }
 
