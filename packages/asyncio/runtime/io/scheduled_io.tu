@@ -87,6 +87,7 @@ mem ScheduledIo {
     util.LinkedList*   waiters          // intrusive list of Waiter
     u64                reader_ctx       // poll_readiness(DIR_READ) ctx slot
     u64                writer_ctx       // poll_readiness(DIR_WRITE) ctx slot
+    u64                iosrc_bits       // IoSource* bits; 0 after deregister/close
 }
 
 // Build an empty ScheduledIo: no readiness, no waiters, no shutdown.
@@ -96,6 +97,7 @@ const ScheduledIo::new() ScheduledIo {
     s.prev_sio = null
     s.next_sio = null
     s.readiness = 0
+    s.iosrc_bits = 0
     wl<runtime.MutexInter> = new runtime.MutexInter
     wl.init()
     s.waiters_lock = wl

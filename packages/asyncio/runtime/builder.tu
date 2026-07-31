@@ -138,6 +138,13 @@ fn build_drivers(b<Builder>) i32, DriverPair, i32 {
     }
 
     pair<DriverPair> = Driver::compose(io_drv, io_h, time_drv, time_h, sig_drv, sig_h)
+    if time_h != null && io_h != null {
+        th_bits<u64> = 0
+        ioh_bits2<u64> = 0
+        th_bits = time_h
+        ioh_bits2 = io_h
+        rttime.time_handle_bind_ioh_bits(th_bits, ioh_bits2)
+    }
     return 0, pair, 0
 }
 
@@ -212,13 +219,6 @@ fn build_multi_thread(b<Builder>) Runtime {
             unparker<sched.Unparker> = sched.Unparker::new(park)
             core<sched.WorkerCore>  = sched.WorkerCore::new(local_b, park, rng, b.global_queue_interval)
             worker<sched.MtWorker>  = sched.MtWorker::new(handle, i, core)
-            // Prebuild RuntimeContext here; worker only mt_ctx_enter(bits).
-            worker.ctx_bits = mt_worker_ctx_prebuild(
-                handle.(u64),
-                weak.(u64),
-                drv_h.(u64),
-                rng.(u64)
-            )
 
             r<sched.Remote> = new sched.Remote
             r.steal_end = steal_a

@@ -29,6 +29,7 @@ mem IoDriver {
     i32 signal_ready    // set to 1 when TOKEN_SIGNAL fires
     u64 events_slot     // Events* raw bits
     u64 poll_slot       // Poll* raw bits
+    i32 io_hit          // non-wakeup/non-signal events dispatched this turn
 }
 
 // Cross-thread companion to IoDriver. Owns the registry view + waker so
@@ -71,6 +72,7 @@ const IoDriver::new() i32 {
 
     drv<IoDriver> = new IoDriver
     drv.signal_ready = 0
+    drv.io_hit = 0
     drv.events_slot  = events_buf.(u64)
     drv.poll_slot    = p.(u64)
 
@@ -120,6 +122,7 @@ IoHandle::add_source(iosrc_bits<u64>, interest<netio.Interest>) i32, ScheduledIo
         lk.unlock()
         return rerr, null
     }
+    sio.iosrc_bits = iosrc_bits
     return 0, sio
 }
 
@@ -168,6 +171,7 @@ fn iodriver_consume_signal_ready_bits(iod_bits<u64>) i32 {
 IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
     err<i32> = netio.registry_deregister(reg, iosrc_bits)
+    sio.iosrc_bits = 0
     lk<runtime.MutexInter> = this.synced_lock
     lk.lock()
     need_wake<i32> = this.registrations.deregister(this.synced, sio)
@@ -180,6 +184,8 @@ IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
 
 // Drain everything. Called on runtime shutdown; every waiter then observes
 // OtherDriverTerminated on its next poll_readiness or Readiness::poll.
+// Also deregister + close each remaining IoSource fd so the next runtime
+// can rebind the same UDP/TCP ports (no Drop in Tu — this is the RAII path).
 IoHandle::shutdown(){
     if this.registrations == null || this.synced == null {
         return
@@ -191,9 +197,19 @@ IoHandle::shutdown(){
     lk.lock()
     head<ScheduledIo> = this.registrations.shutdown(this.synced)
     lk.unlock()
+    reg<netio.Registry> = null
+    if this.registry_slot != 0 {
+        reg = netio.registry_from_bits(this.registry_slot)
+    }
     cur<ScheduledIo> = head
     while cur != null {
         nxt<ScheduledIo> = cur.next_sio
+        bits<u64> = cur.iosrc_bits
+        if bits != 0 && reg != null {
+            netio.registry_deregister(reg, bits)
+            netio.iosource_close_fd(bits)
+            cur.iosrc_bits = 0
+        }
         wakes<util.WakeList> = cur.shutdown()
         util.wake_list_clear(wakes)
         cur = nxt
@@ -216,6 +232,7 @@ IoHandle::release_pending_registrations(){
 // Interrupted maps to a no-op turn so the caller can re-park as needed.
 IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
     handle.release_pending_registrations()
+    this.io_hit = 0
     err<i32> = netio.poll_poll(netio.poll_from_bits(this.poll_slot), netevent.events_from_bits(this.events_slot), max_wait)
     if err == IO_INTERRUPTED return 0
     if err != LIBIO_OK return err
@@ -237,6 +254,7 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
             continue
         }
 
+        this.io_hit = 1
         sio<ScheduledIo> = token.(ScheduledIo)
         ready<Ready> = ready_from_event(ev)
         sio.set_readiness(TICK_INC, ready.bits)
@@ -256,4 +274,12 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
         metrics_incr_ready_count_by(handle.metrics, fired)
     }
     return 0
+}
+
+// Cross-pkg: whether the last turn dispatched real IO (not just wakeup).
+fn iodriver_took_io(iod<IoDriver>) i32 {
+    if iod == null {
+        return 0
+    }
+    return iod.io_hit
 }

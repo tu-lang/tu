@@ -60,9 +60,8 @@ fn context_driver_handle(rc<RuntimeContext>) DriverHandle {
     return rc.drv_handle()
 }
 
-// Build RuntimeContext for a worker on the builder thread (no enter yet).
-// Workers call mt_ctx_enter(ctx_bits) directly — cross-package multi-arg
-// fn-ptr enter from clone() threads SEGV'd under current codegen.
+// Build RuntimeContext for an MT worker (mother enter_runtime on the
+// worker thread). Scheduler calls this directly — not via fn-ptr bits.
 fn mt_worker_ctx_prebuild(sched_bits<u64>, wh_bits<u64>, drv_bits<u64>, rng_bits<u64>) u64 {
     rng<util.FastRand> = null
     if rng_bits != 0 {

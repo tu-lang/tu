@@ -31,13 +31,28 @@ fn sleep_active_handle_bits() u64 {
 
 mem Sleep: async {
     TimerEntry* entry
+    u64         duration_ms  // non-zero: resolve absolute deadline on first poll
     i32         registered
 }
 
 // Register once, then poll_elapsed until fired.
+// Duration-based sleeps compute now+duration here so eager construction
+// before block_on (or slow MT worker start) cannot treat relative ms as
+// absolute wheel deadlines and fire both arms of select at once.
 Sleep::poll(ctx){
     if this.registered == 0 {
         th_bits<u64> = ACTIVE_SLEEP_HANDLE_BITS
+        if this.duration_ms != 0 {
+            now_ms<u64> = 0
+            if th_bits != 0 {
+                now_ms = time_handle_now_ms_bits(th_bits)
+            }
+            dl<u64> = now_ms + this.duration_ms
+            this.entry.deadline_ms = dl
+            cell<StateCell> = this.entry.shared.get_cell()
+            cell.arm(dl)
+            this.duration_ms = 0
+        }
         if th_bits != 0 {
             e_bits<u64> = 0
             e_bits = this.entry
@@ -56,7 +71,14 @@ fn sleep_timer_shutdown() i32 {
     return 0x03020010
 }
 
+// Absolute-deadline sleep (sleep_until / interval).
 fn sleep_new(deadline_ms<u64>) Sleep {
     e<TimerEntry> = TimerEntry::new(deadline_ms)
-    return new Sleep { entry: e, registered: 0 }
+    return new Sleep { entry: e, duration_ms: 0, registered: 0 }
+}
+
+// Relative sleep: deadline = now + duration_ms resolved on first poll.
+fn sleep_new_duration(duration_ms<u64>) Sleep {
+    e<TimerEntry> = TimerEntry::new(0)
+    return new Sleep { entry: e, duration_ms: duration_ms, registered: 0 }
 }

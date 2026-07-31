@@ -1,5 +1,5 @@
-// Time driver: thin wrapper that hands the IO driver a max-park timeout
-// derived from the wheel and advances the wheel after each turn().
+// Time driver: next_wake + single turn(eff) + drive_wheel.
+// MT: absorb pure eventfd wakeups inside park (early re-poll SEGVs).
 
 use runtime
 use sys
@@ -28,6 +28,8 @@ mem TimeHandle {
     runtime.MutexInter* lock     // serialises wheel mutations
     Wheel*              wheel
     Clock*              clk      // not `clock` — type-assert trap
+    u64                 next_wake_ms   // absolute ms; 0 = none published
+    u64                 ioh_wake_bits  // IoHandle eventfd for insert-wake
 }
 
 // Last successful TimeDriver::new results. build_drivers uses last()
@@ -48,6 +50,15 @@ TimeHandle::now_ms() u64 {
     c<Clock> = this.clk
     if c == null return 0
     return c.now_ms()
+}
+
+// Wire IoHandle eventfd so a sooner deadline can unpark the reactor.
+fn time_handle_bind_ioh_bits(handle_bits<u64>, ioh_bits<u64>) {
+    if handle_bits == 0 {
+        return
+    }
+    th<TimeHandle> = handle_bits
+    th.ioh_wake_bits = ioh_bits
 }
 
 // Build a paired (driver, handle). Publishes via timedriver_last / timehandle_last.
@@ -71,6 +82,8 @@ const TimeDriver::new(park_iod<rtio.IoDriver>) i32 {
     h.lock.init()
     h.wheel = w
     h.clk = c
+    h.next_wake_ms = 0
+    h.ioh_wake_bits = 0
 
     LAST_TIMEDRIVER = drv
     LAST_TIMEHANDLE = h
@@ -108,6 +121,12 @@ TimeHandle::drive_wheel(now_ms<u64>){
     this.lock.lock()
     this.wheel.poll(now_ms)
     pending<EntryList> = this.wheel.take_pending()
+    found<i32>, deadline<u64> = this.wheel.poll_at()
+    if found != EXPIR_FOUND {
+        this.next_wake_ms = 0
+    } else {
+        this.next_wake_ms = deadline
+    }
     this.lock.unlock()
 
     // Drain fired entries; pop_front() returns null when the list is empty.
@@ -117,6 +136,9 @@ TimeHandle::drive_wheel(now_ms<u64>){
             break
         }
         s<StateCell> = cur.get_cell()
+        if s == null {
+            continue
+        }
         s.mark_pending(now_ms)
         wake_ctx<u64> = s.take_waker_ctx()
         if wake_ctx != 0 {
@@ -125,54 +147,148 @@ TimeHandle::drive_wheel(now_ms<u64>){
     }
 }
 
-// Park the IO driver up to `limit_ms`, but no longer than the next wheel
-// deadline. Computes the timeout first, then drive_wheel() after the turn.
+// Park up to limit_ms, narrowed by the next wheel deadline.
+// Mother: publish next_wake → one IoDriver::turn(eff) → drive_wheel.
+// Blocking epoll is GC-safe via entersyscall (stack scanned at syscall_sp).
 TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>) i32 {
     eff_ms<u64> = compute_effective_ms(handle, limit_ms)
+    handle.lock.lock()
+    found0<i32>, deadline0<u64> = handle.wheel.poll_at()
+    if found0 != EXPIR_FOUND {
+        handle.next_wake_ms = 0
+    } else {
+        handle.next_wake_ms = deadline0
+    }
+    handle.lock.unlock()
 
     if this.park_iod == null || ioh == null {
-        // No IoHandle: mother still advances the wheel then waits until the
-        // next deadline (or limit). nanosleep is the timed wait; STW join
-        // happens after hub unlock in Parker::park_driver / mt_block_on —
-        // do not osyield while the driver TryLock is held.
+        // Time-only: advance wheel, then nanosleep up to next deadline.
         now<u64> = handle.now_ms()
         handle.drive_wheel(now)
-        eff_ms = compute_effective_ms(handle, limit_ms)
-        if eff_ms > PARK_SLICE_MS {
-            eff_ms = PARK_SLICE_MS
+        handle.lock.lock()
+        found_t<i32>, deadline_t<u64> = handle.wheel.poll_at()
+        if found_t != EXPIR_FOUND {
+            handle.next_wake_ms = 0
+        } else {
+            handle.next_wake_ms = deadline_t
         }
-        if eff_ms == 0 {
+        handle.lock.unlock()
+        if found_t != EXPIR_FOUND {
+            // Empty wheel: brief sleep so JoinHandle unpark can land; never
+            // sleep the full park limit (select short vs long would both Ready).
             eff_ms = 1
+        } else {
+            now_t<u64> = handle.now_ms()
+            if deadline_t <= now_t {
+                eff_ms = 1
+            } else {
+                delta_t<u64> = deadline_t - now_t
+                eff_ms = limit_ms
+                if delta_t < eff_ms {
+                    eff_ms = delta_t
+                }
+                if eff_ms > PARK_SLICE_MS {
+                    eff_ms = PARK_SLICE_MS
+                }
+                if eff_ms == 0 {
+                    eff_ms = 1
+                }
+            }
         }
         req<std.TimeSpec:> = null
         rem<std.TimeSpec:> = null
         req.sec = 0
         nsec_v<u64> = eff_ms * 1000000
         req.nsec = nsec_v.(i64)
+        runtime.entersyscall()
         std.nanosleep(&req, &rem)
+        runtime.exitsyscall()
         handle.drive_wheel(handle.now_ms())
         return 0
     }
 
     iod<rtio.IoDriver> = this.park_iod
-    err<i32> = iod.turn(ioh, ms_to_duration(eff_ms))
-    handle.drive_wheel(handle.now_ms())
+    // Mother: one turn(eff) then process. Pure eventfd wakeups (insert-wake /
+    // unpark) must not return to MT block_on re-poll — that path SEGVs.
+    // Retry until a timer fires, IO hits, or the wheel is empty.
+    err<i32> = 0
+    loops<i32> = 0
+    loop {
+        if loops > 64 {
+            break
+        }
+        loops += 1
+        handle.lock.lock()
+        found_l<i32>, deadline_l<u64> = handle.wheel.poll_at()
+        if found_l != EXPIR_FOUND {
+            handle.next_wake_ms = 0
+        } else {
+            handle.next_wake_ms = deadline_l
+        }
+        handle.lock.unlock()
+
+        if found_l != EXPIR_FOUND {
+            err = iod.turn(ioh, ms_to_duration(1))
+            handle.drive_wheel(handle.now_ms())
+            break
+        }
+        now_l<u64> = handle.now_ms()
+        if deadline_l <= now_l {
+            err = iod.turn(ioh, ms_to_duration(0))
+            handle.drive_wheel(handle.now_ms())
+            break
+        }
+        delta_l<u64> = deadline_l - now_l
+        wait_l<u64> = limit_ms
+        if delta_l < wait_l {
+            wait_l = delta_l
+        }
+        if wait_l == 0 {
+            wait_l = 1
+        }
+        err = iod.turn(ioh, ms_to_duration(wait_l))
+        handle.drive_wheel(handle.now_ms())
+        if rtio.iodriver_took_io(iod) != 0 {
+            break
+        }
+        handle.lock.lock()
+        found2<i32>, dl2<u64> = handle.wheel.poll_at()
+        handle.lock.unlock()
+        if found2 != EXPIR_FOUND {
+            break
+        }
+        if dl2 != deadline_l {
+            break
+        }
+    }
     return err
 }
 
 // Schedule an entry. Returns INSERT_* from Wheel::insert.
+// If the new deadline is sooner than next_wake_ms, wake the IoHandle.
 TimeHandle::register(entry<TimerEntry>) i32 {
     this.lock.lock()
     err<i32>, deadline<u64> = this.wheel.insert(entry.shared, entry.deadline_ms)
-    this.lock.unlock()
+    need_wake<i32> = 0
     if err == INSERT_OK {
         entry.registered = 1
+        nw<u64> = this.next_wake_ms
+        if nw == 0 || deadline < nw {
+            this.next_wake_ms = deadline
+            need_wake = 1
+        }
     } else if err == INSERT_ELAPSED {
         // mark_pending leaves PENDING_FIRE so poll_elapsed returns FIRED
         // on this same Sleep::poll (waker optional — caller is polling now).
         s<StateCell> = entry.shared.get_cell()
         s.mark_pending(deadline)
         entry.registered = 1
+        need_wake = 1
+    }
+    wake_bits<u64> = this.ioh_wake_bits
+    this.lock.unlock()
+    if need_wake != 0 && wake_bits != 0 {
+        rtio.io_handle_wake_bits(wake_bits)
     }
     return err
 }

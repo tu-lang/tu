@@ -113,24 +113,41 @@ Wheel::remove(item<TimerShared>) i32 {
 
 // Earliest deadline remaining in the wheel. Returns (EXPIR_FOUND, ms) or
 // (EXPIR_NONE, 0).
+// Must start from the slot corresponding to `elapsed` (not slot 0): a later
+// timer can occupy a lower slot index and would otherwise look "next",
+// causing park to oversleep and fire multiple timers together.
 Wheel::poll_at() (i32, u64) {
+    best_found<i32> = EXPIR_NONE
+    best_dl<u64> = 0
     for lv<i32> = 0 ; lv < NUM_LEVELS ; lv += 1 {
         layer<Level> = level_at(this.levels, lv)
-        sl<i32> = layer.next_occupied_slot(0)
-        if sl >= 0 {
-            sr<u64> = slot_range(lv)
-            lr<u64> = level_range(lv)
-            mask<u64> = lr - 1
-            not_mask<u64> = 0xffffffffffffffff - mask
-            level_start<u64> = this.elapsed & not_mask
-            base<u64> = level_start + sl.(u64) * sr
-            if base <= this.elapsed {
-                base = base + lr
-            }
-            return EXPIR_FOUND, base
+        if layer.occupied == 0 {
+            continue
+        }
+        sr<u64> = slot_range(lv)
+        lr<u64> = level_range(lv)
+        cur_idx<u64> = (this.elapsed / sr) & LEVEL_MASK
+        cur_slot<i32> = cur_idx.(i32)
+        sl<i32> = layer.next_occupied_slot(cur_slot)
+        if sl < 0 {
+            sl = layer.next_occupied_slot(0)
+        }
+        if sl < 0 {
+            continue
+        }
+        mask<u64> = lr - 1
+        not_mask<u64> = 0xffffffffffffffff - mask
+        level_start<u64> = this.elapsed & not_mask
+        base<u64> = level_start + sl.(u64) * sr
+        if base <= this.elapsed {
+            base = base + lr
+        }
+        if best_found == EXPIR_NONE || base < best_dl {
+            best_found = EXPIR_FOUND
+            best_dl = base
         }
     }
-    return EXPIR_NONE, 0
+    return best_found, best_dl
 }
 
 // Cascade entries on lv0 slot (already extracted) down: simply move them

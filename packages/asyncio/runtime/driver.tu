@@ -118,7 +118,6 @@ fn driver_park_timeout_ms_bits(drv_bits<u64>, handle_bits<u64>, ms<u64>) i32 {
 
 // Park for at most d. Time wheel narrows the wait if its next deadline
 // is closer; IoDriver::turn handles signal events via TOKEN_SIGNAL.
-// Io.park then process().
 //
 // signalfd is registered EPOLLET. If a signal arrives while the reactor is
 // not in epoll_wait, the edge is lost and a subsequent park would block
@@ -130,7 +129,6 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
         sb<u64> = 0
         sb = sd
         rtsig.signal_driver_process_bits(sb)
-        // Same-pkg take — do not read sd.park_skip across packages.
         if rtsig.signal_driver_take_park_skip(sb) != 0 {
             return 0
         }
@@ -147,7 +145,6 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
         sb2<u64> = 0
         sb2 = sd
         rtsig.signal_driver_process_bits(sb2)
-        // Drain-after-turn can wake signal waiters; skip another block.
         if rtsig.signal_driver_take_park_skip(sb2) != 0 {
             return 0
         }

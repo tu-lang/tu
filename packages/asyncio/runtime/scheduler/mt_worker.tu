@@ -8,6 +8,7 @@ use std.atomic
 use io
 use asyncio.task
 use asyncio.util as util
+use asyncio.runtime as asyncrt
 
 
 // Pack task pointer as future ctx.
@@ -125,14 +126,17 @@ fn worker_run(w<MtWorker>){
 }
 
 // Loop body takes WorkerCore as a parameter so member access is typed.
-// Mother: enter_runtime around the worker run loop. Context is prebuilt on
-// the builder thread — cross-package multi-arg fn-ptr enter SEGV'd on workers.
+// Mother: enter_runtime around the worker run loop — build context on
+// this thread via direct cross-pkg call, then mt_ctx_enter.
 fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     shared<MtShared> = w.handle.shared
-    saved_ctx<u64> = 0
-    if w.ctx_bits != 0 {
-        saved_ctx = mt_ctx_enter(w.ctx_bits)
-    }
+    ctx_bits<u64> = asyncrt.mt_worker_ctx_prebuild(
+        w.handle.(u64),
+        w.handle.rt_handle,
+        w.handle.driver_handle,
+        core.rand.(u64)
+    )
+    saved_ctx<u64> = mt_ctx_enter(ctx_bits)
     // Bind WorkerCore so spawn and wake both prefer schedule_local.
     mt_core_bind(core.(u64))
 
@@ -237,9 +241,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     mt_finalize_shutdown(w, core)
 
     mt_core_unbind()
-    if saved_ctx != 0 {
-        mt_ctx_exit(saved_ctx)
-    }
+    mt_ctx_exit(saved_ctx)
 }
 
 // Last searcher leaving search: if inject still has work, wake one sleeper.
