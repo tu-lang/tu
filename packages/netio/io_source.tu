@@ -98,6 +98,20 @@ fn iosource_raw_fd(bits<u64>) i32 {
 	return src.raw_fd
 }
 
+// Close the underlying fd once; safe to call after detach. Idempotent.
+fn iosource_close_fd(bits<u64>) {
+	if bits == 0 {
+		return
+	}
+	src<IoSource> = bits.(IoSource)
+	fd<i32> = src.raw_fd
+	if fd < 0 {
+		return
+	}
+	sys.close(fd)
+	src.raw_fd = -1
+}
+
 fn iosource_register_bits(bits<u64>, registry<Registry>, t<Token>, interests<Interest>) i32 {
 	src<IoSource> = bits.(IoSource)
 	return src.enroll_fd(registry, t, interests)

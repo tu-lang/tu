@@ -194,6 +194,7 @@ fn checkalldead(){
 	    match c.status {
 			CoreRun : debug(*"%p[%d] %d runing\n",c,c.cid,c.status)
 			CoreStop: debug(*"%p[%d] %dstop\n",c,c.cid,c.status)
+			CoreSyscall: debug(*"%p[%d] %dsyscall\n",c,c.cid,c.status)
 			_:  debug(*"%p[%d] error status\n",c,c.cid)
 		}
 	}	

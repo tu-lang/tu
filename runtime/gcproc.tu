@@ -234,32 +234,40 @@ Gc::setpercent(in<i32>){
 Gc::stopSTW() {
 	dgc(*"stop world \n")
     c<Core> = core()
-    // debug_alllock()
     sched.lock.lock()
-    // checkalldead()
-    sched.stopwait = sched.cores
     allcores<i32> = sched.cores
     sched.stopmark = 0
     sched.stopsweep = 0
     atomic.store(&sched.gcwaiting,1.(i8))
 
+    // Only wait for mutator cores still in CoreRun. Cores already in
+    // CoreSyscall (blocking epoll/nanosleep) are treated as stopped.
     c.status = CoreStop
-    sched.stopwait -= 1
+    need<i32> = 0
+    for cc<Core> = sched.allcores; cc != Null ; cc = cc.link {
+        if cc.cid == c.cid {
+            continue
+        }
+        st<u32> = cc.status
+        if st == CoreRun {
+            need += 1
+        }
+    }
+    sched.stopwait = need
     wait<i32> = sched.stopwait
     sched.lock.unlock()
-    if(sched.stopwait > 0) {
+    if wait > 0 {
         sched.stopnote.Sleep()
         sched.stopnote.Clear()
-        // checkalldead()
 	}
     if sched.stopwait > 0 {
-        // checkalldead()
         dief(*"sched.stopwait:%d != 0 m:%d\n",sched.stopwait,sched.cores)
     }
     for c = sched.allcores; c != Null ; c = c.link {
-        if c.status != CoreStop {
+        st2<u32> = c.status
+        if st2 != CoreStop && st2 != CoreSyscall {
             checkalldead()
-            dief(*"m.status not stop plan:%d now:%d\n",allcores,sched.cores)
+            dief(*"m.status not stop plan:%d now:%d status:%d\n",allcores,sched.cores,st2)
         }
 	}
     dgc(*"all world stop\n")
@@ -270,14 +278,13 @@ Gc::startSTW()
     c_<Core> = core()
     c_.status = CoreRun
     sched.gcwaiting = 0
-    // checkalldead()
     for c<Core> = sched.allcores; c != Null ; c = c.link {
         if c.cid == c_.cid continue
 
-        if c.status != CoreStop
+        st<u32> = c.status
+        if st != CoreStop && st != CoreSyscall {
             dief(*"m.status not stop\n")
-        if c.status != CoreStop
-            dief(*"thread:%d cur:%d not sleep\n",c.cid,core().cid)
+        }
         c.status = CoreRun
         c.park.Wake()
 	} 

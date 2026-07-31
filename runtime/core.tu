@@ -11,6 +11,7 @@ fn clone(cloneflags<u64> , newsp<u64> , ctid<u64> , funcp<u64> , args<u64> , tls
 enum {
 	CoreRun ,
 	CoreStop ,
+	CoreSyscall , // blocking syscall; STW treats as already stopped
 }
 
 mem Core {
@@ -30,6 +31,7 @@ mem Core {
 	u64* 	tls,tls_hi
 	u32     clear_tid           // SETTID/CLEARTID futex word; non-zero while alive, 0 after exit
 	i32     join_tracked        // legacy counter path; prefer core_join on clear_tid
+	u64     syscall_sp          // SP saved at entersyscall for GC stack scan
 }
 
 mem Sched {
@@ -45,6 +47,8 @@ mem Sched {
 	Note	  allsweepdone
 	Core* 	  allcores
 	u64 	  debug
+	i32		  markwait              // cores expected to finish mark (excludes CoreSyscall)
+	i32		  sweepwait             // cores expected to finish sweep
 
 }
 
@@ -189,6 +193,7 @@ Core::init(){
     this.helpmark = 0
     this.helpsweep = 0
     this.join_tracked = 0
+    this.syscall_sp = 0
     // Seeded again in newcore before clone; 0 here only for zeroed Core layout.
     this.clear_tid = 0
 }
@@ -276,4 +281,56 @@ top:
         debugfn<type_sched_debug> = sched.debug
         debugfn()
     }
+}
+
+// Mark this core as outside the mutator before a blocking syscall (epoll,
+// nanosleep, …). stopSTW will not wait on CoreSyscall cores, but mark still
+// scans syscall_sp..stktop. Must not hold runtime locks or be mallocing.
+fn entersyscall() {
+	c<Core> = core()
+	if c == null {
+		return
+	}
+	if c.locks != 0 || c.mallocing != 0 {
+		return
+	}
+	if c.status != CoreRun {
+		return
+	}
+	sched.lock.lock()
+	if sched.gcwaiting != 0 {
+		// STW already running — join it before the syscall instead.
+		sched.lock.unlock()
+		schedule()
+		return
+	}
+	c.syscall_sp = get_sp()
+	c.status = CoreSyscall
+	sched.lock.unlock()
+}
+
+// Re-enter the mutator after a blocking syscall. If STW ran while we were
+// in CoreSyscall, wait until startSTW wakes us before touching the heap.
+fn exitsyscall() {
+	c<Core> = core()
+	if c == null {
+		return
+	}
+	loop {
+		sched.lock.lock()
+		if c.status != CoreSyscall && c.status != CoreStop {
+			// Already CoreRun (e.g. startSTW raced); done.
+			sched.lock.unlock()
+			return
+		}
+		if sched.gcwaiting == 0 {
+			c.status = CoreRun
+			sched.lock.unlock()
+			return
+		}
+		// STW in progress: look like a normal stopped core and sleep.
+		c.status = CoreStop
+		sched.lock.unlock()
+		stopworld()
+	}
 }

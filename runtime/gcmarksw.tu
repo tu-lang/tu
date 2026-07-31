@@ -70,14 +70,14 @@ fn gcmarkhelper(){
 	c<Core> = core()
 	gc.markscan2(&c.queue)
 	
-	if atomic.xadd(&sched.stopmark, 1.(i8)) == sched.cores
+	if atomic.xadd(&sched.stopmark, 1.(i8)) == sched.markwait
 		sched.allmarkdone.Wake()
 }
 fn gcsweephelper(){
 	tracef(*"gcsweephelper:\n")
     while sweepone() >= Null {}
 
-	if atomic.xadd(&sched.stopsweep, 1.(i8)) == sched.cores
+	if atomic.xadd(&sched.stopsweep, 1.(i8)) == sched.sweepwait
 		sched.allsweepdone.Wake()
 }
 
@@ -181,21 +181,62 @@ Gc::markscan(){
     _c<Core> = core()
    	for c<Core> = sched.allcores; c != Null ; c = c.link
         c.local.releaseAll()
+    expect<i32> = 0
+    for c<Core> = sched.allcores; c != Null ; c = c.link {
+        if c.cid == _c.cid {
+            expect += 1
+            continue
+        }
+        st<u32> = c.status
+        // CoreSyscall: stack frozen at syscall_sp — scan here, do not wake.
+        if st == CoreSyscall {
+            this.markscan_stack(c, &_c.queue)
+            continue
+        }
+        if st != CoreStop {
+            dief(*"thread:%d cur:%d not sleep\n",c.cid,_c.cid)
+        }
+        expect += 1
+	}
+    sched.markwait = expect
     for c<Core> = sched.allcores; c != Null ; c = c.link {
         if c.cid == _c.cid continue
+        if c.status == CoreSyscall continue
         c.helpmark = 1
-        if c.status != CoreStop
-            dief(*"thread:%d cur:%d not sleep\n",c.cid,_c.cid)
         c.park.Wake()
 	}
     dgc(*"Wake all thread start marking\n")
     this.markscan2(&_c.queue)
-	dgc(*"check all scan has done before:%d total:%d\n",sched.stopmark, sched.cores)
-    if atomic.xadd(&sched.stopmark,1.(i8)) != sched.cores {
+	dgc(*"check all scan has done before:%d expect:%d\n",sched.stopmark, expect)
+    if atomic.xadd(&sched.stopmark,1.(i8)) != expect {
         sched.allmarkdone.Sleep()
         sched.allmarkdone.Clear()
     }
     dgc(*"all thread mark done\n")
+}
+
+// Scan a foreign core's stack (CoreSyscall) using SP saved at entersyscall.
+Gc::markscan_stack(c<Core>, queue<Queue>)
+{
+    if c == null {
+        return
+    }
+    stk_end<u64> = c.syscall_sp
+    if stk_end == 0 {
+        return
+    }
+    if c.stktop <= stk_end {
+        return
+    }
+    cur_sp<u64*> = stk_end
+    for cur_sp = stk_end ; cur_sp <= c.stktop ; cur_sp += 1 {
+        s<Span> = s
+        objIndex<u64> = 0
+        base<u64> = findObject(*cur_sp,&s,&objIndex)
+        if base != 0 {
+            greyobject(base, s,queue,objIndex)
+        }
+    }
 }
 
 Gc::markscan2(queue<Queue>)
@@ -404,17 +445,32 @@ Gc::sweep(){
 	}
 	heap_.lock.unlock()
 	c_<Core> = core()
+	expect<i32> = 0
+	for c<Core> = sched.allcores; c != Null ; c = c.link {
+		if c.cid == c_.cid {
+			expect += 1
+			continue
+		}
+		st<u32> = c.status
+		if st == CoreSyscall {
+			continue
+		}
+		if st != CoreStop {
+			dief(*"thread:%d cur:%d not sleep\n",c.cid,core().cid)
+		}
+		expect += 1
+	}
+	sched.sweepwait = expect
 	for c<Core> = sched.allcores; c != Null ; c = c.link {
 		if c.cid == c_.cid continue
+		if c.status == CoreSyscall continue
 		c.helpsweep = 1
-		if c.status != CoreStop
-			dief(*"thread:%d cur:%d not sleep\n",c.cid,core().cid)
 		c.park.Wake()
 	}		
 	dgc(*"Wake all thread sweeping\n")
 	while sweepone() >= Null {}
 	dgc(*"all sweep one done\n")
-	if atomic.xadd(&sched.stopsweep,1.(i8)) != sched.cores {
+	if atomic.xadd(&sched.stopsweep,1.(i8)) != expect {
 		sched.allsweepdone.Sleep()
 		sched.allsweepdone.Clear()
 	}
