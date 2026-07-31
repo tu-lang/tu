@@ -47,11 +47,37 @@ async Semaphore::acquire(n<u32>){
     return 0, Permit::new(this, n)
 }
 
+// Cross-pkg: await AcquireFut leaf, then build Permit in the owner package.
+fn semaphore_acquire_fut_bits(sem_bits<u64>, n<u32>) AcquireFut {
+    s<Semaphore> = sem_bits.(Semaphore)
+    fut<AcquireFut> = new AcquireFut{}
+    fut.init(s.sem, n)
+    return fut
+}
+
+fn semaphore_permit_bits(sem_bits<u64>, n<u32>) u64 {
+    s<Semaphore> = sem_bits.(Semaphore)
+    p<Permit> = Permit::new(s, n)
+    return p.(u64)
+}
+
+fn permit_give_back_bits(p_bits<u64>) {
+    p<Permit> = p_bits.(Permit)
+    p.give_back()
+}
+
 // Non-blocking variant; returns SendFull when permits are unavailable.
 Semaphore::try_acquire(n<u32>) (i32, Permit) {
     err<i32> = this.sem.try_acquire(n)
     if err != 0 return err, new Permit { owner_sem: null, n: 0 }
     return 0, Permit::new(this, n)
+}
+
+fn semaphore_try_acquire_bits(sem_bits<u64>, n<u32>) (i32, u64) {
+    s<Semaphore> = sem_bits.(Semaphore)
+    err<i32>, p<Permit> = s.try_acquire(n)
+    if err != 0 return err, 0
+    return 0, p.(u64)
 }
 
 // Mark the semaphore closed; pending and future acquire calls bail out.

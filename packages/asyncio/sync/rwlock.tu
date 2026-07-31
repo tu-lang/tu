@@ -74,3 +74,47 @@ async RwLock::write(){
     if err != 0 return err, new WriteGuard { lock: null }
     return 0, WriteGuard::new(this)
 }
+
+fn rwlock_write_fut_bits(lock_bits<u64>) AcquireFut {
+    l<RwLock> = lock_bits.(RwLock)
+    fut<AcquireFut> = new AcquireFut{}
+    fut.init(l.sem, MAX_READERS)
+    return fut
+}
+
+fn rwlock_read_fut_bits(lock_bits<u64>) AcquireFut {
+    l<RwLock> = lock_bits.(RwLock)
+    fut<AcquireFut> = new AcquireFut{}
+    fut.init(l.sem, 1)
+    return fut
+}
+
+fn rwlock_write_guard_bits(lock_bits<u64>) u64 {
+    l<RwLock> = lock_bits.(RwLock)
+    return WriteGuard::new(l).(u64)
+}
+
+fn rwlock_read_guard_bits(lock_bits<u64>) u64 {
+    l<RwLock> = lock_bits.(RwLock)
+    return ReadGuard::new(l).(u64)
+}
+
+fn write_guard_set_bits(g_bits<u64>, v<u64>) {
+    g<WriteGuard> = g_bits.(WriteGuard)
+    g.set(v)
+}
+
+fn write_guard_give_back_bits(g_bits<u64>) {
+    g<WriteGuard> = g_bits.(WriteGuard)
+    g.give_back()
+}
+
+fn read_guard_get_bits(g_bits<u64>) u64 {
+    g<ReadGuard> = g_bits.(ReadGuard)
+    return g.get()
+}
+
+fn read_guard_give_back_bits(g_bits<u64>) {
+    g<ReadGuard> = g_bits.(ReadGuard)
+    g.give_back()
+}

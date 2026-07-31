@@ -1,7 +1,7 @@
-// Synchronisation barrier: every wait() blocks until `n` participants
-// arrive. The last arrival wakes the rest by bumping `generation` and
-// firing notify_waiters. The wait future re-checks generation on each
-// poll so a concurrent notify cannot wake stragglers from the next round.
+// Synchronisation barrier: every wait blocks until `n` participants arrive.
+// The last arrival wakes the rest by bumping generation and notify_waiters.
+// The wait future re-checks generation on each poll so a concurrent notify
+// cannot wake stragglers from the next round.
 
 use runtime
 
@@ -26,7 +26,8 @@ const Barrier::new(n<i32>) Barrier {
     return b
 }
 
-// Async leaf for Barrier::wait().
+// Async leaf for one Barrier wait. Prefer barrier_wait_fut_bits across pkgs —
+// member async multi-return poisons later MT block_on (same class as Mutex::lock).
 mem BarrierWaitFut: async {
     Barrier*  hub
     i32       arrival_gen
@@ -55,9 +56,10 @@ BarrierWaitFut::init(hub<Barrier>){
     this.stage = 0
 }
 
+// Ready value is leader_flag (0/1); Pending while waiting for the generation bump.
 BarrierWaitFut::poll(ctx){
     if this.stage == 2 {
-        return runtime.PollReady, 0.(i64)
+        return runtime.PollReady, this.leader_flag.(i64)
     }
     hub<Barrier> = this.hub
     hub.gate_lock.lock()
@@ -65,7 +67,7 @@ BarrierWaitFut::poll(ctx){
     hub.gate_lock.unlock()
     if cur_gen != this.arrival_gen {
         this.stage = 2
-        return runtime.PollReady, 0.(i64)
+        return runtime.PollReady, this.leader_flag.(i64)
     }
     if this.pending_nf == null {
         this.pending_nf = notified_from_notify(hub.wake_hub)
@@ -74,16 +76,28 @@ BarrierWaitFut::poll(ctx){
     pcode<i32> = nfy.poll(ctx)
     if pcode == runtime.PollReady {
         this.pending_nf = null
+        // Notify may have raced past the gen check above — re-read before Pending.
+        hub.gate_lock.lock()
+        cur2<i32> = hub.generation
+        hub.gate_lock.unlock()
+        if cur2 != this.arrival_gen {
+            this.stage = 2
+            return runtime.PollReady, this.leader_flag.(i64)
+        }
     }
     return runtime.PollPending
 }
 
-// Wait for the round to complete. Returns (0, is_leader) where is_leader
-// is 1 for the participant that triggered the wake.
-async Barrier::wait(){
-    fut<BarrierWaitFut> = new BarrierWaitFut
-    fut.init(this)
-    code<i32> = fut.await
-    if code != 0 return code, 0
-    return 0, fut.leader_flag
+// Cross-pkg factory: barrier bits → BarrierWaitFut.
+fn barrier_wait_fut_bits(barrier_bits<u64>) BarrierWaitFut {
+    b<Barrier> = barrier_bits.(Barrier)
+    fut<BarrierWaitFut> = new BarrierWaitFut{}
+    fut.init(b)
+    return fut
+}
+
+// Leader flag after the future is Ready (also available as await result).
+fn barrier_wait_leader_bits(fut_bits<u64>) i32 {
+    f<BarrierWaitFut> = fut_bits.(BarrierWaitFut)
+    return f.leader_flag
 }

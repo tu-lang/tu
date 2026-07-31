@@ -59,11 +59,23 @@ fn atomic_waker_new_raw() u64 {
 }
 
 fn atomic_waker_register_raw(bits<u64>, ctx<u64>) {
+    if bits == 0 {
+        return
+    }
     a<AtomicWaker> = bits.(AtomicWaker)
+    if a == null {
+        return
+    }
     a.register_by_ref(ctx)
 }
 
 fn atomic_waker_wake_raw(bits<u64>) u64 {
+    if bits == 0 {
+        return 0
+    }
     a<AtomicWaker> = bits.(AtomicWaker)
+    if a == null {
+        return 0
+    }
     return a.wake()
 }

@@ -16,7 +16,7 @@ const Mutex::new(value<u64>) Mutex {
     return m
 }
 
-// Guard handed back by lock(). MutexGuard::give_back re-permits the mutex.
+// Guard handed back after acquire. MutexGuard::give_back re-permits the mutex.
 mem MutexGuard {
     Mutex* m
 }
@@ -41,12 +41,35 @@ MutexGuard::give_back(){
     batch_sem_release(this.m.sem, 1)
 }
 
-// Acquire the lock. Returns (0, MutexGuard) on success or (Closed, empty
-// guard) when the underlying semaphore was closed.
-async Mutex::lock(){
-    fut<AcquireFut> = new AcquireFut
-    fut.init(this.sem, 1)
-    err<i32> = fut.await
-    if err != 0 return err, new MutexGuard { m: null }
-    return 0, MutexGuard::new(this)
+// Cross-pkg / recommended acquire: build AcquireFut then await.
+// Member async Mutex::lock is unsafe across packages (null assign / MT poison).
+fn mutex_acquire_fut_bits(mutex_bits<u64>) AcquireFut {
+    m<Mutex> = mutex_bits.(Mutex)
+    fut<AcquireFut> = new AcquireFut{}
+    fut.init(m.sem, 1)
+    return fut
+}
+
+fn mutex_guard_from_bits(g_bits<u64>) MutexGuard {
+    return g_bits.(MutexGuard)
+}
+
+fn mutex_guard_bits(mutex_bits<u64>) u64 {
+    m<Mutex> = mutex_bits.(Mutex)
+    return MutexGuard::new(m).(u64)
+}
+
+fn mutex_guard_set_bits(g_bits<u64>, v<u64>) {
+    g<MutexGuard> = g_bits.(MutexGuard)
+    g.set(v)
+}
+
+fn mutex_guard_get_bits(g_bits<u64>) u64 {
+    g<MutexGuard> = g_bits.(MutexGuard)
+    return g.get()
+}
+
+fn mutex_guard_give_back_bits(g_bits<u64>) {
+    g<MutexGuard> = g_bits.(MutexGuard)
+    g.give_back()
 }
