@@ -61,6 +61,13 @@ ChainExpr::objgen(ctx,load)
 {
 	utils.debug("gen.ChainExpr::objgen()")
 	this.record()
+	// Propagate chain-end assert onto the last field so Var_Func skips newfuncobject.
+	if this.tyassert != null && std.len(this.fields) > 0 {
+		last = std.tail(this.fields)
+		if last.tyassert == null {
+			last.tyassert = this.tyassert
+		}
+	}
 	for i = 0 ; i < std.len(this.fields) ; i += 1{
 		expr = this.fields[i]
 		if i == std.len(this.fields) - 1 {

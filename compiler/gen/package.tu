@@ -20,6 +20,9 @@ fn genStruct(s)
 			ps = s.parser // Parser
 			compile.currentParser  = ps
 			acualPkg = ps.getImport(m.structpkg)
+			if acualPkg == "" {
+				acualPkg = m.structpkg
+			}
 			dst = package.getStruct(acualPkg,m.structname)
 			if dst == null {
 				p.panic(

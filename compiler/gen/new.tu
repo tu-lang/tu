@@ -38,6 +38,20 @@ NewExpr::compile(ctx,load)
 		s = null
 		if (s = pkg.getStruct(this.name) ) && s != null {
 			internal.gc_malloc(s.size)
+			// Bare `new AsyncMem` skips StructInitExpr; write future poll table
+			// so offset 0 is not null (avoids "future vir table is null" on later stores).
+			if s.isasync {
+				if !s.iscomputed
+					this.check(false,"dest async fn not compute stacksize")
+				fc = s.getPoll()
+				if fc == null
+					this.check(false,"poll not exist,maybe not define?")
+				compile.Push()
+				compile.writeln("    lea %s(%%rip), %%rax", s.futurepollname())
+				compile.writeln("    mov (%%rsp), %%rdi")
+				compile.writeln("    mov %%rax, (%%rdi)")
+				compile.Pop("%rax")
+			}
 			return this
 		}else{
 			var = new VarExpr(this.name,this.line,this.column)

@@ -1,4 +1,5 @@
 use compiler.utils
+use compiler.parser.package
 use std
 use compiler.gen
 
@@ -91,7 +92,15 @@ Class::checkRmSupers(){
 Member::initStructRef() {
 	if this.structname == ""
 		utils.error("should not happend")
-	this.structref = package.getStruct(this.structpkg,this.structname)
+	// Same-package fields often leave structpkg empty; cross-pkg getType would
+	// miss the pointee if resolved under the current parser pkg. Fall back to
+	// the parent Struct's package when pkg is empty.
+	pkg = this.structpkg
+	if pkg == "" && this.parent != null {
+		ps = this.parent
+		pkg = ps.pkg
+	}
+	this.structref = package.getStruct(pkg,this.structname)
 }
 
 Member::getarrcount(){

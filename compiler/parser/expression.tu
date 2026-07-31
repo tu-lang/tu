@@ -98,13 +98,23 @@ Parser::parseChainExpr(first){
             _ : break
         }
     }
-    // chain-end assert (chainExpr.tyassert) must be carried by ChainExpr, don't collapse
-    if std.len(chainExpr.fields) == 1 && chainExpr.tyassert == null {
-        f = chainExpr.fields[0]
-        if type(f) == type(gen.MemberCallExpr) {
-            f.checkawait()
+    // Single VarExpr + chain-end assert: write back and collapse so pkg.fn.(u64)
+    // matches bare fn.(u64) (VarExpr.tyassert skips newfuncobject).
+    // Multi-field / non-Var keep ChainExpr as assert carrier.
+    if std.len(chainExpr.fields) == 1 {
+        only = chainExpr.fields[0]
+        if chainExpr.tyassert != null && type(only) == type(gen.VarExpr) {
+            if only.tyassert == null {
+                only.tyassert = chainExpr.tyassert
+            }
+            return only
         }
-        return f
+        if chainExpr.tyassert == null {
+            if type(only) == type(gen.MemberCallExpr) {
+                only.checkawait()
+            }
+            return only
+        }
     }
     chainExpr.checkawait()
     return ret

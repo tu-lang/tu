@@ -101,6 +101,8 @@ Parser::parseParameterList()
                             var.structpkg = sname
                             var.structname = reader.curLex.dyn()
                             reader.scan()
+                        }else{
+                            var.structpkg = this.pkg.full_package
                         }
                     }else if reader.curToken >= ast.I8 && reader.curToken <= ast.F64{
                     

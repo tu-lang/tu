@@ -297,6 +297,9 @@ VarExpr::getStackSize(p){
         if this.structtype && this.structname != ""  {
             this.check(this.stacksize != 0)
             acualPkg = p.getImport(this.structpkg)
+            if acualPkg == "" {
+                acualPkg = this.structpkg
+            }
             s = package.getStruct(acualPkg,this.structname)
             if(s == null) {
                 fmt.println(this.structname)
