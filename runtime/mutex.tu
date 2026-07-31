@@ -138,7 +138,8 @@ Sema::unlock()
     }
     for s = root.head ; s != null ; s = s.next {
         if s.addr == &this.sema {
-            atomic.xadd(&root.nwait,-1.(i8))
+            dec_nw<u32> = 4294967295
+            atomic.xadd(&root.nwait, dec_nw)
             root.dequeue(s)
             break
         }

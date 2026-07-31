@@ -84,7 +84,8 @@ Sched::rmcore(c<Core>){
 		if cc == Null dief(*"ever happen")
 		pc.link = cc.link
 	}
-	atomic.xadd(&sched.cores,-1.(i8))
+	dec_cores<u32> = 4294967295
+	atomic.xadd(&sched.cores, dec_cores)
 	sched.lock.unlock()
 	gc.worldSeam.unlock()
 }

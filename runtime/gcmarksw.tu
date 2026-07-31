@@ -460,7 +460,8 @@ fn sweepone(){
 			npages = 0
 		}
 	}
-	atomic.xadd(&heap_.sweepers, -1.(i8))
+	dec_sw<u32> = 4294967295
+	atomic.xadd(&heap_.sweepers, dec_sw)
 	return npages
 }
 
