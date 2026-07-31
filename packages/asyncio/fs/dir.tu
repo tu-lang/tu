@@ -61,7 +61,7 @@ fn is_dot_name_cstr(name_c<i8*>) i32 {
 
 // Sync open of a directory stream.
 fn read_dir_open_sync(path_bits<u64>) i32, ReadDir {
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     pc<i8*> = string.cstr_from_bits(path_bits)
     clo_raw = std.O_CLOEXEC
     clo<i64> = clo_raw.(i64)
@@ -120,7 +120,7 @@ fn load_u16_le(buf<u8*>, off<i32>) i32 {
 
 // Sync next entry; returns (err, owned name bits). name bits == 0 at EOF.
 fn read_dir_next_bits(rd<ReadDir>) i32, u64 {
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     pos<i32> = rd.dents_pos
     filled<i32> = rd.dents_len
     base<u8*> = rd.dents
@@ -177,7 +177,7 @@ fn read_dir_next_bits(rd<ReadDir>) i32, u64 {
 }
 
 ReadDir::close() i32 {
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     if this.fd < 0 return ok_code
     raw_c<i32> = 0
     raw_c = sys.close(this.fd)
@@ -199,10 +199,8 @@ ReadDirFut::poll(ctx) {
     return ready, err, r
 }
 
-fn fs_read_dir(path<string.String>) runtime.Future {
-    f<ReadDirFut> = new ReadDirFut { path_bits: string.string_to_bits(path), pad: 0 }
-    fut<runtime.Future> = f
-    return fut
+fn fs_read_dir(path<string.String>) ReadDirFut {
+    return new ReadDirFut { path_bits: string.string_to_bits(path), pad: 0 }
 }
 
 mem NextEntryFut: async {
@@ -218,11 +216,9 @@ NextEntryFut::poll(ctx) {
     return ready, err, nb
 }
 
-fn fs_next_entry(rd<ReadDir>) runtime.Future {
+fn fs_next_entry(rd<ReadDir>) NextEntryFut {
     bits<u64> = rd.(u64)
-    f<NextEntryFut> = new NextEntryFut { rd_bits: bits }
-    fut<runtime.Future> = f
-    return fut
+    return new NextEntryFut { rd_bits: bits }
 }
 
 // Cross-package close (member close from outside can mis-dispatch).

@@ -15,7 +15,7 @@ CreateDirFut::poll(ctx) {
     mode_i<i64> = 493
     mraw<i32> = 0
     mraw = sys.mkdir(pc, mode_i)
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     ready<i32> = runtime.PollReady
     if mraw >= 0 return ready, ok_code
     err<i32>, junk<u64> = sys.cvt(mraw)

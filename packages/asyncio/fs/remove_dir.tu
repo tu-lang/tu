@@ -13,7 +13,7 @@ RemoveDirFut::poll(ctx) {
     pc<i8*> = string.cstr_from_bits(this.path_bits)
     raw_rm<i32> = 0
     raw_rm = sys.rmdir(pc)
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     ready<i32> = runtime.PollReady
     if raw_rm >= 0 return ready, ok_code
     err<i32>, junk<u64> = sys.cvt(raw_rm)

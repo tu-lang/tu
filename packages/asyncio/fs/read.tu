@@ -42,8 +42,6 @@ ReadFut::poll(ctx) {
     return runtime.PollReady, io.Ok, io.buf_with_len(buf, total)
 }
 
-fn fs_read(path<string.String>) runtime.Future {
-    f<ReadFut> = new ReadFut { path_bits: string.string_to_bits(path) }
-    fut<runtime.Future> = f
-    return fut
+fn fs_read(path<string.String>) ReadFut {
+    return new ReadFut { path_bits: string.string_to_bits(path) }
 }

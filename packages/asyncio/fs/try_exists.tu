@@ -16,7 +16,7 @@ TryExistsFut::poll(ctx) {
     s<std.Stat> = new std.Stat
     pc<i8*> = string.cstr_from_bits(this.path_bits)
     err<i32>, junk<u64> = sys.cvt(sys.stat(pc, s.(u64)))
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     zero<i32> = 0
     one<i32> = 1
     not_found<i32> = 16908289
@@ -26,8 +26,7 @@ TryExistsFut::poll(ctx) {
     return ready, err, zero
 }
 
-fn fs_try_exists(path<string.String>) runtime.Future {
-    f<TryExistsFut> = new TryExistsFut { path_bits: string.string_to_bits(path), pad: 0 }
-    fut<runtime.Future> = f
-    return fut
+// Concrete leaf (same pattern as ctrl_c / UdpRecvFut); callers `.await` it.
+fn fs_try_exists(path<string.String>) TryExistsFut {
+    return new TryExistsFut { path_bits: string.string_to_bits(path), pad: 0 }
 }

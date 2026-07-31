@@ -16,8 +16,6 @@ RemoveFileFut::poll(ctx) {
     return runtime.PollReady, err
 }
 
-fn fs_remove_file(path<string.String>) runtime.Future {
-    f<RemoveFileFut> = new RemoveFileFut { path_bits: string.string_to_bits(path) }
-    fut<runtime.Future> = f
-    return fut
+fn fs_remove_file(path<string.String>) RemoveFileFut {
+    return new RemoveFileFut { path_bits: string.string_to_bits(path) }
 }

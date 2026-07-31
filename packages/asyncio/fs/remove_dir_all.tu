@@ -40,7 +40,7 @@ fn path_is_dir_cstr(path_c<i8*>) i32 {
 
 // Map negative errno to io error; non-negative => Ok.
 fn fs_sys_ret(raw<i32>) i32 {
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     if raw >= 0 return ok_code
     err<i32>, junk<u64> = sys.cvt(raw)
     return err
@@ -48,7 +48,7 @@ fn fs_sys_ret(raw<i32>) i32 {
 
 // Sync recursive remove.
 fn remove_dir_all_sync(path_bits<u64>) i32 {
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     pc<i8*> = string.cstr_from_bits(path_bits)
     raw_rm<i32> = 0
     raw_rm = sys.rmdir(pc)
@@ -102,8 +102,6 @@ RemoveDirAllFut::poll(ctx) {
     return ready, err
 }
 
-fn fs_remove_dir_all(path<string.String>) runtime.Future {
-    f<RemoveDirAllFut> = new RemoveDirAllFut { path_bits: string.string_to_bits(path), pad: 0 }
-    fut<runtime.Future> = f
-    return fut
+fn fs_remove_dir_all(path<string.String>) RemoveDirAllFut {
+    return new RemoveDirAllFut { path_bits: string.string_to_bits(path), pad: 0 }
 }
