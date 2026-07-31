@@ -40,6 +40,32 @@ fn multi_return_comma_newline() i32,i32 {
     return 1,
         2
 }
+
+// Callee with two returns; used to test `return callee()` forwarding.
+fn pair_ok() i32,i32 {
+    return 7, 11
+}
+
+// Must forward both values (not drop the second to genDefault 0).
+fn forward_pair() i32,i32 {
+    return pair_ok()
+}
+
+// Member-call path: same forwarding through ChainExpr / MemberCallExpr.
+mem PairBox {
+    i32 a
+    i32 b
+}
+PairBox::as_pair() i32,i32 {
+    return this.a, this.b
+}
+fn forward_member_pair() i32,i32 {
+    p<PairBox> = new PairBox
+    p.a = 3
+    p.b = 5
+    return p.as_pair()
+}
+
 func test_bare_return_newline(){
     c<RetCore> = new RetCore
     c.flag = 0
@@ -51,6 +77,10 @@ func test_bare_return_newline(){
     if same_line_return(7) != 7 os.die("same-line return")
     a<i32>, b<i32> = multi_return_comma_newline()
     if a != 1 || b != 2 os.die("comma newline multi-return")
+    f1<i32>, f2<i32> = forward_pair()
+    if f1 != 7 || f2 != 11 os.die("return callee() multi-return forward")
+    m1<i32>, m2<i32> = forward_member_pair()
+    if m1 != 3 || m2 != 5 os.die("return member() multi-return forward")
     fmt.println("test bare return newline success")
 }
 

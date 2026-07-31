@@ -72,6 +72,7 @@ func main(){
 	test_extern_direct()
 	test_extern_pointer()
 	test_static_inner()
+	test_cross_pkg_typed()
 }
 
 // 3.结构体嵌套
@@ -153,4 +154,30 @@ func test_static_inner(){
 	}
 	p.b.test(200)
 	fmt.println("test_static_inner success")
+}
+
+// Cross-pkg typed param + field method: bare pkg.Type in signature and mem.
+fn cross_pkg_take(d<net.Data>) i32 {
+	return d.a
+}
+
+func test_cross_pkg_typed(){
+	fmt.println("test_cross_pkg_typed")
+	d<net.Data> = new net.Data
+	d.a = 42
+	if cross_pkg_take(d) != 42 {
+		fmt.println("cross pkg param failed")
+		os.exit(-1)
+	}
+	ep<ExternPointer> = new ExternPointer
+	ep.inner = d
+	if ep.inner.a != 42 {
+		fmt.println("cross pkg field load failed")
+		os.exit(-1)
+	}
+	if cross_pkg_take(ep.inner) != 42 {
+		fmt.println("cross pkg field as arg failed")
+		os.exit(-1)
+	}
+	fmt.println("test_cross_pkg_typed success")
 }

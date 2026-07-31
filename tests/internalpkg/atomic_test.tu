@@ -213,6 +213,21 @@ func test_add_u64(){
 	fmt.println("test xadd u64 success")
 }
 
+// i8→u32 cast for xadd: signed -1 must become all-ones u32 (not +255).
+func test_xadd_u32_i8_dec(){
+	x<AddU32> = new AddU32 {
+		before : magic32,
+		after  : magic32
+	}
+	x.i = 10
+	neg<i8> = -1
+	atomic.xadd(&x.i, neg)
+	if x.i != 9 {
+		os.dief("i8 dec expected 9 got %d", int(x.i))
+	}
+	fmt.println("test xadd u32 i8 dec success")
+}
+
 mem CasI32 {
 	i32 before,i,after
 }
@@ -284,4 +299,5 @@ func main(){
 	test_add_u32()
 	test_add_i64()
 	test_add_u64()
+	test_xadd_u32_i8_dec()
 }

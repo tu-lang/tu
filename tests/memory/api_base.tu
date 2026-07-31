@@ -319,6 +319,8 @@ fn case_cross_pkg_mem_return(){
 	if head == null os.die("head null")
 	if head.tag != 7 os.die("head.tag")
 	if head.next == null os.die("head.next null after cross-pkg multi-return")
+	// Direct two-level chain (nested-pkg getType must resolve Box* → Box).
+	if head.next.tag != 8 os.die("head.next.tag chain")
 	n<memret_owner.Box> = head.next
 	if n.tag != 8 os.die("head.next.tag")
 
@@ -327,6 +329,7 @@ fn case_cross_pkg_mem_return(){
 	if h2 == null os.die("head null Type::method")
 	if h2.tag != 11 os.die("Type::method tag")
 	if h2.next == null os.die("Type::method next null")
+	if h2.next.tag != 12 os.die("Type::method next.tag chain")
 	n2<memret_owner.Box> = h2.next
 	if n2.tag != 12 os.die("Type::method next.tag")
 	if h2.pe == null os.die("Type::method pe null")

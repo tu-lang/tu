@@ -197,10 +197,15 @@ fn test_async_api_ptr_field() {
 	aw<FutWriter> = s
 	bits<u64> = 0
 	bits = aw
-	// Literal bind only — `f.w = ...` after new overwrites async virf.
-	f<ApiPtrWriteFut> = new ApiPtrWriteFut { w: bits.(FutWriter) }
-	n<u64> = runtime.block(f)
-	if n != 7 os.dief("async api* expected 7 got %d", int(n))
+	// Literal bind
+	f1<ApiPtrWriteFut> = new ApiPtrWriteFut { w: bits.(FutWriter) }
+	n1<u64> = runtime.block(f1)
+	if n1 != 7 os.dief("async api* literal expected 7 got %d", int(n1))
+	// bare new + field assign (must init poll.f on new)
+	f2<ApiPtrWriteFut> = new ApiPtrWriteFut
+	f2.w = bits.(FutWriter)
+	n2<u64> = runtime.block(f2)
+	if n2 != 7 os.dief("async api* assign expected 7 got %d", int(n2))
 	fmt.println("test async api ptr field success")
 }
 
