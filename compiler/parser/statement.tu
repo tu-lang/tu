@@ -1,6 +1,8 @@
 use compiler.ast
 use compiler.gen
 use compiler.utils
+use compiler.compile
+use compiler.parser.package
 
 Parser::parseStatement()
 {
@@ -318,14 +320,22 @@ Parser::parseReturnStmt(ret_line<i32>) {
     fc = this.currentFunc
     this.check(fc != null)
     count = std.len(ret)
-    // return callee(): sole call may forward N declared returns while ret.size()==1;
-    // raise mcount to declared size so FunctionPhase does not reject the count.
-    // Chain ending in a field (v.c.get().c) must not raise mcount.
+    // return callee(): sole call may forward N returns while ret.size()==1.
+    // Static: mcount must equal declared (pad/trunc at codegen).
+    // Dynamic: lift from callee mcount. Chain field end must not raise.
+    // Async `return inner.poll(ctx)` is size==1 sole call (not PollReady,x).
     start = 0
     if fc.isasync() && std.len(ret) > 0
         start = 1
-    if std.len(ret) - start == 1 {
-        sole = ret[start]
+    sole_forward = false
+    if std.len(ret) - start == 1
+        sole_forward = true
+    if fc.isasync() && std.len(ret) == 1
+        sole_forward = true
+    if sole_forward {
+        sole = ret[0]
+        if fc.isasync() && std.len(ret) > 1
+            sole = ret[start]
         is_call = false
         if sole != null {
             if type(sole) == type(gen.FunCallExpr) || type(sole) == type(gen.MemberCallExpr)
@@ -341,8 +351,72 @@ Parser::parseReturnStmt(ret_line<i32>) {
         }
         if is_call {
             declared = std.len(fc.returnTypes)
-            if declared > count
+            // Declared > 0: exact declared arity (do not raise to callee).
+            if declared > 0 {
                 count = declared
+            } else if compile.phase == compile.FunctionPhase && sole != null {
+                fce = null
+                mce = null
+                if type(sole) == type(gen.FunCallExpr)
+                    fce = sole
+                else if type(sole) == type(gen.MemberCallExpr)
+                    mce = sole
+                else if type(sole) == type(gen.ChainExpr) {
+                    ch = sole
+                    if std.len(ch.fields) > 0 {
+                        last = std.tail(ch.fields)
+                        if type(last) == type(gen.FunCallExpr)
+                            fce = last
+                        else if type(last) == type(gen.MemberCallExpr)
+                            mce = last
+                    }
+                }
+                callee = null
+                method = ""
+                if fce != null && fce.funcname != "" {
+                    if fce.is_pkgcall && fce.package != ""
+                        // gen.getGLobalFunc (Package::getGLobalFunc); not parser.package
+                        callee = gen.getGLobalFunc(fce.package, fce.funcname)
+                    else
+                        callee = this.getFunc(fce.funcname, false)
+                    if callee == null
+                        method = fce.funcname
+                } else if mce != null && mce.membername != "" {
+                    method = mce.membername
+                }
+                // Class/struct methods: scan tables; prefer higher mcount (poll).
+                if callee == null && method != "" {
+                    best = null
+                    for k, f : this.funcs {
+                        if f != null && f.name == method {
+                            if best == null || f.mcount > best.mcount
+                                best = f
+                        }
+                    }
+                    if this.pkg != null {
+                        for k, cls : this.pkg.classes {
+                            for f : cls.funcs {
+                                if f != null && f.name == method {
+                                    if best == null || f.mcount > best.mcount
+                                        best = f
+                                }
+                            }
+                        }
+                        for k, st : this.pkg.structs {
+                            if std.exist(method, st.funcs) {
+                                f = st.funcs[method]
+                                if f != null {
+                                    if best == null || f.mcount > best.mcount
+                                        best = f
+                                }
+                            }
+                        }
+                    }
+                    callee = best
+                }
+                if callee != null && callee.mcount > count
+                    count = callee.mcount
+            }
         }
     }
     if fc.mcount < count

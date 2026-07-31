@@ -112,7 +112,8 @@ ReturnStmt::genExpr(ctx , i){
 ReturnStmt::genDefault(ctx , i){
     fc = ast.GF()
     defineType = null
-    if std.len(fc.returnTypes) > ( i + 1) {
+    // Mother: size >= (i+1) ⇔ len > i (0-based index i needs at least i+1 entries)
+    if std.len(fc.returnTypes) > i {
         defineType = fc.returnTypes[i]
     }
 
@@ -168,6 +169,28 @@ ReturnStmt::compilemulti(ctx){
         fce = null
         if compiled != null && type(compiled) == type(FunCallExpr)
             fce = compiled
+
+        // Dynamic ObjCall: multi-return on dyn ret stack (defaultfunc.mcount is wrong).
+        if fce != null && fce.is_dyn {
+            if fc.mcount > 1 {
+                compile.Push()
+                for i = fc.mcount - 1 ; i >= 0 ; i -= 1 {
+                    spe = new StackPosExpr(this.line, this.column)
+                    spe.isdyn = true
+                    spe.cur = i + 1
+                    spe.pos = 0
+                    spe.compile(ctx, true)
+                    if i == 0
+                        continue
+                    cur = i - 1
+                    compile.writeln(" mov %d(%%rbp) , %%rdi", stackpointer)
+                    compile.writeln(" mov %%rax , %d(%%rdi)", cur * 8)
+                }
+                compile.Pop("%rdi")
+            }
+            fce.dynfreeret()
+            return null
+        }
 
         if fce != null && fce.fcs != null && fce.fcs.mcount > 1 {
             callee = fce.fcs
@@ -228,8 +251,23 @@ ReturnStmt::compilemulti(ctx){
         }
 
         // Already compile(load=false): single-return result in rax; fill other slots.
+        // genDefault clobbers rax — push first return, then restore.
+        firstTy = ast.I64
+        if std.len(fc.returnTypes) > 0 {
+            defineType = fc.returnTypes[0]
+            if defineType != null && (defineType.baseType() || defineType.pointer)
+                firstTy = defineType.abiToken()
+        }
+        if ast.isfloattk(firstTy)
+            compile.Pushf(firstTy)
+        else
+            compile.Push()
         for i = fc.mcount - 1 ; i >= 1 ; i -= 1
             this.genDefault(ctx, i)
+        if ast.isfloattk(firstTy)
+            compile.Popf(firstTy)
+        else
+            compile.Pop("%rax")
         if std.len(fc.returnTypes) > 0 {
             defineType = fc.returnTypes[0]
             if defineType != null && (defineType.baseType() || defineType.pointer)
