@@ -343,6 +343,8 @@ fn worker_entry(){
     // Increment before run; builder's wait_claimed already saw the claim.
     atomic.xadd(&shared0.workers_alive, 1)
     worker_run(w)
-    atomic.xadd(&shared0.workers_alive, -1.(i8))
+    // u32 all-ones: -1.(i8) zero-extends to +255 on xadd (see optimize atomic-xadd).
+    dec_alive<u32> = 4294967295
+    atomic.xadd(&shared0.workers_alive, dec_alive)
 }
 

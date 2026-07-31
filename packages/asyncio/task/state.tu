@@ -10,7 +10,8 @@ use os
 
 // CAS success sentinel: std.atomic cas/cas64 return 1 on success;
 // comparing against an untyped literal 0 crashes codegen (binary-op trap).
-CAS_OK<i64> = 1
+CAS_OK<i32> = 1
+CAS64_OK<i64> = 1
 
 // Lifecycle bits.
 RUNNING<i32>        = 0x01
@@ -103,14 +104,14 @@ TaskState::transition_to_running() i32 {
                 return TR_Failed
             }
             new_state<i32> = cur - REF_ONE
-            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK {
                 if (new_state & REF_COUNT_MASK) == 0 { return TR_Dealloc }
                 return TR_Failed
             }
             continue
         }
         new_state<i32> = (cur | RUNNING) & 0xFFFFFFFB
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK {
             if (new_state & CANCELLED) != 0 { return TR_Cancelled }
             return TR_Success
         }
@@ -134,14 +135,14 @@ TaskState::transition_to_idle() i32 {
                 return TI_Ok
             }
             new_state<i32> = (cur & 0xFFFFFFFE) - REF_ONE
-            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK {
                 if (new_state & REF_COUNT_MASK) == 0 { return TI_OkDealloc }
                 return TI_Ok
             }
             continue
         }
         new_state<i32> = (cur & 0xFFFFFFFE) + REF_ONE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TI_OkNotified }
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return TI_OkNotified }
     }
     return TI_Ok
 }
@@ -153,7 +154,7 @@ TaskState::transition_to_complete() i32 {
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
         new_state<i32> = (cur & 0xFFFFFFFE) | COMPLETE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return new_state }
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return new_state }
     }
     return 0
 }
@@ -168,7 +169,7 @@ TaskState::ref_inc(){
             os.die("task.state ref_inc overflow")
             return
         }
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return }
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return }
     }
 }
 
@@ -183,7 +184,7 @@ TaskState::ref_dec() i32 {
             return 0
         }
         new_state<i32> = cur - REF_ONE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK {
             if (new_state & REF_COUNT_MASK) == 0 return 1
             return 0
         }
@@ -205,7 +206,7 @@ TaskState::transition_to_notified_by_val() i32 {
                 return TN_DoNothing
             }
             new_state<i32> = (cur | NOTIFIED) - REF_ONE
-            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TN_DoNothing }
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return TN_DoNothing }
             continue
         }
         if (cur & (COMPLETE | NOTIFIED)) != 0 {
@@ -214,14 +215,14 @@ TaskState::transition_to_notified_by_val() i32 {
                 return TN_DoNothing
             }
             new_state<i32> = cur - REF_ONE
-            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK {
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK {
                 if (new_state & REF_COUNT_MASK) == 0 { return TN_Dealloc }
                 return TN_DoNothing
             }
             continue
         }
         new_state<i32> = (cur | NOTIFIED) + REF_ONE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TN_Submit }
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return TN_Submit }
     }
     return TN_DoNothing
 }
@@ -236,11 +237,11 @@ TaskState::transition_to_notified_by_ref() i32 {
         if (cur & (COMPLETE | NOTIFIED)) != 0 { return TN_DoNothing }
         if (cur & RUNNING) != 0 {
             new_state<i32> = cur | NOTIFIED
-            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TN_DoNothing }
+            if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return TN_DoNothing }
             continue
         }
         new_state<i32> = (cur | NOTIFIED) + REF_ONE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return TN_Submit }
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return TN_Submit }
     }
     return TN_DoNothing
 }
@@ -252,7 +253,7 @@ TaskState::set_join_waker() i32 {
         cur<i32> = w.(i32)
         if (cur & JOIN_INTEREST) == 0 return -1
         new_state<i32> = cur | JOIN_WAKER
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK return 0
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK return 0
     }
     return -1
 }
@@ -263,7 +264,7 @@ TaskState::unset_join_waker(){
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
         new_state<i32> = cur & 0xFFFFFFEF
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return }
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return }
     }
 }
 
@@ -273,6 +274,6 @@ TaskState::set_cancelled(){
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
         new_state<i32> = cur | CANCELLED
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS_OK { return }
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return }
     }
 }

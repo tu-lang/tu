@@ -11,7 +11,7 @@ use asyncio.task
 
 // CAS success sentinel: std.atomic cas/cas64 return 1 on success;
 // comparing against an untyped literal 0 crashes codegen (binary-op trap).
-CAS_OK<i64> = 1
+CAS64_OK<i64> = 1
 
 // readiness packing: [shutdown:1 | tick:15 | readiness:16].
 READINESS_BITS<i32> = 16
@@ -151,7 +151,7 @@ ScheduledIo::set_readiness(tick_op<i32>, new_ready_bits<i32>) i32 {
 
         nxt<u64> = util.pack_pack_field(ready_pack, merged_ready.(u64), cur)
         nxt = util.pack_pack_field(tick_pack, next_tick.(u64), nxt)
-        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS_OK return 0
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS64_OK return 0
     }
     return 0
 }
@@ -283,7 +283,7 @@ ScheduledIo::clear_readiness(event<ReadyEvent>) i32 {
         cur_ready<i32> = unpack_ready_bits(cur)
         next_ready<i32> = cur_ready & (~mask_no_closed)
         nxt<u64> = util.pack_pack_field(ready_pack, next_ready.(u64), cur)
-        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS_OK return 0
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS64_OK return 0
     }
     return 0
 }
@@ -303,7 +303,7 @@ ScheduledIo::shutdown() util.WakeList {
             break
         }
         nxt<u64> = util.pack_pack_field(shutdown_pack, 1, cur)
-        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS_OK {
+        if atomic.cas64(&this.readiness, cur.(i64), nxt.(i64)) == CAS64_OK {
             break
         }
     }

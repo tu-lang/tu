@@ -8,7 +8,7 @@ use asyncio.runtime.blocking as rtblk
 
 // CAS success sentinel: std.atomic cas/cas64 return 1 on success;
 // comparing against an untyped literal 0 crashes codegen (binary-op trap).
-CAS_OK<i64> = 1
+CAS_OK<i32> = 1
 
 EMPTY_PARK<i32>    = 0
 PARKED_PARK<i32>   = 1
