@@ -1,4 +1,6 @@
 use compiler.ast
+use compiler.compile
+use compiler.parser.package
 use std
 
 
@@ -30,6 +32,23 @@ ReturnStmt::compile(ctx)
     }
     ctx.jmpReturn()
     return null
+}
+
+// True when expr is a call form eligible for multi-return forwarding.
+// ChainExpr only counts when the last field is a call (not a field access).
+func return_expr_looks_like_call(e){
+    if e == null return false
+    if type(e) == type(FunCallExpr) return true
+    if type(e) == type(MemberCallExpr) return true
+    if type(e) == type(ChainExpr) {
+        ch = e
+        if std.len(ch.fields) == 0 return false
+        last = std.tail(ch.fields)
+        if type(last) == type(FunCallExpr) return true
+        if type(last) == type(MemberCallExpr) return true
+        return false
+    }
+    return false
 }
 
 ReturnStmt::exprCast(ctx , expr, i){
@@ -141,6 +160,85 @@ ReturnStmt::compilemulti(ctx){
     stackpointer = fc.ret_stack
     this.check(stackpointer> 0)
 
+    // return callee(): single multi-return call forwards as a group,
+    // same as a,b = callee(); return a,b. Old path with ret.size()==1
+    // filled extra slots via genDefault(0) and silently dropped values.
+    if std.len(this.ret) == 1 && return_expr_looks_like_call(this.ret[0]) {
+        compiled = this.ret[0].compile(ctx, false)
+        fce = null
+        if compiled != null && type(compiled) == type(FunCallExpr)
+            fce = compiled
+
+        if fce != null && fce.fcs != null && fce.fcs.mcount > 1 {
+            callee = fce.fcs
+            // Match MultiAssignStmt::assign: push rax first return, then StackPosExpr.
+            ty = ast.I64
+            if std.len(fc.returnTypes) > 0 {
+                ti = fc.returnTypes[0]
+                if ti.baseType() || ti.pointer
+                    ty = ti.abiToken()
+            }else if std.len(callee.returnTypes) > 0 {
+                ti = callee.returnTypes[0]
+                if ti.baseType() || ti.pointer
+                    ty = ti.abiToken()
+            }
+            if ast.isfloattk(ty)
+                compile.Pushf(ty)
+            else
+                compile.Push()
+
+            for i = fc.mcount - 1 ; i >= 0 ; i -= 1 {
+                if (i + 1) > callee.mcount {
+                    this.genDefault(ctx, i)
+                    continue
+                }
+                spe = new StackPosExpr(this.line, this.column)
+                spe.total = callee.mcount
+                spe.cur = i + 1
+                spe.pos = 0
+                spe.ismem = true
+                spe.dstType = ast.I64
+                if std.len(fc.returnTypes) > i {
+                    rt = fc.returnTypes[i]
+                    if rt.pointer || rt.baseType()
+                        spe.dstType = rt.abiToken()
+                    else {
+                        spe.dstType = ast.I64
+                        spe.st = package.getStruct(rt.pkg, rt.name)
+                    }
+                }else if std.len(callee.returnTypes) > i {
+                    rt = callee.returnTypes[i]
+                    if rt.pointer || rt.baseType()
+                        spe.dstType = rt.abiToken()
+                }
+                spe.compile(ctx, true)
+                if i == 0 {
+                    // First return stays in rax
+                    continue
+                }
+                cur = i - 1
+                compile.writeln(" mov %d(%%rbp) , %%rdi", stackpointer)
+                if ast.isfloattk(spe.dstType)
+                    compile.PushfDst(spe.dstType, "%rdi", cur * 8)
+                else
+                    compile.writeln(" mov %%rax , %d(%%rdi)", cur * 8)
+            }
+            fce.freeret()
+            return null
+        }
+
+        // Already compile(load=false): single-return result in rax; fill other slots.
+        for i = fc.mcount - 1 ; i >= 1 ; i -= 1
+            this.genDefault(ctx, i)
+        if std.len(fc.returnTypes) > 0 {
+            defineType = fc.returnTypes[0]
+            if defineType != null && (defineType.baseType() || defineType.pointer)
+                compile.Cast(ast.I64, defineType.dstCastType())
+        }
+        return null
+    }
+
+    // Pad missing / drop extras relative to declared mcount
     for i = fc.mcount - 1 ; i >= 0 ;i -= 1 {
         cur = i - 1
         if i == 0 {

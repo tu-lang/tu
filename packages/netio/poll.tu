@@ -8,10 +8,9 @@ mem Poll {
 	Registry* reg_store // mother: registry
 }
 
-// Mother: Registry { selector }. Store Selector as u64 — cross-package
-// `Selector*` field loads / member calls segfault under current codegen.
+// Mother: Registry { selector }.
 mem Registry {
-	u64 sel_raw // mother: selector
+	nsys.Selector* sel
 }
 
 // Build Poll via single-return helpers (nested (i32,T) multi-return drops T).
@@ -20,7 +19,7 @@ fn poll_create() Poll {
 	if sel == null
 		return null
 	return new Poll {
-		reg_store: new Registry { sel_raw: nsys.selector_to_bits(sel) }
+		reg_store: new Registry { sel: sel }
 	}
 }
 
@@ -44,9 +43,8 @@ fn poll_poll(p<Poll>, events<event.Events>, timeout<libsys.Duration>) i32 {
 }
 
 fn registry_register(reg<Registry>, iosrc_bits<u64>, t<Token>, interests<Interest>) i32 {
-    // Bypass event.Source api dispatch (`.enroll` / `.register` segfault under
-    // current codegen). All netio Sources wrap IoSource; mother still goes
-    // Registry::register → Source::register → selector.
+    // All netio Sources wrap IoSource; register via IoSource bits (same end
+    // as Registry → Source::enroll → selector). Keeps one path for driver bits.
     return iosource_register_bits(iosrc_bits, reg, t, interests)
 }
 
@@ -92,7 +90,8 @@ Registry::try_clone() i32, Registry {
 	err<i32>, bits<u64> = nsys.selector_try_clone_bits(sel)
 	if err != io.Ok
 		return err, null
-	return io.Ok, new Registry { sel_raw: bits }
+	cloned<nsys.Selector> = nsys.selector_from_bits(bits)
+	return io.Ok, new Registry { sel: cloned }
 }
 
 // Mother: assert!(!selector.register_waker()).
@@ -105,12 +104,11 @@ Registry::register_waker() i32 {
 }
 
 fn registry_selector_bits(reg<Registry>) u64 {
-	return reg.sel_raw
+	return nsys.selector_to_bits(registry_selector(reg))
 }
 
 fn registry_selector(reg<Registry>) nsys.Selector {
-	bits<u64> = registry_selector_bits(reg)
-	return nsys.selector_from_bits(bits)
+	return reg.sel
 }
 
 fn poll_from_bits(bits<u64>) Poll {
@@ -118,8 +116,7 @@ fn poll_from_bits(bits<u64>) Poll {
 }
 
 fn poll_sel_raw(p<Poll>) u64 {
-    r<Registry> = p.reg_store
-    return r.sel_raw
+    return registry_selector_bits(p.reg_store)
 }
 
 // Dummy arg: multi-return callee must have >=1 stack arg so caller keeps T.

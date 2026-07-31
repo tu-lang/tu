@@ -13,6 +13,16 @@ i32i16 = "movswl %ax, %eax"
 i32u16 = "movzwl %ax, %eax"
 i32i64 = "movsxd %eax, %rax"
 u32i64 = "mov %eax, %eax"
+// Narrow int -> u32: signed sources sign-extend, unsigned zero-extend into eax low 32.
+i8u32  = "movsbl %al, %eax"
+i16u32 = "movswl %ax, %eax"
+u8u32  = "movzbl %al, %eax"
+u16u32 = "movzwl %ax, %eax"
+// Narrow int -> i32 (were NULL; args/assigns relied on leftover high bits).
+i8i32  = "movsbl %al, %eax"
+i16i32 = "movswl %ax, %eax"
+u8i32  = "movzbl %al, %eax"
+u16i32 = "movzwl %ax, %eax"
 
 i32f32 = "cvtsi2ssl %eax, %xmm0"
 u32f32 = "mov %eax, %eax\n cvtsi2ssq %rax, %xmm0"
@@ -44,13 +54,13 @@ f64f32 = "cvtsd2ss %xmm0, %xmm0"
 // the casts table
 casts = [ 
 	// i8   i16     i32     i64     u8     u16     u32     u64     f32	   f64
-	[null,  null,   null,   i32i64, i32u8, i32u16, null,   i32i64, i32f32, i32f64], // i8
-	[i32i8, null,   null,   i32i64, i32u8, i32u16, null,   i32i64, i32f32, i32f64], // i16
+	[null,  null,   i8i32,  i32i64, i32u8, i32u16, i8u32,  i32i64, i32f32, i32f64], // i8
+	[i32i8, null,   i16i32, i32i64, i32u8, i32u16, i16u32, i32i64, i32f32, i32f64], // i16
 	[i32i8, i32i16, null,   i32i64, i32u8, i32u16, null,   i32i64, i32f32, i32f64], // i32
 	[i32i8, i32i16, null,   null,   i32u8, i32u16, null,   null,   i64f32, i64f64], // i64
 
-	[i32i8, null,   null,   i32i64, null,  null,   null,   i32i64, i32f32, i32f64], // u8
-	[i32i8, i32i16, null,   i32i64, i32u8, null,   null,   i32i64, i32f32, i32f64], // u16
+	[i32i8, null,   u8i32,  i32i64, null,  null,   u8u32,  i32i64, i32f32, i32f64], // u8
+	[i32i8, i32i16, u16i32, i32i64, i32u8, null,   u16u32, i32i64, i32f32, i32f64], // u16
 	[i32i8, i32i16, null,   u32i64, i32u8, i32u16, null,   u32i64, u32f32, u32f64], // u32
 	[i32i8, i32i16, null,   null,   i32u8, i32u16, null,   null,   u64f32, u64f64], // u64
 	[f32i8, f32i16, f32i32, f32i64, f32u8, f32u16, f32u32, f32u64, null,   f32f64], // f32

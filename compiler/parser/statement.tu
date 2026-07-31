@@ -317,9 +317,36 @@ Parser::parseReturnStmt(ret_line<i32>) {
     }
     fc = this.currentFunc
     this.check(fc != null)
-
-    if fc.mcount < std.len(ret)
-        fc.mcount = std.len(ret)
+    count = std.len(ret)
+    // return callee(): sole call may forward N declared returns while ret.size()==1;
+    // raise mcount to declared size so FunctionPhase does not reject the count.
+    // Chain ending in a field (v.c.get().c) must not raise mcount.
+    start = 0
+    if fc.isasync() && std.len(ret) > 0
+        start = 1
+    if std.len(ret) - start == 1 {
+        sole = ret[start]
+        is_call = false
+        if sole != null {
+            if type(sole) == type(gen.FunCallExpr) || type(sole) == type(gen.MemberCallExpr)
+                is_call = true
+            else if type(sole) == type(gen.ChainExpr) {
+                ch = sole
+                if std.len(ch.fields) > 0 {
+                    last = std.tail(ch.fields)
+                    if type(last) == type(gen.FunCallExpr) || type(last) == type(gen.MemberCallExpr)
+                        is_call = true
+                }
+            }
+        }
+        if is_call {
+            declared = std.len(fc.returnTypes)
+            if declared > count
+                count = declared
+        }
+    }
+    if fc.mcount < count
+        fc.mcount = count
 
     node.ret = ret
     return node
