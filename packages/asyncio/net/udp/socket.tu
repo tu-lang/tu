@@ -161,3 +161,13 @@ UdpSocket::recv_from(buf<io.Buf>) UdpRecvFut {
         peer: null
     }
 }
+
+// Deregister + close the underlying fd so the port can be rebound.
+UdpSocket::close() i32 {
+    if this.poll_ev == null {
+        return 0
+    }
+    err<i32> = this.poll_ev.close()
+    this.poll_ev = null
+    return err
+}

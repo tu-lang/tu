@@ -15,6 +15,18 @@ JoinHandle::init(raw<RawTask>){
     this.consumed = 0
 }
 
+// Cancel the underlying task (idempotent). Join then yields JoinErrorCancelled.
+JoinHandle::abort(){
+    rtask<RawTask> = this.task_ptr
+    if rtask == null { return }
+    rtask.abort_signal()
+}
+
+// AbortHandle view of the same RawTask (safe after this JoinHandle is dropped).
+JoinHandle::abort_handle() AbortHandle {
+    return AbortHandle::new(this.task_ptr)
+}
+
 // Poll the JoinHandle.
 JoinHandle::poll(ctx){
     if this.task_ptr == null {

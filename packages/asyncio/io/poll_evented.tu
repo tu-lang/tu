@@ -78,7 +78,24 @@ PollEvented::try_io(interest<netio.Interest>, op<rtio.IoOp>) i32, i64 {
 // Detach from the IO Driver. After deregister the PollEvented must not
 // be used; callers should drop their reference.
 PollEvented::deregister() i32 {
-    return this.reg.deregister(this.iosrc_bits)
+    if this.reg == null {
+        return 0
+    }
+    err<i32> = this.reg.deregister(this.iosrc_bits)
+    this.reg = null
+    return err
+}
+
+// Deregister from the driver and close the OS fd (Tu has no Drop).
+PollEvented::close() i32 {
+    bits<u64> = this.iosrc_bits
+    err<i32> = this.deregister()
+    if bits != 0 {
+        netio.iosource_close_fd(bits)
+        this.iosrc_bits = 0
+        this.holder_bits = 0
+    }
+    return err
 }
 
 // Poll the requested read/write readiness on `pe`, OR-ing whatever the driver

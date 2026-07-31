@@ -40,8 +40,9 @@ fn deadline_from_instant(when<rttime.Instant>) u64 {
 fn sleep(d<sys.Duration>) runtime.Future {
     // Refresh publish from context when available; never wipe with 0.
     rttime.sleep_set_handle_bits(current_time_handle_bits())
-    deadline<u64> = deadline_from_duration(d)
-    s = rttime.sleep_new(deadline)
+    // Defer now+duration until Sleep::poll — dual() may be built before
+    // block_on publishes TimeHandle (eager arg eval).
+    s = rttime.sleep_new_duration(d.as_millis())
     fut<runtime.Future> = s
     return fut
 }
