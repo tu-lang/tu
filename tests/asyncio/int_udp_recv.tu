@@ -11,7 +11,6 @@ use string
 use std
 use net
 use asyncio.runtime as rt
-use asyncio.net as anet
 use asyncio.net.udp as audp
 use asyncio.util
 
@@ -49,11 +48,9 @@ async udp_echo_body() {
     mlen<i32> = std.strlen(msg.str())
     mlen_u<u64> = mlen.(u64)
 
-    // client -> server
-    werr<i32>, _ = client.send_to(str_buf(msg), saddr).await
+    werr<i32>, wn0<u64> = client.send_to(str_buf(msg), saddr).await
     if werr != io.Ok return werr
 
-    // server receives, learns the client's address (typed peer SocketAddr)
     rbuf<io.Buf> = io.NewBuf(16)
     rerr<i32>, n_i<i64>, from<net.SocketAddr> = server.recv_from(rbuf).await
     if rerr != io.Ok return rerr
@@ -61,15 +58,66 @@ async udp_echo_body() {
     if n != mlen_u return io.OtherParse
     if from == null return io.OtherParse
 
-    // server echoes back to the origin
     echo<io.Buf> = io.NewBuf(n.(i32))
     ep<i8*> = echo.ptr()
     rp<i8*> = rbuf.ptr()
     std.memcpy(ep, rp, n)
-    werr2<i32>, _ = server.send_to(echo, from).await
+    werr2<i32>, wn1<u64> = server.send_to(echo, from).await
     if werr2 != io.Ok return werr2
 
-    // client receives the echo
+    rbuf2<io.Buf> = io.NewBuf(16)
+    rerr2<i32>, n2_i<i64>, peer2<net.SocketAddr> = client.recv_from(rbuf2).await
+    if rerr2 != io.Ok return rerr2
+    if peer2 == null return io.OtherParse
+    n2<u64> = n2_i.(u64)
+    if n2 != mlen_u return io.OtherParse
+
+    src<u8*> = msg.str()
+    got_p<i8*> = rbuf2.ptr()
+    got<u8*> = null
+    got = got_p
+    i<u64> = 0
+    while i < n2 {
+        if got[i] != src[i] return io.OtherParse
+        i += 1
+    }
+    return io.Ok
+}
+
+// Distinct ports so CT and MT can run in one process without bind races.
+async udp_echo_mt_body() {
+    saddr<net.SocketAddr> = addr_of(string.S(*"127.0.0.1:34668"))
+    caddr<net.SocketAddr> = addr_of(string.S(*"127.0.0.1:34669"))
+
+    serr<i32>, server<audp.UdpSocket> = audp.udp_bind(saddr)
+    if serr != io.Ok return serr
+    if server == null return io.Other
+
+    cerr<i32>, client<audp.UdpSocket> = audp.udp_bind(caddr)
+    if cerr != io.Ok return cerr
+    if client == null return io.Other
+
+    msg<string.String> = string.S(*"ping")
+    mlen<i32> = std.strlen(msg.str())
+    mlen_u<u64> = mlen.(u64)
+
+    werr<i32>, wn0<u64> = client.send_to(str_buf(msg), saddr).await
+    if werr != io.Ok return werr
+
+    rbuf<io.Buf> = io.NewBuf(16)
+    rerr<i32>, n_i<i64>, from<net.SocketAddr> = server.recv_from(rbuf).await
+    if rerr != io.Ok return rerr
+    n<u64> = n_i.(u64)
+    if n != mlen_u return io.OtherParse
+    if from == null return io.OtherParse
+
+    echo<io.Buf> = io.NewBuf(n.(i32))
+    ep<i8*> = echo.ptr()
+    rp<i8*> = rbuf.ptr()
+    std.memcpy(ep, rp, n)
+    werr2<i32>, wn1<u64> = server.send_to(echo, from).await
+    if werr2 != io.Ok return werr2
+
     rbuf2<io.Buf> = io.NewBuf(16)
     rerr2<i32>, n2_i<i64>, peer2<net.SocketAddr> = client.recv_from(rbuf2).await
     if rerr2 != io.Ok return rerr2
@@ -103,6 +151,31 @@ fn int_udp_echo(){
     fmt.println("int_udp_echo passed")
 }
 
+fn int_udp_echo_mt(){
+    fmt.println("int_udp_echo_mt test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    rerr<i32>, result<i64> = rt.builder_block_on(b, udp_echo_mt_body(), 0)
+    if rerr != 0 os.dief("mt block_on failed: %d", rerr)
+    ri<i32> = 0
+    ri = result
+    if ri != io.Ok os.dief("mt udp echo body failed: %d", ri)
+
+    b2<rt.Builder> = rt.Builder::new_multi_thread()
+    b2 = b2.worker_threads(4)
+    b2 = b2.enable_all()
+    // Same ports as mt1 — runtime shutdown must close fds (AddrInUse otherwise).
+    rerr2<i32>, result2<i64> = rt.builder_block_on(b2, udp_echo_mt_body(), 0)
+    if rerr2 != 0 os.dief("mt2 block_on failed: %d", rerr2)
+    ri2<i32> = 0
+    ri2 = result2
+    if ri2 != io.Ok os.dief("mt2 udp echo body failed: %d", ri2)
+
+    fmt.println("int_udp_echo_mt passed")
+}
+
 fn main(){
     int_udp_echo()
+    int_udp_echo_mt()
 }

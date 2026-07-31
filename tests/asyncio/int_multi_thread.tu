@@ -1,12 +1,15 @@
 // Integration test for multi_thread block_on (task 9.41).
 // 4 workers; Handle::current; nested spawn / wake use schedule_local.
 // Fan-out stresses wake-local LIFO + steal across workers.
+// sleep_spawn covers time park wake then schedule_local spawn.
 
 use fmt
 use os
+use io
 use runtime
 use asyncio.task
 use asyncio.runtime as rt
+use asyncio.time as atime
 
 mem CurrentOkFut: async {
     i64 _pad
@@ -124,8 +127,33 @@ fn int_multi_thread_fanout(){
     fmt.println("int_multi_thread_fanout passed")
 }
 
+// Sleep, then spawn on a worker after timer wake (PARKED_DRIVER + schedule_local).
+async mt_sleep_spawn_body() {
+    e1<i32> = atime.sleep(atime.from_millis(20)).await
+    if e1 != io.Ok return e1.(i64)
+    err<i32>, h<rt.Handle> = rt.Handle::current()
+    if err != 0 return err.(i64)
+    jh<task.JoinHandle> = h.spawn(current_ok_fut())
+    v<i64> = jh.await
+    e2<i32> = atime.sleep(atime.from_millis(20)).await
+    if e2 != io.Ok return e2.(i64)
+    return v
+}
+
+fn int_multi_thread_sleep_spawn(){
+    fmt.println("int_multi_thread_sleep_spawn test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    err<i32>, val<i64> = rt.builder_block_on(b, mt_sleep_spawn_body(), 0)
+    if err != 0 os.dief("sleep_spawn block_on failed: %d", err)
+    if val.(i32) != 1 os.dief("expected sleep_spawn 1, got %d", val.(i32))
+    fmt.println("int_multi_thread_sleep_spawn passed")
+}
+
 fn main(){
     int_multi_thread()
     int_multi_thread_nested()
     int_multi_thread_fanout()
+    int_multi_thread_sleep_spawn()
 }

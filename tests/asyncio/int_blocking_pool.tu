@@ -41,6 +41,46 @@ fn int_blocking_pool_basic() {
     fmt.println("int_blocking_pool_basic passed")
 }
 
+// Same spawn_blocking path under multi_thread + enable_all (workers + pool).
+fn int_blocking_pool_mt() {
+    fmt.println("int_blocking_pool_mt")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    rerr<i32>, result<i64> = rt.builder_block_on(b, blocking_pool_body(), 0)
+    if rerr != 0 {
+        os.dief("mt block_on failed: %d", rerr)
+    }
+    ri<i32> = result
+    if ri != io.Ok {
+        os.dief("mt blocking body failed: %d", ri)
+    }
+    fmt.println("int_blocking_pool_mt passed")
+}
+
+// Several MT runtimes in one process after blocking work (shutdown stress).
+fn int_blocking_pool_mt_cycles() {
+    fmt.println("int_blocking_pool_mt_cycles")
+    n<i32> = 0
+    while n < 6 {
+        b<rt.Builder> = rt.Builder::new_multi_thread()
+        b = b.worker_threads(4)
+        b = b.enable_all()
+        rerr<i32>, result<i64> = rt.builder_block_on(b, blocking_pool_body(), 0)
+        if rerr != 0 {
+            os.dief("cycle block_on failed: %d", rerr)
+        }
+        ri<i32> = result
+        if ri != io.Ok {
+            os.dief("cycle body failed: %d", ri)
+        }
+        n += 1
+    }
+    fmt.println("int_blocking_pool_mt_cycles passed")
+}
+
 fn main() {
     int_blocking_pool_basic()
+    int_blocking_pool_mt()
+    int_blocking_pool_mt_cycles()
 }

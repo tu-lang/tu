@@ -76,6 +76,7 @@ async unix_echo_body() {
 }
 
 fn int_unix_echo() {
+    fmt.println("int_unix_echo test")
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
     rerr<i32>, result<i64> = rt.builder_block_on(b, unix_echo_body(), 0)
@@ -89,6 +90,35 @@ fn int_unix_echo() {
     fmt.println("int_unix_echo passed")
 }
 
+fn int_unix_echo_mt() {
+    fmt.println("int_unix_echo_mt test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    rerr<i32>, result<i64> = rt.builder_block_on(b, unix_echo_body(), 0)
+    if rerr != 0 {
+        os.dief("mt block_on failed: %d", rerr)
+    }
+    ri<i32> = result
+    if ri != io.Ok {
+        os.dief("mt unix_echo body failed: %d", ri)
+    }
+
+    b2<rt.Builder> = rt.Builder::new_multi_thread()
+    b2 = b2.worker_threads(4)
+    b2 = b2.enable_all()
+    rerr2<i32>, result2<i64> = rt.builder_block_on(b2, unix_echo_body(), 0)
+    if rerr2 != 0 {
+        os.dief("mt2 block_on failed: %d", rerr2)
+    }
+    ri2<i32> = result2
+    if ri2 != io.Ok {
+        os.dief("mt2 unix_echo body failed: %d", ri2)
+    }
+    fmt.println("int_unix_echo_mt passed")
+}
+
 fn main() {
     int_unix_echo()
+    int_unix_echo_mt()
 }

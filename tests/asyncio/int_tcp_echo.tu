@@ -94,6 +94,61 @@ async tcp_echo_body() {
     return io.Ok
 }
 
+// Same echo on a distinct port for multi_thread (avoid TIME_WAIT after CT).
+async tcp_echo_body_mt() {
+    addr_s<string.String> = string.S(*"127.0.0.1:34568")
+    slen<i32> = std.strlen(addr_s.str())
+    perr<i32>, addr<net.SocketAddr> = util.net_parse_ascii_bytes(addr_s.str(), slen)
+    if perr != io.Ok return perr
+
+    berr<i32>, listener<tcp.TcpListener> = tcp.TcpListener::bind(addr)
+    if berr != io.Ok return berr
+
+    cerr<i32>, client<tcp.TcpStream> = tcp.TcpStream::connect(addr).await
+    if cerr != io.Ok return cerr
+
+    aerr<i32>, server<tcp.TcpStream> = listener.accept().await
+    if aerr != io.Ok return aerr
+
+    msg<string.String> = string.S(*"ping")
+    mlen<i32> = std.strlen(msg.str())
+    mlen_u<u64> = mlen.(u64)
+    wbuf<io.Buf> = str_buf(msg)
+
+    wclient<ioutil.AsyncWrite> = client
+    werr<i32> = ioutil.write_all(wclient, wbuf).await
+    if werr != io.Ok return werr
+
+    own1<io.Buf> = io.NewBuf(16)
+    rb1<aio.ReadBuf> = aio.read_buf_from_i8(own1.ptr(), 16)
+    rerr<i32>, rn<u64> = ioutil.read(server, rb1).await
+    if rerr != io.Ok return rerr
+    if rn != mlen_u return io.OtherParse
+    cmp_err<i32> = cmp_buf_eq(own1, msg, rn)
+    if cmp_err != io.Ok return cmp_err
+
+    echo<io.Buf> = io.NewBuf(rn.(i32))
+    ep<i8*> = echo.ptr()
+    sp1<i8*> = own1.ptr()
+    std.memcpy(ep, sp1, rn)
+    wserver<ioutil.AsyncWrite> = server
+    werr2<i32> = ioutil.write_all(wserver, echo).await
+    if werr2 != io.Ok return werr2
+
+    own2<io.Buf> = io.NewBuf(16)
+    rb2<aio.ReadBuf> = aio.read_buf_from_i8(own2.ptr(), 16)
+    rerr2<i32>, n2<u64> = ioutil.read(client, rb2).await
+    if rerr2 != io.Ok return rerr2
+    if n2 != mlen_u return io.OtherParse
+    cmp_err2<i32> = cmp_buf_eq(own2, msg, n2)
+    if cmp_err2 != io.Ok return cmp_err2
+
+    hold_err<i32> = atime.sleep(atime.from_millis(50)).await
+    if hold_err != io.Ok return hold_err
+
+    return io.Ok
+}
+
 fn int_tcp_echo() {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
@@ -112,6 +167,28 @@ fn int_tcp_echo() {
     fmt.println("int_tcp_echo passed")
 }
 
+// Same echo body under multi_thread + enable_all (IO + time park on workers).
+fn int_tcp_echo_mt() {
+    fmt.println("int_tcp_echo_mt test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    body<runtime.Future> = tcp_echo_body_mt()
+    if body == null {
+        os.die("tcp_echo_body_mt returned null future")
+    }
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
+    if rerr != 0 {
+        os.dief("mt block_on failed: %d", rerr)
+    }
+    ri<i32> = result
+    if ri != io.Ok {
+        os.dief("mt tcp_echo body failed: %d", ri)
+    }
+    fmt.println("int_tcp_echo_mt passed")
+}
+
 fn main() {
     int_tcp_echo()
+    int_tcp_echo_mt()
 }

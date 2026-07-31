@@ -81,6 +81,18 @@ fn run_body(name<i8*>, body) {
     fmt.println(string.new(name))
 }
 
+fn run_body_mt(name<i8*>, body) {
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
+    if rerr != 0 os.dief("mt block_on failed: %d", rerr)
+    ri<i32> = 0
+    ri = result
+    if ri != io.Ok os.dief("mt process body failed: %d", ri)
+    fmt.println(string.new(name))
+}
+
 fn int_process_echo(){
     fmt.println("int_process_echo test")
     run_body("  proc_echo passed", proc_echo_body())
@@ -88,6 +100,15 @@ fn int_process_echo(){
     fmt.println("int_process_echo passed")
 }
 
+fn int_process_echo_mt(){
+    fmt.println("int_process_echo_mt test")
+    run_body_mt("  mt proc_echo passed", proc_echo_body())
+    run_body_mt("  mt proc_kill passed", proc_kill_body())
+    run_body_mt("  mt proc_echo again passed", proc_echo_body())
+    fmt.println("int_process_echo_mt passed")
+}
+
 fn main(){
     int_process_echo()
+    int_process_echo_mt()
 }

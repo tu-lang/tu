@@ -218,6 +218,36 @@ fn int_fs_roundtrip(){
     fmt.println("int_fs_roundtrip passed")
 }
 
+// Same four bodies under multi_thread + enable_all (blocking pool + workers).
+fn run_fs_mt(name<i8*>, body) {
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    e<i32>, r<i64> = rt.builder_block_on(b, body, 0)
+    if e != 0 os.dief("mt block_on failed: %d", e)
+    ri<i32> = 0
+    ri = r
+    if ri != io.Ok {
+        fmt.println(string.new(name))
+        fmt.println("mt body failed")
+        fmt.println(int(ri))
+        os.exit(1)
+    }
+    fmt.println(string.new(name))
+}
+
+fn int_fs_roundtrip_mt(){
+    fmt.println("int_fs_roundtrip_mt test")
+    run_fs_mt("  mt fs_roundtrip passed", fs_roundtrip_body())
+    run_fs_mt("  mt fs_create_remove_dir passed", fs_create_remove_dir_body())
+    run_fs_mt("  mt fs_metadata_rename passed", fs_metadata_rename_body())
+    run_fs_mt("  mt fs_read_dir passed", fs_read_dir_body())
+    // Second MT runtime after fs work must stay clean.
+    run_fs_mt("  mt fs_roundtrip again passed", fs_roundtrip_body())
+    fmt.println("int_fs_roundtrip_mt passed")
+}
+
 fn main(){
     int_fs_roundtrip()
+    int_fs_roundtrip_mt()
 }

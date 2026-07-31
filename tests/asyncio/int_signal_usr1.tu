@@ -102,6 +102,19 @@ fn run_body(name<i8*>, body) {
     fmt.println(string.new(name))
 }
 
+// Same bodies under multi_thread + enable_all (workers + signalfd + time).
+fn run_body_mt(name<i8*>, body) {
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
+    if rerr != 0 os.dief("mt block_on failed: %d", rerr)
+    ri<i32> = 0
+    ri = result
+    if ri != io.Ok os.dief("mt signal body failed: %d", ri)
+    fmt.println(string.new(name))
+}
+
 fn int_ctrl_c_self_kill(){
     fmt.println("int_ctrl_c_self_kill test")
     run_body("  sig_usr1 passed", sig_usr1_body())
@@ -109,6 +122,16 @@ fn int_ctrl_c_self_kill(){
     fmt.println("int_ctrl_c_self_kill passed")
 }
 
+fn int_ctrl_c_self_kill_mt(){
+    fmt.println("int_ctrl_c_self_kill_mt test")
+    run_body_mt("  mt sig_usr1 passed", sig_usr1_body())
+    run_body_mt("  mt ctrl_c passed", ctrl_c_body())
+    // Second MT runtime after signal work must stay clean.
+    run_body_mt("  mt sig_usr1 again passed", sig_usr1_body())
+    fmt.println("int_ctrl_c_self_kill_mt passed")
+}
+
 fn main(){
     int_ctrl_c_self_kill()
+    int_ctrl_c_self_kill_mt()
 }
