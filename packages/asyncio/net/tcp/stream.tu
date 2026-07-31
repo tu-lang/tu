@@ -34,7 +34,7 @@ mem TcpStream {
 // is no active IO driver).
 const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32, TcpStream) {
     shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
-    ok_code<i32> = 1           // io.Ok
+    ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
@@ -99,7 +99,7 @@ ConnectFut::poll(ctx){
     // Numeric codes: leaf-poll asmgen sometimes fails to resolve io.*/aerr.* consts.
     other_err<i32> = 16908328       // io.Other
     shut_err<i32> = 0x03020005      // aerr.RuntimeShutdown
-    ok_code<i32> = 1                // io.Ok
+    ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     if this.stage == -1 return ready, other_err, null
@@ -251,7 +251,7 @@ TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     sock<nettcp.TcpStream> = this.raw_sock()
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx)
@@ -284,7 +284,7 @@ TcpStream::poll_write_priv(ctx<u64>, b<io.Buf>) i32, u64 {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(ctx)
         if rerr == pend return pend, 0

@@ -31,7 +31,7 @@ const UnixDatagram::bind(path<string.String>) (i32, UnixDatagram) {
 // Register an already-bound netio UnixDatagram with the IO driver.
 const UnixDatagram::from_netio(inner<netuds.UnixDatagram>) (i32, UnixDatagram) {
     shut_err<i32> = 0x03020005
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)

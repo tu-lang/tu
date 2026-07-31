@@ -26,7 +26,7 @@ mem UnixStream {
 // Returns (io.Ok, stream) or an error with null.
 const UnixStream::from_netio(inner<netuds.UnixStream>) (i32, UnixStream) {
     shut_err<i32> = 0x03020005
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
@@ -74,7 +74,7 @@ mem UnixConnectFut: async {
 UnixConnectFut::poll(ctx){
     other_err<i32> = 16908328
     shut_err<i32> = 0x03020005
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     if this.stage == -1 return ready, other_err, null
@@ -125,7 +125,7 @@ UnixStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     sock<netuds.UnixStream> = this.raw_sock()
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx)
@@ -157,7 +157,7 @@ UnixStream::poll_write_priv(ctx<u64>, b<io.Buf>) i32, u64 {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(ctx)
         if rerr == pend return pend, 0

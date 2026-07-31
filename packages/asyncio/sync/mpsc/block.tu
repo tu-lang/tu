@@ -5,7 +5,7 @@ use std.atomic
 
 // CAS success sentinel: std.atomic cas/cas64 return 1 on success;
 // comparing against an untyped literal 0 crashes codegen (binary-op trap).
-CAS_OK<i64> = 1
+CAS64_OK<i64> = 1
 
 BLOCK_CAP<u32> = 32
 
@@ -40,7 +40,7 @@ Block::put_slot(off<u32>, value<i64>) i32 {
         bit<u64> = 1.(u64) << off.(u64)
         if (cur & bit) != 0 return MpscPushBusy
         new_bits<u64> = cur | bit
-        if atomic.cas64(&this.published_bits, cur.(i64), new_bits.(i64)) == CAS_OK {
+        if atomic.cas64(&this.published_bits, cur.(i64), new_bits.(i64)) == CAS64_OK {
             this.slots[off] = value
             return 0
         }

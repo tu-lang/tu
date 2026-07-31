@@ -32,7 +32,7 @@ const TcpListener::bind(addr<net.SocketAddr>) (i32, TcpListener) {
 
 const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
     shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
-    ok_code<i32> = 1           // io.Ok
+    ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null {
         return shut_err, null
@@ -74,7 +74,7 @@ mem AcceptFut: async {
 }
 
 AcceptFut::poll(ctx){
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302 // io.WouldBlock
@@ -112,7 +112,7 @@ TcpListener::accept() AcceptFut {
 
 // Same ready/accept/clear loop as AcceptFut::poll.
 TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302

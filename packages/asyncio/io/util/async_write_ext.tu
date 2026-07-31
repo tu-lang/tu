@@ -116,6 +116,7 @@ WriteAll::poll(ctx) {
     pend<i32> = runtime.PollPending
     wz<i32> = 16908312
     ok_code<i32> = 1
+    // 1 == library io.Ok; this file `use io as iobuf` so cannot write io.Ok.
     code<i32> = this.done_code
     if code != 0 {
         return ready, code

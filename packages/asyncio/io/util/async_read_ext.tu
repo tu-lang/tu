@@ -45,6 +45,7 @@ Read::poll(ctx) {
     }
     delta<u64> = rb.filled_len() - this.start
     ok_code<i32> = 1
+    // 1 == library io.Ok; this file `use io as iobuf` so cannot write io.Ok.
     return runtime.PollReady, ok_code, delta
 }
 

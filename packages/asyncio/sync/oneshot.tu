@@ -7,7 +7,7 @@ use runtime
 
 // CAS success sentinel: std.atomic cas/cas64 return 1 on success;
 // comparing against an untyped literal 0 crashes codegen (binary-op trap).
-CAS_OK<i64> = 1
+CAS_OK<i32> = 1
 
 VALUE_SET<i32>  = 0x01
 TX_DROPPED<i32> = 0x02

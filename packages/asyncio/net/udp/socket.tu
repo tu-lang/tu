@@ -31,7 +31,7 @@ fn udp_socket_last() UdpSocket {
 const UdpSocket::bind(addr<net.SocketAddr>) (i32, UdpSocket) {
     LAST_UDP_SOCK = null
     shut_err<i32> = 0x03020005
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
 
     err<i32>, inner<netudp.UdpSocket> = netudp.UdpSocket::bind(addr)
     if err != ok_code return err, null
@@ -88,7 +88,7 @@ UdpSendFut::poll(ctx) {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     loop {
         werr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(ctx.(u64))
         if werr == pend return pend
@@ -106,24 +106,24 @@ UdpSendFut::poll(ctx) {
     return ready, ok_code, 0.(i64)
 }
 
-// Leaf for recv_from.
+// Leaf for recv_from. Peer is typed SocketAddr (no u64 peer_bits erase).
 mem UdpRecvFut: async {
     aio.PollEvented*   poll_ev
     netudp.UdpSocket*  sock
     u64                buf_bits
     i64                byte_count
-    u64                peer_bits
+    net.SocketAddr     peer
 }
 
 UdpRecvFut::poll(ctx) {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx.(u64))
         if rerr == pend return pend
-        if rerr != 0 return ready, rerr, 0.(i64), 0.(u64)
+        if rerr != 0 return ready, rerr, 0.(i64), null
 
         buf<io.Buf> = io.buf_from_bits(this.buf_bits)
         e<i32>, n<u64>, addr<net.SocketAddr> = this.sock.recv_from(buf)
@@ -131,13 +131,11 @@ UdpRecvFut::poll(ctx) {
             this.poll_ev.clear_readiness(ev)
             continue
         }
-        bits<u64> = 0
-        bits = addr
-        this.peer_bits = bits
+        this.peer = addr
         this.byte_count = n.(i64)
-        return ready, e, n.(i64), bits
+        return ready, e, n.(i64), addr
     }
-    return ready, ok_code, 0.(i64), 0.(u64)
+    return ready, ok_code, 0.(i64), null
 }
 
 // Return leaf for caller await.
@@ -160,6 +158,6 @@ UdpSocket::recv_from(buf<io.Buf>) UdpRecvFut {
         sock: sock,
         buf_bits: io.buf_to_bits(buf),
         byte_count: 0,
-        peer_bits: 0
+        peer: null
     }
 }

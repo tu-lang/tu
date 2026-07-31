@@ -53,14 +53,13 @@ async udp_echo_body() {
     werr<i32>, _ = client.send_to(str_buf(msg), saddr).await
     if werr != io.Ok return werr
 
-    // server receives, learns the client's address
+    // server receives, learns the client's address (typed peer SocketAddr)
     rbuf<io.Buf> = io.NewBuf(16)
-    rerr<i32>, n_i<i64>, from_bits<u64> = server.recv_from(rbuf).await
+    rerr<i32>, n_i<i64>, from<net.SocketAddr> = server.recv_from(rbuf).await
     if rerr != io.Ok return rerr
     n<u64> = n_i.(u64)
     if n != mlen_u return io.OtherParse
-    from<net.SocketAddr> = null
-    from = from_bits
+    if from == null return io.OtherParse
 
     // server echoes back to the origin
     echo<io.Buf> = io.NewBuf(n.(i32))
@@ -72,8 +71,9 @@ async udp_echo_body() {
 
     // client receives the echo
     rbuf2<io.Buf> = io.NewBuf(16)
-    rerr2<i32>, n2_i<i64>, _ = client.recv_from(rbuf2).await
+    rerr2<i32>, n2_i<i64>, peer2<net.SocketAddr> = client.recv_from(rbuf2).await
     if rerr2 != io.Ok return rerr2
+    if peer2 == null return io.OtherParse
     n2<u64> = n2_i.(u64)
     if n2 != mlen_u return io.OtherParse
 

@@ -44,7 +44,7 @@ fn unix_listener_bind(path<string.String>) i32, UnixListener {
 // Register an already-bound netio UnixListener with the IO driver.
 const UnixListener::from_netio(inner<netuds.UnixListener>) (i32, UnixListener) {
     shut_err<i32> = 0x03020005
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return shut_err, null
     dh<rt.DriverHandle> = rt.context_driver_handle(rc)
@@ -81,7 +81,7 @@ mem UnixAcceptFut: async {
 }
 
 UnixAcceptFut::poll(ctx){
-    ok_code<i32> = 1
+    ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = 16908302

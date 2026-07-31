@@ -20,15 +20,16 @@ CtrlCFut::poll(ctx) {
         this.recv_fut = stream.recv()
         this.stage = 1
     }
-    return this.recv_fut.poll(ctx)
+    // Unpack multi-return; bare `return recv_fut.poll(ctx)` can drop the value.
+    code<i32>, val = this.recv_fut.poll(ctx)
+    return code, val
 }
 
-// Awaitable until first SIGINT after poll.
-fn ctrl_c() runtime.Future {
-    f<CtrlCFut> = new CtrlCFut {
+// Awaitable until first SIGINT after poll. Returns the concrete leaf
+// (same pattern as SignalStream::recv → RecvFut); callers `.await` it.
+fn ctrl_c() CtrlCFut {
+    return new CtrlCFut {
         stage: 0,
         recv_fut: null
     }
-    fut<runtime.Future> = f
-    return fut
 }

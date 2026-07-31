@@ -2,6 +2,7 @@
 //   - subscribe to SIGUSR1 and SIGINT
 //   - raise SIGUSR1 to ourselves
 //   - SIGUSR1 recv() resolves; the SIGINT stream must stay un-fired
+//   - ctrl_c().await resolves on SIGINT (concrete CtrlCFut, no Future erase)
 //
 // Requires the signal driver running on the runtime root (signalfd drain +
 // EventInfo::fire after each IO turn). Linux-only; validated on Linux CI, not
@@ -16,6 +17,8 @@ use sys
 use string
 use asyncio.runtime as rt
 use asyncio.signal as sig
+use asyncio.time as atime
+use asyncio.task as task
 
 // task 18.4: SIGUSR1 self-kill wakes its stream while SIGINT stays quiet.
 async sig_usr1_body() {
@@ -52,6 +55,40 @@ async sig_usr1_body() {
     return ok_code
 }
 
+// Raise SIGINT after a short Sleep so ctrl_c is already parked.
+async kill_sigint_after_sleep() {
+    e1<i32> = atime.sleep(atime.from_millis(30)).await
+    if e1 != io.Ok return e1
+    pid_i<i32> = 0
+    pid_i = os._getpid()
+    sigint<i32> = 2
+    kerr<i32> = sys.kill(pid_i, sigint)
+    if kerr < 0 return io.OtherParse
+    return io.Ok
+}
+
+fn kill_sigint_fut() runtime.Future {
+    return kill_sigint_after_sleep()
+}
+
+// task 18.4 follow-up: public ctrl_c() leaf awaits SIGINT.
+async ctrl_c_body() {
+    ok_code<i32> = io.Ok
+    bad<i32> = io.OtherParse
+
+    err_h<i32>, h<rt.Handle> = rt.Handle::current()
+    if err_h != 0 return bad
+
+    jh<task.JoinHandle> = h.spawn(kill_sigint_fut())
+    cerr<i32> = sig.ctrl_c().await
+    if cerr != ok_code return cerr
+
+    // Join the killer so shutdown does not race the Sleep.
+    jv<i64> = jh.await
+    if jv.(i32) != ok_code return bad
+    return ok_code
+}
+
 // Drive one body via builder_block_on (same path as int_process_echo / macros).
 fn run_body(name<i8*>, body) {
     b<rt.Builder> = rt.Builder::new_current_thread()
@@ -68,6 +105,7 @@ fn run_body(name<i8*>, body) {
 fn int_ctrl_c_self_kill(){
     fmt.println("int_ctrl_c_self_kill test")
     run_body("  sig_usr1 passed", sig_usr1_body())
+    run_body("  ctrl_c passed", ctrl_c_body())
     fmt.println("int_ctrl_c_self_kill passed")
 }
 
