@@ -668,6 +668,7 @@ fn value_string_plus(lhs<Value>,rhs<Value>)
             tmstr = lhs.data.(string.Str).dup()
             if rhs.type == Int        tmstr = tmstr.catfmt(*"%I",rhs.data)
             else if rhs.type == Array tmstr = tmstr.cat(arr_tostring(rhs))
+            else if rhs.type == Map   tmstr = tmstr.cat(map_tostring(rhs))
             else if rhs.type == Char  tmstr = tmstr.putc(rhs.data)
             else                      tmstr = tmstr.cat(rhs.data)
         }

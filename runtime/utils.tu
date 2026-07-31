@@ -58,7 +58,8 @@ retry:
 }
  
 Stack::pop(){
-	cursor<i32> = atomic.xadd(&this.index, -1.(i8))
+	dec_idx<u32> = 4294967295
+	cursor<i32> = atomic.xadd(&this.index, dec_idx)
 	if cursor < 0 {
 		atomic.xadd(&this.index, 1.(i8))
 		return Null

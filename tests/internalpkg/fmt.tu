@@ -1,5 +1,6 @@
 
 use fmt
+use os
 
 func println(){
     a = -1323
@@ -31,8 +32,18 @@ func test_sprintf(){
 
     fmt.println("test sprintf success")
 }
+
+// Map println must show "{k:v...}", not "map:%p".
+func test_map_println(){
+    fmt.println("test map println")
+    m = {"a": 1}
+    fmt.println(m)
+    e = {}
+    fmt.println(e)
+    fmt.println("test map println success")
+}
 func main(){
     println()
     test_sprintf()
+    test_map_println()
 }
-

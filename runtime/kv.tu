@@ -209,6 +209,50 @@ fn arr_tostring(varr<Value>)
     return ret.cat(*"]")
 }
 
+// Format a dynamic map as "{k:v,k:v,...}" for fmt.println / debugging.
+fn map_tostring(vmap<Value>)
+{
+    ret<string.Str> = string.empty()
+    tree<map.Rbtree> = vmap.data
+    ret = ret.cat(*"{")
+    if tree == null {
+        return ret.cat(*"}")
+    }
+    if tree.root == tree.sentinel {
+        return ret.cat(*"}")
+    }
+    cur<map.RbtreeNode> = tree.root.min(tree.sentinel)
+    first<i32> = 1
+    while cur != null && cur != tree.sentinel {
+        if first == 0 {
+            ret = ret.cat(*",")
+        }
+        first = 0
+        // RbtreeNode.k/v are Value*; member access auto-derefs like object.tu.
+        match cur.k.type {
+            String : ret = ret.cat(cur.k.data)
+            Float : {
+                fv<FloatValue> = cur.k
+                fstr<string.String> = string.f64tostring(fv.data, 5.(i8))
+                ret = ret.cat(fstr.str())
+            }
+            _ : ret = ret.catfmt(*"%I", cur.k.data)
+        }
+        ret = ret.cat(*":")
+        match cur.v.type {
+            String : ret = ret.cat(cur.v.data)
+            Float : {
+                fv2<FloatValue> = cur.v
+                fstr2<string.String> = string.f64tostring(fv2.data, 5.(i8))
+                ret = ret.cat(fstr2.str())
+            }
+            _ : ret = ret.catfmt(*"%I", cur.v.data)
+        }
+        cur = tree.next(cur)
+    }
+    return ret.cat(*"}")
+}
+
 //compiler: function iter var size
 mem KvIter {
 	i64  type , root

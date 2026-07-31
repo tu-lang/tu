@@ -30,7 +30,8 @@ func test_runtimemalloc()
 
 
 }
-//std 内存分配器性能比较低，测试1万次分配
+// Legacy std.malloc bench only — production must use runtime.malloc (GC).
+// Smaller loop so the legacy allocator stays covered without implying it is preferred.
 func test_stdmalloc(){
 	maxsize<i32> = 100
 	count<i32> = 10000
