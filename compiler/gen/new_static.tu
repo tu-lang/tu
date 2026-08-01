@@ -214,7 +214,12 @@ NewStructExpr::compile(ctx,load){
 NewStructExpr::getStruct(){
 	if this.st != null
 		return this.st
+	// Import alias → full_package; empty miss falls back to literal pkgname
+	// (same family as VarExpr isMemtype) so genawait2 annot stays resolvable.
 	fullpackage = GP().getImport(this.init.pkgname)
+	if (fullpackage == "" || fullpackage == null) && this.init.pkgname != "" {
+		fullpackage = this.init.pkgname
+	}
 	s = package.getStruct(fullpackage,this.init.name)
 	if s == null this.check(false,"struct not exist when new struct")
 	this.st = s

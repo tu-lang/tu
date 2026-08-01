@@ -98,12 +98,19 @@ Parser::parseChainExpr(first){
             _ : break
         }
     }
-    // Single VarExpr + chain-end assert: write back and collapse so pkg.fn.(u64)
-    // matches bare fn.(u64) (VarExpr.tyassert skips newfuncobject).
-    // Multi-field / non-Var keep ChainExpr as assert carrier.
+    // Single scalar + chain-end assert: write back and collapse.
+    // VarExpr: pkg.fn.(u64) matches bare fn.(u64).
+    // BinaryExpr: (0 - x).(i32) avoids fake Chain entering memgen.
+    // Multi-field / member-chain nodes keep ChainExpr as assert carrier.
     if std.len(chainExpr.fields) == 1 {
         only = chainExpr.fields[0]
         if chainExpr.tyassert != null && type(only) == type(gen.VarExpr) {
+            if only.tyassert == null {
+                only.tyassert = chainExpr.tyassert
+            }
+            return only
+        }
+        if chainExpr.tyassert != null && type(only) == type(gen.BinaryExpr) {
             if only.tyassert == null {
                 only.tyassert = chainExpr.tyassert
             }

@@ -99,6 +99,7 @@ StructInitExpr::getType(ctx){
 	return ast.U64
 }
 BinaryExpr::getType(ctx){
+	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	match this.opt {
 		ast.LOGNOT | ast.EQ | ast.NE: return ast.I64
 		ast.GT | ast.GE | ast.LT | ast.LE: return ast.I64

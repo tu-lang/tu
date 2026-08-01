@@ -46,12 +46,32 @@ ChainExpr::ismem(ctx) {
 	 return false
 }
 
+// True for field kinds that may enter memgen. Scalars (BinaryExpr, …) are not.
+func isChainMemberField(expr){
+	if expr == null return false
+	if type(expr) == type(StructMemberExpr) return true
+	if type(expr) == type(MemberExpr) return true
+	if type(expr) == type(FunCallExpr) return true
+	if type(expr) == type(IndexExpr) return true
+	if type(expr) == type(MemberCallExpr) return true
+	return false
+}
+
 ChainExpr::compile(ctx,load)
 {
 	utils.debug("gen.ChainExpr::compile() ")
 	this.record()
-	
-	if exprIsMtype(this.fields[0],ctx)
+	first = this.fields[0]
+	// Wave E: single scalar + chain-end assert — evaluate then Cast; do not memgen.
+	if std.len(this.fields) == 1 && this.tyassert != null && !isChainMemberField(first) {
+		from = first.getType(ctx)
+		first.compile(ctx, load)
+		to = this.tyassert.abiToken()
+		if from >= ast.I8 && from <= ast.F64 && to >= ast.I8 && to <= ast.F64
+			compile.Cast(from, to)
+		return first
+	}
+	if exprIsMtype(first,ctx)
 		return this.memgen(ctx,load)
 
 	return this.objgen(ctx,load)

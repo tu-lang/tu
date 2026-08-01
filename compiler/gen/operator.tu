@@ -202,12 +202,34 @@ BinaryExpr::compile(ctx,load)
     )
     if !this.rhs && (this.opt != ast.BITNOT && this.opt != ast.LOGNOT)
         this.panic("right expression is wrong expression:" + this.toString())
+
+    // Operand result type before .(T); used for Cast after eval.
+    fromTy = ast.I64
+    if this.tyassert != null {
+        saved = this.tyassert
+        this.tyassert = null
+        fromTy = this.getType(ctx)
+        this.tyassert = saved
+    }
     
     if this.isMemtype(ctx) {
-        return (new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)).gen()
+        (new OperatorHelper(ctx,this.lhs,this.rhs,this.opt)).gen()
+        if this.tyassert != null {
+            to = this.tyassert.abiToken()
+            if fromTy >= ast.I8 && fromTy <= ast.F64 && to >= ast.I8 && to <= ast.F64
+                compile.Cast(fromTy, to)
+        }
+        return null
     }
-    if this.opt == ast.LOGOR || this.opt == ast.LOGAND 
-        return this.FirstCompile(ctx)
+    if this.opt == ast.LOGOR || this.opt == ast.LOGAND {
+        this.FirstCompile(ctx)
+        if this.tyassert != null {
+            to = this.tyassert.abiToken()
+            if fromTy >= ast.I8 && fromTy <= ast.F64 && to >= ast.I8 && to <= ast.F64
+                compile.Cast(fromTy, to)
+        }
+        return null
+    }
     
     if this.rhs   this.rhs.compile(ctx,true)
     else            compile.writeln("   mov $0,%%rax")
@@ -217,6 +239,11 @@ BinaryExpr::compile(ctx,load)
     compile.Push()
     
     internal.call_operator(this.opt,"runtime_binary_operator")
+    if this.tyassert != null {
+        to = this.tyassert.abiToken()
+        if fromTy >= ast.I8 && fromTy <= ast.F64 && to >= ast.I8 && to <= ast.F64
+            compile.Cast(fromTy, to)
+    }
     return null
 }
 
