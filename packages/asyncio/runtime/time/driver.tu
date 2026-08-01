@@ -1,5 +1,4 @@
 // Time driver: next_wake + single turn(eff) + drive_wheel.
-// MT: absorb pure eventfd wakeups inside park (early re-poll SEGVs).
 
 use runtime
 use sys
@@ -208,59 +207,28 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>)
     }
 
     iod<rtio.IoDriver> = this.park_iod
-    // Mother: one turn(eff) then process. Pure eventfd wakeups (insert-wake /
-    // unpark) must not return to MT block_on re-poll — that path SEGVs.
-    // Retry until a timer fires, IO hits, or the wheel is empty.
+    // One turn(eff) then drive_wheel. Early eventfd wakeups return to the
+    // scheduler; MT block_on prepare_direct_poll balances Notified refs.
     err<i32> = 0
-    loops<i32> = 0
-    loop {
-        if loops > 64 {
-            break
-        }
-        loops += 1
-        handle.lock.lock()
-        found_l<i32>, deadline_l<u64> = handle.wheel.poll_at()
-        if found_l != EXPIR_FOUND {
-            handle.next_wake_ms = 0
-        } else {
-            handle.next_wake_ms = deadline_l
-        }
-        handle.lock.unlock()
-
-        if found_l != EXPIR_FOUND {
-            err = iod.turn(ioh, ms_to_duration(1))
-            handle.drive_wheel(handle.now_ms())
-            break
-        }
+    if found0 != EXPIR_FOUND {
+        err = iod.turn(ioh, ms_to_duration(1))
+    } else {
         now_l<u64> = handle.now_ms()
-        if deadline_l <= now_l {
+        if deadline0 <= now_l {
             err = iod.turn(ioh, ms_to_duration(0))
-            handle.drive_wheel(handle.now_ms())
-            break
-        }
-        delta_l<u64> = deadline_l - now_l
-        wait_l<u64> = limit_ms
-        if delta_l < wait_l {
-            wait_l = delta_l
-        }
-        if wait_l == 0 {
-            wait_l = 1
-        }
-        err = iod.turn(ioh, ms_to_duration(wait_l))
-        handle.drive_wheel(handle.now_ms())
-        if rtio.iodriver_took_io(iod) != 0 {
-            break
-        }
-        handle.lock.lock()
-        found2<i32>, dl2<u64> = handle.wheel.poll_at()
-        handle.lock.unlock()
-        if found2 != EXPIR_FOUND {
-            break
-        }
-        if dl2 != deadline_l {
-            break
+        } else {
+            delta_l<u64> = deadline0 - now_l
+            wait_l<u64> = limit_ms
+            if delta_l < wait_l {
+                wait_l = delta_l
+            }
+            if wait_l == 0 {
+                wait_l = 1
+            }
+            err = iod.turn(ioh, ms_to_duration(wait_l))
         }
     }
+    handle.drive_wheel(handle.now_ms())
     return err
 }
 

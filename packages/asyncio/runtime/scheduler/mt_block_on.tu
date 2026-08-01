@@ -28,6 +28,8 @@ fn mt_block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
 }
 
 // CachedParkThread::block_on stand-in: poll root / park until COMPLETE.
+// Each direct poll must own a Notified ref (prepare_direct_poll); park
+// alone can return on eventfd without wake_by_ref.
 fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
     fut_bits<u64> = 0
     fut_bits = fut
@@ -39,8 +41,6 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
     )
 
     shared<MtShared> = handle.shared
-    // Share ParkDriverHub with workers (mother Parker clone shares TryLock<Driver>).
-    // null hub only when the runtime was built without drivers.
     park<Parker> = Parker::new(shared.park_hub)
     up<Unparker> = Unparker::new(park)
     shared.block_on_unparker = up
@@ -65,7 +65,7 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
             break
         }
 
-        // Poll root only — workers own spawn / inject.
+        task.raw_prepare_direct_poll(root)
         task.harness_poll(root, root_ctx)
 
         snap2<i32> = root.life_load()

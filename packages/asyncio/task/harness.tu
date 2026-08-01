@@ -76,6 +76,9 @@ RawTask::harness_poll(ctx<u64>){
             // by transition_to_idle, then drop our own poll ref.
             n<Notified> = notified_from_raw(this)
             this.task_header.sched_schedule(n)
+            // Schedule may only unpark (block_on root) and leave NOTIFIED set;
+            // clear the bit so the next direct poll goes through prepare.
+            life_st.clear_notified_bit()
             if life_st.ref_dec() != 0 {
                 this.harness_dealloc()
             }

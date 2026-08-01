@@ -9,6 +9,7 @@ int_macros_join_select.tu
 int_multi_thread.tu
 int_mt_io_timer.tu
 int_mt_stress.tu
+int_mt_timer_repoll.tu
 int_process_echo.tu
 int_signal_usr1.tu
 int_sync_primitives.tu

@@ -80,6 +80,17 @@ RawTask::list_take_next() RawTask {
     return this.task_header.queue_next_out()
 }
 
+// Prepare a block_on root for harness_poll without an inject Notified.
+RawTask::prepare_direct_poll(){
+    life_st<TaskState> = this.life_st()
+    life_st.ensure_notified_for_poll()
+}
+
+// Package-level helper for schedulers.
+fn raw_prepare_direct_poll(rtask<RawTask>){
+    rtask.prepare_direct_poll()
+}
+
 // Set NOTIFIED and enqueue when needed.
 RawTask::wake_by_ref(){
     raw_wake_by_ref_bits(this.(u64))
