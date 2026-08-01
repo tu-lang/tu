@@ -40,11 +40,11 @@ fn is_valid_utf8(buf<io.Buf>) i32 {
 }
 
 mem ReadToStringFut: async {
-    u64 path_bits
+    string.String path
 }
 
 ReadToStringFut::poll(ctx) {
-    oerr<i32>, f<File> = file_open_read_sync(this.path_bits)
+    oerr<i32>, f<File> = file_open_read_sync(this.path)
     if oerr != io.Ok return runtime.PollReady, oerr, null
     merr<i32>, meta<Metadata> = file_metadata_sync(f)
     cap<u64> = 8192
@@ -75,5 +75,5 @@ ReadToStringFut::poll(ctx) {
 }
 
 fn fs_read_to_string(path<string.String>) ReadToStringFut {
-    return new ReadToStringFut { path_bits: string.string_to_bits(path) }
+    return new ReadToStringFut { path: path }
 }

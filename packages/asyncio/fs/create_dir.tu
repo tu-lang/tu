@@ -7,11 +7,11 @@ use runtime
 
 // Leaf: mkdir(2) with mode 0o777.
 mem CreateDirFut: async {
-    u64 path_bits
+    string.String path
 }
 
 CreateDirFut::poll(ctx) {
-    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    pc<i8*> = string.cstr(this.path)
     mode_i<i64> = 493
     mraw<i32> = 0
     mraw = sys.mkdir(pc, mode_i)
@@ -23,5 +23,5 @@ CreateDirFut::poll(ctx) {
 }
 
 fn fs_create_dir(path<string.String>) CreateDirFut {
-    return new CreateDirFut { path_bits: string.string_to_bits(path) }
+    return new CreateDirFut { path: path }
 }

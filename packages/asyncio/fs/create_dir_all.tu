@@ -19,7 +19,7 @@ fn mkdir_ok_exists_cstr(path_cstr<i8*>) i32 {
 // Leaf: walk "/" prefixes and mkdir each (V1 inline, one poll).
 // Uses a mutable cstr copy so prefixes do not need String::sub across packages.
 mem CreateDirAllFut: async {
-    u64 path_bits
+    string.String path
     u64 pad
 }
 
@@ -27,7 +27,7 @@ CreateDirAllFut::poll(ctx) {
     ready<i32> = runtime.PollReady
     ok_code<i32> = io.Ok
     bad_in<i32> = io.InvalidInput
-    src<i8*> = string.cstr_from_bits(this.path_bits)
+    src<i8*> = string.cstr(this.path)
     plen_u<u64> = std.strlen(src)
     plen<i32> = plen_u.(i32)
     if plen == 0 return ready, bad_in
@@ -64,5 +64,5 @@ CreateDirAllFut::poll(ctx) {
 }
 
 fn fs_create_dir_all(path<string.String>) CreateDirAllFut {
-    return new CreateDirAllFut { path_bits: string.string_to_bits(path), pad: 0 }
+    return new CreateDirAllFut { path: path, pad: 0 }
 }

@@ -7,23 +7,22 @@ use sys
 use runtime
 
 mem CanonicalizeFut: async {
-    u64 path_bits
+    string.String path
 }
 
 CanonicalizeFut::poll(ctx) {
-    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    pc<i8*> = string.cstr(this.path)
     buf<u8*> = new 4096
     err<i32>, n<u64> = sys.cvt(sys.readlink(pc, buf, 4096))
     if err == io.Ok {
         return runtime.PollReady, io.Ok, new string.String { inner: string.newlen(buf, n) }
     }
     if err == io.InvalidInput {
-        path_s<string.String> = string.string_from_bits(this.path_bits)
-        return runtime.PollReady, io.Ok, path_s.dup()
+        return runtime.PollReady, io.Ok, this.path.dup()
     }
     return runtime.PollReady, err, null
 }
 
 fn fs_canonicalize(path<string.String>) CanonicalizeFut {
-    return new CanonicalizeFut { path_bits: string.string_to_bits(path) }
+    return new CanonicalizeFut { path: path }
 }

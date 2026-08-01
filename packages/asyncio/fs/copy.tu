@@ -5,12 +5,12 @@ use string
 use runtime
 
 mem CopyFut: async {
-    u64 from_bits
-    u64 to_bits
+    string.String from
+    string.String to
 }
 
 CopyFut::poll(ctx) {
-    oerr<i32>, src<File> = file_open_read_sync(this.from_bits)
+    oerr<i32>, src<File> = file_open_read_sync(this.from)
     if oerr != io.Ok return runtime.PollReady, oerr, 0.(u64)
 
     merr<i32>, meta<Metadata> = file_metadata_sync(src)
@@ -22,7 +22,7 @@ CopyFut::poll(ctx) {
     o = o.create(1)
     o = o.truncate(1)
     o = o.mode(mode)
-    derr<i32>, dst<File> = file_open_sync(this.to_bits, o)
+    derr<i32>, dst<File> = file_open_sync(this.to, o)
     if derr != io.Ok {
         src.close()
         return runtime.PollReady, derr, 0.(u64)
@@ -63,7 +63,7 @@ CopyFut::poll(ctx) {
 
 fn fs_copy(from<string.String>, to<string.String>) CopyFut {
     return new CopyFut {
-        from_bits: string.string_to_bits(from),
-        to_bits: string.string_to_bits(to)
+        from: from,
+        to: to
     }
 }

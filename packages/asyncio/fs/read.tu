@@ -7,11 +7,11 @@ use runtime
 
 // Leaf: open + read-to-end + close in one poll (V1 inline).
 mem ReadFut: async {
-    u64 path_bits
+    string.String path
 }
 
 ReadFut::poll(ctx) {
-    oerr<i32>, f<File> = file_open_read_sync(this.path_bits)
+    oerr<i32>, f<File> = file_open_read_sync(this.path)
     if oerr != io.Ok return runtime.PollReady, oerr, null
 
     cap_i<i32> = 8192
@@ -43,5 +43,5 @@ ReadFut::poll(ctx) {
 }
 
 fn fs_read(path<string.String>) ReadFut {
-    return new ReadFut { path_bits: string.string_to_bits(path) }
+    return new ReadFut { path: path }
 }

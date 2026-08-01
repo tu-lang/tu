@@ -16,8 +16,8 @@ mem File {
 }
 
 // Sync open used by leaf futures.
-fn file_open_sync(path_bits<u64>, opts<OpenOptions>) i32, File {
-    err<i32>, f<File> = file_open_sync_cstr(string.cstr_from_bits(path_bits), opts)
+fn file_open_sync(path<string.String>, opts<OpenOptions>) i32, File {
+    err<i32>, f<File> = file_open_sync_cstr(string.cstr(path), opts)
     return err, f
 }
 
@@ -32,20 +32,20 @@ fn file_open_sync_cstr(path_cstr<i8*>, opts<OpenOptions>) i32, File {
     return io.Ok, new File { fd: fd.(i32) }
 }
 
-fn file_open_read_sync(path_bits<u64>) i32, File {
+fn file_open_read_sync(path<string.String>) i32, File {
     // Hardcoded O_RDONLY|O_CLOEXEC for V1 read path (same pattern as create).
     clo_raw = std.O_CLOEXEC
     clo<i64> = clo_raw.(i64)
     flags<i64> = std.O_RDONLY | clo
     mode_i<i64> = 0
-    pc<i8*> = string.cstr_from_bits(path_bits)
+    pc<i8*> = string.cstr(path)
     err<i32>, fd<u64> = sys.cvt(sys.openat(std.AT_FDCWD, pc, flags, mode_i))
     if err != io.Ok return err, null
     return io.Ok, new File { fd: fd.(i32) }
 }
 
-fn file_create_sync(path_bits<u64>) i32, File {
-    err<i32>, f<File> = file_create_sync_cstr(string.cstr_from_bits(path_bits))
+fn file_create_sync(path<string.String>) i32, File {
+    err<i32>, f<File> = file_create_sync_cstr(string.cstr(path))
     return err, f
 }
 
@@ -91,73 +91,73 @@ fn file_metadata_sync(f<File>) i32, Metadata {
 // ---- open leaf -----------------------------------------------------------
 
 mem OpenFut: async {
-    u64          path_bits
-    OpenOptions* opts
+    string.String path
+    OpenOptions*  opts
 }
 
 OpenFut::poll(ctx) {
-    err<i32>, f<File> = file_open_sync(this.path_bits, this.opts)
+    err<i32>, f<File> = file_open_sync(this.path, this.opts)
     return runtime.PollReady, err, f
 }
 
 fn fs_open(path<string.String>, opts<OpenOptions>) OpenFut {
-    return new OpenFut { path_bits: string.string_to_bits(path), opts: opts }
+    return new OpenFut { path: path, opts: opts }
 }
 
 mem OpenReadFut: async {
-    u64 path_bits
+    string.String path
 }
 
 OpenReadFut::poll(ctx) {
-    err<i32>, f<File> = file_open_read_sync(this.path_bits)
+    err<i32>, f<File> = file_open_read_sync(this.path)
     return runtime.PollReady, err, f
 }
 
 fn fs_open_read(path<string.String>) OpenReadFut {
-    return new OpenReadFut { path_bits: string.string_to_bits(path) }
+    return new OpenReadFut { path: path }
 }
 
 mem CreateFut: async {
-    u64 path_bits
+    string.String path
 }
 
 CreateFut::poll(ctx) {
-    err<i32>, f<File> = file_create_sync(this.path_bits)
+    err<i32>, f<File> = file_create_sync(this.path)
     return runtime.PollReady, err, f
 }
 
 fn fs_create(path<string.String>) CreateFut {
-    return new CreateFut { path_bits: string.string_to_bits(path) }
+    return new CreateFut { path: path }
 }
 
 // ---- File member leaf futures -------------
 
 mem FileReadFut: async {
-    File* file
-    u64   buf_bits
+    File*  file
+    io.Buf buf
 }
 
 FileReadFut::poll(ctx) {
-    err<i32>, n<u64> = file_read_sync(this.file, io.buf_from_bits(this.buf_bits))
+    err<i32>, n<u64> = file_read_sync(this.file, this.buf)
     return runtime.PollReady, err, n
 }
 
 fn file_read_fut(f<File>, buf<io.Buf>) FileReadFut {
-    return new FileReadFut { file: f, buf_bits: io.buf_to_bits(buf) }
+    return new FileReadFut { file: f, buf: buf }
 }
 
 mem FileWriteFut: async {
-    File* file
-    u64   buf_bits
+    File*  file
+    io.Buf buf
 }
 
 FileWriteFut::poll(ctx) {
-    err<i32>, n<u64> = file_write_sync(this.file, io.buf_from_bits(this.buf_bits))
+    err<i32>, n<u64> = file_write_sync(this.file, this.buf)
     return runtime.PollReady, err, n
 }
 
 fn file_write_fut(f<File>, buf<io.Buf>) FileWriteFut {
-    return new FileWriteFut { file: f, buf_bits: io.buf_to_bits(buf) }
+    return new FileWriteFut { file: f, buf: buf }
 }
 
 mem FileMetaFut: async {

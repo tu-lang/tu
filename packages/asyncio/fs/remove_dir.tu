@@ -6,11 +6,11 @@ use sys
 use runtime
 
 mem RemoveDirFut: async {
-    u64 path_bits
+    string.String path
 }
 
 RemoveDirFut::poll(ctx) {
-    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    pc<i8*> = string.cstr(this.path)
     raw_rm<i32> = 0
     raw_rm = sys.rmdir(pc)
     ok_code<i32> = io.Ok
@@ -21,5 +21,5 @@ RemoveDirFut::poll(ctx) {
 }
 
 fn fs_remove_dir(path<string.String>) RemoveDirFut {
-    return new RemoveDirFut { path_bits: string.string_to_bits(path) }
+    return new RemoveDirFut { path: path }
 }

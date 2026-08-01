@@ -7,15 +7,15 @@ use runtime
 
 // Leaf: unlink(2) on first poll.
 mem RemoveFileFut: async {
-    u64 path_bits
+    string.String path
 }
 
 RemoveFileFut::poll(ctx) {
-    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    pc<i8*> = string.cstr(this.path)
     err<i32>, junk<u64> = sys.cvt(sys.unlink(pc))
     return runtime.PollReady, err
 }
 
 fn fs_remove_file(path<string.String>) RemoveFileFut {
-    return new RemoveFileFut { path_bits: string.string_to_bits(path) }
+    return new RemoveFileFut { path: path }
 }

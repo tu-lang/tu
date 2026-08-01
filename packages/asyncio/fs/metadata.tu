@@ -58,33 +58,33 @@ Metadata::permissions() u32 {
 }
 
 mem MetadataFut: async {
-    u64 path_bits
+    string.String path
 }
 
 MetadataFut::poll(ctx) {
     s<std.Stat> = new std.Stat
-    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    pc<i8*> = string.cstr(this.path)
     err<i32>, junk<u64> = sys.cvt(sys.stat(pc, s.(u64)))
     if err != io.Ok return runtime.PollReady, err, null
     return runtime.PollReady, io.Ok, metadata_from_stat(s)
 }
 
 fn fs_metadata(path<string.String>) MetadataFut {
-    return new MetadataFut { path_bits: string.string_to_bits(path) }
+    return new MetadataFut { path: path }
 }
 
 mem SymlinkMetadataFut: async {
-    u64 path_bits
+    string.String path
 }
 
 SymlinkMetadataFut::poll(ctx) {
     s<std.Stat> = new std.Stat
-    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    pc<i8*> = string.cstr(this.path)
     err<i32>, junk<u64> = sys.cvt(sys.lstat(pc, s.(u64)))
     if err != io.Ok return runtime.PollReady, err, null
     return runtime.PollReady, io.Ok, metadata_from_stat(s)
 }
 
 fn fs_symlink_metadata(path<string.String>) SymlinkMetadataFut {
-    return new SymlinkMetadataFut { path_bits: string.string_to_bits(path) }
+    return new SymlinkMetadataFut { path: path }
 }

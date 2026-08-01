@@ -11,17 +11,17 @@ use runtime
 DIRENT_BUF_SIZE<i32> = 4096
 
 mem DirEntry {
-    u64 name_bits // owned cstr bits (GC buffer), not String*
+    string.String name
     u32 kind      // linux_dirent64.d_type
 }
 
 DirEntry::file_name() string.String {
-    return string.string_from_bits(this.name_bits)
+    return this.name
 }
 
 // Cross-package name cstr.
 fn dir_entry_name_cstr(ent<DirEntry>) i8* {
-    return string.cstr_from_bits(ent.name_bits)
+    return string.cstr(ent.name)
 }
 
 DirEntry::is_dir() i32 {
@@ -60,9 +60,9 @@ fn is_dot_name_cstr(name_c<i8*>) i32 {
 }
 
 // Sync open of a directory stream.
-fn read_dir_open_sync(path_bits<u64>) i32, ReadDir {
+fn read_dir_open_sync(path_c<i8*>) i32, ReadDir {
     ok_code<i32> = io.Ok
-    pc<i8*> = string.cstr_from_bits(path_bits)
+    pc<i8*> = path_c
     clo_raw = std.O_CLOEXEC
     clo<i64> = clo_raw.(i64)
     flags<i64> = std.O_RDONLY | clo
@@ -80,9 +80,13 @@ fn read_dir_open_sync(path_bits<u64>) i32, ReadDir {
     return ok_code, r
 }
 
+fn read_dir_open_sync_path(path<string.String>) i32, ReadDir {
+    err<i32>, r<ReadDir> = read_dir_open_sync(string.cstr(path))
+    return err, r
+}
+
 fn read_dir_open_sync_cstr(path_cstr<i8*>) i32, ReadDir {
-    bits<u64> = path_cstr.(u64)
-    err<i32>, r<ReadDir> = read_dir_open_sync(bits)
+    err<i32>, r<ReadDir> = read_dir_open_sync(path_cstr)
     return err, r
 }
 
@@ -118,8 +122,8 @@ fn load_u16_le(buf<u8*>, off<i32>) i32 {
     return lo + hi * 256
 }
 
-// Sync next entry; returns (err, owned name bits). name bits == 0 at EOF.
-fn read_dir_next_bits(rd<ReadDir>) i32, u64 {
+// Sync next entry; returns (err, name). name == null at EOF.
+fn read_dir_next(rd<ReadDir>) i32, string.String {
     ok_code<i32> = io.Ok
     pos<i32> = rd.dents_pos
     filled<i32> = rd.dents_len
@@ -138,12 +142,12 @@ fn read_dir_next_bits(rd<ReadDir>) i32, u64 {
                 raw_i<i32> = 0
                 raw_i = raw_g.(i32)
                 err<i32>, junk<u64> = sys.cvt(raw_i)
-                return err, 0
+                return err, null
             }
             if raw_g == 0 {
                 rd.dents_pos = 0
                 rd.dents_len = 0
-                return ok_code, 0
+                return ok_code, null
             }
             filled = raw_g.(i32)
             pos = 0
@@ -153,13 +157,13 @@ fn read_dir_next_bits(rd<ReadDir>) i32, u64 {
         if reclen_i <= 0 {
             rd.dents_pos = pos
             rd.dents_len = filled
-            return ok_code, 0
+            return ok_code, null
         }
         end_pos<i32> = pos + reclen_i
         if end_pos > filled {
             rd.dents_pos = pos
             rd.dents_len = filled
-            return ok_code, 0
+            return ok_code, null
         }
         name_off<i32> = pos + 19
         name_src<u8*> = base + name_off
@@ -172,7 +176,7 @@ fn read_dir_next_bits(rd<ReadDir>) i32, u64 {
         pos = end_pos
         rd.dents_pos = pos
         rd.dents_len = filled
-        return ok_code, name_bits
+        return ok_code, string.string_from_bits(name_bits)
     }
 }
 
@@ -189,36 +193,33 @@ ReadDir::close() i32 {
 
 // pad keeps async mem layout aligned with two-u64 leaf futures (WriteFut).
 mem ReadDirFut: async {
-    u64 path_bits
+    string.String path
     u64 pad
 }
 
 ReadDirFut::poll(ctx) {
-    err<i32>, r<ReadDir> = read_dir_open_sync(this.path_bits)
+    err<i32>, r<ReadDir> = read_dir_open_sync_path(this.path)
     ready<i32> = runtime.PollReady
     return ready, err, r
 }
 
 fn fs_read_dir(path<string.String>) ReadDirFut {
-    return new ReadDirFut { path_bits: string.string_to_bits(path), pad: 0 }
+    return new ReadDirFut { path: path, pad: 0 }
 }
 
 mem NextEntryFut: async {
-    u64 rd_bits // ReadDir as bits (persist cursor across await)
+    ReadDir* rd
 }
 
 NextEntryFut::poll(ctx) {
     ready<i32> = runtime.PollReady
-    bits<u64> = this.rd_bits
-    rd<ReadDir> = bits
-    err<i32>, nb<u64> = read_dir_next_bits(rd)
-    // Second value is owned name bits; 0 means EOF.
-    return ready, err, nb
+    err<i32>, name<string.String> = read_dir_next(this.rd)
+    // Second value is String; null means EOF.
+    return ready, err, name
 }
 
 fn fs_next_entry(rd<ReadDir>) NextEntryFut {
-    bits<u64> = rd.(u64)
-    return new NextEntryFut { rd_bits: bits }
+    return new NextEntryFut { rd: rd }
 }
 
 // Cross-package close (member close from outside can mis-dispatch).

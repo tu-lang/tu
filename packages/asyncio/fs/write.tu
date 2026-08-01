@@ -5,19 +5,17 @@ use string
 use runtime
 
 // Leaf: create + write-all + close in one poll (V1 inline).
-// Public API takes string.String; async mem stores owned cstr bits.
 mem WriteFut: async {
-    u64 path_bits
-    u64 data_bits
+    string.String path
+    io.Buf        data
 }
 
 WriteFut::poll(ctx) {
-    pc<i8*> = string.cstr_from_bits(this.path_bits)
+    pc<i8*> = string.cstr(this.path)
     oerr<i32>, f<File> = file_create_sync_cstr(pc)
     if oerr != io.Ok return runtime.PollReady, oerr
     total<u64> = 0
-    bits<u64> = this.data_bits
-    data<io.Buf> = io.buf_from_bits(bits)
+    data<io.Buf> = this.data
     dlen<u64> = io.buf_len(data)
     while total < dlen {
         rem<u64> = dlen - total
@@ -37,9 +35,9 @@ WriteFut::poll(ctx) {
     return runtime.PollReady, io.Ok
 }
 
-fn fs_write(path<string.String>, data_bits<u64>) WriteFut {
+fn fs_write(path<string.String>, data<io.Buf>) WriteFut {
     return new WriteFut {
-        path_bits: string.string_to_bits(path),
-        data_bits: data_bits
+        path: path,
+        data: data
     }
 }

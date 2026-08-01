@@ -47,30 +47,29 @@ fn fs_sys_ret(raw<i32>) i32 {
 }
 
 // Sync recursive remove.
-fn remove_dir_all_sync(path_bits<u64>) i32 {
+fn remove_dir_all_sync(path_c<i8*>) i32 {
     ok_code<i32> = io.Ok
-    pc<i8*> = string.cstr_from_bits(path_bits)
+    pc<i8*> = path_c
     raw_rm<i32> = 0
     raw_rm = sys.rmdir(pc)
     if raw_rm >= 0 return ok_code
 
-    rerr<i32>, rd<ReadDir> = read_dir_open_sync(path_bits)
+    rerr<i32>, rd<ReadDir> = read_dir_open_sync(path_c)
     if rerr != ok_code return rerr
 
     loop {
-        nerr<i32>, name_bits<u64> = read_dir_next_bits(rd)
+        nerr<i32>, name<string.String> = read_dir_next(rd)
         if nerr != ok_code {
             rd.close()
             return nerr
         }
-        if name_bits == 0 {
+        if name == null {
             break
         }
-        name_c<i8*> = string.cstr_from_bits(name_bits)
+        name_c<i8*> = string.cstr(name)
         child_c<i8*> = join_path_cstr(pc, name_c)
-        child_bits<u64> = child_c.(u64)
         if path_is_dir_cstr(child_c) != 0 {
-            cerr<i32> = remove_dir_all_sync(child_bits)
+            cerr<i32> = remove_dir_all_sync(child_c)
             if cerr != ok_code {
                 rd.close()
                 return cerr
@@ -92,16 +91,16 @@ fn remove_dir_all_sync(path_bits<u64>) i32 {
 }
 
 mem RemoveDirAllFut: async {
-    u64 path_bits
+    string.String path
     u64 pad
 }
 
 RemoveDirAllFut::poll(ctx) {
-    err<i32> = remove_dir_all_sync(this.path_bits)
+    err<i32> = remove_dir_all_sync(string.cstr(this.path))
     ready<i32> = runtime.PollReady
     return ready, err
 }
 
 fn fs_remove_dir_all(path<string.String>) RemoveDirAllFut {
-    return new RemoveDirAllFut { path_bits: string.string_to_bits(path), pad: 0 }
+    return new RemoveDirAllFut { path: path, pad: 0 }
 }
