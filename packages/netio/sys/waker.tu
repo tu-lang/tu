@@ -2,8 +2,9 @@
 
 use netio
 use sys as libsys
+use io
 
-WAKE_WOULD_BLOCK<i32> = 16908302
+WAKE_WOULD_BLOCK<i32> = io.WouldBlock
 // Mother: libc::EFD_CLOEXEC | libc::EFD_NONBLOCK (avoid `a|b` dynamic codegen).
 EFD_CLOEXEC_NONBLOCK<i32> = 0x80800
 

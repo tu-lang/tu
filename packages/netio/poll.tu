@@ -42,17 +42,29 @@ fn poll_poll(p<Poll>, events<event.Events>, timeout<libsys.Duration>) i32 {
     return p.poll(events, timeout)
 }
 
-fn registry_register(reg<Registry>, iosrc_bits<u64>, t<Token>, interests<Interest>) i32 {
-    // All netio Sources wrap IoSource; register via IoSource bits (same end
-    // as Registry → Source::enroll → selector). Keeps one path for driver bits.
+fn registry_register(reg<Registry>, src<event.Source>, t<Token>, interests<Interest>) i32 {
+    // Mother: Registry::register(source, token, interests) → Source::register.
+    return src.enroll(reg, t, interests)
+}
+
+fn registry_deregister(reg<Registry>, src<event.Source>) i32 {
+    return src.detach(reg)
+}
+
+fn registry_reregister(reg<Registry>, src<event.Source>, t<Token>, interests<Interest>) i32 {
+    return src.reenroll(reg, t, interests)
+}
+
+// Keep IoSource-bits helpers for shutdown close / callers that only hold the wrapper bits.
+fn registry_register_bits(reg<Registry>, iosrc_bits<u64>, t<Token>, interests<Interest>) i32 {
     return iosource_register_bits(iosrc_bits, reg, t, interests)
 }
 
-fn registry_deregister(reg<Registry>, iosrc_bits<u64>) i32 {
+fn registry_deregister_bits(reg<Registry>, iosrc_bits<u64>) i32 {
     return iosource_deregister_bits(iosrc_bits, reg)
 }
 
-fn registry_reregister(reg<Registry>, iosrc_bits<u64>, t<Token>, interests<Interest>) i32 {
+fn registry_reregister_bits(reg<Registry>, iosrc_bits<u64>, t<Token>, interests<Interest>) i32 {
     return iosource_reregister_bits(iosrc_bits, reg, t, interests)
 }
 

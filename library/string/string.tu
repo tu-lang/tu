@@ -31,8 +31,9 @@ fn cstr(s<String>) i8* {
 	return s.str()
 }
 
-// Cross-package path bridge: string_to_bits copies the cstr into an owned
-// GC buffer. path_bits must not hold a raw String* (u64 slots are not traced).
+// Cross-package path bridge: copy cstr into an owned GC buffer as u64.
+// Prefer typed string.String fields on async leaves (GC-traced).
+// Raw u64 slots are not traced; only use bits when a typed field is unavailable.
 fn cstr_from_bits(bits<u64>) i8* {
 	p<i8*> = bits
 	return p
