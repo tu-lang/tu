@@ -5,6 +5,31 @@
 use runtime
 use fmt
 
+// Mother UnparkThread wake: low-bit tag on Unparker* (see wake_by_ctx).
+BLOCK_ON_WAKE_HOOK<u64> = 0
+BLOCK_ON_WAKER_TAG<u64> = 1
+
+fn block_on_wake_hook_sig(ctx_tagged<u64>) (i32)
+
+fn install_block_on_wake_hook(fn_bits<u64>) {
+    BLOCK_ON_WAKE_HOOK = fn_bits
+}
+
+fn block_on_waker_tag(up_bits<u64>) u64 {
+    return up_bits | BLOCK_ON_WAKER_TAG
+}
+
+fn block_on_waker_untag(ctx_tagged<u64>) u64 {
+    return ctx_tagged - BLOCK_ON_WAKER_TAG
+}
+
+fn block_on_waker_is_tagged(ctx<u64>) i32 {
+    if (ctx & BLOCK_ON_WAKER_TAG) != 0 {
+        return 1
+    }
+    return 0
+}
+
 // Function-pointer table. Slots are u64 raw addresses populated by task.harness.
 mem RawVTable {
     u64 poll                    // (raw, ctx)
@@ -80,17 +105,6 @@ RawTask::list_take_next() RawTask {
     return this.task_header.queue_next_out()
 }
 
-// Prepare a block_on root for harness_poll without an inject Notified.
-RawTask::prepare_direct_poll(){
-    life_st<TaskState> = this.life_st()
-    life_st.ensure_notified_for_poll()
-}
-
-// Package-level helper for schedulers.
-fn raw_prepare_direct_poll(rtask<RawTask>){
-    rtask.prepare_direct_poll()
-}
-
 // Set NOTIFIED and enqueue when needed.
 RawTask::wake_by_ref(){
     raw_wake_by_ref_bits(this.(u64))
@@ -111,8 +125,20 @@ fn raw_wake_by_ref_bits(ctx<u64>) {
     }
 }
 
-// Wake from a packed ctx that holds RawTask*.
+// Wake from packed ctx. Mother: task waker schedules RawTask; block_on
+// root uses UnparkThread (tagged Unparker*) which only unparks.
 fn wake_by_ctx(ctx<u64>){
+    if ctx == 0 {
+        return
+    }
+    if block_on_waker_is_tagged(ctx) != 0 {
+        bits<u64> = BLOCK_ON_WAKE_HOOK
+        if bits != 0 {
+            f<block_on_wake_hook_sig> = bits.(u64)
+            f(ctx)
+        }
+        return
+    }
     raw_wake_by_ref_bits(ctx)
 }
 

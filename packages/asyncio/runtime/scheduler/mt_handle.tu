@@ -76,19 +76,6 @@ fn mt_schedule_remote(shared<MtShared>, notif<task.Notified>) {
 // Prefer schedule_local when this OS thread holds a WorkerCore
 // (mother with_current). Else inject.
 fn mt_schedule_any(h<MtHandle>, notif<task.Notified>, is_yield<i32>, allow_local<i32>) {
-    raw_bits<u64> = notif.raw().(u64)
-
-    // block_on root wake: park.unpark only (do not inject).
-    if h.shared.block_on_root_bits != 0 {
-        if raw_bits == h.shared.block_on_root_bits {
-            up0<Unparker> = h.shared.block_on_unparker
-            if up0 != null {
-                up0.unpark()
-            }
-            return
-        }
-    }
-
     if allow_local != 0 {
         core_bits<u64> = mt_core_current_bits()
         if core_bits != 0 {

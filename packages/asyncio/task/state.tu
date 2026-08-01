@@ -227,47 +227,6 @@ TaskState::transition_to_notified_by_val() i32 {
     return TN_DoNothing
 }
 
-// Clear NOTIFIED without touching the refcount. After OkNotified schedule,
-// inject / block_on unpark has taken the wake; leaving the bit set would
-// skip prepare_direct_poll and later idle would ref_dec a phantom Notified.
-TaskState::clear_notified_bit() {
-    loop {
-        w<u64> = atomic.load64(&this.slot_word)
-        cur<i32> = w.(i32)
-        if (cur & NOTIFIED) == 0 {
-            return
-        }
-        new_state<i32> = cur & 0xFFFFFFFB
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK {
-            return
-        }
-    }
-}
-
-// block_on polls the root directly (not via inject Notified). After a park
-// that returned on eventfd alone, NOTIFIED is clear but harness_poll still
-// runs — idle then ref_dec would drop a phantom Notified and free the root.
-// Grant NOTIFIED+REF when idle and clear so the upcoming poll is balanced.
-TaskState::ensure_notified_for_poll() {
-    loop {
-        w<u64> = atomic.load64(&this.slot_word)
-        cur<i32> = w.(i32)
-        if (cur & COMPLETE) != 0 {
-            return
-        }
-        if (cur & RUNNING) != 0 {
-            return
-        }
-        if (cur & NOTIFIED) != 0 {
-            return
-        }
-        new_state<i32> = (cur | NOTIFIED) + REF_ONE
-        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK {
-            return
-        }
-    }
-}
-
 // By-ref notify.
 // COMPLETE/NOTIFIED: nothing to do. RUNNING: set NOTIFIED only (the poller
 // re-enqueues on idle). Idle: set NOTIFIED + ref_inc -> Submit.

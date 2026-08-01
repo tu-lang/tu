@@ -1,14 +1,12 @@
-// multi_thread block_on. Matches multi_thread/mod.rs:
-// CachedParkThread::block_on — poll the root on the calling thread only;
-// spawned tasks run on the worker pool. When the root is woken, schedule
-// unparks this thread and does not push the root onto inject.
+// multi_thread block_on. Mother: runtime/park.rs CachedParkThread::block_on
+// + multi_thread/mod.rs enter_runtime → blocking.block_on(future).
+//
+// Polls the user future directly with an UnparkThread-style waker (tagged
+// Unparker* bits). Spawned tasks run on workers. No RawTask / harness for
+// the block_on root — that Notified refcount path is CT-only.
 
 use runtime
 use asyncio.task
-
-fn mt_block_on_task_ctx(t<task.RawTask>) u64 {
-    return t.(u64)
-}
 
 fn mt_block_on_raw(bits<u64>, fut) i32, i64 {
     mh<MtHandle> = bits.(MtHandle)
@@ -27,51 +25,37 @@ fn mt_block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
     return err, val
 }
 
-// CachedParkThread::block_on stand-in: poll root / park until COMPLETE.
-// Each direct poll must own a Notified ref (prepare_direct_poll); park
-// alone can return on eventfd without wake_by_ref.
+// CachedParkThread::block_on — poll / park until Ready.
 fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
-    fut_bits<u64> = 0
-    fut_bits = fut
-    root<task.RawTask> = task.bind_root(
-        fut_bits,
-        handle,
-        mt_schedule_bridge.(u64),
-        mt_release_bridge.(u64)
-    )
-
     shared<MtShared> = handle.shared
     park<Parker> = Parker::new(shared.park_hub)
     up<Unparker> = Unparker::new(park)
     shared.block_on_unparker = up
-    root_bits<u64> = 0
-    root_bits = root
-    shared.block_on_root_bits = root_bits
+    // No RawTask root (mother polls a plain Future).
+    shared.block_on_root_bits = 0
+
+    task.install_block_on_wake_hook(mt_block_on_wake_tagged.(u64))
+    // Mother UnparkThread waker: low bit tags Unparker* so wake_by_ctx
+    // unparks instead of RawTask::wake_by_ref.
+    waker_ctx<u64> = task.block_on_waker_tag(up.(u64))
 
     err_out<i32> = 0
     val_out<i64> = 0
-    root_ctx<u64> = mt_block_on_task_ctx(root)
+    f<runtime.Future> = fut
 
     loop {
-        snap<i32> = root.life_load()
-        if (snap & task.COMPLETE) != 0 {
-            err_out = 0
-            val_out = root.task_cell.peek_output()
-            break
-        }
-
         if shared.inject.is_closed() {
             err_out = 0x03020005 // asyncio.error.RuntimeShutdown
             break
         }
 
-        task.raw_prepare_direct_poll(root)
-        task.harness_poll(root, root_ctx)
+        prev_ctx<u64> = task.poll_ctx_set(waker_ctx)
+        ready<i32>, output<i64> = f.poll()
+        task.poll_ctx_set(prev_ctx)
 
-        snap2<i32> = root.life_load()
-        if (snap2 & task.COMPLETE) != 0 {
+        if ready == runtime.PollReady {
             err_out = 0
-            val_out = root.task_cell.peek_output()
+            val_out = output
             break
         }
 
@@ -79,7 +63,20 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
         runtime.osyield()
     }
 
-    shared.block_on_root_bits = 0
     shared.block_on_unparker = null
     return err_out, val_out
+}
+
+// wake_by_ctx hook: tagged ctx → Unparker::unpark (mother wake_by_ref).
+fn mt_block_on_wake_tagged(ctx_tagged<u64>) i32 {
+    up_bits<u64> = task.block_on_waker_untag(ctx_tagged)
+    if up_bits == 0 {
+        return 0
+    }
+    up<Unparker> = up_bits.(Unparker)
+    if up == null {
+        return 0
+    }
+    up.unpark()
+    return 0
 }

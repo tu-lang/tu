@@ -207,8 +207,8 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>)
     }
 
     iod<rtio.IoDriver> = this.park_iod
-    // One turn(eff) then drive_wheel. Early eventfd wakeups return to the
-    // scheduler; MT block_on prepare_direct_poll balances Notified refs.
+    // One turn(eff) then drive_wheel. Early eventfd wakeups return to
+    // CachedParkThread::block_on which re-polls the plain Future.
     err<i32> = 0
     if found0 != EXPIR_FOUND {
         err = iod.turn(ioh, ms_to_duration(1))
