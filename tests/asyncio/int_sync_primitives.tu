@@ -69,14 +69,15 @@ async oneshot_smoke_body() {
 
 async mutex_smoke_body() {
     m<sync.Mutex> = sync.Mutex::new(0)
-    mb<u64> = m.(u64)
-    f1<sync.AcquireFut> = sync.mutex_acquire_fut_bits(mb)
+    // Mother: lock = acquire.await + guard. Tu: sync acquire() leaf (no member-async).
+    f1<sync.AcquireFut> = m.acquire()
     lerr<i32> = f1.await
     if lerr != 0 return lerr.(i64)
+    mb<u64> = m.(u64)
     g1<u64> = sync.mutex_guard_bits(mb)
     sync.mutex_guard_set_bits(g1, 7)
     sync.mutex_guard_give_back_bits(g1)
-    f2<sync.AcquireFut> = sync.mutex_acquire_fut_bits(mb)
+    f2<sync.AcquireFut> = m.acquire()
     lerr2<i32> = f2.await
     if lerr2 != 0 return lerr2.(i64)
     g2<u64> = sync.mutex_guard_bits(mb)
@@ -86,13 +87,13 @@ async mutex_smoke_body() {
     return io.Ok.(i64)
 }
 
-// Mutex::acquire leaf + guard bits, then a follow-up MT runtime (poison check).
+// Mutex::acquire + guard bits, then a follow-up MT runtime (poison check).
 async mutex_lock_bits_body() {
     m<sync.Mutex> = sync.Mutex::new(0)
-    mb<u64> = m.(u64)
-    f<sync.AcquireFut> = sync.mutex_acquire_fut_bits(mb)
+    f<sync.AcquireFut> = m.acquire()
     lerr<i32> = f.await
     if lerr != 0 return lerr.(i64)
+    mb<u64> = m.(u64)
     gb<u64> = sync.mutex_guard_bits(mb)
     sync.mutex_guard_set_bits(gb, 9)
     got<u64> = sync.mutex_guard_get_bits(gb)
@@ -172,7 +173,8 @@ async barrier_smoke_body() {
     err<i32>, h<rt.Handle> = rt.Handle::current()
     if err != 0 return err.(i64)
     jh<task.JoinHandle> = h.spawn(barrier_peer_fut())
-    f0<sync.BarrierWaitFut> = sync.barrier_wait_fut_bits(g_barrier_bits)
+    // Mother wait(): sync wait_fut() leaf + await (no member-async).
+    f0<sync.BarrierWaitFut> = b.wait_fut()
     lead0<i64> = f0.await
     lead1<i64> = jh.await
     sum<i32> = lead0.(i32) + lead1.(i32)

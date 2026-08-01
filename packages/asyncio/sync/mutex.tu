@@ -41,13 +41,19 @@ MutexGuard::give_back(){
     batch_sem_release(this.m.sem, 1)
 }
 
-// Cross-pkg / recommended acquire: build AcquireFut then await.
-// Member async Mutex::lock is unsafe across packages (null assign / MT poison).
+// Mother Mutex::acquire — returns the semaphore leaf; caller awaits then
+// builds MutexGuard. Prefer this over member-async lock() (cross-pkg await
+// poisons MT block_on; compiler debt).
+Mutex::acquire() AcquireFut {
+    fut<AcquireFut> = new AcquireFut{}
+    fut.init(this.sem, 1)
+    return fut
+}
+
+// Cross-pkg when Mutex::acquire member return is unavailable: bits → leaf.
 fn mutex_acquire_fut_bits(mutex_bits<u64>) AcquireFut {
     m<Mutex> = mutex_bits.(Mutex)
-    fut<AcquireFut> = new AcquireFut{}
-    fut.init(m.sem, 1)
-    return fut
+    return m.acquire()
 }
 
 fn mutex_guard_from_bits(g_bits<u64>) MutexGuard {

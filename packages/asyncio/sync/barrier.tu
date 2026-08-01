@@ -26,8 +26,9 @@ const Barrier::new(n<i32>) Barrier {
     return b
 }
 
-// Async leaf for one Barrier wait. Prefer barrier_wait_fut_bits across pkgs —
-// member async multi-return poisons later MT block_on (same class as Mutex::lock).
+// Async leaf for one Barrier wait. Mother: Barrier::wait() async.
+// Prefer Barrier::wait_fut / barrier_wait_fut_bits — member-async wait()
+// cross-pkg poisons later MT block_on (compiler debt).
 mem BarrierWaitFut: async {
     Barrier*  hub
     i32       arrival_gen
@@ -88,12 +89,17 @@ BarrierWaitFut::poll(ctx){
     return runtime.PollPending
 }
 
+// Mother wait() body without member-async: build the leaf in-package.
+Barrier::wait_fut() BarrierWaitFut {
+    fut<BarrierWaitFut> = new BarrierWaitFut{}
+    fut.init(this)
+    return fut
+}
+
 // Cross-pkg factory: barrier bits → BarrierWaitFut.
 fn barrier_wait_fut_bits(barrier_bits<u64>) BarrierWaitFut {
     b<Barrier> = barrier_bits.(Barrier)
-    fut<BarrierWaitFut> = new BarrierWaitFut{}
-    fut.init(b)
-    return fut
+    return b.wait_fut()
 }
 
 // Leader flag after the future is Ready (also available as await result).

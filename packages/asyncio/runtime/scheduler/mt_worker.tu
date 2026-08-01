@@ -158,11 +158,8 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
         if (core.tick % core.global_queue_interval) == 0 {
             err<i32>, t<task.Notified> = mt_next_global_task(w, core)
             if err == 0 {
-                raw0<task.RawTask> = t.raw()
-                if shared.block_on_root_bits == 0 || raw0.(u64) != shared.block_on_root_bits {
-                    run_task(w, core, t)
-                    continue
-                }
+                run_task(w, core, t)
+                continue
             }
         }
 
@@ -199,13 +196,6 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
         if shared.inject.is_empty() == 0 {
             ierr2<i32>, ti2<task.Notified> = mt_next_global_task(w, core)
             if ierr2 == 0 {
-                raw_skip<task.RawTask> = ti2.raw()
-                // Caller owns the block_on root — never poll it on a worker.
-                if shared.block_on_root_bits != 0 {
-                    if raw_skip.(u64) == shared.block_on_root_bits {
-                        continue
-                    }
-                }
                 run_task(w, core, ti2)
                 continue
             }

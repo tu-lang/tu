@@ -192,15 +192,21 @@ fn futexsleep(addr<u32*> , val<u32> , ns<i64>){
 	}
     if ns < 0 {
         ret<i32> = futex(addr,FUTEX_WAIT_PRIVATE,val,Null,Null,Null)
+    	// EAGAIN/EINTR are normal (value changed / signal); do not warn.
     	if ret < 0 {
-			warn(*"[futexsleep] addr:%p cnt:%d flag:%d ret:%d\n",addr,val,FUTEX_WAIT_PRIVATE,ret)
+			if ret != 0 - _EAGAIN && ret != 0 - 4 {
+				warn(*"[futexsleep] addr:%p cnt:%d flag:%d ret:%d\n",addr,val,FUTEX_WAIT_PRIVATE,ret)
+			}
     	}
         return Null
     }
     ts<TimeSpec:> = null
-    ret<i32> = futex(addr,FUTEX_WAIT_PRIVATE,val,&ts,Null,Null)
-    if ret < 0 {
-		warn(*"[futexsleep] addr:%p ts:%p cnt:%d flag:%d ret:%d\n",addr,&ts,val,FUTEX_WAIT_PRIVATE,ret)
+    ret2<i32> = futex(addr,FUTEX_WAIT_PRIVATE,val,&ts,Null,Null)
+    if ret2 < 0 {
+		// Zero timeout often returns EAGAIN/ETIMEDOUT while spinning.
+		if ret2 != 0 - _EAGAIN && ret2 != 0 - 4 && ret2 != 0 - 110 {
+			warn(*"[futexsleep] addr:%p ts:%p cnt:%d flag:%d ret:%d\n",addr,&ts,val,FUTEX_WAIT_PRIVATE,ret2)
+		}
     }
 }
 fn futexwakeup(addr<u32*> , cnt<u32>) {
