@@ -1,9 +1,8 @@
 // Library io error codes used by the IO driver.
-// Mirrored as package locals so this package (short-name `io`) never
-// `use io as libio` — that import registers path "io" and poisons
-// getPackage for local mem types (Ready, ScheduledIo, …).
-// Values match library/io/error.tu and library/io/async.tu.
+// Package short-name is `io`; bare `use io` is safe after global full_package stamp.
 
-IO_WOULD_BLOCK<i32>            = 16908302
-IO_INTERRUPTED<i32>            = 16908324
-IO_OTHER_DRIVER_TERMINATED<i32> = 50397243
+use io
+
+IO_WOULD_BLOCK<i32>             = io.WouldBlock
+IO_INTERRUPTED<i32>             = io.Interrupted
+IO_OTHER_DRIVER_TERMINATED<i32> = io.OtherDriverTerminated

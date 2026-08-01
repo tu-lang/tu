@@ -8,9 +8,7 @@ use sys
 use asyncio.task
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
-
-// asyncio.error.RuntimeShutdown
-SCHED_RUNTIME_SHUTDOWN<i32> = 0x03020005
+use asyncio.error as aerr
 
 // Tu passes RawTask* as ctx so
 // ScheduledIo wake can RawTask::wake_by_ref without a (handle,id) lookup.
@@ -141,7 +139,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
         }
 
         if shared.inject.is_closed() {
-            err_out = SCHED_RUNTIME_SHUTDOWN
+            err_out = aerr.RuntimeShutdown
             break
         }
 

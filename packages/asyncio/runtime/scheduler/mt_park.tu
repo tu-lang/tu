@@ -21,11 +21,11 @@ GATE_FREE<i32> = 0
 GATE_HELD<i32> = 1
 
 mem ParkDriverHub {
-    u64 drv_bits
-    u64 handle_bits
-    u64 ioh_bits
-    u64 time_bits
-    i32 drv_gate
+    asyncrt.Driver*       drv
+    asyncrt.DriverHandle* handle
+    rtio.IoHandle*        ioh
+    i32                   time_on   // 1 when time driver published a handle
+    i32                   drv_gate
 }
 
 mem Parker {
@@ -37,12 +37,12 @@ mem Unparker {
     Parker* owner
 }
 
-const ParkDriverHub::new(drv_bits<u64>, handle_bits<u64>, ioh_bits<u64>, time_bits<u64>) ParkDriverHub {
+const ParkDriverHub::new(drv<asyncrt.Driver>, handle<asyncrt.DriverHandle>, ioh<rtio.IoHandle>, time_on<i32>) ParkDriverHub {
     h<ParkDriverHub> = new ParkDriverHub
-    h.drv_bits = drv_bits
-    h.handle_bits = handle_bits
-    h.ioh_bits = ioh_bits
-    h.time_bits = time_bits
+    h.drv = drv
+    h.handle = handle
+    h.ioh = ioh
+    h.time_on = time_on
     h.drv_gate = GATE_FREE
     return h
 }
@@ -113,14 +113,14 @@ Parker::park_driver(handle_ptr<u64>) {
         hub_unlock(hub)
         return
     }
-    drv_bits<u64> = hub.drv_bits
-    h_bits<u64> = handle_ptr
-    if h_bits == 0 {
-        h_bits = hub.handle_bits
+    drv<asyncrt.Driver> = hub.drv
+    h<asyncrt.DriverHandle> = null
+    if handle_ptr != 0 {
+        h = handle_ptr
+    } else {
+        h = hub.handle
     }
-    if drv_bits != 0 && h_bits != 0 {
-        drv<asyncrt.Driver> = drv_bits
-        h<asyncrt.DriverHandle> = h_bits
+    if drv != null && h != null {
         d<sys.Duration> = sys.Duration::from_millis(PARK_DRIVER_SLICE_MS)
         drv.park_timeout(h, d)
     }
@@ -138,7 +138,7 @@ Parker::wait_until_wake(handle_ptr<u64>) i32 {
     }
 
     hub<ParkDriverHub> = this.hub
-    if hub != null && hub.drv_bits != 0 && hub.ioh_bits != 0 {
+    if hub != null && hub.drv != null && hub.ioh != null {
         if hub_try_lock(hub) == 1 {
             this.park_driver(handle_ptr)
             return 0
@@ -150,14 +150,15 @@ Parker::wait_until_wake(handle_ptr<u64>) i32 {
 
 Parker::park_timeout(handle_ptr<u64>, max<sys.Duration>) i32 {
     hub<ParkDriverHub> = this.hub
-    if hub != null && hub.drv_bits != 0 && hub_try_lock(hub) == 1 {
-        h_bits<u64> = handle_ptr
-        if h_bits == 0 {
-            h_bits = hub.handle_bits
+    if hub != null && hub.drv != null && hub_try_lock(hub) == 1 {
+        h<asyncrt.DriverHandle> = null
+        if handle_ptr != 0 {
+            h = handle_ptr
+        } else {
+            h = hub.handle
         }
-        if h_bits != 0 {
-            drv<asyncrt.Driver> = hub.drv_bits
-            h<asyncrt.DriverHandle> = h_bits
+        if h != null {
+            drv<asyncrt.Driver> = hub.drv
             drv.park_timeout(h, max)
         }
         hub_unlock(hub)
@@ -175,8 +176,8 @@ Unparker::unpark(){
     old<i32> = atomic.xchg(addr, NOTIFIED)
     if old == PARKED_DRIVER {
         hub<ParkDriverHub> = p.hub
-        if hub != null && hub.ioh_bits != 0 {
-            rtio.io_handle_wake_bits(hub.ioh_bits)
+        if hub != null && hub.ioh != null {
+            hub.ioh.wake_by_ref()
         }
     }
 }
@@ -202,13 +203,13 @@ fn mt_park_block_on(p<Parker>, shared<MtShared>) {
     if hub == null {
         hub = p.hub
     }
-    if hub == null || hub.drv_bits == 0 {
+    if hub == null || hub.drv == null {
         p.park_condvar()
         return
     }
     p.hub = hub
 
-    if hub.ioh_bits == 0 && hub.time_bits == 0 {
+    if hub.ioh == null && hub.time_on == 0 {
         p.park_condvar()
         return
     }
@@ -218,7 +219,11 @@ fn mt_park_block_on(p<Parker>, shared<MtShared>) {
             return
         }
         if hub_try_lock(hub) == 1 {
-            p.park_driver(hub.handle_bits)
+            hb<u64> = 0
+            if hub.handle != null {
+                hb = hub.handle.(u64)
+            }
+            p.park_driver(hb)
             return
         }
         runtime.osyield()

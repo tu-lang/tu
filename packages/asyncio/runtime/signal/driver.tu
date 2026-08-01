@@ -13,16 +13,16 @@ use io
 use sys
 use asyncio.runtime.io as rtio
 
-// Driver-side state. park_iod_bits / park_ioh_bits back-edges into the IO
-// driver so process() can consume_signal_ready and new() can register the fd.
-// Not named io_* — `.io_handle` / `.iod_bits` are type-assert traps.
+// Driver-side state. park_iod / park_ioh back-edges into the IO driver so
+// process() can consume_signal_ready and new() can register the fd.
+// Not named io_* — `.io_handle` / `.iod` are type-assert traps.
 mem SignalDriver {
     i32                reg_fd        // signalfd descriptor
     u64                reg_sio       // unused; reserved for ScheduledIo wiring
     u64                gslot_bits    // SignalGlobals* as u64 (avoid .globals/.gslot traps)
     runtime.MutexInter* lock
-    u64                park_iod_bits // IoDriver* bits for consume_signal_ready
-    u64                park_ioh_bits // IoHandle* bits for register_sfd
+    rtio.IoDriver*     park_iod      // for consume_signal_ready
+    rtio.IoHandle*     park_ioh      // for register_sfd / wake
     i32                park_skip     // 1 after drain applied work (park reads this field)
 }
 
@@ -47,12 +47,11 @@ fn signalhandle_last() SignalDriverHandle {
 
 // sizeof(signalfd_siginfo) on Linux.
 SIGINFO_LEN<u64> = 128
-// io.WouldBlock — local copy avoids short-name clash in this package.
-SIG_WOULD_BLOCK<i32> = 16908302
+SIG_WOULD_BLOCK<i32> = io.WouldBlock
 
 // Initialise globals + open the signalfd with an empty mask, register it
 // on the IO driver as TOKEN_SIGNAL. Publishes via last() getters.
-const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
+const SignalDriver::new(iod<rtio.IoDriver>, ioh<rtio.IoHandle>) i32 {
     LAST_SIGDRIVER = null
     LAST_SIGHANDLE = null
 
@@ -74,9 +73,7 @@ const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
 
     // Epoll ADD TOKEN_SIGNAL.
     // register_sfd returns sys.Ok (=1) on success (netio Selector convention).
-    if ioh_bits != 0 {
-        ioh<rtio.IoHandle> = null
-        ioh = ioh_bits
+    if ioh != null {
         rerr<i32> = ioh.register_sfd(fd)
         ok_sel<i32> = 1
         if rerr != 0 {
@@ -92,8 +89,8 @@ const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
     drv.gslot_bits = gbits
     drv.lock = new runtime.MutexInter
     drv.lock.init()
-    drv.park_iod_bits = iod_bits
-    drv.park_ioh_bits = ioh_bits
+    drv.park_iod = iod
+    drv.park_ioh = ioh
     drv.park_skip = 0
 
     h<SignalDriverHandle> = new SignalDriverHandle
@@ -109,46 +106,19 @@ const SignalDriver::new(iod_bits<u64>, ioh_bits<u64>) i32 {
 // Drain the signalfd (park, then process after consume_signal_ready).
 // V1: always attempt drain (nonblock). EPOLLET + padded token mismatch can
 // skip consume_signal_ready; skipping drain then hangs forever.
-// After a successful drain, wake the IO eventfd so Pending recv futures
-// are re-polled (RecvFut watches fired_count only).
+// After a successful drain, set park_skip and wake the IO eventfd so
+// Pending recv futures are re-polled (RecvFut watches fired_count only).
 SignalDriver::process(){
-    if this.park_iod_bits != 0 {
-        rtio.iodriver_consume_signal_ready_bits(this.park_iod_bits)
+    if this.park_iod != null {
+        this.park_iod.consume_signal_ready()
     }
     fired<i32> = signal_driver_drain(this)
     if fired != 0 {
-        if this.park_ioh_bits != 0 {
-            rtio.io_handle_wake_bits(this.park_ioh_bits)
+        this.park_skip = 1
+        if this.park_ioh != null {
+            this.park_ioh.wake_by_ref()
         }
     }
-}
-
-// Cross-pkg park hook — Driver cannot reliably member-call process().
-fn signal_driver_process_bits(drv_bits<u64>) {
-    if drv_bits == 0 { return }
-    drv<SignalDriver> = null
-    drv = drv_bits
-    if drv.park_iod_bits != 0 {
-        rtio.iodriver_consume_signal_ready_bits(drv.park_iod_bits)
-    }
-    fired<i32> = signal_driver_drain(drv)
-    if fired != 0 {
-        drv.park_skip = 1
-        if drv.park_ioh_bits != 0 {
-            rtio.io_handle_wake_bits(drv.park_ioh_bits)
-        }
-    }
-}
-
-// Take-and-clear park_skip. Aggregate Driver must not read SignalDriver
-// fields across packages (codegen drops the load → always 0 → EPOLLET hang).
-fn signal_driver_take_park_skip(drv_bits<u64>) i32 {
-    if drv_bits == 0 { return 0 }
-    drv<SignalDriver> = null
-    drv = drv_bits
-    if drv.park_skip == 0 { return 0 }
-    drv.park_skip = 0
-    return 1
 }
 
 // Tear down: close the signalfd. The runtime root drives this on shutdown.
@@ -160,20 +130,6 @@ SignalDriver::shutdown(){
     sys.close(gref.sfd)
     gref.sfd = -1
     this.reg_fd = -1
-}
-
-// Cross-pkg shutdown — aggregate Driver must not member-call SignalDriver.
-fn signal_driver_shutdown_bits(drv_bits<u64>) {
-    if drv_bits == 0 { return }
-    drv<SignalDriver> = null
-    drv = drv_bits
-    if drv.gslot_bits == 0 { return }
-    gref<SignalGlobals> = null
-    gref = drv.gslot_bits
-    if gref.sfd < 0 { return }
-    sys.close(gref.sfd)
-    gref.sfd = -1
-    drv.reg_fd = -1
 }
 
 fn sg_bits_of(drv<SignalDriver>) u64 {

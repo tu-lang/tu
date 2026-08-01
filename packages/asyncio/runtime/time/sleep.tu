@@ -1,8 +1,8 @@
 // Runtime-side Sleep leaf. Holds a traced TimerEntry* so GC cannot free
 // the entry while the future is live.
 //
-// Registration uses TimeHandle::register; the active handle bits are
-// published by builder_block_on via sleep_set_handle_bits.
+// Registration uses TimeHandle::register; the active handle is published
+// by builder_block_on via sleep_set_handle.
 
 use runtime
 use io
@@ -12,21 +12,35 @@ SLEEP_RESULT_OK<i32>        = 0
 SLEEP_RESULT_CANCELLED<i32> = 1
 SLEEP_RESULT_FIRED<i32>     = 2
 
-// TimeHandle bits published by runtime builder_block_on (0 if none).
+// TimeHandle published by runtime builder_block_on (null if none).
 // Sleep::poll registers through this slot so this package need not import
 // asyncio.runtime (avoids import cycles). Published once at block_on enter.
-ACTIVE_SLEEP_HANDLE_BITS<u64> = 0
+ACTIVE_SLEEP_HANDLE<TimeHandle> = null
 
-// Publish a non-zero TimeHandle. Never clear with 0 — factories that probe
-// context before enter would otherwise wipe the builder publish.
-fn sleep_set_handle_bits(bits<u64>) {
-    if bits == 0 { return }
-    ACTIVE_SLEEP_HANDLE_BITS = bits
+// Publish a non-null TimeHandle. Never clear with null — factories that
+// probe context before enter would otherwise wipe the builder publish.
+fn sleep_set_handle(th<TimeHandle>) {
+    if th == null { return }
+    ACTIVE_SLEEP_HANDLE = th
 }
 
-// Read the published handle bits (for deadline math in asyncio.time).
+// Compat: publish from raw bits (builder may still pass DriverHandle bits).
+fn sleep_set_handle_bits(bits<u64>) {
+    if bits == 0 { return }
+    th<TimeHandle> = bits
+    sleep_set_handle(th)
+}
+
+// Read the published handle (for deadline math in asyncio.time).
+fn sleep_active_handle() TimeHandle {
+    return ACTIVE_SLEEP_HANDLE
+}
+
+// Compat bits view of the published handle.
 fn sleep_active_handle_bits() u64 {
-    return ACTIVE_SLEEP_HANDLE_BITS
+    th<TimeHandle> = ACTIVE_SLEEP_HANDLE
+    if th == null return 0
+    return th.(u64)
 }
 
 mem Sleep: async {
@@ -41,9 +55,8 @@ mem Sleep: async {
 // absolute wheel deadlines and fire both arms of select at once.
 Sleep::poll(ctx){
     if this.registered == 0 {
-        th_bits<u64> = ACTIVE_SLEEP_HANDLE_BITS
-        if th_bits != 0 {
-            th<TimeHandle> = th_bits
+        th<TimeHandle> = ACTIVE_SLEEP_HANDLE
+        if th != null {
             if this.duration_ms != 0 {
                 now_ms<u64> = time_handle_now_ms(th)
                 dl<u64> = now_ms + this.duration_ms

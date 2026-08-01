@@ -116,11 +116,7 @@ fn build_drivers(b<Builder>) i32, DriverPair, i32 {
 
         // Signal driver lives on top of the IO driver.
         // Use last() getters — SignalDriver::new triple-ret drops the handle.
-        iod_bits<u64> = 0
-        ioh_bits<u64> = 0
-        iod_bits = io_drv
-        ioh_bits = io_h
-        serr<i32> = rtsig.SignalDriver::new(iod_bits, ioh_bits)
+        serr<i32> = rtsig.SignalDriver::new(io_drv, io_h)
         if serr == 0 {
             sig_drv = rtsig.signaldriver_last()
             sig_h   = rtsig.signalhandle_last()
@@ -195,11 +191,15 @@ fn build_multi_thread(b<Builder>) Runtime {
 
     // Shared driver TryLock for PARKED_DRIVER (mother park Shared).
     if drv != null && drv_h != null {
+        time_on<i32> = 0
+        if drv_h.time_handle != null {
+            time_on = 1
+        }
         shared.park_hub = sched.ParkDriverHub::new(
-            drv.(u64),
-            drv_h.(u64),
-            drv_h.ioh_bits(),
-            drv_h.time_bits()
+            drv,
+            drv_h,
+            drv_h.ihandle,
+            time_on
         )
     }
 
@@ -262,9 +262,12 @@ fn builder_block_on(b<Builder>, fut_bits<u64>, _unused<i32>) i32, i64 {
     return err, val
 }
 
-// Push the runtime's TimeHandle bits into the time Sleep registrar.
+// Push the runtime's TimeHandle into the time Sleep registrar.
 fn publish_sleep_time_handle(rtv<Runtime>) {
-    rttime.sleep_set_handle_bits(runtime_sleep_time_bits(rtv))
+    if rtv == null { return }
+    hdl<DriverHandle> = rtv.driver_handle
+    if hdl == null { return }
+    rttime.sleep_set_handle(hdl.time_handle)
 }
 
 // Member sugar matching the design Builder::build — returns Runtime only for

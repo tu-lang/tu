@@ -126,10 +126,9 @@ fn driver_park_timeout_ms_bits(drv_bits<u64>, handle_bits<u64>, ms<u64>) i32 {
 Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
     sd<rtsig.SignalDriver> = this.sigd
     if sd != null {
-        sb<u64> = 0
-        sb = sd
-        rtsig.signal_driver_process_bits(sb)
-        if rtsig.signal_driver_take_park_skip(sb) != 0 {
+        sd.process()
+        if sd.park_skip != 0 {
+            sd.park_skip = 0
             return 0
         }
     }
@@ -142,10 +141,9 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
     } else {
     }
     if sd != null {
-        sb2<u64> = 0
-        sb2 = sd
-        rtsig.signal_driver_process_bits(sb2)
-        if rtsig.signal_driver_take_park_skip(sb2) != 0 {
+        sd.process()
+        if sd.park_skip != 0 {
+            sd.park_skip = 0
             return 0
         }
     }
@@ -157,15 +155,10 @@ Driver::park_timeout(handle<DriverHandle>, d<sys.Duration>) i32 {
 Driver::shutdown(handle<DriverHandle>){
     sd<rtsig.SignalDriver> = this.sigd
     if sd != null {
-        sb<u64> = 0
-        sb = sd
-        rtsig.signal_driver_shutdown_bits(sb)
+        sd.shutdown()
     }
-    ioh_bits<u64> = handle.ioh_bits()
-    if ioh_bits != 0 {
-        ih<rtio.IoHandle> = null
-        ih = ioh_bits
-        ih.shutdown()
+    if handle.ihandle != null {
+        handle.ihandle.shutdown()
     }
 }
 

@@ -26,13 +26,9 @@ mem Registration {
     ScheduledIo*  shared
 }
 
-// Build a Registration: allocate the ScheduledIo and register the source
-// with netio. On failure leaves nothing behind.
-// Build a Registration: allocate the ScheduledIo and register the IoSource
-// bits with netio. On failure leaves nothing behind.
-// iosrc_bits: IoSource* as u64 (avoids event.Source api dispatch segfault).
-const Registration::new_with_interest_and_handle(iosrc_bits<u64>, interest<netio.Interest>, handle<u64>, io_handle<IoHandle>) i32, Registration {
-    err<i32>, sio<ScheduledIo> = io_handle.add_source(iosrc_bits, interest)
+// Build a Registration via event.Source enroll; iosrc_bits kept for close.
+const Registration::new_with_interest_and_handle(src<netevent.Source>, iosrc_bits<u64>, interest<netio.Interest>, handle<u64>, io_handle<IoHandle>) i32, Registration {
+    err<i32>, sio<ScheduledIo> = io_handle.add_source(src, iosrc_bits, interest)
     if err != 0 return err, null
     r<Registration> = new Registration
     r.sched_handle = handle

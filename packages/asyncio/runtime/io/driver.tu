@@ -9,14 +9,11 @@ use asyncio.task
 
 use runtime
 use std.atomic
+use io
 use netio
 use netio.event as netevent
 use netio.sys as nsys
 use sys
-
-// Mirrors library io.Ok (=1). This package's short name is also `io`, so
-// `use io as libio` conflicts with the self-import map.
-LIBIO_OK<i32> = 1
 
 TOKEN_WAKEUP<u64> = 0
 TOKEN_SIGNAL<u64> = 1
@@ -64,7 +61,7 @@ const IoDriver::new() i32 {
     LAST_IOHANDLE = null
     err<i32>, p<netio.Poll> = netio.make_poll(0)
     // netio/io use Ok=1 (not 0) as success.
-    if err != LIBIO_OK {
+    if err != io.Ok {
         return err
     }
 
@@ -87,7 +84,7 @@ const IoDriver::new() i32 {
     h.synced_lock = lk
     h.metrics = Metrics::new()
     werr<i32>, wk<netio.Waker> = netio.make_waker(reg, netio.token_from_u64(TOKEN_WAKEUP))
-    if werr != LIBIO_OK {
+    if werr != io.Ok {
         return werr
     }
     h.waker_slot = wk.(u64)
@@ -96,12 +93,9 @@ const IoDriver::new() i32 {
     return 0
 }
 
-// Register a source. Token is the new ScheduledIo* cast to u64; later
-// turn() reverses the cast to dispatch the event back.
-// Register a source by IoSource bits. Token is the new ScheduledIo* cast to
-// u64; later turn() reverses the cast to dispatch the event back.
-// Tu: pass iosrc_bits — event.Source api method dispatch segfaults (layout).
-IoHandle::add_source(iosrc_bits<u64>, interest<netio.Interest>) i32, ScheduledIo {
+// Register a source via event.Source api (InitApiVptr on coerce at call sites).
+// iosrc_bits is retained for shutdown close (Source has no close slot).
+IoHandle::add_source(src<netevent.Source>, iosrc_bits<u64>, interest<netio.Interest>) i32, ScheduledIo {
     if this.registrations == null || this.synced == null {
         return 1, null
     }
@@ -115,8 +109,8 @@ IoHandle::add_source(iosrc_bits<u64>, interest<netio.Interest>) i32, ScheduledIo
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
     tok<u64> = sio.token()
     t<netio.Token> = netio.token_from_u64(tok)
-    rerr<i32> = netio.registry_register(reg, iosrc_bits, t, interest)
-    if rerr != LIBIO_OK {
+    rerr<i32> = netio.registry_register(reg, src, t, interest)
+    if rerr != io.Ok {
         lk.lock()
         this.registrations.remove(this.synced, sio)
         lk.unlock()
@@ -167,10 +161,10 @@ fn iodriver_consume_signal_ready_bits(iod_bits<u64>) i32 {
     return 1
 }
 
-// Detach a previously registered source by IoSource bits.
+// Detach by IoSource bits (stable after multi-api view flips overwrite vptr@0).
 IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
-    err<i32> = netio.registry_deregister(reg, iosrc_bits)
+    err<i32> = netio.registry_deregister_bits(reg, iosrc_bits)
     sio.iosrc_bits = 0
     lk<runtime.MutexInter> = this.synced_lock
     lk.lock()
@@ -206,7 +200,7 @@ IoHandle::shutdown(){
         nxt<ScheduledIo> = cur.next_sio
         bits<u64> = cur.iosrc_bits
         if bits != 0 && reg != null {
-            netio.registry_deregister(reg, bits)
+            netio.registry_deregister_bits(reg, bits)
             netio.iosource_close_fd(bits)
             cur.iosrc_bits = 0
         }
@@ -234,15 +228,15 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
     handle.release_pending_registrations()
     this.io_hit = 0
     err<i32> = netio.poll_poll(netio.poll_from_bits(this.poll_slot), netevent.events_from_bits(this.events_slot), max_wait)
-    if err == IO_INTERRUPTED return 0
-    if err != LIBIO_OK return err
+    if err == io.Interrupted return 0
+    if err != io.Ok return err
 
     iter<netevent.Iter> = netevent.events_begin_iter(netevent.events_from_bits(this.events_slot))
     fired<u64> = 0
     loop {
         ie<i32>, ev<netevent.Event> = netevent.events_iter_next(iter)
         // io.Ok is 1 — must not use `ie != 0` (that drops every successful event).
-        if ie != LIBIO_OK break
+        if ie != io.Ok break
 
         token<u64> = ev.token()
         if token == TOKEN_WAKEUP continue

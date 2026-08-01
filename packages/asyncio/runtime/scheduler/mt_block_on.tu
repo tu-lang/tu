@@ -7,6 +7,7 @@
 
 use runtime
 use asyncio.task
+use asyncio.error as aerr
 
 fn mt_block_on_raw(bits<u64>, fut) i32, i64 {
     mh<MtHandle> = bits.(MtHandle)
@@ -45,7 +46,7 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
 
     loop {
         if shared.inject.is_closed() {
-            err_out = 0x03020005 // asyncio.error.RuntimeShutdown
+            err_out = aerr.RuntimeShutdown
             break
         }
 
