@@ -10,10 +10,12 @@ use net
 use io
 use runtime
 use netio
+use netio.event as evsrc
 use netio.net.udp as netudp
 use asyncio.io as aio
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
+use asyncio.error as aerr
 
 // Async UDP: netio source + IO-driver registration.
 mem UdpSocket {
@@ -30,7 +32,7 @@ fn udp_socket_last() UdpSocket {
 // Bind and register for read+write readiness. Returns (io.Ok, socket).
 const UdpSocket::bind(addr<net.SocketAddr>) (i32, UdpSocket) {
     LAST_UDP_SOCK = null
-    shut_err<i32> = 0x03020005
+    shut_err<i32> = aerr.RuntimeShutdown
     ok_code<i32> = io.Ok
 
     err<i32>, inner<netudp.UdpSocket> = netudp.UdpSocket::bind(addr)
@@ -49,7 +51,8 @@ const UdpSocket::bind(addr<net.SocketAddr>) (i32, UdpSocket) {
     interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
     holder<u64> = 0
     holder = inner
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
+    src<evsrc.Source> = inner
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, src, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 return perr, null
     if pe == null return shut_err, null
 
@@ -87,7 +90,7 @@ mem UdpSendFut: async {
 UdpSendFut::poll(ctx) {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
+    would_block<i32> = io.WouldBlock
     ok_code<i32> = io.Ok
     loop {
         werr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(ctx.(u64))
@@ -118,7 +121,7 @@ mem UdpRecvFut: async {
 UdpRecvFut::poll(ctx) {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
+    would_block<i32> = io.WouldBlock
     ok_code<i32> = io.Ok
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx.(u64))

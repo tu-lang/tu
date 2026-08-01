@@ -14,9 +14,9 @@ use io
 use std
 use runtime
 use netio
+use netio.event as evsrc
 use netio.net.tcp as nettcp
 use asyncio.io as aio
-use asyncio.io.util as ioutil
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
 use asyncio.error as aerr
@@ -33,7 +33,7 @@ mem TcpStream {
 // (io.Ok, stream) or an error with a null stream (RuntimeShutdown when there
 // is no active IO driver).
 const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32, TcpStream) {
-    shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
+    shut_err<i32> = aerr.RuntimeShutdown
     ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return shut_err, null
@@ -48,7 +48,8 @@ const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32,
     interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
     holder<u64> = 0
     holder = inner
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
+    src<evsrc.Source> = inner
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, src, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 return perr, null
     if pe == null return shut_err, null
     out<TcpStream> = new TcpStream
@@ -96,9 +97,8 @@ mem ConnectFut: async {
 }
 
 ConnectFut::poll(ctx){
-    // Numeric codes: leaf-poll asmgen sometimes fails to resolve io.*/aerr.* consts.
-    other_err<i32> = 16908328       // io.Other
-    shut_err<i32> = 0x03020005      // aerr.RuntimeShutdown
+    other_err<i32> = io.Other
+    shut_err<i32> = aerr.RuntimeShutdown
     ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
@@ -250,7 +250,7 @@ TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
     if rem == 0 return runtime.PollReady
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
+    would_block<i32> = io.WouldBlock
     ok_code<i32> = io.Ok
     sock<nettcp.TcpStream> = this.raw_sock()
     loop {
@@ -283,7 +283,7 @@ TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
 TcpStream::poll_write_priv(ctx<u64>, b<io.Buf>) i32, u64 {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
+    would_block<i32> = io.WouldBlock
     ok_code<i32> = io.Ok
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(ctx)
@@ -307,7 +307,7 @@ impl aio.AsyncRead for TcpStream {
     }
 }
 
-impl ioutil.AsyncWrite for TcpStream {
+impl aio.AsyncWrite for TcpStream {
     fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
         e<i32> = 0
         n<u64> = 0

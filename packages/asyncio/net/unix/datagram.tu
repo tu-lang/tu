@@ -6,6 +6,7 @@ use string
 use io
 use runtime
 use netio
+use netio.event as evsrc
 use netio.net.uds as netuds
 use netio.sys.uds as udsaddr
 use asyncio.io as aio
@@ -30,7 +31,7 @@ const UnixDatagram::bind(path<string.String>) (i32, UnixDatagram) {
 
 // Register an already-bound netio UnixDatagram with the IO driver.
 const UnixDatagram::from_netio(inner<netuds.UnixDatagram>) (i32, UnixDatagram) {
-    shut_err<i32> = 0x03020005
+    shut_err<i32> = aerr.RuntimeShutdown
     ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return shut_err, null
@@ -44,7 +45,8 @@ const UnixDatagram::from_netio(inner<netuds.UnixDatagram>) (i32, UnixDatagram) {
     interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
     holder<u64> = 0
     holder = inner
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
+    src<evsrc.Source> = inner
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, src, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 return perr, null
     return ok_code, new UnixDatagram { io: pe, last_peer_bits: 0 }
 }

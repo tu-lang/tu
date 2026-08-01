@@ -11,11 +11,12 @@ use io
 use std
 use runtime
 use netio
+use netio.event as evsrc
 use netio.net.uds as netuds
 use asyncio.io as aio
-use asyncio.io.util as ioutil
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
+use asyncio.error as aerr
 
 // Async unix stream: netio source + IO-driver registration via PollEvented.
 mem UnixStream {
@@ -25,7 +26,7 @@ mem UnixStream {
 // Register an already-connected netio UnixStream with the IO driver.
 // Returns (io.Ok, stream) or an error with null.
 const UnixStream::from_netio(inner<netuds.UnixStream>) (i32, UnixStream) {
-    shut_err<i32> = 0x03020005
+    shut_err<i32> = aerr.RuntimeShutdown
     ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null return shut_err, null
@@ -39,7 +40,8 @@ const UnixStream::from_netio(inner<netuds.UnixStream>) (i32, UnixStream) {
     interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
     holder<u64> = 0
     holder = inner
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
+    src<evsrc.Source> = inner
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, src, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 return perr, null
     if pe == null return shut_err, null
     out<UnixStream> = new UnixStream
@@ -72,8 +74,8 @@ mem UnixConnectFut: async {
 }
 
 UnixConnectFut::poll(ctx){
-    other_err<i32> = 16908328
-    shut_err<i32> = 0x03020005
+    other_err<i32> = io.Other
+    shut_err<i32> = aerr.RuntimeShutdown
     ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
@@ -124,7 +126,7 @@ UnixStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
     if rem == 0 return runtime.PollReady
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
+    would_block<i32> = io.WouldBlock
     ok_code<i32> = io.Ok
     sock<netuds.UnixStream> = this.raw_sock()
     loop {
@@ -156,7 +158,7 @@ UnixStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
 UnixStream::poll_write_priv(ctx<u64>, b<io.Buf>) i32, u64 {
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
+    would_block<i32> = io.WouldBlock
     ok_code<i32> = io.Ok
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(ctx)
@@ -185,7 +187,7 @@ impl aio.AsyncRead for UnixStream {
     }
 }
 
-impl ioutil.AsyncWrite for UnixStream {
+impl aio.AsyncWrite for UnixStream {
     fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
         e<i32> = 0
         n<u64> = 0

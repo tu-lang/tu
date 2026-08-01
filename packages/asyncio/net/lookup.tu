@@ -1,20 +1,16 @@
-// Host resolution — lookup_host delegating to addr::to_socket_addrs.
-//
-// Fast path: parse_ascii_bytes (tustd SocketAddr::parse_ascii). Slow path:
-// the design uses spawn_blocking(strto_socket_addrs); Tu leaf future polls that.
-// Package-level async+await is unavailable — expose LookupHostFut instead.
-//
-// Library `net` is reached only via asyncio.util bridges (short-name clash).
+// Host resolution — lookup_host. Fast path: parse_ascii_bytes. Slow path:
+// spawn_blocking(strto_socket_addrs). Package-level async+await unavailable —
+// expose LookupHostFut instead.
 
 use string
 use std
+use io
+use net
 use runtime
 use asyncio.runtime as rt
 use asyncio.task
-use asyncio.util
 
-// library/io/define.tu Ok (asmgen: avoid pkg const in leaf poll).
-NET_IO_OK<i32> = 1
+// Local sentinel when Handle::current fails — not library Unsupported.
 NET_IO_UNSUPPORTED<i32> = 95
 
 // Blocking worker output: err code + resolved address list.
@@ -24,7 +20,7 @@ mem DnsLookupResult {
 }
 
 fn blocking_strto_socket_addrs(host<string.String>) u64 {
-    derr<i32>, list<std.Array> = util.net_strto_socket_addrs(host)
+    derr<i32>, list<std.Array> = net.strto_socket_addrs(host)
     out<DnsLookupResult> = new DnsLookupResult
     out.err_code = derr
     out.addrs = list
@@ -32,7 +28,6 @@ fn blocking_strto_socket_addrs(host<string.String>) u64 {
 }
 
 // Leaf future for lookup_host. poll_stage: 0=start, 1=await join, 2=done.
-// Field renamed from the design-style `stage` to avoid typeassert / package traps.
 mem LookupHostFut: async {
     string.String host
     i32 poll_stage
@@ -48,17 +43,17 @@ LookupHostFut::poll(ctx){
     if this.poll_stage == 0 {
         empty<std.Array> = std.NewArray()
         n<i32> = std.strlen(this.host.str())
-        perr<i32>, addr = util.net_parse_ascii_bytes(this.host.str(), n)
-        if perr == NET_IO_OK {
-            empty.push(addr.(u64))
-            this.err_code = NET_IO_OK
+        perr<i32>, bits<u64> = net.parse_ascii_bytes_bits(this.host.str(), n)
+        if perr == io.Ok {
+            empty.push(bits)
+            this.err_code = io.Ok
             this.addrs = empty
             this.poll_stage = 2
-            return runtime.PollReady, NET_IO_OK
+            return runtime.PollReady, io.Ok
         }
 
         herr<i32>, h<rt.Handle> = rt.Handle::current()
-        if herr != NET_IO_OK {
+        if herr != io.Ok {
             this.err_code = NET_IO_UNSUPPORTED
             this.addrs = empty
             this.poll_stage = 2
@@ -77,7 +72,7 @@ LookupHostFut::poll(ctx){
         }
         out<DnsLookupResult> = val.(DnsLookupResult)
         this.err_code = out.err_code
-        if out.err_code != NET_IO_OK {
+        if out.err_code != io.Ok {
             this.addrs = std.NewArray()
         } else {
             this.addrs = out.addrs
@@ -88,14 +83,13 @@ LookupHostFut::poll(ctx){
     return runtime.PollReady, this.err_code
 }
 
-// Single-slot host for the blocking trampoline (serializer: one DNS spawn at a time).
+// Single-slot host for the blocking trampoline (one DNS spawn at a time).
 JOB_HOST<string.String> = null
 
 fn blocking_dns_trampoline() u64 {
     return blocking_strto_socket_addrs(JOB_HOST)
 }
 
-// User entry point for host lookup — returns a leaf future.
 fn lookup_host(host<string.String>) LookupHostFut {
     return new LookupHostFut {
         host: host,

@@ -11,6 +11,7 @@ use net
 use io
 use runtime
 use netio
+use netio.event as evsrc
 use netio.net.tcp as nettcp
 use asyncio.io as aio
 use asyncio.runtime as rt
@@ -31,7 +32,7 @@ const TcpListener::bind(addr<net.SocketAddr>) (i32, TcpListener) {
 }
 
 const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
-    shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
+    shut_err<i32> = aerr.RuntimeShutdown
     ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
     if rc == null {
@@ -51,7 +52,8 @@ const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
     interest<netio.Interest> = netio.readable_interest()
     holder<u64> = 0
     holder = inner
-    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, inner.iosrc_bits, interest, rc.sched, ioh)
+    src<evsrc.Source> = inner
+    perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, src, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 {
         return perr, null
     }
@@ -77,7 +79,7 @@ AcceptFut::poll(ctx){
     ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302 // io.WouldBlock
+    would_block<i32> = io.WouldBlock
     c<u64> = ctx.(u64)
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(c)
@@ -93,11 +95,11 @@ AcceptFut::poll(ctx){
 
         inner<nettcp.TcpStream> = nettcp.tcp_accept_stream_last()
         peer<net.SocketAddr> = nettcp.tcp_accept_addr_last()
-        if inner == null return ready, 16908328, null // io.Other
+        if inner == null return ready, io.Other, null
         // Package bridge: Type::method static call fails inside async poll.
         rerr2<i32>, s<TcpStream> = tcp_stream_from_netio(inner, peer)
         if rerr2 != ok_code return ready, rerr2, null
-        if s == null return ready, 16908328, null
+        if s == null return ready, io.Other, null
         return ready, ok_code, s
     }
 }
@@ -115,7 +117,7 @@ TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
     ok_code<i32> = io.Ok
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = 16908302
+    would_block<i32> = io.WouldBlock
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx)
         if rerr == pend return pend, null

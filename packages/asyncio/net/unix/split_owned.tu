@@ -4,7 +4,6 @@
 
 use io
 use asyncio.io as aio
-use asyncio.io.util as ioutil
 
 // Owned read half; movable across tasks.
 mem UnixOwnedReadHalf {
@@ -35,7 +34,7 @@ impl aio.AsyncRead for UnixOwnedReadHalf {
     }
 }
 
-impl ioutil.AsyncWrite for UnixOwnedWriteHalf {
+impl aio.AsyncWrite for UnixOwnedWriteHalf {
     fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
         err<i32> = 0
         n<u64> = 0
