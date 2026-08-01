@@ -14,6 +14,7 @@ use os
 use asyncio.runtime as rt
 use asyncio.runtime.signal as rtsig
 use asyncio.sync as sync
+use asyncio.error as aerr
 
 // A Unix signal number.
 mem SignalKind {
@@ -84,8 +85,8 @@ fn stream_last() SignalStream {
 
 fn subscribe(kind<SignalKind>) i32 {
     LAST_SIGNAL_STREAM = null
-    shut_err<i32> = 0x03020005 // aerr.RuntimeShutdown
-    not_reg<i32>  = 0x0302000F // aerr.SignalNotRegistered
+    shut_err<i32> = aerr.RuntimeShutdown
+    not_reg<i32>  = aerr.SignalNotRegistered
     ok_code<i32>  = io.Ok
 
     rc<rt.RuntimeContext> = rt.current_context()

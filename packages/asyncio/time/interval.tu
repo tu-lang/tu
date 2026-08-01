@@ -23,7 +23,9 @@ mem Interval {
 
 // Current runtime clock in ms, or 0 when no runtime/time driver is active.
 fn current_now_ms() u64 {
-    return rttime.time_handle_now_ms_bits(current_time_handle_bits())
+    th<rttime.TimeHandle> = current_time_handle()
+    if th == null return 0
+    return rttime.time_handle_now_ms(th)
 }
 
 // First tick completes immediately

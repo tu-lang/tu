@@ -1,8 +1,5 @@
-// Library `net` bridges for asyncio.net.
-//
-// Package asyncio.net has short-name `net`. Importing the library as
-// `use net` / `use net as libnet` registers path "net" and poisons
-// getPackage for local mem types. Call these from asyncio.util instead.
+// Library `net` helpers still used for SocketAddr string formatting.
+// Parse/strto now call library `net` directly from asyncio.net (bare use net).
 
 use net as libnet
 use io
