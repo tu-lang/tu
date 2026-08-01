@@ -14,10 +14,18 @@ BUILD_LIBA = build_install_liba() {                              	\
 		'use std.map	use std.atomic	use std.regex'				\
 		'use runtime	use runtime.debug	use time'					\
 		> "$$WD/a.tu";												\
-	tu -s "$$WD/a.tu" -std --workdir "$$WD";						\
+	if ! tu -s "$$WD/a.tu" -std --workdir "$$WD"; then				\
+		echo "[build-liba] tu -s failed; refusing incomplete colib" >&2; \
+		rm -rf "$$WD";												\
+		return 1;													\
+	fi;																\
 	rm -f "$$WD/a.tu" "$$WD/a.tu.s";								\
 	cp $(prefix)/lib/coasm/*.s "$$WD"/;								\
-	tu -c "$$WD";													\
+	if ! tu -c "$$WD"; then											\
+		echo "[build-liba] tu -c failed; refusing incomplete colib" >&2; \
+		rm -rf "$$WD";												\
+		return 1;													\
+	fi;																\
 	ar -rc release/tulang.a "$$WD"/*.o;								\
 	cp "$$WD"/*.o $(prefix)/lib/colib/;								\
 	rm -rf "$$WD";													\

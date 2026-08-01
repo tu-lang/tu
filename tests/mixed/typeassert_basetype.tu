@@ -1,5 +1,7 @@
 use fmt
 
+_EAGAIN_TEST<i64> = 0xb
+
 func test_int(){
 	num = 376.(i8)
 	_tmp<i32> = 376
@@ -30,8 +32,38 @@ func test_string(){
 	if string.new(str) == "45ss54" {} else os.die("str != 45ss54")
 	fmt.println("test string success")
 }
+// Parenthesized BinaryExpr + chain-end .(T): scalar cast, must not enter memgen.
+// Operands must be native (typed var / i64 const); bare IntExpr pairs stay dynamic.
+func test_binary_neg_cast(){
+	a<i32> = 0
+	b<i32> = 1
+	v1<i32> = (a - b).(i32)
+	expect1<i32> = a - b
+	if v1 != expect1 {
+		os.die(" (a - b).(i32) mismatch")
+	}
+	v2<i32> = (0 - _EAGAIN_TEST).(i32)
+	expect2<i32> = 0 - _EAGAIN_TEST
+	if v2 != expect2 {
+		os.die(" (0 - const).(i32) mismatch")
+	}
+	c<i32> = 1
+	d<i32> = 2
+	v3<i32> = (c + d).(i32)
+	expect3<i32> = 3
+	if v3 != expect3 {
+		os.die(" (c + d).(i32) mismatch")
+	}
+	// Compare against syscall-style negative errno form.
+	ret<i32> = 0 - _EAGAIN_TEST
+	if ret != (0 - _EAGAIN_TEST).(i32) {
+		os.die(" ret != (0 - const).(i32)")
+	}
+	fmt.println("test_binary_neg_cast success")
+}
 func main(){
 	test_int()
 	test_char()
 	test_string()
+	test_binary_neg_cast()
 }

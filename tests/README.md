@@ -8,9 +8,9 @@
     - operator    操作符号相关
     - runtime     运行时测试
     - statement   语法测试
+    - asyncio     异步运行时 / netio 集成与加压（`int_*` / `prop_*`）
 - 原生类型的语法+依赖库+运行时测试
   - native        原生类型的依赖库相关测试
   - memory        原生类型的内存相关测试，操作符号相关等
 - 原生类型+动态类型复杂运算组合情况的测试
   - mixed
-

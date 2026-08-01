@@ -276,13 +276,8 @@ AsyncBlock::genawait(stmt , recvs){
 
 // Sync factory already returned awaitable: assign then poll (no genawait2 rebuild).
 // rhs may be FunCallExpr or MemberCallExpr.
-AsyncBlock::leafawait(rhs, leaf, recvs){
-    if leaf == null {
-        rhs.check(false, "leafawait missing leaf struct")
-    }
-    casevar = this.gencasevar()
-    casevar.structname = leaf.name
-    // Prefer consumer import alias (proc) over short pkg / full_package key
+// Shared with genawait2: full_package + consumer import alias for cross-pkg NewStruct.
+AsyncBlock::awaitLeafPkgAnnot(leaf){
     full = leaf.pkg
     if leaf.parser != null {
         g = leaf.parser.getpkgname()
@@ -290,16 +285,24 @@ AsyncBlock::leafawait(rhs, leaf, recvs){
             full = g
         }
     }
-    casevar.structpkg = full
     cur = this.root.curp
     if cur != null && cur.pkg != null && full != null && full != "" {
         for alias, path : cur.pkg.imports {
             if path == full {
-                casevar.structpkg = alias
-                break
+                return alias
             }
         }
     }
+    return full
+}
+
+AsyncBlock::leafawait(rhs, leaf, recvs){
+    if leaf == null {
+        rhs.check(false, "leafawait missing leaf struct")
+    }
+    casevar = this.gencasevar()
+    casevar.structname = leaf.name
+    casevar.structpkg = this.awaitLeafPkgAnnot(leaf)
 
     assignExpr = new gen.AssignExpr(0, 0)
     assignExpr.opt = ast.ASSIGN
@@ -391,15 +394,16 @@ AsyncBlock::dynawait(fc , recvs){
 
 AsyncBlock::genawait2(s , callargs , recvs, isstatic){
     casevar = this.gencasevar()
-    casevar.structname = s.name 
-    casevar.structpkg = s.pkg
+    casevar.structname = s.name
+    pkgannot = this.awaitLeafPkgAnnot(s)
+    casevar.structpkg = pkgannot
 
     assignExpr = new gen.AssignExpr(0, 0)
     assignExpr.opt = ast.ASSIGN
     assignExpr.lhs = casevar
     newsvar = new gen.NewStructExpr(0,0)
     newsvar.init = new gen.StructInitExpr(0,0)
-    newsvar.init.pkgname = s.pkg
+    newsvar.init.pkgname = pkgannot
     newsvar.init.name = s.name
     for i = 1 ; i < std.len(s.member) ; i += 1 {
         m = s.member[i]
