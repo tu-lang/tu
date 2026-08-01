@@ -217,6 +217,16 @@ AsyncBlock::genawait(stmt , recvs){
         }
         s = this.getstruct(stmt)
         if s == null {
+            if fc.package != null && fc.package != "" {
+                var = ast.GP().getGlobalVar("", fc.package)
+                if var == null
+                    var = this.root.fc.FindLocalVar(fc.package)
+                if var != null && var.structtype && var.structname != "" {
+                    stmt.check(false,
+                        "member-async .await: async leaf not found for typed receiver "
+                        + var.structpkg + "." + var.structname + "::" + fc.funcname)
+                }
+            }
             return this.dynawait(fc,recvs)
         }
         retvar = this.genawait2(s,fc,recvs,false)

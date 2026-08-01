@@ -6,6 +6,11 @@ mem Lock {
     i32 n
 }
 
+// Untyped `m = lock_new()` must pick up Lock via return-type propagation.
+fn lock_new() Lock {
+    return new Lock { n: 0 }
+}
+
 // Async member leaf; consumer awaits across package boundary.
 async Lock::lock() {
     return 1.(i8)

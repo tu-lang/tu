@@ -3,6 +3,7 @@ use compiler.gen
 use compiler.utils
 use compiler.compile
 use compiler.parser.package
+use std
 
 Parser::parseStatement()
 {
@@ -468,6 +469,16 @@ Parser::parseMultiAssignStmt(firstv){
         if reader.curToken != ast.COMMA 
             break
         reader.scan()
+    }
+
+    // One-to-one multi-assign: propagate mem/leaf onto untyped locals
+    if !stmt.hasawait && std.len(stmt.ls) == std.len(stmt.rs) {
+        i = 0
+        while i < std.len(stmt.ls) {
+            if type(stmt.ls[i]) == type(gen.VarExpr)
+                gen.propagateVarMemTypeFromRhs(stmt.ls[i], stmt.rs[i])
+            i += 1
+        }
     }
 
     this.ismultiassign = false

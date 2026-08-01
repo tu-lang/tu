@@ -1,5 +1,6 @@
 // Cross-pkg member-async .await must resolve leaf in the owner package
 // (genawait2 pkg annot aligned with leafawait). Second block_on must stay healthy.
+// Also: untyped assign from typed factory + materialize leaf then .await.
 use fmt
 use os
 use runtime
@@ -25,6 +26,19 @@ async cross_pending_once() {
 async local_lock_once() {
     m<LocalLock> = new LocalLock { n: 0 }
     return m.lock().await
+}
+
+// Untyped receiver: m = own.lock_new() must propagate Lock so m.lock().await is static.
+async cross_untyped_recv_await() {
+    m = own.lock_new()
+    return m.lock().await
+}
+
+// Materialize member-async leaf then await the local (fut = m.lock(); fut.await).
+async cross_materialize_leaf_await() {
+    m = own.lock_new()
+    fut = m.lock()
+    return fut.await
 }
 
 fn test_cross_member_await() {
@@ -54,7 +68,35 @@ fn test_cross_pending_await() {
     fmt.println("test_cross_pending_await success")
 }
 
+fn test_cross_untyped_recv() {
+    fmt.println("test_cross_untyped_recv")
+    r<i64> = runtime.block(cross_untyped_recv_await())
+    if r != 1 {
+        os.die("untyped recv lock().await != 1")
+    }
+    r2<i64> = runtime.block(local_lock_once())
+    if r2 != 3 {
+        os.die("follow-up after untyped recv poisoned")
+    }
+    fmt.println("test_cross_untyped_recv success")
+}
+
+fn test_cross_materialize_leaf() {
+    fmt.println("test_cross_materialize_leaf")
+    r<i64> = runtime.block(cross_materialize_leaf_await())
+    if r != 1 {
+        os.die("materialize leaf await != 1")
+    }
+    r2<i64> = runtime.block(local_lock_once())
+    if r2 != 3 {
+        os.die("follow-up after materialize poisoned")
+    }
+    fmt.println("test_cross_materialize_leaf success")
+}
+
 fn main() {
     test_cross_member_await()
     test_cross_pending_await()
+    test_cross_untyped_recv()
+    test_cross_materialize_leaf()
 }
