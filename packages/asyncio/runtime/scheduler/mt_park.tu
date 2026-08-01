@@ -118,7 +118,12 @@ Parker::park_driver(handle_ptr<u64>) {
     if h_bits == 0 {
         h_bits = hub.handle_bits
     }
-    asyncrt.driver_park_timeout_ms_bits(drv_bits, h_bits, PARK_DRIVER_SLICE_MS)
+    if drv_bits != 0 && h_bits != 0 {
+        drv<asyncrt.Driver> = drv_bits
+        h<asyncrt.DriverHandle> = h_bits
+        d<sys.Duration> = sys.Duration::from_millis(PARK_DRIVER_SLICE_MS)
+        drv.park_timeout(h, d)
+    }
     if atomic.cas(addr, PARKED_DRIVER, EMPTY) != CAS_OK {
         atomic.cas(addr, NOTIFIED, EMPTY)
     }
@@ -150,8 +155,11 @@ Parker::park_timeout(handle_ptr<u64>, max<sys.Duration>) i32 {
         if h_bits == 0 {
             h_bits = hub.handle_bits
         }
-        ms<u64> = max.as_millis()
-        asyncrt.driver_park_timeout_ms_bits(hub.drv_bits, h_bits, ms)
+        if h_bits != 0 {
+            drv<asyncrt.Driver> = hub.drv_bits
+            h<asyncrt.DriverHandle> = h_bits
+            drv.park_timeout(h, max)
+        }
         hub_unlock(hub)
         return 0
     }

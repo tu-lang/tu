@@ -1,7 +1,7 @@
 // Runtime-side Sleep leaf. Holds a traced TimerEntry* so GC cannot free
 // the entry while the future is live.
 //
-// Registration uses time_handle_register_bits; the active handle bits are
+// Registration uses TimeHandle::register; the active handle bits are
 // published by builder_block_on via sleep_set_handle_bits.
 
 use runtime
@@ -42,21 +42,24 @@ mem Sleep: async {
 Sleep::poll(ctx){
     if this.registered == 0 {
         th_bits<u64> = ACTIVE_SLEEP_HANDLE_BITS
-        if this.duration_ms != 0 {
-            now_ms<u64> = 0
-            if th_bits != 0 {
-                now_ms = time_handle_now_ms_bits(th_bits)
-            }
-            dl<u64> = now_ms + this.duration_ms
-            this.entry.deadline_ms = dl
-            cell<StateCell> = this.entry.shared.get_cell()
-            cell.arm(dl)
-            this.duration_ms = 0
-        }
         if th_bits != 0 {
-            e_bits<u64> = 0
-            e_bits = this.entry
-            time_handle_register_bits(th_bits, e_bits)
+            th<TimeHandle> = th_bits
+            if this.duration_ms != 0 {
+                now_ms<u64> = time_handle_now_ms(th)
+                dl<u64> = now_ms + this.duration_ms
+                this.entry.deadline_ms = dl
+                cell<StateCell> = this.entry.shared.get_cell()
+                cell.arm(dl)
+                this.duration_ms = 0
+            }
+            th.register(this.entry)
+        } else if this.duration_ms != 0 {
+            // No handle yet: arm relative from 0 (rare probe path).
+            dl0<u64> = this.duration_ms
+            this.entry.deadline_ms = dl0
+            cell0<StateCell> = this.entry.shared.get_cell()
+            cell0.arm(dl0)
+            this.duration_ms = 0
         }
         this.registered = 1
     }

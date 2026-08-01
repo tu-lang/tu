@@ -139,11 +139,7 @@ fn build_drivers(b<Builder>) i32, DriverPair, i32 {
 
     pair<DriverPair> = Driver::compose(io_drv, io_h, time_drv, time_h, sig_drv, sig_h)
     if time_h != null && io_h != null {
-        th_bits<u64> = 0
-        ioh_bits2<u64> = 0
-        th_bits = time_h
-        ioh_bits2 = io_h
-        rttime.time_handle_bind_ioh_bits(th_bits, ioh_bits2)
+        rttime.time_handle_bind_ioh(time_h, io_h)
     }
     return 0, pair, 0
 }

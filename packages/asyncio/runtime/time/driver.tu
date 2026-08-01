@@ -52,12 +52,28 @@ TimeHandle::now_ms() u64 {
 }
 
 // Wire IoHandle eventfd so a sooner deadline can unpark the reactor.
+fn time_handle_bind_ioh(th<TimeHandle>, ioh<rtio.IoHandle>) {
+    if th == null {
+        return
+    }
+    if ioh == null {
+        th.ioh_wake_bits = 0
+        return
+    }
+    th.ioh_wake_bits = ioh.(u64)
+}
+
+// Bits wrapper kept for any remaining foreign callers; prefer typed bind.
 fn time_handle_bind_ioh_bits(handle_bits<u64>, ioh_bits<u64>) {
     if handle_bits == 0 {
         return
     }
     th<TimeHandle> = handle_bits
-    th.ioh_wake_bits = ioh_bits
+    ioh<rtio.IoHandle> = null
+    if ioh_bits != 0 {
+        ioh = ioh_bits
+    }
+    time_handle_bind_ioh(th, ioh)
 }
 
 // Build a paired (driver, handle). Publishes via timedriver_last / timehandle_last.

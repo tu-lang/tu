@@ -63,7 +63,9 @@ fn block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
 
 fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     if shared.driver != 0 && shared.driver_handle != 0 {
-        rt.driver_park_bits(shared.driver, shared.driver_handle)
+        drv<rt.Driver> = shared.driver
+        h<rt.DriverHandle> = shared.driver_handle
+        drv.park(h)
         return
     }
     // Fallback: IO-only park when aggregate driver was not wired.
