@@ -16,8 +16,11 @@ Package::get_string(str){
 
 func getStruct(packagename,name) {    
     pkgname = packagename
-    if GP().pkg.imports[packagename] != null {
+    // imports alias first, then full_package key in packages[]
+    if GP().pkg != null && GP().pkg.imports[packagename] != null {
         pkgname = GP().pkg.imports[packagename]
+    } else if packages[packagename] != null {
+        pkgname = packagename
     }
     if pkgname == "" || pkgname == null 
         pkgname = GP().getpkgname() 
@@ -32,8 +35,10 @@ func getStruct(packagename,name) {
 fn getClass(package,name)
 {    
     pkgname = package
-    if GP().pkg.imports[package] != null {
+    if GP().pkg != null && GP().pkg.imports[package] != null {
         pkgname = GP().pkg.imports[package]
+    } else if packages[package] != null {
+        pkgname = package
     }
     if pkgname == ""
         pkgname = GP().getpkgname()

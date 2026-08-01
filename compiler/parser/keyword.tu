@@ -308,7 +308,7 @@ Parser::parseAsyncDef2(fcname , parethis)
         if parethis != null
             st.name = parethis.structname + fcname
         st.parser = this
-        st.pkg  = this.pkg.package
+        st.pkg  = this.pkg.full_package
 
         this.genAsyncPollMember(st,0)
         this.pkg.addAsyncStruct(st.name,st)

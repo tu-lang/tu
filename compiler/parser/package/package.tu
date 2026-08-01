@@ -29,7 +29,7 @@ Package::init(name , path , multi) {
     utils.debugf("parser.package.Package::init() name:%s path:%s multi:%d",
         name,path,multi
     )
-    this.imports[name] = path
+    // Do not self-map short name into imports (poisons top-level io/sys).
     if multi {
         this.path = regex.replace(path,"_","/")
     }

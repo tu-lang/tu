@@ -688,7 +688,7 @@ Parser::parseVarExpr(var)
                     expr.structname = reader.curLex.dyn()
                     reader.scan()
                 }else {
-                    expr.structpkg = this.pkg.package
+                    expr.structpkg = this.pkg.full_package
                 }
                 if ( reader.curToken ==  ast.COLON){
                     this.parseVarStack(expr)

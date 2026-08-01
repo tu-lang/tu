@@ -34,7 +34,7 @@ Parser::parseApiDef()
 		s.member = []
     }
     this.check(utils.isUpper(s.name),"first char of class name need be Upper")
-    s.pkg   = this.pkg.package
+    s.pkg   = this.pkg.full_package
     reader.scan()
     this.check(reader.curToken == ast.LBRACE,"api can't define struct propertiy")
     reader.scan()
@@ -192,7 +192,7 @@ Parser::parseStructDef()
 	}
 
 	this.check(utils.isUpper(s.name),"first char of class name need be Upper")
-	s.pkg   = this.pkg.package
+	s.pkg   = this.pkg.full_package
 	reader.scan()
 	if ( reader.curToken != ast.LBRACE ){
 		this.check(reader.curToken == ast.COLON)
@@ -309,7 +309,7 @@ Parser::parseMembers(s ,idx ,isstruct){
     if(isstruct){
         this.expect(ast.VAR,"expect var token in struct member define")
         structname = reader.curLex.dyn() 
-        structpkg  = this.pkg.package
+        structpkg  = this.pkg.full_package
         reader.scan()
         if(reader.curToken == ast.DOT){
             reader.scan()

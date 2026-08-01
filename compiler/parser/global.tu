@@ -23,7 +23,7 @@ Parser::parseEnumDef(){
         gv.ivalue = string.tostring(defaulte)        
         this.gvars[gv.varname] = gv
         gv.is_local = false
-        gv.package  = this.pkg.package
+        gv.package  = this.pkg.full_package
         gv.type = ast.I32
         gv.size = 4
 
@@ -55,7 +55,7 @@ Parser::parseStructVar(varname)
     }
     this.gvars[varname] = varexpr
     varexpr.is_local = false
-    varexpr.package  = this.pkg.package
+    varexpr.package  = this.pkg.full_package
 }
 Parser::parseFlatVar(var){
     utils.debugf("parser.Parser::parseFlatVar() varname:%s",var)
@@ -63,7 +63,7 @@ Parser::parseFlatVar(var){
     
     this.gvars[var] = varexpr
     varexpr.is_local = false
-    varexpr.package  = this.pkg.package
+    varexpr.package  = this.pkg.full_package
 }
 
 Parser::parseClassFunc(var, constdef){
@@ -293,7 +293,7 @@ Parser::parseGlobalAssign()
     }
     this.gvars[var.varname] = var
     var.is_local = false 
-    var.package  = this.pkg.package
+    var.package  = this.pkg.full_package
     if !needinit return false
 
     this.pkg.InsertInitVarExpression(assign)

@@ -45,32 +45,37 @@ Package::getImport(name){
     if this.imports[name] != null {
         return this.imports[name]
     }
+    // Full package keys (incl. alias-resolved library "io") before short-name self
+    if name == this.full_package
+        return this.full_package
+    if package.packages[name] != null
+        return name
+    // Own short name only when no top-level package owns that key
+    if name == this.package
+        return this.full_package
     return ""
 }
 Package::getPackage(packagename){
-    entire = false
-    for(i : this.imports){
-        if ( packagename != "" && packagename == i){
-            entire = true
-            break
-        }
-    }
     pkg = null
-    if entire{
-        if(package.packages[packagename] != null)
-            pkg = package.packages[packagename]
-    }else{
-        pkgname = ""
-        if(packagename == ""){
-            pkgname =  this.full_package
-        }else{
-            if(this.imports[packagename] != null){
-                pkgname = this.imports[packagename]
+    pkgname = ""
+    if packagename == "" || packagename == null {
+        pkgname = this.full_package
+    } else if this.imports[packagename] != null {
+        pkgname = this.imports[packagename]
+    } else if package.packages[packagename] != null {
+        pkgname = packagename
+    } else if packagename == this.package {
+        pkgname = this.full_package
+    } else {
+        for(i : this.imports){
+            if packagename == i {
+                pkgname = packagename
+                break
             }
         }
-        if(package.packages[pkgname] != null)
-            pkg = package.packages[pkgname]
     }
+    if pkgname != "" && package.packages[pkgname] != null
+        pkg = package.packages[pkgname]
     return pkg
 }
 func GP(){
