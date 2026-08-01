@@ -39,7 +39,7 @@ async fs_roundtrip_body() {
     data<io.Buf> = str_buf(msg)
     ok<i32> = io.Ok
 
-    werr<i32> = afs.fs_write(path, io.buf_to_bits(data)).await
+    werr<i32> = afs.fs_write(path, data).await
     if werr != ok return werr
     rerr<i32>, buf<io.Buf> = afs.fs_read(path).await
     if rerr != ok return rerr
@@ -85,7 +85,7 @@ async fs_metadata_rename_body() {
     data<io.Buf> = str_buf(msg)
     ok<i32> = io.Ok
 
-    werr<i32> = afs.fs_write(src, io.buf_to_bits(data)).await
+    werr<i32> = afs.fs_write(src, data).await
     if werr != ok return werr
 
     merr<i32>, meta<afs.Metadata> = afs.fs_metadata(src).await
@@ -130,25 +130,24 @@ async fs_read_dir_body() {
     d1<io.Buf> = str_buf(string.S(*"a"))
     d2<io.Buf> = str_buf(string.S(*"b"))
     d3<io.Buf> = str_buf(string.S(*"c"))
-    werr1<i32> = afs.fs_write(p1, io.buf_to_bits(d1)).await
+    werr1<i32> = afs.fs_write(p1, d1).await
     if werr1 != ok return werr1
-    werr2<i32> = afs.fs_write(p2, io.buf_to_bits(d2)).await
+    werr2<i32> = afs.fs_write(p2, d2).await
     if werr2 != ok return werr2
-    werr3<i32> = afs.fs_write(p3, io.buf_to_bits(d3)).await
+    werr3<i32> = afs.fs_write(p3, d3).await
     if werr3 != ok return werr3
 
     rderr<i32>, rd<afs.ReadDir> = afs.fs_read_dir(dir).await
     if rderr != ok return rderr
 
     count<i32> = 0
-    zero_bits<u64> = 0
     loop {
-        nerr<i32>, name_bits<u64> = afs.fs_next_entry(rd).await
+        nerr<i32>, name<string.String> = afs.fs_next_entry(rd).await
         if nerr != ok {
             afs.read_dir_close(rd)
             return nerr
         }
-        if name_bits == zero_bits break
+        if name == null break
         count += 1
     }
     afs.read_dir_close(rd)

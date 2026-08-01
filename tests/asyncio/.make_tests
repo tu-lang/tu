@@ -12,6 +12,7 @@ int_mt_stress.tu
 int_mt_timer_repoll.tu
 int_process_echo.tu
 int_signal_usr1.tu
+int_source_enroll.tu
 int_sync_primitives.tu
 int_tcp_echo.tu
 int_time_sleep.tu

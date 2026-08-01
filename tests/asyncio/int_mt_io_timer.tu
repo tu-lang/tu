@@ -92,7 +92,7 @@ async mt_io_timer_body() {
     mlen_u<u64> = mlen.(u64)
     wbuf<io.Buf> = str_buf(msg)
 
-    wclient<ioutil.AsyncWrite> = client
+    wclient<aio.AsyncWrite> = client
     werr<i32> = ioutil.write_all(wclient, wbuf).await
     if werr != io.Ok return werr.(i64)
 
@@ -111,7 +111,7 @@ async mt_io_timer_body() {
     ep<i8*> = echo.ptr()
     sp1<i8*> = own1.ptr()
     std.memcpy(ep, sp1, rn)
-    wserver<ioutil.AsyncWrite> = server
+    wserver<aio.AsyncWrite> = server
     werr2<i32> = ioutil.write_all(wserver, echo).await
     if werr2 != io.Ok return werr2.(i64)
 

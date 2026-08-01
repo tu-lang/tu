@@ -73,6 +73,7 @@ func main(){
 	test_extern_pointer()
 	test_static_inner()
 	test_cross_pkg_typed()
+	test_cross_pkg_member()
 }
 
 // 3.结构体嵌套
@@ -180,4 +181,23 @@ func test_cross_pkg_typed(){
 		os.exit(-1)
 	}
 	fmt.println("test_cross_pkg_typed success")
+}
+
+// Cross-pkg mem member call + field load after mutation (Wave G).
+func test_cross_pkg_member(){
+	fmt.println("test_cross_pkg_member")
+	d<net.Data> = new net.Data
+	d.a = 10
+	d.b = 0
+	d.bump_a()
+	if d.a != 11 {
+		fmt.println("cross pkg member call dropped")
+		os.exit(-1)
+	}
+	d.set_flag(7)
+	if d.b != 7 {
+		fmt.println("cross pkg member set_flag dropped")
+		os.exit(-1)
+	}
+	fmt.println("test_cross_pkg_member success")
 }

@@ -1,5 +1,5 @@
 // Integration test (task 15.17): Unix-domain stream echo round-trip.
-// Full api path: ioutil.write_all / ioutil.read via AsyncWrite / AsyncRead.
+// Full api path: ioutil.write_all / ioutil.read via aio.AsyncWrite / AsyncRead.
 
 use fmt
 use os
@@ -39,7 +39,7 @@ async unix_echo_body() {
     mlen<i32> = std.strlen(msg.str())
     mlen_u<u64> = mlen.(u64)
 
-    wclient<ioutil.AsyncWrite> = client
+    wclient<aio.AsyncWrite> = client
     werr<i32> = ioutil.write_all(wclient, str_buf(msg)).await
     if werr != io.Ok return werr
 
@@ -53,7 +53,7 @@ async unix_echo_body() {
     ep<i8*> = echo.ptr()
     sp1<i8*> = own1.ptr()
     std.memcpy(ep, sp1, rn)
-    wserver<ioutil.AsyncWrite> = server
+    wserver<aio.AsyncWrite> = server
     werr2<i32> = ioutil.write_all(wserver, echo).await
     if werr2 != io.Ok return werr2
 

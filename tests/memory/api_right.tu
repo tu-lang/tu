@@ -320,5 +320,21 @@ fn case1(){
 	//case 5 multi impl
 	if p.case3() == 33 {} else os.die("neq 33")
 
+	// Multi-api view: assign / param coerce / tyassert must InitApiVptr per api
+	va<ApiCase1> = p
+	if va.case1() != 22 {
+		os.die("multi-api assign ApiCase1")
+	}
+	vb<ApiCase1_1> = p
+	if vb.case3() != 33 {
+		os.die("multi-api assign ApiCase1_1")
+	}
+	if p.(ApiCase1).case1() != 22 {
+		os.die("multi-api tyassert ApiCase1")
+	}
+	if p.(ApiCase1_1).case3() != 33 {
+		os.die("multi-api tyassert ApiCase1_1")
+	}
+
 	fmt.println("test case 1 success")
 }

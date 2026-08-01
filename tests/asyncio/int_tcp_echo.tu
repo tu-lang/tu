@@ -1,5 +1,5 @@
 // Integration test (task 15.16): TCP echo round-trip over asyncio.net.tcp.
-// Full api path: ioutil.write_all / ioutil.read via AsyncWrite / AsyncRead.
+// Full api path: ioutil.write_all / ioutil.read via aio.AsyncWrite / AsyncRead.
 
 use fmt
 use os
@@ -60,7 +60,7 @@ async tcp_echo_body() {
 
     // Multi-api concrete must bind AsyncWrite view before write_all
     // (InitApiVptr on assign; TcpStream also implements AsyncRead).
-    wclient<ioutil.AsyncWrite> = client
+    wclient<aio.AsyncWrite> = client
     werr<i32> = ioutil.write_all(wclient, wbuf).await
     if werr != io.Ok return werr
 
@@ -76,7 +76,7 @@ async tcp_echo_body() {
     ep<i8*> = echo.ptr()
     sp1<i8*> = own1.ptr()
     std.memcpy(ep, sp1, rn)
-    wserver<ioutil.AsyncWrite> = server
+    wserver<aio.AsyncWrite> = server
     werr2<i32> = ioutil.write_all(wserver, echo).await
     if werr2 != io.Ok return werr2
 
@@ -115,7 +115,7 @@ async tcp_echo_body_mt() {
     mlen_u<u64> = mlen.(u64)
     wbuf<io.Buf> = str_buf(msg)
 
-    wclient<ioutil.AsyncWrite> = client
+    wclient<aio.AsyncWrite> = client
     werr<i32> = ioutil.write_all(wclient, wbuf).await
     if werr != io.Ok return werr
 
@@ -131,7 +131,7 @@ async tcp_echo_body_mt() {
     ep<i8*> = echo.ptr()
     sp1<i8*> = own1.ptr()
     std.memcpy(ep, sp1, rn)
-    wserver<ioutil.AsyncWrite> = server
+    wserver<aio.AsyncWrite> = server
     werr2<i32> = ioutil.write_all(wserver, echo).await
     if werr2 != io.Ok return werr2
 
