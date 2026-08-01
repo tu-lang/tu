@@ -1,7 +1,8 @@
 // AsyncWrite sink that swallows every byte and reports success.
 
 use runtime
-use io as iobuf
+use io
+use asyncio.io as aio
 
 mem Sink {
     i32 _pad
@@ -17,8 +18,8 @@ fn sink() Sink {
     return Sink::new()
 }
 
-impl AsyncWrite for Sink {
-    fn poll_write(ctx<u64>, src<iobuf.Buf>) (i32, u64) {
+impl aio.AsyncWrite for Sink {
+    fn poll_write(ctx<u64>, src<io.Buf>) (i32, u64) {
         return runtime.PollReady, src.len()
     }
     fn poll_flush(ctx<u64>) i32 {

@@ -5,15 +5,13 @@
 
 use runtime
 use fmt
+use io
 use netio
 use netio.event as evsrc
 use asyncio.runtime.io as rtio
 
-// io.Ok without `use io` (package short-name clash with library/io).
-IO_OK<i32> = 1
-
 // holder_bits: concrete netio socket/listener object (TcpStream*, …) as u64.
-// iosrc_bits: IoSource* as u64 used for epoll register (bypasses Source api).
+// iosrc_bits: IoSource* as u64 kept for deregister/close after api view flips.
 // reg owns the ScheduledIo that bridges into the IO Driver dispatch loop.
 mem PollEvented {
     u64                holder_bits
@@ -21,10 +19,9 @@ mem PollEvented {
     rtio.Registration* reg
 }
 
-// Build a PollEvented by registering `iosrc_bits` with `io_handle`.
-// holder_bits is returned by source() for accept/read/write ops.
-const PollEvented::new(holder_bits<u64>, iosrc_bits<u64>, interest<netio.Interest>, sched<u64>, io_handle<rtio.IoHandle>) i32, PollEvented {
-    err<i32>, reg<rtio.Registration> = rtio.Registration::new_with_interest_and_handle(iosrc_bits, interest, sched, io_handle)
+// Register via event.Source (caller coerces concrete → Source to InitApiVptr).
+const PollEvented::new(holder_bits<u64>, src<evsrc.Source>, iosrc_bits<u64>, interest<netio.Interest>, sched<u64>, io_handle<rtio.IoHandle>) i32, PollEvented {
+    err<i32>, reg<rtio.Registration> = rtio.Registration::new_with_interest_and_handle(src, iosrc_bits, interest, sched, io_handle)
     if err != 0 return err, null
 
     p<PollEvented> = new PollEvented
@@ -122,7 +119,7 @@ fn poll_ready_bits(pe<PollEvented>, want_read<i32>, want_write<i32>, ctx<u64>) i
         }
     }
     if bits != 0 {
-        return runtime.PollReady, IO_OK, Ready::from_bits(bits)
+        return runtime.PollReady, io.Ok, Ready::from_bits(bits)
     }
     return runtime.PollPending, 0, null
 }

@@ -1,9 +1,8 @@
 // Borrowed read buffer surfaced to AsyncRead implementors.
 // Filled/initialized cursor over a byte slice.
 //
-// This package must not `use io` (short-name clash with asyncio.io). Callers
-// with an io.Buf may use `asyncio.io.util.read_buf_over`, or
-// `read_buf_from_i8(buf.ptr(), n)` from a package that imports io.
+// Prefer bare `use io` for library types/consts in this package.
+// Callers with an io.Buf may use `asyncio.io.util.read_buf_over`, or `read_buf_from_i8`.
 //
 // `start` is a real `u8*` so GC scans it (a former `u64 data_bits` left the
 // byte region unrooted across gc_malloc).

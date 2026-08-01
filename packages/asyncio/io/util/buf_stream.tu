@@ -1,7 +1,7 @@
 // BufStream stub — empty adapter so asyncio.io.util compiles.
 
 use runtime
-use io as iobuf
+use io
 use asyncio.io as aio
 
 mem BufStream {
@@ -28,8 +28,8 @@ impl aio.AsyncBufRead for BufStream {
     }
 }
 
-impl AsyncWrite for BufStream {
-    fn poll_write(ctx<u64>, buf<iobuf.Buf>) i32, u64 {
+impl aio.AsyncWrite for BufStream {
+    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
         return runtime.PollReady, 0.(u64)
     }
     fn poll_flush(ctx<u64>) i32 {

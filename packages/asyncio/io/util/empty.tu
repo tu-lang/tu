@@ -1,7 +1,7 @@
 // AsyncRead source that always returns EOF (zero bytes).
 
 use runtime
-use io as iobuf
+use io
 use asyncio.io as aio
 
 // Zero-sized empty reader; impl AsyncRead returns PollReady immediately

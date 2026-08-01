@@ -2,9 +2,9 @@
 // expose poll_fill_buf for callers that want to peek without copying,
 // then consume(amt) when the bytes are taken.
 //
-// Filled-slice is returned as (state, data_bits, len) because this package
-// cannot `use io` (short-name clash). Call sites rebuild io.Buf via
-// io.buf_from_bits / io.NewBuf as needed. The design AsyncBufRead returns &[u8].
+// Filled-slice is returned as (state, data_bits, len). Prefer bare `use io`
+// for library types; call sites rebuild io.Buf via helpers. The design
+// AsyncBufRead returns &[u8].
 
 use runtime
 

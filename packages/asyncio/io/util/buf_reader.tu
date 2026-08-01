@@ -1,7 +1,7 @@
 // BufReader stub — full buffer window deferred; compiles for package load.
 
 use runtime
-use io as iobuf
+use io
 use asyncio.io as aio
 
 mem BufReader {

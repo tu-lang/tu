@@ -6,7 +6,7 @@
 // field assign to Api* overwrites the async poll virf.
 
 use runtime
-use io as iobuf
+use io
 use asyncio.io as aio
 
 mem Read: async {
@@ -39,13 +39,12 @@ Read::poll(ctx) {
         return runtime.PollPending
     }
     if err == runtime.PollError {
-        other_err<i32> = 16908329
+        other_err<i32> = io.Uncategorized
         zero<u64> = 0.(u64)
         return runtime.PollReady, other_err, zero
     }
     delta<u64> = rb.filled_len() - this.start
-    ok_code<i32> = 1
-    // 1 == library io.Ok; this file `use io as iobuf` so cannot write io.Ok.
+    ok_code<i32> = io.Ok
     return runtime.PollReady, ok_code, delta
 }
 
@@ -53,7 +52,7 @@ fn read(r<aio.AsyncRead>, buf<aio.ReadBuf>) Read {
     return Read::new(r, buf)
 }
 
-// Build ReadBuf over an io.Buf (this package may use io; asyncio.io must not).
-fn read_buf_over(buf<iobuf.Buf>) aio.ReadBuf {
-    return aio.read_buf_from_i8(iobuf.buf_ptr(buf), iobuf.buf_len(buf))
+// Build ReadBuf over an io.Buf.
+fn read_buf_over(buf<io.Buf>) aio.ReadBuf {
+    return aio.read_buf_from_i8(io.buf_ptr(buf), io.buf_len(buf))
 }

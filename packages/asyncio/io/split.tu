@@ -2,11 +2,9 @@
 // that can be awaited in different tasks. The two halves share the same
 // backing object (stored as raw bits); callers must ensure the backing
 // outlives both halves.
-//
-// AsyncWrite impl for WriteHalf is in asyncio.io.util (same package as the
-// AsyncWrite api) so library Buf can be named without poisoning this package.
 
 use runtime
+use io
 
 mem ReadHalf {
     u64 read_bits
@@ -31,6 +29,18 @@ const WriteHalf::new(bits<u64>) WriteHalf {
 impl AsyncRead for ReadHalf {
     fn poll_read(ctx<u64>, buf<ReadBuf>) i32 {
         return this.read_bits.(AsyncRead).poll_read(ctx, buf)
+    }
+}
+
+impl AsyncWrite for WriteHalf {
+    fn poll_write(ctx<u64>, buf<io.Buf>) i32, u64 {
+        return this.write_bits.(AsyncWrite).poll_write(ctx, buf)
+    }
+    fn poll_flush(ctx<u64>) i32 {
+        return this.write_bits.(AsyncWrite).poll_flush(ctx)
+    }
+    fn poll_shutdown(ctx<u64>) i32 {
+        return this.write_bits.(AsyncWrite).poll_shutdown(ctx)
     }
 }
 

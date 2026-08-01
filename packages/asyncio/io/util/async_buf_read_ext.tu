@@ -1,7 +1,7 @@
 // AsyncBufRead extension stubs (fill_buf / Split / Lines).
 
 use runtime
-use io as iobuf
+use io
 use asyncio.io as aio
 
 LF<u8> = 10
@@ -17,7 +17,7 @@ const FillBuf::new(r<u64>) FillBuf {
 }
 
 FillBuf::poll(ctx) {
-    empty<iobuf.Buf> = new iobuf.Buf
+    empty<io.Buf> = new io.Buf
     empty.data_ptr = null
     empty.byte_len = 0
     ok<i32> = 0
