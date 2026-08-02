@@ -9,17 +9,19 @@ use runtime
 use netio
 use asyncio.util
 
-NOTIFY_AFTER<u32> = 16
-PENDING_CAP<u32>  = 32
+// Wake the driver after this many deferred drops so release() runs soon.
+NOTIFY_AFTER<u32> = 64
 
 // The design Synced: list of live registrations + pending drops + shutdown flag.
 // Guarded exclusively by IoHandle.synced_lock (not stored here).
+// pending_head uses ScheduledIo.release_next — unbounded, GC-traced, never
+// freed from the close path (only IoDriver::turn releases after poll).
 mem RegistrationSetSynced {
     i32          is_shutdown
     ScheduledIo* head
     ScheduledIo* tail
     u32          live_count
-    u64          pending_slots[32] // ScheduledIo* bits awaiting release
+    ScheduledIo* pending_head
     u32          pending_count
 }
 
@@ -48,6 +50,7 @@ const RegistrationSet::new() i32 {
     s.head = null
     s.tail = null
     s.live_count = 0
+    s.pending_head = null
     s.pending_count = 0
     rs<RegistrationSet> = new RegistrationSet
     rs.pending_release_count = 0
@@ -111,49 +114,52 @@ RegistrationSet::remove(synced<RegistrationSetSynced>, sio<ScheduledIo>){
     }
 }
 
-// Queue for later drop; returns 1 if the driver should unpark to purge
-//.
+// Queue for later drop; returns 1 if the driver should unpark to purge.
+// Caller holds synced_lock. sio stays on the live list until release() in
+// IoDriver::turn (after poll) — never unlink from the close/deregister path.
 RegistrationSet::deregister(synced<RegistrationSetSynced>, sio<ScheduledIo>) i32 {
-    if synced.pending_count >= PENDING_CAP {
-        // Cap full: remove immediately so we never leak.
-        this.remove(synced, sio)
+    if sio.release_queued != 0 {
         return 0
     }
-    synced.pending_slots[synced.pending_count] = sio.(u64)
+    sio.release_queued = 1
+    sio.release_next = synced.pending_head
+    synced.pending_head = sio
     synced.pending_count += 1
     pc<u32> = synced.pending_count
     this.pending_release_count = pc.(u64)
     if pc == NOTIFY_AFTER {
         return 1
     }
+    if pc > NOTIFY_AFTER && (pc % NOTIFY_AFTER) == 0 {
+        return 1
+    }
     return 0
 }
 
-// Drain pending_release via remove.
+// Drain pending_release via remove. Only safe from IoDriver::turn after poll.
 RegistrationSet::release(synced<RegistrationSetSynced>){
-    i<u32> = 0
-    while i < synced.pending_count {
-        bits<u64> = synced.pending_slots[i]
-        if bits != 0 {
-            sio<ScheduledIo> = bits.(ScheduledIo)
-            this.remove(synced, sio)
-        }
-        synced.pending_slots[i] = 0
-        i += 1
-    }
+    cur<ScheduledIo> = synced.pending_head
+    synced.pending_head = null
     synced.pending_count = 0
     this.pending_release_count = 0
+    while cur != null {
+        nxt<ScheduledIo> = cur.release_next
+        cur.release_next = null
+        cur.release_queued = 0
+        this.remove(synced, cur)
+        cur = nxt
+    }
 }
 
 // Mark shutdown and detach every live ScheduledIo. Caller holds synced_lock;
-// must call ScheduledIo::shutdown on each returned node *without* the lock
-//.
+// must call ScheduledIo::shutdown on each returned node *without* the lock.
 // Returns the old head; nodes remain linked via next_sio for the caller walk.
 RegistrationSet::shutdown(synced<RegistrationSetSynced>) ScheduledIo {
     if synced.is_shutdown != 0 {
         return null
     }
     synced.is_shutdown = 1
+    synced.pending_head = null
     synced.pending_count = 0
     this.pending_release_count = 0
     head_sio<ScheduledIo> = synced.head

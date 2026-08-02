@@ -1,4 +1,5 @@
-// Singly-linked intrusive task list helpers; used by inject and OwnedTasks.
+// Singly-linked intrusive task list helpers; used by inject / local queues
+// only (Header.queue_next). OwnedTasks uses Header.owned_* (see owned.tu).
 // Pure functions — caller serialises access. Empty state == both head/tail null.
 
 // O(1) append at tail.

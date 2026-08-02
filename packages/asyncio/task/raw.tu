@@ -92,7 +92,7 @@ RawTask::read_output() (i32, i64) {
     return err, val
 }
 
-// Intrusive-list helpers (inject / OwnedTasks).
+// Intrusive-list helpers for inject / worker local queues (Header.queue_next).
 RawTask::list_prep_push(){
     this.task_header.clear_queue_next()
 }
@@ -103,6 +103,12 @@ RawTask::list_link_next(nxt<RawTask>){
 
 RawTask::list_take_next() RawTask {
     return this.task_header.queue_next_out()
+}
+
+// OwnedTasks intrusive helpers — prefer Header::* via task_header (avoid
+// RawTask.owned_next() name clashing with Header.owned_next field / assert).
+RawTask::owned_prep_push(){
+    this.task_header.clear_owned_links()
 }
 
 // Set NOTIFIED and enqueue when needed.

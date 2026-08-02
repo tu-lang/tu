@@ -29,7 +29,7 @@ mem ParkDriverHub {
 }
 
 mem Parker {
-    i32            state
+    u32            state
     ParkDriverHub* hub
 }
 

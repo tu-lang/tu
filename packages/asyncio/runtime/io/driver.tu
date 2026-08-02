@@ -224,12 +224,20 @@ IoHandle::release_pending_registrations(){
 // ScheduledIo: set_readiness merges fresh bits, then wake() drains all
 // waiters whose reason interest overlaps. Reserved tokens first.
 // Interrupted maps to a no-op turn so the caller can re-park as needed.
+//
+// release_pending runs AFTER dispatch: epoll may still surface a token for a
+// source that deregistered since the previous turn; freeing before poll UAF.
 IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
-    handle.release_pending_registrations()
     this.io_hit = 0
     err<i32> = netio.poll_poll(netio.poll_from_bits(this.poll_slot), netevent.events_from_bits(this.events_slot), max_wait)
-    if err == io.Interrupted return 0
-    if err != io.Ok return err
+    if err == io.Interrupted {
+        handle.release_pending_registrations()
+        return 0
+    }
+    if err != io.Ok {
+        handle.release_pending_registrations()
+        return err
+    }
 
     iter<netevent.Iter> = netevent.events_begin_iter(netevent.events_from_bits(this.events_slot))
     fired<u64> = 0
@@ -250,6 +258,11 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
 
         this.io_hit = 1
         sio<ScheduledIo> = token.(ScheduledIo)
+        // Dropped sources stay reachable via pending_slots until release at
+        // end of turn; ignore readiness once iosrc was cleared on deregister.
+        if sio == null || sio.iosrc_bits == 0 {
+            continue
+        }
         ready<Ready> = ready_from_event(ev)
         sio.set_readiness(TICK_INC, ready.bits)
         wakes<util.WakeList> = sio.wake(ready)
@@ -267,6 +280,7 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
     if fired > 0 {
         metrics_incr_ready_count_by(handle.metrics, fired)
     }
+    handle.release_pending_registrations()
     return 0
 }
 

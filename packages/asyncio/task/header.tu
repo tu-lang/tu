@@ -3,13 +3,18 @@
 use runtime
 
 // Schedulers and the harness only access tasks through Header.
+// queue_next: inject / worker local queues only (Notified exclusive).
+// owned_next/owned_prev: OwnedTasks intrusive list (separate from queues —
+// sharing queue_next with OwnedTasks corrupted the owner list under MT spawn).
 mem Header {
     TaskState* lifecycle
     u64 scheduler                  // raw bits of task.Schedule impl
     u64 sched_schedule_fn          // bridge fn(hbits, Notified); api dispatch on bits crashes codegen
     u64 sched_release_fn           // bridge fn(hbits, RawTask)
     runtime.VObjFunc* poll_vtable  // cached from the future header
-    RawTask* queue_next            // intrusive next pointer for inject / local queues
+    RawTask* queue_next            // intrusive next for inject / local queues
+    RawTask* owned_next            // OwnedTasks forward link
+    RawTask* owned_prev            // OwnedTasks back link (O(1) remove)
     u64 task_id
 }
 
@@ -66,14 +71,36 @@ Header::clear_queue_next(){
     this.queue_next = null
 }
 
-// Link `nxt` after this node in the inject / owned list.
+// Link `nxt` after this node in the inject / local queue.
 Header::set_queue_next(nxt<RawTask>){
     this.queue_next = nxt
 }
 
-// Take the next pointer in the intrusive list.
+// Take the next pointer in the inject / local queue.
 Header::queue_next_out() RawTask {
     return this.queue_next
+}
+
+// Clear OwnedTasks intrusive links.
+Header::clear_owned_links(){
+    this.owned_next = null
+    this.owned_prev = null
+}
+
+Header::owned_next_out() RawTask {
+    return this.owned_next
+}
+
+Header::owned_prev_out() RawTask {
+    return this.owned_prev
+}
+
+Header::set_owned_next(nxt<RawTask>){
+    this.owned_next = nxt
+}
+
+Header::set_owned_prev(prv<RawTask>){
+    this.owned_prev = prv
 }
 
 // Build a fresh Header. Captures fut's VObjFunc* once so the harness does not
@@ -87,6 +114,8 @@ fn header_new(lifecycle, scheduler, sched_fn<u64>, rel_fn<u64>, fut, task_id<u64
         sched_release_fn: rel_fn,
         poll_vtable: f.virf,
         queue_next: null,
+        owned_next: null,
+        owned_prev: null,
         task_id: task_id
     }
 }

@@ -88,6 +88,8 @@ mem ScheduledIo {
     u64                reader_ctx       // poll_readiness(DIR_READ) ctx slot
     u64                writer_ctx       // poll_readiness(DIR_WRITE) ctx slot
     u64                iosrc_bits       // IoSource* bits; 0 after deregister/close
+    ScheduledIo*       release_next     // pending-release chain (RegistrationSet)
+    i32                release_queued   // 1 once linked on pending_head
 }
 
 // Build an empty ScheduledIo: no readiness, no waiters, no shutdown.
@@ -104,6 +106,8 @@ const ScheduledIo::new() ScheduledIo {
     s.waiters    = util.LinkedList::new()
     s.reader_ctx = 0
     s.writer_ctx = 0
+    s.release_next = null
+    s.release_queued = 0
     return s
 }
 

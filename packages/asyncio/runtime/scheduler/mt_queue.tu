@@ -82,6 +82,8 @@ fn queue_local() (Steal, Local) {
 
 // Push at tail. Spills half the queue to inject when full so the next
 // push always succeeds and stealers can keep up. Returns 0 on success.
+// Mother queue.rs Local::push_back: capacity uses steal; if full while a
+// stealer is mid-flight (steal != real), push to inject — never drop.
 Local::push_back_or_overflow(t<task.Notified>, overflow<Inject>) i32 {
     qhub<QueueInner> = this.queue_hub
     raw<task.RawTask> = t.raw()
@@ -101,33 +103,38 @@ Local::push_back_or_overflow(t<task.Notified>, overflow<Inject>) i32 {
             return 0
         }
 
-        // Queue is full; move half (and the new task) to inject.
-        return push_overflow(this, t, overflow)
+        // Full + concurrent steal: stealer will free capacity; park task
+        // on inject (mother). Returning SCHED_SEND_FULL here dropped tasks
+        // and left workers parked with no runnable work under MT spawn load.
+        if steal != real {
+            overflow.push(t)
+            return 0
+        }
+
+        // Full, no stealer: move half + the new task to inject.
+        if push_overflow(this, t, overflow, real, tail) == 0 {
+            return 0
+        }
+        // CAS lost the race — retry with the same task.
     }
     return 0
 }
 
-// Hand half the queue + the freshly-pushed task to inject. Caller saw a
-// full queue; we move LOCAL_QUEUE_CAPACITY/2 entries to inject so the
-// remaining slots are immediately writable on the next push.
-fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
+// Claim half the local queue and push those entries plus `t` onto inject.
+// Returns 0 on success, 1 if CAS lost (caller retries). Mother push_overflow.
+fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>, real<u32>, tail<u32>) i32 {
     qhub<QueueInner> = local.queue_hub
     n<u32> = LOCAL_QUEUE_CAPACITY / 2
 
-    // Try to claim the first n entries by bumping head.real (and steal
-    // back to it afterwards). This races with stealers — if CAS fails we
-    // simply retry the outer loop.
-    h<u64> = atomic.load64(&qhub.head)
-    steal<u32> = head_steal(h)
-    real<u32>  = head_real(h)
-    if steal != real return SCHED_SEND_FULL   // a stealer is already mid-flight
+    prev<u64> = pack_head(real, real)
     new_real<u32> = real + n
     new_h<u64> = pack_head(new_real, new_real)
-    if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) != CAS64_OK {
-        return SCHED_SEND_FULL
+    if atomic.cas64(&qhub.head, prev.(i64), new_h.(i64)) != CAS64_OK {
+        return 1
     }
 
-    // Drain the claimed entries to inject in FIFO order.
+    // Drain the claimed entries to inject in FIFO order, then the new task
+    // (mother push_batch(batch.chain(once(task)))).
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (real + i) & LOCAL_QUEUE_MASK
         bits<u64> = qhub.buffer[idx]
@@ -136,9 +143,8 @@ fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>) i32 {
         notif<task.Notified> = task.notified_from_raw(stolen)
         overflow.push(notif)
     }
-
-    // Push the new task into the now-half-empty queue.
-    return local.push_back_or_overflow(t, overflow)
+    overflow.push(t)
+    return 0
 }
 
 // Owner pop from head.real. CAS-bumps real on success.
@@ -201,14 +207,19 @@ Steal::is_empty() i32 {
     return 0
 }
 
-// Steal up to ceil(size/2) tasks into dst. Returns one of those tasks for
-// the caller to run immediately and leaves the rest in dst.
+// Steal up to ceil(size/2) tasks into dst. Returns one stolen task for the
+// caller and leaves the rest in dst.
+//
+// Mother (queue.rs steal_into2):
+// 1) Claim by advancing head.real (keep head.steal) so steal != real blocks
+//    other stealers; owner Local::pop may still advance real past the claim.
+// 2) Copy claimed tasks into dst.
+// 3) Commit by setting steal == real to the *current* real (not the claim
+//    end) so owner pops during the copy are not rolled back.
 Steal::steal_into(dst<Local>) (i32, task.Notified) {
     src<QueueInner> = this.queue_hub
     dst_inner<QueueInner> = dst.queue_hub
 
-    // Two-phase steal: claim a slice via CAS on head.steal, copy bytes,
-    // then commit head.real.
     loop {
         h<u64> = atomic.load64(&src.head)
         steal<u32> = head_steal(h)
@@ -220,40 +231,62 @@ Steal::steal_into(dst<Local>) (i32, task.Notified) {
         if size == 0 {
             return io.NotFound, task.notified_from_raw(null)
         }
-        n<u32> = (size + 1) / 2
-        new_steal<u32> = real + n
-        new_h<u64> = pack_head(new_steal, real)
-        if atomic.cas64(&src.head, h.(i64), new_h.(i64)) == CAS64_OK {
-            // We now own [real, real+n). Copy entries into dst.
-            // Limit copy to dst's free capacity.
-            avail<u32> = LOCAL_QUEUE_CAPACITY - ring_size(dst_inner.tail, head_real(atomic.load64(&dst_inner.head)))
-            if n > avail n = avail
-
-            for i<u32> = 1 ; i < n ; i += 1 {
-                src_idx<u32> = (real + i) & LOCAL_QUEUE_MASK
-                bits<u64>    = src.buffer[src_idx]
-                src.buffer[src_idx] = 0
-                dst_idx<u32> = (dst_inner.tail + i - 1) & LOCAL_QUEUE_MASK
-                dst_inner.buffer[dst_idx] = bits
-            }
-            dst_inner.tail = dst_inner.tail + n - 1
-
-            // Commit src.head.real, releasing the claimed slice.
-            loop {
-                h2<u64> = atomic.load64(&src.head)
-                new_real2<u32> = real + n
-                new_h2<u64> = pack_head(head_steal(h2), new_real2)
-                if atomic.cas64(&src.head, h2.(i64), new_h2.(i64)) == CAS64_OK break
-            }
-
-            // Return the first stolen entry directly to the caller.
-            first_idx<u32> = real & LOCAL_QUEUE_MASK
-            first_bits<u64> = src.buffer[first_idx]
-            src.buffer[first_idx] = 0
-            first_raw<task.RawTask> = first_bits.(task.RawTask)
-            return 0, task.notified_from_raw(first_raw)
+        n<u32> = size - size / 2
+        if n == 0 {
+            return io.NotFound, task.notified_from_raw(null)
         }
+
+        // Abort if dst looks more than half full (mother steal_into).
+        dst_h<u64> = atomic.load64(&dst_inner.head)
+        dst_steal<u32> = head_steal(dst_h)
+        if ring_size(dst_inner.tail, dst_steal) > LOCAL_QUEUE_CAPACITY / 2 {
+            return io.NotFound, task.notified_from_raw(null)
+        }
+
+        steal_to<u32> = real + n
+        // Claim: keep steal, advance real.
+        new_h<u64> = pack_head(steal, steal_to)
+        if atomic.cas64(&src.head, h.(i64), new_h.(i64)) != CAS64_OK {
+            continue
+        }
+
+        first<u32> = real
+        dst_tail<u32> = dst_inner.tail
+
+        // Copy all n claimed tasks into dst (exclusive producer for dst).
+        i<u32> = 0
+        while i < n {
+            src_idx<u32> = (first + i) & LOCAL_QUEUE_MASK
+            bits<u64> = src.buffer[src_idx]
+            src.buffer[src_idx] = 0
+            dst_idx<u32> = (dst_tail + i) & LOCAL_QUEUE_MASK
+            dst_inner.buffer[dst_idx] = bits
+            i += 1
+        }
+
+        // Commit: steal == real at the *current* real (owner may have popped).
+        loop {
+            h2<u64> = atomic.load64(&src.head)
+            cur_real<u32> = head_real(h2)
+            done_h<u64> = pack_head(cur_real, cur_real)
+            if atomic.cas64(&src.head, h2.(i64), done_h.(i64)) == CAS64_OK {
+                break
+            }
+        }
+
+        // Return one task from dst; leave n-1 queued.
+        n = n - 1
+        ret_pos<u32> = dst_tail + n
+        ret_idx<u32> = ret_pos & LOCAL_QUEUE_MASK
+        ret_bits<u64> = dst_inner.buffer[ret_idx]
+        dst_inner.buffer[ret_idx] = 0
+        if n > 0 {
+            dst_inner.tail = dst_tail + n
+        }
+        ret_raw<task.RawTask> = ret_bits.(task.RawTask)
+        return 0, task.notified_from_raw(ret_raw)
     }
     return io.NotFound, task.notified_from_raw(null)
 }
+
 

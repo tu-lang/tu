@@ -1,12 +1,11 @@
 // Tracks every Task owned by a scheduler. closed=1 makes bind() reject with
 // RuntimeShutdown so shutdown drainers can finish without races.
-// First-pass uses a single Mutex; sharded variant is future work.
+// Intrusive links live on Header.owned_next/owned_prev — never Header.queue_next
+// (that field is exclusive to inject / local Notified queues).
 
 use runtime
 
-// Single-linked list of RawTasks under one mutex; chained via Header.queue_next.
-// head/tail hold raw bits of RawTask* so &this.head matches the u64* signature
-// of task_list_*; readers cast via bits.(RawTask).
+// Doubly-linked RawTask list under one mutex.
 mem OwnedTasks {
     runtime.MutexInter* lock
     u64 head            // 0 when empty; else raw bits of RawTask*
@@ -15,8 +14,6 @@ mem OwnedTasks {
     i32 active          // live count, mutated under lock
 }
 
-// Build an empty, open list. MutexInter::new returns the heap pointer
-// directly; no `&m`.
 const OwnedTasks::new() OwnedTasks {
     o<OwnedTasks> = new OwnedTasks
     m<runtime.MutexInter> = new runtime.MutexInter
@@ -29,8 +26,6 @@ const OwnedTasks::new() OwnedTasks {
     return o
 }
 
-// Register raw as owned. Returns 0 on success, RuntimeShutdown when closed
-// (closed-path leaves the task unlinked; caller must dealloc).
 OwnedTasks::bind(raw<RawTask>) i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
@@ -38,49 +33,62 @@ OwnedTasks::bind(raw<RawTask>) i32 {
         m.unlock()
         return OwnedBindShutdown
     }
-    task_list_push_back(&this.head, &this.tail, raw)
+    h<Header> = raw.task_header
+    h.clear_owned_links()
+    t_bits<u64> = this.tail
+    if t_bits != 0 {
+        prev<RawTask> = t_bits.(RawTask)
+        ph<Header> = prev.task_header
+        ph.set_owned_next(raw)
+        h.set_owned_prev(prev)
+    } else {
+        this.head = raw.(u64)
+    }
+    this.tail = raw.(u64)
     this.active += 1
     m.unlock()
     return 0
 }
 
-// Unlink raw. O(n) walk because the list has no back pointers (acceptable
-// for the first-pass impl). Caller must guarantee raw lives on this list.
+// O(1) unlink via owned_prev / owned_next.
 OwnedTasks::remove(rtask<RawTask>){
     m<runtime.MutexInter> = this.lock
     m.lock()
-    cur_bits<u64> = this.head
-    prev_bits<u64> = 0
-    while cur_bits != 0 {
-        cur<RawTask> = cur_bits.(RawTask)
-        if cur == rtask {
-            nxt<RawTask> = cur.list_take_next()
-            if prev_bits == 0 {
-                if nxt == null this.head = 0
-                else this.head = nxt.(u64)
-            } else {
-                prev<RawTask> = prev_bits.(RawTask)
-                prev.list_link_next(nxt)
-            }
-            if nxt == null {
-                this.tail = prev_bits
-            }
-            cur.list_prep_push()
-            this.active -= 1
-            break
-        }
-        prev_bits = cur_bits
-        nxt<RawTask> = cur.list_take_next()
+    h<Header> = rtask.task_header
+    prv<RawTask> = h.owned_prev_out()
+    nxt<RawTask> = h.owned_next_out()
+    // Already detached (or never bound): do not clobber head/tail.
+    if prv == null && nxt == null && this.head != rtask.(u64) {
+        m.unlock()
+        return
+    }
+    if prv != null {
+        ph<Header> = prv.task_header
+        ph.set_owned_next(nxt)
+    } else {
         if nxt == null {
-            cur_bits = 0
+            this.head = 0
         } else {
-            cur_bits = nxt.(u64)
+            this.head = nxt.(u64)
         }
+    }
+    if nxt != null {
+        nh<Header> = nxt.task_header
+        nh.set_owned_prev(prv)
+    } else {
+        if prv == null {
+            this.tail = 0
+        } else {
+            this.tail = prv.(u64)
+        }
+    }
+    h.clear_owned_links()
+    if this.active > 0 {
+        this.active -= 1
     }
     m.unlock()
 }
 
-// Mark closed. Idempotent — returns 1 only on the first call.
 OwnedTasks::close() i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
@@ -93,17 +101,17 @@ OwnedTasks::close() i32 {
     return first
 }
 
-// Atomic-ish snapshot: read head under lock to avoid torn updates.
 OwnedTasks::is_empty() i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
     empty<i32> = 0
-    if this.head == 0 empty = 1
+    if this.head == 0 {
+        empty = 1
+    }
     m.unlock()
     return empty
 }
 
-// Live task count; read under lock for consistency.
 OwnedTasks::active_count() i32 {
     m<runtime.MutexInter> = this.lock
     m.lock()
