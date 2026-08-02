@@ -205,19 +205,24 @@ MutexInter::lock(){
         spin = active_spin
     }
     loop {
-        for i<i32> = 0 ; i < spin ; i += 1 {
-            while this.key == mutex_unlocked {
-                if atomic.cas(addr,mutex_unlocked,wait) != Null
-                    return Null
+        // During STW, do not linger in locks>0 busy-spin: osyield will not
+        // gcstopworld, and stopSTW would wait forever. Fall through to the
+        // futex soft-syscall path instead.
+        if sched.gcwaiting == 0 {
+            for i<i32> = 0 ; i < spin ; i += 1 {
+                while this.key == mutex_unlocked {
+                    if atomic.cas(addr,mutex_unlocked,wait) != Null
+                        return Null
+                }
+                procyield(active_spin_cnt)
             }
-            procyield(active_spin_cnt)
-        }
-        for j<i32> = 0 ; j < passive_spin ; j += 1 {
-            while this.key == mutex_unlocked {
-                if atomic.cas(addr,mutex_unlocked,wait) != Null
-                    return Null
+            for j<i32> = 0 ; j < passive_spin ; j += 1 {
+                while this.key == mutex_unlocked {
+                    if atomic.cas(addr,mutex_unlocked,wait) != Null
+                        return Null
+                }
+                osyield()
             }
-            osyield()
         }
 
         v = atomic.xchg(addr,mutex_sleeping)
@@ -226,7 +231,13 @@ MutexInter::lock(){
         }
 
         wait = mutex_sleeping
+        // Soft-syscall around futex: STW treats CoreSyscall as stopped, and
+        // stopnote Kick re-counts so we are not waited on while locks>0.
+        entered<i32> = entersyscall_mutexblock()
         futexsleep(addr,mutex_sleeping,-1.(i8))
+        if entered != 0 {
+            exitsyscall()
+        }
     }
 }
 
@@ -247,12 +258,12 @@ MutexInter::unlock(){
     }
 }
 
+// Idempotent wake: concurrent Kick/Wake during STW re-count must not dief.
 Note::Wake(){
 	old<u32> = atomic.xchg(&this.key, 1.(i8))
-	if old != 0 {
-		dief(*"notewakeup - double wakeup (%d)", old)
+	if old == 0 {
+		futexwakeup(&this.key, 1.(i8))
 	}
-    futexwakeup(&this.key, 1.(i8))
 }
 Note::Sleep(){
 	while atomic.load(&this.key) == Null {

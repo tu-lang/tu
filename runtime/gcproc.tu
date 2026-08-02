@@ -67,6 +67,10 @@ fn get_r9()
 fn get_bp()
 fn get_ax()
 fn get_bx()
+fn get_r12()
+fn get_r13()
+fn get_r14()
+fn get_r15()
 
 fn gc_malloc(nbytes<u64>)
 {
@@ -240,28 +244,32 @@ Gc::stopSTW() {
     sched.stopsweep = 0
     atomic.store(&sched.gcwaiting,1.(i8))
 
-    // Only wait for mutator cores still in CoreRun. Cores already in
-    // CoreSyscall (blocking epoll/nanosleep) are treated as stopped.
+    // Only wait for mutator cores still in CoreRun. CoreSyscall (epoll,
+    // nanosleep, MutexInter futex soft-syscall) is treated as stopped.
+    // Re-count loop: mutex soft-syscall Kick / gcstopworld Wake may fire
+    // before every Run core has left; absolute re-count avoids stopwait
+    // under/overflow and false completion.
     c.status = CoreStop
-    need<i32> = 0
-    for cc<Core> = sched.allcores; cc != Null ; cc = cc.link {
-        if cc.cid == c.cid {
-            continue
+    loop {
+        need<i32> = 0
+        for cc<Core> = sched.allcores; cc != Null ; cc = cc.link {
+            if cc.cid == c.cid {
+                continue
+            }
+            st<u32> = cc.status
+            if st == CoreRun {
+                need += 1
+            }
         }
-        st<u32> = cc.status
-        if st == CoreRun {
-            need += 1
+        sched.stopwait = need
+        if need == 0 {
+            sched.lock.unlock()
+            break
         }
-    }
-    sched.stopwait = need
-    wait<i32> = sched.stopwait
-    sched.lock.unlock()
-    if wait > 0 {
+        sched.lock.unlock()
         sched.stopnote.Sleep()
         sched.stopnote.Clear()
-	}
-    if sched.stopwait > 0 {
-        dief(*"sched.stopwait:%d != 0 m:%d\n",sched.stopwait,sched.cores)
+        sched.lock.lock()
     }
     for c = sched.allcores; c != Null ; c = c.link {
         st2<u32> = c.status
@@ -277,15 +285,22 @@ Gc::startSTW()
 	dgc(*"start wolrd\n")
     c_<Core> = core()
     c_.status = CoreRun
-    sched.gcwaiting = 0
+    // Clear before waking Stop cores so exitsyscall racers observe GC done.
+    atomic.store(&sched.gcwaiting,0.(i8))
     for c<Core> = sched.allcores; c != Null ; c = c.link {
         if c.cid == c_.cid continue
 
         st<u32> = c.status
-        if st != CoreStop && st != CoreSyscall {
+        if st == CoreStop {
+            // Parked mutator: resume.
+            c.status = CoreRun
+            c.park.Wake()
+        } else if st == CoreSyscall {
+            // Still blocked in futex/epoll. Leave CoreSyscall so the next
+            // stopSTW does not wait on a locks>0 futex waiter (soft-syscall
+            // deadlock). exitsyscall restores CoreRun when the syscall returns.
+        } else {
             dief(*"m.status not stop\n")
         }
-        c.status = CoreRun
-        c.park.Wake()
 	} 
 }

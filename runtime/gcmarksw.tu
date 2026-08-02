@@ -181,6 +181,15 @@ Gc::markscan(){
     _c<Core> = core()
    	for c<Core> = sched.allcores; c != Null ; c = c.link
         c.local.releaseAll()
+    // Pass 1: scan stacks still frozen in CoreSyscall (epoll/futex soft-syscall).
+    // A core may exitsyscall → CoreStop concurrently; pass 2 picks those up.
+    for c<Core> = sched.allcores; c != Null ; c = c.link {
+        if c.cid == _c.cid continue
+        if c.status == CoreSyscall {
+            this.markscan_stack(c, &_c.queue)
+        }
+	}
+    // Pass 2: cooperative mark for every CoreStop (incl. late syscall returns).
     expect<i32> = 0
     for c<Core> = sched.allcores; c != Null ; c = c.link {
         if c.cid == _c.cid {
@@ -188,9 +197,7 @@ Gc::markscan(){
             continue
         }
         st<u32> = c.status
-        // CoreSyscall: stack frozen at syscall_sp — scan here, do not wake.
         if st == CoreSyscall {
-            this.markscan_stack(c, &_c.queue)
             continue
         }
         if st != CoreStop {
@@ -215,12 +222,19 @@ Gc::markscan(){
     dgc(*"all thread mark done\n")
 }
 
-// Scan a foreign core's stack (CoreSyscall) using SP saved at entersyscall.
+// Scan a foreign core's stack (CoreSyscall) using SP saved at entersyscall,
+// plus callee-saved register roots published with the soft-/blocking-syscall.
 Gc::markscan_stack(c<Core>, queue<Queue>)
 {
     if c == null {
         return
     }
+    this.markscan_word(c.syscall_bp, queue)
+    this.markscan_word(c.syscall_bx, queue)
+    this.markscan_word(c.syscall_r12, queue)
+    this.markscan_word(c.syscall_r13, queue)
+    this.markscan_word(c.syscall_r14, queue)
+    this.markscan_word(c.syscall_r15, queue)
     stk_end<u64> = c.syscall_sp
     if stk_end == 0 {
         return
@@ -236,6 +250,20 @@ Gc::markscan_stack(c<Core>, queue<Queue>)
         if base != 0 {
             greyobject(base, s,queue,objIndex)
         }
+    }
+}
+
+// Grey one potential pointer word from a CoreSyscall register snapshot.
+Gc::markscan_word(word<u64>, queue<Queue>)
+{
+    if word == 0 {
+        return
+    }
+    s<Span> = null
+    objIndex<u64> = 0
+    base<u64> = findObject(word, &s, &objIndex)
+    if base != 0 {
+        greyobject(base, s, queue, objIndex)
     }
 }
 

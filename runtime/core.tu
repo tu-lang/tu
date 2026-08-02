@@ -32,6 +32,15 @@ mem Core {
 	u32     clear_tid           // SETTID/CLEARTID futex word; non-zero while alive, 0 after exit
 	i32     join_tracked        // legacy counter path; prefer core_join on clear_tid
 	u64     syscall_sp          // SP saved at entersyscall for GC stack scan
+	// Callee-saved register roots at soft-/blocking-syscall entry. Mark must
+	// scan these: Tu may keep Task*/Future* live only in rbx/r12-r15 across
+	// the futex/epoll call (stack scan from syscall_sp alone misses them).
+	u64     syscall_bp
+	u64     syscall_bx
+	u64     syscall_r12
+	u64     syscall_r13
+	u64     syscall_r14
+	u64     syscall_r15
 }
 
 mem Sched {
@@ -197,6 +206,12 @@ Core::init(){
     this.helpsweep = 0
     this.join_tracked = 0
     this.syscall_sp = 0
+    this.syscall_bp = 0
+    this.syscall_bx = 0
+    this.syscall_r12 = 0
+    this.syscall_r13 = 0
+    this.syscall_r14 = 0
+    this.syscall_r15 = 0
     // Seeded again in newcore before clone; 0 here only for zeroed Core layout.
     this.clear_tid = 0
 }
@@ -248,11 +263,11 @@ retry:
 	if sched.gcwaiting == 0 {
 		return
 	}
-    c.park.Sleep()
+	c.park.Sleep()
     c.park.Clear()
-	// startSTW sets status back to CoreRun before waking us.
-	// If status is CoreRun, a new GC round may be starting — return
-	// so schedule() → gcstopworld() can re-register as CoreStop.
+	// startSTW sets CoreStop → CoreRun then Wake. If we are CoreRun, a new
+	// GC round may already be starting — return so schedule() → gcstopworld
+	// can re-register as CoreStop. CoreSyscall cores are not woken here.
 	if c.status == CoreRun {
 		return
 	}
@@ -260,14 +275,25 @@ retry:
 }
 fn gcstopworld(){
     c<Core> = core()
-	if !sched.gcwaiting
-        dief(*"gcstop not waiting for gc")
+    // May lose the race with STW finishing while we waited on sched.lock as
+    // CoreSyscall (mutex soft-syscall). No-op instead of dief.
+	if !sched.gcwaiting {
+        return
+    }
     sched.lock.lock()
+    if !sched.gcwaiting {
+        sched.lock.unlock()
+        return
+    }
 	c.status = CoreStop
-    sched.stopwait -= 1
-	if sched.stopwait == 0{
-        dgc(*"Wake Main GC . all thread stop allcores:%d",sched.cores)
-        sched.stopnote.Wake()
+    // stopSTW may already have finished its wait (we were CoreSyscall); do
+    // not underflow stopwait.
+    if sched.stopwait > 0 {
+        sched.stopwait -= 1
+        if sched.stopwait == 0 {
+            dgc(*"Wake Main GC . all thread stop allcores:%d",sched.cores)
+            sched.stopnote.Wake()
+        }
     }
     sched.lock.unlock()
 
@@ -286,9 +312,31 @@ top:
     }
 }
 
+// Snapshot SP + callee-saved regs for GC while this core is CoreSyscall.
+fn publish_syscall_roots(c<Core>) {
+	c.syscall_sp = get_sp()
+	c.syscall_bp = get_bp()
+	c.syscall_bx = get_bx()
+	c.syscall_r12 = get_r12()
+	c.syscall_r13 = get_r13()
+	c.syscall_r14 = get_r14()
+	c.syscall_r15 = get_r15()
+}
+
+fn clear_syscall_roots(c<Core>) {
+	c.syscall_sp = 0
+	c.syscall_bp = 0
+	c.syscall_bx = 0
+	c.syscall_r12 = 0
+	c.syscall_r13 = 0
+	c.syscall_r14 = 0
+	c.syscall_r15 = 0
+}
+
 // Mark this core as outside the mutator before a blocking syscall (epoll,
 // nanosleep, …). stopSTW will not wait on CoreSyscall cores, but mark still
-// scans syscall_sp..stktop. Must not hold runtime locks or be mallocing.
+// scans syscall_sp..stktop and saved callee-saved regs. Must not hold
+// runtime locks or be mallocing.
 fn entersyscall() {
 	c<Core> = core()
 	if c == null {
@@ -307,13 +355,38 @@ fn entersyscall() {
 		schedule()
 		return
 	}
-	c.syscall_sp = get_sp()
+	publish_syscall_roots(c)
 	c.status = CoreSyscall
 	sched.lock.unlock()
 }
 
-// Re-enter the mutator after a blocking syscall. If STW ran while we were
-// in CoreSyscall, wait until startSTW wakes us before touching the heap.
+// Soft-syscall for MutexInter futex wait (c.locks > 0).
+// Does not take sched.lock — the waited mutex may be sched.lock itself.
+// Publishes CoreSyscall first, then Kick stopnote so stopSTW re-counts.
+// Returns 1 if status flipped (caller must exitsyscall after the futex).
+fn entersyscall_mutexblock() i32 {
+	c<Core> = core()
+	if c == null {
+		return 0
+	}
+	if c.status != CoreRun {
+		return 0
+	}
+	// Mid-malloc stacks are not safe to leave as CoreSyscall for mark.
+	if c.mallocing != 0 {
+		return 0
+	}
+	publish_syscall_roots(c)
+	c.status = CoreSyscall
+	if sched.gcwaiting != 0 {
+		sched.stopnote.Wake()
+	}
+	return 1
+}
+
+// Re-enter the mutator after a blocking syscall. startSTW leaves CoreSyscall
+// cores alone; we restore CoreRun when gcwaiting is clear. If STW/mark is
+// still running, become CoreStop and park until startSTW wakes us.
 fn exitsyscall() {
 	c<Core> = core()
 	if c == null {
@@ -321,18 +394,20 @@ fn exitsyscall() {
 	}
 	loop {
 		sched.lock.lock()
-		if c.status != CoreSyscall && c.status != CoreStop {
-			// Already CoreRun (e.g. startSTW raced); done.
+		if c.status == CoreRun {
+			clear_syscall_roots(c)
 			sched.lock.unlock()
 			return
 		}
 		if sched.gcwaiting == 0 {
 			c.status = CoreRun
+			clear_syscall_roots(c)
 			sched.lock.unlock()
 			return
 		}
-		// STW in progress: look like a normal stopped core and sleep.
+		// STW/mark in progress: join as CoreStop so markscan pass 2 sees us.
 		c.status = CoreStop
+		clear_syscall_roots(c)
 		sched.lock.unlock()
 		stopworld()
 	}
