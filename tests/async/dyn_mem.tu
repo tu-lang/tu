@@ -758,6 +758,93 @@ fn test_class_fut_str_await(){
     fmt.println("test class fut str await success")
 }
 
+// Both operands awaited: class Future path in binary +.
+// Expression-surface matrix (class/dyn): Var.await, Call.await, literal, nested.
+async class_fut_sum_binop() {
+    j = new TestCase(1,10,20,30)
+    f1 = j.work_seven()
+    f2 = j.work_add()
+    return f1.await + f2.await
+}
+async class_fut_sum_chain() {
+    j = new TestCase(1,10,20,30)
+    return j.work_seven().await + j.work_add().await
+}
+// Var.await + literal / literal + Var.await
+async class_fut_await_lit() {
+    j = new TestCase(1,10,20,30)
+    f1 = j.work_seven()
+    return f1.await + 3
+}
+async class_fut_lit_await() {
+    j = new TestCase(1,10,20,30)
+    f2 = j.work_add()
+    return 7 + f2.await
+}
+// Var.await × Call.await (mixed forms)
+async class_fut_var_x_call() {
+    j = new TestCase(1,10,20,30)
+    f1 = j.work_seven()
+    return f1.await + j.work_add().await
+}
+async class_fut_call_x_var() {
+    j = new TestCase(1,10,20,30)
+    f2 = j.work_add()
+    return j.work_seven().await + f2.await
+}
+// Nested three awaits
+async class_fut_sum_triple() {
+    j = new TestCase(1,10,20,30)
+    f1 = j.work_seven()
+    f2 = j.work_add()
+    f3 = j.work_seven()
+    return f1.await + f2.await + f3.await
+}
+// Compound assign with await
+async class_fut_add_assign() {
+    j = new TestCase(1,10,20,30)
+    s = 0
+    s += j.work_seven().await
+    s += j.work_add().await
+    return s
+}
+fn test_class_fut_binop_await(){
+    fmt.println("test class fut binop await")
+    r = runtime.block(class_fut_sum_binop())
+    if r != 37 {
+        os.dief("f1.await + f2.await want 37 got %d", int(r))
+    }
+    r2 = runtime.block(class_fut_sum_chain())
+    if r2 != 37 {
+        os.dief("chain.await + chain.await want 37 got %d", int(r2))
+    }
+    r3 = runtime.block(class_fut_await_lit())
+    if r3 != 10 {
+        os.dief("f.await + 3 want 10 got %d", int(r3))
+    }
+    r4 = runtime.block(class_fut_lit_await())
+    if r4 != 37 {
+        os.dief("7 + f.await want 37 got %d", int(r4))
+    }
+    r5 = runtime.block(class_fut_var_x_call())
+    if r5 != 37 {
+        os.dief("var × call want 37 got %d", int(r5))
+    }
+    r6 = runtime.block(class_fut_call_x_var())
+    if r6 != 37 {
+        os.dief("call × var want 37 got %d", int(r6))
+    }
+    r7 = runtime.block(class_fut_sum_triple())
+    if r7 != 44 {
+        os.dief("triple await want 44 got %d", int(r7))
+    }
+    r8 = runtime.block(class_fut_add_assign())
+    if r8 != 37 {
+        os.dief("+= await want 37 got %d", int(r8))
+    }
+    fmt.println("test class fut binop await success")
+}
+
 fn main(){
     fmt.println("test async class func member")
     test_case1()
@@ -771,5 +858,6 @@ fn main(){
     test_class_fut_materialize()
     test_class_fut_two_awaits()
     test_class_fut_str_await()
+    test_class_fut_binop_await()
     fmt.println("test async dyn class func member success")
 }

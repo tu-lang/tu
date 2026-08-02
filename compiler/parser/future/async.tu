@@ -2,6 +2,7 @@ use string
 use std
 use compiler.ast
 use compiler.parser.scanner
+use compiler.parser.package
 use compiler.utils
 use runtime
 use compiler.gen
@@ -61,6 +62,74 @@ class AsyncBlock {
         if isstatic {
             retvar.structtype = true
             retvar.type = ast.U64
+        }
+        this.fc.InsertLocalVar(-1,retvar)
+        return retvar
+    }
+    // mem:async leaf await value slot: static type from poll value return.
+    // Dynamic slots store raw i8 as fake Value* → binary_operator SEGV.
+    fn genretvarForLeaf(s){
+        retvarname = "fut.r." + this.topid()
+        retvar = new gen.VarExpr(retvarname,0,0)
+        if s == null || !s.isasync || this.isRuntimeFutureStruct(s) {
+            retvar.size = 8
+            this.fc.InsertLocalVar(-1,retvar)
+            return retvar
+        }
+        poll = s.asyncfn
+        if poll == null
+            poll = s.getFunc("poll")
+        if poll != null && poll.async_value_dynamic {
+            retvar.size = 8
+            this.fc.InsertLocalVar(-1,retvar)
+            return retvar
+        }
+        vty = null
+        if poll != null && std.len(poll.returnTypes) >= 2
+            vty = poll.returnTypes[1]
+        else if poll != null && std.len(poll.returnTypes) == 1
+            vty = poll.returnTypes[0]
+
+        if vty != null && vty.baseType() && vty.base >= ast.I8 && vty.base <= ast.F64 {
+            retvar.structtype = true
+            retvar.type = vty.base
+            sz = 8
+            if vty.base == ast.I8 || vty.base == ast.U8
+                sz = 1
+            else if vty.base == ast.I16 || vty.base == ast.U16
+                sz = 2
+            else if vty.base == ast.I32 || vty.base == ast.U32 || vty.base == ast.F32
+                sz = 4
+            retvar.size = sz
+            retvar.isunsigned = ast.type_isunsigned(vty.base)
+            retvar.pointer = vty.pointer
+        }else if vty != null && vty.memType() {
+            st = vty.st
+            if st == null
+                st = package.getStruct(vty.pkg, vty.name)
+            retvar.structtype = true
+            retvar.type = ast.U64
+            retvar.size = 8
+            retvar.isunsigned = true
+            if st != null {
+                retvar.structname = st.name
+                full = st.pkg
+                if st.parser != null {
+                    g = st.parser.getpkgname()
+                    if g != ""
+                        full = g
+                }
+                retvar.structpkg = full
+            }else{
+                retvar.structname = vty.name
+                retvar.structpkg = vty.pkg
+            }
+        }else{
+            // Untyped but static returns (e.g. 42.(i8))
+            retvar.structtype = true
+            retvar.type = ast.U64
+            retvar.size = 8
+            retvar.isunsigned = true
         }
         this.fc.InsertLocalVar(-1,retvar)
         return retvar

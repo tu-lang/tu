@@ -3,6 +3,27 @@ use std
 use os
 use string
 
+// Dynamic Value.type must be in Null..Func. Raw Future* (etc.) misused as Value* has a huge tag.
+fn value_tag_ok(v<Value>) i32 {
+    if v == null return 1
+    if v.type < Null || v.type > Func return 0
+    return 1
+}
+// Int-like dynamic tags allowed in numeric binops (not Object/Array/Map/…).
+fn value_is_intish(v<Value>) i32 {
+    if v == null return 0
+    if v.type == Int || v.type == Char || v.type == Bool return 1
+    return 0
+}
+// Die when a dynamic operand is not a real Value (common: unawaited Future* as Value*).
+fn value_guard_binop(lhs<Value>, rhs<Value>, opname<i8*>) {
+    if lhs != null && value_tag_ok(lhs) == 0 {
+        dief(*"[operator%s] invalid lhs (possible unawaited future)", opname)
+    }
+    if rhs != null && value_tag_ok(rhs) == 0 {
+        dief(*"[operator%s] invalid rhs (possible unawaited future)", opname)
+    }
+}
 
  // + operator
  // @param lhs
@@ -14,6 +35,7 @@ fn value_plus(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *"+")
     if lhs.type == String || rhs.type == String {
         result.type = String
         result.data = value_string_plus(lhs,rhs)
@@ -25,6 +47,8 @@ fn value_plus(lhs<Value>,rhs<Value>) {
         fret.data = value_float_plus(lhs,rhs)
         return fret
     }
+    // Int|| keeps historical Object+Int (self-hosted compiler relies on it).
+    // Unawaited Future* is caught above by value_guard_binop (invalid type tag).
     if lhs.type == Int || rhs.type == Int {
         result.type = Int
         result.data = value_int_plus(lhs,rhs)
@@ -56,6 +80,7 @@ fn value_minus(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *"-")
     if lhs.type == String || rhs.type == String {
         result.type = String
         result.data = value_string_minus(lhs,rhs)
@@ -84,6 +109,7 @@ fn value_mul(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *"*")
     if lhs.type == String || rhs.type == String {
         result.type = String
         result.data = value_string_mul(lhs,rhs)
@@ -126,6 +152,7 @@ fn value_div(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *"/")
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_div(lhs,rhs)
@@ -154,6 +181,7 @@ fn value_bitand(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *"&")
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_bitand(lhs,rhs)
@@ -176,6 +204,7 @@ fn value_bitor(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *"|")
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_bitor(lhs,rhs)
@@ -195,6 +224,7 @@ fn value_bitxor(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *"^")
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_bitxor(lhs,rhs)
@@ -205,7 +235,7 @@ fn value_bitxor(lhs<Value>,rhs<Value>) {
         result.data = value_int_bitxor(lhs,rhs)
         return result
     }
-    dief(*"[operator|] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator^] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // << operator
@@ -219,6 +249,7 @@ fn value_shift_left(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *"<<")
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_shift_left(lhs,rhs)
@@ -248,6 +279,7 @@ fn value_shift_right(lhs<Value>,rhs<Value>) {
         std.memcpy(result,rhs, sizeof(Value))
         return result
     }
+    value_guard_binop(lhs, rhs, *">>")
     if lhs.type == String || rhs.type == String {
         result.type = Int
         result.data = value_string_shift_right(lhs,rhs)
@@ -275,6 +307,7 @@ fn value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
     result<Value> = new Value
     result.type = Bool
     result.data = 0
+    value_guard_binop(lhs, rhs, *"==")
     if lhs.type == Object {
 	    if equal result.data = lhs == rhs
 	    else result.data = lhs != rhs
@@ -285,8 +318,8 @@ fn value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
         result.data = value_float_equal(lhs,rhs,equal)
     } else if lhs.type == Int || rhs.type == Int || lhs.type == Char {
         result.data = value_int_equal(lhs,rhs,equal)
-    //other use int to compare
     }else{
+        // Array/Map/Null and other valid tags: keep historical int-style compare
         result.data = value_int_equal(lhs,rhs,equal)
     }
     return result
@@ -301,6 +334,7 @@ fn value_lowerthan(lhs<Value>,rhs<Value>,equal<i32>)
     result<Value> = new Value
     result.type = Bool
     result.data = 1
+    value_guard_binop(lhs, rhs, *"<")
     if lhs.type == String || rhs.type == String {
         result.data = value_string_lowerthan(lhs,rhs,equal)
         return result
@@ -313,7 +347,7 @@ fn value_lowerthan(lhs<Value>,rhs<Value>,equal<i32>)
         result.data = value_int_lowerthan(lhs,rhs,equal)
         return result
     }
-    dief(*"[operator>=] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
+    dief(*"[operator<] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
  // > operator
@@ -325,6 +359,7 @@ fn value_greaterthan(lhs<Value>,rhs<Value>,equal<i32>)
     result<Value> = new Value
     result.type = Bool
     result.data = 1
+    value_guard_binop(lhs, rhs, *">")
     if lhs.type == String || rhs.type == String {
         result.data = value_string_greaterthan(lhs,rhs,equal)
         return result
@@ -335,8 +370,9 @@ fn value_greaterthan(lhs<Value>,rhs<Value>,equal<i32>)
     }
     if lhs.type == Int || rhs.type == Int || lhs.type == Char || rhs.type == Char {
         result.data = value_int_greaterthan(lhs,rhs,equal)
+        return result
     }
-    return result
+    dief(*"[operator>] unknown type: lhs:%s rhs:%s" , type_string(lhs) , type_string(rhs))
 }
 
 

@@ -58,6 +58,7 @@ class Function {
     endstates = []
     returns   = []
     returnTypes = []
+    async_value_dynamic = false
     constdef  = false
     iterid    = 0
     //clousure

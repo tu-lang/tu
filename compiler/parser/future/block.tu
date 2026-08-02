@@ -229,7 +229,7 @@ AsyncBlock::genawait(stmt , recvs){
             }
             return this.dynawait(fc,recvs)
         }
-        retvar = this.genawait2(s,fc,recvs,false)
+        retvar = this.genawait2(s,fc,recvs,true)
         return retvar
     }else if type(stmt) == type(gen.AssignExpr) {
         ae = stmt
@@ -278,7 +278,7 @@ AsyncBlock::genawait(stmt , recvs){
             return this.leafawait(mc, syncLeaf, recvs)
         }
         s = this.getstruct(stmt)
-        return this.genawait2(s, fc, recvs, false)
+        return this.genawait2(s, fc, recvs, true)
     }else {
         stmt.check(false,"unknown await stmt type")
     }        
@@ -440,7 +440,7 @@ AsyncBlock::genawait2(s , callargs , recvs, isstatic){
         pollassign = this.genpollrecv2(casevar,recvs,callargs)
         retvar = null
     }else{
-        retvar = this.genretvar(isstatic)
+        retvar = this.genretvarForLeaf(s)
         pollassign = this.genpollrecv(
             casevar,retvar,callargs
         )
@@ -467,8 +467,7 @@ AsyncBlock::genawait3(sv, s, callargs, recvs){
         pollassign = this.genpollrecv2(casevar,recvs,callargs)
         retvar = null
     }else{
-        // Concrete async leaf: static ret slot; erased Future: dynamic like dynawait
-        retvar = this.genretvar(s != null && s.isasync)
+        retvar = this.genretvarForLeaf(s)
         pollassign = this.genpollrecv(
             casevar,retvar,callargs
         )

@@ -416,6 +416,148 @@ MemberCallExpr::checkawait(){
     }
 }
 
+func varIsAwaitable(v){
+    if v == null return false
+    canon = v
+    if compile.currentFunc != null {
+        c = compile.currentFunc.FindLocalVar(v.varname)
+        if c != null
+            canon = c
+    }
+    if canon.structname == "Future"
+        return true
+    if canon.structtype && canon.structname != "" {
+        st = package.getStruct(canon.structpkg, canon.structname)
+        if st != null && st.isasync
+            return true
+    }
+    return false
+}
+
+func callExprIsAwaitable(e){
+    if e == null return false
+    if type(e) == type(FunCallExpr) {
+        fc = e
+        curf = compile.currentFunc
+        p = null
+        if curf != null
+            p = curf.parser
+        if fc.package != null && fc.package != "" && curf != null {
+            recv = ast.GP().getGlobalVar("", fc.package)
+            if recv == null
+                recv = curf.FindLocalVar(fc.package)
+            if recv != null && !recv.structtype && recv.structname != "" {
+                cls = package.getClass(recv.structpkg, recv.structname)
+                if cls != null {
+                    cf = cls.getFunc(fc.funcname)
+                    if cf != null && cf.asyncst != null
+                        return true
+                }
+            }
+            if recv != null && recv.structtype && recv.structname != "" {
+                parent = package.getStruct(recv.structpkg, recv.structname)
+                if parent != null {
+                    asyncfn = parent.resolveAsyncMember(fc.funcname)
+                    if asyncfn != null && asyncfn.fntype == ast.AsyncFunc
+                        return true
+                    mfn = parent.getFunc(fc.funcname)
+                    leaf = structFromCalleeReturn(mfn)
+                    if leaf != null && (leaf.isasync || leaf.name == "Future")
+                        return true
+                }
+            }
+        }
+        callee = staticCalleeFromRhs(fc)
+        if callee != null {
+            if callee.fntype == ast.AsyncFunc
+                return true
+            leaf = structFromCalleeReturn(callee)
+            if leaf != null && (leaf.isasync || leaf.name == "Future")
+                return true
+        }
+        if p != null && (fc.package == null || fc.package == "") {
+            pkgname = p.getpkgname()
+            if package.packages[pkgname] != null {
+                f = package.packages[pkgname].getFunc(fc.funcname, false)
+                if f != null && f.fntype == ast.AsyncFunc
+                    return true
+            }
+        }
+        return false
+    }
+    if type(e) == type(MemberCallExpr) {
+        mc = e
+        parent = null
+        if mc.staticCall != null
+            parent = mc.staticCall
+        else if mc.obj != null && mc.obj.structtype && mc.obj.structname != ""
+            parent = package.getStruct(mc.obj.structpkg, mc.obj.structname)
+        else if mc.tyassert != null
+            parent = mc.tyassert.getStruct()
+        if parent == null
+            return false
+        asyncfn = parent.resolveAsyncMember(mc.membername)
+        if asyncfn != null && asyncfn.fntype == ast.AsyncFunc
+            return true
+        mfn = parent.getFunc(mc.membername)
+        leaf = structFromCalleeReturn(mfn)
+        if leaf != null && (leaf.isasync || leaf.name == "Future")
+            return true
+        return false
+    }
+    return false
+}
+
+func exprIsUnaWaitedAwaitable(e){
+    if e == null return false
+    if expressionHasAwait(e)
+        return false
+    if type(e) == type(VarExpr)
+        return varIsAwaitable(e)
+    return callExprIsAwaitable(e)
+}
+
+func isPointerOffsetExpr(e){
+    if e == null return false
+    if expressionHasAwait(e)
+        return false
+    if type(e) == type(IntExpr) || type(e) == type(FloatExpr)
+        return true
+    if type(e) == type(VarExpr) {
+        v = e
+        canon = v
+        if compile.currentFunc != null {
+            c = compile.currentFunc.FindLocalVar(v.varname)
+            if c != null
+                canon = c
+        }
+        if canon == v || canon.type < ast.I8 || canon.type > ast.U64 {
+            g = ast.GP().getGlobalVar("", v.varname)
+            if g != null
+                canon = g
+        }
+        if canon.structname != ""
+            return false
+        if canon.type >= ast.I8 && canon.type <= ast.U64
+            return true
+    }
+    return false
+}
+
+func rejectUnaWaitedAwaitableOperand(e, other, opt){
+    if !exprIsUnaWaitedAwaitable(e)
+        return null
+    if callExprIsAwaitable(e) {
+        e.check(false, "awaitable used in operator without .await")
+        return null
+    }
+    if opt == ast.EQ || opt == ast.NE
+        return null
+    if (opt == ast.ADD || opt == ast.SUB) && isPointerOffsetExpr(other)
+        return null
+    e.check(false, "awaitable used in operator without .await")
+}
+
 IfStmt::checkawait(){
     for it : this.cases {
         if it.cond.hasawait {
@@ -444,12 +586,15 @@ ChainExpr::checkawait() {
 }
 
 BinaryExpr::checkawait(){
-	if this.lhs.hasawait {
-		this.hasawait = true
-	}
-	if this.rhs != null && this.rhs.hasawait {
-		this.hasawait = true
-	}
+    if expressionHasAwait(this.lhs) {
+        this.hasawait = true
+    }
+    if this.rhs != null && expressionHasAwait(this.rhs) {
+        this.hasawait = true
+    }
+    rejectUnaWaitedAwaitableOperand(this.lhs, this.rhs, this.opt)
+    if this.rhs != null
+        rejectUnaWaitedAwaitableOperand(this.rhs, this.lhs, this.opt)
 }
 
 AssignExpr::checkawait(){
@@ -461,5 +606,9 @@ AssignExpr::checkawait(){
     }
 	if expressionHasAwait(this.rhs) {
 		this.hasawait = true
-	}	
+	}
+    if this.opt != ast.ASSIGN && this.rhs != null {
+        if exprIsUnaWaitedAwaitable(this.rhs)
+            this.rhs.check(false, "awaitable used in operator without .await")
+    }
 }

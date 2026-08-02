@@ -311,6 +311,18 @@ Parser::parseReturnStmt(ret_line<i32>) {
             if retexpr.hasawait || gen.expressionHasAwait(retexpr) {
                 node.hasawait = true
             }
+            // Untyped async value returns: bare int/array → dynamic await slot
+            if this.currentFunc.isasync() && retexpr.tyassert == null {
+                if type(retexpr) == type(gen.IntExpr) ||
+                   type(retexpr) == type(gen.FloatExpr) ||
+                   type(retexpr) == type(gen.StringExpr) ||
+                   type(retexpr) == type(gen.BoolExpr) ||
+                   type(retexpr) == type(gen.ArrayExpr) ||
+                   type(retexpr) == type(gen.MapExpr) ||
+                   type(retexpr) == type(gen.NullExpr) {
+                    this.currentFunc.async_value_dynamic = true
+                }
+            }
         }
 
         if reader.curToken != ast.COMMA
