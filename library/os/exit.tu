@@ -17,11 +17,6 @@ func panic(args...){
     if ret != null {
 		fmt.vfprintf(std.STDOUT,ret)
     }
-    //REMOVE: todo
-    if debug.enabled != 1 {
-        p<i8*> = null
-        *p = 1
-    }    
     infos = debug.stack(debug_stack)
     fmt.println("\ndebug backtrace:")
     i = 1
@@ -34,10 +29,6 @@ func panic(args...){
 func die(str){
     fmt.println(str)
     code<i8> = -1
-    if debug.enabled != 1 {
-        p<i8*> = null
-        *p = 1
-    }
     infos = debug.stack(debug_stack)
     fmt.println("\ndebug backtrace:")
     i = 1
@@ -51,10 +42,6 @@ func dief(args...){
     ret<string.Str> = string.dynstringfmt(args)
     if ret != null {
 		  fmt.vfprintf(std.STDOUT,ret.putc(NewLine))
-    }
-    if debug.enabled != 1 {
-        p<i8*> = null
-        *p = 1
     }
     code<i8> = -1
     infos = debug.stack(debug_stack)

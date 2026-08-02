@@ -72,6 +72,9 @@ Sched::rmcore(c<Core>){
 	// Serialize with Gc::start: GC walks allcores without sched.lock while
 	// holding worldSeam (stopSTW / mark*). Unlink under the same seam so a
 	// concurrent walker cannot follow a freed link (SEGV on newcore exit).
+	// NOTE: do not adjust stopwait here — a naive Wake races with gcstopworld
+	// and can false-wake STW or double-Wake. Exiting cores must join via
+	// schedule()/gcstopworld first; tests should core_join workers.
 	gc.worldSeam.lock()
 	sched.lock.lock()
 	if c == sched.allcores {

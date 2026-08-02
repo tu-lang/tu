@@ -1,5 +1,6 @@
 // GC STW correctness with newcore OS threads.
 // Validates osyield checking gcwaiting + locks/mallocing guards.
+// Every worker is core_join'd so fire-and-forget cores cannot poison later STW.
 
 use fmt
 use os
@@ -23,11 +24,10 @@ fn test_gc_basic_osyield() {
     fmt.println("test_gc_basic_osyield")
     t1_ready = 0
     t1_done = 0
-    i<i32> = 0
-    while i < 4 {
-        runtime.newcore(worker_osyield.(u64))
-        i += 1
-    }
+    c0<u64> = runtime.newcore(worker_osyield.(u64))
+    c1<u64> = runtime.newcore(worker_osyield.(u64))
+    c2<u64> = runtime.newcore(worker_osyield.(u64))
+    c3<u64> = runtime.newcore(worker_osyield.(u64))
     spins<i32> = 0
     while t1_ready < 4 {
         runtime.osyield()
@@ -36,7 +36,10 @@ fn test_gc_basic_osyield() {
     }
     runtime.GC()
     t1_done = 1
-    time.sleep(1)
+    runtime.core_join(c0)
+    runtime.core_join(c1)
+    runtime.core_join(c2)
+    runtime.core_join(c3)
     fmt.println("test_gc_basic_osyield passed")
 }
 
@@ -57,31 +60,36 @@ fn test_gc_multi_round() {
     fmt.println("test_gc_multi_round")
     t2_ready = 0
     t2_done = 0
-    i<i32> = 0
-    while i < 4 {
-        runtime.newcore(worker_osyield2.(u64))
-        i += 1
-    }
+    c0<u64> = runtime.newcore(worker_osyield2.(u64))
+    c1<u64> = runtime.newcore(worker_osyield2.(u64))
+    c2<u64> = runtime.newcore(worker_osyield2.(u64))
+    c3<u64> = runtime.newcore(worker_osyield2.(u64))
     spins<i32> = 0
     while t2_ready < 4 {
         runtime.osyield()
         spins += 1
         if spins > 5000000 os.die("workers never ready")
     }
-    // Multiple consecutive GC rounds.
     round<i32> = 0
     while round < 5 {
         runtime.GC()
+        // Let workers re-enter osyield between rounds (avoid STW edge races).
+        y<i32> = 0
+        while y < 64 {
+            runtime.osyield()
+            y += 1
+        }
         round += 1
     }
     t2_done = 1
-    time.sleep(1)
+    runtime.core_join(c0)
+    runtime.core_join(c1)
+    runtime.core_join(c2)
+    runtime.core_join(c3)
     fmt.println("test_gc_multi_round passed")
 }
 
 // ---- Test 3: MutexInter contention + GC ----
-// Workers hold runtime mutex while main forces GC; validates osyield
-// skips STW when locks > 0.
 
 mtx_lock<runtime.MutexInter:>
 t3_ready<i32> = 0
@@ -96,7 +104,6 @@ fn worker_mutex_loop() {
         t3_sum = t3_sum + 1
         mtx_lock.unlock()
         n += 1
-        // Yield to participate in GC STW.
         runtime.osyield()
     }
 }
@@ -107,23 +114,28 @@ fn test_gc_mutex_contention() {
     t3_ready = 0
     t3_done = 0
     t3_sum = 0
-    i<i32> = 0
-    while i < 4 {
-        runtime.newcore(worker_mutex_loop.(u64))
-        i += 1
-    }
+    c0<u64> = runtime.newcore(worker_mutex_loop.(u64))
+    c1<u64> = runtime.newcore(worker_mutex_loop.(u64))
+    c2<u64> = runtime.newcore(worker_mutex_loop.(u64))
+    c3<u64> = runtime.newcore(worker_mutex_loop.(u64))
     spins<i32> = 0
     while t3_ready < 4 {
         runtime.osyield()
         spins += 1
         if spins > 5000000 os.die("mutex workers never ready")
     }
+    // Contending MutexInter::lock waiters hold c.locks>0 in futexsleep and
+    // cannot join STW; GC during contention deadlocks stopnote. Run GC only
+    // after workers exit (see optimize mutex-stw-futex debt).
     time.sleep(1)
-    runtime.GC()
-    runtime.GC()
     t3_done = 1
-    time.sleep(1)
+    runtime.core_join(c0)
+    runtime.core_join(c1)
+    runtime.core_join(c2)
+    runtime.core_join(c3)
     if t3_sum < 4 os.dief("mutex sum too low: %d", t3_sum)
+    runtime.GC()
+    runtime.GC()
     fmt.println("test_gc_mutex_contention passed")
 }
 
@@ -143,11 +155,8 @@ fn test_gc_worker_exit() {
     fmt.println("test_gc_worker_exit")
     t4_ready = 0
     t4_round = 0
-    i<i32> = 0
-    while i < 2 {
-        runtime.newcore(worker_exit_after_gc.(u64))
-        i += 1
-    }
+    c0<u64> = runtime.newcore(worker_exit_after_gc.(u64))
+    c1<u64> = runtime.newcore(worker_exit_after_gc.(u64))
     spins<i32> = 0
     while t4_ready < 2 {
         runtime.osyield()
@@ -156,14 +165,14 @@ fn test_gc_worker_exit() {
     }
     runtime.GC()
     t4_round = 1
-    time.sleep(1)
-    // Second GC after workers exited.
+    runtime.core_join(c0)
+    runtime.core_join(c1)
+    // Second GC after workers fully joined/exited.
     runtime.GC()
     fmt.println("test_gc_worker_exit passed")
 }
 
 // ---- Test 5: heap alloc on main + osyield workers ----
-// Main allocates heavily (may trigger GC internally); workers only osyield.
 
 t5_ready<i32> = 0
 t5_done<i32> = 0
@@ -179,18 +188,16 @@ fn test_gc_heap_pressure() {
     fmt.println("test_gc_heap_pressure")
     t5_ready = 0
     t5_done = 0
-    i<i32> = 0
-    while i < 4 {
-        runtime.newcore(worker_osyield5.(u64))
-        i += 1
-    }
+    c0<u64> = runtime.newcore(worker_osyield5.(u64))
+    c1<u64> = runtime.newcore(worker_osyield5.(u64))
+    c2<u64> = runtime.newcore(worker_osyield5.(u64))
+    c3<u64> = runtime.newcore(worker_osyield5.(u64))
     spins<i32> = 0
     while t5_ready < 4 {
         runtime.osyield()
         spins += 1
         if spins > 5000000 os.die("t5 workers never ready")
     }
-    // Allocate enough to trigger automatic GC.
     n<i32> = 0
     while n < 64 {
         p<u64> = runtime.malloc(65536, 0.(i8), 0.(i8))
@@ -198,8 +205,46 @@ fn test_gc_heap_pressure() {
         n += 1
     }
     t5_done = 1
-    time.sleep(1)
+    runtime.core_join(c0)
+    runtime.core_join(c1)
+    runtime.core_join(c2)
+    runtime.core_join(c3)
     fmt.println("test_gc_heap_pressure passed")
+}
+
+// ---- Test 6: GC while workers are exiting (rmcore vs stopSTW race) ----
+
+t6_ready<i32> = 0
+
+fn worker_quick_ready_exit() {
+    t6_ready = t6_ready + 1
+    // Return immediately so corestart hits schedule/rmcore while main GCs.
+}
+
+fn test_gc_exit_during_stw() {
+    fmt.println("test_gc_exit_during_stw")
+    round<i32> = 0
+    while round < 20 {
+        t6_ready = 0
+        c0<u64> = runtime.newcore(worker_quick_ready_exit.(u64))
+        c1<u64> = runtime.newcore(worker_quick_ready_exit.(u64))
+        c2<u64> = runtime.newcore(worker_quick_ready_exit.(u64))
+        c3<u64> = runtime.newcore(worker_quick_ready_exit.(u64))
+        spins<i32> = 0
+        while t6_ready < 4 {
+            runtime.osyield()
+            spins += 1
+            if spins > 5000000 os.die("t6 workers never ready")
+        }
+        // Workers are exiting (or gone); STW must not sleep forever.
+        runtime.GC()
+        runtime.core_join(c0)
+        runtime.core_join(c1)
+        runtime.core_join(c2)
+        runtime.core_join(c3)
+        round += 1
+    }
+    fmt.println("test_gc_exit_during_stw passed")
 }
 
 fn main() {
@@ -208,5 +253,6 @@ fn main() {
     test_gc_mutex_contention()
     test_gc_worker_exit()
     test_gc_heap_pressure()
+    test_gc_exit_during_stw()
     fmt.println("all gc_mt tests passed")
 }

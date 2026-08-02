@@ -256,6 +256,8 @@ Note::Wake(){
 }
 Note::Sleep(){
 	while atomic.load(&this.key) == Null {
+		// Do not entersyscall here: park/stopnote run under CoreStop; exitsyscall
+		// would force CoreRun and lose startSTW wakes (gc_mt hang).
 		futexsleep(&this.key, 0.(i8), -1.(i8))
 	}
 }
