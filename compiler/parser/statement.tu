@@ -480,6 +480,9 @@ Parser::parseMultiAssignStmt(firstv){
             i += 1
         }
     }
+    if !stmt.hasawait && std.len(stmt.rs) == 1 && std.len(stmt.ls) > 1 {
+        gen.propagateMultiAssignStaticRets(stmt)
+    }
 
     this.ismultiassign = false
     return stmt

@@ -187,7 +187,153 @@ func memStructFromRhs(rhs){
     return null
 }
 
-// Untyped local picks up mem/leaf/Future from RHS factory or async call.
+func annotateVarFromTypeInfo(v, rt, callee){
+    if v == null || rt == null
+        return null
+    // Prefer function-local slot (codegen uses FindLocalVar), not MultiAssign LHS copy.
+    target = v
+    fcur = compile.currentFunc
+    if fcur != null {
+        canon = fcur.FindLocalVar(v.varname)
+        if canon != null
+            target = canon
+    }
+    if target.structtype || target.isparam
+        return null
+
+    if rt.baseType() && rt.base >= ast.I8 && rt.base <= ast.F64 {
+        target.structtype = true
+        target.structname = ""
+        target.structpkg = ""
+        target.type = rt.base
+        sz = 8
+        if rt.base == ast.I8 || rt.base == ast.U8
+            sz = 1
+        else if rt.base == ast.I16 || rt.base == ast.U16
+            sz = 2
+        else if rt.base == ast.I32 || rt.base == ast.U32 || rt.base == ast.F32
+            sz = 4
+        target.size = sz
+        target.isunsigned = ast.type_isunsigned(rt.base)
+        target.pointer = rt.pointer
+        return null
+    }
+    if rt.memType() {
+        st = structFromTypeInfo(rt, callee)
+        if st == null && rt.st != null
+            st = rt.st
+        if st == null
+            return null
+        full = st.pkg
+        if st.parser != null {
+            g = st.parser.getpkgname()
+            if g != ""
+                full = g
+        }
+        target.structtype = true
+        target.structname = st.name
+        target.structpkg = full
+        target.type = ast.U64
+        target.size = 8
+        target.isunsigned = true
+    }
+}
+
+func staticCalleeFromRhs(rhs){
+    if rhs == null
+        return null
+    curf = compile.currentFunc
+    if curf == null
+        return null
+    p = curf.parser
+    if p == null
+        return null
+
+    if type(rhs) == type(FunCallExpr) {
+        fc = rhs
+        if fc.package != "" {
+            var = ast.GP().getGlobalVar("", fc.package)
+            if var == null && curf != null
+                var = curf.FindLocalVar(fc.package)
+            if var != null
+                return null
+            parent = p.getStruct("", fc.package)
+            if parent != null {
+                mfn = parent.getFunc(fc.funcname)
+                if mfn != null && std.len(mfn.returnTypes) != 0
+                    return mfn
+            }
+        }
+        pkgname = fc.package
+        if pkgname != null && pkgname != "" && p.pkg != null && p.pkg.imports[pkgname] != null
+            pkgname = p.pkg.imports[pkgname]
+        if pkgname == null || pkgname == ""
+            pkgname = p.getpkgname()
+        if package.packages[pkgname] == null
+            return null
+        callee = package.packages[pkgname].getFunc(fc.funcname, false)
+        if callee != null && std.len(callee.returnTypes) != 0
+            return callee
+        return null
+    }
+    if type(rhs) == type(MemberCallExpr) {
+        mc = rhs
+        parent = null
+        if mc.staticCall != null
+            parent = mc.staticCall
+        else if mc.obj != null {
+            if !mc.obj.structtype || mc.obj.structname == ""
+                return null
+            parent = package.getStruct(mc.obj.structpkg, mc.obj.structname)
+        } else if mc.tyassert != null
+            parent = mc.tyassert.getStruct()
+        if parent == null
+            return null
+        mfn = parent.getFunc(mc.membername)
+        if mfn != null && std.len(mfn.returnTypes) != 0
+            return mfn
+    }
+    return null
+}
+
+// Only when every LHS is untyped. Mixed typed+untyped keeps trailing dyn slots.
+func propagateMultiAssignStaticRets(stmt){
+    if stmt == null || compile.currentFunc == null
+        return null
+    if stmt.hasawait || std.len(stmt.rs) != 1 || std.len(stmt.ls) < 2
+        return null
+
+    i = 0
+    while i < std.len(stmt.ls) {
+        le = stmt.ls[i]
+        if type(le) == type(VarExpr) {
+            v = le
+            target = v
+            canon = compile.currentFunc.FindLocalVar(v.varname)
+            if canon != null
+                target = canon
+            if target.structtype || target.isparam
+                return null
+        }
+        i += 1
+    }
+
+    callee = staticCalleeFromRhs(stmt.rs[0])
+    if callee == null || std.len(callee.returnTypes) == 0
+        return null
+
+    n = std.len(stmt.ls)
+    if n > std.len(callee.returnTypes)
+        n = std.len(callee.returnTypes)
+    i = 0
+    while i < n {
+        le = stmt.ls[i]
+        if type(le) == type(VarExpr)
+            annotateVarFromTypeInfo(le, callee.returnTypes[i], callee)
+        i += 1
+    }
+}
+
 func propagateVarMemTypeFromRhs(lhs, rhs){
     if lhs == null || rhs == null
         return null
@@ -195,6 +341,70 @@ func propagateVarMemTypeFromRhs(lhs, rhs){
         return null
     if expressionHasAwait(rhs)
         return null
+
+    if type(rhs) == type(NewClassExpr) {
+        nc = rhs
+        if lhs.structtype || lhs.structname != ""
+            return null
+        pkg = nc.package
+        cur = compile.currentFunc.parser
+        if pkg == "" && cur != null && cur.pkg != null
+            pkg = cur.pkg.full_package
+        lhs.structtype = false
+        lhs.structname = nc.name
+        lhs.structpkg = pkg
+        lhs.type = ast.U64
+        lhs.size = 8
+        lhs.isunsigned = true
+        canon = compile.currentFunc.FindLocalVar(lhs.varname)
+        if canon != null && canon != lhs && !canon.structtype && canon.structname == "" {
+            canon.structtype = false
+            canon.structname = nc.name
+            canon.structpkg = pkg
+            canon.type = ast.U64
+            canon.size = 8
+            canon.isunsigned = true
+        }
+        return null
+    }
+
+    if type(rhs) == type(FunCallExpr) {
+        fc = rhs
+        if fc.package != "" {
+            recv = ast.GP().getGlobalVar("", fc.package)
+            if recv == null
+                recv = compile.currentFunc.FindLocalVar(fc.package)
+            if recv != null && !recv.structtype && recv.structname != "" {
+                cls = package.getClass(recv.structpkg, recv.structname)
+                if cls != null {
+                    cf = cls.getFunc(fc.funcname)
+                    if cf != null && cf.asyncst != null {
+                        if lhs.structtype && lhs.structname != ""
+                            return null
+                        lhs.structtype = true
+                        lhs.structname = "Future"
+                        lhs.structpkg = "runtime"
+                        lhs.type = ast.U64
+                        lhs.size = 8
+                        lhs.isunsigned = true
+                        canon = compile.currentFunc.FindLocalVar(lhs.varname)
+                        if canon != null && canon != lhs {
+                            if !canon.structtype || canon.structname == "" {
+                                canon.structtype = true
+                                canon.structname = "Future"
+                                canon.structpkg = "runtime"
+                                canon.type = ast.U64
+                                canon.size = 8
+                                canon.isunsigned = true
+                            }
+                        }
+                        return null
+                    }
+                }
+            }
+        }
+    }
+
     st = memStructFromRhs(rhs)
     if st != null
         annotateVarWithStruct(lhs, st)

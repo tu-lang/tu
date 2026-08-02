@@ -701,6 +701,63 @@ fn test_passargs(){
 
     fmt.println("test passargs success")
 }
+
+// Class async: materialize Future then .await (dynfuturenew erase path).
+async TestCase::work_seven() {
+    return 7
+}
+async TestCase::work_add() {
+    return this.m1 + this.m2
+}
+async TestCase::work_str() {
+    return "ok"
+}
+async class_fut_materialize_await() {
+    j = new TestCase(1,11,22,33)
+    fut = j.work_seven()
+    r = fut.await
+    return r
+}
+async class_fut_two_awaits() {
+    j = new TestCase(1,10,20,30)
+    f1 = j.work_seven()
+    r1 = f1.await
+    f2 = j.work_add()
+    r2 = f2.await
+    return r1 + r2
+}
+async class_fut_str_await() {
+    j = new TestCase(1,1,2,3)
+    fut = j.work_str()
+    r = fut.await
+    return r
+}
+fn test_class_fut_materialize(){
+    fmt.println("test class fut materialize await")
+    r = runtime.block(class_fut_materialize_await())
+    if r != 7 {
+        os.dief("fut = j.work(); fut.await want 7 got %d", int(r))
+    }
+    fmt.println("test class fut materialize await success")
+}
+fn test_class_fut_two_awaits(){
+    fmt.println("test class fut two awaits")
+    // work_seven=7, work_add=10+20=30 → 37
+    r = runtime.block(class_fut_two_awaits())
+    if r != 37 {
+        os.dief("two awaits want 37 got %d", int(r))
+    }
+    fmt.println("test class fut two awaits success")
+}
+fn test_class_fut_str_await(){
+    fmt.println("test class fut str await")
+    r = runtime.block(class_fut_str_await())
+    if r != "ok" {
+        os.die("str await want ok")
+    }
+    fmt.println("test class fut str await success")
+}
+
 fn main(){
     fmt.println("test async class func member")
     test_case1()
@@ -711,5 +768,8 @@ fn main(){
     test_blockon()
     test_rtblockon()
     test_common2()
+    test_class_fut_materialize()
+    test_class_fut_two_awaits()
+    test_class_fut_str_await()
     fmt.println("test async dyn class func member success")
 }

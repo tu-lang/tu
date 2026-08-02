@@ -387,6 +387,81 @@ fn test_async_poll_forward_two_hops(){
 	fmt.println("test_async_poll_forward_two_hops success")
 }
 
+// Untyped LHS inherits static returnTypes (a,b = f() without <i32>).
+// Only when EVERY LHS is untyped; mixed typed+untyped must keep dyn slots.
+mem UntypedBox {
+	u64 raw
+}
+fn untyped_pair() (i32, i64) {
+	return 3, 4
+}
+fn untyped_triple() (i32, i32, i32) {
+	return 1, 2, 3
+}
+fn untyped_mixed_iu() (i32, u64) {
+	return 9, 100.(u64)
+}
+fn untyped_box() (i32, UntypedBox) {
+	return 0, new UntypedBox {
+		raw: 99,
+	}
+}
+fn untyped_member_pair() (i32, i32) {
+	p<PairBox> = new PairBox
+	p.a = 5
+	p.b = 6
+	return p.as_pair()
+}
+// Last slot is intentionally dynamic (array); signature lists u64 like case1_1.
+fn untyped_with_dyn_tail() (u8, i32, u64) {
+	return 1.(u8), 2, 0.(u64)
+}
+fn test_untyped_static_multi_ret(){
+	fmt.println("test_untyped_static_multi_ret")
+	a, b = untyped_pair()
+	if a != 3 || b != 4 os.die("untyped_pair")
+
+	x, y, z = untyped_triple()
+	if x != 1 || y != 2 || z != 3 os.die("untyped_triple")
+
+	i, u = untyped_mixed_iu()
+	if i != 9 || u != 100.(u64) os.die("untyped_mixed_iu")
+
+	e, box = untyped_box()
+	if e != 0 os.die("untyped_box err")
+	if box == null os.die("untyped_box null")
+	if box.raw != 99 os.die("untyped_box raw")
+
+	m0, m1 = untyped_member_pair()
+	if m0 != 5 || m1 != 6 os.die("untyped_member_pair")
+
+	// Nested: forwarder then untyped unpack.
+	f0, f1 = fwd_static_pair()
+	if f0 != 7 || f1 != 11 os.die("untyped unpack fwd_static_pair")
+
+	fmt.println("test_untyped_static_multi_ret success")
+}
+
+// Mixed typed+untyped does not propagate (dyn slot preserved). Static values
+// on the untyped side still need an explicit type — covered by
+// tests/native/fnreturn_cast.tu (v1<u8>,...,arr = case1_1). Here: fully typed
+// multi-assign remains the safe mixed path.
+fn test_mixed_typed_explicit_static(){
+	fmt.println("test_mixed_typed_explicit_static")
+	a<i32>, b<i64> = untyped_pair()
+	if a != 3 || b != 4 os.die("explicit typed pair")
+	fmt.println("test_mixed_typed_explicit_static success")
+}
+
+fn test_untyped_cross_pkg_multi_ret(){
+	fmt.println("test_untyped_cross_pkg_multi_ret")
+	a, b = owner.owner_pair()
+	if a != 100 || b != 200 os.die("untyped owner_pair")
+	c, d = owner.owner_member_pair()
+	if c != 30 || d != 40 os.die("untyped owner_member_pair")
+	fmt.println("test_untyped_cross_pkg_multi_ret success")
+}
+
 fn main(){
 	test_static_forward()
 	test_member_chain_forward()
@@ -397,4 +472,7 @@ fn main(){
 	test_class_member_forward()
 	test_async_poll_forward()
 	test_async_poll_forward_two_hops()
+	test_untyped_static_multi_ret()
+	test_mixed_typed_explicit_static()
+	test_untyped_cross_pkg_multi_ret()
 }
