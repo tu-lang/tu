@@ -3,7 +3,7 @@ use std
 use os
 use string
 
-// Dynamic Value.type must be in Null..Func. Raw Future* (etc.) misused as Value* has a huge tag.
+// Dynamic Value.type must be in Null..Func.
 fn value_tag_ok(v<Value>) i32 {
     if v == null return 1
     if v.type < Null || v.type > Func return 0
@@ -15,13 +15,41 @@ fn value_is_intish(v<Value>) i32 {
     if v.type == Int || v.type == Char || v.type == Bool return 1
     return 0
 }
-// Die when a dynamic operand is not a real Value (common: unawaited Future* as Value*).
+// Future* as Value*: type overlays virf; asyncsize > 0 (same idea as dynfuturenew).
+// No align check: class virt virf may be unaligned; x86 allows the load.
+fn value_is_future(v<Value>) i32 {
+    if v == null return 0
+    if value_tag_ok(v) return 0
+    bits<u64> = v.type.(u64)
+    if bits == 0.(u64) return 0
+    vf<VObjFunc> = bits.(VObjFunc)
+    if vf == null return 0
+    if vf.entry == 0.(u64) return 0
+    if vf.asyncsize <= 0 return 0
+    if vf.asyncsize > 1048576 return 0
+    if vf.asyncargs > 0.(u64) && vf.asyncsize < vf.asyncargs.(i32) * 8 {
+        return 0
+    }
+    return 1
+}
+fn value_is_nullish(v<Value>) i32 {
+    if v == null return 1
+    if value_tag_ok(v) && v.type == Null return 1
+    return 0
+}
+// Invalid dynamic operand: Future → unawaited future; else invalid type tag.
 fn value_guard_binop(lhs<Value>, rhs<Value>, opname<i8*>) {
     if lhs != null && value_tag_ok(lhs) == 0 {
-        dief(*"[operator%s] invalid lhs (possible unawaited future)", opname)
+        if value_is_future(lhs) {
+            dief(*"[operator%s] unawaited future on lhs", opname)
+        }
+        dief(*"[operator%s] invalid lhs", opname)
     }
     if rhs != null && value_tag_ok(rhs) == 0 {
-        dief(*"[operator%s] invalid rhs (possible unawaited future)", opname)
+        if value_is_future(rhs) {
+            dief(*"[operator%s] unawaited future on rhs", opname)
+        }
+        dief(*"[operator%s] invalid rhs", opname)
     }
 }
 
@@ -307,7 +335,29 @@ fn value_equal(lhs<Value>,rhs<Value>,equal<i32>) {
     result<Value> = new Value
     result.type = Bool
     result.data = 0
-    value_guard_binop(lhs, rhs, *"==")
+    // Allow pointer identity for non-Value tags vs null (fut == null) or each other.
+    // Comparing a non-Value tag to a real dynamic value still requires .await / fix.
+    l_bad<i32> = 0
+    r_bad<i32> = 0
+    if lhs != null && value_tag_ok(lhs) == 0 {
+        l_bad = 1
+    }
+    if rhs != null && value_tag_ok(rhs) == 0 {
+        r_bad = 1
+    }
+    if l_bad || r_bad {
+        if l_bad && (r_bad || value_is_nullish(rhs)) {
+            if equal result.data = lhs == rhs
+            else result.data = lhs != rhs
+            return result
+        }
+        if r_bad && value_is_nullish(lhs) {
+            if equal result.data = lhs == rhs
+            else result.data = lhs != rhs
+            return result
+        }
+        value_guard_binop(lhs, rhs, *"==")
+    }
     if lhs.type == Object {
 	    if equal result.data = lhs == rhs
 	    else result.data = lhs != rhs
