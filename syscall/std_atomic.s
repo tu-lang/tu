@@ -70,8 +70,10 @@ sao_l1:
 	movl	%eax, %ecx
 	or	%edi, %ecx
 	lock cmpxchgb	%cl, (%rdx)
-	sete	%cl
-	je	sao_l1
+	# cmpxchg sets ZF on success; retry only when the CAS failed (ZF clear).
+	# The old `je` retried on success: when (old|v)==old the second CAS
+	# succeeded again forever (GC pageMarks or8 hang under mark).
+	jne	sao_l1
 	movl	%esi, %eax
 	ret
 

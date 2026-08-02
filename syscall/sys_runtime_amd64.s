@@ -49,6 +49,26 @@ runtime_get_bx:
     movq %rbx,%rax
     ret
 
+.globl runtime_get_r12
+runtime_get_r12:
+    movq %r12,%rax
+    ret
+
+.globl runtime_get_r13
+runtime_get_r13:
+    movq %r13,%rax
+    ret
+
+.globl runtime_get_r14
+runtime_get_r14:
+    movq %r14,%rax
+    ret
+
+.globl runtime_get_r15
+runtime_get_r15:
+    movq %r15,%rax
+    ret
+
 .globl runtime_callerpc
 runtime_callerpc:
     mov 8(%rbp) , %rax
