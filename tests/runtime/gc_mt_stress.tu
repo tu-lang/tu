@@ -5,7 +5,6 @@
 use fmt
 use os
 use runtime
-use time
 
 // ---- Test 1: basic osyield workers + forced GC ----
 
@@ -104,7 +103,10 @@ fn worker_mutex_loop() {
         t3_sum = t3_sum + 1
         mtx_lock.unlock()
         n += 1
-        runtime.osyield()
+        // Yield often so STW soft-syscall / Kick paths interleave with lock.
+        if n % 8 == 0 {
+            runtime.osyield()
+        }
     }
 }
 
@@ -124,17 +126,24 @@ fn test_gc_mutex_contention() {
         spins += 1
         if spins > 5000000 os.die("mutex workers never ready")
     }
-    // Contending MutexInter::lock waiters hold c.locks>0 in futexsleep and
-    // cannot join STW; GC during contention deadlocks stopnote. Run GC only
-    // after workers exit (see optimize mutex-stw-futex debt).
-    time.sleep(1)
+    // GC while workers contend MutexInter (futex waiters with locks>0).
+    // Soft-syscall + startSTW must leave CoreSyscall alone across rounds.
+    round<i32> = 0
+    while round < 40 {
+        runtime.GC()
+        y<i32> = 0
+        while y < 16 {
+            runtime.osyield()
+            y += 1
+        }
+        round += 1
+    }
     t3_done = 1
     runtime.core_join(c0)
     runtime.core_join(c1)
     runtime.core_join(c2)
     runtime.core_join(c3)
     if t3_sum < 4 os.dief("mutex sum too low: %d", t3_sum)
-    runtime.GC()
     runtime.GC()
     fmt.println("test_gc_mutex_contention passed")
 }

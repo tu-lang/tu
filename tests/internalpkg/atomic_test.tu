@@ -287,6 +287,38 @@ func test_cas_u32(){
 	fmt.println("test case u32 success")
 }
 
+// or8 must terminate when the bit is already set (CAS success path).
+// A wrong `je` after cmpxchgb retried forever on no-op OR — hung GC mark.
+mem Or8Slot {
+	i8 before
+	i8 v
+	i8 after
+}
+func test_or8(){
+	x<Or8Slot> = new Or8Slot{
+		before: 0x55.(i8),
+		after:  0x55.(i8)
+	}
+	x.v = 0.(i8)
+	atomic.or8(&x.v, 0x01.(i8))
+	if x.v != 0x01.(i8) {
+		os.dief("or8 set bit0: got %d", int(x.v))
+	}
+	// Second or of the same mask must return (not spin).
+	atomic.or8(&x.v, 0x01.(i8))
+	if x.v != 0x01.(i8) {
+		os.dief("or8 idempotent: got %d", int(x.v))
+	}
+	atomic.or8(&x.v, 0x04.(i8))
+	if x.v != 0x05.(i8) {
+		os.dief("or8 merge bits: got %d", int(x.v))
+	}
+	if x.before != 0x55.(i8) || x.after != 0x55.(i8) {
+		os.die("or8 clobbered neighbors")
+	}
+	fmt.println("test or8 success")
+}
+
 func main(){
 	test_swap_i32()
 	test_compare_and_swap_i64()
@@ -300,4 +332,5 @@ func main(){
 	test_add_i64()
 	test_add_u64()
 	test_xadd_u32_i8_dec()
+	test_or8()
 }
