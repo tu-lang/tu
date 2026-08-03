@@ -19,6 +19,7 @@ mem CtShared {
     u64          ioh_bits           // raw bits of IoHandle*
     u64          blocking_spawner   // raw bits of runtime.blocking.Spawner*
     u64          config             // raw bits of runtime.Config*
+    u32          event_interval     // tasks per turn before non-blocking park
 }
 
 // Build empty shared state (no driver / blocking spawner wired yet).
@@ -33,5 +34,6 @@ const CtShared::new() CtShared {
     s.ioh_bits         = 0
     s.blocking_spawner = 0
     s.config           = 0
+    s.event_interval   = 61
     return s
 }

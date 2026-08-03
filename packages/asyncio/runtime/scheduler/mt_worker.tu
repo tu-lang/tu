@@ -67,6 +67,8 @@ fn run_task(w<MtWorker>, core<WorkerCore>, t<task.Notified>){
     }
     raw<task.RawTask> = t.raw()
     ctx<u64> = mt_task_ctx(raw)
+    // Mother wraps each task poll in coop::budget.
+    asyncrt.reset_budget()
     task.harness_poll(raw, ctx)
 }
 
@@ -202,6 +204,8 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
         }
 
         // 5) Park. Matches Core::transition_to_parked.
+        // has_tasks recheck deferred: Local::len can disagree with pop under
+        // steal races and caused a 100% sched_yield spin; park is safe.
         if shared.shutting_down == 1 {
             core.is_shutdown = 1
             continue
@@ -234,18 +238,38 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     mt_ctx_exit(saved_ctx)
 }
 
-// Last searcher leaving search: if inject still has work, wake one sleeper.
+// Last searcher leaving search: if inject or any remote steal queue still
+// has work, wake one sleeper (mother notify_if_work_pending).
 fn mt_notify_if_work_pending(w<MtWorker>){
     shared<MtShared> = w.handle.shared
-    if shared.inject.is_empty() != 0 {
+    pending<i32> = 0
+    if shared.inject.is_empty() == 0 {
+        pending = 1
+    }
+    if pending == 0 {
+        n<u32> = shared.num_workers
+        i<u32> = 0
+        while i < n {
+            bits<u64> = shared.remotes[i]
+            if bits != 0 {
+                r<Remote> = bits.(Remote)
+                if r.steal_end != null && r.steal_end.is_empty() == 0 {
+                    pending = 1
+                    break
+                }
+            }
+            i += 1
+        }
+    }
+    if pending == 0 {
         return
     }
     sn<MtSynced> = shared.lock_hub
     found<i32>, idx<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
     if found == 1 && idx < shared.num_workers {
         bits2<u64> = shared.remotes[idx]
-        r<Remote> = bits2.(Remote)
-        if r.unparker != null r.unparker.unpark()
+        r2<Remote> = bits2.(Remote)
+        if r2.unparker != null r2.unparker.unpark()
     }
 }
 

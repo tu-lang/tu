@@ -162,6 +162,8 @@ fn iodriver_consume_signal_ready_bits(iod_bits<u64>) i32 {
 }
 
 // Detach by IoSource bits (stable after multi-api view flips overwrite vptr@0).
+// Phase-2 wake-all on close deferred: sio.wake(ALL) here hung
+// int_mt_stress_spawn (re-entrancy / lost-wakeup under concurrent close).
 IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
     err<i32> = netio.registry_deregister_bits(reg, iosrc_bits)
@@ -205,6 +207,12 @@ IoHandle::shutdown(){
             cur.iosrc_bits = 0
         }
         wakes<util.WakeList> = cur.shutdown()
+        wi<i32> = 0
+        wlen<i32> = wakes.len_count()
+        while wi < wlen {
+            task.wake_by_ctx(wakes.ctxs[wi])
+            wi += 1
+        }
         util.wake_list_clear(wakes)
         cur = nxt
     }

@@ -5,6 +5,8 @@
 use runtime
 use netio
 use netio.event as netevent
+use asyncio.task
+use asyncio.runtime as asyncrt
 
 // Caller-supplied operation invoked by poll_read_io / poll_write_io once
 // the resource is ready. Implementations should issue one syscall and
@@ -43,10 +45,24 @@ Registration::deregister(iosrc_bits<u64>) i32 {
     return this.io_handle.remove_source(iosrc_bits, this.shared)
 }
 
+// Yield when cooperative budget is exhausted (mother poll_proceed Pending+wake).
+fn registration_coop_or_pending(ctx<u64>) i32 {
+    cerr<i32>, tok<u64> = asyncrt.poll_proceed(ctx)
+    if cerr == asyncrt.RT_NO_BUDGET {
+        task.wake_by_ctx(task.resolve_poll_ctx(ctx))
+        return 1
+    }
+    return 0
+}
+
 // Poll for read readiness. Caller hands ctx so the driver can wake the task.
 // Ready -> (0, ReadyEvent); Pending -> (PollPending, empty event);
 // shutdown -> (OtherDriverTerminated, empty event).
 Registration::poll_read_ready(ctx<u64>) i32, ReadyEvent {
+    if registration_coop_or_pending(ctx) == 1 {
+        ev0<ReadyEvent> = new ReadyEvent
+        return runtime.PollPending, ev0
+    }
     err<i32> = 0
     ev<ReadyEvent> = new ReadyEvent
     err, ev = this.shared.poll_readiness(ctx, DIR_READ)
@@ -55,6 +71,10 @@ Registration::poll_read_ready(ctx<u64>) i32, ReadyEvent {
 
 // Mirror of poll_read_ready for the writable side.
 Registration::poll_write_ready(ctx<u64>) i32, ReadyEvent {
+    if registration_coop_or_pending(ctx) == 1 {
+        ev0<ReadyEvent> = new ReadyEvent
+        return runtime.PollPending, ev0
+    }
     err<i32> = 0
     ev<ReadyEvent> = new ReadyEvent
     err, ev = this.shared.poll_readiness(ctx, DIR_WRITE)
@@ -90,6 +110,9 @@ Registration::poll_write_io(ctx<u64>, op<IoOp>) i32, i64 {
 // member helpers above only differ in the direction selector.
 fn registration_poll_io_dir(this<Registration>, ctx<u64>, op<IoOp>, dir<i32>) i32, i64 {
     loop {
+        if registration_coop_or_pending(ctx) == 1 {
+            return runtime.PollPending, 0
+        }
         err<i32>, ev<ReadyEvent> = this.shared.poll_readiness(ctx, dir)
         // The design registration.rs poll_io: ready!(poll_ready) then run op.
         // Ready is err==0 (not PollReady — that collides with io.Ok and
@@ -122,4 +145,3 @@ Registration::try_io(interest<netio.Interest>, op<IoOp>) i32, i64 {
     }
     return op_err, val
 }
-

@@ -17,7 +17,8 @@ fn pop_n_into_local(inj<Inject>, n<u32>, local<Local>) u32 {
     if n == 0 return 0
 
     // Stage raw task bits under the lock, then push into Local unlocked.
-    buf<u64*> = runtime.malloc(8 * n.(u64), 1.(i8), 1.(i8))
+    // Scannable: between unlock and Local push these are the only strong roots.
+    buf<u64*> = runtime.malloc(8 * n.(u64), 0.(i8), 1.(i8))
     taken<u32> = 0
 
     inj_synced<InjectSynced> = inj.fifo_state
@@ -39,6 +40,7 @@ fn pop_n_into_local(inj<Inject>, n<u32>, local<Local>) u32 {
     moved<u32> = 0
     for j<u32> = 0 ; j < taken ; j += 1 {
         bits<u64> = buf[j]
+        buf[j] = 0
         notif<task.Notified> = task.notified_from_raw(bits.(task.RawTask))
         local.push_back_or_overflow(notif, inj)
         moved += 1

@@ -42,6 +42,25 @@ fn ring_size(tail<u32>, real<u32>) u32 {
     return tail - real
 }
 
+// Atomically take one buffer slot (swap to 0). Plain load+store races let
+// owner pop and stealer both observe the same RawTask* under GC pressure.
+// Avoid &buf[idx] (compiler trap); advance a u64* by byte offset instead.
+fn buffer_take(buf<u64*>, idx<u32>) u64 {
+    addr<u64*> = buf
+    byte_off<u64> = idx.(u64) << 3
+    addr += byte_off
+    loop {
+        bits<u64> = atomic.load64(addr)
+        if bits == 0 {
+            return 0
+        }
+        if atomic.cas64(addr, bits.(i64), 0.(i64)) == CAS64_OK {
+            return bits
+        }
+    }
+    return 0
+}
+
 // Shared state behind both Local and Steal endpoints.
 mem QueueInner {
     u64   head             // atomic; pack_head(steal, real)
@@ -54,10 +73,10 @@ const QueueInner::new() QueueInner {
     q<QueueInner> = new QueueInner
     q.head   = 0
     q.tail   = 0
-    // noscan: slots are opaque RawTask* bits. Lifetime while queued is
-    // OwnedTasks (+ Notified). Leaving stale bits GC-scanned after pop
-    // caused mark SEGV once the task completed and was freed.
-    q.buffer = runtime.malloc(8 * LOCAL_QUEUE_CAPACITY.(u64), 1.(i8), 1.(i8))
+    // Default scannable allocation: occupied slots are strong RawTask* roots.
+    // Every dequeue path (pop / steal / overflow) must zero the slot before the
+    // task can be freed — do not pass noscan to paper over stale bits.
+    q.buffer = runtime.malloc(8 * LOCAL_QUEUE_CAPACITY.(u64), 0.(i8), 1.(i8))
     return q
 }
 
@@ -137,8 +156,10 @@ fn push_overflow(local<Local>, t<task.Notified>, overflow<Inject>, real<u32>, ta
     // (mother push_batch(batch.chain(once(task)))).
     for i<u32> = 0 ; i < n ; i += 1 {
         idx<u32> = (real + i) & LOCAL_QUEUE_MASK
-        bits<u64> = qhub.buffer[idx]
-        qhub.buffer[idx] = 0
+        bits<u64> = buffer_take(qhub.buffer, idx)
+        if bits == 0 {
+            continue
+        }
         stolen<task.RawTask> = bits.(task.RawTask)
         notif<task.Notified> = task.notified_from_raw(stolen)
         overflow.push(notif)
@@ -169,8 +190,13 @@ Local::pop() (i32, task.Notified) {
         }
         if atomic.cas64(&qhub.head, h.(i64), new_h.(i64)) == CAS64_OK {
             idx<u32> = real & LOCAL_QUEUE_MASK
-            bits<u64> = qhub.buffer[idx]
-            qhub.buffer[idx] = 0
+            // Atomic take: clear before the task can complete/free so the
+            // scannable buffer never retains a pointer after dequeue.
+            bits<u64> = buffer_take(qhub.buffer, idx)
+            if bits == 0 {
+                // Slot already drained (should be rare with correct claim).
+                continue
+            }
             rt<task.RawTask> = bits.(task.RawTask)
             return 0, task.notified_from_raw(rt)
         }
@@ -253,14 +279,19 @@ Steal::steal_into(dst<Local>) (i32, task.Notified) {
         first<u32> = real
         dst_tail<u32> = dst_inner.tail
 
-        // Copy all n claimed tasks into dst (exclusive producer for dst).
+        // Copy claimed slots into dst, skipping empties: the owner may have
+        // popped overlapping indices after our claim (mother allows that).
+        // Writing 0 into dst would later pop a null RawTask and SEGV under GC.
         i<u32> = 0
+        written<u32> = 0
         while i < n {
             src_idx<u32> = (first + i) & LOCAL_QUEUE_MASK
-            bits<u64> = src.buffer[src_idx]
-            src.buffer[src_idx] = 0
-            dst_idx<u32> = (dst_tail + i) & LOCAL_QUEUE_MASK
-            dst_inner.buffer[dst_idx] = bits
+            bits<u64> = buffer_take(src.buffer, src_idx)
+            if bits != 0 {
+                dst_idx<u32> = (dst_tail + written) & LOCAL_QUEUE_MASK
+                dst_inner.buffer[dst_idx] = bits
+                written += 1
+            }
             i += 1
         }
 
@@ -274,14 +305,20 @@ Steal::steal_into(dst<Local>) (i32, task.Notified) {
             }
         }
 
-        // Return one task from dst; leave n-1 queued.
-        n = n - 1
-        ret_pos<u32> = dst_tail + n
+        if written == 0 {
+            return io.NotFound, task.notified_from_raw(null)
+        }
+
+        // Return one task from dst; leave written-1 queued (tight, no holes).
+        leave<u32> = written - 1
+        ret_pos<u32> = dst_tail + leave
         ret_idx<u32> = ret_pos & LOCAL_QUEUE_MASK
-        ret_bits<u64> = dst_inner.buffer[ret_idx]
-        dst_inner.buffer[ret_idx] = 0
-        if n > 0 {
-            dst_inner.tail = dst_tail + n
+        ret_bits<u64> = buffer_take(dst_inner.buffer, ret_idx)
+        if leave > 0 {
+            dst_inner.tail = dst_tail + leave
+        }
+        if ret_bits == 0 {
+            return io.NotFound, task.notified_from_raw(null)
         }
         ret_raw<task.RawTask> = ret_bits.(task.RawTask)
         return 0, task.notified_from_raw(ret_raw)

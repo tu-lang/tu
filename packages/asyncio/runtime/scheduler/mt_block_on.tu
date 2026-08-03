@@ -8,6 +8,7 @@
 use runtime
 use asyncio.task
 use asyncio.error as aerr
+use asyncio.runtime as asyncrt
 
 fn mt_block_on_raw(bits<u64>, fut) i32, i64 {
     mh<MtHandle> = bits.(MtHandle)
@@ -50,6 +51,10 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
             break
         }
 
+        // Mother wraps each task poll in coop::budget; block_on root is
+        // not a RawTask, so reset here before each leaf poll_proceed.
+        asyncrt.reset_budget()
+
         prev_ctx<u64> = task.poll_ctx_set(waker_ctx)
         ready<i32>, output<i64> = f.poll()
         task.poll_ctx_set(prev_ctx)
@@ -61,7 +66,6 @@ fn mt_block_on(handle<MtHandle>, fut) i32, i64 {
         }
 
         mt_park_block_on(park, shared)
-        runtime.osyield()
     }
 
     shared.block_on_unparker = null

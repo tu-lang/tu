@@ -51,15 +51,14 @@ fn idle_state_pack(unparked<u32>, searching<u32>) u32 {
 }
 
 // Returns true on the unparked->searching transition; false when at
-// most half of the workers are unparked (we cap concurrent searchers at
-// num_workers/2 to avoid thundering-herd steal).
+// most half of the workers are already searching (mother: 2*searching >= num_workers).
 Idle::transition_worker_to_searching() i32 {
     addr<i32*> = &this.state
     loop {
         cur<i32> = *addr
         unparked<u32>  = idle_state_unparked(cur.(u32))
         searching<u32> = idle_state_searching(cur.(u32))
-        if searching * 2 >= unparked return 0
+        if searching * 2 >= this.num_workers return 0
         packed<u32> = idle_state_pack(unparked, searching + 1)
         new_state<i32> = packed.(i32)
         if atomic.cas(addr, cur, new_state) == CAS_OK return 1

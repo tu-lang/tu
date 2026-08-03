@@ -163,6 +163,10 @@ fn build_current_thread(b<Builder>) Runtime {
         shared.ioh_bits = drv_h.ioh_bits()
     }
     shared.blocking_spawner = spawner.(u64)
+    shared.event_interval = b.event_interval
+    if shared.event_interval == 0.(u32) {
+        shared.event_interval = DEFAULT_EVENT_INTERVAL
+    }
     handle<sched.CtHandle>   = sched.CtHandle::new(shared)
 
     weak<Handle> = Handle::new(handle.(u64), KIND_CURRENT_THREAD, drv_h, spawner.(u64))

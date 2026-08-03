@@ -19,6 +19,8 @@ fn ct_task_ctx(t<task.RawTask>) u64 {
 // Run one polling round on raw via the harness vtable.
 fn core_run_task(t<task.RawTask>, handle<CtHandle>){
     ctx<u64> = ct_task_ctx(t)
+    // Mother wraps each task poll in coop::budget.
+    rt.reset_budget()
     task.harness_poll(t, ctx)
 }
 
@@ -78,6 +80,25 @@ fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     iodrv.turn(ih, sys.MAX)
 }
 
+// Non-blocking driver turn (event_interval batch). Equivalent to park_timeout(0).
+fn ct_park_driver_nowait(shared<CtShared>) {
+    zero<sys.Duration> = sys.Duration::from_millis(0)
+    if shared.driver != 0 && shared.driver_handle != 0 {
+        drv<rt.Driver> = shared.driver
+        h<rt.DriverHandle> = shared.driver_handle
+        drv.park_timeout(h, zero)
+        return
+    }
+    iod<u64> = shared.iod_bits
+    ioh<u64> = shared.ioh_bits
+    if iod == 0 || ioh == 0 {
+        return
+    }
+    iodrv<rtio.IoDriver> = iod.(rtio.IoDriver)
+    ih<rtio.IoHandle> = ioh.(rtio.IoHandle)
+    iodrv.turn(ih, zero)
+}
+
 // block_on the root future. Returns (err, value) once the root completes
 // or RuntimeShutdown when the inject queue closed before the root did.
 fn block_on(handle<CtHandle>, fut) (i32, i64) {
@@ -96,6 +117,11 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
 
     err_out<i32> = 0
     val_out<i64> = 0
+    ran_since_turn<u32> = 0
+    ev_interval<u32> = shared.event_interval
+    if ev_interval == 0.(u32) {
+        ev_interval = 61
+    }
 
     loop {
         snap<i32> = root.life_load()
@@ -109,6 +135,13 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             continue
         }
 
+        // After event_interval task polls, do a non-blocking driver turn
+        // so IO readiness is not starved by a hot local/inject loop.
+        if ran_since_turn >= ev_interval {
+            ct_park_driver_nowait(shared)
+            ran_since_turn = 0
+        }
+
         core_obj.tick = core_obj.tick + 1
         // Skip Inject::pop when empty: empty (NotFound, Notified) multi-ret
         // hangs / corrupts the dyn return ABI (layout). The design Option::None.
@@ -118,6 +151,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
                 if ierr == 0 {
                     raw_i<task.RawTask> = ti.raw()
                     core_run_task(raw_i, handle)
+                    ran_since_turn += 1
                     continue
                 }
             }
@@ -126,6 +160,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
         lerr<i32>, tl<task.RawTask> = core_obj.pop_local()
         if lerr == 0 {
             core_run_task(tl, handle)
+            ran_since_turn += 1
             continue
         }
 
@@ -134,6 +169,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             if ierr == 0 {
                 raw_j<task.RawTask> = ti.raw()
                 core_run_task(raw_j, handle)
+                ran_since_turn += 1
                 continue
             }
         }
@@ -144,6 +180,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
         }
 
         ct_park_driver(shared, core_obj)
+        ran_since_turn = 0
     }
 
     ct_exit(saved)

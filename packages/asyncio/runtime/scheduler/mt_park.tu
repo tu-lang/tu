@@ -85,12 +85,16 @@ const Unparker::new(p<Parker>) Unparker {
     return u
 }
 
+// Park slice for workers that lose the driver gate. Infinite futex (ns<0)
+// matches MutexInter; Unparker futexwakeup returns promptly. Timed slices
+// were only needed when block_on shared this path and starved timers.
 Parker::park_condvar() {
     addr<i32*> = &this.state
     if atomic.cas(addr, EMPTY, PARKED_CONDVAR) != CAS_OK {
         atomic.cas(addr, NOTIFIED, EMPTY)
         return
     }
+    faddr<u32*> = &this.state
     loop {
         if atomic.cas(addr, NOTIFIED, EMPTY) == CAS_OK {
             return
@@ -101,7 +105,11 @@ Parker::park_condvar() {
             atomic.cas(addr, NOTIFIED, EMPTY)
             return
         }
-        runtime.osyield()
+        entered<i32> = runtime.entersyscall_mutexblock()
+        runtime.futexsleep(faddr, PARKED_CONDVAR.(u32), 0 - 1)
+        if entered != 0 {
+            runtime.exitsyscall()
+        }
     }
 }
 
@@ -128,7 +136,6 @@ Parker::park_driver(handle_ptr<u64>) {
         atomic.cas(addr, NOTIFIED, EMPTY)
     }
     hub_unlock(hub)
-    runtime.osyield()
 }
 
 Parker::wait_until_wake(handle_ptr<u64>) i32 {
@@ -180,6 +187,10 @@ Unparker::unpark(){
             hub.ioh.wake_by_ref()
         }
     }
+    if old == PARKED_CONDVAR {
+        faddr<u32*> = &p.state
+        runtime.futexwakeup(faddr, 1.(u32))
+    }
 }
 
 Parker::shutdown(handle_ptr<u64>){
@@ -187,6 +198,12 @@ Parker::shutdown(handle_ptr<u64>){
     u.unpark()
     this.hub = null
 }
+
+// block_on park: try driver first. If the gate is held, do a short timed
+// futex wait WITHOUT entering PARKED_CONDVAR — that state + block_on under
+// accept load still loses wakes (ab hang). Unpark still stores NOTIFIED;
+// the next loop iteration observes it. Timed wait cuts idle CPU vs osyield.
+BLOCK_ON_GATE_WAIT_NS<i64> = 1000000
 
 fn mt_park_block_on(p<Parker>, shared<MtShared>) {
     if p == null {
@@ -214,6 +231,7 @@ fn mt_park_block_on(p<Parker>, shared<MtShared>) {
         return
     }
 
+    faddr<u32*> = &p.state
     loop {
         if atomic.cas(addr, NOTIFIED, EMPTY) == CAS_OK {
             return
@@ -226,6 +244,12 @@ fn mt_park_block_on(p<Parker>, shared<MtShared>) {
             p.park_driver(hb)
             return
         }
-        runtime.osyield()
+        // Expect EMPTY (or stale); WAIT returns when state changes or timeout.
+        cur<u32> = *faddr
+        entered<i32> = runtime.entersyscall_mutexblock()
+        runtime.futexsleep(faddr, cur, BLOCK_ON_GATE_WAIT_NS)
+        if entered != 0 {
+            runtime.exitsyscall()
+        }
     }
 }

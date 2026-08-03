@@ -189,9 +189,16 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>)
         }
         handle.lock.unlock()
         if found_t != EXPIR_FOUND {
-            // Empty wheel: brief sleep so JoinHandle unpark can land; never
-            // sleep the full park limit (select short vs long would both Ready).
-            eff_ms = 1
+            // Empty wheel: sleep up to the caller limit (capped). Unpark
+            // still interrupts via eventfd / JoinHandle wake — do not use a
+            // 1ms busy-poll which burns a core when the server is idle.
+            eff_ms = limit_ms
+            if eff_ms > PARK_SLICE_MS {
+                eff_ms = PARK_SLICE_MS
+            }
+            if eff_ms == 0 {
+                eff_ms = 1
+            }
         } else {
             now_t<u64> = handle.now_ms()
             if deadline_t <= now_t {
@@ -225,25 +232,20 @@ TimeDriver::park_internal(handle<TimeHandle>, limit_ms<u64>, ioh<rtio.IoHandle>)
     iod<rtio.IoDriver> = this.park_iod
     // One turn(eff) then drive_wheel. Early eventfd wakeups return to
     // CachedParkThread::block_on which re-polls the plain Future.
+    // Use compute_effective_ms (already in eff_ms): empty wheel → full limit,
+    // not a 1ms spin that keeps the idle accept path at ~100% CPU.
     err<i32> = 0
-    if found0 != EXPIR_FOUND {
-        err = iod.turn(ioh, ms_to_duration(1))
-    } else {
+    wait_ms<u64> = eff_ms
+    if wait_ms == 0 {
+        wait_ms = 1
+    }
+    if found0 == EXPIR_FOUND {
         now_l<u64> = handle.now_ms()
         if deadline0 <= now_l {
-            err = iod.turn(ioh, ms_to_duration(0))
-        } else {
-            delta_l<u64> = deadline0 - now_l
-            wait_l<u64> = limit_ms
-            if delta_l < wait_l {
-                wait_l = delta_l
-            }
-            if wait_l == 0 {
-                wait_l = 1
-            }
-            err = iod.turn(ioh, ms_to_duration(wait_l))
+            wait_ms = 0
         }
     }
+    err = iod.turn(ioh, ms_to_duration(wait_ms))
     handle.drive_wheel(handle.now_ms())
     return err
 }
