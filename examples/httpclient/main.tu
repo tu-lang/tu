@@ -1,11 +1,11 @@
-// HTTP/1.1 client via asyncio.wrapper — pure dynamic surface.
+// HTTP/1.1 client via asyncio.wrapper — pure dynamic OOP surface.
 
 use fmt
 use os
-use asyncio.wrapper as wrap
+use asyncio.wrapper as asyncio
 
 async getHello(addr) {
-    cerr, c = wrap.dialTo(addr).await
+    cerr, c = asyncio.dialTo(addr).await
     if cerr != 0 {
         return cerr
     }
@@ -13,17 +13,16 @@ async getHello(addr) {
         return 1
     }
     req = "GET /hello HTTP/1.1\r\nHost: 127.0.0.1:18080\r\nConnection: close\r\n\r\n"
-    werr, wextra = wrap.sendStr(c, req).await
+    werr, wextra = c.sendStr(req).await
     if werr != 0 {
-        wrap.closeStream(c)
+        c.close()
         return werr
     }
-    rerr, got = wrap.recvStr(c, 1024).await
-    wrap.closeStream(c)
+    rerr, got = c.recvStr(1024).await
+    c.close()
     if rerr != 0 {
         return rerr
     }
-    // Dyn string search: require status and body marker.
     if got == "" {
         return 1
     }
@@ -33,7 +32,7 @@ async getHello(addr) {
 }
 
 fn main() {
-    val = wrap.blockOnCt(getHello("127.0.0.1:18080"))
+    val = asyncio.blockOnCt(getHello("127.0.0.1:18080"))
     if val != 0 {
         os.die("httpclient failed")
     }
