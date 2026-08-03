@@ -149,6 +149,48 @@ async tcp_echo_body_mt() {
     return io.Ok
 }
 
+fn close_peer(peer<tcp.TcpStream>) {
+    if peer != null && peer.poll_ev != null {
+        peer.poll_ev.close()
+    }
+}
+
+// Peer writes then closes immediately; reader must wake and finish (not hang).
+async tcp_close_wake_body() {
+    addr_s<string.String> = string.S(*"127.0.0.1:34569")
+    slen<i32> = std.strlen(addr_s.str())
+    perr<i32>, addr<net.SocketAddr> = util.net_parse_ascii_bytes(addr_s.str(), slen)
+    if perr != io.Ok return perr
+
+    berr<i32>, listener<tcp.TcpListener> = tcp.TcpListener::bind(addr)
+    if berr != io.Ok return berr
+
+    round<i32> = 0
+    while round < 16 {
+        cerr<i32>, client<tcp.TcpStream> = tcp.TcpStream::connect(addr).await
+        if cerr != io.Ok return cerr
+        aerr<i32>, server<tcp.TcpStream> = listener.accept().await
+        if aerr != io.Ok return aerr
+
+        msg<string.String> = string.S(*"bye")
+        wbuf<io.Buf> = str_buf(msg)
+        wclient<aio.AsyncWrite> = client
+        werr<i32> = ioutil.write_all(wclient, wbuf).await
+        if werr != io.Ok return werr
+        // Close writer before reader drains — must wake any parked poll.
+        close_peer(client)
+
+        own1<io.Buf> = io.NewBuf(16)
+        rb1<aio.ReadBuf> = aio.read_buf_from_i8(own1.ptr(), 16)
+        rerr<i32>, rn<u64> = ioutil.read(server, rb1).await
+        if rerr != io.Ok return rerr
+        if rn < 3.(u64) return io.OtherParse
+        close_peer(server)
+        round += 1
+    }
+    return io.Ok
+}
+
 fn int_tcp_echo() {
     b<rt.Builder> = rt.Builder::new_current_thread()
     b = b.enable_all()
@@ -188,7 +230,25 @@ fn int_tcp_echo_mt() {
     fmt.println("int_tcp_echo_mt passed")
 }
 
+fn int_tcp_close_wake() {
+    fmt.println("int_tcp_close_wake test")
+    b<rt.Builder> = rt.Builder::new_multi_thread()
+    b = b.worker_threads(4)
+    b = b.enable_all()
+    body<runtime.Future> = tcp_close_wake_body()
+    rerr<i32>, result<i64> = rt.builder_block_on(b, body, 0)
+    if rerr != 0 {
+        os.dief("close_wake block_on failed: %d", rerr)
+    }
+    ri<i32> = result
+    if ri != io.Ok {
+        os.dief("close_wake body failed: %d", ri)
+    }
+    fmt.println("int_tcp_close_wake passed")
+}
+
 fn main() {
     int_tcp_echo()
     int_tcp_echo_mt()
+    int_tcp_close_wake()
 }
