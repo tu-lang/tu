@@ -200,14 +200,13 @@ fn futexsleep(addr<u32*> , val<u32> , ns<i64>){
     	}
         return Null
     }
+    // Split ns into TimeSpec; previously ts was always zero (busy spin).
     ts<TimeSpec:> = null
+    ts.init(ns)
     ret2<i32> = futex(addr,FUTEX_WAIT_PRIVATE,val,&ts,Null,Null)
-    if ret2 < 0 {
-		// Zero timeout often returns EAGAIN/ETIMEDOUT while spinning.
-		if ret2 != 0 - _EAGAIN && ret2 != 0 - 4 && ret2 != 0 - 110 {
-			warn(*"[futexsleep] addr:%p ts:%p cnt:%d flag:%d ret:%d\n",addr,&ts,val,FUTEX_WAIT_PRIVATE,ret2)
-		}
-    }
+    // Timed wait: EAGAIN/EINTR/ETIMEDOUT are normal — do not warn (park
+    // condvar uses 10ms slices and would flood stderr otherwise).
+    return Null
 }
 fn futexwakeup(addr<u32*> , cnt<u32>) {
 	//OPTIMIZE: stack size alignment alloc

@@ -196,7 +196,9 @@ fn malloc(size<u64> , noscan<u8> , needzero<u8>)
 		c.local_scan += scanSize
 	}
 	c_.mallocing = 0 
-	if shouldgc {
+	// Do not start STW while holding MutexInter (locks>0): stopSTW would
+	// wait forever for this core. Defer to a later unlocked malloc.
+	if shouldgc && c_.locks == 0 {
 		gc.start(GcHeap)
 	}
 	return x
