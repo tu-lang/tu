@@ -160,9 +160,12 @@ const Selector::new(_unused<i32>) i32, Selector {
 }
 
 fn selector_create() Selector {
-	ep<i32> = libsys.epoll_create1(EPOLL_CLOEXEC)
-	if ep == -1
+	raw<i32> = libsys.epoll_create1(EPOLL_CLOEXEC)
+	// Raw syscall returns -errno (not libc -1); cvt maps EINTR/etc.
+	cerr<i32>, ep_u<u64> = libsys.cvt(raw)
+	if cerr != libsys.Ok
 		return null
+	ep<i32> = ep_u.(i32)
 	sid<u64> = NEXT_SELECTOR_ID
 	NEXT_SELECTOR_ID += 1
 	return new Selector {
@@ -208,10 +211,14 @@ fn selector_select_impl(sel<Selector>, evts<Events>, timeout_ms_in<i32>) i32 {
 	cap_u<u64> = events_get_capacity(evts)
 	cap_i<i32> = cap_u.(i32)
 	ep_fd<i32> = selector_ep(sel)
-	n_events<i32> = libsys.epoll_wait(ep_fd, raw_bits, cap_i, timeout_ms)
-	if n_events == -1
-		return libsys.last_error()
-	events_set_count(evts, n_events.(u64))
+	// Raw syscall: success >= 0, error = -errno (EINTR=-4). Checking == -1
+	// missed EINTR and stored -4 as Events.count → iter ran past the buffer
+	// (token garbage / SEGV) or dropped readiness (Recv-Q hang).
+	n_raw<i32> = libsys.epoll_wait(ep_fd, raw_bits, cap_i, timeout_ms)
+	cerr<i32>, n_u<u64> = libsys.cvt(n_raw)
+	if cerr != libsys.Ok
+		return cerr
+	events_set_count(evts, n_u)
 	return libsys.Ok
 }
 
@@ -305,21 +312,24 @@ fn selector_select(sel<Selector>, evts<Events>, timeout_ms<i32>) i32 {
 fn selector_add_fd(sel<Selector>, fd<i32>, t_bits<u64>, interest_bits<u8>) i32 {
 	ev_bits<u64> = pack_kernel_event(interests_to_epoll(interest_bits), t_bits)
 	ret<i32> = libsys.epoll_ctl(selector_ep(sel), EPOLL_CTL_ADD, fd, ev_bits)
-	if ret == -1
-		return libsys.last_error()
+	cerr<i32> = libsys.cvt(ret)
+	if cerr != libsys.Ok
+		return cerr
 	return libsys.Ok
 }
 fn selector_mod_fd(sel<Selector>, fd<i32>, t_bits<u64>, interest_bits<u8>) i32 {
 	ev_bits<u64> = pack_kernel_event(interests_to_epoll(interest_bits), t_bits)
 	ret<i32> = libsys.epoll_ctl(selector_ep(sel), EPOLL_CTL_MOD, fd, ev_bits)
-	if ret == -1
-		return libsys.last_error()
+	cerr<i32> = libsys.cvt(ret)
+	if cerr != libsys.Ok
+		return cerr
 	return libsys.Ok
 }
 fn selector_del_fd(sel<Selector>, fd<i32>) i32 {
 	ret<i32> = libsys.epoll_ctl(selector_ep(sel), EPOLL_CTL_DEL, fd, 0)
-	if ret == -1
-		return libsys.last_error()
+	cerr<i32> = libsys.cvt(ret)
+	if cerr != libsys.Ok
+		return cerr
 	return libsys.Ok
 }
 

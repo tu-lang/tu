@@ -139,6 +139,8 @@ Notified::poll(ctx){
     // (non-zero garbage), which then crashes wake_by_ref on life_st().
     packed<u64> = task.resolve_poll_ctx(0)
     if this.stage == NOTIFIED_STAGE_INIT {
+        // Allocate waiter before taking the lock (MutexInter + malloc → STW deadlock).
+        w<NotifyWaiter> = NotifyWaiter::new(packed)
         par.lock.lock()
         if par.take_permit() != 0 {
             par.lock.unlock()
@@ -146,7 +148,6 @@ Notified::poll(ctx){
             return runtime.PollReady, 0.(i64)
         }
         // No permit; queue ourselves.
-        w<NotifyWaiter> = NotifyWaiter::new(packed)
         // Intrusive: pass address of embedded Pointers (offset 0), same as
         // ScheduledIo waiters — plain `w.node` is the wrong pointer shape.
         par.waiter_q.push_back(&w.node)

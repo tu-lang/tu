@@ -21,8 +21,9 @@ fn poll_ctx_hub_ensure() {
     }
     h<PollCidHub> = new PollCidHub
     n<u64> = POLL_CID_CAP.(u64)
-    // Opaque waker identity bits — not GC roots (poll stack keeps the task).
-    h.ctxs = runtime.malloc(8 * n, 1.(i8), 1.(i8))
+    // Strong roots while a worker is inside harness_poll: soft-syscall STW can
+    // miss register-only task pointers; the cid slot must keep RawTask alive.
+    h.ctxs = runtime.malloc(8 * n, 0.(i8), 1.(i8))
     i<i32> = 0
     while i < POLL_CID_CAP {
         h.ctxs[i] = 0

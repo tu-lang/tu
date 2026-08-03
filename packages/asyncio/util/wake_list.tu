@@ -38,8 +38,14 @@ WakeList::len_count() i32 {
     return this.len
 }
 
-// Drop pending wakes without scheduling.
+// Drop pending wakes without scheduling. Zero slots so a scannable WakeList
+// cannot keep stale RawTask* bits alive across GC after len is reset.
 fn wake_list_clear(list<WakeList>) {
+    i<i32> = 0
+    while i < list.len {
+        list.ctxs[i] = 0
+        i += 1
+    }
     list.len = 0
 }
 
