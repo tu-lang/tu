@@ -1,4 +1,4 @@
 // asyncio.wrapper: dynamic class facade over the mem asyncio engine.
-// Public API is camelCase. Class shells live in asyncio.wrapper.types;
-// this package exposes sync leaf-future factories + blockOn/spawn.
+// Public API: camelCase func / async; dyn inputs and outputs only.
+// Class shells live in asyncio.wrapper.types (no async in that package).
 // Leaf name is "wrapper" (not "wrap") to avoid library/string/wrap.tu.

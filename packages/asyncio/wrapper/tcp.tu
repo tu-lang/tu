@@ -1,6 +1,6 @@
-// Dynamic-facing TCP surface: class shells + sync factories returning engine leaf futures.
-// Await those futures in the *caller's* package-level async (main/test file).
-// Awaiting (i32, Mem) inside this imported package drops the Mem to null.
+// Dynamic-facing TCP surface: camelCase func / async, dyn in and out.
+// Engine Mem awaits stay inside this package; examples only see class shells
+// and dynamic error codes / strings.
 
 use io
 use std
@@ -49,16 +49,18 @@ fn tcp_close_leaf(bits<u64>) {
     }
 }
 
+// Bind and return (err, Listener class). Dyn address string.
 func listen(addr) {
     perr<i32>, sa<net.SocketAddr> = parse_addr_dyn(addr)
     if perr != io.Ok {
-        return perr, null
+        return int(perr), null
     }
     berr<i32>, listener<tcp.TcpListener> = tcp.TcpListener::bind(sa)
     if berr != io.Ok {
-        return berr, null
+        return int(berr), null
     }
-    return 0, wtypes.listenerFrom(listener)
+    out = wtypes.listenerFrom(listener)
+    return 0, out
 }
 
 func dial() {
@@ -69,46 +71,89 @@ func streamFrom(engine_obj) {
     return wtypes.streamFrom(engine_obj)
 }
 
-// Returns AcceptFut. Caller: aerr, peer = wrap.takeConn(lis).await; st = wrap.streamFrom(peer)
-fn takeConn(lis) tcp.AcceptFut {
+// Accept one connection; returns (err, Stream class).
+async takeConn(lis) {
     bits<u64> = lis.raw
-    return tcp_accept_leaf(bits)
+    afut<tcp.AcceptFut> = tcp_accept_leaf(bits)
+    aerr<i32>, peer<tcp.TcpStream> = afut.await
+    if aerr != io.Ok {
+        return int(aerr), null
+    }
+    if peer == null {
+        return int(io.Other), null
+    }
+    st = wtypes.streamFrom(peer)
+    return 0, st
 }
 
-// Returns ConnectFut.
-fn dialTo(addr) tcp.ConnectFut {
+// Dial; returns (err, Stream class).
+async dialTo(addr) {
     perr<i32>, sa<net.SocketAddr> = parse_addr_dyn(addr)
     if perr != io.Ok {
-        perr2<i32>, sa2<net.SocketAddr> = parse_addr_dyn(*"127.0.0.1:1")
-        return tcp_connect_leaf(sa2)
+        return int(perr), null
     }
-    return tcp_connect_leaf(sa)
+    cfut<tcp.ConnectFut> = tcp_connect_leaf(sa)
+    cerr<i32>, peer<tcp.TcpStream> = cfut.await
+    if cerr != io.Ok {
+        return int(cerr), null
+    }
+    if peer == null {
+        return int(io.Other), null
+    }
+    st = wtypes.streamFrom(peer)
+    return 0, st
 }
 
-// Returns WriteAll future.
-fn sendStr(st, s) ioutil.WriteAll {
+// Write full dyn string; returns (err, ""). err==0 on success.
+async sendStr(st, s) {
     bits<u64> = st.raw
     buf<io.Buf> = dyn_buf(s)
-    return tcp_write_leaf(bits, buf)
+    wfut<ioutil.WriteAll> = tcp_write_leaf(bits, buf)
+    werr<i32> = wfut.await
+    if werr != io.Ok {
+        return int(werr), ""
+    }
+    return 0, ""
 }
 
-// Returns (Read future, owned buffer). Caller awaits Read then recvDone.
-fn recvStr(st, max_n) (ioutil.Read, io.Buf) {
+// Read up to max_n bytes; returns (err, dyn string). err==0 on success.
+async recvStr(st, max_n) {
     bits<u64> = st.raw
-    n_i<i32> = max_n
+    n_i<i32> = dyn_i32(max_n)
+    if n_i <= 0 {
+        return int(io.InvalidInput), ""
+    }
     own<io.Buf> = io.NewBuf(n_i)
     rb<aio.ReadBuf> = aio.read_buf_from_i8(own.ptr(), n_i)
-    return tcp_read_leaf(bits, rb), own
+    rfut<ioutil.Read> = tcp_read_leaf(bits, rb)
+    rerr<i32>, rn<u64> = rfut.await
+    if rerr != io.Ok {
+        return int(rerr), ""
+    }
+    return 0, buf_to_dyn_string(own, rn)
 }
 
-func recvDone(own, rerr, rn) {
-    if rerr != io.Ok {
-        return ""
+// Read and discard up to max_n bytes (no dyn string alloc). Returns err (0=ok).
+async drain(st, max_n) {
+    bits<u64> = st.raw
+    n_i<i32> = dyn_i32(max_n)
+    if n_i <= 0 {
+        return int(io.InvalidInput), 0
     }
-    return buf_to_dyn_string(own, rn)
+    own<io.Buf> = io.NewBuf(n_i)
+    rb<aio.ReadBuf> = aio.read_buf_from_i8(own.ptr(), n_i)
+    rfut<ioutil.Read> = tcp_read_leaf(bits, rb)
+    rerr<i32>, rn<u64> = rfut.await
+    if rerr != io.Ok {
+        return int(rerr), 0
+    }
+    return 0, int(rn.(i32))
 }
 
 func closeStream(st) {
+    if st == null {
+        return
+    }
     bits<u64> = st.raw
     tcp_close_leaf(bits)
     st.raw = 0

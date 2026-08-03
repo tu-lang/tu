@@ -2,14 +2,15 @@
 
 Runnable demos (not CI tests). Prefer subdirs with `main.tu`.
 
-Use `asyncio.wrapper` camelCase factories; await leaf futures in the demo file
-with typed `ConnectFut` / `AcceptFut` / `WriteAll` / `Read` locals (compiler UX).
+**Pure dynamic only** via `asyncio.wrapper` camelCase APIs:
+
+- `func` / `class` / dynamic strings — yes
+- `mem` / typed locals / type asserts / `*"..."` / engine `asyncio.net.tcp` — no
 
 | Path | Role |
 |------|------|
-| `httpserver/` | Persistent HTTP/1.1 server (CT sequential accept; ab/wrk stable) |
-| `httpclient/` | HTTP/1.1 client via `asyncio.wrapper` |
-| `httpclient/` | Client against a running server (`blockOnCt`) |
+| `httpserver/` | HTTP/1.1 server (`blockOnMt` + per-conn `spawn`) |
+| `httpclient/` | HTTP/1.1 client (`blockOnCt` + `dialTo`/`sendStr`/`recvStr`) |
 
 HTTP framing stays in these demos (not in `asyncio.wrapper`).
 
