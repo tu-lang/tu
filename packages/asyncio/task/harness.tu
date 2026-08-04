@@ -64,13 +64,17 @@ RawTask::harness_poll(ctx<u64>){
     poll_ctx_set(prev_ctx)
 
     if ready == runtime.PollPending {
+        // Stage IDLE before releasing RUNNING: otherwise a concurrent wake
+        // can Submit + re-poll (force RUNNING) and this late IDLE write
+        // stomps the in-flight poll stage (store_output CAS fails).
+        this.task_cell.force_stage(STAGE_IDLE)
         ti<i32> = life_st.transition_to_idle()
         if ti == TI_Cancelled {
-            // Cancelled during the poll; stage is still RUNNING.
+            // Cancelled during the poll; restore RUNNING for complete path.
+            this.task_cell.force_stage(STAGE_RUNNING)
             this.harness_complete(JoinErrorCancelled, 0)
             return
         }
-        this.task_cell.force_stage(STAGE_IDLE)
         if ti == TI_OkNotified {
             // Self-wake fired mid-poll: submit the fresh Notified ref taken
             // by transition_to_idle, then drop our own poll ref.
@@ -118,14 +122,15 @@ RawTask::harness_complete(err<i32>, output<i64>){
 
 // Wake the JoinHandle waker registered in the cell.
 // Must NOT re-schedule this (completed) task; it wakes the joining task.
+// Mother: only wake when JOIN_WAKER was set at complete; bit is ownership.
 RawTask::wake_join_waker(){
     life_st<TaskState> = this.life_st()
     snap<i32> = life_st.load()
-    if (snap & JOIN_WAKER) == 0 { return }
-
-    life_st.unset_join_waker()
-
+    if (snap & JOIN_WAKER) == 0 {
+        return
+    }
     jb<u64> = this.join_bits()
+    life_st.unset_waker_after_complete()
     if jb == 0 { return }
     wake_by_ctx(jb)
 }

@@ -50,6 +50,18 @@ fn idle_state_pack(unparked<u32>, searching<u32>) u32 {
     return (unparked << UNPARK_SHIFT) | (searching & SEARCH_MASK)
 }
 
+// Mother State::unpark_one: +1 unparked and +num_searching searching.
+fn idle_unpark_one(addr<i32*>, num_searching<u32>) {
+    loop {
+        cur<i32> = *addr
+        unparked<u32>  = idle_state_unparked(cur.(u32))
+        searching<u32> = idle_state_searching(cur.(u32))
+        packed<u32> = idle_state_pack(unparked + 1, searching + num_searching)
+        new_state<i32> = packed.(i32)
+        if atomic.cas(addr, cur, new_state) == CAS_OK return
+    }
+}
+
 // Returns true on the unparked->searching transition; false when at
 // most half of the workers are already searching (mother: 2*searching >= num_workers).
 Idle::transition_worker_to_searching() i32 {
@@ -122,18 +134,35 @@ Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter>, 
 
 // Worker just woke — update unparked counter and remove from sleepers.
 Idle::transition_worker_from_parked(synced<IdleSynced>, lock<runtime.MutexInter>, worker<u32>){
-    addr<i32*> = &this.state
-    loop {
-        cur<i32> = *addr
-        unparked<u32>  = idle_state_unparked(cur.(u32))
-        searching<u32> = idle_state_searching(cur.(u32))
-        packed<u32> = idle_state_pack(unparked + 1, searching)
-        new_state<i32> = packed.(i32)
-        if atomic.cas(addr, cur, new_state) == CAS_OK break
-    }
+    this.unpark_worker_by_id(synced, lock, worker)
+}
 
+// Pick one sleeper to wake; returns (1, idx) on hit, (0, 0) when empty.
+Idle::worker_to_notify(synced<IdleSynced>, lock<runtime.MutexInter>) (i32, u32) {
+    if this.notify_should_wakeup() == 0 return 0, 0
     lock.lock()
-    // Compact the sleepers array by removing `worker`.
+    // Re-check under lock (mother).
+    if this.notify_should_wakeup() == 0 {
+        lock.unlock()
+        return 0, 0
+    }
+    if synced.sleepers_len == 0 {
+        lock.unlock()
+        return 0, 0
+    }
+    // Notify path accounts for wake-up state here; woken worker should not
+    // blindly +unparked on return from park.
+    idle_unpark_one(&this.state, 1)
+    synced.sleepers_len -= 1
+    idx<u32> = synced.sleepers[synced.sleepers_len]
+    lock.unlock()
+    return 1, idx
+}
+
+// Remove worker from sleepers and +1 unparked (searching unchanged).
+// Returns 1 when worker was parked.
+Idle::unpark_worker_by_id(synced<IdleSynced>, lock<runtime.MutexInter>, worker<u32>) i32 {
+    lock.lock()
     n<u32> = synced.sleepers_len
     for i<u32> = 0 ; i < n ; i += 1 {
         if synced.sleepers[i] == worker {
@@ -141,24 +170,27 @@ Idle::transition_worker_from_parked(synced<IdleSynced>, lock<runtime.MutexInter>
                 synced.sleepers[j] = synced.sleepers[j + 1]
             }
             synced.sleepers_len -= 1
-            break
+            idle_unpark_one(&this.state, 0)
+            lock.unlock()
+            return 1
         }
     }
     lock.unlock()
+    return 0
 }
 
-// Pick one sleeper to wake; returns (1, idx) on hit, (0, 0) when empty.
-Idle::worker_to_notify(synced<IdleSynced>, lock<runtime.MutexInter>) (i32, u32) {
-    if this.notify_should_wakeup() == 0 return 0, 0
+// True while worker index is still in sleepers list.
+Idle::is_parked(synced<IdleSynced>, lock<runtime.MutexInter>, worker<u32>) i32 {
     lock.lock()
-    if synced.sleepers_len == 0 {
-        lock.unlock()
-        return 0, 0
+    n<u32> = synced.sleepers_len
+    for i<u32> = 0 ; i < n ; i += 1 {
+        if synced.sleepers[i] == worker {
+            lock.unlock()
+            return 1
+        }
     }
-    synced.sleepers_len -= 1
-    idx<u32> = synced.sleepers[synced.sleepers_len]
     lock.unlock()
-    return 1, idx
+    return 0
 }
 
 // True when we should wake another worker (no current searcher and at

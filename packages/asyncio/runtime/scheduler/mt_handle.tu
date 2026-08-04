@@ -29,6 +29,7 @@ const MtHandle::new(shared<MtShared>) MtHandle {
 // is_yield != 0 forces FIFO push (no LIFO).
 // Caller must pass a typed WorkerCore (from stack / current_bits after GC-scanned bind).
 fn mt_schedule_local(core<WorkerCore>, shared<MtShared>, notif<task.Notified>, is_yield<i32>) {
+    mt_sched_count_local()
     should_notify<i32> = 0
     if is_yield != 0 || core.lifo_enabled == 0 {
         core.run_queue.push_back_or_overflow(notif, shared.inject)
@@ -50,26 +51,39 @@ fn mt_schedule_local(core<WorkerCore>, shared<MtShared>, notif<task.Notified>, i
         sn<MtSynced> = shared.lock_hub
         found<i32>, idx<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
         if found == 1 && idx < shared.num_workers {
+            mt_notify_count_hit()
             rb<u64> = shared.remotes[idx]
             r<Remote> = rb.(Remote)
             if r.unparker != null {
                 r.unparker.unpark()
             }
+        } else {
+            mt_notify_count_miss()
         }
     }
 }
 
 // Inject + wake one sleeper (mother push_remote_task + notify_parked_remote).
 fn mt_schedule_remote(shared<MtShared>, notif<task.Notified>) {
+    mt_sched_count_remote()
     shared.inject.push(notif)
     sn<MtSynced> = shared.lock_hub
     found<i32>, idx<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
     if found == 1 && idx < shared.num_workers {
+        mt_notify_count_hit()
         rb<u64> = shared.remotes[idx]
         r<Remote> = rb.(Remote)
         if r.unparker != null {
             r.unparker.unpark()
         }
+        return
+    }
+    mt_notify_count_miss()
+    // searching>0 skipped notify: mother relies on the searcher. Nudge
+    // park_driver so a worker blocked in epoll re-enters and scans inject.
+    hub<ParkDriverHub> = shared.park_hub
+    if hub != null && hub.ioh != null {
+        hub.ioh.wake_by_ref()
     }
 }
 

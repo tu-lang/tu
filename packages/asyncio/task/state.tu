@@ -246,26 +246,47 @@ TaskState::transition_to_notified_by_ref() i32 {
     return TN_DoNothing
 }
 
-// Arm JOIN_WAKER. Returns 0 on success, -1 when JOIN_INTEREST is gone.
+// Arm JOIN_WAKER. Returns 0 on success, -1 when JOIN_INTEREST is gone
+// or COMPLETE is already set (mother set_join_waker fails on complete).
 TaskState::set_join_waker() i32 {
     loop {
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
         if (cur & JOIN_INTEREST) == 0 return -1
+        if (cur & COMPLETE) != 0 return -1
         new_state<i32> = cur | JOIN_WAKER
         if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK return 0
     }
     return -1
 }
 
-// Clear JOIN_WAKER.
-TaskState::unset_join_waker(){
+// Clear JOIN_WAKER only while the task is not complete (mother unset_waker).
+// Returns 0 on success, -1 if COMPLETE (caller should read output instead).
+TaskState::unset_waker() i32 {
+    loop {
+        w<u64> = atomic.load64(&this.slot_word)
+        cur<i32> = w.(i32)
+        if (cur & COMPLETE) != 0 return -1
+        if (cur & JOIN_WAKER) == 0 return 0
+        new_state<i32> = cur & 0xFFFFFFEF
+        if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK return 0
+    }
+    return -1
+}
+
+// Clear JOIN_WAKER after COMPLETE (mother unset_waker_after_complete).
+TaskState::unset_waker_after_complete(){
     loop {
         w<u64> = atomic.load64(&this.slot_word)
         cur<i32> = w.(i32)
         new_state<i32> = cur & 0xFFFFFFEF
         if atomic.cas64(&this.slot_word, cur.(i64), new_state.(i64)) == CAS64_OK { return }
     }
+}
+
+// Clear JOIN_WAKER.
+TaskState::unset_join_waker(){
+    this.unset_waker_after_complete()
 }
 
 // Set CANCELLED (monotonic).

@@ -203,12 +203,32 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             }
         }
 
-        // 5) Park. Matches Core::transition_to_parked.
-        // has_tasks recheck deferred: Local::len can disagree with pop under
-        // steal races and caused a 100% sched_yield spin; park is safe.
+        // 5) Park. Drain lifo + one local pop first (LIFO is not stealable).
+        // Never gate on Local::len() (steal races → 100% spin). Mother
+        // notify uses unpark_one(+unparked,+searching); wake path matches
+        // transition_from_parked.
         if shared.shutting_down == 1 {
             core.is_shutdown = 1
             continue
+        }
+        if core.lifo_slot != 0 {
+            bits_pre<u64> = core.lifo_slot
+            core.lifo_slot = 0
+            run_task(w, core, task.notified_from_raw(bits_pre.(task.RawTask)))
+            continue
+        }
+        lerr_pre<i32>, lt_pre<task.Notified> = core.run_queue.pop()
+        if lerr_pre == 0 {
+            run_task(w, core, lt_pre)
+            continue
+        }
+        // Inject may have work while local is empty (mother next_task).
+        if shared.inject.is_empty() == 0 {
+            ierr_pre<i32>, ti_pre<task.Notified> = mt_next_global_task(w, core)
+            if ierr_pre == 0 {
+                run_task(w, core, ti_pre)
+                continue
+            }
         }
         was_searching<i32> = core.is_searching
         sn<MtSynced> = shared.lock_hub
@@ -219,15 +239,92 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
         if is_last_searcher == 1 {
             mt_notify_if_work_pending(w)
         }
-
-        core.parker.wait_until_wake(w.handle.driver_handle)
-        if shared.shutting_down == 1 {
-            core.is_shutdown = 1
+        // Push-vs-park: still in sleepers → unpark_worker_by_id credits.
+        // If notify already popped us (return 0), searching was +1'd — we are
+        // the searcher (mother transition_from_parked has_tasks path).
+        if core.lifo_slot != 0 {
+            was_lf<i32> = shared.idle.unpark_worker_by_id(sn.idle_synced, shared.synced_lock, w.worker_idx)
+            if was_lf == 0 {
+                core.is_searching = 1
+            }
             continue
         }
-        shared.idle.transition_worker_from_parked(sn.idle_synced, shared.synced_lock, w.worker_idx)
-        if shared.idle.transition_worker_to_searching() == 1 {
+        if shared.inject.is_empty() == 0 {
+            ierr_pk0<i32>, ti_pk0<task.Notified> = mt_next_global_task(w, core)
+            if ierr_pk0 == 0 {
+                was_inj<i32> = shared.idle.unpark_worker_by_id(sn.idle_synced, shared.synced_lock, w.worker_idx)
+                if was_inj == 0 {
+                    core.is_searching = 1
+                }
+                run_task(w, core, ti_pk0)
+                continue
+            }
+        }
+
+        // Park loop: mother transition_from_parked — leave only when local
+        // has work or notify removed us from sleepers. Also pull inject:
+        // schedule during park_driver can land on inject when searching
+        // throttle skipped notify; without this check the driver re-parks
+        // and SEARCHING_LEAK deadlocks (inject stranded, sleepers full).
+        loop {
+            core.parker.wait_until_wake(w.handle.driver_handle)
+            if shared.shutting_down == 1 {
+                core.is_shutdown = 1
+                // Notify may have already +searching for us; drop that credit.
+                if shared.idle.unpark_worker_by_id(sn.idle_synced, shared.synced_lock, w.worker_idx) == 0 {
+                    if core.is_searching == 0 {
+                        shared.idle.transition_worker_from_searching()
+                    }
+                }
+                break
+            }
+            // Work scheduled onto this worker during park_driver.
+            if core.lifo_slot != 0 {
+                was_parked<i32> = shared.idle.unpark_worker_by_id(
+                    sn.idle_synced, shared.synced_lock, w.worker_idx
+                )
+                // was_parked==0 ⇒ notify already +1 searching ⇒ we are searcher.
+                if was_parked == 0 {
+                    core.is_searching = 1
+                } else {
+                    core.is_searching = 0
+                }
+                break
+            }
+            lerr_pk<i32>, lt_pk<task.Notified> = core.run_queue.pop()
+            if lerr_pk == 0 {
+                was_parked2<i32> = shared.idle.unpark_worker_by_id(
+                    sn.idle_synced, shared.synced_lock, w.worker_idx
+                )
+                if was_parked2 == 0 {
+                    core.is_searching = 1
+                } else {
+                    core.is_searching = 0
+                }
+                run_task(w, core, lt_pk)
+                break
+            }
+            if shared.inject.is_empty() == 0 {
+                ierr_pk<i32>, ti_pk<task.Notified> = mt_next_global_task(w, core)
+                if ierr_pk == 0 {
+                    was_parked3<i32> = shared.idle.unpark_worker_by_id(
+                        sn.idle_synced, shared.synced_lock, w.worker_idx
+                    )
+                    if was_parked3 == 0 {
+                        core.is_searching = 1
+                    } else {
+                        core.is_searching = 0
+                    }
+                    run_task(w, core, ti_pk)
+                    break
+                }
+            }
+            if shared.idle.is_parked(sn.idle_synced, shared.synced_lock, w.worker_idx) == 1 {
+                continue
+            }
+            // Removed by notify_one: state already accounted via unpark_one.
             core.is_searching = 1
+            break
         }
     }
 

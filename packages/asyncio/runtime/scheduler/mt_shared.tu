@@ -6,9 +6,11 @@ use runtime
 use asyncio.task
 
 // One slot per worker exposing its Steal end + Unparker.
+// core_bits: WorkerCore* for hang dumps (lifo / is_searching); not used by schedule.
 mem Remote {
     Steal*    steal_end
     Unparker* unparker
+    u64       core_bits
 }
 
 // MtSynced bundles fields guarded by `synced_lock`.

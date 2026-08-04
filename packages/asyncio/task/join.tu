@@ -28,6 +28,8 @@ JoinHandle::abort_handle() AbortHandle {
 }
 
 // Poll the JoinHandle.
+// Register waker then re-check COMPLETE to close the register-vs-complete race.
+// set_join_waker fails when COMPLETE — fall through and take the output.
 JoinHandle::poll(ctx){
     if this.task_ptr == null {
         return runtime.PollReady, JoinErrorAlreadyConsumed
@@ -39,13 +41,10 @@ JoinHandle::poll(ctx){
     snap<i32> = rtask.life_load()
 
     if (snap & COMPLETE) == 0 {
-        // Register the harness-published task waker (ctx arg is null-padded
-        // by the dynstackcall poll path), then re-check COMPLETE to close
-        // the register-vs-complete race.
         packed<u64> = resolve_poll_ctx(ctx.(u64))
-        rtask.register_join_waker(packed)
+        arm<i32> = rtask.register_join_waker(packed)
         snap = rtask.life_load()
-        if (snap & COMPLETE) == 0 {
+        if arm == 0 && (snap & COMPLETE) == 0 {
             return runtime.PollPending
         }
     }

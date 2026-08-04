@@ -85,9 +85,13 @@ const Unparker::new(p<Parker>) Unparker {
     return u
 }
 
-// Park slice for workers that lose the driver gate. Infinite futex (ns<0)
-// matches MutexInter; Unparker futexwakeup returns promptly. Timed slices
-// were only needed when block_on shared this path and starved timers.
+// Workers that lose the driver gate. Mother uses Condvar::wait; we use a
+// timed futex so the park loop can re-check try_lock (driver gate) and
+// stranded inject. Idle sleepers membership remains the source of truth
+// (transition_from_parked): timeout clears PARKED_CONDVAR → EMPTY so the
+// next wait_until_wake may take the driver gate.
+PARK_CONDVAR_SLICE_NS<i64> = 1000000
+
 Parker::park_condvar() {
     addr<i32*> = &this.state
     if atomic.cas(addr, EMPTY, PARKED_CONDVAR) != CAS_OK {
@@ -101,14 +105,17 @@ Parker::park_condvar() {
         }
         cur<i32> = *addr
         if cur != PARKED_CONDVAR {
-            atomic.cas(addr, PARKED_CONDVAR, EMPTY)
             atomic.cas(addr, NOTIFIED, EMPTY)
             return
         }
         entered<i32> = runtime.entersyscall_mutexblock()
-        runtime.futexsleep(faddr, PARKED_CONDVAR.(u32), 0 - 1)
+        runtime.futexsleep(faddr, PARKED_CONDVAR.(u32), PARK_CONDVAR_SLICE_NS)
         if entered != 0 {
             runtime.exitsyscall()
+        }
+        // Timeout: drop PARKED so wait_until_wake can retry try_lock / inject.
+        if atomic.cas(addr, PARKED_CONDVAR, EMPTY) == CAS_OK {
+            return
         }
     }
 }
@@ -116,8 +123,14 @@ Parker::park_condvar() {
 Parker::park_driver(handle_ptr<u64>) {
     addr<i32*> = &this.state
     hub<ParkDriverHub> = this.hub
+    // Mother: CAS EMPTY→PARKED_DRIVER; on NOTIFIED, swap EMPTY and return
+    // (notification consumed). Do not xchg blindly — that could clear a
+    // concurrent PARKED_* from a mismatched caller.
     if atomic.cas(addr, EMPTY, PARKED_DRIVER) != CAS_OK {
-        atomic.xchg(addr, EMPTY)
+        cur<i32> = *addr
+        if cur == NOTIFIED {
+            atomic.xchg(addr, EMPTY)
+        }
         hub_unlock(hub)
         return
     }
@@ -129,16 +142,19 @@ Parker::park_driver(handle_ptr<u64>) {
         h = hub.handle
     }
     if drv != null && h != null {
-        d<sys.Duration> = sys.Duration::from_millis(PARK_DRIVER_SLICE_MS)
-        drv.park_timeout(h, d)
+        // Bounded park (50ms). Driver::park(sys.MAX) → as_millis overflows and
+        // Poll maps MAX to epoll -1; combined with timer-wheel path that is a
+        // footgun. Unpark still wakes early via eventfd; entersyscall on epoll
+        // keeps GC STW safe for the slice.
+        asyncrt.driver_park_timeout_ms_bits(drv.(u64), h.(u64), PARK_DRIVER_SLICE_MS)
     }
-    if atomic.cas(addr, PARKED_DRIVER, EMPTY) != CAS_OK {
-        atomic.cas(addr, NOTIFIED, EMPTY)
-    }
+    // Mother: swap EMPTY; NOTIFIED or PARKED_DRIVER both OK.
+    old<i32> = atomic.xchg(addr, EMPTY)
     hub_unlock(hub)
 }
 
 Parker::wait_until_wake(handle_ptr<u64>) i32 {
+    mt_hang_dump_maybe()
     addr<i32*> = &this.state
     if atomic.cas(addr, NOTIFIED, EMPTY) == CAS_OK {
         return 0
@@ -146,6 +162,9 @@ Parker::wait_until_wake(handle_ptr<u64>) i32 {
 
     hub<ParkDriverHub> = this.hub
     if hub != null && hub.drv != null && hub.ioh != null {
+        // Drain deferred close wakes before blocking — peers Pending on EOF
+        // must run even if the last remove_source raced the previous turn.
+        hub.ioh.flush_close_wakes()
         if hub_try_lock(hub) == 1 {
             this.park_driver(handle_ptr)
             return 0
@@ -180,6 +199,7 @@ Unparker::unpark(){
         return
     }
     addr<i32*> = &p.state
+    // Mother: swap NOTIFIED even when already NOTIFIED (release semantics).
     old<i32> = atomic.xchg(addr, NOTIFIED)
     if old == PARKED_DRIVER {
         hub<ParkDriverHub> = p.hub
@@ -187,7 +207,10 @@ Unparker::unpark(){
             hub.ioh.wake_by_ref()
         }
     }
-    if old == PARKED_CONDVAR {
+    // PARKED_CONDVAR: worker park_condvar waiter.
+    // EMPTY: mt_park_block_on may be in timed futexsleep(addr, EMPTY, …).
+    // PARKED_DRIVER: also futexwake in case a waiter sits on the word.
+    if old == PARKED_CONDVAR || old == EMPTY || old == PARKED_DRIVER {
         faddr<u32*> = &p.state
         runtime.futexwakeup(faddr, 1.(u32))
     }
@@ -206,6 +229,7 @@ Parker::shutdown(handle_ptr<u64>){
 BLOCK_ON_GATE_WAIT_NS<i64> = 1000000
 
 fn mt_park_block_on(p<Parker>, shared<MtShared>) {
+    mt_hang_dump_maybe()
     if p == null {
         return
     }
@@ -235,6 +259,9 @@ fn mt_park_block_on(p<Parker>, shared<MtShared>) {
     loop {
         if atomic.cas(addr, NOTIFIED, EMPTY) == CAS_OK {
             return
+        }
+        if hub != null && hub.ioh != null {
+            hub.ioh.flush_close_wakes()
         }
         if hub_try_lock(hub) == 1 {
             hb<u64> = 0
