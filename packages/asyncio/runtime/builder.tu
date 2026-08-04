@@ -223,6 +223,7 @@ fn build_multi_thread(b<Builder>) Runtime {
             r<sched.Remote> = new sched.Remote
             r.steal_end = steal_a
             r.unparker = unparker
+            r.core_bits = core.(u64)
             shared.remotes[i] = r.(u64)
 
             sched.worker_handoff_publish(worker)

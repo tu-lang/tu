@@ -90,6 +90,8 @@ mem ScheduledIo {
     u64                iosrc_bits       // IoSource* bits; 0 after deregister/close
     ScheduledIo*       release_next     // pending-release chain (RegistrationSet)
     i32                release_queued   // 1 once linked on pending_head
+    ScheduledIo*       close_wake_next  // deferred Ready::ALL wake after close
+    i32                close_wake_queued
 }
 
 // Build an empty ScheduledIo: no readiness, no waiters, no shutdown.
@@ -108,6 +110,8 @@ const ScheduledIo::new() ScheduledIo {
     s.writer_ctx = 0
     s.release_next = null
     s.release_queued = 0
+    s.close_wake_next = null
+    s.close_wake_queued = 0
     return s
 }
 
@@ -187,6 +191,9 @@ fn interest_to_ready_mask(interest<netio.Interest>) i32 {
 // flagged is_ready=1 and their ctx is handed back to the caller via the
 // returned WakeList; reader_ctx / writer_ctx are also drained. The driver
 // schedules wakes outside the lock.
+//
+// Mother: if the 32-slot list fills, drop waiters_lock, wake_all, re-lock,
+// and continue — never drop a waiter ctx because the scratch buffer was full.
 ScheduledIo::wake(ready<Ready>) util.WakeList {
     out<util.WakeList> = new util.WakeList
     out.init()
@@ -194,32 +201,65 @@ ScheduledIo::wake(ready<Ready>) util.WakeList {
     wl<runtime.MutexInter> = this.waiters_lock
     wl.lock()
 
-    // Single-direction shortcuts first: reader_ctx handles READABLE/closed/err,
-    // writer_ctx handles WRITABLE/closed/err. Drained on first match.
     if (ready.is_readable() || ready.is_read_closed() || ready.is_error()) {
         if this.reader_ctx != 0 {
-            out.push(this.reader_ctx)
-            this.reader_ctx = 0
+            if out.is_full() != 0 {
+                wl.unlock()
+                wi0<i32> = 0
+                wlen0<i32> = out.len_count()
+                while wi0 < wlen0 {
+                    task.wake_by_ctx(out.ctxs[wi0])
+                    wi0 += 1
+                }
+                util.wake_list_clear(out)
+                wl.lock()
+            }
+            if out.push(this.reader_ctx) != 0 {
+                this.reader_ctx = 0
+            }
         }
     }
     if (ready.is_writable() || ready.is_write_closed() || ready.is_error()) {
         if this.writer_ctx != 0 {
-            out.push(this.writer_ctx)
-            this.writer_ctx = 0
+            if out.is_full() != 0 {
+                wl.unlock()
+                wi1<i32> = 0
+                wlen1<i32> = out.len_count()
+                while wi1 < wlen1 {
+                    task.wake_by_ctx(out.ctxs[wi1])
+                    wi1 += 1
+                }
+                util.wake_list_clear(out)
+                wl.lock()
+            }
+            if out.push(this.writer_ctx) != 0 {
+                this.writer_ctx = 0
+            }
         }
     }
 
-    // Walk the waiter list FIFO; matched waiters are removed and queued for
-    // schedule. Waiters whose interest does not overlap stay in place.
     cur<util.Pointers> = this.waiters.head
     while cur != null {
         nxt<util.Pointers> = cur.next
         w<Waiter> = cur.(Waiter)
         match_mask<i32> = interest_bits_to_ready_mask(w.interest_bits)
         if (ready.bits & match_mask) != 0 {
+            if out.is_full() != 0 {
+                wl.unlock()
+                wi2<i32> = 0
+                wlen2<i32> = out.len_count()
+                while wi2 < wlen2 {
+                    task.wake_by_ctx(out.ctxs[wi2])
+                    wi2 += 1
+                }
+                util.wake_list_clear(out)
+                wl.lock()
+            }
             this.waiters.remove(cur)
             w.is_ready = 1
-            if w.ctx_packed != 0 out.push(w.ctx_packed)
+            if w.ctx_packed != 0 {
+                out.push(w.ctx_packed)
+            }
         }
         cur = nxt
     }
@@ -252,6 +292,9 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
         wl<runtime.MutexInter> = this.waiters_lock
         wl.lock()
         wake_ctx<u64> = task.resolve_poll_ctx(ctx)
+        if wake_ctx == 0 {
+            wake_ctx = ctx
+        }
         if dir == DIR_READ  this.reader_ctx = wake_ctx
         if dir == DIR_WRITE this.writer_ctx = wake_ctx
         // Re-read while holding the lock: wake() takes the same lock, so a
@@ -260,6 +303,16 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
         cur = atomic.load64(&this.readiness)
         hit = unpack_ready_bits(cur) & interest_mask
         is_sd = pack_is_shutdown(cur)
+        // Ready on re-check: drop the slot we installed so a later wake does
+        // not re-schedule a task that already observed Ready (MT spurious).
+        if (hit != 0 || is_sd != 0) && wake_ctx != 0 {
+            if dir == DIR_READ && this.reader_ctx == wake_ctx {
+                this.reader_ctx = 0
+            }
+            if dir == DIR_WRITE && this.writer_ctx == wake_ctx {
+                this.writer_ctx = 0
+            }
+        }
         wl.unlock()
         if is_sd == 0 && hit == 0 {
             return runtime.PollPending, ReadyEvent::new(unpack_tick(cur), Ready::empty())

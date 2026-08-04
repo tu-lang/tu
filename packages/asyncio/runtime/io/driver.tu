@@ -38,6 +38,7 @@ mem IoHandle {
     runtime.MutexInter*     synced_lock
     u64                     waker_slot     // Waker* raw bits
     Metrics*                metrics
+    ScheduledIo*            close_wake_head // deferred ScheduledIo::drop wakes
 }
 
 // Last successful IoDriver::new results. Consumers use iodriver_last /
@@ -83,6 +84,7 @@ const IoDriver::new() i32 {
     lk.init()
     h.synced_lock = lk
     h.metrics = Metrics::new()
+    h.close_wake_head = null
     werr<i32>, wk<netio.Waker> = netio.make_waker(reg, netio.token_from_u64(TOKEN_WAKEUP))
     if werr != io.Ok {
         return werr
@@ -134,6 +136,15 @@ fn io_handle_wake_bits(ioh_bits<u64>) i32 {
     return ih.wake_by_ref()
 }
 
+// Cross-pkg: flush deferred close wakes (schedulers / park paths).
+fn io_handle_flush_close_wakes_bits(ioh_bits<u64>) {
+    if ioh_bits == 0 {
+        return
+    }
+    ih<IoHandle> = ioh_bits
+    ih.flush_close_wakes()
+}
+
 // Register signalfd with TOKEN_SIGNAL.
 // Named register_sfd — callers in asyncio.runtime.signal must not write
 // `.register_signal_*` (type-assert trap on `signal` in that package).
@@ -162,8 +173,9 @@ fn iodriver_consume_signal_ready_bits(iod_bits<u64>) i32 {
 }
 
 // Detach by IoSource bits (stable after multi-api view flips overwrite vptr@0).
-// Phase-2 wake-all on close deferred: sio.wake(ALL) here hung
-// int_mt_stress_spawn (re-entrancy / lost-wakeup under concurrent close).
+// Mother ScheduledIo::drop wakes Ready::ALL. Immediate wake_by_ctx here reenters
+// schedule under the closing task and raised MT hang rate — queue the wake and
+// flush at end of IoDriver::turn (and kick eventfd so a parked driver runs).
 IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
     err<i32> = netio.registry_deregister_bits(reg, iosrc_bits)
@@ -172,10 +184,62 @@ IoHandle::remove_source(iosrc_bits<u64>, sio<ScheduledIo>) i32 {
     lk.lock()
     need_wake<i32> = this.registrations.deregister(this.synced, sio)
     lk.unlock()
+    closed_bits<i32> = READABLE | WRITABLE | READ_CLOSED | WRITE_CLOSED | ERROR
+    sio.set_readiness(TICK_INC, closed_bits)
+    this.queue_close_wake(sio)
+    // Always nudge the reactor so flush_close_wakes runs even when deregister
+    // did not request a wake (Pending peer must observe closed).
+    this.wake_by_ref()
     if need_wake != 0 {
         this.wake_by_ref()
     }
     return err
+}
+
+// Link sio onto the deferred close-wake list (once).
+IoHandle::queue_close_wake(sio<ScheduledIo>) {
+    if sio == null {
+        return
+    }
+    lk<runtime.MutexInter> = this.synced_lock
+    lk.lock()
+    if sio.close_wake_queued == 0 {
+        sio.close_wake_queued = 1
+        sio.close_wake_next = this.close_wake_head
+        this.close_wake_head = sio
+    }
+    lk.unlock()
+}
+
+// Mother drop wake: drain waiters with Ready::ALL outside any task poll stack.
+// Loop until empty — wake_by_ctx may close more sources that re-queue.
+IoHandle::flush_close_wakes() {
+    loop {
+        lk<runtime.MutexInter> = this.synced_lock
+        lk.lock()
+        head<ScheduledIo> = this.close_wake_head
+        this.close_wake_head = null
+        lk.unlock()
+        if head == null {
+            return
+        }
+        cur<ScheduledIo> = head
+        while cur != null {
+            nxt<ScheduledIo> = cur.close_wake_next
+            cur.close_wake_next = null
+            cur.close_wake_queued = 0
+            all<Ready> = Ready::from_bits(0xFFFF)
+            wakes<util.WakeList> = cur.wake(all)
+            wi<i32> = 0
+            wlen<i32> = wakes.len_count()
+            while wi < wlen {
+                task.wake_by_ctx(wakes.ctxs[wi])
+                wi += 1
+            }
+            util.wake_list_clear(wakes)
+            cur = nxt
+        }
+    }
 }
 
 // Drain everything. Called on runtime shutdown; every waiter then observes
@@ -239,10 +303,12 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
     this.io_hit = 0
     err<i32> = netio.poll_poll(netio.poll_from_bits(this.poll_slot), netevent.events_from_bits(this.events_slot), max_wait)
     if err == io.Interrupted {
+        handle.flush_close_wakes()
         handle.release_pending_registrations()
         return 0
     }
     if err != io.Ok {
+        handle.flush_close_wakes()
         handle.release_pending_registrations()
         return err
     }
@@ -288,6 +354,7 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
     if fired > 0 {
         metrics_incr_ready_count_by(handle.metrics, fired)
     }
+    handle.flush_close_wakes()
     handle.release_pending_registrations()
     return 0
 }

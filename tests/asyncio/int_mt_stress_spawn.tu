@@ -95,8 +95,28 @@ fn client_one_fut(addr<net.SocketAddr>, msg_s<string.String>) runtime.Future {
     return client_one(addr, msg_s)
 }
 
-async mt_stress_spawn_wave() {
+async mt_stress_spawn_wave(port_off<i32>) {
+    // Unique port per wave avoids TIME_WAIT collisions across sequential runtimes.
     addr_s<string.String> = string.S(*"127.0.0.1:34670")
+    if port_off == 1 { addr_s = string.S(*"127.0.0.1:34671") }
+    if port_off == 2 { addr_s = string.S(*"127.0.0.1:34672") }
+    if port_off == 3 { addr_s = string.S(*"127.0.0.1:34673") }
+    if port_off == 4 { addr_s = string.S(*"127.0.0.1:34674") }
+    if port_off == 5 { addr_s = string.S(*"127.0.0.1:34675") }
+    if port_off == 6 { addr_s = string.S(*"127.0.0.1:34676") }
+    if port_off == 7 { addr_s = string.S(*"127.0.0.1:34677") }
+    if port_off == 8 { addr_s = string.S(*"127.0.0.1:34678") }
+    if port_off == 9 { addr_s = string.S(*"127.0.0.1:34679") }
+    if port_off == 10 { addr_s = string.S(*"127.0.0.1:34680") }
+    if port_off == 11 { addr_s = string.S(*"127.0.0.1:34681") }
+    if port_off == 12 { addr_s = string.S(*"127.0.0.1:34682") }
+    if port_off == 13 { addr_s = string.S(*"127.0.0.1:34683") }
+    if port_off == 14 { addr_s = string.S(*"127.0.0.1:34684") }
+    if port_off == 15 { addr_s = string.S(*"127.0.0.1:34685") }
+    if port_off == 16 { addr_s = string.S(*"127.0.0.1:34686") }
+    if port_off == 17 { addr_s = string.S(*"127.0.0.1:34687") }
+    if port_off == 18 { addr_s = string.S(*"127.0.0.1:34688") }
+    if port_off == 19 { addr_s = string.S(*"127.0.0.1:34689") }
     slen<i32> = std.strlen(addr_s.str())
     perr<i32>, addr<net.SocketAddr> = util.net_parse_ascii_bytes(addr_s.str(), slen)
     if perr != io.Ok {
@@ -172,11 +192,11 @@ async mt_stress_spawn_wave() {
     return io.Ok.(i64)
 }
 
-fn int_mt_stress_spawn_once() {
+fn int_mt_stress_spawn_once(port_off<i32>) {
     b<rt.Builder> = rt.Builder::new_multi_thread()
     b = b.worker_threads(4)
     b = b.enable_all()
-    err<i32>, val<i64> = rt.builder_block_on(b, mt_stress_spawn_wave(), 0)
+    err<i32>, val<i64> = rt.builder_block_on(b, mt_stress_spawn_wave(port_off), 0)
     check(err == 0, "mt_stress_spawn block_on failed")
     check(val.(i32) == io.Ok, "mt_stress_spawn wave failed")
 }
@@ -185,7 +205,7 @@ fn main() {
     fmt.println("int_mt_stress_spawn test")
     n<i32> = 0
     while n < 20 {
-        int_mt_stress_spawn_once()
+        int_mt_stress_spawn_once(n)
         n += 1
     }
     fmt.println("int_mt_stress_spawn passed")

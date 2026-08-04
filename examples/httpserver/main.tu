@@ -44,7 +44,7 @@ async HttpServer::run() {
 
 fn main() {
     server = new HttpServer()
-    val = asyncio.blockOnCt(server.run())
+    val = asyncio.blockOnMt(10,server.run())
     if val != 0 {
         os.die("httpserver stopped")
     }

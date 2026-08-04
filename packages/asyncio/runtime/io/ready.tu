@@ -48,11 +48,14 @@ Ready::is_empty() i32 {
 
 Ready::is_readable() i32 {
     if (this.bits & READABLE) != 0 return 1
+    // Mother: READ_CLOSED is also readable (EOF / half-close).
+    if (this.bits & READ_CLOSED) != 0 return 1
     return 0
 }
 
 Ready::is_writable() i32 {
     if (this.bits & WRITABLE) != 0 return 1
+    if (this.bits & WRITE_CLOSED) != 0 return 1
     return 0
 }
 
