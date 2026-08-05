@@ -37,8 +37,11 @@ func CreateFunction(fc) {
     funcname = fc.fullname()
     utils.debugf("compile.CreateFunction()  fullname:%s",funcname)
 
-    //register function label
+    //register function label (also fills funcnameid for closures)
     lid = fc.parser.label() +".L.funcname." + ast.incr_labelid()
+    if fc.funcnameid == null || fc.funcnameid == "" {
+        fc.funcnameid = lid
+    }
     writeln("   .globl %s",lid)
     writeln("%s:",lid)
     writeln("   .string \"%s\"",fc.beautyName())
@@ -115,5 +118,21 @@ func CreateFunction(fc) {
     }
 
     writeln("    ret")
+    // .size must follow ret at top-level; empty end label cannot precede .size/.data
     writeln("    .size %s , .-%s",funcname,funcname)
+    writeln(".global __tu_end_%s", funcname)
+    writeln("__tu_end_%s:", funcname)
+    writeln("    pause")
+
+    // Phase1 pcln fragment (linker merges into runtime_pclntab)
+    writeln(".data")
+    writeln(".global __tu_pcln.%s", funcname)
+    writeln("__tu_pcln.%s:", funcname)
+    writeln("    .quad %s", funcname)
+    writeln("    .quad __tu_end_%s", funcname)
+    writeln("    .quad %s", fc.funcnameid)
+    writeln("    .quad %s", fc.parser.filenameid)
+    writeln("    .long %d", fc.start_line)
+    writeln("    .long 0")
+    writeln(".text")
 }

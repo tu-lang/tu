@@ -68,6 +68,8 @@ class Function {
     caporders = []
     //RFC105:
     vid       = 0
+    // Function def start line for pclntab Phase1
+    start_line = 0
 
 
     fn isasync(){

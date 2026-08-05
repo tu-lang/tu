@@ -121,6 +121,7 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
     if node == null
         node = new ast.Function()
     node.fntype = ft
+    node.start_line = this.line
 
     match ft {
         ast.StructFunc : node.st = st
