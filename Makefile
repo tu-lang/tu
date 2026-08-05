@@ -118,13 +118,24 @@ test_dev:
 	@echo "test compiler success"
 
 # Directory-level suites. dirs with tests/<dir>/.make_tests only run allowlisted files.
-cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio
+# Toolchain self-tests (compiler/asmer/linker) run as peer targets so `make tests -j`
+# overlaps them with tests/* instead of waiting until every suite finishes.
+cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio toolchain_compiler toolchain_asmer toolchain_linker
+
+.PHONY: toolchain_compiler toolchain_asmer toolchain_linker
+toolchain_compiler:
+	@sh compiler/test.sh
+	@echo "compiler tests passed"
+toolchain_asmer:
+	@sh asmer/test.sh
+	@echo "asmer tests passed"
+toolchain_linker:
+	@sh linker/test.sh
+	@echo "linker tests passed"
 
 # make test -j9
 tests_cases: $(cases)
 	@echo "all test cases passed"
-	@$(TEST_COMPILER); test_compiler
-	@echo "compiler tests passed"
 tests_start:
 	@echo "tests start"
 tests: tests_start
