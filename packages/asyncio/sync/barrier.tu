@@ -74,17 +74,19 @@ BarrierWaitFut::poll(ctx){
         this.pending_nf = notified_from_notify(hub.wake_hub)
     }
     nfy<Notified> = this.pending_nf
-    pcode<i32> = nfy.poll(ctx)
+    // Notified resolves poll ctx itself; pass 0 (do not ctx.(u64)).
+    pcode<i32> = nfy.poll(0)
     if pcode == runtime.PollReady {
         this.pending_nf = null
-        // Notify may have raced past the gen check above — re-read before Pending.
-        hub.gate_lock.lock()
-        cur2<i32> = hub.generation
-        hub.gate_lock.unlock()
-        if cur2 != this.arrival_gen {
-            this.stage = 2
-            return runtime.PollReady, this.leader_flag.(i64)
-        }
+    }
+    // Always re-check generation before Pending — notify_waiters may have
+    // run with an empty queue before this waiter linked (lost wake).
+    hub.gate_lock.lock()
+    cur2<i32> = hub.generation
+    hub.gate_lock.unlock()
+    if cur2 != this.arrival_gen {
+        this.stage = 2
+        return runtime.PollReady, this.leader_flag.(i64)
     }
     return runtime.PollPending
 }

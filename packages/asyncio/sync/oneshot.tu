@@ -4,6 +4,7 @@
 
 use std.atomic
 use runtime
+use asyncio.task as task
 
 // CAS success sentinel: std.atomic cas/cas64 return 1 on success;
 // comparing against an untyped literal 0 crashes codegen (binary-op trap).
@@ -89,7 +90,11 @@ OneshotSender::send(v<i64>) i32 {
         newv<i32> = cur | VALUE_SET
         if atomic.cas(addr, cur, newv) == CAS_OK {
             inner.data_i64 = v
-            inner.rx_waker.wake()
+            // Must schedule — wake()/take_ctx alone left recv Pending forever.
+            ctx_bits<u64> = inner.rx_waker.wake()
+            if ctx_bits != 0 {
+                task.wake_by_ctx(ctx_bits)
+            }
             return 0
         }
     }
@@ -105,7 +110,10 @@ OneshotSender::drop_send(){
         cur<i32> = atomic.load(addr)
         newv<i32> = cur | TX_DROPPED
         if atomic.cas(addr, cur, newv) == CAS_OK {
-            inner.rx_waker.wake()
+            ctx_bits<u64> = inner.rx_waker.wake()
+            if ctx_bits != 0 {
+                task.wake_by_ctx(ctx_bits)
+            }
             return
         }
     }
@@ -129,12 +137,13 @@ SenderClosedFut::init(shell<OneshotInner>){
 
 SenderClosedFut::poll(ctx){
     inner<OneshotInner> = this.backing
+    packed<u64> = task.resolve_poll_ctx(0)
     cur<i32> = atomic.load(&inner.state)
     if (cur & RX_DROPPED) != 0 || (cur & CLOSED) != 0 {
         this.stage = SC_STAGE_DONE
         return runtime.PollReady, 0.(i64)
     }
-    inner.tx_waker.register_by_ref(ctx.(u64))
+    inner.tx_waker.register_by_ref(packed)
     cur2<i32> = atomic.load(&inner.state)
     if (cur2 & RX_DROPPED) != 0 || (cur2 & CLOSED) != 0 {
         this.stage = SC_STAGE_DONE
@@ -177,7 +186,10 @@ OneshotReceiver::drop_recv(){
         cur<i32> = atomic.load(addr)
         newv<i32> = cur | RX_DROPPED
         if atomic.cas(addr, cur, newv) == CAS_OK {
-            inner.tx_waker.wake()
+            ctx_bits<u64> = inner.tx_waker.wake()
+            if ctx_bits != 0 {
+                task.wake_by_ctx(ctx_bits)
+            }
             return
         }
     }
@@ -203,6 +215,9 @@ RecvFut::init(shell<OneshotInner>, poll_mode<i32>){
 
 RecvFut::poll(ctx){
     shell<OneshotInner> = this.backing
+    // Harness Future::poll does not forward ctx; ctx.(u64) is dyn-int garbage
+    // that crashes wake_by_ref (same trap as Notify::Notified).
+    packed<u64> = task.resolve_poll_ctx(0)
     st<i32> = atomic.load(&shell.state)
     if this.poll_mode == 1 {
         if (st & TX_DROPPED) != 0 || (st & CLOSED) != 0 {
@@ -220,7 +235,7 @@ RecvFut::poll(ctx){
         }
     }
 
-    shell.rx_waker.register_by_ref(ctx.(u64))
+    shell.rx_waker.register_by_ref(packed)
     st2<i32> = atomic.load(&shell.state)
     if this.poll_mode == 1 {
         if (st2 & TX_DROPPED) != 0 || (st2 & CLOSED) != 0 {

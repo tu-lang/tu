@@ -4,6 +4,7 @@
 // so smaller release calls cannot starve a large request.
 
 use runtime
+use asyncio.task as task
 
 // Cap on `permits`; we leave the high three bits unused so encoding tricks
 // (e.g. embedding a "shutdown_flag" sentinel) stay available later.
@@ -78,14 +79,19 @@ BatchSemaphore::release(n<u32>){
         if h == null break
         w<SemWaiter> = h.(SemWaiter)
         if w.remaining_permits > pool break
-        // Feed the head; pool drains by remaining_permits, the head wakes.
         pool = pool - w.remaining_permits
         w.remaining_permits = 0
         this.waiters.remove(h)
         w.queued = 0
-        // Wake observation: subsequent poll sees remaining_permits == 0
-        // and resolves; the runtime root will route ctx into the
-        // scheduler queue once it lands.
+        ctx_bits<u64> = w.ctx_packed
+        w.ctx_packed = 0
+        this.permits = pool
+        this.lock.unlock()
+        if ctx_bits != 0 {
+            task.wake_by_ctx(ctx_bits)
+        }
+        this.lock.lock()
+        pool = this.permits
     }
     this.permits = pool
     this.lock.unlock()
@@ -105,6 +111,13 @@ BatchSemaphore::close(){
         // sentinel observed by the future's poll; it short-circuits to
         // asyncio.error.Closed.
         w.remaining_permits = MAX_PERMITS + 1
+        ctx_bits<u64> = w.ctx_packed
+        w.ctx_packed = 0
+        this.lock.unlock()
+        if ctx_bits != 0 {
+            task.wake_by_ctx(ctx_bits)
+        }
+        this.lock.lock()
     }
     this.lock.unlock()
 }
@@ -137,6 +150,8 @@ AcquireFut::init(sem<BatchSemaphore>, n<u32>){
 // on close, (PollPending, 0) when still waiting.
 AcquireFut::poll(ctx){
     sem<BatchSemaphore> = this.owner_sem
+    // Harness Future::poll does not forward ctx; ctx.(u64) is dyn-int garbage.
+    packed<u64> = task.resolve_poll_ctx(0)
 
     if this.stage == ACQ_STAGE_INIT {
         sem.lock.lock()
@@ -151,7 +166,7 @@ AcquireFut::poll(ctx){
             this.stage = ACQ_STAGE_DONE
             return runtime.PollReady, 0.(i64)
         }
-        w<SemWaiter> = SemWaiter::new(this.needed, ctx.(u64))
+        w<SemWaiter> = SemWaiter::new(this.needed, packed)
         sem.waiters.push_back(w.node)
         w.queued = 1
         sem.lock.unlock()
@@ -170,7 +185,7 @@ AcquireFut::poll(ctx){
             this.stage = ACQ_STAGE_DONE
             return runtime.PollReady, SEM_ERR_CLOSED
         }
-        n.ctx_packed = ctx.(u64)
+        n.ctx_packed = packed
         return runtime.PollPending
     }
     return runtime.PollReady, 0.(i64)

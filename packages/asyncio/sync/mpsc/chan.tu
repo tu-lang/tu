@@ -48,7 +48,7 @@ TX_COUNT_DEC<u32> = 0xFFFFFFFF
 Chan::drop_last_sender() i32 {
     n<i32> = atomic.xadd(&this.tx_count, TX_COUNT_DEC)
     if n == 1 {
-        libsync.atomic_waker_wake_raw(this.rx_waker_bits)
+        libsync.atomic_waker_wake_by_ref_raw(this.rx_waker_bits)
         return 1
     }
     return 0
@@ -84,7 +84,7 @@ fn chan_send_inner(c<Chan>, v<i64>) i32 {
         if c.semaphore_bits != 0 libsync.batch_sem_release_raw(c.semaphore_bits, 1)
         return perr
     }
-    libsync.atomic_waker_wake_raw(c.rx_waker_bits)
+    libsync.atomic_waker_wake_by_ref_raw(c.rx_waker_bits)
     return 0
 }
 
