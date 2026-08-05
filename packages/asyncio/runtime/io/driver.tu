@@ -347,6 +347,16 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
             task.wake_by_ctx(wakes.ctxs[wi])
             wi += 1
         }
+        // Orphan readiness: Ready bits set, no waiter. EPOLLET will not
+        // re-fire; nudge block_on so the next poll observes the bits
+        // (httpserver ab: listen_q stall with READABLE+rctx=0).
+        // Only READABLE — WRITABLE orphans are common on new sockets and
+        // must not storm-unpark block_on.
+        if wlen == 0 {
+            if ready.is_readable() != 0 {
+                task.nudge_empty_io_wake()
+            }
+        }
         util.wake_list_clear(wakes)
         fired += 1
     }

@@ -4,8 +4,9 @@
 use fmt
 use runtime
 use std.atomic
+use netio
 
-// Dump every live ScheduledIo: readiness word, reader/writer ctx, iosrc.
+// Dump every live ScheduledIo: readiness word, reader/writer ctx, iosrc, fd.
 fn io_debug_dump(ioh_bits<u64>) {
     if ioh_bits == 0 {
         fmt.println("io_debug: null ioh")
@@ -29,13 +30,19 @@ fn io_debug_dump(ioh_bits<u64>) {
         ready_bits<i32> = unpack_ready_bits(ready_w)
         tick<i32> = unpack_tick(ready_w)
         shut<i32> = unpack_shutdown(ready_w)
+        fd<i32> = -1
+        if cur.iosrc_bits != 0 {
+            fd = netio.iosource_raw_fd(cur.iosrc_bits)
+        }
         fmt.println("  sio[", int(n), "] ready=", int(ready_bits),
             " tick=", int(tick),
             " shut=", int(shut),
             " rctx=", int(cur.reader_ctx),
             " wctx=", int(cur.writer_ctx),
             " iosrc=", int(cur.iosrc_bits),
-            " queued=", int(cur.release_queued))
+            " fd=", int(fd),
+            " rel_q=", int(cur.release_queued),
+            " close_q=", int(cur.close_wake_queued))
         cur = cur.next_sio
         n += 1
     }

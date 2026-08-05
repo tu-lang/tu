@@ -292,30 +292,42 @@ ScheduledIo::poll_readiness(ctx<u64>, dir<i32>) i32, ReadyEvent {
         wl<runtime.MutexInter> = this.waiters_lock
         wl.lock()
         wake_ctx<u64> = task.resolve_poll_ctx(ctx)
+        // Never stash a null waker: that wipes a concurrent waiter and leaves
+        // Pending with nothing for set_readiness to wake.
         if wake_ctx == 0 {
-            wake_ctx = ctx
+            wl.unlock()
+            // Cannot arm a waiter. Re-sample; if still empty, Pending would
+            // hang forever (READABLE+rctx=0). Nudge block_on and return
+            // Pending so the next park slice re-enters with a real ctx.
+            cur = atomic.load64(&this.readiness)
+            hit = unpack_ready_bits(cur) & interest_mask
+            is_sd = pack_is_shutdown(cur)
+            if is_sd == 0 && hit == 0 {
+                task.nudge_empty_io_wake()
+                return runtime.PollPending, ReadyEvent::new(unpack_tick(cur), Ready::empty())
+            }
+            // Readiness appeared while unlocked — fall through to Ready.
+        } else {
+            if dir == DIR_READ  this.reader_ctx = wake_ctx
+            if dir == DIR_WRITE this.writer_ctx = wake_ctx
         }
-        if dir == DIR_READ  this.reader_ctx = wake_ctx
-        if dir == DIR_WRITE this.writer_ctx = wake_ctx
         // Re-read while holding the lock: wake() takes the same lock, so a
         // concurrent readiness change is either visible here or will see
         // the waker we just stored.
-        cur = atomic.load64(&this.readiness)
-        hit = unpack_ready_bits(cur) & interest_mask
-        is_sd = pack_is_shutdown(cur)
-        // Ready on re-check: drop the slot we installed so a later wake does
-        // not re-schedule a task that already observed Ready (MT spurious).
-        if (hit != 0 || is_sd != 0) && wake_ctx != 0 {
-            if dir == DIR_READ && this.reader_ctx == wake_ctx {
-                this.reader_ctx = 0
+        // Keep the waker on Ready (mother scheduled_io::poll_readiness): a
+        // concurrent set_readiness+wake that lost the race still needs a
+        // slot, and a later edge after WouldBlock+clear must not find an
+        // empty reader/writer with no Pending poll in flight.
+        if wake_ctx != 0 {
+            cur = atomic.load64(&this.readiness)
+            hit = unpack_ready_bits(cur) & interest_mask
+            is_sd = pack_is_shutdown(cur)
+            wl.unlock()
+            if is_sd == 0 && hit == 0 {
+                // No waker: still Pending (caller is in harness_poll). Never return
+                // Ready-empty here — that busy-loops poll_read WouldBlock forever.
+                return runtime.PollPending, ReadyEvent::new(unpack_tick(cur), Ready::empty())
             }
-            if dir == DIR_WRITE && this.writer_ctx == wake_ctx {
-                this.writer_ctx = 0
-            }
-        }
-        wl.unlock()
-        if is_sd == 0 && hit == 0 {
-            return runtime.PollPending, ReadyEvent::new(unpack_tick(cur), Ready::empty())
         }
     }
 
