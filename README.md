@@ -19,7 +19,7 @@
 
 ---
 
-Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态 `mem` / 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现。
+Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态 `mem` / 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现；异步侧原生支持多线程协程调度。
 
 ```
 Usage: tu <command|option> [arguments]
@@ -179,54 +179,9 @@ fn main(){}
 
 ---
 
-### Async — 无栈协程，工厂直接 `.await`
+### Asyncio — 异步运行时：定时器、网络与并发
 
-叶子 future 用 `mem … : async` + `poll`；调用侧可以 `factory().await`，不必先塞进中间变量。
-
-```
-use fmt
-use runtime
-use os
-
-mem ReadStream: async {
-    i32 bytes
-    i32 readn
-    i32 fd
-}
-ReadStream::poll(ctx){
-    if this.readn != this.bytes {
-        this.readn += 1
-        return runtime.PollPending
-    }
-    match this.fd {
-        1 : return runtime.PollReady, "hello "
-        2 : return runtime.PollReady, "world"
-        _ : os.die("")
-    }
-}
-
-fn open_stream(fd<i32>) ReadStream {
-    return new ReadStream { fd: fd, bytes: 5, readn: 0 }
-}
-
-async read(){
-    buf = ""
-    buf += open_stream(1).await
-    buf += open_stream(2).await
-    return buf
-}
-
-fn main(){
-    body = runtime.block(read())
-    fmt.println(body)   // hello world
-}
-```
-
----
-
-### Asyncio — 异步运行时：定时器竞速与并发
-
-`packages/asyncio` 提供 Builder、时间轮、IO/信号 driver，以及 `select` / `join` / `timeout`。下面这段真实可跑（`tu run demo.tu`）——两个定时器 `select` 竞速，再 `join` 并发等待：
+`packages/asyncio` 提供 Builder、时间轮、IO/信号 driver，以及 `select` / `join` / `timeout`。下面这段真实可跑——两个定时器 `select` 竞速，再 `join` 并发等待：
 
 ```
 use fmt
@@ -269,7 +224,53 @@ join: both timers fired
 done
 ```
 
-TCP/UDP/Unix echo、fs、process、signal 的完整用例见 `tests/asyncio/`。
+网络侧走 `asyncio.wrapper` 动态 OOP 门面，仓库自带 HTTP demo：
+
+```bash
+tu run examples/httpserver   # 终端 1
+tu run examples/httpclient   # 终端 2
+# 或 curl / ab http://127.0.0.1:18080/
+```
+
+```
+use fmt
+use os
+use asyncio.wrapper as asyncio
+
+okResp = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
+okResp += "Content-Length: 13\r\nConnection: close\r\n\r\nHello, world!"
+
+async serveOne(st) {
+    st.drain(4096).await
+    st.sendStr(okResp).await
+    st.close()
+    return 0
+}
+
+class HttpServer {
+    func init() {}
+}
+
+async HttpServer::run() {
+    err, lis = asyncio.listen("127.0.0.1:18080")
+    if err != 0 {
+        return err
+    }
+    fmt.println("listening on http://127.0.0.1:18080")
+    loop {
+        aerr, st = lis.takeConn().await
+        if aerr == 0 && st != null {
+            serveOne(st).await
+        }
+    }
+}
+
+fn main() {
+    asyncio.blockOnCt(new HttpServer().run())
+}
+```
+
+客户端同形：`asyncio.dialTo(addr).await` → `sendStr` → `recvStr`。完整源码见 [`examples/`](./examples/)；TCP/UDP/Unix、fs、process、signal 用例见 `tests/asyncio/`。
 
 ---
 
