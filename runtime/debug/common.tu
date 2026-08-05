@@ -1,12 +1,14 @@
 use fmt
 use os
 use runtime
+use string
 
 // cfg(mod_static,true)
 
+// Legacy DWARF path (disabled for formal backtrace).
 lines<Lines> = null
 elf<Elf>	 = null
-//NOTICE: set by compiler
+// NOTICE: compiler may still set this for -g; table presence is the real gate.
 enabled<i8>  = 0
 
 func error(str){
@@ -20,43 +22,16 @@ func check(ret<i32>){
 		error("check  failed")
 	}
 }
-// enable by compiler through  -g parameter
-// like: tu run hello.tu -g
+
+// Bind .tupclntab if present; no fopen of the executable.
 func debug_init(){
-	//FIXME: "return" cause lost of initcall missing
-	// if enabled != 1.(i8) return 1.(i8)
-	if enabled == 1 {
-	elf = new Elf {
-		filepath : runtime.self_path
-	}
-	elf.init()
-
-	seclines<Elf64_Shdr> = elf.Section(".debug_line".(i8))
-	if seclines == null {
-		debug("couldn't find .debug_line")
-		return 0.(i8)
-	}
-	lines = new Lines {
-		reader: Reader {
-			buffer: elf.buffer + seclines.sh_offset,
-			len: seclines.sh_size,
-			offset: 0
-		},
-		files: std.NewArray(),
-		rows: std.NewArray()
-	}
-	lines.parse()
-	}
+	pclntab_init()
 }
+
+// Resolve PC via pclntab; degrade to bare address when missing.
 func findpc(pc<u64>){
-	// must enable debug first
-	// like: tu run hello.tu -g
-	if enabled == 0.(i8) return int(pc) + ":??"
-
-	row<PcData> = lines.funcline(pc)
-	if row == null return int(pc) + ":??"
-
-	return fmt.sprintf(
-		"%s:%d",string.new(row.filename),int(row.line)
-	)
+	if pclntab_init() == 0.(i8) {
+		return int(pc) + ":??"
+	}
+	return pcln_format_pc(pc)
 }
