@@ -155,3 +155,29 @@ runtime_futex:
     mov $202 , %rax
     syscall
     ret
+
+# Phase1 pclntab: reserved buffer filled by linker (or left as empty header).
+.data
+.globl runtime_pclntab
+runtime_pclntab:
+    .long 0xFFFFFFF1
+    .long 0x00000801
+    .long 0
+    .long 0
+    .long 24
+    .long 0
+    .zero 524264
+.globl runtime_pclntab_end
+runtime_pclntab_end:
+    .byte 0
+
+.text
+.globl runtime_pclntab_addr
+runtime_pclntab_addr:
+    lea runtime_pclntab(%rip), %rax
+    ret
+
+.globl runtime_pclntab_end_addr
+runtime_pclntab_end_addr:
+    lea runtime_pclntab_end(%rip), %rax
+    ret
