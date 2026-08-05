@@ -17,6 +17,7 @@ use asyncio.io as aio
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
 use asyncio.error as aerr
+use asyncio.task
 
 mem TcpListener {
     aio.PollEvented* poll_ev
@@ -49,7 +50,10 @@ const TcpListener::from_netio(inner<nettcp.TcpListener>) (i32, TcpListener) {
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
-    interest<netio.Interest> = netio.readable_interest()
+    // Level-triggered accept. ET listen is functionally correct here but shows
+    // multi-second accept stalls under c=100 flood (rps 14k-40k vs steady 40k);
+    // LT keeps latency flat. See optimize 2026-08-05 mt-httpserver entry.
+    interest<netio.Interest> = netio.readable_level_interest()
     holder<u64> = 0
     holder = inner
     src<evsrc.Source> = inner
@@ -80,22 +84,26 @@ AcceptFut::poll(ctx){
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
     would_block<i32> = io.WouldBlock
-    c<u64> = ctx.(u64)
+    c<u64> = task.resolve_poll_ctx(ctx.(u64))
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(c)
         if rerr == pend return pend
         if rerr != 0 return ready, rerr, null
 
-        acc_err<i32> = this.listener.accept()
+        acc_err<i32>, sbits<u64>, abits<u64> = nettcp.tcp_listener_accept_bits(this.listener)
         if acc_err == would_block {
             this.poll_ev.clear_readiness(ev)
             continue
         }
         if acc_err != ok_code return ready, acc_err, null
+        if sbits == 0.(u64) return ready, io.Other, null
 
-        inner<nettcp.TcpStream> = nettcp.tcp_accept_stream_last()
-        peer<net.SocketAddr> = nettcp.tcp_accept_addr_last()
-        if inner == null return ready, io.Other, null
+        inner<nettcp.TcpStream> = null
+        inner = sbits
+        peer<net.SocketAddr> = null
+        if abits != 0.(u64) {
+            peer = abits
+        }
         // Package bridge: Type::method static call fails inside async poll.
         rerr2<i32>, s<TcpStream> = tcp_stream_from_netio(inner, peer)
         if rerr2 != ok_code return ready, rerr2, null
@@ -124,15 +132,20 @@ TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
         if rerr != 0 return runtime.PollError, null
 
         listener<nettcp.TcpListener> = this.raw_listener()
-        acc_err<i32> = listener.accept()
+        acc_err<i32>, sbits<u64>, abits<u64> = nettcp.tcp_listener_accept_bits(listener)
         if acc_err == would_block {
             this.poll_ev.clear_readiness(ev)
             continue
         }
         if acc_err != ok_code return runtime.PollError, null
+        if sbits == 0.(u64) return runtime.PollError, null
 
-        inner<nettcp.TcpStream> = nettcp.tcp_accept_stream_last()
-        peer<net.SocketAddr> = nettcp.tcp_accept_addr_last()
+        inner<nettcp.TcpStream> = null
+        inner = sbits
+        peer<net.SocketAddr> = null
+        if abits != 0.(u64) {
+            peer = abits
+        }
         rerr2<i32>, s<TcpStream> = tcp_stream_from_netio(inner, peer)
         if rerr2 != ok_code return runtime.PollError, null
         return ready, s

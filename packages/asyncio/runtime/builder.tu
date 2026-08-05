@@ -186,6 +186,10 @@ fn build_multi_thread(b<Builder>) Runtime {
     spawner<rtblk.Spawner>   = rtblk.Spawner::new(pool)
 
     shared<sched.MtShared>   = sched.MtShared::new(b.worker_threads)
+    shared.event_interval = b.event_interval
+    if shared.event_interval == 0.(u32) {
+        shared.event_interval = DEFAULT_EVENT_INTERVAL
+    }
     handle<sched.MtHandle>   = sched.MtHandle::new(shared)
     handle.driver_handle    = drv_h.(u64)
     handle.blocking_spawner = spawner.(u64)
@@ -217,7 +221,9 @@ fn build_multi_thread(b<Builder>) Runtime {
             rng<util.FastRand>     = util.FastRand::new(0xdeadbeef + i.(u64))
             park<sched.Parker>      = sched.Parker::new(shared.park_hub)
             unparker<sched.Unparker> = sched.Unparker::new(park)
-            core<sched.WorkerCore>  = sched.WorkerCore::new(local_b, park, rng, b.global_queue_interval)
+            core<sched.WorkerCore>  = sched.WorkerCore::new(
+                local_b, park, rng, b.global_queue_interval, shared.event_interval
+            )
             worker<sched.MtWorker>  = sched.MtWorker::new(handle, i, core)
 
             r<sched.Remote> = new sched.Remote

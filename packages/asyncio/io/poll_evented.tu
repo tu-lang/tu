@@ -36,6 +36,11 @@ PollEvented::source() u64 {
     return this.holder_bits
 }
 
+// IoSource* bits for peek/close (avoid `.iosrc_bits` type-assert trap from callers).
+PollEvented::iosource_bits() u64 {
+    return this.iosrc_bits
+}
+
 // Poll for read readiness; ctx is the (sched, task_id) packed waker payload.
 PollEvented::poll_read_ready(ctx<u64>) i32, rtio.ReadyEvent {
     err<i32>, ev<rtio.ReadyEvent> = this.reg.poll_read_ready(ctx)
@@ -64,6 +69,33 @@ PollEvented::poll_write_io(ctx<u64>, op<rtio.IoOp>) i32, i64 {
 // Clear readiness bits from a prior poll_*_ready snapshot.
 PollEvented::clear_readiness(event<rtio.ReadyEvent>) i32 {
     return this.reg.clear_readiness(event)
+}
+
+// After WouldBlock: clear current read readiness (fresh tick).
+PollEvented::clear_read_now() i32 {
+    return this.reg.clear_dir_now(rtio.DIR_READ)
+}
+
+PollEvented::clear_write_now() i32 {
+    return this.reg.clear_dir_now(rtio.DIR_WRITE)
+}
+
+// After WouldBlock+clear under EPOLLET: if the kernel still has bytes,
+// re-seed READABLE so the next poll does not wait for a missed edge.
+PollEvented::reseed_readable_if_buffered() {
+    if netio.iosource_peek_readable(this.iosrc_bits) == 1 {
+        this.reg.reseed_readable()
+    }
+}
+
+// Software WRITABLE seed for readable-only epoll registrations.
+PollEvented::seed_writable() i32 {
+    return this.reg.seed_writable()
+}
+
+// Reregister with EPOLLOUT after a write WouldBlock on a readable-only fd.
+PollEvented::enable_writable_interest() i32 {
+    return this.reg.enable_writable_interest()
 }
 
 // Single-shot try_io: one readiness check + one op invocation.

@@ -45,13 +45,19 @@ const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32,
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
-    interest<netio.Interest> = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
+    // Readable-only epoll + software WRITABLE seed; EPOLLOUT is armed lazily
+    // on the first write WouldBlock. Registering READABLE|WRITABLE upfront
+    // (mother's shape) loses requests under MT flood — bisected 2026-08-05:
+    // dual-interest ET missed 10/15 x50k regardless of listener LT/ET, while
+    // this shape is 15/15. Root driver race is open debt (optimize entry).
+    interest<netio.Interest> = netio.readable_interest()
     holder<u64> = 0
     holder = inner
     src<evsrc.Source> = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, src, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 return perr, null
     if pe == null return shut_err, null
+    pe.seed_writable()
     out<TcpStream> = new TcpStream
     out.poll_ev = pe
     out.peer = peer
@@ -120,7 +126,7 @@ ConnectFut::poll(ctx){
 // calling nettcp.tcp_stream_connect corrupts the async frame).
 // Return ConnectFut (not erased Future): multi-return poll needs concrete leaf.
 const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
-    cerr<i32> = nettcp.tcp_stream_connect(addr)
+    cerr<i32>, bits<u64> = nettcp.tcp_stream_connect(addr)
     if cerr != io.Ok {
         f0<ConnectFut> = new ConnectFut
         f0.poll_ev = null
@@ -128,14 +134,15 @@ const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
         f0.stage = -1
         return f0
     }
-    inner<nettcp.TcpStream> = nettcp.tcp_stream_last()
-    if inner == null {
+    if bits == 0.(u64) {
         f1<ConnectFut> = new ConnectFut
         f1.poll_ev = null
         f1.stream = null
         f1.stage = -1
         return f1
     }
+    inner<nettcp.TcpStream> = null
+    inner = bits
     rerr<i32>, s<TcpStream> = TcpStream::from_netio(inner, addr)
     if rerr != io.Ok {
         f2<ConnectFut> = new ConnectFut
@@ -264,6 +271,7 @@ TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
         e<i32>, n<u64> = nettcp.tcp_stream_read_priv(sock, tmp)
         if e == would_block {
             this.poll_ev.clear_readiness(ev)
+            this.poll_ev.reseed_readable_if_buffered()
             continue
         }
         if e != ok_code return runtime.PollError
@@ -294,6 +302,8 @@ TcpStream::poll_write_priv(ctx<u64>, b<io.Buf>) i32, u64 {
         e<i32>, n<u64> = nettcp.tcp_stream_write_priv(sock, b)
         if e == would_block {
             this.poll_ev.clear_readiness(ev)
+            // Readable-only registration: arm EPOLLOUT for the next edge.
+            this.poll_ev.enable_writable_interest()
             continue
         }
         if e != ok_code return runtime.PollError, 0

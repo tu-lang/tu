@@ -58,11 +58,14 @@ func blockOnMt(workers, fut) {
 }
 
 // Schedule fut on the current runtime Handle.
+// Detach the JoinHandle immediately — Tu has no Drop; discarding the handle
+// without detach leaks task refs and wedges long-lived servers (ab n=50k).
 func spawn(fut) {
     err<i32>, h<rt.Handle> = rt.Handle::current()
     if err != 0 {
         return err
     }
-    h.spawn(fut)
+    jh<task.JoinHandle> = h.spawn(fut)
+    jh.detach()
     return 0
 }
