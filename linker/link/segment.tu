@@ -100,3 +100,35 @@ Seglist::relocAddr(relAddr<u32>,type<u8>,symAddr<u32>,addend<i32>)
 		_  				   :    utils.debug("unknow rela")
 	}
 }
+
+// Read u64 at VA into out; returns 1 on hit, 0 on miss.
+Seglist::pcln_read_u64_into(va_u<u32>, out<u64*>){
+	baddr_u<u32> = *this.baseAddr
+	rel_u<u32> = va_u - baddr_u
+	for(v<Block> : this.blocks){
+		if v.offset <= rel_u && rel_u + 8.(u32) <= v.offset + v.size {
+			base<i8*> = v.data
+			off_i<i32> = (rel_u - v.offset).(i32)
+			p<u64*> = base + off_i
+			*out = *p
+			return 1
+		}
+	}
+	return 0
+}
+
+// Read i32 at VA into out; returns 1 on hit, 0 on miss.
+Seglist::pcln_read_i32_into(va_u<u32>, out<i32*>){
+	baddr_u<u32> = *this.baseAddr
+	rel_u<u32> = va_u - baddr_u
+	for(v<Block> : this.blocks){
+		if v.offset <= rel_u && rel_u + 4.(u32) <= v.offset + v.size {
+			base<i8*> = v.data
+			off_i<i32> = (rel_u - v.offset).(i32)
+			p<i32*> = base + off_i
+			*out = *p
+			return 1
+		}
+	}
+	return 0
+}
