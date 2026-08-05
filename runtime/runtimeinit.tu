@@ -123,45 +123,20 @@ fn runtimeinit(){
 
 fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	println(*"\npanicked! stack backtrace:")
-	buf_o<i8:10> = null
 	rip<u64> = segsegv_rip(ctxt)
-	//self path
-	selfpath = string.new(self_path)
-	if debug.enabled == 1{
-		pc = debug.findpc(rip)
-		println(*"0: %s" ,*pc)
-	}else {
-		buf<i8*>	 = &buf_o
-		std.itoa(rip,buf,16.(i8))
-		os.shell(
-			fmt.sprintf(
-				"addr2line -e %s 0x%s",
-				selfpath,
-				string.new(buf)
-			)
-		)
-	}
+	// L2a: pclntab only; never fork addr2line
+	pc = debug.findpc(rip)
+	println(*"0: %s" ,*pc)
 	bp<u64*> = runtime.get_bp()
 	//skip first stack
 	bp = *bp
 	i = 1
 	//stack backtrace 
 	loop {
-		pc<u64*> = bp + 8
-		rip = *pc
+		pc_slot<u64*> = bp + 8
+		rip = *pc_slot
 		if rip == null break
-		if debug.enabled == 1 {
-			fmt.println(i + ": " + debug.findpc(rip))
-		}else {
-			buf<i8*>	 = &buf_o
-			std.itoa(rip,buf,16.(i8))
-			os.shell(fmt.sprintf(
-					"addr2line -e %s 0x%s",
-					selfpath,
-					string.new(buf)
-				)
-			)
-		}
+		fmt.println(i + ": " + debug.findpc(rip))
 		bp = *bp
 		i += 1
 	}

@@ -72,6 +72,10 @@ fn get_r13()
 fn get_r14()
 fn get_r15()
 
+// addresses of runtime_pclntab / runtime_pclntab_end (syscall .s).
+fn pclntab_addr() (u64)
+fn pclntab_end_addr() (u64)
+
 fn gc_malloc(nbytes<u64>)
 {
 	return malloc(nbytes,0.(i8),1.(i8))
