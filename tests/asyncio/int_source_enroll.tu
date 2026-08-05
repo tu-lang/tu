@@ -39,15 +39,19 @@ fn main() {
     }
 
     // Multi-api TcpStream: coerce to Source then enroll (must not SEGV)
-    cerr<i32> = tcp.TcpStream::connect(addr)
+    cerr<i32>, cbits<u64> = tcp.TcpStream::connect(addr)
     if cerr != io.Ok {
         os.dief("connect %d", cerr)
     }
-    aerr<i32> = l.accept()
+    aerr<i32>, sbits<u64>, abits<u64> = l.accept()
     if aerr != io.Ok {
         os.dief("accept %d", aerr)
     }
-    stream<tcp.TcpStream> = tcp.tcp_accept_stream_last()
+    if sbits == 0.(u64) {
+        os.dief("accept null stream")
+    }
+    stream<tcp.TcpStream> = null
+    stream = sbits
     src_s<event.Source> = stream
     t2<netio.Token> = netio.token_from_u64(2.(u64))
     e2<i32> = src_s.enroll(reg, t2, interests)

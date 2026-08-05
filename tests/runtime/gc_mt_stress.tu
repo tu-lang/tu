@@ -128,6 +128,8 @@ fn test_gc_mutex_contention() {
     }
     // GC while workers contend MutexInter (futex waiters with locks>0).
     // Soft-syscall + startSTW must leave CoreSyscall alone across rounds.
+// startSTW also tolerates CoreRun after clearing gcwaiting (exitsyscall race);
+// dief there used to exit only one thread and wedge MT httpserver.
     round<i32> = 0
     while round < 40 {
         runtime.GC()
