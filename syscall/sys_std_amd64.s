@@ -30,7 +30,10 @@ std_seek:
 	retq
 .global std_die
 std_die:
-	mov $60,%rax
+	# exit_group (231): kill the whole process. Plain exit (60) only ends the
+	# calling thread — under MT, a GC dief then left sibling workers spinning
+	# on futex with listen_q wedged (httpserver ab).
+	mov $231,%rax
 	syscall
 	retq
 .global std_brk

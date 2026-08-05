@@ -286,6 +286,9 @@ Gc::startSTW()
     c_<Core> = core()
     c_.status = CoreRun
     // Clear before waking Stop cores so exitsyscall racers observe GC done.
+    // Those racers may already be CoreRun when we walk allcores — that is
+    // expected (not dief). Under MT+epoll, dief here used exit(2) and left
+    // sibling workers alive → futex storm + listen_q wedge (httpserver ab).
     atomic.store(&sched.gcwaiting,0.(i8))
     for c<Core> = sched.allcores; c != Null ; c = c.link {
         if c.cid == c_.cid continue
@@ -299,6 +302,8 @@ Gc::startSTW()
             // Still blocked in futex/epoll. Leave CoreSyscall so the next
             // stopSTW does not wait on a locks>0 futex waiter (soft-syscall
             // deadlock). exitsyscall restores CoreRun when the syscall returns.
+        } else if st == CoreRun {
+            // exitsyscall already resumed after gcwaiting cleared.
         } else {
             dief(*"m.status not stop\n")
         }
