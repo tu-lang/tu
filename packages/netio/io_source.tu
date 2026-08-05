@@ -98,6 +98,27 @@ fn iosource_raw_fd(bits<u64>) i32 {
 	return src.raw_fd
 }
 
+// MSG_PEEK (Linux 0x2): true when the kernel still has readable bytes.
+// Used after EPOLLET clear_readiness would otherwise park with buffered data.
+// Stack one-byte buffer — avoid heap alloc on the hot WouldBlock path.
+fn iosource_peek_readable(bits<u64>) i32 {
+	if bits == 0 {
+		return 0
+	}
+	src<IoSource> = bits.(IoSource)
+	fd<i32> = src.raw_fd
+	if fd < 0 {
+		return 0
+	}
+	b<u8> = 0
+	msg_peek<i32> = 2
+	raw<i64> = sys.recv(fd, &b, 1.(u64), msg_peek)
+	if raw > 0 {
+		return 1
+	}
+	return 0
+}
+
 // Close the underlying fd once; safe to call after detach. Idempotent.
 fn iosource_close_fd(bits<u64>) {
 	if bits == 0 {

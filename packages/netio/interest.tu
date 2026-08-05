@@ -5,6 +5,8 @@
 
 READABLE_BIT<u8> = 1
 WRITABLE_BIT<u8> = 2
+// Tu-only: request level-triggered epoll (no EPOLLET) for one registration.
+LEVEL_BIT<u8> = 128
 
 mem Interest {
 	u8 flags
@@ -16,6 +18,11 @@ fn readable_interest() Interest {
 
 fn writable_interest() Interest {
 	return new Interest { flags: WRITABLE_BIT }
+}
+
+// Readable interest without EPOLLET — prefer for TcpListener accept.
+fn readable_level_interest() Interest {
+	return new Interest { flags: READABLE_BIT | LEVEL_BIT }
 }
 
 // Mother: Interest::add — OR the flag bits.

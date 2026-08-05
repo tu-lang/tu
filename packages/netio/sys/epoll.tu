@@ -261,7 +261,13 @@ Selector::drop() {
 }
 
 fn interests_to_epoll(interest_bits<u8>) u32 {
+	// Default EPOLLET (mother). LEVEL_BIT requests level-triggered for a
+	// single registration (e.g. listen) when edge loss must be tolerated.
 	kind<u32> = EPOLLET
+	level_bit<u8> = 128
+	if (interest_bits & level_bit) != 0.(u8) {
+		kind = 0
+	}
 	if (interest_bits & 1) != 0
 		kind = kind | EPOLLIN | EPOLLRDHUP
 	if (interest_bits & 2) != 0

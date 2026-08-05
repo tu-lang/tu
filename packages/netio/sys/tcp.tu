@@ -68,35 +68,30 @@ fn set_reuseaddr(socket<net.TcpListener>, reuseaddr<i32>) i32 {
 	return set_reuseaddr_fd(socket.as_raw_fd(), reuseaddr)
 }
 
-LAST_ACCEPT_STREAM<net.TcpStream> = null
-LAST_ACCEPT_ADDR<net.SocketAddr> = null
-
-fn accept_stream_last() net.TcpStream {
-	return LAST_ACCEPT_STREAM
-}
-fn accept_addr_last() net.SocketAddr {
-	return LAST_ACCEPT_ADDR
-}
-
-fn accept(listener<net.TcpListener>) i32 {
-	return accept_fd(listener.as_raw_fd())
+// accept_fd returns (err, std_stream_bits, addr_bits). No process-global LAST
+// slot — MT / concurrent accept must not cross-wire fds.
+fn accept(listener<net.TcpListener>) i32, u64, u64 {
+	e<i32> = 0
+	sb<u64> = 0
+	ab<u64> = 0
+	e, sb, ab = accept_fd(listener.as_raw_fd())
+	return e, sb, ab
 }
 
-fn accept_fd(fd<i32>) i32 {
-	LAST_ACCEPT_STREAM = null
-	LAST_ACCEPT_ADDR = null
+fn accept_fd(fd<i32>) i32, u64, u64 {
 	storage_bits<u64> = libsys.sockaddr_storage_new_raw()
 	length<i32> = libsys.SOCKADDR_STORAGE_LEN
 	cloexec<i32> = SOCK_CLOEXEC
 	nonblock<i32> = SOCK_NONBLOCK
 	flags<i32> = cloexec | nonblock
 	err<i32>, afd<u64> = libsys.cvt(libsys.accept4(fd, storage_bits, &length, flags))
-	if err != libsys.Ok
-		return err
-	LAST_ACCEPT_STREAM = net.TcpStream::fromrawfd(afd.(i32))
+	if err != libsys.Ok {
+		return err, 0.(u64), 0.(u64)
+	}
+	std_stream<net.TcpStream> = net.TcpStream::fromrawfd(afd.(i32))
 	aerr<i32>, addr_bits<u64> = libsys.sockaddr_to_addr_raw(storage_bits, length.(u64))
-	if aerr != libsys.Ok
-		return aerr
-	LAST_ACCEPT_ADDR = net.socket_addr_from_bits(addr_bits)
-	return libsys.Ok
+	if aerr != libsys.Ok {
+		return aerr, 0.(u64), 0.(u64)
+	}
+	return libsys.Ok, std_stream.(u64), addr_bits
 }

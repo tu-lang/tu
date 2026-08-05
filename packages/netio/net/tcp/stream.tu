@@ -13,12 +13,6 @@ mem TcpStream {
 	u64 iosrc_bits
 }
 
-LAST_TCP_STREAM<TcpStream> = null
-
-fn tcp_stream_last() TcpStream {
-	return LAST_TCP_STREAM
-}
-
 const TcpStream::from_std(stream<net.TcpStream>) TcpStream {
 	return TcpStream::from_std_fd(stream, stream.as_raw_fd())
 }
@@ -33,24 +27,29 @@ const TcpStream::fromrawfd(fd<i32>) TcpStream {
 	return TcpStream::from_std_fd(net.TcpStream::fromrawfd(fd), fd)
 }
 
-// Mother TcpStream::connect. Returns err only; on success tcp_stream_last().
-const TcpStream::connect(addr<net.SocketAddr>) i32 {
-	LAST_TCP_STREAM = null
+// Mother TcpStream::connect. Returns (err, stream_bits).
+// Cross-pkg (i32, Mem) drops pointer fields; concurrent connect must not share
+// a process-global LAST slot (MT clients race and cross-wire fds).
+const TcpStream::connect(addr<net.SocketAddr>) i32, u64 {
 	err<i32>, fd<i32> = nsys.new_for_addr(addr)
-	if err != io.Ok
-		return err
+	if err != io.Ok {
+		return err, 0.(u64)
+	}
 	stream<TcpStream> = TcpStream::fromrawfd(fd)
 	err = nsys.connect_fd(stream.raw_fd(), addr)
-	if err != io.Ok
-		return err
-	LAST_TCP_STREAM = stream
-	return io.Ok
+	if err != io.Ok {
+		return err, 0.(u64)
+	}
+	return io.Ok, stream.(u64)
 }
 
 // Package bridge — asyncio member async connect must not call
 // nettcp.TcpStream::connect by static name (same leaf name corrupts the frame).
-fn tcp_stream_connect(addr<net.SocketAddr>) i32 {
-	return TcpStream::connect(addr)
+fn tcp_stream_connect(addr<net.SocketAddr>) i32, u64 {
+	e<i32> = 0
+	bits<u64> = 0
+	e, bits = TcpStream::connect(addr)
+	return e, bits
 }
 
 TcpStream::std_stream() net.TcpStream {

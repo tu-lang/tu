@@ -71,29 +71,30 @@ TcpListener::raw_fd() i32 {
 }
 
 // Mother: self.inner.do_io(|inner| tcp::accept(inner)...).
-// Linux IoSourceState::do_io is a direct call; invoke accept on Deref target.
-// Multi-ret stream pointer is published via LAST_TCP_ACCEPT_STREAM.
-LAST_TCP_ACCEPT_STREAM<TcpStream> = null
-LAST_TCP_ACCEPT_ADDR<net.SocketAddr> = null
-
-fn tcp_accept_stream_last() TcpStream {
-	return LAST_TCP_ACCEPT_STREAM
+// Returns (err, stream_bits, addr_bits). Cross-pkg Mem multi-ret is unsafe;
+// bits avoid LAST_* globals that race under concurrent accept.
+TcpListener::accept() i32, u64, u64 {
+	err<i32>, std_bits<u64>, addr_bits<u64> = nsys.accept_fd(this.raw_fd())
+	if err != io.Ok {
+		return err, 0.(u64), 0.(u64)
+	}
+	if std_bits == 0.(u64) {
+		return io.Other, 0.(u64), 0.(u64)
+	}
+	std_stream<net.TcpStream> = null
+	std_stream = std_bits
+	stream<TcpStream> = TcpStream::from_std(std_stream)
+	addr<net.SocketAddr> = net.socket_addr_from_bits(addr_bits)
+	return io.Ok, stream.(u64), addr.(u64)
 }
-fn tcp_accept_addr_last() net.SocketAddr {
-	return LAST_TCP_ACCEPT_ADDR
-}
 
-TcpListener::accept() i32 {
-	LAST_TCP_ACCEPT_STREAM = null
-	LAST_TCP_ACCEPT_ADDR = null
-	err<i32> = nsys.accept_fd(this.raw_fd())
-	if err != io.Ok
-		return err
-	std_stream<net.TcpStream> = nsys.accept_stream_last()
-	addr<net.SocketAddr> = nsys.accept_addr_last()
-	LAST_TCP_ACCEPT_STREAM = TcpStream::from_std(std_stream)
-	LAST_TCP_ACCEPT_ADDR = addr
-	return io.Ok
+// Package bridges for AcceptFut (Type::method illegal inside async poll).
+fn tcp_listener_accept_bits(listener<TcpListener>) i32, u64, u64 {
+	e<i32> = 0
+	sb<u64> = 0
+	ab<u64> = 0
+	e, sb, ab = listener.accept()
+	return e, sb, ab
 }
 
 impl event.Source for TcpListener {
