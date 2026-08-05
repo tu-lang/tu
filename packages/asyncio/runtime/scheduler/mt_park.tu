@@ -174,6 +174,9 @@ Parker::wait_until_wake(handle_ptr<u64>) i32 {
     return 0
 }
 
+// Mother park_timeout: only Duration::ZERO is used (maintenance / defer).
+// TryLock the driver and poll once; if the gate is held, return immediately
+// — never fall through to wait_until_wake (that would block maintenance).
 Parker::park_timeout(handle_ptr<u64>, max<sys.Duration>) i32 {
     hub<ParkDriverHub> = this.hub
     if hub != null && hub.drv != null && hub_try_lock(hub) == 1 {
@@ -188,9 +191,8 @@ Parker::park_timeout(handle_ptr<u64>, max<sys.Duration>) i32 {
             drv.park_timeout(h, max)
         }
         hub_unlock(hub)
-        return 0
     }
-    return this.wait_until_wake(handle_ptr)
+    return 0
 }
 
 Unparker::unpark(){

@@ -45,22 +45,81 @@ fn mt_schedule_local(core<WorkerCore>, shared<MtShared>, notif<task.Notified>, i
         }
         core.lifo_slot = notif.raw().(u64)
     }
-    // Mother: notify only when work was spilled / FIFO push. Same-worker LIFO
-    // with empty prev does not wake peers — this worker runs lifo next.
-    if should_notify == 1 {
-        sn<MtSynced> = shared.lock_hub
-        found<i32>, idx<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
-        if found == 1 && idx < shared.num_workers {
-            mt_notify_count_hit()
-            rb<u64> = shared.remotes[idx]
-            r<Remote> = rb.(Remote)
-            if r.unparker != null {
-                r.unparker.unpark()
-            }
-        } else {
-            mt_notify_count_miss()
+    // Mother: while park is taken (driver turn on THIS worker), skip notify and
+    // let transition_from_parked see has_tasks. But LIFO is not stealable — if
+    // this core's parker is PARKED_CONDVAR (another thread scheduled onto a
+    // sleeping worker via wrong/stale current), we must unpark that owner or
+    // the task is stranded forever. Same for PARKED_DRIVER: a schedule that
+    // lands after epoll returned but before the park loop reads LIFO is rare;
+    // eventfd unpark makes the miss impossible.
+    if should_notify == 0 && core.parker != null {
+        pst<i32> = core.parker.state.(i32)
+        if pst == PARKED_CONDVAR || pst == PARKED_DRIVER {
+            should_notify = 1
         }
     }
+    if should_notify == 0 {
+        return
+    }
+    // Prefer unparking the owner of this core when it is still in sleepers.
+    owner<i32> = mt_worker_index_for_core(shared, core)
+    sn<MtSynced> = shared.lock_hub
+    if owner >= 0 {
+        ou<u32> = owner.(u32)
+        if shared.idle.is_parked(sn.idle_synced, shared.synced_lock, ou) == 1 {
+            shared.idle.unpark_worker_by_id(sn.idle_synced, shared.synced_lock, ou)
+            rb0<u64> = shared.remotes[ou]
+            if rb0 != 0 {
+                r0<Remote> = rb0.(Remote)
+                if r0.unparker != null {
+                    r0.unparker.unpark()
+                }
+            }
+            mt_notify_count_hit()
+            return
+        }
+    }
+    found<i32>, idx<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
+    if found == 1 && idx < shared.num_workers {
+        mt_notify_count_hit()
+        rb<u64> = shared.remotes[idx]
+        r<Remote> = rb.(Remote)
+        if r.unparker != null {
+            r.unparker.unpark()
+        }
+    } else {
+        mt_notify_count_miss()
+        mt_heal_searching_leak(shared)
+        found3<i32>, idx3<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
+        if found3 == 1 && idx3 < shared.num_workers {
+            mt_notify_count_hit()
+            rb4<u64> = shared.remotes[idx3]
+            r4<Remote> = rb4.(Remote)
+            if r4.unparker != null {
+                r4.unparker.unpark()
+            }
+        }
+    }
+}
+
+// Index of the worker whose Remote.core_bits matches `core`, or -1.
+fn mt_worker_index_for_core(shared<MtShared>, core<WorkerCore>) i32 {
+    if shared == null || core == null {
+        return -1
+    }
+    want<u64> = core.(u64)
+    i<u32> = 0
+    while i < shared.num_workers {
+        bits<u64> = shared.remotes[i]
+        if bits != 0 {
+            r<Remote> = bits.(Remote)
+            if r.core_bits == want {
+                return i.(i32)
+            }
+        }
+        i += 1
+    }
+    return -1
 }
 
 // Inject + wake one sleeper (mother push_remote_task + notify_parked_remote).
@@ -79,8 +138,19 @@ fn mt_schedule_remote(shared<MtShared>, notif<task.Notified>) {
         return
     }
     mt_notify_count_miss()
-    // searching>0 skipped notify: mother relies on the searcher. Nudge
-    // park_driver so a worker blocked in epoll re-enters and scans inject.
+    // searching>0 skipped notify: mother relies on the searcher. Heal a leaked
+    // searching credit then retry once; also nudge park_driver via eventfd.
+    mt_heal_searching_leak(shared)
+    found2<i32>, idx2<u32> = shared.idle.notify_one(sn.idle_synced, shared.synced_lock)
+    if found2 == 1 && idx2 < shared.num_workers {
+        mt_notify_count_hit()
+        rb3<u64> = shared.remotes[idx2]
+        r3<Remote> = rb3.(Remote)
+        if r3.unparker != null {
+            r3.unparker.unpark()
+        }
+        return
+    }
     hub<ParkDriverHub> = shared.park_hub
     if hub != null && hub.ioh != null {
         hub.ioh.wake_by_ref()
@@ -89,11 +159,20 @@ fn mt_schedule_remote(shared<MtShared>, notif<task.Notified>) {
 
 // Prefer schedule_local when this OS thread holds a WorkerCore
 // (mother with_current). Else inject.
+// Never leave work on a PARKED_CONDVAR core's LIFO from a foreign thread —
+// LIFO is not stealable; inject+notify instead.
 fn mt_schedule_any(h<MtHandle>, notif<task.Notified>, is_yield<i32>, allow_local<i32>) {
     if allow_local != 0 {
         core_bits<u64> = mt_core_current_bits()
         if core_bits != 0 {
             core<WorkerCore> = core_bits.(WorkerCore)
+            if core.parker != null {
+                pst<i32> = core.parker.state.(i32)
+                if pst == PARKED_CONDVAR {
+                    mt_schedule_remote(h.shared, notif)
+                    return
+                }
+            }
             mt_schedule_local(core, h.shared, notif, is_yield)
             return
         }
@@ -186,7 +265,9 @@ MtHandle::spawn(fut) task.JoinHandle {
 fn mt_schedule_bridge(hbits<u64>, nbits<u64>){
     mh<MtHandle> = hbits.(MtHandle)
     n<task.Notified> = nbits.(task.Notified)
-    // Wake path: local when on a worker (same as Schedule::schedule).
+    // Mother schedule: prefer local LIFO when this thread holds a WorkerCore.
+    // mt_schedule_any still forces inject when the core is PARKED_CONDVAR
+    // (LIFO is not stealable). park_timeout(0)/inject heal cover driver turns.
     mt_schedule_any(mh, n, 0, 1)
 }
 

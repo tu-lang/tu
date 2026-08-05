@@ -8,7 +8,7 @@
 use runtime
 use std
 
-CTX_TID_CAP<i32> = 64
+CTX_TID_CAP<i32> = 256
 
 mem CtxTlsHub {
     runtime.MutexInter* lock
@@ -80,9 +80,21 @@ fn ctx_tid_claim(h<CtxTlsHub>, tid<u64>) i32 {
         }
         j += 1
     }
-    h.tids[0] = tid
-    h.cores[0] = 0
-    return 0
+    // Full: reuse a slot whose core and ctx are clear (exited worker), never
+    // clobber an in-use worker (old code always overwrote [0] → wrong LIFO).
+    k<i32> = 0
+    while k < CTX_TID_CAP {
+        if h.cores[k] == 0 && h.ctxs[k] == 0 {
+            h.tids[k] = tid
+            return k
+        }
+        k += 1
+    }
+    // Last resort: still avoid [0] if it looks live.
+    h.tids[CTX_TID_CAP - 1] = tid
+    h.cores[CTX_TID_CAP - 1] = 0
+    h.ctxs[CTX_TID_CAP - 1] = 0
+    return CTX_TID_CAP - 1
 }
 
 // Saved slot layout matches asyncio.runtime.RtSavedSlot (u64 prev_bits).
@@ -113,7 +125,10 @@ fn mt_ctx_exit(saved_bits<u64>) {
     h.lock.lock()
     idx<i32> = saved.slot_idx
     if idx >= 0 && idx < CTX_TID_CAP {
-        h.cores[idx] = 0
+        // Do NOT clear cores[idx] here — WorkerCore bind is independent of the
+        // RuntimeContext stack (mt_core_bind / mt_core_unbind). Nested
+        // rt_enter/rt_exit must not strand schedule_local (cores==0 → inject
+        // races / lost LIFO under PARKED_DRIVER).
         if saved.prev_bits == 0 {
             h.ctxs[idx] = 0
             h.tids[idx] = 0
@@ -144,10 +159,8 @@ fn mt_core_bind(core_bits<u64>) {
     h<CtxTlsHub> = CTX_HUB
     tid<u64> = std.gettid()
     h.lock.lock()
-    idx<i32> = ctx_tid_find(h, tid)
-    if idx >= 0 {
-        h.cores[idx] = core_bits
-    }
+    idx<i32> = ctx_tid_claim(h, tid)
+    h.cores[idx] = core_bits
     h.lock.unlock()
 }
 

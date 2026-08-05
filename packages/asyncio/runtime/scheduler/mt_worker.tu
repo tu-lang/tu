@@ -6,6 +6,7 @@
 use runtime
 use std.atomic
 use io
+use sys
 use asyncio.task
 use asyncio.util as util
 use asyncio.runtime as asyncrt
@@ -141,6 +142,11 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
     saved_ctx<u64> = mt_ctx_enter(ctx_bits)
     // Bind WorkerCore so spawn and wake both prefer schedule_local.
     mt_core_bind(core.(u64))
+    ran_since_turn<u32> = 0
+    ev_i<u32> = core.event_interval
+    if ev_i == 0.(u32) {
+        ev_i = 61
+    }
 
     loop {
         // Prefer unlocked shutting_down — inject.is_closed() takes gate_lock
@@ -150,6 +156,15 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
         }
         if core.is_shutdown == 1 break
         core.tick = core.tick + 1
+        core.progress = core.progress + 1
+
+        // Mother Context::maintenance: after event_interval *task runs*,
+        // non-blocking driver turn (not every empty steal spin).
+        if ran_since_turn >= ev_i {
+            zero<sys.Duration> = sys.Duration::from_millis(0)
+            core.parker.park_timeout(w.handle.driver_handle, zero)
+            ran_since_turn = 0
+        }
 
         // Cooperative GC while busy (park path already osyields).
         if (core.tick % core.global_queue_interval) == 0 {
@@ -161,6 +176,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             err<i32>, t<task.Notified> = mt_next_global_task(w, core)
             if err == 0 {
                 run_task(w, core, t)
+                ran_since_turn += 1
                 continue
             }
         }
@@ -170,6 +186,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             bits<u64> = core.lifo_slot
             core.lifo_slot = 0
             run_task(w, core, task.notified_from_raw(bits.(task.RawTask)))
+            ran_since_turn += 1
             continue
         }
 
@@ -177,6 +194,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
         lerr<i32>, lt<task.Notified> = core.run_queue.pop()
         if lerr == 0 {
             run_task(w, core, lt)
+            ran_since_turn += 1
             continue
         }
 
@@ -191,6 +209,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             serr<i32>, st<task.Notified> = mt_steal_work(w, core)
             if serr == 0 {
                 run_task(w, core, st)
+                ran_since_turn += 1
                 continue
             }
         }
@@ -199,6 +218,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             ierr2<i32>, ti2<task.Notified> = mt_next_global_task(w, core)
             if ierr2 == 0 {
                 run_task(w, core, ti2)
+                ran_since_turn += 1
                 continue
             }
         }
@@ -215,11 +235,13 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             bits_pre<u64> = core.lifo_slot
             core.lifo_slot = 0
             run_task(w, core, task.notified_from_raw(bits_pre.(task.RawTask)))
+            ran_since_turn += 1
             continue
         }
         lerr_pre<i32>, lt_pre<task.Notified> = core.run_queue.pop()
         if lerr_pre == 0 {
             run_task(w, core, lt_pre)
+            ran_since_turn += 1
             continue
         }
         // Inject may have work while local is empty (mother next_task).
@@ -227,6 +249,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
             ierr_pre<i32>, ti_pre<task.Notified> = mt_next_global_task(w, core)
             if ierr_pre == 0 {
                 run_task(w, core, ti_pre)
+                ran_since_turn += 1
                 continue
             }
         }
@@ -257,6 +280,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
                     core.is_searching = 1
                 }
                 run_task(w, core, ti_pk0)
+                ran_since_turn += 1
                 continue
             }
         }
@@ -267,7 +291,11 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
         // throttle skipped notify; without this check the driver re-parks
         // and SEARCHING_LEAK deadlocks (inject stranded, sleepers full).
         loop {
+            // Refresh tid→core bind before park (claim if missing). IO wakes
+            // during park_driver use mt_core_current_bits → this core's LIFO.
+            mt_core_bind(core.(u64))
             core.parker.wait_until_wake(w.handle.driver_handle)
+            core.progress = core.progress + 1
             if shared.shutting_down == 1 {
                 core.is_shutdown = 1
                 // Notify may have already +searching for us; drop that credit.
@@ -302,6 +330,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
                     core.is_searching = 0
                 }
                 run_task(w, core, lt_pk)
+                ran_since_turn += 1
                 break
             }
             if shared.inject.is_empty() == 0 {
@@ -316,6 +345,7 @@ fn worker_run_loop(w<MtWorker>, core<WorkerCore>){
                         core.is_searching = 0
                     }
                     run_task(w, core, ti_pk)
+                    ran_since_turn += 1
                     break
                 }
             }

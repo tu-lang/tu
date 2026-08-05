@@ -116,6 +116,12 @@ Inject::pop() (i32, task.Notified) {
     s<InjectSynced> = this.fifo_state
     raw<task.RawTask> = task.task_list_pop_front(&s.head, &s.tail)
     if raw == null {
+        // Heal depth desync: empty list must report depth 0 or is_empty
+        // stays false and last-searcher notify spins forever.
+        sh0<InjectShared> = this.depth_atomic
+        if sh0.depth != 0.(u32) {
+            sh0.depth = 0
+        }
         m.unlock()
         empty<task.Notified> = null
         return io.NotFound, empty

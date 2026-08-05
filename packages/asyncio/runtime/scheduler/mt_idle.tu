@@ -100,9 +100,15 @@ Idle::transition_worker_from_searching() i32 {
 // Move the worker into parked: push onto sleepers and decrement unparked.
 // is_searching: whether this worker was searching (also dec searching count).
 // Returns 1 when this was the last searcher — caller must notify_if_work_pending.
+//
+// Mother idle.rs: take synced lock FIRST, then dec state, then push sleepers.
+// Updating state before the sleeper list opens a window where notify sees
+// searching==0 / unparked<n but sleepers empty → miss, then the worker
+// sleeps forever with inject work stranded.
 Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter>, worker<u32>, is_searching<i32>) i32 {
     addr<i32*> = &this.state
     last_searcher<i32> = 0
+    lock.lock()
     loop {
         cur<i32> = *addr
         unparked<u32>  = idle_state_unparked(cur.(u32))
@@ -122,8 +128,6 @@ Idle::transition_worker_to_parked(synced<IdleSynced>, lock<runtime.MutexInter>, 
         new_state<i32> = packed.(i32)
         if atomic.cas(addr, cur, new_state) == CAS_OK break
     }
-
-    lock.lock()
     if synced.sleepers_len < synced.sleepers_cap {
         synced.sleepers[synced.sleepers_len] = worker
         synced.sleepers_len += 1
@@ -138,6 +142,7 @@ Idle::transition_worker_from_parked(synced<IdleSynced>, lock<runtime.MutexInter>
 }
 
 // Pick one sleeper to wake; returns (1, idx) on hit, (0, 0) when empty.
+// Mother: only when notify_should_wakeup (no searcher).
 Idle::worker_to_notify(synced<IdleSynced>, lock<runtime.MutexInter>) (i32, u32) {
     if this.notify_should_wakeup() == 0 return 0, 0
     lock.lock()
@@ -203,6 +208,46 @@ Idle::notify_should_wakeup() i32 {
     if unparked >= this.num_workers return 0
     return 1
 }
+
+// Clear idle searching credits that no live WorkerCore claims (SEARCHING_LEAK).
+// Call when notify misses so inject/LIFO work is not stranded while every
+// worker sleeps on condvar (eventfd only wakes PARKED_DRIVER).
+fn mt_heal_searching_leak(shared<MtShared>) {
+    if shared == null || shared.idle == null {
+        return
+    }
+    cur<i32> = shared.idle.state
+    searching<u32> = idle_state_searching(cur.(u32))
+    if searching == 0 {
+        return
+    }
+    any<i32> = 0
+    i<u32> = 0
+    while i < shared.num_workers {
+        bits<u64> = shared.remotes[i]
+        if bits != 0 {
+            r<Remote> = bits.(Remote)
+            if r.core_bits != 0 {
+                c<WorkerCore> = r.core_bits.(WorkerCore)
+                if c.is_searching == 1 {
+                    any = 1
+                    break
+                }
+            }
+        }
+        i += 1
+    }
+    if any == 1 {
+        return
+    }
+    // Drop leaked credits one-by-one.
+    n<u32> = searching
+    while n > 0 {
+        shared.idle.transition_worker_from_searching()
+        n -= 1
+    }
+}
+
 
 // Wrapper that picks a sleeper and tells the caller to wake them. Caller
 // is responsible for the actual unpark (we don't hold a Parker* here).

@@ -38,6 +38,7 @@ mem MtShared {
     i32               shutting_down        // 1 after inject close; park loops exit
     i32               workers_alive        // OS threads still in worker_entry
     ParkDriverHub*    park_hub             // shared driver TryLock for PARKED_DRIVER
+    u32               event_interval       // tasks per non-blocking driver turn
 }
 
 // Allocate empty MtShared sized for num_workers. remotes are filled in
@@ -71,6 +72,7 @@ const MtShared::new(num_workers<u32>) MtShared {
     s.shutting_down      = 0
     s.workers_alive      = 0
     s.park_hub           = null
+    s.event_interval     = 61
     return s
 }
 

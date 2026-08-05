@@ -5,8 +5,12 @@
 use fmt
 use runtime
 use os
+use std
+use string
 use std.atomic
+use sys
 use asyncio.task
+use asyncio.runtime.io as rtio
 
 // Process-wide counters (debug only).
 MT_SCHED_LOCAL<i32> = 0
@@ -34,23 +38,61 @@ fn mt_notify_count_miss() {
 MT_HANG_DUMP_MH<u64> = 0
 MT_HANG_DUMP_IOH<u64> = 0
 MT_HANG_DUMP_REQ<i32> = 0
+// Soft: print dump and continue (no os.exit). Used for ab miss forensics.
+MT_HANG_DUMP_SOFT<i32> = 0
+MT_HANG_DUMP_FILE_POLL<i32> = 0
 
 fn mt_hang_dump_arm(mh_bits<u64>, ioh_bits<u64>) {
     MT_HANG_DUMP_MH = mh_bits
     MT_HANG_DUMP_IOH = ioh_bits
 }
 
+fn mt_hang_dump_set_soft(v<i32>) {
+    MT_HANG_DUMP_SOFT = v
+}
+
+fn mt_hang_dump_enable_file_poll(v<i32>) {
+    MT_HANG_DUMP_FILE_POLL = v
+}
+
 fn mt_hang_dump_request() {
     MT_HANG_DUMP_REQ = 1
+}
+
+// Force dump on the calling thread (watchdog OS thread). Prefer this when
+// workers are stuck in epoll/futex and never re-enter wait_until_wake.
+fn mt_hang_dump_now() {
+    MT_HANG_DUMP_REQ = 1
+    mt_hang_dump_maybe()
 }
 
 fn mt_hang_dump_cancel() {
     MT_HANG_DUMP_REQ = 0
 }
 
+// External trigger: ab script touches /tmp/mt_dump.req after a miss.
+fn mt_hang_dump_poll_file() {
+    if MT_HANG_DUMP_FILE_POLL == 0 {
+        return
+    }
+    if MT_HANG_DUMP_MH == 0 {
+        return
+    }
+    path<string.String> = string.S(*"/tmp/mt_dump.req")
+    pc<i8*> = path.str()
+    fd<i32> = sys.openat(std.AT_FDCWD, pc, 0.(i64), 0.(i64))
+    if fd < 0 {
+        return
+    }
+    sys.close(fd)
+    sys.unlink(pc)
+    MT_HANG_DUMP_REQ = 1
+}
+
 // Called from park paths (worker / block_on) so we stay on a runtime thread.
 // Keep this body minimal — large helper calls have hit "call not func object".
 fn mt_hang_dump_maybe() {
+    mt_hang_dump_poll_file()
     if MT_HANG_DUMP_REQ == 0 {
         return
     }
@@ -59,14 +101,18 @@ fn mt_hang_dump_maybe() {
     bits<u64> = MT_HANG_DUMP_MH
     if bits == 0 {
         fmt.println("mt_hang: null mh")
-        os.exit(42)
+        if MT_HANG_DUMP_SOFT == 0 {
+            os.exit(42)
+        }
         return
     }
     mh<MtHandle> = bits.(MtHandle)
     shared<MtShared> = mh.shared
     if shared == null {
         fmt.println("mt_hang: null shared")
-        os.exit(42)
+        if MT_HANG_DUMP_SOFT == 0 {
+            os.exit(42)
+        }
         return
     }
     cur<i32> = 0
@@ -89,6 +135,16 @@ fn mt_hang_dump_maybe() {
         " notify_miss=", int(MT_NOTIFY_MISS),
         " sched_local=", int(MT_SCHED_LOCAL),
         " sched_remote=", int(MT_SCHED_REMOTE))
+    inj_d<u32> = 0
+    if shared.inject != null && shared.inject.depth_atomic != null {
+        inj_d = shared.inject.depth_atomic.depth
+    }
+    fmt.println("mt_hang: inject_depth=", int(inj_d))
+    fmt.println("mt_hang: wake_submit=", int(task.io_wake_submit_get()),
+        " wake_nop=", int(task.io_wake_nop_get()),
+        " wake_zero=", int(task.io_wake_zero_get()),
+        " wake_tag=", int(task.io_wake_tag_get()),
+        " wake_dealloc=", int(task.io_wake_dealloc_get()))
 
     search_local_sum<i32> = 0
     i<u32> = 0
@@ -106,10 +162,12 @@ fn mt_hang_dump_maybe() {
         }
         is_s<i32> = 0
         lifo_nz<i32> = 0
+        prog<u64> = 0
         if r.core_bits != 0 {
             core<WorkerCore> = r.core_bits.(WorkerCore)
             is_s = core.is_searching
             search_local_sum += is_s
+            prog = core.progress
             if core.lifo_slot != 0 {
                 lifo_nz = 1
             }
@@ -121,11 +179,27 @@ fn mt_hang_dump_maybe() {
         fmt.println("  remote[", int(i), "] park=", int(pst),
             " is_searching=", int(is_s),
             " lifo=", int(lifo_nz),
-            " steal_empty=", int(steal_empty))
+            " steal_empty=", int(steal_empty),
+            " progress=", int(prog))
         i += 1
     }
     if searching > 0.(u32) && search_local_sum == 0 {
         fmt.println("mt_hang: SEARCHING_LEAK")
+    }
+    // Driver gate: 0=FREE 1=HELD. If HELD with no PARKED_DRIVER, gate leak.
+    hub<ParkDriverHub> = shared.park_hub
+    if hub != null {
+        fmt.println("mt_hang: drv_gate=", int(hub.drv_gate),
+            " time_on=", int(hub.time_on))
+    } else {
+        fmt.println("mt_hang: park_hub=null")
+    }
+    // IO registrations + waiter ctx (decisive for wake-lost vs searching).
+    iohb<u64> = MT_HANG_DUMP_IOH
+    if iohb != 0 {
+        rtio.io_debug_dump(iohb)
+    } else {
+        fmt.println("io_debug: no ioh armed")
     }
     // Owned tasks snapshot (states only).
     owned<task.OwnedTasks> = shared.owned
@@ -140,12 +214,18 @@ fn mt_hang_dump_maybe() {
         n<i32> = 0
         while cur_raw != null && n < 32 {
             st<i32> = cur_raw.life_load()
-            fmt.println("  task[", int(n), "] state=", int(st),
+            stage<i32> = -1
+            if cur_raw.task_cell != null {
+                stage = cur_raw.task_cell.load_stage()
+            }
+            fmt.println("  task[", int(n), "] ptr=", int(cur_raw.(u64)),
+                " state=", int(st),
                 " run=", int(st & 1),
                 " done=", int((st >> 1) & 1),
                 " ntf=", int((st >> 2) & 1),
                 " join_w=", int((st >> 4) & 1),
-                " ref=", int((st >> 6) & 0x3FFFFFF))
+                " ref=", int((st >> 6) & 0x3FFFFFF),
+                " stage=", int(stage))
             nxt<task.RawTask> = null
             if cur_raw.task_header != null {
                 nxt = cur_raw.task_header.owned_next_out()
@@ -163,6 +243,35 @@ fn mt_hang_dump_maybe() {
             si += 1
         }
         shared.synced_lock.unlock()
+    }
+    if MT_HANG_DUMP_SOFT != 0 {
+        fmt.println("=== END DUMP (soft) ===")
+        return
+    }
+    // Second progress sample ~1s later: frozen workers keep the same count.
+    fmt.println("mt_hang: progress sample-2 after 1s")
+    runtime.entersyscall()
+    req<std.TimeSpec:> = null
+    rem<std.TimeSpec:> = null
+    req.sec = 1
+    req.nsec = 0
+    std.nanosleep(&req, &rem)
+    runtime.exitsyscall()
+    i2<u32> = 0
+    while i2 < shared.num_workers {
+        rb2<u64> = shared.remotes[i2]
+        if rb2 == 0 {
+            i2 += 1
+            continue
+        }
+        r2<Remote> = rb2.(Remote)
+        prog2<u64> = 0
+        if r2.core_bits != 0 {
+            c2<WorkerCore> = r2.core_bits.(WorkerCore)
+            prog2 = c2.progress
+        }
+        fmt.println("  remote[", int(i2), "] progress2=", int(prog2))
+        i2 += 1
     }
     fmt.println("=== END DUMP ===")
     os.exit(42)

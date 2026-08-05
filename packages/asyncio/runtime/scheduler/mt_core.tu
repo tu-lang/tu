@@ -17,10 +17,12 @@ mem WorkerCore {
     Parker*      parker
     util.FastRand*    rand
     u32          global_queue_interval
+    u32          event_interval         // non-blocking driver turn cadence (mother)
+    u64          progress               // hang forensics: increments each loop / park wake
 }
 
 // Build a WorkerCore wired to run_queue + park.
-const WorkerCore::new(run_queue<Local>, parker<Parker>, rand<util.FastRand>, global_interval<u32>) WorkerCore {
+const WorkerCore::new(run_queue<Local>, parker<Parker>, rand<util.FastRand>, global_interval<u32>, event_interval<u32>) WorkerCore {
     c<WorkerCore> = new WorkerCore
     c.tick                  = 0
     c.lifo_slot             = 0
@@ -31,6 +33,11 @@ const WorkerCore::new(run_queue<Local>, parker<Parker>, rand<util.FastRand>, glo
     c.parker                = parker
     c.rand                  = rand
     c.global_queue_interval = global_interval
+    c.event_interval        = event_interval
+    if c.event_interval == 0.(u32) {
+        c.event_interval = 61
+    }
+    c.progress              = 0
     return c
 }
 
