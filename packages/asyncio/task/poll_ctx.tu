@@ -1,64 +1,112 @@
-// Per-OS-thread active poll waker bits, keyed by runtime.core_cid().
-// Mother Context is thread-local. A process-global ACTIVE_POLL_CTX races when
-// multiple multi_thread workers call harness_poll concurrently — join/IO
-// wakers get the wrong RawTask* and SEGV / hang under load.
+// Per-OS-thread active poll waker bits, keyed by gettid().
+// Mother Context is thread-local. core_cid() can be -1 around soft-syscall /
+// core detach windows; a zero waker then Pending with no IO registration
+// left READABLE orphans (joint hang dump). Tid is stable for the OS thread.
 //
-// Each Core has a unique cid; one writer per slot, no lock / no CAS.
+// Hub must be published from poll_ctx_hub_init (builder, single-threaded)
+// before workers run. Lock only on first claim of a tid slot. Publish/load of
+// ctxs[idx] is single-writer (this OS thread).
 
 use runtime
+use std
 
-POLL_CID_CAP<i32> = 1024
+POLL_TID_CAP<i32> = 256
 
-mem PollCidHub {
+mem PollTidHub {
+    runtime.MutexInter* lock
+    u64* tids
     u64* ctxs
 }
 
-POLL_CID_HUB<PollCidHub> = null
+POLL_TID_HUB<PollTidHub> = null
 
-fn poll_ctx_hub_ensure() {
-    if POLL_CID_HUB != null {
-        return
-    }
-    h<PollCidHub> = new PollCidHub
-    n<u64> = POLL_CID_CAP.(u64)
-    // Strong roots while a worker is inside harness_poll: soft-syscall STW can
-    // miss register-only task pointers; the cid slot must keep RawTask alive.
+fn poll_ctx_hub_create() PollTidHub {
+    h<PollTidHub> = new PollTidHub
+    lk<runtime.MutexInter> = new runtime.MutexInter
+    lk.init()
+    h.lock = lk
+    n<u64> = POLL_TID_CAP.(u64)
+    h.tids = runtime.malloc(8 * n, 1.(i8), 1.(i8))
     h.ctxs = runtime.malloc(8 * n, 0.(i8), 1.(i8))
     i<i32> = 0
-    while i < POLL_CID_CAP {
+    while i < POLL_TID_CAP {
+        h.tids[i] = 0
         h.ctxs[i] = 0
         i += 1
     }
-    POLL_CID_HUB = h
+    return h
 }
 
-// Builder / block_on call before any worker poll.
+// Builder calls this before spawning workers — single-threaded publish.
 fn poll_ctx_hub_init() {
-    poll_ctx_hub_ensure()
+    if POLL_TID_HUB != null {
+        return
+    }
+    POLL_TID_HUB = poll_ctx_hub_create()
 }
 
-// Publish ctx for this OS thread's Core; returns previous (nesting).
+fn poll_ctx_hub_ensure() {
+    if POLL_TID_HUB != null {
+        return
+    }
+    // Fallback if a path skipped init; still racy under MT — prefer init().
+    POLL_TID_HUB = poll_ctx_hub_create()
+}
+
+fn poll_tid_find(h<PollTidHub>, tid<u64>) i32 {
+    i<i32> = 0
+    while i < POLL_TID_CAP {
+        if h.tids[i] == tid {
+            return i
+        }
+        i += 1
+    }
+    return -1
+}
+
+fn poll_tid_claim_locked(h<PollTidHub>, tid<u64>) i32 {
+    found<i32> = poll_tid_find(h, tid)
+    if found >= 0 {
+        return found
+    }
+    j<i32> = 0
+    while j < POLL_TID_CAP {
+        if h.tids[j] == 0 {
+            h.tids[j] = tid
+            h.ctxs[j] = 0
+            return j
+        }
+        j += 1
+    }
+    h.tids[POLL_TID_CAP - 1] = tid
+    h.ctxs[POLL_TID_CAP - 1] = 0
+    return POLL_TID_CAP - 1
+}
+
 fn poll_ctx_set(ctx<u64>) u64 {
     poll_ctx_hub_ensure()
-    h<PollCidHub> = POLL_CID_HUB
-    id<i32> = runtime.core_cid()
-    if id < 0 || id >= POLL_CID_CAP {
-        return 0
+    h<PollTidHub> = POLL_TID_HUB
+    tid<u64> = std.gettid()
+    idx<i32> = poll_tid_find(h, tid)
+    if idx < 0 {
+        h.lock.lock()
+        idx = poll_tid_claim_locked(h, tid)
+        h.lock.unlock()
     }
-    prev<u64> = h.ctxs[id]
-    h.ctxs[id] = ctx
+    prev<u64> = h.ctxs[idx]
+    h.ctxs[idx] = ctx
     return prev
 }
 
-// Current Core's published poll ctx, or 0.
 fn poll_ctx_get() u64 {
-    h<PollCidHub> = POLL_CID_HUB
+    h<PollTidHub> = POLL_TID_HUB
     if h == null {
         return 0
     }
-    id<i32> = runtime.core_cid()
-    if id < 0 || id >= POLL_CID_CAP {
+    tid<u64> = std.gettid()
+    idx<i32> = poll_tid_find(h, tid)
+    if idx < 0 {
         return 0
     }
-    return h.ctxs[id]
+    return h.ctxs[idx]
 }

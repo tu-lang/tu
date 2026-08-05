@@ -144,8 +144,13 @@ RawTask::harness_dealloc(){
 }
 
 // Drop one ref; dealloc when it hits zero.
+// Mother drop_join_handle_slow: first unset JOIN_INTEREST, then drop the
+// JoinHandle reference. Without this, discarding a JoinHandle (Tu has no
+// Drop) leaks JOIN_INTEREST + one ref forever — httpserver spawn wedges
+// after ~50k connections on one process.
 RawTask::drop_join_handle_slow(){
     life_st<TaskState> = this.life_st()
+    life_st.transition_to_join_handle_dropped()
     if life_st.ref_dec() != 0 {
         this.harness_dealloc()
     }

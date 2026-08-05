@@ -289,6 +289,48 @@ TaskState::unset_join_waker(){
     this.unset_waker_after_complete()
 }
 
+// Mother drop_join_handle_fast: CAS INITIAL → (INITIAL-REF) & !JOIN_INTEREST.
+// Returns 1 on success (JoinHandle ref already dropped).
+TaskState::drop_join_handle_fast() i32 {
+    want<i32> = INITIAL_STATE
+    next<i32> = (INITIAL_STATE - REF_ONE) & (~JOIN_INTEREST)
+    loop {
+        w<u64> = atomic.load64(&this.slot_word)
+        cur<i32> = w.(i32)
+        if cur != want {
+            return 0
+        }
+        if atomic.cas64(&this.slot_word, cur.(i64), next.(i64)) == CAS64_OK {
+            return 1
+        }
+    }
+    return 0
+}
+
+// Mother transition_to_join_handle_dropped: unset JOIN_INTEREST (and JOIN_WAKER
+// when not COMPLETE). Tu has no Drop — JoinHandle::detach must call this.
+// Returns 1 when COMPLETE (caller may discard output).
+TaskState::transition_to_join_handle_dropped() i32 {
+    loop {
+        w<u64> = atomic.load64(&this.slot_word)
+        cur<i32> = w.(i32)
+        if (cur & JOIN_INTEREST) == 0 {
+            return 0
+        }
+        next<i32> = cur & (~JOIN_INTEREST)
+        if (cur & COMPLETE) == 0 {
+            next = next & (~JOIN_WAKER)
+        }
+        if atomic.cas64(&this.slot_word, cur.(i64), next.(i64)) == CAS64_OK {
+            if (cur & COMPLETE) != 0 {
+                return 1
+            }
+            return 0
+        }
+    }
+    return 0
+}
+
 // Set CANCELLED (monotonic).
 TaskState::set_cancelled(){
     loop {

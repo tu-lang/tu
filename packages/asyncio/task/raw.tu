@@ -4,15 +4,54 @@
 
 use runtime
 use fmt
+use std.atomic
+
+// Wake forensic counters (hang dump).
+IO_WAKE_ZERO<i32> = 0
+IO_WAKE_SUBMIT<i32> = 0
+IO_WAKE_DONOTHING<i32> = 0
+IO_WAKE_DEALLOC<i32> = 0
+IO_WAKE_TAGGED<i32> = 0
+
+fn io_wake_count_zero() {
+    atomic.xadd(&IO_WAKE_ZERO, 1)
+}
+fn io_wake_count_submit() {
+    atomic.xadd(&IO_WAKE_SUBMIT, 1)
+}
+fn io_wake_count_donothing() {
+    atomic.xadd(&IO_WAKE_DONOTHING, 1)
+}
+fn io_wake_count_dealloc() {
+    atomic.xadd(&IO_WAKE_DEALLOC, 1)
+}
+fn io_wake_count_tagged() {
+    atomic.xadd(&IO_WAKE_TAGGED, 1)
+}
+
+// Cross-pkg: one counter per call (multi-ret across packages corrupts).
+fn io_wake_submit_get() i32 { return IO_WAKE_SUBMIT }
+fn io_wake_nop_get() i32 { return IO_WAKE_DONOTHING }
+fn io_wake_zero_get() i32 { return IO_WAKE_ZERO }
+fn io_wake_tag_get() i32 { return IO_WAKE_TAGGED }
+fn io_wake_dealloc_get() i32 { return IO_WAKE_DEALLOC }
 
 // Mother UnparkThread wake: low-bit tag on Unparker* (see wake_by_ctx).
 BLOCK_ON_WAKE_HOOK<u64> = 0
 BLOCK_ON_WAKER_TAG<u64> = 1
+// When epoll sets Ready but wake() finds no waiter (rctx=0), nudge block_on
+// out of park so the next poll observes the orphaned readiness bits.
+EMPTY_IO_NUDGE_HOOK<u64> = 0
 
 fn block_on_wake_hook_sig(ctx_tagged<u64>) (i32)
+fn empty_io_nudge_hook_sig() (i32)
 
 fn install_block_on_wake_hook(fn_bits<u64>) {
     BLOCK_ON_WAKE_HOOK = fn_bits
+}
+
+fn install_empty_io_nudge_hook(fn_bits<u64>) {
+    EMPTY_IO_NUDGE_HOOK = fn_bits
 }
 
 fn block_on_waker_tag(up_bits<u64>) u64 {
@@ -28,6 +67,16 @@ fn block_on_waker_is_tagged(ctx<u64>) i32 {
         return 1
     }
     return 0
+}
+
+// Driver calls this after set_readiness+wake with an empty waiter list.
+fn nudge_empty_io_wake() {
+    bits<u64> = EMPTY_IO_NUDGE_HOOK
+    if bits == 0 {
+        return
+    }
+    f<empty_io_nudge_hook_sig> = bits.(u64)
+    f()
 }
 
 // Function-pointer table. Slots are u64 raw addresses populated by task.harness.
@@ -119,6 +168,7 @@ RawTask::wake_by_ref(){
 // Package-fn wake used by wake_by_ctx.
 fn raw_wake_by_ref_bits(ctx<u64>) {
     if ctx == 0 {
+        io_wake_count_zero()
         return
     }
     rtask<RawTask> = null
@@ -126,8 +176,13 @@ fn raw_wake_by_ref_bits(ctx<u64>) {
     life_st<TaskState> = rtask.life_st()
     code<i32> = life_st.transition_to_notified_by_ref()
     if code == TN_Submit {
+        io_wake_count_submit()
         n<Notified> = notified_from_raw(rtask)
         rtask.task_header.sched_schedule(n)
+    } else if code == TN_Dealloc {
+        io_wake_count_dealloc()
+    } else {
+        io_wake_count_donothing()
     }
 }
 
@@ -135,9 +190,11 @@ fn raw_wake_by_ref_bits(ctx<u64>) {
 // root uses UnparkThread (tagged Unparker*) which only unparks.
 fn wake_by_ctx(ctx<u64>){
     if ctx == 0 {
+        io_wake_count_zero()
         return
     }
     if block_on_waker_is_tagged(ctx) != 0 {
+        io_wake_count_tagged()
         bits<u64> = BLOCK_ON_WAKE_HOOK
         if bits != 0 {
             f<block_on_wake_hook_sig> = bits.(u64)

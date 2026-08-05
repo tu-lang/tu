@@ -15,6 +15,22 @@ JoinHandle::init(raw<RawTask>){
     this.consumed = 0
 }
 
+// Detach without awaiting (mother JoinHandle::drop). Required: Tu has no
+// automatic Drop, so fire-and-forget spawn must call this or task refs leak.
+JoinHandle::detach(){
+    rtask<RawTask> = this.task_ptr
+    if rtask == null {
+        return
+    }
+    this.task_ptr = null
+    // Fast path: still at INITIAL (not yet polled) — mother drop_join_handle_fast.
+    life_st<TaskState> = rtask.life_st()
+    if life_st.drop_join_handle_fast() == 1 {
+        return
+    }
+    rtask.drop_join_handle_slow()
+}
+
 // Cancel the underlying task (idempotent). Join then yields JoinErrorCancelled.
 JoinHandle::abort(){
     rtask<RawTask> = this.task_ptr
