@@ -73,6 +73,8 @@ class Function {
     pcln_pc_labels = []
     pcln_pc_lines  = []
     has_defer = false
+    // return-through-try finally entry labels (inner→outer); pushed only while compiling try body
+    finally_stack = []
 
 
     fn isasync(){

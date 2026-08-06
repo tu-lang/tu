@@ -16,6 +16,25 @@ func GenAddr(var){
         }
     }
     if var.is_local {
+        // defer thunk: arg0 is enclosing %rbp
+        if defer_frame_mode {
+            writeln("    mov 16(%%rbp), %%rax")
+            if ast.GF().isasync() {
+                if var.isparam && !var.onmem {
+                    writeln("   lea %d(%%rax) , %%rax",var.offset)
+                    return var
+                }
+                This = ast.GF().thisvar
+                if This == null {
+                    var.check(false,"this param not found in async fn")
+                }
+                writeln("    mov %d(%%rax), %%rax", This.offset)
+                writeln("    add $%d , %%rax", var.offset)
+            }else{
+                writeln("    lea %d(%%rax), %%rax", var.offset)
+            }
+            return var
+        }
         if ast.GF().isasync() {
             if var.isparam && !var.onmem {
                 writeln("   lea %d(%%rbp) , %%rax",var.offset)

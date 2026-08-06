@@ -30,6 +30,12 @@ ReturnStmt::compile(ctx)
     }else {
         this.compilemulti(ctx)
     }
+    // return through try: run finally chain before .L.return
+    if fc != null && std.len(fc.finally_stack) > 0 {
+        top = std.tail(fc.finally_stack)
+        compile.writeln("    jmp %s", top)
+        return null
+    }
     ctx.jmpReturn()
     return null
 }
@@ -576,14 +582,32 @@ TryStmt::compile(ctx){
 	compile.writeln("    call runtime_setjmp")
 	compile.writeln("    cmp $0, %%rax")
 	compile.writeln("    jne %s", unwindL)
+	finRetL = ""
+	finRetNext = ""
+	if this.finallyBlock != null && compile.currentFunc != null {
+		finRetL = compile.currentParser.label() + ".L.try.finally.ret." + id
+		if std.len(compile.currentFunc.finally_stack) == 0 {
+			finRetNext = compile.currentParser.label() + ".L.return." + compile.currentFunc.fullname()
+		} else {
+			finRetNext = std.tail(compile.currentFunc.finally_stack)
+		}
+		compile.currentFunc.finally_stack[] = finRetL
+	}
 	if this.tryBlock != null {
 		this.tryBlock.compile(ctx)
+	}
+	if this.finallyBlock != null && compile.currentFunc != null && std.len(compile.currentFunc.finally_stack) > 0 {
+		std.pop(compile.currentFunc.finally_stack)
 	}
 	compile.writeln("    call runtime_exc_try_pop")
 	compile.writeln("    jmp %s", finallyL)
 	compile.writeln("%s:", unwindL)
 	if this.finallyBlock != null {
 		this.finallyBlock.compile(ctx)
+	}
+	// Design §7.2: after finally, run this frame's defers LIFO before catch.
+	if compile.currentFunc != null && compile.currentFunc.has_defer {
+		compile.writeln("    call runtime_defer_run_before_catch")
 	}
 	if hasCatch == 1 {
 		compile.writeln("    jmp %s", catchL)
@@ -640,6 +664,17 @@ TryStmt::compile(ctx){
 	if this.finallyBlock != null {
 		this.finallyBlock.compile(ctx)
 	}
+	compile.writeln("    jmp %s", endL)
+	if this.finallyBlock != null && finRetL != "" {
+		compile.writeln("%s:", finRetL)
+		compile.writeln("    push %%rbx")
+		compile.writeln("    mov %%rax, %%rbx")
+		compile.writeln("    call runtime_exc_try_pop")
+		this.finallyBlock.compile(ctx)
+		compile.writeln("    mov %%rbx, %%rax")
+		compile.writeln("    pop %%rbx")
+		compile.writeln("    jmp %s", finRetNext)
+	}
 	compile.writeln("%s:", endL)
 	return null
 }
@@ -679,13 +714,16 @@ DeferStmt::compile(ctx){
 	compile.writeln("%s:", thunk)
 	compile.writeln("    push %%rbp")
 	compile.writeln("    mov %%rsp, %%rbp")
+	compile.defer_frame_mode = true
 	if this.block != null {
 		this.block.compile(ctx)
 	}
+	compile.defer_frame_mode = false
 	compile.writeln("    mov %%rbp, %%rsp")
 	compile.writeln("    pop %%rbp")
 	compile.writeln("    ret")
 	compile.writeln("%s:", after)
+	compile.writeln("    push %%rbp")
 	compile.writeln("    lea %s(%%rip), %%rax", thunk)
 	compile.Push()
 	compile.writeln("    call runtime_defer_push")

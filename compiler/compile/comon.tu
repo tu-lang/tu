@@ -18,6 +18,8 @@ debug  = false
 sdebug = false
 nostd  = true
 trace  = false
+// True while compiling a defer thunk body: GenAddr uses arg0 as enclosing %rbp.
+defer_frame_mode = false
 
 func pathInWorkdir(basename){
     return utils.pathInWorkdir(basename)

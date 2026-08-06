@@ -15,8 +15,9 @@ class Exception {
 	func init(msg){
 		this.message = msg
 		this.code = 0
-		this.file = ""
-		this.line = 0
+		// Throw site: skip Exception::init (+ new/super frames as needed).
+		this.file = debug.CallerFile(2)
+		this.line = debug.CallerLine(2)
 		this.trace = debug.stack(32)
 		this.previous = null
 		if runtime.exc_nest() > 0 {
