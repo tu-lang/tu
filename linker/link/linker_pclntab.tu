@@ -4,6 +4,9 @@ use linker.linux
 use linker.utils
 
 TU_PCLN_PREFIX = "__tu_pcln."
+const TU_PCLN_HDR_I<i32> = 24
+const TU_PCLN_REC_I<i32> = 40
+const TU_PCLN_MAGIC_U<u32> = 0xFFFFFFF1.(u32)
 
 fn pcln_is_frag(name){
 	if std.len(name) <= 10 {
@@ -17,18 +20,9 @@ fn pcln_frag_func(name){
 	return string.sub(name, 10)
 }
 
-// Merge __tu_pcln.* + __tu_ln.* into runtime_pclntab.
-// Use locals for sizes/magic (pkg-level typed consts load as addresses).
+// Merge __tu_pcln.* + __tu_ln.* into runtime_pclntab (exact-sized by allocAddr).
 Linker::fillPclntab()
 {
-	hdr_sz<i32> = 24
-	rec_sz<i32> = 40
-	magic_u<u32> = 0xFFFFFFF1.(u32)
-	o16u<u32> = 16.(u32)
-	o24u<u32> = 24.(u32)
-	o32u<u32> = 32.(u32)
-	o36u<u32> = 36.(u32)
-
 	if !std.exist("runtime_pclntab", this.symDef) {
 		return true
 	}
@@ -60,17 +54,16 @@ Linker::fillPclntab()
 		return true
 	}
 
-	// Functab only first; dense pctab grows from pctab_off within cap.
-	need_i<i32> = hdr_sz + ncount * rec_sz
+	need_i<i32> = TU_PCLN_HDR_I + ncount * TU_PCLN_REC_I
 	need_u<u64> = need_i.(u64)
-	if cap_u > 0.(u64) && need_u > cap_u {
-		utils.error("pclntab: runtime_pclntab reserve too small")
+	zero_u64<u64> = 0
+	if cap_u > zero_u64 && need_u > cap_u {
+		utils.error("pclntab: allocated size too small for functab")
 	}
 
 	baddr_u<u32> = *dataSeg.baseAddr
 	tab_u<u32> = tab_sym.st_value.(u32)
 	rel_u<u32> = tab_u - baddr_u
-	// Span full reserve so dense writes stay in-block
 	span_u32<u32> = cap_u.(u32)
 	need_as_u32<u32> = need_i.(u32)
 	if span_u32 < need_as_u32 {
@@ -91,15 +84,20 @@ Linker::fillPclntab()
 		utils.error("pclntab: cannot locate runtime_pclntab in .data")
 	}
 
+	cap_i<i32> = cap_u.(i32)
 	zi<i32> = 0
-	while zi < need_i {
+	zero_n<i32> = cap_i
+	if zero_n < need_i {
+		zero_n = need_i
+	}
+	while zi < zero_n {
 		zp<i8*> = dst + zi
 		*zp = 0
 		zi += 1
 	}
 
 	p0<u32*> = dst
-	*p0 = magic_u
+	*p0 = TU_PCLN_MAGIC_U
 	b4<i8*> = dst + 4
 	*b4 = 1
 	b5<i8*> = dst + 5
@@ -109,13 +107,16 @@ Linker::fillPclntab()
 	p12<u32*> = dst + 12
 	*p12 = 0.(u32)
 	p16<u32*> = dst + 16
-	*p16 = hdr_sz.(u32)
+	*p16 = TU_PCLN_HDR_I.(u32)
 	pctab_off_i<i32> = need_i
 	p20<u32*> = dst + 20
 	*p20 = pctab_off_i.(u32)
 
 	cursor_i<i32> = pctab_off_i
-	cap_i<i32> = cap_u.(i32)
+	o16u<u32> = 16.(u32)
+	o24u<u32> = 24.(u32)
+	o32u<u32> = 32.(u32)
+	o36u<u32> = 36.(u32)
 	ri<i32> = 0
 	for(def : this.symDef){
 		sname = def.name
@@ -147,7 +148,7 @@ Linker::fillPclntab()
 
 		pcln_off_u<u32> = 0.(u32)
 		lnname = "__tu_ln." + fname
-		if nlines_i > 0 && nlines_i < 512 && std.exist(lnname, this.symDef) {
+		if nlines_i > 0 && nlines_i < 100000 && std.exist(lnname, this.symDef) {
 			chunk_i<i32> = 4 + nlines_i * 8
 			if cursor_i + chunk_i <= cap_i {
 				pcln_off_u = cursor_i.(u32)
@@ -179,7 +180,7 @@ Linker::fillPclntab()
 			}
 		}
 
-		off_i<i32> = hdr_sz + ri * rec_sz
+		off_i<i32> = TU_PCLN_HDR_I + ri * TU_PCLN_REC_I
 		pu<u64*> = dst + off_i
 		*pu = entry_u
 		pu = dst + off_i + 8
@@ -200,15 +201,15 @@ Linker::fillPclntab()
 	while i < ncount {
 		j<i32> = i
 		while j > 0 {
-			prev_off<i32> = hdr_sz + (j - 1) * rec_sz
-			cur_off<i32> = hdr_sz + j * rec_sz
+			prev_off<i32> = TU_PCLN_HDR_I + (j - 1) * TU_PCLN_REC_I
+			cur_off<i32> = TU_PCLN_HDR_I + j * TU_PCLN_REC_I
 			p_prev<u64*> = dst + prev_off
 			p_cur<u64*> = dst + cur_off
 			if *p_cur >= *p_prev {
 				break
 			}
 			k<i32> = 0
-			while k < rec_sz {
+			while k < TU_PCLN_REC_I {
 				a<i8*> = dst + prev_off + k
 				b<i8*> = dst + cur_off + k
 				tmp<i8> = *a

@@ -125,6 +125,7 @@ Linker::link(out)
 	}
 	this.allocAddr()
 	this.symParser()
+	this.fixPclntabEnd()
 	this.relocate()
 	this.fillPclntab()
 	this.buildExe()

@@ -21,6 +21,7 @@ class Linker
 	exe				    // File* 
 	startOwner			// _start owner file
 	bssaddr  = 0
+	pclntab_size = 0    // exact need bytes after computePclntabNeed
 	bytes
 }
 Linker::init(){
@@ -137,11 +138,99 @@ Linker::allocAddr()
 	curOff = int(sizeof(linux.Elf64_Ehdr)) + int(sizeof(linux.Elf64_Phdr)) * std.len(this.segNames)
 	//for reference
 	mcurOff<i32> = *curOff
+	need_u<u32> = this.computePclntabNeed()
 
 	for(seg : this.segNames){
-		this.segLists[seg].allocAddr(seg,&curAddr,&mcurOff)
+		pass_need<u32> = 0
+		if seg == ".data" {
+			pass_need = need_u
+		}
+		this.segLists[seg].allocAddr(seg,&curAddr,&mcurOff,pass_need)
 	}
 	this.bssaddr = int(curAddr)
+}
+
+// Scan __tu_pcln.* before allocAddr; st_value still section-relative.
+Linker::computePclntabNeed()
+{
+	this.pclntab_size = 0
+	if !std.exist("runtime_pclntab", this.symDef) {
+		return 0
+	}
+	hdr_sz<i32> = 24
+	rec_sz<i32> = 40
+	nfunc<i32> = 0
+	pctab_i<i32> = 0
+	for(def : this.symDef){
+		sname = def.name
+		if !pcln_is_frag(sname) {
+			continue
+		}
+		fname = pcln_frag_func(sname)
+		if !std.exist(fname, this.symDef) {
+			continue
+		}
+		nfunc += 1
+		prov = def.prov
+		if !std.exist(".data", prov.shdrTab) {
+			continue
+		}
+		data_sh<linux.Elf64_Shdr> = prov.shdrTab[".data"]
+		fr<linux.Elf64_Sym> = prov.symTab[sname]
+		off_u<u64> = fr.st_value
+		sz_u<u64> = data_sh.sh_size
+		forty_u<u64> = 40
+		if off_u + forty_u <= sz_u {
+			tmp_i<i32> = 0
+			bufp<i8*> = new 4
+			thirtysix_u<u64> = 36
+			four_u<u64> = 4
+			prov.getData(bufp, data_sh.sh_offset + off_u + thirtysix_u, four_u)
+			tp<i32*> = bufp
+			tmp_i = *tp
+			if tmp_i > 0 {
+				pctab_i += 4 + tmp_i * 8
+			}
+		}
+	}
+	need_i<i32> = hdr_sz + nfunc * rec_sz + pctab_i
+	need_i = need_i + 3
+	need_i = need_i - need_i % 4
+	if need_i < hdr_sz {
+		need_i = hdr_sz
+	}
+	this.pclntab_size = need_i
+	ret_u<u32> = need_i.(u32)
+	return ret_u
+}
+
+// After symParser: end = start + need for lea/cap.
+Linker::fixPclntabEnd()
+{
+	ps<i32> = this.pclntab_size
+	if ps == 0 {
+		return true
+	}
+	if !std.exist("runtime_pclntab", this.symDef) {
+		return true
+	}
+	if !std.exist("runtime_pclntab_end", this.symDef) {
+		return true
+	}
+	start_sym<linux.Elf64_Sym> = this.symDef["runtime_pclntab"].prov.symTab["runtime_pclntab"]
+	end_sym<linux.Elf64_Sym> = this.symDef["runtime_pclntab_end"].prov.symTab["runtime_pclntab_end"]
+	end_sym.st_value = start_sym.st_value + ps.(u64)
+	for(sym : this.symLinks){
+		if sym.name == "runtime_pclntab_end" {
+			if sym.recv != null {
+				if std.exist("runtime_pclntab_end", sym.recv.symTab) {
+					rs<linux.Elf64_Sym> = sym.recv.symTab["runtime_pclntab_end"]
+					rs.st_value = end_sym.st_value
+				}
+			}
+		}
+	}
+	return true
 }
 
 Linker::symParser()
