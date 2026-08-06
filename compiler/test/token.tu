@@ -34,5 +34,6 @@ token = [
 	int(ast.API),      int(ast.IMPL),  int(ast.AS),
 	int(ast.F32),      int(ast.F64),
 	int(ast.BUILTIN),  int(ast.LPAREN),
+	int(ast.TRY),      int(ast.CATCH), int(ast.FINALLY), int(ast.THROW), int(ast.DEFER),
 	int(ast.END)
 ]

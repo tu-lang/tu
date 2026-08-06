@@ -50,6 +50,18 @@ Parser::parseStatement()
             reader.scan()
             node = this.parseMatchSmt()
         }
+        ast.TRY: {
+            reader.scan()
+            node = this.parseTryStmt()
+        }
+        ast.THROW: {
+            reader.scan()
+            node = this.parseThrowStmt()
+        }
+        ast.DEFER: {
+            reader.scan()
+            node = this.parseDeferStmt()
+        }
         ast.LBRACE: {
             node = this.parseBlock(false,false)
         }
@@ -556,4 +568,84 @@ Parser::parseContinueStmt(){
     }
     cs.continueto = stmt
     return cs
+}
+Parser::parseTryStmt(){
+	utils.debug("parser.Parser::parseTryStmt()")
+	reader<scanner.ScannerStatic> = this.scanner
+	node = new gen.TryStmt(this.line, this.column)
+	jbid = ast.incr_labelid()
+	jb = new gen.VarExpr(".jmpbuf." + jbid, this.line, this.column)
+	jb.structtype = true
+	jb.type = ast.I64
+	jb.size = 8
+	jb.stack = true
+	jb.stacksize = 8
+	this.newvar(jb)
+	node.jmpbufVar = jb
+	node.tryBlock = this.parseBlock(false, false)
+	this.check(node.tryBlock != null, "try requires a block")
+	while reader.curToken == ast.CATCH {
+		reader.scan()
+		cc = new gen.CatchClause()
+		cc.line = this.line
+		cc.column = this.column
+		this.check(reader.curToken == ast.LPAREN, "catch expects (")
+		reader.scan()
+		this.check(reader.curToken == ast.VAR, "catch expects type or name")
+		first = reader.curLex.dyn()
+		reader.scan()
+		if reader.curToken == ast.VAR {
+			cc.typeName = first
+			cc.varName = reader.curLex.dyn()
+			reader.scan()
+		} else {
+			cc.typeName = ""
+			cc.varName = first
+		}
+		this.check(reader.curToken == ast.RPAREN, "catch expects )")
+		reader.scan()
+		if cc.varName != "" {
+			ve = new gen.VarExpr(cc.varName, cc.line, cc.column)
+			this.newvar(ve)
+			cc.varExpr = ve
+		}
+		cc.block = this.parseBlock(false, false)
+		this.check(cc.block != null, "catch requires a block")
+		node.catches[] = cc
+	}
+	if reader.curToken == ast.FINALLY {
+		reader.scan()
+		node.finallyBlock = this.parseBlock(false, false)
+		this.check(node.finallyBlock != null, "finally requires a block")
+	}
+	this.check(std.len(node.catches) > 0 || node.finallyBlock != null, "try requires catch or finally")
+	return node
+}
+
+Parser::parseThrowStmt(){
+	utils.debug("parser.Parser::parseThrowStmt()")
+	node = new gen.ThrowStmt(this.line, this.column)
+	node.expr = this.parseExpression(1)
+	this.check(node.expr != null, "throw requires an expression")
+	return node
+}
+
+Parser::parseDeferStmt(){
+	utils.debug("parser.Parser::parseDeferStmt()")
+	reader<scanner.ScannerStatic> = this.scanner
+	node = new gen.DeferStmt(this.line, this.column)
+	if this.currentFunc != null {
+		this.currentFunc.has_defer = true
+	}
+	if reader.curToken == ast.LBRACE {
+		node.block = this.parseBlock(false, false)
+	} else {
+		b = new gen.BlockStmt()
+		s = this.parseStatement()
+		this.check(s != null, "defer requires a statement")
+		b.stmts[] = s
+		node.block = b
+	}
+	this.check(node.block != null, "defer requires a block")
+	return node
 }

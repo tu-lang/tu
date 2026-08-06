@@ -162,6 +162,11 @@ func getTokenString(tk) {
         API: return "api"
         IMPL: return "impl"
         AS: return "as"
+        TRY: return "try"
+        CATCH: return "catch"
+        FINALLY: return "finally"
+        THROW: return "throw"
+        DEFER: return "defer"
         _ :	return "undefine"
     }
 }

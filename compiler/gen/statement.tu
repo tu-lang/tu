@@ -529,3 +529,165 @@ MultiAssignStmt::assign2(ctx,fce){
     fce.dynfreeret()
     return null    
 }
+class CatchClause {
+	typeName = ""
+	varName = ""
+	varExpr = null
+	block = null
+	line = 0
+	column = 0
+}
+
+class TryStmt : ast.Ast {
+	tryBlock = null
+	catches = []
+	finallyBlock = null
+	jmpbufVar = null
+	func init(line, column){
+		super.init(line, column)
+	}
+}
+TryStmt::toString(){
+	return "try"
+}
+TryStmt::compile(ctx){
+	this.record()
+	id = ast.incr_labelid()
+	catchL = compile.currentParser.label() + ".L.try.catch." + id
+	finallyL = compile.currentParser.label() + ".L.try.finally." + id
+	endL = compile.currentParser.label() + ".L.try.end." + id
+	rethrowL = compile.currentParser.label() + ".L.try.rethrow." + id
+	unwindL = compile.currentParser.label() + ".L.try.unwind." + id
+	hasFin = 0
+	if this.finallyBlock != null {
+		hasFin = 1
+	}
+	hasCatch = 0
+	if std.len(this.catches) > 0 {
+		hasCatch = 1
+	}
+	compile.GenAddr(this.jmpbufVar)
+	compile.Push()
+	compile.writeln("    push $%d", hasFin)
+	compile.writeln("    push $0")
+	compile.writeln("    call runtime_exc_try_push")
+	compile.GenAddr(this.jmpbufVar)
+	compile.writeln("    mov %%rax, %%rdi")
+	compile.writeln("    call runtime_setjmp")
+	compile.writeln("    cmp $0, %%rax")
+	compile.writeln("    jne %s", unwindL)
+	if this.tryBlock != null {
+		this.tryBlock.compile(ctx)
+	}
+	compile.writeln("    call runtime_exc_try_pop")
+	compile.writeln("    jmp %s", finallyL)
+	compile.writeln("%s:", unwindL)
+	if this.finallyBlock != null {
+		this.finallyBlock.compile(ctx)
+	}
+	if hasCatch == 1 {
+		compile.writeln("    jmp %s", catchL)
+	} else {
+		compile.writeln("    jmp %s", rethrowL)
+	}
+	if hasCatch == 1 {
+		compile.writeln("%s:", catchL)
+		i = 0
+		while i < std.len(this.catches) {
+			cc = this.catches[i]
+			compile.writeln("    call runtime_exc_current")
+			compile.writeln("    push %%rax")
+			if cc.typeName == "" {
+				compile.writeln("    push $0")
+			} else {
+				cls = package.resolveCatchClass(cc.typeName)
+				this.check(cls != null, "catch type not found: " + cc.typeName)
+				nce = new gen.NewClassExpr(this.line, this.column)
+				nce.package = cls.pkg
+				nce.name = cls.name
+				s = nce.getReal()
+				this.check(s != null, "catch type resolve failed: " + cc.typeName)
+				compile.writeln("    lea %s(%%rip), %%rax", s.virtname())
+				compile.writeln("    push %%rax")
+			}
+			compile.writeln("    call runtime_exc_catch_match")
+			compile.writeln("    cmp $0, %%rax")
+			no_id = ast.incr_labelid()
+			no_match = compile.currentParser.label() + ".L.try.nomatch." + no_id
+			compile.writeln("    je %s", no_match)
+			if cc.varExpr != null {
+				compile.GenAddr(cc.varExpr)
+				compile.Push()
+				compile.writeln("    call runtime_exc_current")
+				compile.Store()
+			}
+			if cc.block != null {
+				cc.block.compile(ctx)
+			}
+			compile.writeln("    call runtime_exc_clear_nest")
+			compile.writeln("    call runtime_exc_try_pop")
+			compile.writeln("    jmp %s", endL)
+			compile.writeln("%s:", no_match)
+			i += 1
+		}
+		compile.writeln("    jmp %s", rethrowL)
+	}
+	compile.writeln("%s:", rethrowL)
+	compile.writeln("    call runtime_exc_try_pop")
+	compile.writeln("    call runtime_exc_rethrow")
+	compile.writeln("    jmp %s", endL)
+	compile.writeln("%s:", finallyL)
+	if this.finallyBlock != null {
+		this.finallyBlock.compile(ctx)
+	}
+	compile.writeln("%s:", endL)
+	return null
+}
+
+class ThrowStmt : ast.Ast {
+	expr = null
+	func init(line, column){
+		super.init(line, column)
+	}
+}
+ThrowStmt::toString(){
+	return "throw"
+}
+ThrowStmt::compile(ctx){
+	this.record()
+	this.expr.compile(ctx, true)
+	compile.Push()
+	compile.writeln("    call runtime_exc_throw")
+	return null
+}
+
+class DeferStmt : ast.Ast {
+	block = null
+	func init(line, column){
+		super.init(line, column)
+	}
+}
+DeferStmt::toString(){
+	return "defer"
+}
+DeferStmt::compile(ctx){
+	this.record()
+	id = ast.incr_labelid()
+	thunk = compile.currentParser.label() + ".L.defer." + id
+	after = compile.currentParser.label() + ".L.defer.after." + id
+	compile.writeln("    jmp %s", after)
+	compile.writeln("%s:", thunk)
+	compile.writeln("    push %%rbp")
+	compile.writeln("    mov %%rsp, %%rbp")
+	if this.block != null {
+		this.block.compile(ctx)
+	}
+	compile.writeln("    mov %%rbp, %%rsp")
+	compile.writeln("    pop %%rbp")
+	compile.writeln("    ret")
+	compile.writeln("%s:", after)
+	compile.writeln("    lea %s(%%rip), %%rax", thunk)
+	compile.Push()
+	compile.writeln("    call runtime_defer_push")
+	return null
+}

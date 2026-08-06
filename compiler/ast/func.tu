@@ -72,6 +72,7 @@ class Function {
     start_line = 0
     pcln_pc_labels = []
     pcln_pc_lines  = []
+    has_defer = false
 
 
     fn isasync(){

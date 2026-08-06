@@ -49,3 +49,24 @@ fn getClass(package,name)
     pkg = packages[pkgname]
     return pkg.getClass(name)
 }
+
+// Resolve catch type in current package then imported packages.
+fn resolveCatchClass(name) {
+	cls = getClass("", name)
+	if cls != null {
+		return cls
+	}
+	if GP().pkg == null {
+		return null
+	}
+	for fullpkg : GP().pkg.imports {
+		if packages[fullpkg] == null {
+			continue
+		}
+		cls = packages[fullpkg].getClass(name)
+		if cls != null {
+			return cls
+		}
+	}
+	return null
+}

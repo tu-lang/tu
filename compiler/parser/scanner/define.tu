@@ -15,10 +15,13 @@ keywords = {
 	"match" : ast.MATCH ,  "enum"  : ast.ENUM,   "goto"    : ast.GOTO,		"cfg"  : ast.CFG,
 	"const" : ast.CONST,   "api": ast.API,		 "impl"	   : ast.IMPL,
 	"as"    : ast.AS,
+	"try"   : ast.TRY,     "catch": ast.CATCH,   "finally" : ast.FINALLY,
+	"throw" : ast.THROW,   "defer": ast.DEFER,
 }
 builtins = {
     "int" : true , "sizeof" : true , "type" : true, "float" : true,
 	"inter_get_bp" : true,
+	"inter_get_sp" : true,
 }
 specs = {
 	"\\n"  : 10.(i8),

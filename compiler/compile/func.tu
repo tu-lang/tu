@@ -69,6 +69,9 @@ func CreateFunction(fc) {
     if fc.stack_size > 1024*1024 {
         utils.error("function stack > 1mb")
     }
+    if fc.has_defer {
+        writeln("    call runtime_defer_frame_push")
+    }
     fc.pcln_pc_labels = []
     fc.pcln_pc_lines = []
     
@@ -116,6 +119,9 @@ func CreateFunction(fc) {
         writeln("    mov $0, %%rax")
 
     writeln("%s.L.return.%s:",fc.parser.label(), funcname)
+    if fc.has_defer {
+        writeln("    call runtime_defer_run_frame")
+    }
     writeln("    mov %%rbp, %%rsp")
     writeln("    pop %%rbp")
 
@@ -141,8 +147,9 @@ func CreateFunction(fc) {
     writeln("__tu_end_%s:", funcname)
     writeln("    pause")
 
-    // Phase1.5 pcln fragment + optional __tu_ln dense lines
+    // Phase3 pcln fragment + framesize + optional dense lines
     nlines = std.len(fc.pcln_pc_lines)
+    framesize = 16 + fc.stack_size
     writeln(".data")
     writeln(".global __tu_pcln.%s", funcname)
     writeln("__tu_pcln.%s:", funcname)
@@ -152,6 +159,8 @@ func CreateFunction(fc) {
     writeln("    .quad %s", fc.parser.filenameid)
     writeln("    .long %d", fc.start_line)
     writeln("    .long %d", nlines)
+    writeln("    .long %d", framesize)
+    writeln("    .long 0")
     if nlines > 0 {
         writeln(".global __tu_ln.%s", funcname)
         writeln("__tu_ln.%s:", funcname)
