@@ -17,6 +17,30 @@ Parser::parseGlobal() {
 
     this.scanner.scan()
 }
+
+// Pad .data offset to N-byte boundary (.balign/.align) or 2^N (.p2align).
+Parser::parseBalign() {
+    kind<i32> = this.scanner.curtoken
+    this.check(kind == ast.KW_BALIGN || kind == ast.KW_P2ALIGN, "should be .balign/.align/.p2align")
+    this.check(this.scanner.scan() == ast.TK_NUMBER, ".balign needs byte count")
+    n<i32> = this.scanner.curlex.tonumber()
+    if kind == ast.KW_P2ALIGN {
+        this.check(n >= 0 && n < 31, ".p2align out of range")
+        n = 1 << n
+    }
+    this.check(n > 0, ".balign align must be > 0")
+    pad<i32> = (n - (this.data_size % n)) % n
+    if pad > 0 {
+        // Unique local name per pad (data_symbol keeps every push; map is last-wins).
+        padName<string.String> = string.S(*".balign.pad")
+        padSym<ast.Sym> = ast.newDataSym(padName, this.data_size)
+        padSym.global = false
+        padSym.addBlock(new ast.ByteBlock(ast.KW_ZERO, pad.(u64)))
+        this.data_size += pad
+        this.symtable.addSym(padSym)
+    }
+    this.scanner.scan()
+}
 Parser::parseLabel() {
     utils.debug("Parser::parseLabel() %S".(i8),this.scanner.curlex.str())
     labelname<string.String> = this.scanner.curlex

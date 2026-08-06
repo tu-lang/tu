@@ -24,6 +24,7 @@ labels = {
     ".data"   : ast.KW_DATA,   ".string": ast.KW_STRING, ".size"   : ast.KW_SIZE,
     ".quad": ast.KW_QUAD,    ".long": ast.KW_LONG,      ".value": ast.KW_VALUE,   ".byte": ast.KW_BYTE,
     ".zero": ast.KW_ZERO,
+    ".balign": ast.KW_BALIGN, ".align": ast.KW_BALIGN, ".p2align": ast.KW_P2ALIGN,
 
     "push" : ast.KW_PUSH,      "pop" : ast.KW_POP,       "int" : ast.KW_INT,      
     "movb": ast.KW_MOVB,       "movw": ast.KW_MOVW,     "movl": ast.KW_MOVL,        "movq": ast.KW_MOVQ,       "movabsq": ast.KW_MOVQ,

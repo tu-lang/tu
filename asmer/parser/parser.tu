@@ -116,6 +116,7 @@ Parser::parseLex()
                 this.scanner.scan()
             }
             ast.KW_GLOBAL: this.parseGlobal()
+            ast.KW_BALIGN | ast.KW_P2ALIGN: this.parseBalign()
             ast.KW_LABEL : this.parseLabel()
             ast.TK_EOF:    break
             _:  this.check(False,"lex unkown instruct")
