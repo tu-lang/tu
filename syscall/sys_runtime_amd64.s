@@ -156,7 +156,7 @@ runtime_futex:
     syscall
     ret
 
-# Phase1.5 pclntab: reserved buffer filled by linker (dense lines need headroom).
+# pclntab: reserved buffer filled by linker (dense lines need headroom).
 .data
 .globl runtime_pclntab
 runtime_pclntab:
