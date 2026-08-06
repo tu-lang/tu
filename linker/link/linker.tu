@@ -5,6 +5,7 @@ use fmt
 
 bytes
 trace
+strip_pcln_file = 0 // zero file fields in PclnRec when non-zero
 
 class Linker
 {
@@ -158,7 +159,7 @@ Linker::computePclntabNeed()
 		return 0
 	}
 	hdr_sz<i32> = 24
-	rec_sz<i32> = 40
+	rec_sz<i32> = 48
 	nfunc<i32> = 0
 	pctab_i<i32> = 0
 	for(def : this.symDef){
@@ -179,8 +180,8 @@ Linker::computePclntabNeed()
 		fr<linux.Elf64_Sym> = prov.symTab[sname]
 		off_u<u64> = fr.st_value
 		sz_u<u64> = data_sh.sh_size
-		forty_u<u64> = 40
-		if off_u + forty_u <= sz_u {
+		frag_u<u64> = 48
+		if off_u + frag_u <= sz_u {
 			tmp_i<i32> = 0
 			bufp<i8*> = new 4
 			thirtysix_u<u64> = 36

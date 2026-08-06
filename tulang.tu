@@ -50,6 +50,7 @@ Compiler::print_help(){
         "  -d                         开启 trace 日志\n" +
         "  -g                         带 debug 段（支持栈回溯）\n" +
         "  -gcc                       使用 gcc 链接\n" +
+        "  -strip-pcln-file           pclntab 不写入文件名\n" +
         "  -std                       同时编译 runtime/std 内置库\n" +
         "  --workdir DIR              中间产物写到 DIR（.s/.o/a.out）\n" +
         "  --workdir-cwd              中间产物写当前目录（旧行为）\n" +
@@ -99,6 +100,9 @@ Compiler::commadparse(){
             "-g"   : compile.debug    = true
             "-std" : compile.nostd = false
             "-gcc" : this.flag_gcc = true
+            "-strip-pcln-file" : {
+                link.strip_pcln_file = 1
+            }
             "-lat" : printlat = true
             "--workdir-cwd" : this.workdir_cwd = true
             "--work" : this.flag_work = true

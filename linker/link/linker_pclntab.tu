@@ -5,8 +5,8 @@ use linker.utils
 
 TU_PCLN_PREFIX = "__tu_pcln."
 const TU_PCLN_HDR_I<i32> = 24
-const TU_PCLN_REC_I<i32> = 40
-const TU_PCLN_MAGIC_U<u32> = 0xFFFFFFF1.(u32)
+const TU_PCLN_REC_I<i32> = 48
+const TU_PCLN_MAGIC_U<u32> = 0xFFFFFFF2.(u32)
 
 fn pcln_is_frag(name){
 	if std.len(name) <= 10 {
@@ -117,6 +117,7 @@ Linker::fillPclntab()
 	o24u<u32> = 24.(u32)
 	o32u<u32> = 32.(u32)
 	o36u<u32> = 36.(u32)
+	o40u<u32> = 40.(u32)
 	ri<i32> = 0
 	for(def : this.symDef){
 		sname = def.name
@@ -141,10 +142,12 @@ Linker::fillPclntab()
 		file_u<u64> = 0.(u64)
 		line_i<i32> = 0
 		nlines_i<i32> = 0
+		framesize_i<i32> = 0
 		dataSeg.pcln_read_u64_into(fva_u + o16u, &name_u)
 		dataSeg.pcln_read_u64_into(fva_u + o24u, &file_u)
 		dataSeg.pcln_read_i32_into(fva_u + o32u, &line_i)
 		dataSeg.pcln_read_i32_into(fva_u + o36u, &nlines_i)
+		dataSeg.pcln_read_i32_into(fva_u + o40u, &framesize_i)
 
 		pcln_off_u<u32> = 0.(u32)
 		lnname = "__tu_ln." + fname
@@ -188,15 +191,23 @@ Linker::fillPclntab()
 		pu = dst + off_i + 16
 		*pu = name_u
 		pu = dst + off_i + 24
-		*pu = file_u
+		if strip_pcln_file != 0 {
+			*pu = 0.(u64)
+		} else {
+			*pu = file_u
+		}
 		pi<i32*> = dst + off_i + 32
 		*pi = line_i
 		pu32<u32*> = dst + off_i + 36
 		*pu32 = pcln_off_u
+		pu32 = dst + off_i + 40
+		*pu32 = framesize_i.(u32)
+		pu32 = dst + off_i + 44
+		*pu32 = 0.(u32)
 		ri += 1
 	}
 
-	// Sort records by entry; keep pcln_off with each record (swap full 40 bytes).
+	// Sort records by entry; swap full record bytes.
 	i<i32> = 1
 	while i < ncount {
 		j<i32> = i
