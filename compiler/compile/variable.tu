@@ -212,8 +212,11 @@ fn registerObjects(){
             writeln("   .quad %s",cls.father.virtname())
         else 
             writeln("   .quad 0")
+        writeln("   .long %d", cls.type_id)
         writeln("   .long %d",std.len(cls.membervars))
         writeln("   .long %d",std.len(cls.funcs))
+        // Pad so VObjFunc fcs starts at offset 24 (8-byte align after parent+3*i32).
+        writeln("   .long 0")
 
         orderf = []
         for fc : cls.funcs {

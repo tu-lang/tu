@@ -571,6 +571,9 @@ Parser::parseContinueStmt(){
 }
 Parser::parseTryStmt(){
 	utils.debug("parser.Parser::parseTryStmt()")
+	if this.currentFunc != null && this.currentFunc.isasync() {
+		this.check(false, "try/catch/finally not supported inside async (see RFC-106)")
+	}
 	reader<scanner.ScannerStatic> = this.scanner
 	node = new gen.TryStmt(this.line, this.column)
 	jbid = ast.incr_labelid()
@@ -624,6 +627,9 @@ Parser::parseTryStmt(){
 
 Parser::parseThrowStmt(){
 	utils.debug("parser.Parser::parseThrowStmt()")
+	if this.currentFunc != null && this.currentFunc.isasync() {
+		this.check(false, "throw not supported inside async (see RFC-106)")
+	}
 	node = new gen.ThrowStmt(this.line, this.column)
 	node.expr = this.parseExpression(1)
 	this.check(node.expr != null, "throw requires an expression")
@@ -632,6 +638,9 @@ Parser::parseThrowStmt(){
 
 Parser::parseDeferStmt(){
 	utils.debug("parser.Parser::parseDeferStmt()")
+	if this.currentFunc != null && this.currentFunc.isasync() {
+		this.check(false, "defer not supported inside async (see RFC-106)")
+	}
 	reader<scanner.ScannerStatic> = this.scanner
 	node = new gen.DeferStmt(this.line, this.column)
 	if this.currentFunc != null {

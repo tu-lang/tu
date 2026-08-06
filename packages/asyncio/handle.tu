@@ -30,12 +30,12 @@ const Handle::current() (i32, Handle) {
 }
 
 // Spawn a future on the active scheduler.
-Handle::spawn(fut) JoinHandle {
+Handle::spawn(fut) {
     return this.inner.spawn(fut)
 }
 
 // Spawn a synchronous closure on the blocking pool.
-Handle::spawn_blocking(op<u64>) JoinHandle {
+Handle::spawn_blocking(op<u64>) {
     return this.inner.spawn_blocking(op)
 }
 

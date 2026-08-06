@@ -136,4 +136,3 @@ fn sg_bits_of(drv<SignalDriver>) u64 {
     if drv == null return 0
     return drv.gslot_bits
 }
-

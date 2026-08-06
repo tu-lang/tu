@@ -15,10 +15,14 @@ mem VObjMem {
     u64 nid
     i64 ofs
 }
+// Class vtable header: parent + type_id + sizes + pad, then packed func/mem entries.
+// Pad keeps fcs at offset 24 so VObjFunc stays 8-byte aligned (matches GenVar .long 0).
 mem VObjHeader {
 	u64 parent
+	i32 type_id
 	i32 membersize
 	i32	funcsize
+	i32 pad
 	VObjFunc fcs[1]
 }
 
