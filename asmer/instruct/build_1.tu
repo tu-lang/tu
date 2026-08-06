@@ -51,6 +51,14 @@ Instruct::genOneInst() {
                     this.append1(exchar)
                     return true
                 }
+                // jmp *%reg → FF /4
+                if this.type == ast.KW_JMP && this.left == ast.TY_REG {
+                    opcode = 0xff
+                    this.append1(opcode)
+                    exchar = 0xe0 + this.modrm.reg
+                    this.append1(exchar)
+                    return true
+                }
                 sym<ast.Sym> = this.parser.symtable.getSym(this.name)
                 rel<i32> = 0
                 if sym.externed { 
