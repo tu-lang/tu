@@ -38,6 +38,77 @@ fn pick_in_try(){
 	return 1
 }
 
+// return through try must still run finally (PHP/Go alignment).
+fn test_return_runs_finally(){
+	fmt.println("test_return_runs_finally")
+	g_tag = ""
+	r = pick_with_finally()
+	if r != 9 {
+		os.die("return+finally want 9")
+	}
+	if g_tag != "F" {
+		os.die("return+finally want F got " + g_tag)
+	}
+	fmt.println("test_return_runs_finally passed")
+}
+
+fn pick_with_finally(){
+	try {
+		return 9
+	} catch (e) {
+		return 0
+	} finally {
+		g_tag += "F"
+	}
+	return 1
+}
+
+fn test_return_nested_finally(){
+	fmt.println("test_return_nested_finally")
+	g_tag = ""
+	r = pick_nested_finally()
+	if r != 3 {
+		os.die("nested return+finally want 3")
+	}
+	if g_tag != "IO" {
+		os.die("nested finally want IO got " + g_tag)
+	}
+	fmt.println("test_return_nested_finally passed")
+}
+
+fn pick_nested_finally(){
+	try {
+		try {
+			return 3
+		} finally {
+			g_tag += "I"
+		}
+	} finally {
+		g_tag += "O"
+	}
+	return 0
+}
+
+// Defer mutates stack local via out-pointer observed by caller.
+fn bump_local_via_defer(p<i32*>){
+	defer {
+		*p = *p + 1
+	}
+	defer {
+		*p = *p + 1
+	}
+}
+
+fn test_defer_local(){
+	fmt.println("test_defer_local")
+	n<i32> = 0
+	bump_local_via_defer(&n)
+	if n != 2 {
+		os.die("defer local want 2")
+	}
+	fmt.println("test_defer_local passed")
+}
+
 fn test_throw_in_if(){
 	fmt.println("test_throw_in_if")
 	hit = 0
@@ -192,9 +263,63 @@ fn test_try_only_finally(){
 	fmt.println("test_try_only_finally passed")
 }
 
+class StmtErr : exception.Exception {
+	func init(msg){
+		super.init(msg)
+	}
+}
+
+fn test_typed_catch_mismatch(){
+	fmt.println("test_typed_catch_mismatch")
+	wrong = 0
+	outer = 0
+	try {
+		try {
+			throw new exception.Exception("base")
+		} catch (StmtErr e) {
+			wrong = 1
+		}
+	} catch (e) {
+		outer = 1
+	}
+	if wrong != 0 {
+		os.die("typed catch should miss base Exception")
+	}
+	if outer != 1 {
+		os.die("outer catch miss")
+	}
+	fmt.println("test_typed_catch_mismatch passed")
+}
+
+fn test_finally_defer_catch_order(){
+	fmt.println("test_finally_defer_catch_order")
+	g_tag = ""
+	stmt_fdc_inner()
+	if g_tag != "FDC" {
+		os.die("want FDC got " + g_tag)
+	}
+	fmt.println("test_finally_defer_catch_order passed")
+}
+
+fn stmt_fdc_inner(){
+	defer {
+		g_tag += "D"
+	}
+	try {
+		throw new exception.Exception("o")
+	} catch (e) {
+		g_tag += "C"
+	} finally {
+		g_tag += "F"
+	}
+}
+
 func main(){
 	test_no_throw()
 	test_return_from_try()
+	test_return_runs_finally()
+	test_return_nested_finally()
+	test_defer_local()
 	test_throw_in_if()
 	test_throw_in_while()
 	test_throw_in_for()
@@ -204,5 +329,7 @@ func main(){
 	test_match_in_try()
 	test_assign_after_catch()
 	test_try_only_finally()
+	test_typed_catch_mismatch()
+	test_finally_defer_catch_order()
 	fmt.println("all statement exc tests passed")
 }

@@ -13,6 +13,8 @@ class ErrA : exception.Exception {
 }
 
 class Worker {
+	tag = 0
+
 	func throwUp(){
 		throw new exception.Exception("from method")
 	}
@@ -46,6 +48,23 @@ class Worker {
 		}
 		defer {
 			g_order += "Y"
+		}
+	}
+
+	// Defer writes this.tag via enclosing frame capture.
+	func deferThisTag(){
+		this.tag = 0
+		this.deferThisTagInner()
+		if this.tag != 2 {
+			os.die("defer this.tag want 2")
+		}
+	}
+	func deferThisTagInner(){
+		defer {
+			this.tag = this.tag + 1
+		}
+		defer {
+			this.tag = this.tag + 1
 		}
 	}
 
@@ -106,6 +125,13 @@ func test_method_defer(){
 	fmt.println("test_method_defer passed")
 }
 
+func test_method_defer_this_tag(){
+	fmt.println("test_method_defer_this_tag")
+	w = new Worker()
+	w.deferThisTag()
+	fmt.println("test_method_defer_this_tag passed")
+}
+
 func test_method_typed_catch(){
 	fmt.println("test_method_typed_catch")
 	w = new Worker()
@@ -163,6 +189,7 @@ func main(){
 	test_method_throw_caught_by_caller()
 	test_method_catch_inside()
 	test_method_defer()
+	test_method_defer_this_tag()
 	test_method_typed_catch()
 	test_method_finally_order()
 	test_method_nested_on_object()

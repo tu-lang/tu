@@ -1,5 +1,4 @@
 // Static mem: try/catch/finally/defer/throw in mem methods (pure static track).
-// Defer bodies use package globals (defer thunk cannot capture this/locals yet).
 
 use fmt
 use os
@@ -10,6 +9,7 @@ g_hit = 0
 
 mem Sink {
 	i32 tag
+	i32 hits
 }
 
 Sink::reset(){
@@ -176,6 +176,23 @@ Sink::deferInner(){
 	}
 }
 
+// Defer captures this.hits via enclosing frame %rbp.
+Sink::deferThisHits(){
+	this.hits = 0
+	this.deferThisHitsInner()
+	if this.hits != 2 {
+		os.die("mem defer this.hits want 2")
+	}
+}
+Sink::deferThisHitsInner(){
+	defer {
+		this.hits = this.hits + 1
+	}
+	defer {
+		this.hits = this.hits + 1
+	}
+}
+
 Sink::deferOnReturn(){
 	g_order = ""
 	this.earlyRetDefer()
@@ -329,6 +346,13 @@ fn test_mem_defer_lifo(){
 	fmt.println("test_mem_defer_lifo passed")
 }
 
+fn test_mem_defer_this_hits(){
+	fmt.println("test_mem_defer_this_hits")
+	s<Sink> = new Sink{}
+	s.deferThisHits()
+	fmt.println("test_mem_defer_this_hits passed")
+}
+
 fn test_mem_defer_on_return(){
 	fmt.println("test_mem_defer_on_return")
 	s<Sink> = new Sink{}
@@ -382,6 +406,7 @@ fn main(){
 	test_mem_finally_before_catch()
 	test_mem_try_only_finally()
 	test_mem_defer_lifo()
+	test_mem_defer_this_hits()
 	test_mem_defer_on_return()
 	test_mem_match_in_try()
 	test_mem_assign_after_catch()

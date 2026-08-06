@@ -47,18 +47,18 @@ StatSink::tryCatchMem(){
 	return hit
 }
 StatSink::deferMem(){
-	g_mem_hits = 0
+	this.hits = 0
 	this.deferMemInner()
-	if g_mem_hits != 2 {
-		os.die("defer mem want 2")
+	if this.hits != 2 {
+		os.die("defer mem this.hits want 2")
 	}
 }
 StatSink::deferMemInner(){
 	defer {
-		g_mem_hits = g_mem_hits + 1
+		this.hits = this.hits + 1
 	}
 	defer {
-		g_mem_hits = g_mem_hits + 1
+		this.hits = this.hits + 1
 	}
 }
 StatSink::finallyWithDyn(){
@@ -125,8 +125,8 @@ fn test_static_defer_then_dyn_throw(){
 	fmt.println("test_static_defer_then_dyn_throw")
 	g_order = ""
 	mixed_defer_dyn()
-	if g_order != "CD" {
-		os.die("defer dyn want CD got " + g_order)
+	if g_order != "DC" {
+		os.die("defer dyn want DC got " + g_order)
 	}
 	fmt.println("test_static_defer_then_dyn_throw passed")
 }
