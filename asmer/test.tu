@@ -61,7 +61,38 @@ func codegen(filename){
             psize += inst.size
         }
     }
+    // .balign/.align/.p2align: lock .data offsets (see co/asmer/test.cpp).
+    if string.sub(filename, std.len(filename) - 8) == "balign.s" {
+        check_balign_layout(gen)
+    }
     fmt.printf("[all test passed] %s\n",filename )
+}
+
+func check_balign_layout(gen){
+    // "x\\0"(2)+pad6→aligned8@8; +"ab\\0"(3)=19+pad1→aligned4@20;
+    // +long4=24→aligned_p2@24; +quad8=32→already8@32.
+    pgen<parser.Parser> = gen
+    expect_one(pgen, "oddstr", 0.(i32))
+    expect_one(pgen, "aligned8", 8.(i32))
+    expect_one(pgen, "odd2", 16.(i32))
+    expect_one(pgen, "aligned4", 20.(i32))
+    expect_one(pgen, "aligned_p2", 24.(i32))
+    expect_one(pgen, "already8", 32.(i32))
+}
+
+func expect_one(pgen<parser.Parser>, name, want<i32>){
+    data_symbol<std.Array> = pgen.symtable.data_symbol
+    for(i<i32> = 0; i < data_symbol.len(); i += 1) {
+        sym<ast.Sym> = data_symbol.addr[i]
+        n = string.new(sym.name.str())
+        if n == name {
+            if sym.addr != want {
+                os.dief("[balign] %s addr=%d want=%d", name, int(sym.addr), int(want))
+            }
+            return
+        }
+    }
+    os.dief("[balign] missing sym %s", name)
 }
 
 func main()

@@ -1,6 +1,6 @@
 0x777777 100    # INT     INT 
 "string"        # STRING   
-#fix me 100.20	         FLOAT   
+# FIXME 100.20	         FLOAT   
 101             # INT
 'a' '\n'   	    # CHAR
 & | ~           # BITAND BITOR BITNOT
@@ -27,4 +27,9 @@ goto            # GOTO
 int(            # BUILTIN LPAREN
 sizeof(         # BUILTIN LPAREN
 type(           # BUILTIN LPAREN
-
+loop fn         # LOOP FUNC
+async await     # ASYNC AWAIT
+cfg const       # CFG CONST
+api impl as     # API IMPL AS
+f32 f64         # F32 F64
+float(          # BUILTIN LPAREN

@@ -27,6 +27,12 @@ token = [
 	int(ast.GOTO),
 	int(ast.BUILTIN),  int(ast.LPAREN),
 	int(ast.BUILTIN),  int(ast.LPAREN),
-	int(ast.BUILTIN),  int(ast.LPAREN), int(ast.END)
+	int(ast.BUILTIN),  int(ast.LPAREN),
+	int(ast.LOOP),     int(ast.FUNC),
+	int(ast.ASYNC),    int(ast.AWAIT),
+	int(ast.CFG),      int(ast.CONST),
+	int(ast.API),      int(ast.IMPL),  int(ast.AS),
+	int(ast.F32),      int(ast.F64),
+	int(ast.BUILTIN),  int(ast.LPAREN),
+	int(ast.END)
 ]
-

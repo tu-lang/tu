@@ -126,6 +126,7 @@ func getTokenString(tk) {
         ELSE:	return "else"
         BOOL:	return "bool"
         WHILE:	return "while"
+        LOOP:	return "loop"
         FOR:	return "for"
         EMPTY:	return "null"
         FUNC:	return "func"
@@ -138,8 +139,14 @@ func getTokenString(tk) {
         CO:	return "co"
         CLASS:	return "class"
         DELREF:	return "(*)var"
+        MEM:	return "mem"
         MATCH:  return "match"
+        ENUM:	return "enum"
         BUILTIN: return "builtin"
+        GOTO:	return "goto"
+        CFG:	return "cfg"
+        ASYNC:	return "async"
+        AWAIT:	return "await"
         
         I8: return "i8"
         I16: return "i16"
@@ -152,6 +159,9 @@ func getTokenString(tk) {
         F32: return "f32"
         F64: return "f64"
         CONST: return "const"
+        API: return "api"
+        IMPL: return "impl"
+        AS: return "as"
         _ :	return "undefine"
     }
 }
