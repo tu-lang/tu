@@ -41,6 +41,7 @@ mem Core {
 	u64     syscall_r13
 	u64     syscall_r14
 	u64     syscall_r15
+	u64     exc_state           // ExcState* bits; per-OS-thread try/defer (L2b/L2c)
 }
 
 mem Sched {
@@ -212,6 +213,7 @@ Core::init(){
     this.syscall_r13 = 0
     this.syscall_r14 = 0
     this.syscall_r15 = 0
+    this.exc_state = 0
     // Seeded again in newcore before clone; 0 here only for zeroed Core layout.
     this.clear_tid = 0
 }

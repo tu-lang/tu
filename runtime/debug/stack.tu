@@ -180,3 +180,51 @@ func Caller(skip<i32>){
 	}
 	return findpc(lookup)
 }
+
+// File path of the caller at skip levels above this helper.
+func CallerFile(skip<i32>){
+	pc<u64> = caller_pc_at(skip)
+	if pc == 0.(u64) {
+		return ""
+	}
+	r<PclnRec> = findfunc(pc)
+	if r == null || r.file == 0.(u64) {
+		return ""
+	}
+	return string.new(r.file)
+}
+
+// Source line of the caller at skip levels above this helper.
+func CallerLine(skip<i32>){
+	pc<u64> = caller_pc_at(skip)
+	if pc == 0.(u64) {
+		return 0
+	}
+	r<PclnRec> = findfunc(pc)
+	if r == null {
+		return 0
+	}
+	return int(funcline(r, pc))
+}
+
+fn caller_pc_at(skip<i32>) u64 {
+	level<i32> = skip + 3
+	if level < 3 {
+		level = 3
+	}
+	bytes<u64> = FRAME_SIZE * level.(u64)
+	raw = std.malloc(bytes)
+	dst<Frame> = raw.(Frame)
+	n<i32>, trunc<i32> = capture_stack(dst, level)
+	idx<i32> = skip + 1
+	if n <= idx {
+		return 0.(u64)
+	}
+	fr_bits<u64> = dst.(u64) + idx.(u64) * FRAME_SIZE
+	fr<Frame> = fr_bits.(Frame)
+	lookup<u64> = fr.pc
+	if lookup > 0.(u64) {
+		lookup = lookup - 1.(u64)
+	}
+	return lookup
+}

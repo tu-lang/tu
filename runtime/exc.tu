@@ -1,6 +1,5 @@
-// L2b/L2c exception engine: TLS try/defer stacks + setjmp/longjmp.
-// Jmpbufs are 64-byte stack slots owned by each try (must not move / GC).
-// L2a (die/SEGV) must never call into this module.
+// L2b/L2c exception engine: per-OS-thread try/defer stacks + setjmp/longjmp.
+// ExcState hangs off Core (FS TLS via core()); L2a (die/SEGV) never enters here.
 
 use std
 use fmt
@@ -9,8 +8,10 @@ use os
 EXC_MAX_NEST<i32> = 32
 
 // DeferNode: fnptr==0 is a function-frame sentinel (prologue push).
+// frame_rbp is the enclosing function %rbp captured at defer_push (Go-style).
 mem DeferNode {
 	u64 fnptr
+	u64 frame_rbp
 	DeferNode* prev
 }
 
@@ -24,6 +25,7 @@ mem TryFrame {
 	TryFrame* prev
 }
 
+// Per-thread EH state (try stack, defer chain, in-flight exception).
 mem ExcState {
 	TryFrame* tries
 	DeferNode* defers
@@ -32,22 +34,35 @@ mem ExcState {
 	u64 uncaught
 }
 
-g_exc_ready<i32> = 0
-g_exc<ExcState> = null
+// Process-wide fallback before core() is set (bootstrap only).
+g_exc_boot<ExcState> = null
 
-fn exc_ensure() ExcState {
-	if g_exc_ready != 0 {
-		return g_exc
-	}
-	g_exc = new ExcState{
+fn exc_state_new() ExcState {
+	return new ExcState{
 		tries: null,
 		defers: null,
 		cur_exc: 0.(u64),
 		nest: 0,
 		uncaught: 0.(u64),
 	}
-	g_exc_ready = 1
-	return g_exc
+}
+
+// Resolve ExcState for the calling OS thread.
+fn exc_ensure() ExcState {
+	c<Core> = core()
+	if c != null {
+		if c.exc_state != 0.(u64) {
+			return c.exc_state.(ExcState)
+		}
+		st<ExcState> = exc_state_new()
+		c.exc_state = st.(u64)
+		return st
+	}
+	if g_exc_boot != null {
+		return g_exc_boot
+	}
+	g_exc_boot = exc_state_new()
+	return g_exc_boot
 }
 
 fn exc_try_push(catch_type<u64>, has_finally<i32>, jmpbuf<u64>) TryFrame {
@@ -80,30 +95,34 @@ fn defer_frame_push() {
 	st<ExcState> = exc_ensure()
 	n<DeferNode> = new DeferNode{
 		fnptr: 0.(u64),
+		frame_rbp: 0.(u64),
 		prev: st.defers
 	}
 	st.defers = n
 }
 
-fn defer_push(fnptr<u64>) {
+// Register a defer thunk; frame_rbp is the caller's %rbp for stack locals/this.
+fn defer_push(fnptr<u64>, frame_rbp<u64>) {
 	st<ExcState> = exc_ensure()
 	n<DeferNode> = new DeferNode{
 		fnptr: fnptr,
+		frame_rbp: frame_rbp,
 		prev: st.defers
 	}
 	st.defers = n
 }
 
-fn defer_thunk() {
+// Thunk signature: receives enclosing frame %rbp as sole argument.
+fn defer_thunk(frame_rbp<u64>) {
 	return
 }
 
-fn call_defer_fn(p<u64>) {
+fn call_defer_fn(p<u64>, frame_rbp<u64>) {
 	if p == 0.(u64) {
 		return
 	}
 	fc<defer_thunk> = p.(u64)
-	fc()
+	fc(frame_rbp)
 }
 
 fn defer_run_frame() {
@@ -114,7 +133,22 @@ fn defer_run_frame() {
 		if n.fnptr == 0.(u64) {
 			return
 		}
-		call_defer_fn(n.fnptr)
+		call_defer_fn(n.fnptr, n.frame_rbp)
+	}
+}
+
+// Run function-scoped defers up to (but not past) the frame sentinel.
+// Used on exception unwind before catch so the return epilogue still sees
+// the sentinel and does not execute an outer frame's defers.
+fn defer_run_before_catch() {
+	st<ExcState> = exc_ensure()
+	while st.defers != null {
+		if st.defers.fnptr == 0.(u64) {
+			return
+		}
+		n<DeferNode> = st.defers
+		st.defers = n.prev
+		call_defer_fn(n.fnptr, n.frame_rbp)
 	}
 }
 
@@ -124,7 +158,7 @@ fn defer_run_until(mark<DeferNode>) {
 		n<DeferNode> = st.defers
 		st.defers = n.prev
 		if n.fnptr != 0.(u64) {
-			call_defer_fn(n.fnptr)
+			call_defer_fn(n.fnptr, n.frame_rbp)
 		}
 	}
 }
@@ -197,7 +231,8 @@ fn exc_throw(obj<u64>) {
 		tf = st.tries
 	}
 	tf.unwinding = 1
-	defer_run_until(tf.defer_mark)
+	// Design §7.2: finally then defer then catch — defer runs after longjmp
+	// on the unwind path (see TryStmt codegen), not here.
 	buf<u64> = exc_jmpbuf_ptr(tf)
 	longjmp(buf, 1)
 }
@@ -221,14 +256,13 @@ fn exc_rethrow() {
 	}
 	tf<TryFrame> = st.tries
 	tf.unwinding = 1
-	defer_run_until(tf.defer_mark)
 	buf<u64> = exc_jmpbuf_ptr(tf)
 	longjmp(buf, 1)
 }
 
 // Match dynamic exception against catch type.
 // want_hdr==0 means catch any; otherwise want_hdr is virth_* address.
-// Walks ObjectValue.hdr parent chain (class objects).
+// Walks ObjectValue.hdr parent chain (class inheritance).
 fn exc_catch_match(want_hdr<u64>, obj<u64>) i32 {
 	if obj == 0.(u64) {
 		return 0
