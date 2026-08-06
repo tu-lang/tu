@@ -1,5 +1,5 @@
-// L0 pclntab: readonly PC -> func/file/line lookup (Phase1).
-// Table lives in runtime_pclntab buffer; accessed via runtime.pclntab_addr.
+// L0 pclntab: readonly PC -> func/file/line (Phase1.5 dense lines).
+// Table: header + PclnRec[] + optional {u32 n; (u32 pc_off,i32 line)*n} streams.
 
 use fmt
 use string
@@ -9,7 +9,7 @@ TU_PCLN_MAGIC<u32>  = 0xFFFFFFF1.(u32)
 TU_PCLN_HDR_SIZE<u64> = 24.(u64)
 TU_PCLN_REC_SIZE<u64> = 40.(u64)
 
-// PcHeader v1 (first 24 bytes of .tupclntab).
+// PcHeader v1 (first 24 bytes).
 mem PcHeader {
     u32 magic
     u8  min_lc
@@ -18,20 +18,19 @@ mem PcHeader {
     u32 nfunc
     u32 nfiles
     u32 functab_off
-    u32 _res0
+    u32 pctab_off
 }
 
-// Phase1 function record (sorted by entry).
+// Function record; pcln_off!=0 means dense line table at base+pcln_off.
 mem PclnRec {
     u64 entry
     u64 endv
     u64 name
     u64 file
     i32 line
-    i32 pad
+    u32 pcln_off
 }
 
-// Runtime view of the loaded table.
 mem PclnTab {
     u64 base
     u32 nfunc
@@ -40,7 +39,6 @@ mem PclnTab {
 
 g_pcln<PclnTab> = null
 
-// Bind table from linker symbols; degrade quietly on bad magic.
 fn pclntab_init() i8 {
     if g_pcln != null {
         return g_pcln.ready.(i8)
@@ -64,7 +62,7 @@ fn pclntab_init() i8 {
     return 1.(i8)
 }
 
-// Binary search: largest entry <= pc with pc < end; copy record out of rodata.
+// Binary search function covering pc; copy record out of rodata.
 fn findfunc(pc<u64>) PclnRec {
     if g_pcln == null || g_pcln.ready == 0 {
         return null
@@ -102,12 +100,58 @@ fn findfunc(pc<u64>) PclnRec {
         name: r2.name,
         file: r2.file,
         line: r2.line,
-        pad: 0
+        pcln_off: r2.pcln_off
     }
     return out
 }
 
-// Format one PC for backtrace: "name @ file:line" or "0xpc:??".
+// One dense-line table header word.
+mem PclnLineHdr {
+    u32 n
+}
+
+// One (pc_off, line) pair in dense table.
+mem PclnLineEnt {
+    u32 pc_off
+    i32 line
+}
+
+// Resolve source line for pc within function (dense table or start_line).
+fn funcline(r<PclnRec>, pc<u64>) i32 {
+    if r == null {
+        return 0
+    }
+    line<i32> = r.line
+    if r.pcln_off == 0.(u32) {
+        return line
+    }
+    if g_pcln == null {
+        return line
+    }
+    tab<u64> = g_pcln.base + r.pcln_off.(u64)
+    hdr<PclnLineHdr> = tab.(PclnLineHdr)
+    nent<u32> = hdr.n
+    if nent == 0.(u32) {
+        return line
+    }
+    off<u64> = 0.(u64)
+    if pc >= r.entry {
+        off = pc - r.entry
+    }
+    i<u32> = 0.(u32)
+    while i < nent {
+        ent_bits<u64> = tab + 4.(u64) + i.(u64) * 8.(u64)
+        ent<PclnLineEnt> = ent_bits.(PclnLineEnt)
+        if ent.pc_off.(u64) <= off {
+            line = ent.line
+            i = i + 1.(u32)
+        } else {
+            break
+        }
+    }
+    return line
+}
+
 func pcln_format_pc(pc){
     r<PclnRec> = findfunc(pc.(u64))
     if r == null {
@@ -121,5 +165,6 @@ func pcln_format_pc(pc){
     if r.file != 0.(u64) {
         file_s = string.new(r.file)
     }
-    return fmt.sprintf("%s @ %s:%d", name_s, file_s, int(r.line))
+    ln<i32> = funcline(r, pc.(u64))
+    return fmt.sprintf("%s @ %s:%d", name_s, file_s, int(ln))
 }

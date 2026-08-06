@@ -4,28 +4,31 @@ use linker.linux
 use linker.utils
 
 TU_PCLN_PREFIX = "__tu_pcln."
-TU_PCLN_HDR_I<i32> = 24
-TU_PCLN_REC_I<i32> = 40
-TU_PCLN_MAGIC_U<u32> = 0xFFFFFFF1.(u32)
 
-// True if name starts with "__tu_pcln.".
 fn pcln_is_frag(name){
-	pref = TU_PCLN_PREFIX
-	pl = std.len(pref)
-	if std.len(name) <= pl {
+	if std.len(name) <= 10 {
 		return false
 	}
-	return pref + string.sub(name, pl) == name
+	rest = string.sub(name, 10)
+	return "__tu_pcln." + rest == name
 }
 
 fn pcln_frag_func(name){
-	return string.sub(name, std.len(TU_PCLN_PREFIX))
+	return string.sub(name, 10)
 }
 
-// Merge __tu_pcln.* fragments into runtime_pclntab .data reserve.
-// Writes native integers only (no dynamic Int boxing into the table).
+// Merge __tu_pcln.* + __tu_ln.* into runtime_pclntab.
+// Use locals for sizes/magic (pkg-level typed consts load as addresses).
 Linker::fillPclntab()
 {
+	hdr_sz<i32> = 24
+	rec_sz<i32> = 40
+	magic_u<u32> = 0xFFFFFFF1.(u32)
+	o16u<u32> = 16.(u32)
+	o24u<u32> = 24.(u32)
+	o32u<u32> = 32.(u32)
+	o36u<u32> = 36.(u32)
+
 	if !std.exist("runtime_pclntab", this.symDef) {
 		return true
 	}
@@ -36,9 +39,11 @@ Linker::fillPclntab()
 		end_sym<linux.Elf64_Sym> = this.symDef["runtime_pclntab_end"].prov.symTab["runtime_pclntab_end"]
 		tab_end_va = end_sym.st_value
 	}
-	cap_u<u64> = tab_end_va - tab_sym.st_value
+	cap_u<u64> = 0.(u64)
+	if tab_end_va > tab_sym.st_value {
+		cap_u = tab_end_va - tab_sym.st_value
+	}
 
-	// Pass 1: count fragments
 	ncount<i32> = 0
 	for(def : this.symDef){
 		sname = def.name
@@ -51,22 +56,30 @@ Linker::fillPclntab()
 		}
 		ncount += 1
 	}
+	if ncount == 0 {
+		return true
+	}
 
-	need_i<i32> = TU_PCLN_HDR_I + ncount * TU_PCLN_REC_I
+	// Functab only first; dense pctab grows from pctab_off within cap.
+	need_i<i32> = hdr_sz + ncount * rec_sz
 	need_u<u64> = need_i.(u64)
 	if cap_u > 0.(u64) && need_u > cap_u {
 		utils.error("pclntab: runtime_pclntab reserve too small")
 	}
 
-	// Locate dst with native VAs (same *baseAddr pattern as relocAddr).
 	baddr_u<u32> = *dataSeg.baseAddr
 	tab_u<u32> = tab_sym.st_value.(u32)
 	rel_u<u32> = tab_u - baddr_u
-	need_u32<u32> = need_i.(u32)
+	// Span full reserve so dense writes stay in-block
+	span_u32<u32> = cap_u.(u32)
+	need_as_u32<u32> = need_i.(u32)
+	if span_u32 < need_as_u32 {
+		span_u32 = need_as_u32
+	}
 	dst<i8*> = null
 	found<i32> = 0
 	for(v<Block> : dataSeg.blocks){
-		if v.offset <= rel_u && rel_u + need_u32 <= v.offset + v.size {
+		if v.offset <= rel_u && rel_u + span_u32 <= v.offset + v.size {
 			base<i8*> = v.data
 			off_i<i32> = (rel_u - v.offset).(i32)
 			dst = base + off_i
@@ -86,24 +99,23 @@ Linker::fillPclntab()
 	}
 
 	p0<u32*> = dst
-	*p0 = TU_PCLN_MAGIC_U
-	oi4<i32> = 4
-	oi5<i32> = 5
-	b4<i8*> = dst + oi4
+	*p0 = magic_u
+	b4<i8*> = dst + 4
 	*b4 = 1
-	b5<i8*> = dst + oi5
+	b5<i8*> = dst + 5
 	*b5 = 8
-	oi8<i32> = 8
-	oi12<i32> = 12
-	oi16<i32> = 16
-	p8<u32*> = dst + oi8
+	p8<u32*> = dst + 8
 	*p8 = ncount.(u32)
-	p12<u32*> = dst + oi12
+	p12<u32*> = dst + 12
 	*p12 = 0.(u32)
-	p16<u32*> = dst + oi16
-	*p16 = TU_PCLN_HDR_I.(u32)
+	p16<u32*> = dst + 16
+	*p16 = hdr_sz.(u32)
+	pctab_off_i<i32> = need_i
+	p20<u32*> = dst + 20
+	*p20 = pctab_off_i.(u32)
 
-	// Pass 2: write unsorted records with native st_value / relocated ptrs from fragments.
+	cursor_i<i32> = pctab_off_i
+	cap_i<i32> = cap_u.(i32)
 	ri<i32> = 0
 	for(def : this.symDef){
 		sname = def.name
@@ -127,47 +139,76 @@ Linker::fillPclntab()
 		name_u<u64> = 0.(u64)
 		file_u<u64> = 0.(u64)
 		line_i<i32> = 0
-		dataSeg.pcln_read_u64_into(fva_u + 16.(u32), &name_u)
-		dataSeg.pcln_read_u64_into(fva_u + 24.(u32), &file_u)
-		dataSeg.pcln_read_i32_into(fva_u + 32.(u32), &line_i)
+		nlines_i<i32> = 0
+		dataSeg.pcln_read_u64_into(fva_u + o16u, &name_u)
+		dataSeg.pcln_read_u64_into(fva_u + o24u, &file_u)
+		dataSeg.pcln_read_i32_into(fva_u + o32u, &line_i)
+		dataSeg.pcln_read_i32_into(fva_u + o36u, &nlines_i)
 
-		off_i<i32> = TU_PCLN_HDR_I + ri * TU_PCLN_REC_I
-		o0<i32> = off_i
-		o8<i32> = off_i + 8
-		o16b<i32> = off_i + 16
-		o24<i32> = off_i + 24
-		o32<i32> = off_i + 32
-		o36<i32> = off_i + 36
-		pu<u64*> = dst + o0
+		pcln_off_u<u32> = 0.(u32)
+		lnname = "__tu_ln." + fname
+		if nlines_i > 0 && nlines_i < 512 && std.exist(lnname, this.symDef) {
+			chunk_i<i32> = 4 + nlines_i * 8
+			if cursor_i + chunk_i <= cap_i {
+				pcln_off_u = cursor_i.(u32)
+				pn<u32*> = dst + cursor_i
+				*pn = nlines_i.(u32)
+				cursor_i += 4
+				ln_sym<linux.Elf64_Sym> = this.symDef[lnname].prov.symTab[lnname]
+				lnva_u<u32> = ln_sym.st_value.(u32)
+				li<i32> = 0
+				while li < nlines_i {
+					pcva_u<u64> = 0.(u64)
+					ln_i<i32> = 0
+					stride<i32> = li * 16
+					ent_u<u32> = stride.(u32)
+					dataSeg.pcln_read_u64_into(lnva_u + ent_u, &pcva_u)
+					eight<u32> = 8.(u32)
+					dataSeg.pcln_read_i32_into(lnva_u + ent_u + eight, &ln_i)
+					pc_off_u<u32> = 0.(u32)
+					if pcva_u >= entry_u {
+						pc_off_u = (pcva_u - entry_u).(u32)
+					}
+					po<u32*> = dst + cursor_i
+					*po = pc_off_u
+					pl<i32*> = dst + cursor_i + 4
+					*pl = ln_i
+					cursor_i += 8
+					li += 1
+				}
+			}
+		}
+
+		off_i<i32> = hdr_sz + ri * rec_sz
+		pu<u64*> = dst + off_i
 		*pu = entry_u
-		pu = dst + o8
+		pu = dst + off_i + 8
 		*pu = end_u
-		pu = dst + o16b
+		pu = dst + off_i + 16
 		*pu = name_u
-		pu = dst + o24
+		pu = dst + off_i + 24
 		*pu = file_u
-		pi<i32*> = dst + o32
+		pi<i32*> = dst + off_i + 32
 		*pi = line_i
-		pi = dst + o36
-		*pi = 0
+		pu32<u32*> = dst + off_i + 36
+		*pu32 = pcln_off_u
 		ri += 1
 	}
 
-	// In-place insertion sort by entry (native u64).
+	// Sort records by entry; keep pcln_off with each record (swap full 40 bytes).
 	i<i32> = 1
 	while i < ncount {
 		j<i32> = i
 		while j > 0 {
-			prev_off<i32> = TU_PCLN_HDR_I + (j - 1) * TU_PCLN_REC_I
-			cur_off<i32> = TU_PCLN_HDR_I + j * TU_PCLN_REC_I
+			prev_off<i32> = hdr_sz + (j - 1) * rec_sz
+			cur_off<i32> = hdr_sz + j * rec_sz
 			p_prev<u64*> = dst + prev_off
 			p_cur<u64*> = dst + cur_off
 			if *p_cur >= *p_prev {
 				break
 			}
-			// Swap full 40-byte records
 			k<i32> = 0
-			while k < TU_PCLN_REC_I {
+			while k < rec_sz {
 				a<i8*> = dst + prev_off + k
 				b<i8*> = dst + cur_off + k
 				tmp<i8> = *a

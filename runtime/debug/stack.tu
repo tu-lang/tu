@@ -87,10 +87,19 @@ func stack(level<i32>){
 	arr = []
 	i<i32> = 0
 	base<u64> = dst.(u64)
+	// Skip this stack() frame (index 0); user frames start at leaf/caller.
+	if n > 0 {
+		i = 1
+	}
 	while i < n {
 		fr_bits<u64> = base + i.(u64) * FRAME_SIZE
 		fr<Frame> = fr_bits.(Frame)
-		arr[] = findpc(fr.pc)
+		// Return address is one past the call; back up for line lookup.
+		lookup<u64> = fr.pc
+		if lookup > 0.(u64) {
+			lookup = lookup - 1.(u64)
+		}
+		arr[] = findpc(lookup)
 		i += 1
 	}
 	if trunc != 0 {
