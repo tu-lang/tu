@@ -210,12 +210,17 @@ Parser::parseGlobalDef()
         // _        : return parseFlatVar(var)
         _ : {
             reader.rollback(tx)
-            return this.parseGlobalAssign()
+            is_const_var = false
+            if reader.curToken == ast.CONST {
+                is_const_var = true
+                reader.scan()
+            }
+            return this.parseGlobalAssign(is_const_var)
         }
     }
 }
 
-Parser::parseGlobalAssign()
+Parser::parseGlobalAssign(is_const_var)
 {
     utils.debug("parser.Parser::parseGlobalAssign()")
     needinit = true
@@ -231,6 +236,9 @@ Parser::parseGlobalAssign()
                 this.panic("unsupport global synatix: " + expr.toString(""))
             var = ae.lhs
             assign = ae
+            if is_const_var {
+                var.imut = true
+            }
             match type(ae.rhs) {
                 type(gen.IntExpr) : {
                     var.ivalue = ae.rhs.lit
@@ -283,6 +291,9 @@ Parser::parseGlobalAssign()
         }
         type(gen.VarExpr) : {
             var   = expr
+            if is_const_var {
+                var.imut = true
+            }
             assign     = new gen.AssignExpr(this.line,this.column)
             assign.opt = ast.ASSIGN
             assign.lhs = var

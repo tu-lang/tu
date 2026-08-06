@@ -4,6 +4,55 @@ use compiler.parser.package
 use compiler.utils
 use fmt
 
+// Emit .balign before .data labels so gas+ld packing after .string cannot
+// leave Note/MutexInter futex words on misaligned addresses.
+fn emitDataAlign(bytes){
+    if bytes < 1 {
+        bytes = 1
+    }
+    writeln("    .balign %d", bytes)
+}
+
+// Natural alignment for a package-level global; mem stack objects at least 8.
+fn globalVarDataAlign(v, p) {
+    if v == null {
+        return 8
+    }
+    if !v.structtype || v.pointer {
+        return 8
+    }
+    if v.stack && v.structname != "" {
+        acualPkg = p.getImport(v.structpkg)
+        if acualPkg == "" {
+            acualPkg = v.structpkg
+        }
+        s = package.getStruct(acualPkg, v.structname)
+        if s != null {
+            if s.size == 0 && !s.iscomputed && s.parser != null && s.parser.pkg != null {
+                s.parser.pkg.genStruct(s)
+            }
+            a = s.align
+            if a < 8 {
+                a = 8
+            }
+            return a
+        }
+        return 8
+    }
+    if v.type >= ast.I8 && v.type <= ast.F64 {
+        sz = 8
+        if v.type == ast.I8 || v.type == ast.U8 {
+            sz = 1
+        } else if v.type == ast.I16 || v.type == ast.U16 {
+            sz = 2
+        } else if v.type == ast.I32 || v.type == ast.U32 || v.type == ast.F32 {
+            sz = 4
+        }
+        return sz
+    }
+    return 8
+}
+
 fn registerStrings(){
     for(var : currentParser.strs){
         CreateGlobalString(var)
@@ -12,6 +61,7 @@ fn registerStrings(){
 
 fn registerGcMList()
 {
+    emitDataAlign(8)
     writeln("    .globl gc.ms.entry")
     writeln("gc.ms.entry:")
     writeln("   .quad gc.ms.end")
@@ -25,6 +75,7 @@ fn registerGcMList()
         writeln("   .quad %s",pkg.gc_moudles)
     }
 
+    emitDataAlign(8)
     writeln("    .globl gc.ms.end")
     writeln("gc.ms.end:")
     writeln("   .quad 0")
@@ -46,18 +97,21 @@ func registerVars(){
     }
 
     if pkg.fparser == currentParser {
+        emitDataAlign(8)
         writeln("    .globl %s", pkg.gc_moudles)
         writeln("%s:", pkg.gc_moudles)
         writeln("    .quad %s",currentParser.gstartvar())
     }
 
     //moudle start
+    emitDataAlign(8)
     writeln("    .globl %s", currentParser.gstartvar())
     writeln("%s:", currentParser.gstartvar())
     writeln("    .quad %s",currentParser.gendvar())
 
     for(name,v : currentParser.gvars){
         gname = currentParser.getpkgname() + "_" + name
+        emitDataAlign(globalVarDataAlign(v, currentParser))
         writeln("    .global %s",gname)
         writeln("%s:",gname)
         if !v.structtype {
@@ -123,6 +177,7 @@ func registerVars(){
     }
 
     //entry end
+    emitDataAlign(8)
     writeln("    .globl %s", currentParser.gendvar())
     writeln("%s:", currentParser.gendvar())
     if currentParser.next != null {
@@ -135,6 +190,7 @@ func CreateGlobalString(var){
     if var.name == "" {
         var.check(false,"static string not compute")
     }
+    // Strings stay byte-packed; following data labels must emitDataAlign.
     writeln("    .globl %s", var.name)
     writeln("%s:", var.name)
     writeln("    .string \"%s\"",var.lit)
@@ -148,6 +204,7 @@ fn registerObjects(){
         // gen object type info
         obj_virtname = cls.virtname()
 
+        emitDataAlign(8)
         writeln("   .global %s",obj_virtname)
         writeln("%s:",obj_virtname)
 
@@ -240,6 +297,7 @@ fn registerApiTable(){
         
         for it : st.apis {
             tbptr = st.apiname(it.name)
+            emitDataAlign(8)
             writeln("    .global %s",tbptr)
             writeln("%s:",tbptr)
 
@@ -283,6 +341,7 @@ fn registerFutures(){
             utils.error("future not impl poll")
         }
         virtname = st.futurepollname()
+        emitDataAlign(8)
         writeln("    .global %s",virtname)
         writeln("%s:",virtname)
 
@@ -302,4 +361,3 @@ fn registerFutures(){
         writeln("   .quad 0")
     }
 }
-

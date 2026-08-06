@@ -39,6 +39,7 @@ class VarExpr : ast.Ast {
 
     isparam = false
     onmem   = false
+    imut    = false
     func init(varname,line,column){
         super.init(line,column)
     }
@@ -178,17 +179,26 @@ VarExpr::compile(ctx,load){
         }
         ast.Var_Global_Extern_Static | ast.Var_Local | ast.Var_Global_Local | ast.Var_Global_Extern | ast.Var_Local_Static : 
         { 
-            compile.GenAddr(this.ret)
-            if load && !this.ret.stack {
-                if ast.isfloattk(this.ret.type) && !this.ret.pointer
-                    compile.Loadf(this.ret.type)
-                else if this.ret.structtype == true && 
-                        this.ret.pointer == false   && 
-                        this.ret.type <= ast.F64 && 
-                        this.ret.type >= ast.I8    
-                    compile.LoadSize(this.ret.size,this.ret.isunsigned)
-                else                                    
-                    compile.Load()
+            // const Name<i32> = N: mov imm; mutable globals (gcphase=0) still load memory.
+            if load && this.ret.is_local == false && this.ret.pointer == false &&
+               this.ret.stack == false && this.ret.imut == true &&
+               this.ret.structtype == true &&
+               this.ret.ivalue != "" &&
+               this.ret.type <= ast.U64 && this.ret.type >= ast.I8 {
+                compile.writeln("    mov $%s, %%rax", this.ret.ivalue)
+            } else {
+                compile.GenAddr(this.ret)
+                if load && !this.ret.stack {
+                    if ast.isfloattk(this.ret.type) && !this.ret.pointer
+                        compile.Loadf(this.ret.type)
+                    else if this.ret.structtype == true && 
+                            this.ret.pointer == false   && 
+                            this.ret.type <= ast.F64 && 
+                            this.ret.type >= ast.I8    
+                        compile.LoadSize(this.ret.size,this.ret.isunsigned)
+                    else                                    
+                        compile.Load()
+                }
             }
         }
         ast.Var_Func : {  
@@ -281,6 +291,7 @@ VarExpr::clone(){
     nvar.isunsigned = this.isunsigned
     nvar.stack = this.stack
     nvar.stacksize = this.stacksize
+    nvar.imut = this.imut
     nvar.elements  = this.elements
     nvar.tyassert = this.tyassert
     nvar.ret = this.ret
