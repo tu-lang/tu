@@ -20,6 +20,21 @@ func registerFunc(fc){
     CreateFunction(fc)
     currentFunc = null
 }
+
+// Emit a PC label when source line changes (dense pclntab).
+func emitPclnPC(line){
+    if currentFunc == null || line <= 0 {
+        return null
+    }
+    n = std.len(currentFunc.pcln_pc_lines)
+    if n > 0 && currentFunc.pcln_pc_lines[n - 1] == line {
+        return null
+    }
+    lab = "__tu_pc." + currentFunc.fullname() + "." + n
+    writeln("%s:", lab)
+    currentFunc.pcln_pc_labels[] = lab
+    currentFunc.pcln_pc_lines[] = line
+}
 func registerFuncs(){
     utils.debug("compile.registerFuncs()")
     for f : currentParser.funcs {
@@ -54,6 +69,8 @@ func CreateFunction(fc) {
     if fc.stack_size > 1024*1024 {
         utils.error("function stack > 1mb")
     }
+    fc.pcln_pc_labels = []
+    fc.pcln_pc_lines = []
     
     //params args offset is over rbp + 16；not register
     //for i = 0; i < 6; i += 1
@@ -124,7 +141,8 @@ func CreateFunction(fc) {
     writeln("__tu_end_%s:", funcname)
     writeln("    pause")
 
-    // Phase1 pcln fragment (linker merges into runtime_pclntab)
+    // Phase1.5 pcln fragment + optional __tu_ln dense lines
+    nlines = std.len(fc.pcln_pc_lines)
     writeln(".data")
     writeln(".global __tu_pcln.%s", funcname)
     writeln("__tu_pcln.%s:", funcname)
@@ -133,6 +151,17 @@ func CreateFunction(fc) {
     writeln("    .quad %s", fc.funcnameid)
     writeln("    .quad %s", fc.parser.filenameid)
     writeln("    .long %d", fc.start_line)
-    writeln("    .long 0")
+    writeln("    .long %d", nlines)
+    if nlines > 0 {
+        writeln(".global __tu_ln.%s", funcname)
+        writeln("__tu_ln.%s:", funcname)
+        i = 0
+        while i < nlines {
+            writeln("    .quad %s", fc.pcln_pc_labels[i])
+            writeln("    .long %d", fc.pcln_pc_lines[i])
+            writeln("    .long 0")
+            i += 1
+        }
+    }
     writeln(".text")
 }

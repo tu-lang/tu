@@ -54,7 +54,15 @@ Parser::parseStatement()
             node = this.parseBlock(false,false)
         }
         _ : {
+            stmt_line = this.line
+            stmt_col = this.column
             node = this.parseExpression(1)
+            if node != null {
+                if node.line == null || node.line == 0 {
+                    node.line = stmt_line
+                    node.column = stmt_col
+                }
+            }
             if reader.curToken == ast.COMMA {
                 node = this.parseMultiAssignStmt(node)
             }

@@ -57,6 +57,10 @@ BlockStmt::compile(ctx){
         ctx.create()
     }
     for( stmt : this.stmts ){
+        // Dense pclntab: emit PC label when statement source line changes
+        if stmt != null && stmt.line > 0 {
+            compile.emitPclnPC(stmt.line)
+        }
         stmt.compile(ctx,true)
     }
     if !this.hasctx && std.len(this.stmts) > 0 {

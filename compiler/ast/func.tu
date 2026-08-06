@@ -68,8 +68,10 @@ class Function {
     caporders = []
     //RFC105:
     vid       = 0
-    // Function def start line for pclntab Phase1
+    // Function def start line for pclntab; dense PC lines in pcln_pc_*
     start_line = 0
+    pcln_pc_labels = []
+    pcln_pc_lines  = []
 
 
     fn isasync(){
