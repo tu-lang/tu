@@ -33,11 +33,8 @@ Options:
   -c   <file.s|dir>          汇编为可重定位目标文件（.o）
   -o   <file.o|dir>          链接目标文件生成可执行程序
   -d                         开启 trace 日志
-  -g                         带 debug 段（支持栈回溯）
-  -gcc                       使用 gcc 链接
   -std                       同时编译 runtime/std 内置库
   --workdir DIR              中间产物写到 DIR（.s/.o/a.out）
-  --workdir-cwd              中间产物写当前目录（旧行为）
   --work                     保留中间产物
   -v                         打印版本
 
@@ -50,10 +47,7 @@ Default workdir: $TMPDIR/tu-build-<stem>-...
 tu run hello.tu
 ```
 
-## Demo
-
 ![gif](./assets/tulang.gif)
-
 ## Install
 
 ```bash
@@ -64,23 +58,122 @@ sudo make install
 
 ## Tests
 
-语法与运行时用例都在 `tests/`（数据结构、运算符、GC、async、asyncio 集成等）。
+语法与运行时用例都在 `tests/`（数据结构、运算符、GC、async、异常/`defer`、asyncio 集成等）。  
+用户面 demo 在 `examples/`，由 `make tests` 的 `examples` 目标跑各自的 `test.sh`。
 
 ```bash
 sudo make install
 make tests
+# 只跑 examples：
+make examples
 ```
 
-## Language surface
+## Keywords
 
 | 层 | 能力 |
 |----|------|
+| 现代抽象 | `asyncio`（timer / net / fs / process / signal / select / join）· `async`/`await`（写 `async name()`，**不要** `async fn`）· `api`/`impl` |
+| 异常与清理 | `try` / `catch` / `finally` · `throw` · `defer`（同步函数；`async` 体内暂不支持） |
 | 动态 | `int` `float` `string` `bool` `null` `array` `map` `closure` `object` |
 | 静态 | `i8`…`u64` `f32` `f64` `pointer` `mem` |
 | 控制与模块 | `func`/`fn` `goto` `class` `return` `type` `use` `if` `while` `for`/`range` `loop` `match` |
-| 现代抽象 | `async`/`await` · `api`/`impl` · `asyncio`（timer / net / fs / process / signal / select / join）|
 
----
+## Demo
+
+
+### Asyncio — 原生异步库
+
+`asyncio` 覆盖定时器、网络、fs / process / signal，以及 mpsc channel、Mutex / Notify 等同步原语，还有 `select` / `join`。应用侧可走 `asyncio.wrapper` 动态 OOP 门面；下面以 HTTP 为例：
+
+```bash
+tu run examples/httpserver/main.tu   # 终端 1
+tu run examples/httpclient/main.tu   # 终端 2
+# 或 curl / ab http://127.0.0.1:18080/
+# CI 形态：make examples（常驻服务压测约 10s 后 kill）
+```
+
+```
+use fmt
+use os
+use asyncio.wrapper as asyncio
+
+okResp = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
+okResp += "Content-Length: 13\r\nConnection: close\r\n\r\nHello, world!"
+
+async serveOne(st) {
+    st.drain(4096).await
+    st.sendStr(okResp).await
+    st.close()
+    return 0
+}
+
+class HttpServer {
+    func init() {}
+}
+
+async HttpServer::run() {
+    err, lis = asyncio.listen("127.0.0.1:18080")
+    if err != 0 {
+        return err
+    }
+    fmt.println("listening on http://127.0.0.1:18080")
+    loop {
+        aerr, st = lis.takeConn().await
+        if aerr == 0 && st != null {
+            serveOne(st).await
+        }
+    }
+}
+
+fn main() {
+    asyncio.blockOnCt(new HttpServer().run())
+}
+```
+
+客户端同形：`asyncio.dialTo(addr).await` → `sendStr` → `recvStr`。完整源码见 [`examples/`](./examples/)；更多集成测见 `tests/asyncio/`。
+
+### Try / defer — 同步路径上的异常与清理
+
+`try` / `catch` / `finally`、`throw`、`defer` 绑定**同步 OS 栈帧**（`fn` / `func` / 非 async 成员）。  
+`return` 穿出 `try` 仍会跑 `finally`；`defer` 按 LIFO 在函数返回前执行。  
+异步函数写 `async name()`（不要 `async fn`）；当前 **async 体内不能**再写 `try` / `throw` / `defer`。
+
+```
+use fmt
+use os
+use exception
+
+g = ""
+
+fn work(){
+	defer {
+		g += "D"
+	}
+	try {
+		throw new exception.Exception("boom")
+	} catch (e) {
+		g += "C"
+		fmt.println(e.getMessage())
+	} finally {
+		g += "F"
+	}
+}
+
+fn main(){
+	work()
+	if g != "FDC" {
+		os.die("want FDC")
+	}
+	fmt.println("ok", g)
+}
+```
+
+```text
+boom
+ok FDC
+```
+
+更多断言见 `tests/statement/exc_try_defer.tu`、`tests/runtime/exc_try_catch.tu`。
 
 ### Dynamic — 异构数据一把梭
 
@@ -124,8 +217,6 @@ fn main(){
     }
 }
 ```
-
----
 
 ### Static — 结构体就是布局
 
@@ -176,103 +267,6 @@ Rbtree::find(hk<u64>){
 
 fn main(){}
 ```
-
----
-
-### Asyncio — 异步运行时：定时器、网络与并发
-
-`packages/asyncio` 提供 Builder、时间轮、IO/信号 driver，以及 `select` / `join` / `timeout`。下面这段真实可跑——两个定时器 `select` 竞速，再 `join` 并发等待：
-
-```
-use fmt
-use io
-use os
-use runtime
-use asyncio.runtime as rt
-use asyncio.macros as m
-use asyncio.time as atime
-
-// Race two timers: the 10ms one wins the select.
-async race() {
-    winner<i32> = m.select2(
-        atime.sleep(atime.from_millis(10)),
-        atime.sleep(atime.from_millis(1000))
-    ).await
-    fmt.println("select: fast timer won, branch =", int(winner))
-
-    // Run two sleeps concurrently; total wait is max(20,30), not the sum.
-    st<i32> = m.join2(
-        atime.sleep(atime.from_millis(20)),
-        atime.sleep(atime.from_millis(30))
-    ).await
-    fmt.println("join: both timers fired")
-    return st
-}
-
-fn main() {
-    b<rt.Builder> = rt.Builder::new_current_thread()
-    b = b.enable_all()
-    err<i32>, ret<i64> = rt.builder_block_on(b, race(), 0)
-    if err != 0 || ret != io.Ok os.die("runtime failed")
-    fmt.println("done")
-}
-```
-
-```text
-select: fast timer won, branch = 1
-join: both timers fired
-done
-```
-
-网络侧走 `asyncio.wrapper` 动态 OOP 门面，仓库自带 HTTP demo：
-
-```bash
-tu run examples/httpserver   # 终端 1
-tu run examples/httpclient   # 终端 2
-# 或 curl / ab http://127.0.0.1:18080/
-```
-
-```
-use fmt
-use os
-use asyncio.wrapper as asyncio
-
-okResp = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
-okResp += "Content-Length: 13\r\nConnection: close\r\n\r\nHello, world!"
-
-async serveOne(st) {
-    st.drain(4096).await
-    st.sendStr(okResp).await
-    st.close()
-    return 0
-}
-
-class HttpServer {
-    func init() {}
-}
-
-async HttpServer::run() {
-    err, lis = asyncio.listen("127.0.0.1:18080")
-    if err != 0 {
-        return err
-    }
-    fmt.println("listening on http://127.0.0.1:18080")
-    loop {
-        aerr, st = lis.takeConn().await
-        if aerr == 0 && st != null {
-            serveOne(st).await
-        }
-    }
-}
-
-fn main() {
-    asyncio.blockOnCt(new HttpServer().run())
-}
-```
-
-客户端同形：`asyncio.dialTo(addr).await` → `sendStr` → `recvStr`。完整源码见 [`examples/`](./examples/)；TCP/UDP/Unix、fs、process、signal 用例见 `tests/asyncio/`。
-
----
 
 ### Api + Impl — 静态类型上的多态
 
