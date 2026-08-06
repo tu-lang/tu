@@ -61,9 +61,29 @@ func test_binary_neg_cast(){
 	}
 	fmt.println("test_binary_neg_cast success")
 }
+
+// Package-level const typed scalars must load as values (mov imm), not lea addresses.
+const PKG_CONST_HDR<i32> = 24
+const PKG_CONST_REC<i32> = 40
+func test_pkg_typed_const_rvalue(){
+	sum<i32> = PKG_CONST_HDR + PKG_CONST_REC
+	if sum != 64 {
+		os.die("PKG_CONST_HDR + PKG_CONST_REC should be 64")
+	}
+	prod<i32> = PKG_CONST_HDR * 2
+	if prod != 48 {
+		os.die("PKG_CONST_HDR * 2 should be 48")
+	}
+	if PKG_CONST_REC < 100 {
+	} else {
+		os.die("PKG_CONST_REC < 100 should hold")
+	}
+	fmt.println("test_pkg_typed_const_rvalue success")
+}
 func main(){
 	test_int()
 	test_char()
 	test_string()
 	test_binary_neg_cast()
+	test_pkg_typed_const_rvalue()
 }

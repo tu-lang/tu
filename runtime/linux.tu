@@ -186,9 +186,10 @@ func sys_map(v<u64>,n<u64>)
 }
 
 fn futexsleep(addr<u32*> , val<u32> , ns<i64>){
-	//OPTIMIZE: stack size alignment alloc
-	if addr % 4 != 0 {
-    	addr = ALIGNUP(addr,4.(i8))
+	// Futex word must be 4-byte aligned. Never ALIGNUP: shifting the address
+	// waits on a neighboring word and drops Wake (STW hang under gas+ld).
+	if addr.(u64) % 4.(u64) != 0 {
+		dief(*"runtime: futexsleep misaligned addr:%p", addr)
 	}
     if ns < 0 {
         ret<i32> = futex(addr,FUTEX_WAIT_PRIVATE,val,Null,Null,Null)
@@ -209,9 +210,8 @@ fn futexsleep(addr<u32*> , val<u32> , ns<i64>){
     return Null
 }
 fn futexwakeup(addr<u32*> , cnt<u32>) {
-	//OPTIMIZE: stack size alignment alloc
-	if addr % 4 != 0 {
-    	addr = ALIGNUP(addr,4.(i8))
+	if addr.(u64) % 4.(u64) != 0 {
+		dief(*"runtime: futexwakeup misaligned addr:%p", addr)
 	}
     ret<i32> = futex(addr,FUTEX_WAKE_PRIVATE,cnt,Null,Null,Null)
     if ret >= 0 {

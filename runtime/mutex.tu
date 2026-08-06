@@ -187,7 +187,12 @@ MutexInter::init(){
 }
 MutexInter::lock(){
     c<Core> = core()
-    addr<u32*> = ALIGNUP(&this.key,4.(i8))
+    // Low 32 bits of key are the futex word; key itself must be 4-byte aligned.
+    raw<u64> = &this.key
+    if (raw & 3.(u64)) != 0 {
+        dief(*"runtime: MutexInter key misaligned:%p", raw)
+    }
+    addr<u32*> = raw
 
     c.locks += 1
     if c.locks < 0 {
@@ -243,7 +248,11 @@ MutexInter::lock(){
 
 MutexInter::unlock(){
     c<Core> = core()
-    addr<u32*> = ALIGNUP(&this.key,4.(i8))
+    raw<u64> = &this.key
+    if (raw & 3.(u64)) != 0 {
+        dief(*"runtime: MutexInter key misaligned:%p", raw)
+    }
+    addr<u32*> = raw
     v<u32> = atomic.xchg(addr,mutex_unlocked)
     if v == mutex_unlocked {
         dief(*"unlock of unlocked lock key:%d v:%d",this.key,v)

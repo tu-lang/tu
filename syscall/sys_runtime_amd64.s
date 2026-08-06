@@ -156,7 +156,7 @@ runtime_futex:
     syscall
     ret
 
-# pclntab: reserved buffer filled by linker (dense lines need headroom).
+# pclntab: stub header only; linker grows .data to exact need and fills.
 .data
 .globl runtime_pclntab
 runtime_pclntab:
@@ -166,8 +166,6 @@ runtime_pclntab:
     .long 0
     .long 24
     .long 0
-    # ~2MiB reserve for functab + dense pc→line streams
-    .zero 2097128
 .globl runtime_pclntab_end
 runtime_pclntab_end:
     .byte 0
