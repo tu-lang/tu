@@ -156,11 +156,11 @@ runtime_futex:
     syscall
     ret
 
-# pclntab: stub header only; linker grows .data to exact need and fills.
+# pclntab: stub header only; linker grows .data to exact need and fills (magic v2).
 .data
 .globl runtime_pclntab
 runtime_pclntab:
-    .long 0xFFFFFFF1
+    .long 0xFFFFFFF2
     .long 0x00000801
     .long 0
     .long 0
@@ -180,3 +180,47 @@ runtime_pclntab_addr:
 runtime_pclntab_end_addr:
     lea runtime_pclntab_end(%rip), %rax
     ret
+
+# setjmp(buf): save callee-saved + rsp/rip; return 0
+# buf layout: rbx,rbp,r12,r13,r14,r15,rsp,rip (8×u64)
+.globl runtime_setjmp
+runtime_setjmp:
+    mov %rbx, 0(%rdi)
+    mov %rbp, 8(%rdi)
+    mov %r12, 16(%rdi)
+    mov %r13, 24(%rdi)
+    mov %r14, 32(%rdi)
+    mov %r15, 40(%rdi)
+    lea 8(%rsp), %rax
+    mov %rax, 48(%rdi)
+    mov (%rsp), %rax
+    mov %rax, 56(%rdi)
+    mov $0, %rax
+    ret
+
+.globl runtime_longjmp
+runtime_longjmp:
+    mov %rsi, %rax
+    cmp $0, %rax
+    jne runtime_longjmp_ok
+    mov $1, %rax
+runtime_longjmp_ok:
+    mov 0(%rdi), %rbx
+    mov 8(%rdi), %rbp
+    mov 16(%rdi), %r12
+    mov 24(%rdi), %r13
+    mov 32(%rdi), %r14
+    mov 40(%rdi), %r15
+    mov 48(%rdi), %rsp
+    mov 56(%rdi), %rcx
+    jmp *%rcx
+
+.globl runtime_jmpbuf_pool_addr
+runtime_jmpbuf_pool_addr:
+    lea runtime_jmpbuf_pool(%rip), %rax
+    ret
+
+.data
+.globl runtime_jmpbuf_pool
+runtime_jmpbuf_pool:
+    .zero 4096

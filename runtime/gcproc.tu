@@ -76,6 +76,10 @@ fn get_r15()
 fn pclntab_addr() (u64)
 fn pclntab_end_addr() (u64)
 
+// setjmp/longjmp for try/catch (syscall .s); buf is 64-byte JmpBuf.
+fn setjmp(buf<u64>) (i32)
+fn longjmp(buf<u64>, v<i32>)
+
 fn gc_malloc(nbytes<u64>)
 {
 	return malloc(nbytes,0.(i8),1.(i8))

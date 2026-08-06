@@ -1,15 +1,14 @@
-// L0 pclntab: readonly PC -> func/file/line (Phase1.5 dense lines).
-// Table: header + PclnRec[] + optional {u32 n; (u32 pc_off,i32 line)*n} streams.
+// L0 pclntab v2: PC -> func/file/line + framesize (pcsp subset for RBP-less walk).
 
 use fmt
 use string
 use runtime
 
-TU_PCLN_MAGIC<u32>  = 0xFFFFFFF1.(u32)
+TU_PCLN_MAGIC<u32>  = 0xFFFFFFF2.(u32)
 TU_PCLN_HDR_SIZE<u64> = 24.(u64)
-TU_PCLN_REC_SIZE<u64> = 40.(u64)
+TU_PCLN_REC_SIZE<u64> = 48.(u64)
 
-// PcHeader v1 (first 24 bytes).
+// PcHeader v1 layout (first 24 bytes); magic selects v2 record size.
 mem PcHeader {
     u32 magic
     u8  min_lc
@@ -21,7 +20,7 @@ mem PcHeader {
     u32 pctab_off
 }
 
-// Function record; pcln_off!=0 means dense line table at base+pcln_off.
+// Function record; framesize = 16+stack_size for standard frames.
 mem PclnRec {
     u64 entry
     u64 endv
@@ -29,6 +28,8 @@ mem PclnRec {
     u64 file
     i32 line
     u32 pcln_off
+    u32 framesize
+    u32 _pad
 }
 
 mem PclnTab {
@@ -62,7 +63,7 @@ fn pclntab_init() i8 {
     return 1.(i8)
 }
 
-// Binary search function covering pc; copy record out of rodata.
+// Binary search function covering pc; copy record out of table.
 fn findfunc(pc<u64>) PclnRec {
     if g_pcln == null || g_pcln.ready == 0 {
         return null
@@ -100,23 +101,22 @@ fn findfunc(pc<u64>) PclnRec {
         name: r2.name,
         file: r2.file,
         line: r2.line,
-        pcln_off: r2.pcln_off
+        pcln_off: r2.pcln_off,
+        framesize: r2.framesize,
+        _pad: 0.(u32)
     }
     return out
 }
 
-// One dense-line table header word.
 mem PclnLineHdr {
     u32 n
 }
 
-// One (pc_off, line) pair in dense table.
 mem PclnLineEnt {
     u32 pc_off
     i32 line
 }
 
-// Resolve source line for pc within function (dense table or start_line).
 fn funcline(r<PclnRec>, pc<u64>) i32 {
     if r == null {
         return 0
@@ -150,6 +150,18 @@ fn funcline(r<PclnRec>, pc<u64>) i32 {
         }
     }
     return line
+}
+
+// FuncForPC / Caller helpers (Phase6).
+fn FuncForPC(pc<u64>) PclnRec {
+    return findfunc(pc)
+}
+
+fn funcname(r<PclnRec>) {
+    if r == null || r.name == 0.(u64) {
+        return "??"
+    }
+    return string.new(r.name)
 }
 
 func pcln_format_pc(pc){
