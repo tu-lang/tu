@@ -27,9 +27,9 @@ fn core_run_task(t<task.RawTask>, handle<CtHandle>){
 // Drain the Defer list back to inject. Defer hosts the tasks parked by
 // coop yield_now; pushing them back to inject preserves FIFO across the
 // next polling round.
-fn drain_defer(defer<Defer>, inj<Inject>) i32 {
-    if defer.is_empty() != 0 return 0
-    defer.drain_into_inject(inj)
+fn drain_defer(dlist<Defer>, inj<Inject>) i32 {
+    if dlist.is_empty() != 0 return 0
+    dlist.drain_into_inject(inj)
     return 1
 }
 
@@ -108,8 +108,8 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
     root<task.RawTask> = task.bind_root(fut_bits, handle, ct_schedule_bridge.(u64), ct_release_bridge.(u64))
 
     core_obj<Core> = ct_core_new(shared.driver, DEFAULT_GLOBAL_QUEUE_INTERVAL)
-    defer<Defer>   = Defer::new()
-    ctx_obj<CtContext> = CtContext::new(handle, core_obj, defer)
+    dlist<Defer>   = Defer::new()
+    ctx_obj<CtContext> = CtContext::new(handle, core_obj, dlist)
     saved<CtSavedSlot> = ct_enter(ctx_obj)
 
     notif_root<task.Notified> = task.notified_from_raw(root)
@@ -131,7 +131,7 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
             break
         }
 
-        if drain_defer(defer, shared.inject) {
+        if drain_defer(dlist, shared.inject) {
             continue
         }
 

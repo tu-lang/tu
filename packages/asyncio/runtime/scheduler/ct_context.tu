@@ -8,20 +8,20 @@ use std
 // Not true TLS: always pair with owner_tid in is_current_handle.
 ACTIVE_CT<CtContext> = null
 
-// Per-thread context combining handle + core + defer.
+// Per-thread context combining handle + core + coop dlist.
 mem CtContext {
     CtHandle* handle
     Core*     core
-    Defer*    defer
+    Defer*    dlist
     u64       owner_tid    // gettid of block_on thread (TLS surrogate)
 }
 
-// Build a context bundling handle / core / defer.
-const CtContext::new(handle<CtHandle>, core<Core>, defer<Defer>) CtContext {
+// Build a context bundling handle / core / coop dlist.
+const CtContext::new(handle<CtHandle>, core<Core>, dlist<Defer>) CtContext {
     c<CtContext> = new CtContext
     c.handle = handle
     c.core   = core
-    c.defer  = defer
+    c.dlist  = dlist
     c.owner_tid = 0
     return c
 }
