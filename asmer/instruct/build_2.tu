@@ -6,6 +6,19 @@ use fmt
 
 Instruct::insthead(){
     utils.debug("Instruct::insthead()".(i8))
+    // LEA to 64-bit GP needs REX.W. Bare "lea sym, %r64" is TY_IMMED and
+    // skips register-pair REX paths (truncates on Darwin high VA).
+    if this.type == ast.KW_LEA && this.left == ast.TY_IMMED {
+        if ast.r8islow(this.tks.addr[1]) {
+            this.append1(0x48.(i8))
+            return true
+        }
+        if ast.r8ishigh(this.tks.addr[1]) {
+            this.append1(0x4c.(i8))
+            return true
+        }
+        return true
+    }
     dword<i32> = 0
     if this.type == ast.KW_CVTSI2SD || this.type == ast.KW_CVTSI2SDL
         this.append1(0xf2.(i8))

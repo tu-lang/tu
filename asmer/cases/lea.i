@@ -21,3 +21,8 @@ Disassembly of section .text:
 0000000000000035 <test1>:
   35:	48 8d 15 c4 ff ff ff 	lea    -0x3c(%rip),%rdx        # 0 <mem>
   3c:	48 8d 15 d4 ff ff ff 	lea    -0x2c(%rip),%rdx        # 17 <test>
+
+0000000000000043 <bare>:
+  43:	48 8d 05 b6 ff ff ff 	lea    -0x4a(%rip),%rax        # 0 <mem>
+  4a:	48 8d 3d af ff ff ff 	lea    -0x51(%rip),%rdi        # 0 <mem>
+  51:	4c 8d 05 a8 ff ff ff 	lea    -0x58(%rip),%r8         # 0 <mem>
