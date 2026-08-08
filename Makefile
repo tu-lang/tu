@@ -41,6 +41,16 @@ CLEAN_ALL = clean_all() {											\
         rm -rf $(prefix)/lib/coasm;                            		\
     fi;                                                     	 	\
 }
+# TARGET=linux|darwin — selects syscall tree + runtime OS file.
+# Default follows host OS (uname); override with TARGET=linux|darwin.
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+DEFAULT_TARGET := darwin
+else
+DEFAULT_TARGET := linux
+endif
+TARGET ?= $(DEFAULT_TARGET)
+
 INSTALL_ALL = install_all() {                              			\
     if [ ! -d $(prefix)/lib/colib ]; then                        	\
         mkdir -p $(prefix)/lib/colib;                            	\
@@ -54,11 +64,21 @@ INSTALL_ALL = install_all() {                              			\
 	rm -rf $(prefix)/lib/colib/*;									\
 	rm -rf $(prefix)/lib/copkg/*;									\
 	rm -rf $(prefix)/lib/coasm/*;									\
-	cp release/tu $(prefix)/bin/tu;									\
+	cp release/tu $(prefix)/bin/tu 2>/dev/null || true;				\
 	cp -r runtime $(prefix)/lib/copkg/;								\
 	cp -r library/* $(prefix)/lib/copkg/;							\
 	cp -r packages/* $(prefix)/lib/copkg/;							\
-	cp -r syscall/* $(prefix)/lib/coasm/;							\
+	if [ "$(TARGET)" = "darwin" ]; then								\
+		rm -f $(prefix)/lib/copkg/runtime/linux.tu;					\
+		cp platform/darwin/runtime_os.tu $(prefix)/lib/copkg/runtime/darwin.tu; \
+		mkdir -p $(prefix)/lib/coasm-darwin;						\
+		rm -f $(prefix)/lib/coasm-darwin/*;							\
+		cp syscall/darwin/*.s $(prefix)/lib/coasm-darwin/;			\
+		echo "[install] TARGET=darwin → coasm-darwin + runtime/darwin.tu"; \
+	else															\
+		rm -f $(prefix)/lib/copkg/runtime/darwin.tu;				\
+		for f in syscall/*.s; do cp "$$f" $(prefix)/lib/coasm/; done; \
+	fi;																\
 	if [ -f release/tulang.a ]; then								\
 		XD=$$(mktemp -d "$${TMPDIR:-/tmp}/tu-extract-liba-XXXXXX");	\
 		(cd "$$XD" && ar -x "$(CURDIR)/release/tulang.a");			\
@@ -97,9 +117,32 @@ dev_release: install
 	cp release/tu $(prefix)/bin/tu
 
 .PHONY: install
-install: 
+install:
+ifeq ($(TARGET),darwin)
+	@$(MAKE) install-darwin
+else
 	@$(INSTALL_ALL); install_all
 	@echo "tu env installed"
+endif
+
+# Darwin runtime/coasm for mother tuc --target=darwin (no self-hosted tu binary).
+# Also refreshes Linux coasm: shared runtime/ (e.g. segsegvrecv_pc) must stay in
+# sync or default `tuc build` (target=linux) fails with undefined asm symbols.
+# On macOS, plain `make install` routes here via TARGET default = darwin.
+.PHONY: install-darwin
+install-darwin:
+	@mkdir -p $(prefix)/lib/copkg $(prefix)/lib/coasm $(prefix)/lib/coasm-darwin
+	@rm -rf $(prefix)/lib/copkg/*
+	@cp -R runtime $(prefix)/lib/copkg/
+	@cp -R library/* $(prefix)/lib/copkg/
+	@cp -R packages/* $(prefix)/lib/copkg/
+	@rm -f $(prefix)/lib/copkg/runtime/linux.tu
+	@cp platform/darwin/runtime_os.tu $(prefix)/lib/copkg/runtime/darwin.tu
+	@rm -f $(prefix)/lib/coasm-darwin/*
+	@cp syscall/darwin/*.s $(prefix)/lib/coasm-darwin/
+	@rm -f $(prefix)/lib/coasm/*
+	@cp syscall/*.s $(prefix)/lib/coasm/
+	@echo "install-darwin: copkg + coasm-darwin (+ coasm)"
 
 .PHONY: clean
 clean:
