@@ -75,15 +75,24 @@ fn mallocinit() {
 	while(gcphase != _GCoff){}
 }
 
-fn args_init(argc<u64>, argv<u64*>){
-	//save exec out file
-	ori_execout = argv - 8
-	ori_execout = *ori_execout
-	//start parse env info
-	envp<u64*> = argv + argc * PointerSize
+fn args_init(argc<u64>, argv<u64*>, envp_in<u64*>){
+	// argv[0] is the program path on both Linux and Darwin (dyld passes
+	// argc/argv/envp in registers; Linux crt used to read a pre-argv stack word).
+	ori_execout = null
+	if argv != null {
+		if *argv != null {
+			ori_execout = *argv
+		}
+	}
+	// Linux: envp_in==null → envp follows argv's NULL (contiguous stack).
+	// Darwin LC_MAIN: envp is a separate pointer — must pass it explicitly.
+	envp<u64*> = envp_in
+	if envp == null {
+		envp = argv + (argc + 1.(u64)) * PointerSize
+	}
 	c = int(argc)
 	c -= 1
-	ori_envp = envp # save env
+	ori_envp = envp
 	//save args
 	arr = []
 	while argc > 0 {
@@ -109,59 +118,31 @@ fn args_init(argc<u64>, argv<u64*>){
 		envp += PointerSize
 	}
 	ori_envs = envs
-	//init current executetable path
-	self_path =  std.realpath("/proc/self/exe".(i8))
-	if self_path < 0 {
+	// Linux: /proc/self/exe. Darwin has no /proc — realpath returns null;
+	// fall back to argv[0].
+	self_path = std.realpath("/proc/self/exe".(i8))
+	if self_path == null {
 		self_path = ori_execout
 	}
 }
 fn runtimeinit(){
-	os.setsignal(os.SIGSEGV,std.segsegvrecv)
+	// Must pass raw code PC — std.segsegvrecv as a value is a heap descriptor.
+	os.setsignal(os.SIGSEGV,std.segsegvrecv_pc())
 	pools_init()
 	debug.debug_init()
 }
 
 fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
+	// Avoid recursive SIGSEGV while unwinding.
+	os.setsignal(os.SIGSEGV,0.(u64))
 	println(*"\npanicked! stack backtrace:")
+	// Platform-specific: linux.tu / darwin.tu implement segsegv_rip.
 	rip<u64> = segsegv_rip(ctxt)
 	// L2a: pclntab only; never fork addr2line
 	pc = debug.findpc(rip)
 	println(*"0: %s" ,*pc)
-	bp<u64*> = runtime.get_bp()
-	//skip first stack
-	bp = *bp
-	i = 1
-	//stack backtrace 
-	loop {
-		pc_slot<u64*> = bp + 8
-		rip = *pc_slot
-		if rip == null break
-		fmt.println(i + ": " + debug.findpc(rip))
-		bp = *bp
-		i += 1
-	}
-	os.exit(ErrorCode)
-}
-mem Stackt {
-	i8* ss_sp
-	i32 ss_flags
-	i8 pad_cgo_0[4]
-	u64 ss_size
-}
-mem Ucontext  {
-	u64 	uc_flags   
-	Ucontext* uc_link      
-	Stackt uc_stack
-	u64 uc_mcontext
-}
-mem Sigcontext {
-	u64 r8,r9,r10,r11,r12,r13,r14,r15,rdi,rsi,rbp,rbx,rdx,rax,rcx,rsp,rip,eflags
-	u16 cs,gs,fs,__pad0
-	u64 err,trapno,oldmask,cr2
-	//fpstate1*     *fpstate
-	// u64 __reserved1[8]
-}
-fn segsegv_rip(ctxt<Ucontext>) {
-	sigc<Sigcontext> = &ctxt.uc_mcontext
-	return sigc.rip
+	// Optional rbp frames: linux.tu walks; darwin.tu is a no-op (sigtramp).
+	segsegv_walkstack()
+	// os.exit expects a pointer operand (*code); use std.die for a raw code.
+	std.die(ErrorCode.(i8))
 }

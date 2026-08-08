@@ -19,10 +19,11 @@ mem Sigactiont  {
 	u64 sa_handler,sa_flags,sa_restorer,sa_mask
 }
 
-// Install a SA_SIGINFO handler. Always set SA_RESTORER to the raw
-// std.sigreturn_pc() address — Tu `sigreturn.(u64)` is a heap descriptor
-// and must not be used as sa_restorer (kernel would jump there → SEGV at
-// NULL). Do not set SA_ONSTACK without a configured sigaltstack.
+// Install a SA_SIGINFO handler. fc must be a raw code PC (e.g.
+// std.segsegvrecv_pc()), not a Tu func value — those are heap descriptors.
+// Always set SA_RESTORER to std.sigreturn_pc() on Linux. Darwin's
+// std.rt_sigaction translates this layout and injects std_sigtramp.
+// Do not set SA_ONSTACK without a configured sigaltstack.
 func setsignal(i<u32> , fc<u64>) {
 	sa<Sigactiont> = new Sigactiont
 	sa.sa_flags = _SA_SIGINFO | _SA_RESTART | _SA_RESTORER

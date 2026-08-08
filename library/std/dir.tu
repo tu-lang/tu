@@ -13,13 +13,13 @@ func realpath(name<i8*>) {
 	buffer_o<i8:128> = null
 	buffer<i8*> = &buffer_o
 	len = readlink(name,buffer,128.(i8))
+	// Soft-fail: missing path (e.g. no /proc on Darwin) returns null;
+	// callers fall back to argv[0]. Do not spam stderr on the expected miss.
 	if len < 0 {
-		fmt.vfprintf(STDOUT,"readlink failed %d".(i8),len)
-		return 0.(i8)
+		return null
 	}
 	if len >= 128 {
-		fmt.vfprintf(STDOUT,"readlink failed path over 128 %d".(i8),len)
-		return 0.(i8)
+		return null
 	}
 	return string.newlen(buffer,len)
 }
