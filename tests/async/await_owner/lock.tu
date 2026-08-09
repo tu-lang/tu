@@ -24,3 +24,19 @@ async Lock::pending_then_ready() {
     }
     return 2.(i8)
 }
+
+// User-written poll on mem:async (not async-fn conversion). Cross-pkg .await
+// must see poll return types after parse2 clears funcs.
+mem ReadyLeaf: async {
+    i8 val
+}
+
+fn ready_new(v<i8>) ReadyLeaf {
+    f<ReadyLeaf> = new ReadyLeaf
+    f.val = v
+    return f
+}
+
+ReadyLeaf::poll(ctx) i32, i8 {
+    return runtime.PollReady, this.val
+}

@@ -41,6 +41,18 @@ async cross_materialize_leaf_await() {
     return fut.await
 }
 
+async cross_ready_var_await() {
+    a<own.ReadyLeaf> = own.ready_new(10.(i8))
+    return a.await
+}
+
+async cross_ready_binop_assign() {
+    a<own.ReadyLeaf> = own.ready_new(10.(i8))
+    b<own.ReadyLeaf> = own.ready_new(20.(i8))
+    sum<i8> = a.await + b.await
+    return sum
+}
+
 fn test_cross_member_await() {
     fmt.println("test_cross_member_await")
     r1<i64> = runtime.block(cross_lock_once())
@@ -94,9 +106,27 @@ fn test_cross_materialize_leaf() {
     fmt.println("test_cross_materialize_leaf success")
 }
 
+fn test_cross_ready_leaf_poll() {
+    fmt.println("test_cross_ready_leaf_poll")
+    r<i64> = runtime.block(cross_ready_var_await())
+    if int(r.(i8)) != 10 {
+        os.dief("ReadyLeaf.await want 10 got %d", int(r.(i8)))
+    }
+    r2<i64> = runtime.block(cross_ready_binop_assign())
+    if int(r2.(i8)) != 30 {
+        os.dief("ReadyLeaf sum assign want 30 got %d", int(r2.(i8)))
+    }
+    r3<i64> = runtime.block(local_lock_once())
+    if r3 != 3 {
+        os.die("follow-up after ready leaf poisoned")
+    }
+    fmt.println("test_cross_ready_leaf_poll success")
+}
+
 fn main() {
     test_cross_member_await()
     test_cross_pending_await()
     test_cross_untyped_recv()
     test_cross_materialize_leaf()
+    test_cross_ready_leaf_poll()
 }
