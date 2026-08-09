@@ -57,7 +57,8 @@ mem Dirent{
     i64 d_ino 
     i64 d_off
     u16 d_reclen
-    i8 d_name
+    i8  d_type
+    i8  d_name
 }
 class FileFd {type name path}
 //opendir
@@ -106,9 +107,10 @@ init_dents:
 
 
     d<Dirent> = dir.dir + dir.pos
-    file_name = string.new(&d.d_name)
-    file_type_p<i8*> = d + d.d_reclen - 1 
-    file_type = dirtype(*file_type_p)
+    // linux_dirent64: d_type @18, d_name @19
+    name_p<i8*> = &d.d_name
+    file_name = string.new(name_p)
+    file_type = dirtype(d.d_type)
 
     #incr pos
     dir.pos += d.d_reclen
