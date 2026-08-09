@@ -28,8 +28,15 @@ fn tcp_bind(socket<net.TcpListener>, addr<net.SocketAddr>) i32 {
 fn connect_fd(fd<i32>, addr<net.SocketAddr>) i32 {
 	ptr_bits<u64>, raw_len<i32> = socket_addr(addr)
 	err<i32>, junk<u64> = libsys.cvt(libsys.connect(fd, ptr_bits, raw_len))
-	if err != libsys.Ok && err != io.OS_EINPROGRESS
+	if err != libsys.Ok && err != io.OS_EINPROGRESS {
 		return err
+	}
+	if err == io.OS_EINPROGRESS {
+		werr<i32> = platform_connect_finish(fd, addr)
+		if werr != libsys.Ok {
+			return werr
+		}
+	}
 	return libsys.Ok
 }
 

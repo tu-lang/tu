@@ -15,6 +15,7 @@ SOCK_STREAM<i32>          = 1
 SOCK_DGRAM<i32>           = 2
 SOL_SOCKET<i32>           = 1
 SO_REUSEADDR<i32>         = 2
+SO_ERROR<i32>             = 4
 SOCKADDR_STORAGE_LEN<i32> = 128
 F_DUPFD_CLOEXEC<i32>      = 1030
 

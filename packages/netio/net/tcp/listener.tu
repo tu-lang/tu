@@ -74,7 +74,13 @@ TcpListener::raw_fd() i32 {
 // Returns (err, stream_bits, addr_bits). Cross-pkg Mem multi-ret is unsafe;
 // bits avoid LAST_* globals that race under concurrent accept.
 TcpListener::accept() i32, u64, u64 {
+	slot<u64> = netio.iosource_platform_slot(this.iosrc_bits)
+	nsys.platform_before_accept(slot, this.raw_fd())
 	err<i32>, std_bits<u64>, addr_bits<u64> = nsys.accept_fd(this.raw_fd())
+	if err == io.WouldBlock {
+		nsys.platform_before_accept(slot, this.raw_fd())
+		err, std_bits, addr_bits = nsys.accept_fd(this.raw_fd())
+	}
 	if err != io.Ok {
 		return err, 0.(u64), 0.(u64)
 	}

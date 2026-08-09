@@ -24,6 +24,7 @@ mem IoSource {
 	i32 raw_fd
 	u64 io_bits
 	u64 selector_id
+	u64 platform_slot
 }
 
 const IoSource::new(fd<i32>, obj_bits<u64>) IoSource {
@@ -34,6 +35,7 @@ const IoSource::new(fd<i32>, obj_bits<u64>) IoSource {
 	src.io_bits = obj_bits
 	zero<u64> = 0
 	src.selector_id = zero
+	src.platform_slot = zero
 	return src
 }
 
@@ -51,6 +53,7 @@ IoSource::enroll_fd(registry<Registry>, t<Token>, interests<Interest>) i32 {
 	if this.selector_id != 0 && this.selector_id != sel.id()
 		return io.AlreadyExists
 	this.selector_id = sel.id()
+	this.platform_slot = nsys.platform_enroll_selector_slot(sel.(u64))
 	ret<i32> = nsys.selector_add_fd(sel, this.raw_fd, t.as_u64(), interest_as_u8(interests))
 	return ret
 }
@@ -73,6 +76,7 @@ IoSource::detach_fd(registry<Registry>) i32 {
 	if this.selector_id != sel3.id()
 		return io.AlreadyExists
 	this.selector_id = 0
+	this.platform_slot = nsys.platform_on_detach_selector_slot()
 	return nsys.selector_del_fd(sel3, this.raw_fd)
 }
 
@@ -146,4 +150,12 @@ fn iosource_reregister_bits(bits<u64>, registry<Registry>, t<Token>, interests<I
 fn iosource_deregister_bits(bits<u64>, registry<Registry>) i32 {
 	src<IoSource> = bits.(IoSource)
 	return src.detach_fd(registry)
+}
+
+fn iosource_platform_slot(bits<u64>) u64 {
+	if bits == 0 {
+		return 0.(u64)
+	}
+	src<IoSource> = bits.(IoSource)
+	return src.platform_slot
 }
