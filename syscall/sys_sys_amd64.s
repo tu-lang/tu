@@ -150,6 +150,17 @@ sys_epoll_wait:
 	syscall
 	retq
 
+# Darwin-only; Linux stubs so unused declarations still link.
+.global sys_kqueue
+sys_kqueue:
+	mov $-78, %rax
+	retq
+
+.global sys_kevent
+sys_kevent:
+	mov $-78, %rax
+	retq
+
 .global sys_readlink
 sys_readlink:
 	mov $89, %rax

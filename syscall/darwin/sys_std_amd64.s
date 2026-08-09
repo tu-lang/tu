@@ -68,7 +68,17 @@ std_read_ok:
 std_close:
 	push %rbp
 	mov %rsp, %rbp
+	and $-16, %rsp
+	mov darwin_sfd_kq(%rip), %rax
+	cmp $0, %rax
+	je std_close_do
+	cmp %rax, %rdi
+	jne std_close_do
+	movq $0, darwin_sfd_kq(%rip)
+	movq $0, darwin_sfd_mask(%rip)
+std_close_do:
 	call _close
+	mov %rbp, %rsp
 	pop %rbp
 	cmp $-1, %rax
 	jne std_close_ok
@@ -184,8 +194,7 @@ std_nanosleep:
 
 .globl std_getdents
 std_getdents:
-	# getdirentries64 + convert to dir.tu layout (name@18, type@reclen-1).
-	# Memory ops via %rax/%rsi/%rdi only — asmer breaks movb N(%rN).
+	# getdirentries64 → linux_dirent64 (ino@0, off@8, reclen@16, type@18, name@19).
 	push %rbp
 	mov %rsp, %rbp
 	push %rbx
@@ -193,6 +202,7 @@ std_getdents:
 	push %r13
 	push %r14
 	push %r15
+	and $-16, %rsp
 	mov %rsi, %r12
 	mov %rdx, %r13
 	mov %rdi, %r15
@@ -201,7 +211,7 @@ std_getdents:
 	mov $0, %rax
 	mov %r14, %rdi
 	add $0x1000, %rdi
-	mov %rax, (%rdi)
+	mov %rax, 0(%rdi)
 	mov %r15, %rdi
 	mov %r14, %rsi
 	mov %r13, %rdx
@@ -222,6 +232,7 @@ std_getdents_loop:
 	jge std_getdents_done
 	mov %r14, %rax
 	add %rbx, %rax
+	# Darwin: reclen u16@16, namlen u16@18, type u8@20, name@21
 	mov 16(%rax), %rcx
 	mov %rcx, %rdx
 	and $0xffff, %rcx
@@ -229,16 +240,9 @@ std_getdents_loop:
 	and $0xffff, %rdx
 	cmp $0, %rcx
 	je std_getdents_done
-	mov %rax, %rsi
-	add $20, %rsi
-	movb (%rsi), %al
-	mov %r14, %rdi
-	add $0x1008, %rdi
-	movb %al, (%rdi)
-	mov %r14, %rax
-	add %rbx, %rax
+	# out_reclen = align8(19+namlen+1)
 	mov %rdx, %r8
-	add $19, %r8
+	add $20, %r8
 	add $7, %r8
 	shr $3, %r8
 	shl $3, %r8
@@ -248,42 +252,44 @@ std_getdents_loop:
 	jg std_getdents_done
 	mov %r12, %rdi
 	add %r11, %rdi
-	mov (%rax), %rsi
-	mov %rsi, (%rdi)
+	mov 0(%rax), %rsi
+	mov %rsi, 0(%rdi)
 	mov 8(%rax), %rsi
 	mov %rsi, 8(%rdi)
+	# store u16 reclen at dst+16
 	mov %rdi, %rsi
 	add $16, %rsi
 	mov %r8, %rax
-	movb %al, (%rsi)
+	movb %al, 0(%rsi)
 	shr $8, %rax
 	add $1, %rsi
-	movb %al, (%rsi)
+	movb %al, 0(%rsi)
+	# reload Darwin entry ptr
 	mov %r14, %rax
 	add %rbx, %rax
+	# type @20 → dst+18
+	mov %rax, %rsi
+	add $20, %rsi
+	movb 0(%rsi), %cl
+	mov %rdi, %rsi
+	add $18, %rsi
+	movb %cl, 0(%rsi)
+	# name @21 → dst+19
 	mov %rax, %rsi
 	add $21, %rsi
 	mov %rdi, %rax
-	add $18, %rax
-	mov %rdi, %r9
+	add $19, %rax
 std_getdents_cpy:
 	cmp $0, %rdx
 	je std_getdents_cpy_done
-	movb (%rsi), %cl
-	movb %cl, (%rax)
+	movb 0(%rsi), %cl
+	movb %cl, 0(%rax)
 	add $1, %rsi
 	add $1, %rax
 	sub $1, %rdx
 	jmp std_getdents_cpy
 std_getdents_cpy_done:
-	movb $0, (%rax)
-	mov %r9, %rax
-	add %r8, %rax
-	sub $1, %rax
-	mov %r14, %rsi
-	add $0x1008, %rsi
-	movb (%rsi), %cl
-	movb %cl, (%rax)
+	movb $0, 0(%rax)
 	mov %r14, %rax
 	add %rbx, %rax
 	mov 16(%rax), %rcx
@@ -293,34 +299,21 @@ std_getdents_cpy_done:
 	jmp std_getdents_loop
 std_getdents_done:
 	mov %r11, %rax
-	add $0x1010, %rsp
-	pop %r15
-	pop %r14
-	pop %r13
-	pop %r12
-	pop %rbx
-	pop %rbp
-	retq
+	jmp std_getdents_epilogue
 std_getdents_empty:
 	xor %rax, %rax
-	add $0x1010, %rsp
-	pop %r15
-	pop %r14
-	pop %r13
-	pop %r12
-	pop %rbx
-	pop %rbp
-	retq
+	jmp std_getdents_epilogue
 std_getdents_syserr:
 	mov %rax, %rdi
 	xor %rax, %rax
 	sub %rdi, %rax
-	add $0x1010, %rsp
-	pop %r15
-	pop %r14
-	pop %r13
-	pop %r12
-	pop %rbx
+std_getdents_epilogue:
+	mov -8(%rbp), %rbx
+	mov -16(%rbp), %r12
+	mov -24(%rbp), %r13
+	mov -32(%rbp), %r14
+	mov -40(%rbp), %r15
+	mov %rbp, %rsp
 	pop %rbp
 	retq
 
@@ -609,14 +602,208 @@ std_gettid:
 	jne std_errno_neg
 	retq
 
+# Darwin has no signalfd(2). Emulate with a dedicated kqueue + EVFILT_SIGNAL
+# plus an empty catcher (prevents default terminate). Drain reads via sys_read
+# which harvests kevents into a Linux signalfd_siginfo-shaped buffer.
+.data
+.align 8
+.globl darwin_sfd_kq
+darwin_sfd_kq:
+	.quad 0
+darwin_sfd_mask:
+	.quad 0
+.globl darwin_sig_mask
+darwin_sig_mask:
+	.quad 0
+
+.text
+.globl std_sfd_handler
+std_sfd_handler:
+	retq
+
 .globl std_signalfd4
 std_signalfd4:
-	mov $-78, %rax
+	# rdi=fd (-1 create), rsi=mask ptr, rdx=sizemask, rcx=flags
+	# Create kqueue; on mask updates EV_ADD EVFILT_SIGNAL. Signals are
+	# blocked via std_rt_sigprocmask (soft+real) so default actions do not run.
+	push %rbp
+	mov %rsp, %rbp
+	push %rbx
+	push %r12
+	push %r13
+	push %r14
+	push %r15
+	and $-16, %rsp
+	sub $64, %rsp
+	mov %rdi, %rbx
+	mov %rsi, %r12
+	cmp $-1, %ebx
+	jne std_signalfd4_update
+	mov $0x200016A, %rax
+	syscall
+	setb %cl
+	cmp $0, %cl
+	jne std_signalfd4_kq_err
+	mov %rax, %rbx
+	mov %rax, darwin_sfd_kq(%rip)
+	jmp std_signalfd4_update
+std_signalfd4_kq_err:
+	mov %rax, %rdi
+	xor %rax, %rax
+	sub %rdi, %rax
+	jmp std_signalfd4_done
+std_signalfd4_update:
+	cmp $0, %r12
+	je std_signalfd4_ret_fd
+	mov %r12, %rsi
+	mov 0(%rsi), %rax
+	mov %rax, %r12
+	mov darwin_sfd_mask(%rip), %r13
+	# signum in r15 (1..32); Darwin sigset_t is 4 bytes.
+	mov $1, %r15
+std_signalfd4_loop:
+	cmp $32, %r15
+	jg std_signalfd4_mask_done
+	# bit = 1 << (signum-1) via shl %cl
+	mov %r15, %rcx
+	sub $1, %rcx
+	mov $1, %rax
+	shl %cl, %rax
+	mov %r12, %rdx
+	and %rax, %rdx
+	mov %r13, %rsi
+	and %rax, %rsi
+	cmp %rdx, %rsi
+	je std_signalfd4_next
+	cmp $0, %rdx
+	je std_signalfd4_clr
+	# EV_ADD|EV_CLEAR EVFILT_SIGNAL — save signum at -48(%rbp)
+	mov %r15, -48(%rbp)
+	mov darwin_sfd_kq(%rip), %rdi
+	sub $32, %rsp
+	mov %r15, 0(%rsp)
+	movw $-6, 8(%rsp)
+	movw $0x21, 10(%rsp)
+	movl $0, 12(%rsp)
+	movq $0, 16(%rsp)
+	movq $0, 24(%rsp)
+	mov %rsp, %rsi
+	mov $1, %edx
+	xor %rcx, %rcx
+	xor %r8, %r8
+	xor %r9, %r9
+	mov %rcx, %r10
+	mov $0x200016B, %rax
+	syscall
+	add $32, %rsp
+	mov -48(%rbp), %r15
+	jmp std_signalfd4_next
+std_signalfd4_clr:
+	mov %r15, -48(%rbp)
+	mov darwin_sfd_kq(%rip), %rdi
+	sub $32, %rsp
+	mov %r15, 0(%rsp)
+	movw $-6, 8(%rsp)
+	movw $0x2, 10(%rsp)
+	movl $0, 12(%rsp)
+	movq $0, 16(%rsp)
+	movq $0, 24(%rsp)
+	mov %rsp, %rsi
+	mov $1, %edx
+	xor %rcx, %rcx
+	xor %r8, %r8
+	xor %r9, %r9
+	mov %rcx, %r10
+	mov $0x200016B, %rax
+	syscall
+	add $32, %rsp
+	mov -48(%rbp), %r15
+std_signalfd4_next:
+	add $1, %r15
+	jmp std_signalfd4_loop
+std_signalfd4_mask_done:
+	mov %r12, darwin_sfd_mask(%rip)
+std_signalfd4_ret_fd:
+	mov %rbx, %rax
+std_signalfd4_done:
+	mov -8(%rbp), %rbx
+	mov -16(%rbp), %r12
+	mov -24(%rbp), %r13
+	mov -32(%rbp), %r14
+	mov -40(%rbp), %r15
+	mov %rbp, %rsp
+	pop %rbp
 	retq
 
 .globl std_rt_sigprocmask
 std_rt_sigprocmask:
+	# Soft mask (for signalfd4) + real _sigprocmask so EVFILT_SIGNAL can
+	# observe blocked signals without default terminate.
+	# rdi=how (Linux: 0/1/2), rsi=set, rdx=oldset, rcx=size
+	# Darwin how is 1/2/3 — remap before _sigprocmask.
+	push %rbp
+	mov %rsp, %rbp
+	push %rbx
+	push %r12
+	push %r13
+	push %r14
+	and $-16, %rsp
+	mov %rdi, %r12
+	mov %rsi, %r13
+	mov %rdx, %r14
+	mov darwin_sig_mask(%rip), %rax
+	cmp $0, %r14
+	je std_rt_sigprocmask_no_old
+	mov %rax, 0(%r14)
+std_rt_sigprocmask_no_old:
+	cmp $0, %r13
+	je std_rt_sigprocmask_kern
+	mov 0(%r13), %rbx
+	mov %r12, %rcx
+	# Keep how in low 32 bits (avoid $0xffffffff — asmer folds it to -1).
+	mov %ecx, %ecx
+	cmp $0, %rcx
+	je std_rt_sigprocmask_block
+	cmp $1, %rcx
+	je std_rt_sigprocmask_unblock
+	# SETMASK (Linux how=2)
+	mov %rbx, darwin_sig_mask(%rip)
+	jmp std_rt_sigprocmask_kern
+std_rt_sigprocmask_block:
+	or %rbx, %rax
+	mov %rax, darwin_sig_mask(%rip)
+	jmp std_rt_sigprocmask_kern
+std_rt_sigprocmask_unblock:
+	mov darwin_sig_mask(%rip), %rax
+	mov $-1, %rcx
+	xor %rbx, %rcx
+	and %rcx, %rax
+	mov %rax, darwin_sig_mask(%rip)
+std_rt_sigprocmask_kern:
+	# Remap Linux how → Darwin: 0→1, 1→2, 2→3
+	mov %r12, %rax
+	mov %eax, %eax
+	add $1, %rax
+	mov %rax, %rdi
+	mov %r13, %rsi
+	xor %rdx, %rdx
+	call _sigprocmask
+	cmp $-1, %rax
+	jne std_rt_sigprocmask_ok
+	call ___error
+	mov (%rax), %edi
 	xor %rax, %rax
+	sub %rdi, %rax
+	jmp std_rt_sigprocmask_done
+std_rt_sigprocmask_ok:
+	xor %rax, %rax
+std_rt_sigprocmask_done:
+	mov -8(%rbp), %rbx
+	mov -16(%rbp), %r12
+	mov -24(%rbp), %r13
+	mov -32(%rbp), %r14
+	mov %rbp, %rsp
+	pop %rbp
 	retq
 
 .globl std_pidfd_open
@@ -660,14 +847,84 @@ std_fork_err:
 
 .globl std_dup2
 std_dup2:
-	# Darwin has dup2 as libc; use fcntl F_DUPFD if needed — stub via raw 90? use openat path
-	# SYS_dup2 not present; approximate with return -78
-	mov $-78, %rax
+	# libSystem dup2(oldfd, newfd).
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	call _dup2
+	cmp $-1, %rax
+	jne std_dup2_ok
+	call ___error
+	mov (%rax), %edi
+	xor %rax, %rax
+	sub %rdi, %rax
+std_dup2_ok:
+	mov %rbp, %rsp
+	pop %rbp
 	retq
 
 .globl std_pipe2
 std_pipe2:
-	mov $-78, %rax
+	# pipe(2) + fcntl for Linux O_CLOEXEC (0x80000) / O_NONBLOCK (0x800).
+	# rdi = int fds[2], rsi = flags
+	push %rbp
+	mov %rsp, %rbp
+	push %rbx
+	push %r12
+	push %r13
+	and $-16, %rsp
+	mov %rdi, %rbx
+	mov %rsi, %r12
+	mov %rbx, %rdi
+	call _pipe
+	cmp $-1, %rax
+	jne std_pipe2_ok_pipe
+	call ___error
+	mov (%rax), %edi
+	xor %rax, %rax
+	sub %rdi, %rax
+	jmp std_pipe2_done
+std_pipe2_ok_pipe:
+	xor %r13, %r13
+std_pipe2_flag_loop:
+	cmp $2, %r13
+	jge std_pipe2_ret0
+	mov %r13, %rax
+	add %rax, %rax
+	add %rax, %rax
+	add %rbx, %rax
+	movl (%rax), %edi
+	mov %r12, %rax
+	and $0x800, %eax
+	cmp $0, %eax
+	je std_pipe2_ce
+	mov $4, %esi
+	mov $4, %edx
+	call _fcntl
+std_pipe2_ce:
+	mov %r13, %rax
+	add %rax, %rax
+	add %rax, %rax
+	add %rbx, %rax
+	movl (%rax), %edi
+	mov %r12, %rax
+	and $0x80000, %eax
+	cmp $0, %eax
+	je std_pipe2_next
+	mov $2, %esi
+	mov $1, %edx
+	call _fcntl
+std_pipe2_next:
+	add $1, %r13
+	jmp std_pipe2_flag_loop
+std_pipe2_ret0:
+	xor %rax, %rax
+std_pipe2_done:
+	mov -8(%rbp), %rbx
+	mov -16(%rbp), %r12
+	mov -24(%rbp), %r13
+	mov %rbp, %rsp
+	pop %rbp
 	retq
 
 # Shared: rax=errno, CF path → return -errno

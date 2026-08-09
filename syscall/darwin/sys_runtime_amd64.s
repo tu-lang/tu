@@ -271,17 +271,64 @@ runtime_futex:
 	mov $-22, %rax
 	ret
 futex_wait:
-	# args in: rdi=addr rsi=op rdx=val rcx=ts
-	# ulock_wait(op=1, addr, val, timeout_us=0)
-	mov %rdi, %rsi
-	mov $1, %rdi
+	# args in: rdi=addr rsi=op rdx=val rcx=ts (TimeSpec* or null)
+	# ulock_wait(op=1, addr, val, timeout_us); timeout_us=0 means infinite.
+	push %rbp
+	mov %rsp, %rbp
+	push %rbx
+	push %r12
+	push %r13
+	push %r14
+	mov %rdi, %r12
+	mov %rdx, %r13
+	mov %rcx, %r14
+	cmp $0, %r14
+	je futex_wait_infinite
+	mov 0(%r14), %rax
+	mov $1000000, %r10
+	imul %r10, %rax
+	mov %rax, %r11
+	mov 8(%r14), %rax
+	xor %rdx, %rdx
+	mov $1000, %r10
+	div %r10
+	add %rax, %r11
+	cmp $0, %r11
+	jne futex_wait_clamp
+	mov $1, %r11
+futex_wait_clamp:
+	mov $0xFFFFFFFF, %rcx
+	cmp %rcx, %r11
+	jbe futex_wait_have_us
+	mov %rcx, %r11
+futex_wait_have_us:
+	mov %r11, %r10
+	jmp futex_wait_do
+futex_wait_infinite:
 	xor %r10, %r10
+futex_wait_do:
+	mov $1, %rdi
+	mov %r12, %rsi
+	mov %r13, %rdx
 	mov $0x2000203, %rax
 	syscall
 	setb %cl
 	cmp $0, %cl
-	jne futex_err
+	jne futex_wait_err
+	pop %r14
+	pop %r13
+	pop %r12
+	pop %rbx
+	pop %rbp
 	ret
+futex_wait_err:
+	mov %rax, %rdi
+	pop %r14
+	pop %r13
+	pop %r12
+	pop %rbx
+	pop %rbp
+	jmp futex_err
 futex_wake:
 	# ulock_wake(op=1, addr, 0)
 	mov %rdi, %rsi
