@@ -389,13 +389,14 @@ FunCallExpr::PushRegisterArgs(ctx,fc){
                 compile.writeln("    push $0")
             }
         
+        // Reverse push then pop into rdi..r9. Arg lowering shares argGen/argCast
+        // with stackcall; no-body/asm only chooses register placement.
         for (i = std.len(this.args) - 1; i >= 0; i -= 1) {
             if gp >= compile.GP_MAX {
                 stack += 1
             }
             gp += 1
-			this.args[i].compile(ctx,true)
-            compile.Push()
+			this.argGen(ctx,this.args[i],i,fc)
         }
         
         if fc.is_variadic {
