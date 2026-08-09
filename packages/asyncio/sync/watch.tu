@@ -82,7 +82,7 @@ WatchChangedFut::init(rx<WatchReceiver>){
     this.pending_nf = null
 }
 
-WatchChangedFut::poll(ctx){
+WatchChangedFut::poll(ctx) i32, i64 {
     rx<WatchReceiver> = this.rx_side
     hub<Watch> = rx.backing
     if hub.tx_dropped != 0 {
@@ -122,7 +122,7 @@ WatchSenderClosedFut::init(hub<Watch>){
     this.pending_nf = null
 }
 
-WatchSenderClosedFut::poll(ctx){
+WatchSenderClosedFut::poll(ctx) i32, i64 {
     hub<Watch> = this.hub
     if hub.rx_live == 0 {
         return runtime.PollReady, 0.(i64)

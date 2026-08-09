@@ -58,7 +58,7 @@ BarrierWaitFut::init(hub<Barrier>){
 }
 
 // Ready value is leader_flag (0/1); Pending while waiting for the generation bump.
-BarrierWaitFut::poll(ctx){
+BarrierWaitFut::poll(ctx) i32, i64 {
     if this.stage == 2 {
         return runtime.PollReady, this.leader_flag.(i64)
     }

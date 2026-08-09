@@ -46,12 +46,12 @@ JoinHandle::abort_handle() AbortHandle {
 // Poll the JoinHandle.
 // Register waker then re-check COMPLETE to close the register-vs-complete race.
 // set_join_waker fails when COMPLETE — fall through and take the output.
-JoinHandle::poll(ctx){
+JoinHandle::poll(ctx) i32, i64 {
     if this.task_ptr == null {
-        return runtime.PollReady, JoinErrorAlreadyConsumed
+        return runtime.PollReady, JoinErrorAlreadyConsumed.(i64)
     }
     if this.consumed == 1 {
-        return runtime.PollReady, JoinErrorAlreadyConsumed
+        return runtime.PollReady, JoinErrorAlreadyConsumed.(i64)
     }
     rtask<RawTask> = this.task_ptr
     snap<i32> = rtask.life_load()
@@ -72,5 +72,5 @@ JoinHandle::poll(ctx){
     if err == 0 {
         return runtime.PollReady, val
     }
-    return runtime.PollReady, err
+    return runtime.PollReady, err.(i64)
 }

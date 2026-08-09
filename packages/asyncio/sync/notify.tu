@@ -132,7 +132,7 @@ Notified::init(owner_notify<Notify>){
 
 // Three-stage state machine. INIT consumes a stashed permit if available;
 // WAITING checks the wake flag; DONE re-poll is a logic error.
-Notified::poll(ctx){
+Notified::poll(ctx) i32, i64 {
     par<Notify> = this.owner_notify
     // Harness Future::poll does not forward ctx; always prefer per-thread poll ctx.
     // Passing a literal 0 into poll makes ctx.(u64) a dyn-int bit pattern
@@ -219,7 +219,7 @@ mem WaitNotifiedFut: async {
     u64 nf_bits
 }
 
-WaitNotifiedFut::poll(ctx) {
+WaitNotifiedFut::poll(ctx) i32, i64 {
     code<i32> = notified_poll_bits(this.nf_bits)
     if code == runtime.PollReady {
         return runtime.PollReady, 0.(i64)

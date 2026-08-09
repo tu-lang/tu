@@ -135,7 +135,7 @@ SenderClosedFut::init(shell<OneshotInner>){
     this.stage = SC_STAGE_INIT
 }
 
-SenderClosedFut::poll(ctx){
+SenderClosedFut::poll(ctx) i32, i64 {
     inner<OneshotInner> = this.backing
     packed<u64> = task.resolve_poll_ctx(0)
     cur<i32> = atomic.load(&inner.state)
@@ -213,7 +213,7 @@ RecvFut::init(shell<OneshotInner>, poll_mode<i32>){
     this.poll_mode = poll_mode
 }
 
-RecvFut::poll(ctx){
+RecvFut::poll(ctx) i32, i64 {
     shell<OneshotInner> = this.backing
     // Harness Future::poll does not forward ctx; ctx.(u64) is dyn-int garbage
     // that crashes wake_by_ref (same trap as Notify::Notified).

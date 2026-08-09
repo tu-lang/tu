@@ -148,7 +148,7 @@ AcquireFut::init(sem<BatchSemaphore>, n<u32>){
 
 // Poll the future; returns (PollReady, 0) on success, (PollReady, err)
 // on close, (PollPending, 0) when still waiting.
-AcquireFut::poll(ctx){
+AcquireFut::poll(ctx) i32, i64 {
     sem<BatchSemaphore> = this.owner_sem
     // Harness Future::poll does not forward ctx; ctx.(u64) is dyn-int garbage.
     packed<u64> = task.resolve_poll_ctx(0)
