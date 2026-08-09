@@ -6,6 +6,35 @@
 EX_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Darwin / co make tests: mother tuc→tua→tul (self-hosted tu has no darwin yet).
+ex_setup_toolchain(){
+    if [ "$(uname -s)" != Darwin ]; then
+        return
+    fi
+    if [ -z "${CO_DARWIN_COASM:-}" ]; then
+        export CO_DARWIN_COASM="/usr/local/lib/coasm-darwin"
+    fi
+    if [ -z "${CO_DARWIN_LIB:-}" ]; then
+        if [ -d "$EX_ROOT/../co/linker/darwin" ]; then
+            export CO_DARWIN_LIB="$EX_ROOT/../co/linker/darwin"
+        elif [ -d "$EX_ROOT/co/linker/darwin" ]; then
+            export CO_DARWIN_LIB="$EX_ROOT/co/linker/darwin"
+        fi
+    fi
+}
+
+ex_use_tuc(){
+    if [ "${EX_USE_TUC:-}" = 1 ]; then
+        return 0
+    fi
+    if [ "$(uname -s)" = Darwin ]; then
+        return 0
+    fi
+    return 1
+}
+
+ex_setup_toolchain
+
 ex_log(){
     echo -e "\033[32m$1\033[0m" >&2
 }
@@ -18,7 +47,26 @@ ex_fail(){
 ex_build(){
     local name="$1"
     local src="$EX_DIR/$name/main.tu"
+    local demo_dir="$EX_DIR/$name"
     [ -f "$src" ] || ex_fail "missing $src"
+
+    if ex_use_tuc; then
+        local ERR OUT
+        ERR=$(mktemp)
+        if ! (cd "$demo_dir" && tuc build main.tu >"$ERR" 2>&1); then
+            cat "$ERR" >&2
+            rm -f "$ERR"
+            ex_fail "tuc build failed: $src"
+        fi
+        cat "$ERR" >&2
+        rm -f "$ERR"
+        OUT="$demo_dir/main"
+        [ -f "$OUT" ] || ex_fail "missing binary $OUT (tuc build)"
+        chmod 755 "$OUT" || ex_fail "chmod failed: $OUT"
+        echo "$OUT"
+        return
+    fi
+
     local ERR WD OUT
     ERR=$(mktemp)
     if ! tu -s "$src" >"$ERR" 2>&1; then

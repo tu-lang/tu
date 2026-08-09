@@ -11,6 +11,14 @@ use string
 use io
 use runtime
 
+// No-body sys.mkdir from a mem method: IntExpr must still unbox via registercall argCast.
+mem FsBox {
+    i8* dirp
+}
+FsBox::mkdir0755() i32 {
+    return sys.mkdir(this.dirp, 493)
+}
+
 fn main(){
     fmt.println("test sys fs path")
     dir_s<string.String> = string.S(*"/tmp/tu_lib_formal_sys_dir3")
@@ -20,17 +28,66 @@ fn main(){
     sys.unlink(filep)
     sys.rmdir(dirp)
     mk<i32> = sys.mkdir(dirp, 493)
+    if mk != 0 {
+        os.die("mkdir literal 493 failed")
+    }
     flags<i64> = std.O_CREAT
     flags = flags + std.O_RDWR
     flags = flags + std.O_TRUNC
     mode<i64> = 420
     fd<i32> = sys.openat(std.AT_FDCWD, filep, flags, mode)
     if fd < 0 {
-        os.dief("openat %d", fd)
+        os.die("openat failed")
     }
     msg_s<string.String> = string.S(*"hi-sys")
     wbuf<u8*> = string.cstr(msg_s)
     wrote_n<i64> = sys.write(fd, wbuf, 6)
+    if wrote_n != 6 {
+        os.die("write literal 6 failed")
+    }
+    sys.close(fd)
+    sys.unlink(filep)
+    sys.rmdir(dirp)
+
+    // registercall + argCast: type assert / typed local / mem method, not only IntExpr.
+    // Untyped `400+93` still boxes (same stackcall argCast gap); use typed add.
+    extra<i64> = 400
+    extra = extra + 93
+    mk = sys.mkdir(dirp, extra)
+    if mk != 0 {
+        os.die("mkdir typed local 400+93 failed")
+    }
+    sys.rmdir(dirp)
+    mk = sys.mkdir(dirp, 493.(i64))
+    if mk != 0 {
+        os.die("mkdir typeassert 493.(i64) failed")
+    }
+    sys.rmdir(dirp)
+    box<FsBox> = new FsBox
+    box.dirp = dirp
+    mk = box.mkdir0755()
+    if mk != 0 {
+        os.die("mkdir from mem method literal failed")
+    }
+    fd = sys.openat(std.AT_FDCWD, filep, flags, mode)
+    if fd < 0 {
+        os.die("openat after mem mkdir failed")
+    }
+    nlen<u64> = 3
+    nlen = nlen + 3
+    wrote_n = sys.write(fd, wbuf, nlen)
+    if wrote_n != 6 {
+        os.die("write typed local 3+3 failed")
+    }
+    sys.close(fd)
+    fd = sys.openat(std.AT_FDCWD, filep, flags, mode)
+    if fd < 0 {
+        os.die("openat before typeassert write failed")
+    }
+    wrote_n = sys.write(fd, wbuf, 6.(u64))
+    if wrote_n != 6 {
+        os.die("write typeassert 6.(u64) failed")
+    }
     sys.close(fd)
     sys.unlink(filep)
     sys.rmdir(dirp)

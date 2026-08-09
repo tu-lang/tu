@@ -138,6 +138,14 @@ install-darwin:
 	@cp -R packages/* $(prefix)/lib/copkg/
 	@rm -f $(prefix)/lib/copkg/runtime/linux.tu
 	@cp platform/darwin/runtime_os.tu $(prefix)/lib/copkg/runtime/darwin.tu
+	# Darwin signal numbers (SIGUSR1=30, …); keep Linux signal.tu in the tree.
+	@cp platform/darwin/os_signal.tu $(prefix)/lib/copkg/os/signal.tu
+	# Native kqueue Selector: overlay epoll/waker so consumers keep netio.sys names.
+	@cp packages/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/epoll.tu
+	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu
+	@cp packages/netio/sys/waker_kqueue.tu $(prefix)/lib/copkg/netio/sys/waker.tu
+	@rm -f $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
+	@cp platform/darwin/netio_platform.tu $(prefix)/lib/copkg/netio/sys/platform.tu
 	@rm -f $(prefix)/lib/coasm-darwin/*
 	@cp syscall/darwin/*.s $(prefix)/lib/coasm-darwin/
 	@rm -f $(prefix)/lib/coasm/*

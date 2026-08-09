@@ -6,6 +6,7 @@
 use fmt
 use os
 use runtime
+use std
 use std.atomic
 
 DONE_CNT<i32> = 0
@@ -53,6 +54,29 @@ fn worker_osyield_until_hold_clear() {
     while HOLD_FLAG != 0 {
         runtime.osyield()
     }
+}
+
+fn monotonic_ms() u64 {
+    ts<std.TimeSpec> = new std.TimeSpec
+    std.clock_gettime(0, ts)
+    return ts.sec.(u64) * 1000 + ts.nsec.(u64) / 1000000
+}
+
+// Timed futexsleep must return near the deadline (not infinite wait).
+fn test_futexsleep_timed_returns() {
+    fmt.println("test_futexsleep_timed_returns")
+    word<u32> = 0
+    t0<u64> = monotonic_ms()
+    runtime.futexsleep(&word, 0, 50000000)
+    t1<u64> = monotonic_ms()
+    elapsed<u64> = t1 - t0
+    if elapsed > 500 {
+        os.die("futexsleep timed wait too slow")
+    }
+    if elapsed < 15 {
+        os.die("futexsleep timed wait returned too fast")
+    }
+    fmt.println("test_futexsleep_timed_returns passed")
 }
 
 // core_join(0) is a no-op.
@@ -271,6 +295,7 @@ fn test_core_join_with_gc() {
 }
 
 fn run_all_once() {
+    test_futexsleep_timed_returns()
     test_core_join_zero_bits()
     test_core_join_single()
     test_core_join_quick_exit()
