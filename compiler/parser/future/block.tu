@@ -242,11 +242,20 @@ AsyncBlock::genawait(stmt , recvs){
        return ae.lhs
     }else if type(stmt) == type(gen.BinaryExpr) {
         be = stmt
+        recvAssign = recvs
         if be.lhs != null && gen.expressionHasAwait(be.lhs) {
-            be.lhs = this.genawait(be.lhs,recvs)
+            be.lhs = this.genawait(be.lhs, null)
         }
         if be.rhs != null && gen.expressionHasAwait(be.rhs) {
-            be.rhs = this.genawait(be.rhs,recvs)
+            be.rhs = this.genawait(be.rhs, null)
+        }
+        if recvAssign != null && std.len(recvAssign.ls) == 1 {
+            ae = new gen.AssignExpr(be.line, be.column)
+            ae.opt = recvAssign.opt
+            ae.lhs = recvAssign.ls[0]
+            ae.rhs = be
+            this.push(ae)
+            return recvAssign.ls[0]
         }
        return be       
     }else if type(stmt) == type(gen.VarExpr) {

@@ -10,9 +10,14 @@ Package::parse2()
     }
 
     for st : this.structs {
+        keepPoll = null
+        if st.isasync && st.asyncfn == null
+            keepPoll = st.getFunc("poll")
         st.funcs = {}
         st.order_funcs = []
         st.apis        = []
+        if keepPoll != null
+            st.funcs[keepPoll.name] = keepPoll
         // asyncMemberLeaves / syncFactoryLeaves kept across parse2 for await rewrite
     }
 
