@@ -172,7 +172,7 @@ AcquireFut::poll(ctx){
         sem.lock.unlock()
         this.waiter_node  = w
         this.stage = ACQ_STAGE_WAITING
-        return runtime.PollPending
+        return runtime.PollPending, 0.(i64)
     }
 
     if this.stage == ACQ_STAGE_WAITING {
@@ -186,7 +186,7 @@ AcquireFut::poll(ctx){
             return runtime.PollReady, SEM_ERR_CLOSED
         }
         n.ctx_packed = packed
-        return runtime.PollPending
+        return runtime.PollPending, 0.(i64)
     }
     return runtime.PollReady, 0.(i64)
 }
@@ -228,6 +228,17 @@ fn batch_sem_acquire_fut(bits<u64>, n<u32>) AcquireFut {
 fn batch_sem_acquire_fut_raw(bits<u64>, n<u32>) u64 {
     fut<AcquireFut> = batch_sem_acquire_fut(bits, n)
     return fut.(u64)
+}
+
+// Cross-pkg poll for AcquireFut bits (await of returned AcquireFut can null).
+fn acquire_fut_poll_bits(fut_bits<u64>) i32 {
+    if fut_bits == 0 {
+        return runtime.PollPending
+    }
+    fut<AcquireFut> = null
+    fut = fut_bits
+    code<i32> = fut.poll(0)
+    return code
 }
 
 // Same-package helper to avoid Permit::give_back / guard method name clashes

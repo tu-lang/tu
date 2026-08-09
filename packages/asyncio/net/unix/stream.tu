@@ -90,6 +90,7 @@ UnixConnectFut::poll(ctx){
     ok<i32>, has<i32>, soerr<i32> = sock.take_error()
     if ok != ok_code return ready, ok, null
     if has == net.Has return ready, soerr, null
+    this.poll_ev.seed_writable()
     return ready, ok_code, this.stream
 }
 

@@ -111,14 +111,17 @@ IoHandle::add_source(src<netevent.Source>, iosrc_bits<u64>, interest<netio.Inter
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
     tok<u64> = sio.token()
     t<netio.Token> = netio.token_from_u64(tok)
+    // Publish iosrc before register so a same-turn kevent cannot be dropped
+    // by the iosrc_bits==0 guard in IoDriver::turn.
+    sio.iosrc_bits = iosrc_bits
     rerr<i32> = netio.registry_register(reg, src, t, interest)
     if rerr != io.Ok {
+        sio.iosrc_bits = 0
         lk.lock()
         this.registrations.remove(this.synced, sio)
         lk.unlock()
         return rerr, null
     }
-    sio.iosrc_bits = iosrc_bits
     return 0, sio
 }
 
@@ -153,7 +156,10 @@ IoHandle::register_sfd(fd<i32>) i32 {
     reg<netio.Registry> = netio.registry_from_bits(this.registry_slot)
     sel<nsys.Selector> = netio.registry_selector(reg)
     tok<u64> = TOKEN_SIGNAL
-    return sel.register_readable(fd, tok)
+    // Interest: readable (1) | level-triggered (128). Edge (EV_CLEAR) can miss
+    // self-pipe writes that land before the next kevent wait (Darwin signalfd).
+    interest<u8> = 129
+    return sel.register(fd, tok, interest)
 }
 
 // Clear and return prior flag.

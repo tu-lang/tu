@@ -74,41 +74,70 @@ TcpListener::raw_listener() nettcp.TcpListener {
 }
 
 // Leaf future for accept().await — the design poll_accept loop.
+// done_* fields mirror ConnectFut: return values after PollPending must come
+// from future fields (fresh locals/new objects in the Ready return slot were
+// observed swapped/corrupt on Darwin spawn-before-accept).
 mem AcceptFut: async {
     aio.PollEvented*     poll_ev
     nettcp.TcpListener*  listener
+    i32                  done_err
+    TcpStream*           done_stream
+}
+
+// Finish one successful accept into a TcpStream (shared by poll paths).
+fn accept_finish_stream(sbits<u64>, abits<u64>) i32, TcpStream {
+    if sbits == 0.(u64) {
+        return io.Other, null
+    }
+    inner<nettcp.TcpStream> = null
+    inner = sbits
+    peer<net.SocketAddr> = null
+    if abits != 0.(u64) {
+        peer = abits
+    }
+    rerr2<i32>, s<TcpStream> = tcp_stream_from_netio(inner, peer)
+    if rerr2 != io.Ok {
+        return rerr2, null
+    }
+    if s == null {
+        return io.Other, null
+    }
+    return io.Ok, s
 }
 
 AcceptFut::poll(ctx){
-    ok_code<i32> = io.Ok
+    would_block<i32> = io.WouldBlock
     pend<i32> = runtime.PollPending
     ready<i32> = runtime.PollReady
-    would_block<i32> = io.WouldBlock
+    ok_code<i32> = io.Ok
     c<u64> = task.resolve_poll_ctx(ctx.(u64))
+    // Accept-first + readiness wait (mio/tokio shape). WouldBlock must come
+    // straight from accept4 — never sleep-retry in the syscall wrapper.
     loop {
-        rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(c)
-        if rerr == pend return pend
-        if rerr != 0 return ready, rerr, null
-
         acc_err<i32>, sbits<u64>, abits<u64> = nettcp.tcp_listener_accept_bits(this.listener)
-        if acc_err == would_block {
-            this.poll_ev.clear_readiness(ev)
-            continue
+        if acc_err == ok_code {
+            ferr<i32>, s<TcpStream> = accept_finish_stream(sbits, abits)
+            this.done_err = ferr
+            this.done_stream = s
+            if ferr != ok_code {
+                return ready, this.done_err, null
+            }
+            return ready, ok_code, this.done_stream
         }
-        if acc_err != ok_code return ready, acc_err, null
-        if sbits == 0.(u64) return ready, io.Other, null
+        if acc_err != would_block {
+            this.done_err = acc_err
+            return ready, this.done_err, null
+        }
 
-        inner<nettcp.TcpStream> = null
-        inner = sbits
-        peer<net.SocketAddr> = null
-        if abits != 0.(u64) {
-            peer = abits
+        rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(c)
+        if rerr == pend {
+            return pend
         }
-        // Package bridge: Type::method static call fails inside async poll.
-        rerr2<i32>, s<TcpStream> = tcp_stream_from_netio(inner, peer)
-        if rerr2 != ok_code return ready, rerr2, null
-        if s == null return ready, io.Other, null
-        return ready, ok_code, s
+        if rerr != 0 {
+            this.done_err = rerr
+            return ready, this.done_err, null
+        }
+        this.poll_ev.clear_readiness(ev)
     }
 }
 
@@ -117,6 +146,8 @@ TcpListener::accept() AcceptFut {
     f<AcceptFut> = new AcceptFut
     f.poll_ev = this.poll_ev
     f.listener = this.raw_listener()
+    f.done_err = 0
+    f.done_stream = null
     return f
 }
 
@@ -127,27 +158,20 @@ TcpListener::poll_accept(ctx<u64>) i32, TcpStream {
     ready<i32> = runtime.PollReady
     would_block<i32> = io.WouldBlock
     loop {
+        listener<nettcp.TcpListener> = this.raw_listener()
+        acc_err<i32>, sbits<u64>, abits<u64> = nettcp.tcp_listener_accept_bits(listener)
+        if acc_err == ok_code {
+            ferr<i32>, s<TcpStream> = accept_finish_stream(sbits, abits)
+            if ferr != ok_code return runtime.PollError, null
+            return ready, s
+        }
+        if acc_err != would_block {
+            return runtime.PollError, null
+        }
+
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx)
         if rerr == pend return pend, null
         if rerr != 0 return runtime.PollError, null
-
-        listener<nettcp.TcpListener> = this.raw_listener()
-        acc_err<i32>, sbits<u64>, abits<u64> = nettcp.tcp_listener_accept_bits(listener)
-        if acc_err == would_block {
-            this.poll_ev.clear_readiness(ev)
-            continue
-        }
-        if acc_err != ok_code return runtime.PollError, null
-        if sbits == 0.(u64) return runtime.PollError, null
-
-        inner<nettcp.TcpStream> = null
-        inner = sbits
-        peer<net.SocketAddr> = null
-        if abits != 0.(u64) {
-            peer = abits
-        }
-        rerr2<i32>, s<TcpStream> = tcp_stream_from_netio(inner, peer)
-        if rerr2 != ok_code return runtime.PollError, null
-        return ready, s
+        this.poll_ev.clear_readiness(ev)
     }
 }

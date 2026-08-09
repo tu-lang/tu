@@ -206,9 +206,31 @@ fn notify_waiters_raw(bits<u64>) {
 
 // Factory for await at the call site (no package-level async).
 fn notified_from_bits(bits<u64>) Notified {
-    fut<Notified> = new Notified{}
+    // Prefer `new Notified` over `new Notified{}` — empty braces have left
+    // async leaf headers uninitialized (unary-op null on .await under MT).
+    fut<Notified> = new Notified
     fut.init_from_bits(bits)
     return fut
+}
+
+// Cross-pkg leaf for awaiting a Notify by u64 bits. Callers must not
+// `nf.await` a Notified returned across packages (async header arrives null).
+mem WaitNotifiedFut: async {
+    u64 nf_bits
+}
+
+WaitNotifiedFut::poll(ctx) {
+    code<i32> = notified_poll_bits(this.nf_bits)
+    if code == runtime.PollReady {
+        return runtime.PollReady, 0.(i64)
+    }
+    return runtime.PollPending, 0.(i64)
+}
+
+fn wait_notified_bits(bits<u64>) WaitNotifiedFut {
+    nf<Notified> = notified_from_bits(bits)
+    nb<u64> = nf.(u64)
+    return new WaitNotifiedFut { nf_bits: nb }
 }
 
 // Cross-pkg poll — foreign packages must not member-call Notified::poll

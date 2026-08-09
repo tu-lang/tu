@@ -72,7 +72,7 @@ fn oneshot_send_bits(tx_bits<u64>, v<i64>) i32 {
 // Leaf recv future for cross-pkg await (avoid member async + await).
 fn oneshot_recv_fut_bits(rx_bits<u64>) RecvFut {
     rx<OneshotReceiver> = rx_bits.(OneshotReceiver)
-    fut<RecvFut> = new RecvFut{}
+    fut<RecvFut> = new RecvFut
     fut.init(rx.backing, 0)
     return fut
 }

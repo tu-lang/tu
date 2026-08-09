@@ -45,7 +45,7 @@ MutexGuard::give_back(){
 // builds MutexGuard. Prefer this over member-async lock() (cross-pkg await
 // poisons MT block_on; compiler debt).
 Mutex::acquire() AcquireFut {
-    fut<AcquireFut> = new AcquireFut{}
+    fut<AcquireFut> = new AcquireFut
     fut.init(this.sem, 1)
     return fut
 }

@@ -33,6 +33,16 @@ mem TcpStream {
 // (io.Ok, stream) or an error with a null stream (RuntimeShutdown when there
 // is no active IO driver).
 const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32, TcpStream) {
+    e<i32> = 0
+    s<TcpStream> = null
+    e, s = TcpStream::from_netio_interest(inner, peer, 0)
+    return e, s
+}
+
+// want_write=0: accept path — readable-only + software WRITABLE seed (Linux
+// ET flood workaround). want_write=1: connect path — mother READABLE|WRITABLE
+// so poll_write_ready waits for real EPOLLOUT / EINPROGRESS completion.
+const TcpStream::from_netio_interest(inner<nettcp.TcpStream>, peer<net.SocketAddr>, want_write<i32>) (i32, TcpStream) {
     shut_err<i32> = aerr.RuntimeShutdown
     ok_code<i32> = io.Ok
     rc<rt.RuntimeContext> = rt.current_context()
@@ -45,19 +55,19 @@ const TcpStream::from_netio(inner<nettcp.TcpStream>, peer<net.SocketAddr>) (i32,
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
-    // Readable-only epoll + software WRITABLE seed; EPOLLOUT is armed lazily
-    // on the first write WouldBlock. Registering READABLE|WRITABLE upfront
-    // (mother's shape) loses requests under MT flood — bisected 2026-08-05:
-    // dual-interest ET missed 10/15 x50k regardless of listener LT/ET, while
-    // this shape is 15/15. Root driver race is open debt (optimize entry).
     interest<netio.Interest> = netio.readable_interest()
+    if want_write == 1 {
+        interest = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
+    }
     holder<u64> = 0
     holder = inner
     src<evsrc.Source> = inner
     perr<i32>, pe<aio.PollEvented> = aio.PollEvented::new(holder, src, inner.iosrc_bits, interest, rc.sched, ioh)
     if perr != 0 return perr, null
     if pe == null return shut_err, null
-    pe.seed_writable()
+    if want_write == 0 {
+        pe.seed_writable()
+    }
     out<TcpStream> = new TcpStream
     out.poll_ev = pe
     out.peer = peer
@@ -119,6 +129,10 @@ ConnectFut::poll(ctx){
     ok<i32>, has<i32>, soerr<i32> = sock.take_error()
     if ok != ok_code return ready, ok, null
     if has == net.Has return ready, soerr, null
+    // Connect consumed the first WRITABLE edge (or Darwin delivered it as
+    // EV_ERROR). Seed so the following write_all does not wait for a
+    // second EPOLLOUT that kqueue/epoll-ET will not re-fire.
+    this.poll_ev.seed_writable()
     return ready, ok_code, this.stream
 }
 
@@ -143,7 +157,7 @@ const TcpStream::connect(addr<net.SocketAddr>) ConnectFut {
     }
     inner<nettcp.TcpStream> = null
     inner = bits
-    rerr<i32>, s<TcpStream> = TcpStream::from_netio(inner, addr)
+    rerr<i32>, s<TcpStream> = TcpStream::from_netio_interest(inner, addr, 1)
     if rerr != io.Ok {
         f2<ConnectFut> = new ConnectFut
         f2.poll_ev = null

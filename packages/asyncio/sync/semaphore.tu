@@ -50,7 +50,7 @@ async Semaphore::acquire(n<u32>){
 // Cross-pkg: await AcquireFut leaf, then build Permit in the owner package.
 fn semaphore_acquire_fut_bits(sem_bits<u64>, n<u32>) AcquireFut {
     s<Semaphore> = sem_bits.(Semaphore)
-    fut<AcquireFut> = new AcquireFut{}
+    fut<AcquireFut> = new AcquireFut
     fut.init(s.sem, n)
     return fut
 }

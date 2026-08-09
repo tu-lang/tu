@@ -7,9 +7,9 @@
 use runtime
 use std
 use io
+use os
 // SIGKILL / SIGSTOP cannot be intercepted; reject early.
 SIGKILL_SIGNUM<i32> = 9
-SIGSTOP_SIGNUM<i32> = 19
 
 // asyncio.runtime.error.RT_SIG_NOT_REG (asmgen local)
 RT_SIG_NOT_REG<i32> = 0x0302000F
@@ -29,7 +29,7 @@ SignalDriverHandle::register(signum<i32>) i32 {
     if signum < 1 return RT_SIG_NOT_REG
     if signum >= NUM_SIGNALS return RT_SIG_NOT_REG
     if signum == SIGKILL_SIGNUM return RT_SIG_NOT_REG
-    if signum == SIGSTOP_SIGNUM return RT_SIG_NOT_REG
+    if signum == os.SIGSTOP return RT_SIG_NOT_REG
 
     if this.gslot_bits == 0 return RT_SIG_NOT_REG
     gref<SignalGlobals> = null
