@@ -48,7 +48,6 @@ Compiler::print_help(){
         "  -c   <file.s|dir>          汇编为可重定位目标文件（.o）\n" +
         "  -o   <file.o|dir>          链接目标文件生成可执行程序\n" +
         "  -d                         开启 trace 日志\n" +
-        "  -g                         带 debug 段（支持栈回溯）\n" +
         "  -gcc                       使用 gcc 链接\n" +
         "  -strip-pcln-file           pclntab 不写入文件名\n" +
         "  -std                       同时编译 runtime/std 内置库\n" +

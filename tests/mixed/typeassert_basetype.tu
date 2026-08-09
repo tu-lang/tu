@@ -80,10 +80,40 @@ func test_pkg_typed_const_rvalue(){
 	}
 	fmt.println("test_pkg_typed_const_rvalue success")
 }
+
+// Native-asserted literals in binary ops must use static arithmetic
+// (not runtime_binary_operator). Bare IntExpr pairs stay dynamic.
+func test_assert_literal_binop(){
+	v<u64> = 1.(u64) << 30
+	expect<u64> = 1073741824.(u64)
+	if v != expect {
+		os.die("1.(u64) << 30 mismatch")
+	}
+	s<i32> = 8.(i32) + 4.(i32)
+	if s != 12 {
+		os.die("8.(i32) + 4.(i32) != 12")
+	}
+	n<u64> = 64.(u64)
+	if n > 1.(u64) << 30 {
+		os.die("64 > 1.(u64)<<30 should be false")
+	}
+	w<u64> = 1.(u64)
+	w = w << 30.(u64)
+	if w != expect {
+		os.die("typed var << asserted lit mismatch")
+	}
+	csum<i32> = 'A'.(i8) + 1.(i8)
+	if csum != 66 {
+		os.die("'A'.(i8) + 1.(i8) != 66")
+	}
+	fmt.println("test_assert_literal_binop success")
+}
+
 func main(){
 	test_int()
 	test_char()
 	test_string()
 	test_binary_neg_cast()
 	test_pkg_typed_const_rvalue()
+	test_assert_literal_binop()
 }

@@ -193,9 +193,10 @@ fn futexsleep(addr<u32*> , val<u32> , ns<i64>){
 	}
     if ns < 0 {
         ret<i32> = futex(addr,FUTEX_WAIT_PRIVATE,val,Null,Null,Null)
-    	// EAGAIN/EINTR are normal (value changed / signal); do not warn.
+    	// EAGAIN/EINTR/ETIMEDOUT are normal; do not warn (stderr flood under
+    	// MT park wedges the reactor via stdout lock contention).
     	if ret < 0 {
-			if ret != 0 - _EAGAIN && ret != 0 - 4 {
+			if ret != 0 - _EAGAIN && ret != 0 - 4 && ret != 0 - 110 {
 				warn(*"[futexsleep] addr:%p cnt:%d flag:%d ret:%d\n",addr,val,FUTEX_WAIT_PRIVATE,ret)
 			}
     	}

@@ -26,6 +26,7 @@ BUILD_LIBA = build_install_liba() {                              	\
 		rm -rf "$$WD";												\
 		return 1;													\
 	fi;																\
+	rm -f release/tulang.a;											\
 	ar -rc release/tulang.a "$$WD"/*.o;								\
 	cp "$$WD"/*.o $(prefix)/lib/colib/;								\
 	rm -rf "$$WD";													\
@@ -64,6 +65,11 @@ INSTALL_ALL = install_all() {                              			\
 		(cd "$$XD" && ar -x "$(CURDIR)/release/tulang.a");			\
 		mv "$$XD"/*.o $(prefix)/lib/colib/;							\
 		rm -rf "$$XD";												\
+		if ls $(prefix)/lib/colib/co_* >/dev/null 2>&1 &&			\
+		   ls $(prefix)/lib/colib/tu_* >/dev/null 2>&1; then		\
+			echo "[install] mixed co_/tu_ objects in colib; stale tulang.a — run: rm -f release/tulang.a && make release" >&2; \
+			return 1;												\
+		fi;															\
 	fi;																\
 }
 TEST_COMPILER = test_compiler() {									\
@@ -77,13 +83,20 @@ build-liba:
 	@$(BUILD_LIBA); build_install_liba
 	@echo "install liba  to $(prefix)/lib/colib success"
 
-.PHONEY: release
-release: install build-liba install
+# Directory release/ exists; must be .PHONY or `make release` is a no-op.
+.PHONY: release
+# Recreate tulang.a from scratch. ar -r keeps stale members when asmer
+# output names change (co_*.tu.o vs tu_*.o) and install would mix both.
+release:
+	rm -f release/tulang.a
+	$(MAKE) install
+	$(MAKE) build-liba
+	$(MAKE) install
 	@echo "release tu liba success"
 	@echo "release bin lib success"
 
 # NOTICE: don't use this
-.PHONEY: release
+.PHONY: dev_release
 dev_release: install
 	@ERR=$$(mktemp); \
 	tuc run tulang.tu 2>$$ERR; \

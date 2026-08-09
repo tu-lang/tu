@@ -51,6 +51,17 @@ func exprIsMtype(cond,ctx){
                 ismtype = true
             }
         }
+        // Native-asserted integer/char literals are static operands.
+        // Bare IntExpr stays dynamic so a << 1 (dyn a) still uses runtime_binary.
+        type(IntExpr) | type(CharExpr): {
+            ta = cond.tyassert
+            if ta != null {
+                tk = ta.abiToken()
+                if tk >= ast.I8 && tk <= ast.U64 {
+                    ismtype = true
+                }
+            }
+        }
     }
     return ismtype
 }
