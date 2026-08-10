@@ -22,6 +22,14 @@ check(){
 }
 
 # Compile one .tu via workdir; run optional args against the binary.
+if [ "$(uname -s)" = "Darwin" ]; then
+    # Instruction .i cases do not need an ELF tua binary; main.tu -p is linux CLI.
+    log "[run] tu run asmer/test.tu"
+    tu run asmer/test.tu
+    check
+    log "all passing...."
+    exit 0
+fi
 run_tu_build(){
     src="$1"
     shift
