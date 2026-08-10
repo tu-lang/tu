@@ -9,6 +9,11 @@ use runtime
 gcBlackenEnabled<u32> = 0
 ncpu<u32> = 0
 
+// Host OS tag for toolchain default target (1 = darwin).
+fn host_os() i32 {
+	return 1
+}
+
 # Darwin mmap flags (typed i64). Do not use `|` of constants — codegen may
 # emit Linux _MAP_ANON (0x20) instead of Darwin 0x1000.
 D_PROT_READWRITE<i64> = 0x3

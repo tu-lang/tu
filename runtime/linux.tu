@@ -7,6 +7,11 @@ use runtime.debug
 gcBlackenEnabled<u32> = 0
 ncpu<u32> = 0
 
+// Host OS tag for toolchain default target (0 = linux).
+fn host_os() i32 {
+	return 0
+}
+
 func sys_fixalloc(size<u64> , align<u64>)
 {
 	p<u64> = null
