@@ -11,15 +11,16 @@
 
 ![logo](./assets/logo.svg)
 
-**零依赖 · 动静同构 · 全静态链接 · 已自举**
+**零依赖 · 动静同构 · 全静态链接 · 已自举 · Linux & macOS**
 
-`compiler` 纯动态 · `asmer` 纯静态 · `linker` 动静混合 —— 整条工具链用 Tu 自己写成。
+`compiler` 纯动态 · `asmer` 纯静态 · `linker` 动静混合 —— 整条工具链用 Tu 自己写成。  
+当前支持目标平台：**Linux / macOS（x86_64）**。
 
 </div>
 
 ---
 
-Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态 `mem` / 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现；异步侧原生支持多线程协程调度。
+Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态 `mem` / 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现；异步侧原生支持多线程协程调度。Linux 与 macOS 共用同一份语言与标准库表面，本机 `make install` 即可装好对应运行时。
 
 ```
 Usage: tu <command|option> [arguments]
@@ -36,6 +37,7 @@ Options:
   -std                       同时编译 runtime/std 内置库
   --workdir DIR              中间产物写到 DIR（.s/.o/a.out）
   --work                     保留中间产物
+  --target linux|darwin      对象/链接后端（默认=宿主；亦可用 TU_TARGET）
   -v                         打印版本
 
 Default workdir: $TMPDIR/tu-build-<stem>-...
@@ -50,11 +52,15 @@ tu run hello.tu
 ![gif](./assets/tulang.gif)
 ## Install
 
+在 **Linux** 或 **macOS**（x86_64）上：
+
 ```bash
 git clone https://github.com/tu-lang/tu.git
 cd tu
 sudo make install
 ```
+
+`make install` 按当前系统选择 Linux / Darwin 运行时与汇编入口；一般无需手工改 `TARGET`。跨平台交叉时可用 `TARGET=linux|darwin` 或 `tu --target …`。
 
 ## Tests
 
