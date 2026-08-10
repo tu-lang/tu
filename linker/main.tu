@@ -1,9 +1,14 @@
 
 use fmt
 use linker.link
+use linker.darwin
 use os 
 use std
+use string
 use linker.utils
+use runtime
+
+link_target = 0
 
 //[dir,dir,dir]
 scan_dirs
@@ -13,18 +18,46 @@ scan_files
 
 // executable file name
 out
+out_set = 0
 
 func print_help(){
     fmt.println("usage: ./cld [options|file.o...]\n" +
                 "  -p        指定扫描目录下所有.0文件进行链接生成可执行程序\n" +
                 "  -d        debug\n" +
                 "  -o [name] 指定生成的可执行文件名,默认tol\n" +
+                "  --target linux|darwin  link backend (default: host / TU_TARGET)\n" +
                 "  file.o   ... 手动指定多个file.o进行链接\n"
     )
 }
 
+func darwin_default_out() {
+    if out_set != 0 {
+        return
+    }
+    if link_target != 1 {
+        return
+    }
+    if std.len(scan_files) > 0 {
+        out = utils.path_join(utils.path_dirname(scan_files[0]), "a.out")
+        return
+    }
+    if std.len(scan_dirs) > 0 {
+        out = utils.path_join(scan_dirs[0], "a.out")
+    }
+}
+
 func link(){
     utils.debug("main.link")
+    darwin_default_out()
+    lt<i32> = link_target
+    if lt == 1 {
+        rc = darwin.link_objects(scan_files, out)
+        if rc != 0 {
+            utils.error("Generate " + out + " Failed")
+        }
+        utils.msg(100,"Generate " + out + " Passed")
+        return
+    }
     linker  = new link.Linker()
     for(obj : scan_files){
         linker.addElf(obj)
@@ -34,6 +67,7 @@ func link(){
 
 func scan(){
     utils.debug("main.scan")
+    darwin_default_out()
     linker  = new link.Linker()
 
     for(dir : scan_dirs){
@@ -52,6 +86,15 @@ func scan(){
     total = std.len(scan_files)
     if total <= 0 utils.error("please provide at lease one .o file")
 
+    if link_target == 1 {
+        rc = darwin.link_objects(scan_files, out)
+        if rc != 0 {
+            utils.error("Generate " + out + " Failed")
+        }
+        utils.msg(100,"Generate " + out + " Passed")
+        return
+    }
+
     i = 1
     for f : scan_files {
 	    utils.smsg("[ " + i + "/" + total +"]","Reading elf object info " + f)
@@ -64,13 +107,55 @@ func scan(){
     utils.msg(100,"Generate " + out + " Passed")
 }
 
+func link_target_default() i32 {
+    for (k, v : os.envs()) {
+        arr = string.split(v, "=")
+        if std.len(arr) >= 2 {
+            if arr[0] == "TU_TARGET" || arr[0] == "CO_TARGET" {
+                if arr[1] == "darwin" || arr[1] == "macos" || arr[1] == "osx" {
+                    return 1
+                }
+                if arr[1] == "linux" {
+                    return 0
+                }
+            }
+        }
+    }
+    return runtime.host_os()
+}
 func command() {
     scan_dirs = []
     scan_files = []
     out = "a.out"
+    out_set = 0
+    link_target = link_target_default()
     i = 0
     while i < std.len(os.argv())  {
-        match os.argv()[i] {
+        arg = os.argv()[i]
+        if std.len(arg) > 9 {
+            pref = "--target="
+            pref_ok = true
+            j = 0
+            while j < 9 {
+                if arg[j] != pref[j] {
+                    pref_ok = false
+                    break
+                }
+                j += 1
+            }
+            if pref_ok {
+                tpos = 9
+                name = string.sub(arg, tpos)
+                if name == "darwin" || name == "macos" || name == "osx" {
+                    link_target = 1
+                } else if name == "linux" {
+                    link_target = 0
+                }
+                i += 1
+                continue
+            }
+        }
+        match arg {
             "-p" : {
                 scan_dirs[] = os.argv()[i+1]    // link dir
                 i += 2
@@ -81,10 +166,32 @@ func command() {
             }
             "-o" : {
                 out = os.argv()[i+1]
+                out_set = 1
+                i += 2
+            }
+            "--target" : {
+                name = os.argv()[i+1]
+                if name == "darwin" || name == "macos" || name == "osx" {
+                    link_target = 1
+                } else if name == "linux" {
+                    link_target = 0
+                }
                 i += 2
             }
             _ : {
-                scan_dirs[] = os.argv()[i]   // link object
+                arg = os.argv()[i]
+                n = std.len(arg)
+                is_obj = false
+                if n >= 2 {
+                    if arg[n - 2] == '.' && arg[n - 1] == 'o' {
+                        is_obj = true
+                    }
+                }
+                if is_obj {
+                    scan_files[] = arg
+                } else {
+                    scan_dirs[] = arg
+                }
                 i += 1
             }
         }
@@ -99,7 +206,7 @@ func main() {
 
     // link single files or scan dir
     if std.len(scan_dirs)        return scan()
-    else if std.len(scan_files)  return scan()
+    else if std.len(scan_files)  return link()
     else                         return print_help()
 
 }
