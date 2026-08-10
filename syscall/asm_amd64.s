@@ -4,8 +4,7 @@ main:
 	call std_stdinit
 	call runtime_osinit
     mov (%rsp),%rdi
-    lea 16(%rsp),%rsi
-	# Linux: envp follows argv NULL; pass null so args_init derives it.
+    lea 8(%rsp),%rsi
 	xor %rdx, %rdx
 	push %rdx
 	push %rsi

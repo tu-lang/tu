@@ -1,0 +1,2 @@
+# Normalize text to LF (avoid macOS/WSL CRLF whole-file false diffs)
+* text=auto eol=lf

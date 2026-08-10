@@ -78,6 +78,8 @@ INSTALL_ALL = install_all() {                              			\
 		echo "[install] TARGET=darwin → coasm-darwin + runtime/darwin.tu"; \
 	else															\
 		rm -f $(prefix)/lib/copkg/runtime/darwin.tu;				\
+		rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu;				\
+		rm -f $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu;			\
 		for f in syscall/*.s; do cp "$$f" $(prefix)/lib/coasm/; done; \
 	fi;																\
 	if [ -f release/tulang.a ]; then								\

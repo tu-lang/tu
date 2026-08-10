@@ -107,7 +107,7 @@ func scan(){
     utils.msg(100,"Generate " + out + " Passed")
 }
 
-func link_target_default() i32 {
+func link_target_default() {
     for (k, v : os.envs()) {
         arr = string.split(v, "=")
         if std.len(arr) >= 2 {
@@ -121,7 +121,11 @@ func link_target_default() i32 {
             }
         }
     }
-    return runtime.host_os()
+    // Dynamic 0/1 only — native i32 0 from host_os() is a null Value*.
+    if runtime.host_os() == 1 {
+        return 1
+    }
+    return 0
 }
 func command() {
     scan_dirs = []
@@ -130,8 +134,18 @@ func command() {
     out_set = 0
     link_target = link_target_default()
     i = 0
-    while i < std.len(os.argv())  {
-        arg = os.argv()[i]
+    av = os.argv()
+    // Skip argv[0] program path (same as tulang / asmer after macos argv unify).
+    if std.len(av) > 0 {
+        a0 = av[0]
+        if a0 != "-p" && a0 != "-d" && a0 != "-o" && a0 != "--target" {
+            if std.len(a0) == 0 || a0[0] != '-' {
+                i = 1
+            }
+        }
+    }
+    while i < std.len(av)  {
+        arg = av[i]
         if std.len(arg) > 9 {
             pref = "--target="
             pref_ok = true
@@ -157,20 +171,20 @@ func command() {
         }
         match arg {
             "-p" : {
-                scan_dirs[] = os.argv()[i+1]    // link dir
+                scan_dirs[] = av[i+1]
                 i += 2
             }
             "-d" : {
-                link.trace = true          // debug mode
+                link.trace = true
                 i += 1
             }
             "-o" : {
-                out = os.argv()[i+1]
+                out = av[i+1]
                 out_set = 1
                 i += 2
             }
             "--target" : {
-                name = os.argv()[i+1]
+                name = av[i+1]
                 if name == "darwin" || name == "macos" || name == "osx" {
                     link_target = 1
                 } else if name == "linux" {
@@ -179,7 +193,7 @@ func command() {
                 i += 2
             }
             _ : {
-                arg = os.argv()[i]
+                arg = av[i]
                 n = std.len(arg)
                 is_obj = false
                 if n >= 2 {

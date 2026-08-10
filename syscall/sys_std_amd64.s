@@ -50,7 +50,7 @@ std_nanosleep:
 
 .globl std_getdents
 std_getdents:
-     mov $78,%rax
+     mov $217,%rax
      syscall
      retq
 

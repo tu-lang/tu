@@ -60,10 +60,11 @@ func asmergen(){
 func parse_as_target(name) {
     asm.requested_target = name
     if name == "darwin" || name == "macos" || name == "osx" {
-        return asm.TARGET_DARWIN
+        // Dynamic return must be a boxed int; native TARGET_* (0) is a null Value*.
+        return 1
     }
     if name == "linux" {
-        return asm.TARGET_LINUX
+        return 0
     }
     os.die("unknown --target=" + name)
 }
@@ -89,13 +90,25 @@ func command() {
     scan_dirs = []
     scan_files = []
     as_target_default()
-    as_target = asm.TARGET_LINUX
+    // Dynamic as_target: use 0/1 literals (asm.TARGET_LINUX is i32 0 → null Value*).
+    as_target = 0
     if asm.requested_target == "darwin" || asm.requested_target == "macos" || asm.requested_target == "osx" {
-        as_target = asm.TARGET_DARWIN
+        as_target = 1
     }
     i = 0
-    while i < std.len(os.argv())  {
-        arg = os.argv()[i]
+    av = os.argv()
+    // Darwin ori_argv keeps argv[0] (program path); Linux entry now matches.
+    if std.len(av) > 0 {
+        a0 = av[0]
+        if a0 != "-p" && a0 != "-c" && a0 != "-d" && a0 != "--target" {
+            // Skip program path; flags start with '-'.
+            if std.len(a0) == 0 || a0[0] != '-' {
+                i = 1
+            }
+        }
+    }
+    while i < std.len(av)  {
+        arg = av[i]
         if std.len(arg) > 9 {
             pref_ok = true
             pref = "--target="
@@ -116,7 +129,7 @@ func command() {
         }
         match arg {
             "-p" : {
-                scan_dirs[] = os.argv()[i+1]
+                scan_dirs[] = av[i+1]
                 i += 2
             }
             "-d" : {
@@ -127,11 +140,11 @@ func command() {
                 i += 1
             }
             "--target" : {
-                as_target = parse_as_target(os.argv()[i+1])
+                as_target = parse_as_target(av[i+1])
                 i += 2
             }
             _ : {
-                scan_files[] = os.argv()[i]
+                scan_files[] = av[i]
                 i += 1
             }
         }
