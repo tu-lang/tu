@@ -5,7 +5,8 @@ use compiler.utils
 use compiler.compile
 use compiler.parser
 use asmer.asm
-use linker.link 
+use linker.link
+use linker.darwin
 use runtime
 //TODO: set by compiler
 root = "/usr/local/lib"
@@ -26,6 +27,7 @@ class Compiler {
     // default compiler
     type = "compiler"
     flag_gcc  = false
+    flag_nostd_explicit = false
     //default executeable name
     out       = "a.out"
     // workdir: default TMPDIR/tu-build-*; --workdir-cwd or --workdir DIR
@@ -33,6 +35,52 @@ class Compiler {
     workdir_explicit = ""
     // Keep .s/.o after build when --work is set
     flag_work = false
+    // linux=0 / darwin=1 / windows=2
+    target = 0
+}
+func arg_after_prefix(arg, n) {
+    out = ""
+    i = n
+    alen = std.len(arg)
+    while i < alen {
+        out += arg[i]
+        i += 1
+    }
+    return out
+}
+func arg_has_prefix(arg, pref) {
+    n = std.len(pref)
+    if std.len(arg) < n {
+        return false
+    }
+    j = 0
+    while j < n {
+        if arg[j] != pref[j] {
+            return false
+        }
+        j += 1
+    }
+    return true
+}
+Compiler::init() {
+    this.target = utils.target_default()
+}
+Compiler::apply_target(name) {
+    asm.requested_target = name
+    if name == "linux" {
+        this.target = utils.TARGET_LINUX
+        return
+    }
+    if name == "darwin" || name == "macos" || name == "osx" {
+        this.target = utils.TARGET_DARWIN
+        return
+    }
+    if name == "windows" || name == "win64" || name == "pe" {
+        fmt.printf("[tu] --target=%s is not implemented yet\n", name)
+        os.exit(-1)
+    }
+    fmt.printf("[tu] unknown --target=%s (want linux|darwin|windows)\n", name)
+    os.exit(-1)
 }
 Compiler::print_help(){
     // Column-aligned help (avoid fmt.println: it appends a trailing tab).
@@ -55,15 +103,31 @@ Compiler::print_help(){
         "  --workdir DIR              中间产物写到 DIR（.s/.o/a.out）\n" +
         "  --workdir-cwd              中间产物写当前目录（旧行为）\n" +
         "  --work                     保留中间产物\n" +
+        "  --target linux|darwin      对象/链接后端（默认=host；可用 TU_TARGET）\n" +
         "  -v                         打印版本\n" +
         "\n" +
         "Default workdir: $TMPDIR/tu-build-<stem>-...\n"
     )
 }
 Compiler::commadparse(){
+    av = os.argv()
     i = 0
-    while i < std.len(os.argv())  {
-        match os.argv()[i] {
+    // Darwin ori_argv keeps argv[0] (program path); Linux already dropped it.
+    if std.len(av) > 0 {
+        a0 = av[0]
+        if a0 != "run" && a0 != "build" && !arg_has_prefix(a0, "-") {
+            i = 1
+        }
+    }
+    while i < std.len(av)  {
+        arg = av[i]
+        if arg_has_prefix(arg, "--target=") {
+            preflen = std.len("--target=")
+            this.apply_target(arg_after_prefix(arg, preflen))
+            i += 1
+            continue
+        }
+        match arg {
             "run" : {
                 this.type = "compiler"
                 this.flag_link = true
@@ -99,6 +163,10 @@ Compiler::commadparse(){
             }
             "-g"   : compile.debug    = true
             "-std" : compile.nostd = false
+            "-nostd" : {
+                compile.nostd = true
+                this.flag_nostd_explicit = true
+            }
             "-gcc" : this.flag_gcc = true
             "-strip-pcln-file" : {
                 link.strip_pcln_file = 1
@@ -110,11 +178,16 @@ Compiler::commadparse(){
                 this.workdir_explicit = os.argv()[i + 1]
                 i += 1
             }
+            "--target" : {
+                this.apply_target(os.argv()[i + 1])
+                i += 1
+            }
             "-v"   : {
                 fmt.printf(
                     "tu-lang version: %s\n" +
-                    "Target         : x86_64 linux\n",
-                    version
+                    "Target         : x86_64 %s\n",
+                    version,
+                    utils.target_name(this.target)
                 )
                 os.exit(0)
             }
@@ -163,6 +236,10 @@ Compiler::compiler(file){
     if compile.nostd && !this.flag_gcc {
         compile.nostd = true
     }
+    // Darwin has no prebuilt colib; run/build includes std+coasm unless -nostd.
+    if this.target == utils.TARGET_DARWIN && this.flag_link && !this.flag_nostd_explicit {
+        compile.nostd = false
+    }
     compile.initWorkdir(file, this.workdir_cwd, this.workdir_explicit)
     compile.genast(file)
     compile.editast()
@@ -173,6 +250,9 @@ Compiler::compiler(file){
         wd = "."
     }
     if this.flag_link {
+        if this.target == utils.TARGET_DARWIN && this.flag_gcc {
+            utils.error("-gcc is linux-only; use the self-hosted darwin linker")
+        }
         //By Gcc Link
         if this.flag_gcc {
             compile.gcclink()
@@ -181,17 +261,31 @@ Compiler::compiler(file){
             }
             os.shell("chmod 777 '" + utils.pathInWorkdir("a.out") + "'")
         }else {
-        //Self Asmer && Linker
+        // Self asmer+linker: copy prefix coasm into workdir (same as mother tuc),
+        // then assemble only there. Never write .o back into /usr/local/lib/coasm*.
             this.code_files = []
+            if !compile.nostd {
+                if this.target == utils.TARGET_DARWIN {
+                    src = root + "/coasm-darwin"
+                    probe = src + "/asm_amd64.s"
+                    fp<i32> = std.fopen(*probe, *"r")
+                    if fp <= 0 {
+                        utils.error("missing Darwin coasm at " + src)
+                    }
+                    std.close(fp)
+                    os.shell("cp '" + src + "'/*.s '" + wd + "/'")
+                } else {
+                    os.shell("cp '" + root + "/coasm'/*.s '" + wd + "/'")
+                }
+            }
             this.scandir(wd,".s")
-            if !compile.nostd 
-                this.scandir(root + "/coasm/",".s")
             this.asmer()
 
             this.code_files = []
+            if compile.nostd && this.target != utils.TARGET_DARWIN {
+                os.shell("cp '" + root + "/colib'/*.o '" + wd + "/'")
+            }
             this.scandir(wd,".o")
-            if compile.nostd 
-                this.scandir(root + "/colib/",".o")
             this.out = utils.pathInWorkdir("a.out")
             this.linker()
             if !this.flag_work {
@@ -235,16 +329,25 @@ Compiler::asmer(){
     utils.msg(100,"Aasmer generate all Passed")
 }
 Compiler::linker(){
-    linker = new link.Linker()
     total = std.len(this.code_files)
     if total <= 0 utils.error("please provide at lease one .o file")
 
-    // a.out 默认落在首个 .o 同目录（与母版 tul 一致）
+    // Default a.out next to the first .o, same as tul.
     if this.out == "a.out" && total > 0 {
         this.out = utils.path_join(utils.path_dirname(this.code_files[0]), "a.out")
     }
     fmt.printf("[tu] outfile: %s\n", this.out)
 
+    if this.target == utils.TARGET_DARWIN {
+        rc = darwin.link_objects(this.code_files, this.out)
+        if rc != 0 {
+            utils.error("Generate " + this.out + " Failed")
+        }
+        utils.msg(100,"Generate " + this.out + " Passed")
+        return
+    }
+
+    linker = new link.Linker()
     i = 1
     for f : this.code_files {
 	    utils.smsg("[ " + i + "/" + total +"]","Reading elf object info " + f)

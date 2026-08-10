@@ -105,16 +105,32 @@ release: install build-liba install
 # NOTICE: don't use this
 .PHONEY: release
 dev_release: install
+	@if [ "$(TARGET)" = "darwin" ]; then \
+		mv runtime/linux.tu runtime/linux.tu.bak; \
+		cp platform/darwin/runtime_os.tu runtime/darwin.tu; \
+		cp library/os/signal.tu library/os/signal.tu.bak; \
+		cp platform/darwin/os_signal.tu library/os/signal.tu; \
+	fi
 	@ERR=$$(mktemp); \
-	tuc run tulang.tu 2>$$ERR; \
+	tuc build tulang.tu 2>$$ERR; \
 	STATUS=$$?; \
 	cat $$ERR; \
-	WD=$$(sed -n 's/^\[tuc\] workdir: //p' $$ERR | tail -1); \
+	if [ "$(TARGET)" = "darwin" ]; then \
+		rm -f runtime/darwin.tu; \
+		mv runtime/linux.tu.bak runtime/linux.tu; \
+		mv library/os/signal.tu.bak library/os/signal.tu; \
+	fi; \
 	rm -f $$ERR; \
 	if [ $$STATUS -ne 0 ]; then exit $$STATUS; fi; \
-	if [ -z "$$WD" ] || [ "$$WD" = "(cwd)" ]; then WD=.; fi; \
-	mv $$WD/a.out release/tu; \
-	cp release/tu $(prefix)/bin/tu
+	if [ "$(TARGET)" = "darwin" ]; then \
+		mv ./tulang release/tu-darwin; \
+		cp release/tu-darwin $(prefix)/bin/tu; \
+		echo "[dev_release] darwin → release/tu-darwin"; \
+	else \
+		if [ -f ./tulang ]; then mv ./tulang release/tu; \
+		elif [ -f ./a.out ]; then mv ./a.out release/tu; fi; \
+		cp release/tu $(prefix)/bin/tu; \
+	fi
 
 .PHONY: install
 install:
@@ -150,7 +166,36 @@ install-darwin:
 	@cp syscall/darwin/*.s $(prefix)/lib/coasm-darwin/
 	@rm -f $(prefix)/lib/coasm/*
 	@cp syscall/*.s $(prefix)/lib/coasm/
-	@echo "install-darwin: copkg + coasm-darwin (+ coasm)"
+	@mkdir -p $(prefix)/lib/costub-darwin
+	@cp linker/darwin/stub_entry.s linker/darwin/stub_runtime.s $(prefix)/lib/costub-darwin/
+	@if [ -f release/tu-darwin ]; then cp release/tu-darwin $(prefix)/bin/tu; echo "[install] tu ← release/tu-darwin"; fi
+	@echo "install-darwin: copkg + coasm-darwin (+ coasm) + costub-darwin"
+
+# Rebuild tu-darwin with the just-installed self-hosted tu (B4 loop).
+.PHONY: bootstrap-darwin
+bootstrap-darwin: install-darwin
+	@if [ ! -x release/tu-darwin ] && [ ! -x $(prefix)/bin/tu ]; then \
+		echo "bootstrap-darwin: missing release/tu-darwin; run make dev_release first"; exit 1; \
+	fi
+	@mv runtime/linux.tu runtime/linux.tu.bak
+	@cp platform/darwin/runtime_os.tu runtime/darwin.tu
+	@cp library/os/signal.tu library/os/signal.tu.bak
+	@cp platform/darwin/os_signal.tu library/os/signal.tu
+	@ERR=$$(mktemp); \
+	if [ -x release/tu-darwin ]; then TU_BIN=./release/tu-darwin; else TU_BIN=tu; fi; \
+	$$TU_BIN build tulang.tu --workdir-cwd 2>$$ERR; \
+	STATUS=$$?; \
+	cat $$ERR; \
+	rm -f runtime/darwin.tu; \
+	mv runtime/linux.tu.bak runtime/linux.tu; \
+	mv library/os/signal.tu.bak library/os/signal.tu; \
+	rm -f $$ERR; \
+	if [ $$STATUS -ne 0 ]; then exit $$STATUS; fi
+	@if [ -f ./a.out ]; then mv ./a.out release/tu-darwin; \
+	elif [ -f ./tulang ]; then mv ./tulang release/tu-darwin; \
+	else echo "bootstrap-darwin: no a.out/tulang produced"; exit 1; fi
+	@cp release/tu-darwin $(prefix)/bin/tu
+	@echo "[bootstrap-darwin] tu → release/tu-darwin"
 
 .PHONY: clean
 clean:
@@ -179,9 +224,14 @@ toolchain_compiler:
 	@echo "compiler tests passed"
 toolchain_asmer:
 	@sh asmer/test.sh
+	@bash asmer/darwin/cases/check_macho.sh
+	@bash asmer/darwin/cases/check_rip_store.sh
 	@echo "asmer tests passed"
 toolchain_linker:
 	@sh linker/test.sh
+	@bash linker/darwin/cases/check_execute.sh
+	@bash linker/darwin/cases/check_dyld_import.sh
+	@bash linker/darwin/cases/check_pclntab.sh
 	@echo "linker tests passed"
 examples:
 	@bash examples/test.sh
@@ -197,4 +247,9 @@ tests: tests_start
 	#Time elapsed: 2:16.05
 %: ./tests/%
 	@sh tests_all.sh $@ ;
+# GNU time -f is Linux-only; BSD time on Darwin only has -p.
+ifeq ($(UNAME_S),Darwin)
+TIME = /usr/bin/time -p
+else
 TIME = /usr/bin/time -f $(TIMEFORMAT)
+endif
