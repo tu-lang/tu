@@ -71,19 +71,13 @@ class AsyncBlock {
     fn genretvarForLeaf(s){
         retvarname = "fut.r." + this.topid()
         retvar = new gen.VarExpr(retvarname,0,0)
-        if s == null || !s.isasync || this.isRuntimeFutureStruct(s) {
+        if s == null || !s.isasync || this.isRuntimeFutureStruct(s) ||
+           this.leafAwaitValueDynamic(s) {
             retvar.size = 8
             this.fc.InsertLocalVar(-1,retvar)
             return retvar
         }
-        poll = s.asyncfn
-        if poll == null
-            poll = s.getFunc("poll")
-        if poll != null && poll.async_value_dynamic {
-            retvar.size = 8
-            this.fc.InsertLocalVar(-1,retvar)
-            return retvar
-        }
+        poll = s.getPoll()
         vty = null
         if poll != null && std.len(poll.returnTypes) >= 2
             vty = poll.returnTypes[1]
@@ -133,6 +127,26 @@ class AsyncBlock {
         }
         this.fc.InsertLocalVar(-1,retvar)
         return retvar
+    }
+    fn leafAwaitValueDynamic(s){
+        if s == null || !s.isasync return true
+        if this.isRuntimeFutureStruct(s) return true
+        poll = s.getPoll()
+        if poll == null return true
+        if std.len(poll.returnTypes) >= 2 {
+            vty = poll.returnTypes[1]
+            if vty != null && vty.baseType() && vty.base >= ast.I8 && vty.base <= ast.F64
+                return false
+            if vty != null && vty.memType()
+                return false
+            return true
+        }
+        if std.len(poll.returnTypes) == 1 {
+            vty = poll.returnTypes[0]
+            if vty != null && vty.baseType() && vty.base >= ast.I8 && vty.base <= ast.F64
+                return false
+        }
+        return poll.async_value_dynamic
     }
     fn genstateid(){
         stateid = this.root.stateid

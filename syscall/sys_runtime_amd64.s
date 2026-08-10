@@ -76,7 +76,8 @@ runtime_callerpc:
 
 .globl runtime_gcmentryptr
 runtime_gcmentryptr:
-    lea gc.ms.entry , %rax
+    # Use (%rip) so lea is 64-bit (leal→%eax truncates high VA).
+    lea gc.ms.entry(%rip), %rax
     ret
 
 .globl runtime_settls

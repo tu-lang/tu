@@ -100,10 +100,13 @@ fn write(fd<i32>, buff<u8*>, len<u64>) (i64)
 fn close(fd<i32>) (i32)
 // socketpair 53
 fn socketpair(domain<i32>, ty<i32>, protocol<i32>, sv<i32*>) (i32)
-// epoll_* — used by netio; keep under sys so symbols are sys_epoll_*
+// epoll_* — used by netio on Linux; keep under sys so symbols are sys_epoll_*
 fn epoll_create1(flags<i32>) (i32)
 fn epoll_ctl(epfd<i32>, op<i32>, fd<i32>, event<u64>) (i32)
 fn epoll_wait(epfd<i32>, events<u64>, maxevents<i32>, timeout_ms<i32>) (i32)
+// kqueue / kevent — Darwin netio Selector (installed over epoll.tu on Mac)
+fn kqueue() (i32)
+fn kevent(kq<i32>, changelist<u64>, nchanges<i32>, eventlist<u64>, nevents<i32>, timeout<u64>) (i32)
 // path helpers used by asyncio.fs (mother: libc / tustd sys::fs)
 fn readlink(path<i8*>, buf<i8*>, bufsiz<u64>) (i64)
 fn rename(oldpath<i8*>, newpath<i8*>) (i32)

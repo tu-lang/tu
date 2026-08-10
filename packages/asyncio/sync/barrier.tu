@@ -58,7 +58,7 @@ BarrierWaitFut::init(hub<Barrier>){
 }
 
 // Ready value is leader_flag (0/1); Pending while waiting for the generation bump.
-BarrierWaitFut::poll(ctx){
+BarrierWaitFut::poll(ctx) i32, i64 {
     if this.stage == 2 {
         return runtime.PollReady, this.leader_flag.(i64)
     }
@@ -88,12 +88,12 @@ BarrierWaitFut::poll(ctx){
         this.stage = 2
         return runtime.PollReady, this.leader_flag.(i64)
     }
-    return runtime.PollPending
+    return runtime.PollPending, 0.(i64)
 }
 
 // Mother wait() body without member-async: build the leaf in-package.
 Barrier::wait_fut() BarrierWaitFut {
-    fut<BarrierWaitFut> = new BarrierWaitFut{}
+    fut<BarrierWaitFut> = new BarrierWaitFut
     fut.init(this)
     return fut
 }
@@ -108,4 +108,15 @@ fn barrier_wait_fut_bits(barrier_bits<u64>) BarrierWaitFut {
 fn barrier_wait_leader_bits(fut_bits<u64>) i32 {
     f<BarrierWaitFut> = fut_bits.(BarrierWaitFut)
     return f.leader_flag
+}
+
+// Cross-pkg poll for BarrierWaitFut bits.
+fn barrier_wait_poll_bits(fut_bits<u64>) i32 {
+    if fut_bits == 0 {
+        return runtime.PollPending
+    }
+    fut<BarrierWaitFut> = null
+    fut = fut_bits
+    code<i32> = fut.poll(0)
+    return code
 }

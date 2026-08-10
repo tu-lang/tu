@@ -74,6 +74,34 @@ func fread_with_buf(fd<i32>,buf<u64*> , size<i64>){
 	return buf
 }
 
+func path_dirname(path){
+	n = std.len(path)
+	if n == 0 return "."
+	i = n - 1
+	while i >= 0 {
+		if path[i] == '/' break
+		i -= 1
+	}
+	if i < 0 return "."
+	if i == 0 return "/"
+	out = ""
+	j = 0
+	while j < i {
+		out += path[j]
+		j += 1
+	}
+	return out
+}
+func path_join(d,f){
+	if d == null || d == "" || d == "."
+		return f
+	dlen = std.len(d)
+	last = d[dlen - 1]
+	if last == '/'
+		return d + f
+	return d + "/" + f
+}
+
 //func fseek(fp<u64>,offset<i64> , set<i64>)
 func fseek(fp,offset<i64>){
 	utils.debug("utils.fseek:",int(fp),int(offset))

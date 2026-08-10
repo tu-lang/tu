@@ -2,17 +2,26 @@ use asmer.ast
 use asmer.elf
 use asmer.utils
 use asmer.parser
+use asmer.darwin
 use std
 use std.map
 use fmt
 use os
 use string
+use runtime
 
 Asmer::init(filename)
 {
     utils.debug("Asmer::init %s".(i8),*filename)
     this.text = 0
     this.bytes = 0
+    this.target = runtime.host_os()
+    if requested_target == "darwin" || requested_target == "macos" || requested_target == "osx" {
+        this.target = TARGET_DARWIN
+    }
+    if requested_target == "linux" {
+        this.target = TARGET_LINUX
+    }
     this.elf   = new elf.ElfFile(this)
     this.parser = new parser.Parser(filename,this.elf)
     outname    = this.parser.outname
@@ -23,13 +32,22 @@ Asmer::init(filename)
     this.out   = fp
 }
 Asmer::close(){
-    utils.fclose(this.out)
+    if this.out != 0 {
+        utils.fclose(this.out)
+        this.out = 0
+    }
 }
 //start
 Asmer::execute() {
     utils.debug("Asmer::execute".(i8))
     this.parser.parse()
     this.data = this.parser.data_size
+    if this.target == TARGET_DARWIN {
+        this.close()
+        outp = this.parser.outname
+        darwin.emit_object(this.parser, this.elf, outp)
+        return
+    }
     this.buildElf()
     this.writeElf()
 }

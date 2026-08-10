@@ -68,7 +68,7 @@ OnceInitFut::init(hub<OnceCell>){
     this.pending_nf = null
 }
 
-OnceInitFut::poll(ctx){
+OnceInitFut::poll(ctx) i32, i64 {
     hub<OnceCell> = this.hub
     cur<i32> = atomic.load(&hub.cell_state)
     if cur == INIT_DONE {

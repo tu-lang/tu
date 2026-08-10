@@ -13,4 +13,9 @@ test:
 test1:
     lea mem(%rip) ,%rdx
     lea test(%rip) ,%rdx
+# Bare symbol form must still emit REX.W (leaq), not leal — Darwin high VA / Linux correctness.
+bare:
+    lea mem, %rax
+    lea mem, %rdi
+    lea mem, %r8
 

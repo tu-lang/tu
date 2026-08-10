@@ -282,12 +282,24 @@ fn gcstopworld(){
 	if !sched.gcwaiting {
         return
     }
+    // Publish CoreStop before sched.lock: stopSTW only counts CoreRun waiters.
+    // If we block on sched.lock while still CoreRun, STW sleeps forever
+    // (gc_mt_stress / make tests on Darwin).
+    if c.status == CoreRun {
+        c.status = CoreStop
+        sched.stopnote.Wake()
+    }
     sched.lock.lock()
     if !sched.gcwaiting {
         sched.lock.unlock()
+        if c.status == CoreStop {
+            c.status = CoreRun
+        }
         return
     }
-	c.status = CoreStop
+    if c.status == CoreRun {
+        c.status = CoreStop
+    }
     // stopSTW may already have finished its wait (we were CoreSyscall); do
     // not underflow stopwait.
     if sched.stopwait > 0 {
@@ -374,8 +386,10 @@ fn entersyscall_mutexblock() i32 {
 	if c.status != CoreRun {
 		return 0
 	}
-	// Mid-malloc stacks are not safe to leave as CoreSyscall for mark.
-	if c.mallocing != 0 {
+	// Mid-malloc stacks are not safe to leave as CoreSyscall for mark during
+	// normal operation, but during STW a CoreRun mutex futex waiter blocks
+	// stopnote forever (gc_mt_stress). Publish CoreSyscall when gcwaiting.
+	if c.mallocing != 0 && sched.gcwaiting == 0 {
 		return 0
 	}
 	publish_syscall_roots(c)

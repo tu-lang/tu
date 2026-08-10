@@ -2,9 +2,15 @@ use std
 use std.atomic
 use os
 use runtime
+use runtime.debug
 
 gcBlackenEnabled<u32> = 0
 ncpu<u32> = 0
+
+// Host OS tag for toolchain default target (0 = linux).
+fn host_os() i32 {
+	return 0
+}
 
 func sys_fixalloc(size<u64> , align<u64>)
 {
@@ -344,4 +350,50 @@ LinearAlloc::alloc(size<u64>,align<u64>)
 		this.mapped = pEnd
 	}
 	return p
+}
+
+// Linux ucontext: uc_mcontext is embedded; rip at Sigcontext offset.
+mem Stackt {
+	i8* ss_sp
+	i32 ss_flags
+	i8 pad_cgo_0[4]
+	u64 ss_size
+}
+mem Ucontext {
+	u64 uc_flags
+	Ucontext* uc_link
+	Stackt uc_stack
+	u64 uc_mcontext
+}
+mem Sigcontext {
+	u64 r8,r9,r10,r11,r12,r13,r14,r15,rdi,rsi,rbp,rbx,rdx,rax,rcx,rsp,rip,eflags
+	u16 cs,gs,fs,__pad0
+	u64 err,trapno,oldmask,cr2
+}
+
+fn segsegv_rip(ctxt<u64>) u64 {
+	uc<Ucontext> = ctxt.(Ucontext)
+	sigc<Sigcontext> = &uc.uc_mcontext
+	return sigc.rip
+}
+
+fn segsegv_walkstack(){
+	bp<u64*> = runtime.get_bp()
+	if bp == null {
+		return
+	}
+	bp = *bp
+	i = 1
+	max_frames<i32> = 64
+	loop {
+		if i > max_frames break
+		if bp == null break
+		pc_slot<u64*> = bp + 8
+		rip<u64> = *pc_slot
+		if rip == null break
+		pc2 = debug.findpc(rip)
+		println(*"%d: %s" ,i,*pc2)
+		bp = *bp
+		i += 1
+	}
 }

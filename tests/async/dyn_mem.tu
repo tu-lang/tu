@@ -1,6 +1,7 @@
 use fmt
 use runtime
 use os
+use await_owner as own
 
 class TestCase {
     ty = ty
@@ -808,6 +809,29 @@ async class_fut_add_assign() {
     s += j.work_add().await
     return s
 }
+async dyn_cross_ready_var() {
+    a<own.ReadyLeaf> = own.ready_new(10.(i8))
+    v<i8> = a.await
+    return int(v)
+}
+async dyn_cross_ready_binop_assign() {
+    a<own.ReadyLeaf> = own.ready_new(10.(i8))
+    b<own.ReadyLeaf> = own.ready_new(20.(i8))
+    sum<i8> = a.await + b.await
+    return int(sum)
+}
+fn test_dyn_cross_ready_leaf(){
+    fmt.println("test dyn cross ReadyLeaf poll await")
+    r = runtime.block(dyn_cross_ready_var())
+    if r != 10 {
+        os.dief("dyn ReadyLeaf.await want 10 got %d", int(r))
+    }
+    r2 = runtime.block(dyn_cross_ready_binop_assign())
+    if r2 != 30 {
+        os.dief("dyn ReadyLeaf sum assign want 30 got %d", int(r2))
+    }
+    fmt.println("test dyn cross ReadyLeaf poll await success")
+}
 fn test_class_fut_binop_await(){
     fmt.println("test class fut binop await")
     r = runtime.block(class_fut_sum_binop())
@@ -859,5 +883,6 @@ fn main(){
     test_class_fut_two_awaits()
     test_class_fut_str_await()
     test_class_fut_binop_await()
+    test_dyn_cross_ready_leaf()
     fmt.println("test async dyn class func member success")
 }

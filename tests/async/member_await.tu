@@ -80,6 +80,10 @@ async TestCase::mem_binop_instance_mix() {
     l<Listener> = new Listener { fd: 0 }
     return l.accept().await + this.helper().await
 }
+async TestCase::mem_binop_assign_sum() {
+    sum<i8> = TcpStream::connect().await + this.helper().await
+    return sum
+}
 
 fn test_static_type_await() {
     fmt.println("test static Type::method().await")
@@ -131,6 +135,8 @@ fn test_mem_fut_binop_await() {
     if int(r.(i8)) != 49 os.dief("+= await want 49 got %d", int(r.(i8)))
     r = runtime.block(case1.mem_binop_instance_mix())
     if int(r.(i8)) != 106 os.dief("instance.await + this.await want 106 got %d", int(r.(i8)))
+    r = runtime.block(case1.mem_binop_assign_sum())
+    if int(r.(i8)) != 49 os.dief("sum = Type.await + this.await want 49 got %d", int(r.(i8)))
     fmt.println("test mem await BinaryExpr matrix success")
 }
 

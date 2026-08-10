@@ -22,6 +22,13 @@ check(){
 }
 
 assert(){
+    if [ "$(uname -s)" = "Darwin" ]; then
+        log "[run] tu run $1"
+        tu run "$1"
+        check
+        echo "exec done..."
+        return
+    fi
     log "[compile] tu -s compiler/$1 "
     ERR=$(mktemp)
     tu -s "$1" >"$ERR" 2>&1

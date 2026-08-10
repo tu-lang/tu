@@ -239,6 +239,16 @@ MutexInter::lock(){
         // Soft-syscall around futex: STW treats CoreSyscall as stopped, and
         // stopnote Kick re-counts so we are not waited on while locks>0.
         entered<i32> = entersyscall_mutexblock()
+        if entered == 0 && sched.gcwaiting != 0 && c.status == CoreRun {
+            // gcwaiting flipped after mutexblock refused (e.g. brief mallocing
+            // window). Must not futex as CoreRun during STW (gc_mt hang).
+            // Never flip CoreStop (GC coordinator / parked workers): exitsyscall
+            // would park the thread mid-sweep (gc_mt basic_osyield hang).
+            publish_syscall_roots(c)
+            c.status = CoreSyscall
+            sched.stopnote.Wake()
+            entered = 1
+        }
         futexsleep(addr,mutex_sleeping,-1.(i8))
         if entered != 0 {
             exitsyscall()

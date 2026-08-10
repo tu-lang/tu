@@ -77,14 +77,14 @@ async RwLock::write(){
 
 fn rwlock_write_fut_bits(lock_bits<u64>) AcquireFut {
     l<RwLock> = lock_bits.(RwLock)
-    fut<AcquireFut> = new AcquireFut{}
+    fut<AcquireFut> = new AcquireFut
     fut.init(l.sem, MAX_READERS)
     return fut
 }
 
 fn rwlock_read_fut_bits(lock_bits<u64>) AcquireFut {
     l<RwLock> = lock_bits.(RwLock)
-    fut<AcquireFut> = new AcquireFut{}
+    fut<AcquireFut> = new AcquireFut
     fut.init(l.sem, 1)
     return fut
 }

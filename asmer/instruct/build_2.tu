@@ -6,6 +6,19 @@ use fmt
 
 Instruct::insthead(){
     utils.debug("Instruct::insthead()".(i8))
+    // LEA to 64-bit GP needs REX.W. Bare "lea sym, %r64" is TY_IMMED and
+    // skips register-pair REX paths (truncates on Darwin high VA).
+    if this.type == ast.KW_LEA && this.left == ast.TY_IMMED {
+        if ast.r8islow(this.tks.addr[1]) {
+            this.append1(0x48.(i8))
+            return true
+        }
+        if ast.r8ishigh(this.tks.addr[1]) {
+            this.append1(0x4c.(i8))
+            return true
+        }
+        return true
+    }
     dword<i32> = 0
     if this.type == ast.KW_CVTSI2SD || this.type == ast.KW_CVTSI2SDL
         this.append1(0xf2.(i8))
@@ -221,7 +234,13 @@ Instruct::genTwoInst()
                         return true
                     }
                     if(this.is_rel){
-                        opcode = 0x8b
+                        // RIP-relative: label(%rip),%reg loads with 0x8b;
+                        // %reg,label(%rip) stores with 0x89. Unconditional 0x8b
+                        // turned every RIP-relative store into a load.
+                        if(this.left == ast.TY_IMMED)
+                            opcode = 0x8b
+                        else
+                            opcode = 0x89
                         len    = 4
                         exchar = 0x05 + 0x08 * this.modrm.reg
                     }else{

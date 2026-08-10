@@ -37,6 +37,14 @@ check(){
 assert(){
     expected="$1"
     input="$2"
+    # Darwin: no prebuilt colib; compile std+coasm from source.
+    if [ "$(uname -s)" = "Darwin" ]; then
+        log "[run] tu run $input"
+        tu run "$input"
+        check
+        echo "exec done..."
+        return
+    fi
     log "[compile] tu -s $input"
     ERR=$(mktemp)
     tu -s $input >"$ERR" 2>&1

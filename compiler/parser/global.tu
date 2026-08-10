@@ -135,6 +135,9 @@ Parser::parseClassFunc(var, constdef){
             }
         }
     }
+    if fctype != ast.StructFunc && parent != null && parent.isasync && f.name == "poll" {
+        this.pkg.addStructFunc(var, f.name, f, parent)
+    }
     
     this.addFunc(var + f.name,f)
     return

@@ -14,6 +14,8 @@ func brk(brk<u64>)
 
 //segsegv recv; implement by asm
 func segsegvrecv()
+# Raw PC of std_segsegvrecv for sigaction (not a Tu func descriptor).
+func segsegvrecv_pc()
 
 //execv ; implement by asm
 func execve(filename<i8*>,argv<i8*>,envp<i8*>)
@@ -21,6 +23,8 @@ func execve(filename<i8*>,argv<i8*>,envp<i8*>)
 func sigreturn()
 # Raw PC of std_sigreturn for sa_restorer (not a Tu func descriptor).
 func sigreturn_pc()
+# Darwin nostd: raw PC of std_sigtramp for __sigaction.sa_tramp (Linux: unused).
+func sigtramp_pc()
 //sig %rdi
 //act %rsi
 //oact %rdx

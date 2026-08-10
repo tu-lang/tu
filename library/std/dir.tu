@@ -13,13 +13,13 @@ func realpath(name<i8*>) {
 	buffer_o<i8:128> = null
 	buffer<i8*> = &buffer_o
 	len = readlink(name,buffer,128.(i8))
+	// Soft-fail: missing path (e.g. no /proc on Darwin) returns null;
+	// callers fall back to argv[0]. Do not spam stderr on the expected miss.
 	if len < 0 {
-		fmt.vfprintf(STDOUT,"readlink failed %d".(i8),len)
-		return 0.(i8)
+		return null
 	}
 	if len >= 128 {
-		fmt.vfprintf(STDOUT,"readlink failed path over 128 %d".(i8),len)
-		return 0.(i8)
+		return null
 	}
 	return string.newlen(buffer,len)
 }
@@ -57,7 +57,8 @@ mem Dirent{
     i64 d_ino 
     i64 d_off
     u16 d_reclen
-    i8 d_name
+    i8  d_type
+    i8  d_name
 }
 class FileFd {type name path}
 //opendir
@@ -106,9 +107,10 @@ init_dents:
 
 
     d<Dirent> = dir.dir + dir.pos
-    file_name = string.new(&d.d_name)
-    file_type_p<i8*> = d + d.d_reclen - 1 
-    file_type = dirtype(*file_type_p)
+    // linux_dirent64: d_type @18, d_name @19
+    name_p<i8*> = &d.d_name
+    file_name = string.new(name_p)
+    file_type = dirtype(d.d_type)
 
     #incr pos
     dir.pos += d.d_reclen

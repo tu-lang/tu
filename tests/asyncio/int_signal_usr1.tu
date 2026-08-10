@@ -40,9 +40,10 @@ async sig_usr1_body() {
     // os._getpid is the raw syscall (typed i32 path); os.getpid() dynamic
     // int→i32 corrupts the pid (strace: kill(garbage)).
     // Local i32 for kill's 2nd arg (literal 2nd-arg corruption trap).
+    // Use os.SIGUSR1 (Linux=10, Darwin=30) — never hardcode Linux numbers.
     pid_i<i32> = 0
     pid_i = os._getpid()
-    sigusr1<i32> = 10
+    sigusr1<i32> = os.SIGUSR1
     kerr<i32> = sys.kill(pid_i, sigusr1)
     if kerr < 0 return bad
 

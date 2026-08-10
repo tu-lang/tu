@@ -69,7 +69,7 @@ BroadcastRecvFut::init(owner<Broadcast>, cursor<u64>){
     this.ready_val = 0
 }
 
-BroadcastRecvFut::poll(ctx){
+BroadcastRecvFut::poll(ctx) i32, i64 {
     hub<Broadcast> = this.owner
     cur_tail<u64> = atomic.load64(&hub.tail)
     if this.cursor < cur_tail {

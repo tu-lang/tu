@@ -103,6 +103,12 @@ std_sigreturn_pc:
      lea std_sigreturn(%rip), %rax
      retq
 
+# Linux uses sa_restorer; Darwin injects trampoline inside rt_sigaction.
+.globl std_sigtramp_pc
+std_sigtramp_pc:
+     xor %rax, %rax
+     retq
+
 .globl std_rt_sigaction
 std_rt_sigaction:
      mov %rcx, %r10
@@ -135,6 +141,11 @@ std_segsegvrecv:
      push %rdi
      call runtime_segsegv_handler
      add $24, %rsp
+     retq
+
+.globl std_segsegvrecv_pc
+std_segsegvrecv_pc:
+     lea std_segsegvrecv(%rip), %rax
      retq
 
 .globl std_readlink

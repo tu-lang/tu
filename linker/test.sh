@@ -22,6 +22,10 @@ check(){
 }
 
 assert(){
+    if [ "$(uname -s)" = "Darwin" ]; then
+        log "skip: ELF linker demo is linux-only (darwin cases run from Makefile)"
+        return
+    fi
     log "[compile] tu -s linker/main.tu "
     ERR=$(mktemp)
     tu -s linker/main.tu -std >"$ERR" 2>&1

@@ -87,7 +87,7 @@ Parser::parseData(labelname<string.String>) {
         tk<i32> = this.scanner.scan()
         if tk == ast.KW_LABEL {
             sym.isrel = true
-            sym.str = this.scanner.curlex
+            sym.str = this.scanner.curlex.dup()
 
             this.elf.addRel(
                 string.S(*".data"),this.data_size,sym.str,elf.R_X86_64_64
