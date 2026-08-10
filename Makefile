@@ -151,6 +151,8 @@ dev_release: install
 install:
 ifeq ($(TARGET),darwin)
 	@$(MAKE) install-darwin
+else ifeq ($(TARGET),windows)
+	@$(MAKE) install-windows
 else
 	@$(INSTALL_ALL); install_all
 	@echo "tu env installed"
@@ -185,6 +187,21 @@ install-darwin:
 	@cp linker/darwin/stub_entry.s linker/darwin/stub_runtime.s $(prefix)/lib/costub-darwin/
 	@if [ -f release/tu-darwin ]; then cp release/tu-darwin $(prefix)/bin/tu; echo "[install] tu ← release/tu-darwin"; fi
 	@echo "install-darwin: copkg + coasm-darwin (+ coasm) + costub-darwin"
+
+.PHONY: install-windows
+install-windows:
+	@mkdir -p $(prefix)/lib/copkg $(prefix)/lib/coasm $(prefix)/lib/coasm-windows $(prefix)/lib/copeff
+	@rm -rf $(prefix)/lib/copkg/*
+	@cp -R runtime $(prefix)/lib/copkg/
+	@cp -R library/* $(prefix)/lib/copkg/
+	@cp -R packages/* $(prefix)/lib/copkg/
+	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/darwin.tu
+	@cp platform/windows/runtime_os.tu $(prefix)/lib/copkg/runtime/windows.tu
+	@rm -f $(prefix)/lib/coasm-windows/*
+	@cp syscall/windows/*.s $(prefix)/lib/coasm-windows/
+	@cp syscall/*.s $(prefix)/lib/coasm/
+	@cp ../co/linker/peff/stub_entry.s ../co/linker/peff/stub_runtime.s $(prefix)/lib/copeff/ 2>/dev/null || true
+	@echo "install-windows: copkg + coasm-windows (+ coasm) + copeff"
 
 # Rebuild tu-darwin with the just-installed self-hosted tu (B4 loop).
 .PHONY: bootstrap-darwin

@@ -88,14 +88,18 @@ fn args_init(argc<u64>, argv<u64*>, envp_in<u64*>){
 	// Darwin LC_MAIN: envp is a separate pointer — must pass it explicitly.
 	envp<u64*> = envp_in
 	if envp == null {
-		envp = argv + (argc + 1.(u64)) * PointerSize
+		if argv == null {
+			envp = null
+		} else {
+			envp = argv + (argc + 1.(u64)) * PointerSize
+		}
 	}
 	c = int(argc)
 	c -= 1
 	ori_envp = envp
 	//save args
 	arr = []
-	while argc > 0 {
+	while argc > 0 && argv != null {
 		if *argv == null {
 			break
 		}
@@ -110,12 +114,14 @@ fn args_init(argc<u64>, argv<u64*>, envp_in<u64*>){
 	ori_argv = arr
 	//save env
 	envs = []
-	while *envp != null {
-		str1<Value> = new Value
-		str1.type = String
-		str1.data = string.newstring(*envp)
-		arr_pushone(str1,envs)
-		envp += PointerSize
+	if envp != null {
+		while *envp != null {
+			str1<Value> = new Value
+			str1.type = String
+			str1.data = string.newstring(*envp)
+			arr_pushone(str1,envs)
+			envp += PointerSize
+		}
 	}
 	ori_envs = envs
 	// Linux: /proc/self/exe. Darwin has no /proc — realpath returns null;
