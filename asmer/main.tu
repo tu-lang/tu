@@ -3,7 +3,9 @@ use fmt
 use asmer.asm
 use os 
 use std
+use string
 use asmer.utils
+use runtime
 
 #[dir,dir,dir]
 scan_dirs
@@ -11,12 +13,16 @@ scan_dirs
 #[file,file]
 scan_files
 
+as_target = 0
+
 func print_help () {
     fmt.println(
         "usage: ./ta [options] file.s  可用的选项:\n" + 
-        "  *.s      翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" +
+        "  *.s      翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" + 
+        "  -c *.s   翻译单个汇编文件（与 -c 前的路径等价）\n" +
         "  -p ...   批量翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" +
-        "  -d       打印编译过程信息信息\n"
+        "  -d       打印编译过程信息信息\n" +
+        "  --target linux|darwin   object backend (default: host / TU_TARGET)\n"
     )
 }
 func asmergen(){
@@ -51,22 +57,81 @@ func asmergen(){
     utils.msg(100,"Generate all Passed")
 }
 
+func parse_as_target(name) {
+    asm.requested_target = name
+    if name == "darwin" || name == "macos" || name == "osx" {
+        return asm.TARGET_DARWIN
+    }
+    if name == "linux" {
+        return asm.TARGET_LINUX
+    }
+    os.die("unknown --target=" + name)
+}
+func as_target_default() {
+    for (k, v : os.envs()) {
+        arr = string.split(v, "=")
+        if std.len(arr) >= 2 {
+            if arr[0] == "TU_TARGET" || arr[0] == "CO_TARGET" {
+                if arr[1] == "darwin" || arr[1] == "macos" || arr[1] == "osx" || arr[1] == "linux" {
+                    parse_as_target(arr[1])
+                    return
+                }
+            }
+        }
+    }
+    if runtime.host_os() == 1 {
+        asm.requested_target = "darwin"
+    } else {
+        asm.requested_target = "linux"
+    }
+}
 func command() {
     scan_dirs = []
     scan_files = []
+    as_target_default()
+    as_target = asm.TARGET_LINUX
+    if asm.requested_target == "darwin" || asm.requested_target == "macos" || asm.requested_target == "osx" {
+        as_target = asm.TARGET_DARWIN
+    }
     i = 0
     while i < std.len(os.argv())  {
-        match os.argv()[i] {
+        arg = os.argv()[i]
+        if std.len(arg) > 9 {
+            pref_ok = true
+            pref = "--target="
+            j = 0
+            while j < 9 {
+                if arg[j] != pref[j] {
+                    pref_ok = false
+                    break
+                }
+                j += 1
+            }
+            if pref_ok {
+                tpos = 9
+                as_target = parse_as_target(string.sub(arg, tpos))
+                i += 1
+                continue
+            }
+        }
+        match arg {
             "-p" : {
-                scan_dirs[] = os.argv()[i+1]    # asm dir
+                scan_dirs[] = os.argv()[i+1]
                 i += 2
             }
             "-d" : {
-                asm.trace = true                # debug mode
+                asm.trace = true
                 i += 1
             }
+            "-c" : {
+                i += 1
+            }
+            "--target" : {
+                as_target = parse_as_target(os.argv()[i+1])
+                i += 2
+            }
             _ : {
-                scan_files[] = os.argv()[i]   # link object
+                scan_files[] = os.argv()[i]
                 i += 1
             }
         }
