@@ -234,7 +234,13 @@ Instruct::genTwoInst()
                         return true
                     }
                     if(this.is_rel){
-                        opcode = 0x8b
+                        // RIP-relative: label(%rip),%reg loads with 0x8b;
+                        // %reg,label(%rip) stores with 0x89. Unconditional 0x8b
+                        // turned every RIP-relative store into a load.
+                        if(this.left == ast.TY_IMMED)
+                            opcode = 0x8b
+                        else
+                            opcode = 0x89
                         len    = 4
                         exchar = 0x05 + 0x08 * this.modrm.reg
                     }else{

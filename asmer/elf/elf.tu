@@ -163,7 +163,10 @@ ElfFile::addRel(seg<string.String>,addr<i32>,name<string.String>,type<i32>)
 	if name.empty() == string.True {
 		utils.error("add empty rel")
 	}
-	rel<RelInfo> = new RelInfo(seg,addr,name,type)
+	// Snapshot names: scanner.curlex is reused on the next scan().
+	seg2<string.String> = seg.dup()
+	name2<string.String> = name.dup()
+	rel<RelInfo> = new RelInfo(seg2,addr,name2,type)
 	this.relTab.push(rel)
 	return rel
 }
