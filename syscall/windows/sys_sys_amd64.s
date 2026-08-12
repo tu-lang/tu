@@ -25,76 +25,14 @@ wwe_fail:
 	mov $-38, %rax
 	ret
 
-# edi = positive WSA error ? rax = Linux -errno
+# edi = positive WSA error; rax = Linux -errno
+# Thin trampoline: Tu stack ABI ? push arg, then call runtime_win_wsa_errno_neg.
+.globl win_wsa_errno_neg
 win_wsa_errno_neg:
-	cmp $10035, %edi
-	jne wse_36
-	mov $-11, %rax
-	ret
-wse_36:
-	cmp $10036, %edi
-	jne wse_37
-	mov $-115, %rax
-	ret
-wse_37:
-	cmp $10037, %edi
-	jne wse_48
-	mov $-114, %rax
-	ret
-wse_48:
-	cmp $10048, %edi
-	jne wse_54
-	mov $-98, %rax
-	ret
-wse_54:
-	cmp $10054, %edi
-	jne wse_53
-	mov $-104, %rax
-	ret
-wse_53:
-	cmp $10053, %edi
-	jne wse_61
-	mov $-103, %rax
-	ret
-wse_61:
-	cmp $10061, %edi
-	jne wse_60
-	mov $-111, %rax
-	ret
-wse_60:
-	cmp $10060, %edi
-	jne wse_22
-	mov $-110, %rax
-	ret
-wse_22:
-	cmp $10022, %edi
-	jne wse_14
-	mov $-22, %rax
-	ret
-wse_14:
-	cmp $10014, %edi
-	jne wse_24
-	mov $-14, %rax
-	ret
-wse_24:
-	cmp $10024, %edi
-	jne wse_40
-	mov $-24, %rax
-	ret
-wse_40:
-	cmp $10040, %edi
-	jne wse_58
-	mov $-90, %rax
-	ret
-wse_58:
-	cmp $10058, %edi
-	jne wse_def
-	mov $-108, %rax
-	ret
-wse_def:
-	mov %edi, %ecx
-	xor %eax, %eax
-	sub %rcx, %rax
+	movsxd %edi, %rax
+	push %rax
+	call runtime_win_wsa_errno_neg
+	add $8, %rsp
 	ret
 
 win_wsa_fail:

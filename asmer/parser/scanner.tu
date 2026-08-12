@@ -233,6 +233,16 @@ Scanner::parseKeyword(c<i8>)
     if std.exist(lex,labels) {
        return this.token(labels[lex],lexeme) 
     }
+    // RFC-107: unknown %reg must hard-fail (never become KW_LABEL / undef COFF)
+    if lexeme.inner[0] == '%' {
+        utils.errorf(
+            "AsmError: unknown register '%s' line:%d column:%d file:%s\n(asmer fail-fast: do not emit undef COFF symbols for bad %%regs)\n",
+            lexeme.dyn(),
+            int(this.line),
+            int(this.column),
+            this.filepath.dyn()
+        )
+    }
     return this.token(ast.KW_LABEL, lexeme)
 }
 Scanner::_scan() {

@@ -284,6 +284,7 @@ Instruct::genTwoInst()
                             if(_c < I32_MIN){
                                 len = 8
                                 opcode = 0xb8 + this.modrm.reg
+                                exchar = 0
                             }
                         }else if this.inst.imm > I32_MAX {
                             len = 8
