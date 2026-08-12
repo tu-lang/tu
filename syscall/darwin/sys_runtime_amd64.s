@@ -206,27 +206,26 @@ runtime_clone_out:
 	ret
 
 # pthread start: call Tu fn(arg) with stack ABI, then zero clear_tid + ulock wake.
-# SysV: at thread entry rsp≡8 (mod 16). After push rbp/rbx/r15 → rsp≡0.
-# Tu stack-arg call needs push arg then call with rsp≡0 before call — pad 8 first.
+# SysV: at thread entry rsp≡8 (mod 16). Keep ctid* in stack slot — Tu clobbers r15.
 .globl runtime_pthread_start
 runtime_pthread_start:
 	push %rbp
 	mov %rsp, %rbp
 	push %rbx
-	push %r15
+	push %r12
+	sub $16, %rsp
 	mov %rdi, %rbx
-	mov 16(%rbx), %r15
-	mov 0(%rbx), %rax
+	mov 16(%rbx), %rax
+	mov %rax, -24(%rbp)
+	mov 0(%rbx), %r12
 	mov 8(%rbx), %rdi
 	sub $8, %rsp
 	push %rdi
-	call *%rax
-	add $16, %rsp
-	# clear_tid = 0 (u32)
+	call *%r12
+	add $8, %rsp
+	mov -24(%rbp), %rdi
 	xor %eax, %eax
-	mov %eax, (%r15)
-	# runtime_futex(addr, FUTEX_WAKE=1, ...) — rsp≡0 here, OK for call
-	mov %r15, %rdi
+	mov %eax, (%rdi)
 	mov $1, %esi
 	xor %edx, %edx
 	xor %ecx, %ecx
@@ -235,8 +234,7 @@ runtime_pthread_start:
 	call runtime_futex
 	xor %edi, %edi
 	call _pthread_exit
-	pop %r15
-	pop %rbx
+	mov %rbp, %rsp
 	pop %rbp
 	ret
 

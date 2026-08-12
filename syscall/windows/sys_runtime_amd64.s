@@ -175,25 +175,29 @@ cl_out:
 	pop %rbp
 	ret
 
+# CreateThread entry (Win64): rcx = pack{fn,arg,ctid*}.
+# Tu codegen clobbers caller-saved and often r12 — keep ctid* in [rbp-24].
+# Before call rsp must be 16-byte aligned (≡0); Tu callee pops the stack arg.
 .globl win_thread_start
 win_thread_start:
 	push %rbp
 	mov %rsp, %rbp
 	push %rbx
-	push %r12
-	and $-16, %rsp
+	push %r13
 	sub $16, %rsp
 	mov %rcx, %rbx
-	mov 16(%rbx), %r12
-	mov 0(%rbx), %rax
+	mov 16(%rbx), %rax
+	mov %rax, -24(%rbp)
+	mov 0(%rbx), %r13
 	mov 8(%rbx), %rdi
+	# rsp at rbp-32 ≡0; need ≡8 before push so push→≡0.
 	sub $8, %rsp
 	push %rdi
-	call *%rax
-	add $16, %rsp
+	call *%r13
+	add $8, %rsp
+	mov -24(%rbp), %rdi
 	xor %eax, %eax
-	mov %eax, (%r12)
-	mov %r12, %rdi
+	mov %eax, (%rdi)
 	mov $1, %esi
 	xor %edx, %edx
 	xor %ecx, %ecx
@@ -202,8 +206,7 @@ win_thread_start:
 	call runtime_futex
 	xor %ecx, %ecx
 	call ExitThread
-	pop %r12
-	pop %rbx
+	mov %rbp, %rsp
 	pop %rbp
 	ret
 
@@ -229,6 +232,8 @@ runtime_osyield_sys:
 
 .globl runtime_futex
 runtime_futex:
+	# SysV: rdi=addr rsi=op rdx=val rcx=TimeSpec* (null=infinite)
+	# WAIT/WAKE via WaitOnAddress / WakeByAddressAll (synchronization.lib).
 	mov %rsi, %rax
 	and $0x7f, %rax
 	cmp $0, %rax
@@ -242,30 +247,39 @@ fx_wait:
 	mov %rsp, %rbp
 	push %r12
 	push %r13
+	push %r14
 	and $-16, %rsp
 	sub $48, %rsp
 	mov %rdi, %r12
 	mov %rdx, %r13
-	mov $0xFFFFFFFF, %r9
+	# Default: INFINITE
+	mov $0xFFFFFFFF, %r14
 	cmp $0, %rcx
 	je fx_do
-	mov 0(%rcx), %eax
-	movsxd %eax, %rax
+	# ms = tv_sec*1000 + tv_nsec/1000000 (match Darwin ulock us conversion)
+	mov 0(%rcx), %rax
 	mov $1000, %r8
 	imul %r8, %rax
-	cmp $0, %rax
-	jne fx_ms
-	mov $1, %rax
-fx_ms:
-	mov %rax, %r9
+	mov %rax, %r14
+	mov 8(%rcx), %rax
+	xor %rdx, %rdx
+	mov $1000000, %r8
+	div %r8
+	add %rax, %r14
+	cmp $0, %r14
+	jne fx_do
+	mov $1, %r14
 fx_do:
+	# compare value on stack past shadow; WaitOnAddress(addr, &cmp, 4, ms)
 	mov %r13, 32(%rsp)
 	mov %r12, %rcx
 	lea 32(%rsp), %rdx
 	mov $4, %r8
+	mov %r14, %r9
 	call WaitOnAddress
 	xor %eax, %eax
-	lea -16(%rbp), %rsp
+	lea -24(%rbp), %rsp
+	pop %r14
 	pop %r13
 	pop %r12
 	pop %rbp
