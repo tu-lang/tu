@@ -1144,12 +1144,15 @@ sew_pack:
 	shl $4, %rdx
 	lea 64(%rsp), %r9
 	add %rdx, %r9
-	movzbl 10(%r9), %eax
+	# WSAPOLLFD.revents is a 16-bit SHORT at +10. POLLIN=0x0100 lives in the
+	# high byte ? reading only the low byte drops all readable events (UDP hang).
+	movzwl 10(%r9), %eax
 	cmp $0, %eax
 	je sew_pn
 	xor %edi, %edi
 	mov %eax, %edx
-	and $0x100, %edx
+	# POLLIN = POLLRDNORM|POLLRDBAND (0x0100|0x0200)
+	and $0x300, %edx
 	cmp $0, %edx
 	je sew_pq
 	add $0x1, %edi
