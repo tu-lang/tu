@@ -119,7 +119,14 @@ Parser::parseLex()
             ast.KW_BALIGN | ast.KW_P2ALIGN: this.parseBalign()
             ast.KW_LABEL : this.parseLabel()
             ast.TK_EOF:    break
-            _:  this.check(False,"lex unkown instruct")
+            _: {
+                // gas compat: mnemonic names can be labels (e.g. test:) when followed by ':'
+                if this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_CDQ && this.scanner.peek_is_colon() {
+                    this.parseLabel()
+                }else{
+                    this.check(False,"lex unkown instruct")
+                }
+            }
         }
         if this.scanner.curtoken == ast.TK_EOF
             break

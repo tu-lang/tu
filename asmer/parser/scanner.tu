@@ -33,7 +33,10 @@ labels = {
     "sar": ast.KW_SAR,         "sub" : ast.KW_SUB,        
     "add" : ast.KW_ADD,        "addq" : ast.KW_ADD,      "xadd": ast.KW_XADD,
     "and" : ast.KW_AND,        "imul" : ast.KW_MUL,      "jg" : ast.KW_JG,          "jge" : ast.KW_JGE,         "jl": ast.KW_JL,
-    "jle" : ast.KW_JLE,        "jna": ast.KW_JNA,        "dec" : ast.KW_DEC,
+    "jle" : ast.KW_JLE,        "jna": ast.KW_JNA,
+    "dec" : ast.KW_DEC,        "inc" : ast.KW_INC,       "neg" : ast.KW_NEG,
+    "test": ast.KW_TEST,       "testq": ast.KW_TEST,     "testl": ast.KW_TEST,
+    "cmpl": ast.KW_CMP,
 
     "callq": ast.KW_CALL,        "call": ast.KW_CALL,       "sete": ast.KW_SETE,       "setl": ast.KW_SETL,      "setle": ast.KW_SETLE,    
     "setge": ast.KW_SETGE,       "setbe": ast.KW_SETBE,     "setg": ast.KW_SETG,       "setne": ast.KW_SETNE,    "setb": ast.KW_SETB,
@@ -69,6 +72,8 @@ labels = {
     "%rdx": ast.KW_RDX,      "%rdi": ast.KW_RDI,     "%rsi": ast.KW_RSI,
     "%r8": ast.KW_R8,        "%r9": ast.KW_R9,       "%r10": ast.KW_R10,
     "%r11": ast.KW_R11,      "%r12": ast.KW_R12,     "%r13": ast.KW_R13,    "%r14": ast.KW_R14, "%r15": ast.KW_R15,
+    "%r8d": ast.KW_R8D,      "%r9d": ast.KW_R9D,     "%r10d": ast.KW_R10D,  "%r11d": ast.KW_R11D,
+    "%r12d": ast.KW_R12D,    "%r13d": ast.KW_R13D,   "%r14d": ast.KW_R14D,  "%r15d": ast.KW_R15D,
     "%xmm0": ast.KW_XMM0,    "%xmm1": ast.KW_XMM1,   "%xmm2": ast.KW_XMM2,  "%xmm3": ast.KW_XMM3,
     "%xmm4": ast.KW_XMM4,    "%xmm5": ast.KW_XMM5,   "%xmm6": ast.KW_XMM6,  "%xmm7": ast.KW_XMM7,
     "%xmm8": ast.KW_XMM8,    "%xmm9": ast.KW_XMM9,   "%xmm10": ast.KW_XMM10,  "%xmm11": ast.KW_XMM11,
@@ -130,6 +135,21 @@ Scanner::peek() {
         return EOF
     }
     return this.buffer[this.pos]
+}
+// True if next non-space char is ':' (mnemonic used as label, e.g. test:)
+Scanner::peek_is_colon() i32 {
+    p<i32> = this.pos
+    while p < this.buffersize {
+        c<i8> = this.buffer[p]
+        if c == ' ' || c == '\t' || c == '\r' {
+            p += 1
+            continue
+        }
+        if c == '#' return False
+        if c == ':' return True
+        return False
+    }
+    return False
 }
 Scanner::token(tk<i32>,lex<string.String>){
     this.curlex = lex

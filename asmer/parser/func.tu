@@ -14,7 +14,7 @@ Parser::parseFunction(labelname<string.String>) {
 
         token<i32> = this.scanner.curtoken
 
-        if( token >= ast.KW_MOV && token <= ast.KW_LEA )
+        if( token >= ast.KW_MOV && token <= ast.KW_TEST )
             inst  = this.parseTwoInstruct()
         else if( token >= ast.KW_CALL && token <= ast.KW_POP )
             inst  = this.parseOneInstruct()
@@ -35,7 +35,9 @@ LPARSE_LOC:
             goto LPARSE_LOC  
         }
 
-        if(this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_CDQ){} else{
+        // Stop before a mnemonic-as-label (gas: test:)
+        if this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_CDQ && !this.scanner.peek_is_colon() {
+        }else{
             break
         }
     }

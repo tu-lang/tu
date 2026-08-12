@@ -23,6 +23,8 @@ Parser::regoffset(){
     }
     if(ty >= ast.KW_R8 && ty <= ast.KW_R15)
         return ty - ast.KW_R8
+    if(ty >= ast.KW_R8D && ty <= ast.KW_R15D)
+        return ty - ast.KW_R8D
     utils.errorf("regoffset invalid :%d",int(ty))
 }
 Parser::parseInstruct(inst<instruct.Instruct>) {
@@ -32,6 +34,9 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
 
     inst.str.cat(this.scanner.curlex) 
     tk<i32> = this.scanner.scan()
+    // gas compat: jmp test / call push — operand may share a mnemonic name
+    if tk >= ast.KW_MOV && tk <= ast.KW_CDQ
+        tk = ast.KW_LABEL
     match tk {
         ast.TK_IMME:{
             number<u64>   = 0
@@ -220,7 +225,8 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
             this.check(
                 (this.scanner.curtoken >= ast.KW_RAX && this.scanner.curtoken <= ast.KW_RIP) ||
                 (this.scanner.curtoken >= ast.KW_AL && this.scanner.curtoken <= ast.KW_BH) ||
-                (this.scanner.curtoken >= ast.KW_EAX && this.scanner.curtoken <= ast.KW_EDI),
+                (this.scanner.curtoken >= ast.KW_EAX && this.scanner.curtoken <= ast.KW_EDI) ||
+                (this.scanner.curtoken >= ast.KW_R8D && this.scanner.curtoken <= ast.KW_R15D),
                 "should be any register in default"
             )
             inst.tks.push(this.scanner.curtoken)
@@ -269,7 +275,7 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
     }
 }
 Parser::parseTwoInstruct() {
-    this.check(this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_LEA ,"should be in [mov-lea] register")
+    this.check(this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_TEST ,"should be in [mov-test] register")
     inst<instruct.Instruct> = new instruct.Instruct(this.scanner.curtoken,this)
     inst.left      = this.parseInstruct(inst)
     this.check(this.scanner.curtoken == ast.TK_COMMA,"should be ,in two inst")
