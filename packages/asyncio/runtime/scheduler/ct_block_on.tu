@@ -61,11 +61,17 @@ fn block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
     return err, val
 }
 
+// Bounded park slice when the CT loop is idle. Foreign-thread schedule
+// (spawn_blocking wake, inject push) relies on IoHandle eventfd; if that
+// edge is missed, periodic timeout still re-scans inject/local queues.
+CT_PARK_SLICE_MS<u64> = 50
+
 fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     if shared.driver != 0 && shared.driver_handle != 0 {
         drv<rt.Driver> = shared.driver
         h<rt.DriverHandle> = shared.driver_handle
-        drv.park(h)
+        slice<sys.Duration> = sys.Duration::from_millis(CT_PARK_SLICE_MS)
+        drv.park_timeout(h, slice)
         return
     }
     // Fallback: IO-only park when aggregate driver was not wired.

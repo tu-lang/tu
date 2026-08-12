@@ -12,8 +12,8 @@ set COPEFF=%PREFIX%\lib\copeff
 echo [install-windows] prefix=%PREFIX%
 if exist "%COPKG%" rmdir /s /q "%COPKG%"
 mkdir "%COPKG%"
-mkdir "%COASM%"
-mkdir "%COPEFF%"
+if not exist "%COASM%" mkdir "%COASM%"
+if not exist "%COPEFF%" mkdir "%COPEFF%"
 
 xcopy /e /i /y "%ROOT%runtime" "%COPKG%\runtime" >nul
 xcopy /e /i /y "%ROOT%library\*" "%COPKG%\" >nul

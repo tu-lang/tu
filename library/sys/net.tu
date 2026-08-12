@@ -427,15 +427,25 @@ mem UdpSocket {
     Socket* socket_hub
 }
 
+// Sockaddr pointer + wire length for UDP bind/sendto (cross-pkg safe).
+// Return crepr_as_ptr_raw directly — assigning it to a local via
+// `p = crepr_as_ptr_raw(bits)` mis-stores under current codegen.
+fn udp_dest_sockaddr(dst<net.SocketAddr>) u64, i32 {
+    repr_bits<u64>, junk_len<u32> = net.socket_addr_into_inner_bits(dst)
+    dl<i32> = SOCKADDR_IN_LEN
+    if net.socket_addr_is_v4(dst) == 0 {
+        dl = SOCKADDR_IN6_LEN
+    }
+    return socket_addr_crepr_as_ptr_raw(repr_bits), dl
+}
+
 UdpSocket::bind(ret<i32> , addr<net.SocketAddr>) i32, UdpSocket {
     if ret != Ok return ret, null
 
     ret,sock<Socket> = Socket::new(addr, SOCK_DGRAM)
     if ret != Ok return ret, null
 
-    addr_repr<SocketAddrCRepr>, len<i32> = net.socket_addr_into_inner(addr)
-    // Mother: sockaddr pointer is crepr.as_ptr(), not the wrapper object itself.
-    addr_bits<u64> = addr_repr.as_ptr()
+    addr_bits<u64>, len<i32> = udp_dest_sockaddr(addr)
     ret = cvt(bind(sock.as_raw(), addr_bits, len))
     if ret != Ok return ret, null
 
@@ -456,9 +466,7 @@ UdpSocket::recv_from(buf<io.Buf>) i32, u64, net.SocketAddr {
 UdpSocket::send_to(buf<io.Buf> , dst<net.SocketAddr>) i32, u64 {
     // Mother: min(buf.len(), wrlen_t::MAX); wrlen_t = size_t → just buf.len().
     len<u64> = buf.len()
-    dst_repr<SocketAddrCRepr>, dstlen<i32> = net.socket_addr_into_inner(dst)
-    // sendto requires sockaddr*; SocketAddrCRepr is a v4/v6 store wrapper.
-    addr_bits<u64> = dst_repr.as_ptr()
+    addr_bits<u64>, dstlen<i32> = udp_dest_sockaddr(dst)
     ok<i32> , ret<u64> = cvt(
         sendto(
             this.socket_hub.as_raw(),
