@@ -93,20 +93,20 @@ UdpSendFut::poll(ctx) {
     would_block<i32> = io.WouldBlock
     ok_code<i32> = io.Ok
     loop {
-        buf<io.Buf> = io.buf_from_bits(this.buf_bits)
-        target<net.SocketAddr> = null
-        target = this.target_bits
-        // Optimistic send: UDP is usually writable after bind. Waiting only
-        // for an EPOLLET POLLOUT edge can park forever on Windows soft-epoll.
-        e<i32>, n<u64> = this.sock.send_to(buf, target)
-        if e != would_block {
-            this.byte_count = n.(i64)
-            return ready, e, n.(i64)
-        }
         werr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_write_ready(ctx.(u64))
         if werr == pend return pend
         if werr != 0 return ready, werr, 0.(i64)
-        this.poll_ev.clear_readiness(ev)
+
+        buf<io.Buf> = io.buf_from_bits(this.buf_bits)
+        target<net.SocketAddr> = null
+        target = this.target_bits
+        e<i32>, n<u64> = this.sock.send_to(buf, target)
+        if e == would_block {
+            this.poll_ev.clear_readiness(ev)
+            continue
+        }
+        this.byte_count = n.(i64)
+        return ready, e, n.(i64)
     }
     return ready, ok_code, 0.(i64)
 }
@@ -126,18 +126,19 @@ UdpRecvFut::poll(ctx) {
     would_block<i32> = io.WouldBlock
     ok_code<i32> = io.Ok
     loop {
-        // Optimistic recv first (level-trigger soft-epoll may miss edges).
-        buf<io.Buf> = io.buf_from_bits(this.buf_bits)
-        e<i32>, n<u64>, addr<net.SocketAddr> = this.sock.recv_from(buf)
-        if e != would_block {
-            this.peer = addr
-            this.byte_count = n.(i64)
-            return ready, e, n.(i64), addr
-        }
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx.(u64))
         if rerr == pend return pend
         if rerr != 0 return ready, rerr, 0.(i64), null
-        this.poll_ev.clear_readiness(ev)
+
+        buf<io.Buf> = io.buf_from_bits(this.buf_bits)
+        e<i32>, n<u64>, addr<net.SocketAddr> = this.sock.recv_from(buf)
+        if e == would_block {
+            this.poll_ev.clear_readiness(ev)
+            continue
+        }
+        this.peer = addr
+        this.byte_count = n.(i64)
+        return ready, e, n.(i64), addr
     }
     return ready, ok_code, 0.(i64), null
 }

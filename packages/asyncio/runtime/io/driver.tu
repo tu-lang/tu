@@ -328,10 +328,7 @@ IoDriver::turn(handle<IoHandle>, max_wait<sys.Duration>) i32 {
 
         token<u64> = ev.token()
         if token == TOKEN_WAKEUP {
-            wk<netio.Waker> = netio.waker_from_bits(handle.waker_slot)
-            if wk != null && wk.inner != null {
-                wk.inner.reset()
-            }
+            netio.waker_reset(netio.waker_from_bits(handle.waker_slot))
             continue
         }
         // Padded Event (u32+u64) makes epoll_ctl store TOKEN_SIGNAL as 1<<32;

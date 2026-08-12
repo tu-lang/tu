@@ -33,3 +33,16 @@ fn waker_wake(w<Waker>) i32 {
 Waker::wake() i32 {
 	return this.inner.wake()
 }
+
+// Drain the eventfd counter after TOKEN_WAKEUP. Needed so the next park
+// can see a fresh 0→1 edge (EPOLLET) and so level-triggered backends
+// do not spin on a still-readable wakeup fd.
+Waker::reset() i32 {
+	if this == null return 0
+	return this.inner.reset()
+}
+
+fn waker_reset(w<Waker>) i32 {
+	if w == null return 0
+	return w.reset()
+}
