@@ -181,5 +181,84 @@ fn main(){
         os.die("sockaddr_to_addr_raw null addr")
     }
 
+    // Loopback TCP: bind/listen/connect/accept/send/recv.
+    lfd<i32> = sys.socket(2, 1, 0)
+    if lfd < 0 {
+        os.dief("tcp listen socket %d", lfd)
+    }
+    one<i32> = 1
+    onep<i32*> = &one
+    one_bits<u64> = onep.(u64)
+    olen<i32> = 4
+    sys.setsockopt(lfd, 1, 2, one_bits, olen)
+    sa_bits<u64> = runtime.malloc(16, 0.(i8), 1.(i8))
+    sap<u8*> = sa_bits
+    i = 0
+    while i < 16 {
+        sap[i] = 0
+        i += 1
+    }
+    sap[0] = 2
+    sap[1] = 0
+    // port 0 — kernel assigns
+    sap[4] = 127
+    sap[5] = 0
+    sap[6] = 0
+    sap[7] = 1
+    br<i32> = sys.bind(lfd, sa_bits, 16)
+    if br != 0 {
+        os.dief("tcp bind %d", br)
+    }
+    lr<i32> = sys.listen(lfd, 1)
+    if lr != 0 {
+        os.dief("tcp listen %d", lr)
+    }
+    // Read assigned port via getsockname is not wrapped; use fixed high port.
+    // Re-bind on an explicit port for the client connect.
+    sys.close(lfd)
+    lfd = sys.socket(2, 1, 0)
+    if lfd < 0 {
+        os.dief("tcp listen socket2 %d", lfd)
+    }
+    sys.setsockopt(lfd, 1, 2, one_bits, olen)
+    // htons(34568) = 0x8708
+    sap[2] = 0x87
+    sap[3] = 0x08
+    br = sys.bind(lfd, sa_bits, 16)
+    if br != 0 {
+        os.dief("tcp bind2 %d", br)
+    }
+    lr = sys.listen(lfd, 1)
+    if lr != 0 {
+        os.dief("tcp listen2 %d", lr)
+    }
+    cfd<i32> = sys.socket(2, 1, 0)
+    if cfd < 0 {
+        os.dief("tcp client socket %d", cfd)
+    }
+    cr<i32> = sys.connect(cfd, sa_bits, 16)
+    if cr != 0 && cr != -115 && cr != -11 {
+        os.dief("tcp connect %d", cr)
+    }
+    alen<i32> = 16
+    afd<i32> = sys.accept4(lfd, sa_bits, &alen, 0)
+    if afd < 0 {
+        os.dief("tcp accept4 %d", afd)
+    }
+    msg2_s<string.String> = string.S(*"ping")
+    w2<u8*> = string.cstr(msg2_s)
+    wn<i64> = sys.send(cfd, w2, 4, 0)
+    if wn != 4 {
+        os.dief("tcp send %d", wn)
+    }
+    rbuf_bits<u64> = runtime.malloc(8, 0.(i8), 1.(i8))
+    rn2<i64> = sys.recv(afd, rbuf_bits, 8, 0)
+    if rn2 != 4 {
+        os.dief("tcp recv %d", rn2)
+    }
+    sys.close(afd)
+    sys.close(cfd)
+    sys.close(lfd)
+
     fmt.println("test sys fs path success")
 }
