@@ -107,6 +107,39 @@ Instruct::insthead(){
         this.append1(0x66.(i8))
         return  true
     }
+    // %r8d-%r15d: 32-bit extended regs — REX.B/R only, never REX.W
+    if this.tks.used >= 2 && (ast.r4ishigh(this.tks.addr[0]) || ast.r4ishigh(this.tks.addr[1])) {
+        if ast.r4ishigh(this.tks.addr[0]) && ast.r4ishigh(this.tks.addr[1]) {
+            this.append1(0x45.(i8))
+            return true
+        }
+        // AT&T mov %eax,%r8d → opcode 89: extend rm with REX.B
+        if ast.r4ishigh(this.tks.addr[1]) && ast.isr4(this.tks.addr[0]) && !ast.r4ishigh(this.tks.addr[0]) {
+            this.append1(0x41.(i8))
+            return true
+        }
+        // mov %r8d,%eax → extend reg/src with REX.R
+        if ast.r4ishigh(this.tks.addr[0]) && ast.isr4(this.tks.addr[1]) && !ast.r4ishigh(this.tks.addr[1]) {
+            this.append1(0x44.(i8))
+            return true
+        }
+        if ast.r4ishigh(this.tks.addr[0]) && ast.r8islow(this.tks.addr[1]) {
+            this.append1(0x44.(i8))
+            return true
+        }
+        if ast.r8islow(this.tks.addr[0]) && ast.r4ishigh(this.tks.addr[1]) {
+            this.append1(0x41.(i8))
+            return true
+        }
+        if ast.r4ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1]) {
+            this.append1(0x4d.(i8))
+            return true
+        }
+        if ast.r8ishigh(this.tks.addr[0]) && ast.r4ishigh(this.tks.addr[1]) {
+            this.append1(0x45.(i8))
+            return true
+        }
+    }
     if ast.r8ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1]){
         this.append1(0x4d.(i8))
         return true
@@ -306,6 +339,18 @@ Instruct::genTwoInst()
                         len = 4
                     }
                     exchar = 0xe0
+                    exchar += this.modrm.reg
+                }
+                // TEST imm: F7 /0 (64/32) or F6 /0 (8)
+                ast.KW_TEST: {
+                    if ast.isr1(this.tks.addr[1]) {
+                        opcode = 0xf6
+                        len = 1
+                    }else{
+                        opcode = 0xf7
+                        len = 4
+                    }
+                    exchar = 0xc0
                     exchar += this.modrm.reg
                 }
                 ast.KW_SUB:{

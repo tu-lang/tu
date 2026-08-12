@@ -31,6 +31,7 @@ enum {
     KW_SUBSD,   KW_SUBSS,   KW_MULSD,     KW_MULSS,
     KW_DIVSD,   KW_DIVSS,   KW_UNPCKLPS,  KW_XORPS,           KW_XORPD,
     KW_LEA,
+    KW_TEST, // last 2-op; append-only so opcode2 index stays stable
     // need 1 op
     KW_CALL,    KW_SETZ,    KW_SETE,    KW_SETL,    KW_SETLE,   KW_SETAE,   KW_SETGE,
     KW_SETBE,   KW_SETA,    KW_SETG,    KW_SETNZ,   KW_SETNE,   KW_SETP,    KW_SETNP,   KW_SETB,    KW_INT,
@@ -50,7 +51,9 @@ enum {
 
     KW_RAX,  KW_RCX,  KW_RDX,   KW_RBX,   KW_RSP,
     KW_RBP,  KW_RSI,  KW_RDI,   KW_R8,    KW_R9,
-    KW_R10,  KW_R11,  KW_R12,   KW_R13,   KW_R14,   KW_R15, 
+    KW_R10,  KW_R11,  KW_R12,   KW_R13,   KW_R14,   KW_R15,
+    // 32-bit forms of r8-r15 (REX.B/R, no REX.W)
+    KW_R8D, KW_R9D, KW_R10D, KW_R11D, KW_R12D, KW_R13D, KW_R14D, KW_R15D,
     KW_XMM0, KW_XMM1, KW_XMM2,  KW_XMM3,  KW_XMM4,  KW_XMM5,  KW_XMM6,  KW_XMM7, 
     KW_XMM8, KW_XMM9, KW_XMM10, KW_XMM11, KW_XMM12, KW_XMM13, KW_XMM14, KW_XMM15, 
     KW_FS,KW_RIP,

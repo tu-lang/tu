@@ -17,6 +17,11 @@ Instruct::instheads(){
             this.append1(0x41.(i8))
         return true
     }
+    // %r8d-%r15d: unary needs REX.B only, not REX.W
+    if(ast.r4ishigh(this.tks.addr[0])){
+        this.append1(0x41.(i8))
+        return true
+    }
     if(ast.r8ishigh(this.tks.addr[0])){
         if(this.type == ast.KW_POP) {
             this.append1(0x41.(i8))
@@ -192,7 +197,33 @@ Instruct::genOneInst() {
         }
     }else if(this.type == ast.KW_INC || this.type == ast.KW_DEC || this.type == ast.KW_NEG )
     {
-        this.check(False,"unsupport instruct in inc dec neg div")
+        // FF /0 = INC, FF /1 = DEC, F7 /3 = NEG (64-bit REX.W from instheads)
+        reg_op<i32> = 0
+        if(this.type == ast.KW_INC) reg_op = 0
+        else if(this.type == ast.KW_DEC) reg_op = 1
+        else reg_op = 3
+
+        if(this.type == ast.KW_NEG){
+            opcode = 0xf7
+            this.append1(opcode)
+        }else{
+            opcode = 0xff
+            this.append1(opcode)
+        }
+        if(this.left == ast.TY_MEM){
+            this.modrm.reg = reg_op
+            this.writeModRM()
+            if(this.modrm.rm == 4)
+                this.writeSIB()
+            if(this.inst.dispLen)
+                this.append(this.inst.disp,this.inst.dispLen)
+        }else{
+            // Mod=11, reg=reg_op, rm=register (same shape as NOT: 0xc0 + ...)
+            exchar = 0xc0
+            exchar += reg_op * 8
+            exchar += this.modrm.reg
+            this.append1(exchar)
+        }
     }else if(this.type == ast.KW_POP)
     {
         if(this.left == ast.TY_MEM){

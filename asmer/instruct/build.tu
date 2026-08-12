@@ -20,7 +20,7 @@ Instruct::gen(){
     if this == null 
         utils.errorf("Instruct::gen this is null %d",int(this))
     token<i32> = this.type
-    if( token >= ast.KW_MOV && token <= ast.KW_LEA )
+    if( token >= ast.KW_MOV && token <= ast.KW_TEST )
         this.genTwoInst()
     else if( token >= ast.KW_CALL && token <= ast.KW_POP )
         this.genOneInst()

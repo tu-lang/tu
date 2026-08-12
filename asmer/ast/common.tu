@@ -17,12 +17,18 @@ func r8ishigh(tk<i32>){
     if tk >= KW_XMM8 && tk <= KW_XMM15 return true
     return false
 }
+// 32-bit forms of r8-r15; need REX.B/R but not REX.W
+func r4ishigh(tk<i32>){
+    if tk >= KW_R8D && tk <= KW_R15D return true
+    return false
+}
 func isr8(tk<i32>){
     if(r8ishigh(tk) || r8islow(tk)) return true 
     return false
 }
 func isr4(tk<i32>){
     if(tk >= KW_EAX && tk <= KW_EDI) return true
+    if r4ishigh(tk) return true
     return false
 }
 fn isfreg(tk<i32>){
@@ -74,6 +80,9 @@ func reglen(tk<i32>){
     else if(tk >= KW_EAX && tk <= KW_EDI){
         return 4.(i8)
     }
+    else if r4ishigh(tk){
+        return 4.(i8)
+    }
     else if(tk >= KW_RAX && tk <= KW_R15){
         return 8.(i8)
     }else if tk >= KW_XMM0 && tk <= KW_XMM15 {
@@ -91,6 +100,7 @@ func tk_to_string(tk<i32>){
         KW_ADD:    return "add"
         KW_MUL:    return "mul"
         KW_LEA:    return "lea"
+        KW_TEST:   return "test"
         KW_CALL:   return "call"
         KW_INT:    return "int"
         KW_DIV:    return "div"
