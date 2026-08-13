@@ -2,22 +2,30 @@
 setlocal EnableExtensions
 rem Install copkg + coasm-windows next to MSVC tuc (build-win/lib).
 set ROOT=%~dp0
-set PREFIX=%TU_PREFIX%
+rem Trim trailing spaces from TU_PREFIX (cmd "set X=path &&" leaves a space).
+for /f "tokens=* delims= " %%A in ("%TU_PREFIX%") do set PREFIX=%%A
 if "%PREFIX%"=="" set PREFIX=E:\Workspace\co\build-win
 
 set COPKG=%PREFIX%\lib\copkg
 set COASM=%PREFIX%\lib\coasm-windows
 set COPEFF=%PREFIX%\lib\copeff
+set COPEFF_SRC=%ROOT%..\co\linker\peff
+if not exist "%COPEFF_SRC%\stub_entry.s" set COPEFF_SRC=E:\Workspace\co\linker\peff
 
 echo [install-windows] prefix=%PREFIX%
-if exist "%COPKG%" rmdir /s /q "%COPKG%"
-mkdir "%COPKG%"
+if not exist "%COPKG%" mkdir "%COPKG%"
 if not exist "%COASM%" mkdir "%COASM%"
 if not exist "%COPEFF%" mkdir "%COPEFF%"
 
-xcopy /e /i /y "%ROOT%runtime" "%COPKG%\runtime" >nul
-xcopy /e /i /y "%ROOT%library\*" "%COPKG%\" >nul
-xcopy /e /i /y "%ROOT%packages\*" "%COPKG%\" >nul
+rem Mirror in place (avoid rmdir while tests hold handles under copkg).
+rem robocopy exit 0-7 = success; mask with "|| rem" so cmd does not treat nonzero as fail.
+robocopy "%ROOT%runtime" "%COPKG%\runtime" /MIR /NFL /NDL /NJH /NJS /nc /ns /np >nul
+if errorlevel 8 echo [install-windows] robocopy runtime failed & exit /b 1
+robocopy "%ROOT%library" "%COPKG%" /E /NFL /NDL /NJH /NJS /nc /ns /np >nul
+if errorlevel 8 echo [install-windows] robocopy library failed & exit /b 1
+robocopy "%ROOT%packages" "%COPKG%" /E /NFL /NDL /NJH /NJS /nc /ns /np >nul
+if errorlevel 8 echo [install-windows] robocopy packages failed & exit /b 1
+
 del /f /q "%COPKG%\runtime\linux.tu" 2>nul
 del /f /q "%COPKG%\runtime\darwin.tu" 2>nul
 copy /y "%ROOT%platform\windows\runtime_os.tu" "%COPKG%\runtime\windows.tu" >nul
@@ -29,9 +37,13 @@ rem Drop Darwin-only kqueue sources from the Windows package tree.
 del /f /q "%COPKG%\netio\sys\kqueue.tu" 2>nul
 del /f /q "%COPKG%\netio\sys\waker_kqueue.tu" 2>nul
 copy /y "%ROOT%syscall\windows\*.s" "%COASM%\" >nul
-copy /y "%ROOT%\..\co\linker\peff\stub_entry.s" "%COPEFF%\" >nul 2>nul
-copy /y "%ROOT%\..\co\linker\peff\stub_runtime.s" "%COPEFF%\" >nul 2>nul
-if not exist "%COPEFF%\stub_entry.s" copy /y "E:\Workspace\co\linker\peff\stub_*.s" "%COPEFF%\" >nul
+copy /y "%COPEFF_SRC%\stub_entry.s" "%COPEFF%\" >nul 2>nul
+copy /y "%COPEFF_SRC%\stub_runtime.s" "%COPEFF%\" >nul 2>nul
+if not exist "%COPEFF%\stub_entry.s" copy /y "%COPEFF_SRC%\stub_*.s" "%COPEFF%\" >nul
 
+if not exist "%COPKG%\asyncio\net\udp\socket.tu" (
+  echo [install-windows] ERROR: asyncio missing after copy
+  exit /b 2
+)
 echo [install-windows] copkg + coasm-windows + copeff
 endlocal

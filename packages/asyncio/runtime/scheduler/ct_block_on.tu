@@ -9,6 +9,26 @@ use asyncio.task
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
 use asyncio.error as aerr
+use asyncio.sync as libsync
+
+// Bounded park slice for CT block_on (matches mt_park PARK_DRIVER_SLICE_MS).
+// Foreign-thread schedule (spawn_blocking complete) wakes via eventfd; if an
+// edge is lost, infinite park never sees inject tasks.
+CT_PARK_SLICE_MS<i64> = 50
+
+// Orphan READABLE on listen sockets: driver nudge when wake() finds no waiter.
+CT_NUDGE_IOH_BITS<u64> = 0
+CT_NUDGE_WOKEN_BITS<u64> = 0
+
+fn ct_empty_io_nudge() i32 {
+    if CT_NUDGE_IOH_BITS != 0 {
+        rtio.io_handle_wake_bits(CT_NUDGE_IOH_BITS)
+    }
+    if CT_NUDGE_WOKEN_BITS != 0 {
+        libsync.notify_one_raw(CT_NUDGE_WOKEN_BITS)
+    }
+    return 0
+}
 
 // Tu passes RawTask* as ctx so
 // ScheduledIo wake can RawTask::wake_by_ref without a (handle,id) lookup.
@@ -62,10 +82,11 @@ fn block_on_bits(handle_bits<u64>, fut_bits<u64>) i32, i64 {
 }
 
 fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
+    slice<sys.Duration> = sys.Duration::from_millis(CT_PARK_SLICE_MS)
     if shared.driver != 0 && shared.driver_handle != 0 {
         drv<rt.Driver> = shared.driver
         h<rt.DriverHandle> = shared.driver_handle
-        drv.park(h)
+        drv.park_timeout(h, slice)
         return
     }
     // Fallback: IO-only park when aggregate driver was not wired.
@@ -77,7 +98,7 @@ fn ct_park_driver(shared<CtShared>, core_obj<Core>) {
     }
     iodrv<rtio.IoDriver> = iod.(rtio.IoDriver)
     ih<rtio.IoHandle> = ioh.(rtio.IoHandle)
-    iodrv.turn(ih, sys.MAX)
+    iodrv.turn(ih, slice)
 }
 
 // Non-blocking driver turn (event_interval batch). Equivalent to park_timeout(0).
@@ -111,6 +132,10 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
     dlist<Defer>   = Defer::new()
     ctx_obj<CtContext> = CtContext::new(handle, core_obj, dlist)
     saved<CtSavedSlot> = ct_enter(ctx_obj)
+
+    CT_NUDGE_IOH_BITS = shared.ioh_bits
+    CT_NUDGE_WOKEN_BITS = shared.woken
+    task.install_empty_io_nudge_hook(ct_empty_io_nudge.(u64))
 
     notif_root<task.Notified> = task.notified_from_raw(root)
     core_obj.push_local(root)
@@ -184,5 +209,8 @@ fn block_on(handle<CtHandle>, fut) (i32, i64) {
     }
 
     ct_exit(saved)
+    CT_NUDGE_IOH_BITS = 0
+    CT_NUDGE_WOKEN_BITS = 0
+    task.install_empty_io_nudge_hook(0)
     return err_out, val_out
 }
