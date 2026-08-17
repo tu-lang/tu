@@ -16,6 +16,7 @@ WSAEFAULT<i32> = 10014
 WSAEMFILE<i32> = 10024
 WSAEMSGSIZE<i32> = 10040
 WSAENOTCONN<i32> = 10058
+WSAEISCONN<i32> = 10056
 
 # Map positive WSA error to Linux -errno.
 fn win_wsa_errno_neg(code<i32>) i64 {
@@ -27,6 +28,9 @@ fn win_wsa_errno_neg(code<i32>) i64 {
 	}
 	if code == WSAEALREADY {
 		return -114.(i64)
+	}
+	if code == WSAEISCONN {
+		return -106.(i64)
 	}
 	if code == WSAEADDRINUSE {
 		return -98.(i64)

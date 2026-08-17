@@ -136,6 +136,9 @@ fn win_ep_get_fd_tu(fd<i64>, ep_table<i8*>) i32 {
 	if raw == 0.(i8) {
 		return WIN_EP_NONE
 	}
+	if raw == WIN_EP_NONE_B {
+		return WIN_EP_NONE
+	}
 	ub<u8> = raw.(u8)
 	ri<i32> = ub.(i32)
 	return ri - 1

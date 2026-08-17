@@ -325,3 +325,181 @@ fn segsegv_rip(ctxt<u64>) u64 {
 
 fn segsegv_walkstack(){
 }
+
+// Parse GetCommandLineA / GetEnvironmentStringsA raw pointers into
+// argc/argv/envp vectors and delegate to args_init (entry asm calls this).
+// Command-line quoting follows the classic CRT rules: quotes toggle a
+// quoted span, n backslashes before a quote emit n/2 (odd keeps a literal
+// quote), backslashes elsewhere are literal.
+fn win_args_init(cmdline<i8*>, envblk<i8*>) {
+	if cmdline == null {
+		args_init(0.(u64), null, null)
+		return
+	}
+	n<i32> = std.strlen(cmdline)
+	n64<u64> = n + 1
+	buf<i8*> = malloc(n64, 1.(i8), 1.(i8))
+	std.memcpy(buf, cmdline, n64)
+	// Upper bound on argv entries: one per two chars, plus program + NULL.
+	vecn<u64> = (n / 2 + 3) * 8
+	vec<u64*> = malloc(vecn, 1.(i8), 1.(i8))
+	argc<i32> = 0
+	i<i32> = 0
+	w<i32> = 0
+	c<i8> = buf[i]
+	// argv[0] program path: quotes group, no backslash rules.
+	start<i32> = w
+	if c == 34 {
+		i += 1
+		loop {
+			c = buf[i]
+			if c == 0 {
+				break
+			}
+			if c == 34 {
+				i += 1
+				break
+			}
+			d0<i8*> = buf + w
+			*d0 = c
+			w += 1
+			i += 1
+		}
+	} else {
+		loop {
+			c = buf[i]
+			if c == 0 || c == 32 || c == 9 {
+				break
+			}
+			d1<i8*> = buf + w
+			*d1 = c
+			w += 1
+			i += 1
+		}
+	}
+	t0<i8*> = buf + w
+	*t0 = 0
+	w += 1
+	slot0<u64*> = vec
+	tok0<u64> = buf + start
+	*slot0 = tok0
+	argc = 1
+	// Remaining args with CRT backslash/quote rules.
+	loop {
+		loop {
+			c = buf[i]
+			if c != 32 && c != 9 {
+				break
+			}
+			i += 1
+		}
+		if buf[i] == 0 {
+			break
+		}
+		start = w
+		inq<i32> = 0
+		loop {
+			c = buf[i]
+			if c == 0 {
+				break
+			}
+			if c == 92 {
+				k<i32> = 0
+				loop {
+					if buf[i] != 92 {
+						break
+					}
+					k += 1
+					i += 1
+				}
+				h<i32> = k
+				if buf[i] == 34 {
+					h = k / 2
+				}
+				e<i32> = 0
+				while e < h {
+					d2<i8*> = buf + w
+					*d2 = 92.(i8)
+					w += 1
+					e += 1
+				}
+				if buf[i] == 34 && (k % 2) == 1 {
+					d3<i8*> = buf + w
+					*d3 = 34.(i8)
+					w += 1
+					i += 1
+				}
+				continue
+			}
+			if c == 34 {
+				if inq {
+					inq = 0
+				} else {
+					inq = 1
+				}
+				i += 1
+				continue
+			}
+			if inq == 0 && (c == 32 || c == 9) {
+				break
+			}
+			d4<i8*> = buf + w
+			*d4 = c
+			w += 1
+			i += 1
+		}
+		t1<i8*> = buf + w
+		*t1 = 0
+		w += 1
+		slot1<u64*> = vec + argc * 8
+		tok1<u64> = buf + start
+		*slot1 = tok1
+		argc += 1
+	}
+	endslot<u64*> = vec + argc * 8
+	*endslot = 0
+	// Environment block: NUL-separated entries, double NUL terminates.
+	ecnt<i32> = 0
+	j<i32> = 0
+	if envblk != null {
+		loop {
+			if envblk[j] == 0 {
+				break
+			}
+			ecnt += 1
+			loop {
+				if envblk[j] == 0 {
+					break
+				}
+				j += 1
+			}
+			j += 1
+		}
+	}
+	evn<u64> = (ecnt + 1) * 8
+	evec<u64*> = malloc(evn, 1.(i8), 1.(i8))
+	j = 0
+	ei<i32> = 0
+	if envblk != null {
+		loop {
+			if envblk[j] == 0 {
+				break
+			}
+			eslot<u64*> = evec + ei * 8
+			ep<u64> = envblk + j
+			*eslot = ep
+			ei += 1
+			loop {
+				if envblk[j] == 0 {
+					break
+				}
+				j += 1
+			}
+			j += 1
+		}
+	}
+	elast<u64*> = evec + ei * 8
+	*elast = 0
+	a64<u64> = argc
+	args_init(a64, vec, evec)
+}
