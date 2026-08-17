@@ -74,15 +74,28 @@ fn peff_is_stub_obj_name(b) {
     return false
 }
 
+// Write one rsp line. Dyn strings are runtime.Value(String) whose .data is
+// string.Str (SDS); mirror std.File::Write — not *s / .str().
 func peff_write_line(fp, s) {
-    n = std.len(s)
+    if s == null {
+        return
+    }
+    sv<runtime.Value> = s
+    if sv.type != runtime.String {
+        fmt.printf("[tul/peff] rsp line not a string\n")
+        return
+    }
+    st<string.Str> = sv.data
+    n<i32> = st.len()
     if n <= 0 {
         return
     }
-    // Must be dynamic func: *s extracts the C buffer from a dyn string.
-    // Static fn + s.str() hits object_func; static *s writes nothing.
     n64<u64> = n
-    std.write(fp, *s, n64)
+    ret<u64> = std.write(fp, sv.data, n64)
+    if ret != n64 {
+        fmt.printf("[tul/peff] rsp write short: got %d want %d\n", int(ret), int(n))
+        os.die("peff rsp write failed")
+    }
 }
 
 // Assemble stub .s with asmer peff into out_o next to outfile.
