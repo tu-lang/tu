@@ -4,6 +4,8 @@ use compiler.utils
 use compiler.ast
 use compiler.parser
 use compiler.compile
+use os
+use string
 
 class Package {
     parsers = {} // parsers map[filepath + name] = parser
@@ -47,32 +49,57 @@ Package::parse()
 
     if !std.is_dir(abpath) {
         utils.debugf("Parser: current package import not exist :%s",abpath)
-        abpath = "/usr/local/lib/copkg/" + this.path
+        pkgroot = "/usr/local/lib/copkg/"
+        for (ek, ev : os.envs()) {
+            arr = string.split(ev, "=")
+            if std.len(arr) >= 2 && arr[0] == "CO_PKG" && arr[1] != "" {
+                // Keep host separators for std.is_dir on Windows.
+                pkgroot = arr[1]
+                last = pkgroot[std.len(pkgroot) - 1]
+                if last != '/' && last != utils.char1(92.(i8)) {
+                    // Prefer /; Win32 accepts both.
+                    pkgroot = pkgroot + "/"
+                }
+                break
+            }
+        }
+        abpath = pkgroot + this.path
         if !std.is_dir(abpath) {
             utils.debugf("Parser: global pkg path not exist! :%s %s",abpath,this.path)
             return false  
         }
     }
     utils.notice("start scan the package:%s",abpath)
-    fd = std.opendir(abpath)
-    if !fd {
+    names = utils.list_dir_basenames(abpath)
+    if std.len(names) <= 0 {
         utils.error("file|dir not exist " +abpath)
     }
-    while true {
-        file = fd.readdir()
-        if !file {
-            break
+    for name : names {
+        if name == "." || name == ".." {
+            continue
         }
-        if !file.isFile() continue
-        filepath = file.path
-        if string.sub(filepath,std.len(filepath) - 3) == ".tu" {
-            p = new parser.Parser(filepath,this)
-            
-            p.fileno = compile.fileno
-            this.parsers[filepath] = p
-            utils.notice("start parse the package:%s file:%s",abpath,filepath)
-            p.parse()
+        nlen = std.len(name)
+        if nlen < 3 {
+            continue
         }
+        if string.sub(name, nlen - 3) != ".tu" {
+            continue
+        }
+        filepath = abpath
+        last = filepath[std.len(filepath) - 1]
+        bs = utils.char1(92.(i8))
+        if last != '/' && last != bs {
+            filepath = filepath + "/"
+        }
+        filepath = utils.norm_slash(filepath + name)
+        if !std.is_file(filepath) {
+            continue
+        }
+        p = new parser.Parser(filepath,this)
+        p.fileno = compile.fileno
+        this.parsers[filepath] = p
+        utils.notice("start parse the package:%s file:%s",abpath,filepath)
+        p.parse()
     }
     return true
 }

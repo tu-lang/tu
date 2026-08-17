@@ -62,7 +62,9 @@ Parser::init(filepath,pkg) {
         "parser.Parser::init() filename:%s package:%s full_package:%s"
         filepath,pkg.package,pkg.full_package
     )
-    fullname = std.pop(string.split(filepath,"/"))
+    // Windows paths may use \; normalize so basename split on "/" works.
+    fpn = utils.norm_slash(filepath)
+    fullname = std.pop(string.split(fpn,"/"))
     //this.filename = string.sub(fullname,0,std.len(fullname) - 3)
     this.filename = fullname
     this.asmfile  = this.filename + ".s"

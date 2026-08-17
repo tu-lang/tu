@@ -1,4 +1,4 @@
-// Toolchain target selection: linux (ELF) / darwin (Mach-O) / windows (reserved).
+// Toolchain target selection: linux (ELF) / darwin (Mach-O) / windows (PE).
 
 use std
 use runtime
@@ -51,12 +51,15 @@ fn target_default() i32 {
     return runtime.host_os()
 }
 
-// linux and darwin are ready; windows is reserved.
+// linux, darwin and windows object/link backends are wired.
 fn target_ready(t<i32>) i32 {
     if t == TARGET_LINUX {
         return 1
     }
     if t == TARGET_DARWIN {
+        return 1
+    }
+    if t == TARGET_WINDOWS {
         return 1
     }
     return 0

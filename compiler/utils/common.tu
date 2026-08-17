@@ -37,13 +37,24 @@ func isUpper(str)
 	return str[0] >= 'A' && str[0] <= 'Z'
 }
 
-// Parent directory; no slash → "."
+func path_is_sep(c) {
+	if c == '/' {
+		return true
+	}
+	bs = char1(92.(i8))
+	if c == bs {
+		return true
+	}
+	return false
+}
+
+// Parent directory; no slash → "." (accepts / and \).
 func path_dirname(path){
 	n = std.len(path)
 	if n == 0 return "."
 	i = n - 1
 	while i >= 0 {
-		if path[i] == '/' break
+		if path_is_sep(path[i]) break
 		i -= 1
 	}
 	if i < 0 return "."
@@ -61,7 +72,7 @@ func path_basename(path){
 	if n == 0 return path
 	i = n - 1
 	while i >= 0 {
-		if path[i] == '/' break
+		if path_is_sep(path[i]) break
 		i -= 1
 	}
 	if i < 0 return path
@@ -72,16 +83,13 @@ func path_join(d,f){
 		return f
 	dlen = std.len(d)
 	last = d[dlen - 1]
-	if last == '/'
+	if path_is_sep(last)
 		return d + f
 	return d + "/" + f
 }
 
 func make_tu_build_dir(stem){
-	tmp = "/tmp"
-	if std.exist("TMPDIR",envs) && envs["TMPDIR"] != "" {
-		tmp = envs["TMPDIR"]
-	}
+	tmp = host_tmpdir()
 	safe = ""
 	i = 0
 	slen = std.len(stem)
@@ -106,7 +114,6 @@ func make_tu_build_dir(stem){
 	}
 	tries = 0
 	while tries < 32 {
-		// pid + ntime + rand：std.rand 
 		dir = tmp + "/tu-build-" + safe + "-" + fmt.sprintf(
 			"%d-%d-%d",
 			os.getpid(),
@@ -117,7 +124,7 @@ func make_tu_build_dir(stem){
 			tries += 1
 			continue
 		}
-		os.shell("mkdir '" + dir + "'")
+		host_mkdir(dir)
 		if std.is_dir(dir) return dir
 		tries += 1
 	}
@@ -141,7 +148,7 @@ func initWorkdir(code_file, use_cwd, explicit_dir){
 	}
 	if explicit_dir != null && explicit_dir != "" {
 		if !std.is_dir(explicit_dir) {
-			os.shell("mkdir -p '" + explicit_dir + "'")
+			host_mkdir_p(explicit_dir)
 		}
 		workdir = explicit_dir
 		fmt.printf("[tu] workdir: %s\n", workdir)

@@ -85,7 +85,12 @@ func registerVars(){
     utils.debug("compile.registerVars()")
     writeln("    .globl %s", currentParser.filenameid)
     writeln("%s:", currentParser.filenameid)
-    writeln("    .string \"%s\"",currentParser.filepath)
+    // Windows host paths contain \; asmer .string treats \b \n \t as escapes.
+    fpath = currentParser.filepath
+    if fpath != null {
+        fpath = utils.norm_slash(fpath)
+    }
+    writeln("    .string \"%s\"", fpath)
 
     if currentParser == main_parser {
         registerGcMList()
