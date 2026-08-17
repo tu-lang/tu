@@ -40,6 +40,11 @@ const Registration::new_with_interest_and_handle(src<netevent.Source>, iosrc_bit
             sio.set_readiness(TICK_INC, READABLE)
         }
     }
+    // Connect often completes before enroll on loopback; seed WRITABLE so
+    // ConnectFut::poll_write_ready does not hang waiting for a missed edge.
+    if netio.interest_is_writable(interest) == 1 {
+        sio.set_readiness(TICK_INC, WRITABLE)
+    }
     r<Registration> = new Registration
     r.sched_handle = handle
     r.io_handle    = io_handle

@@ -41,9 +41,14 @@ fn new_socket(domain<i32>, socket_type<i32>) i32, i32 {
 }
 
 // Mother: SocketAddrCRepr.as_ptr + socklen for bind/connect.
+// Always pass OS wire length (16/28) — Tu sizeof(SockaddrIn) may pad.
 fn socket_addr(addr<net.SocketAddr>) u64, i32 {
-	bits<u64>, len_u<u32> = net.socket_addr_into_inner_bits(addr)
-	return libsys.socket_addr_crepr_as_ptr_raw(bits), len_u.(i32)
+	bits<u64>, junk_len<u32> = net.socket_addr_into_inner_bits(addr)
+	dl<i32> = 16
+	if net.socket_addr_is_v4(addr) == 0 {
+		dl = 28
+	}
+	return libsys.socket_addr_crepr_as_ptr_raw(bits), dl
 }
 
 fn to_socket_addr(storage_bits<u64>) i32, net.SocketAddr {

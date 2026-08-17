@@ -131,6 +131,8 @@ AcceptFut::poll(ctx){
 
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(c)
         if rerr == pend {
+            // Windows software epoll probes listen accept + MSG_PEEK in
+            // epoll_wait; a nested driver turn here starved CT local tasks.
             return pend
         }
         if rerr != 0 {

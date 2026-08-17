@@ -25,6 +25,12 @@ fn readable_level_interest() Interest {
 	return new Interest { flags: READABLE_BIT | LEVEL_BIT }
 }
 
+// Writable interest without EPOLLET — connect may complete before enroll
+// (localhost); ET would miss the first WRITABLE edge.
+fn writable_level_interest() Interest {
+	return new Interest { flags: WRITABLE_BIT | LEVEL_BIT }
+}
+
 // Mother: Interest::add — OR the flag bits.
 fn interest_merge(a<Interest>, b<Interest>) Interest {
 	af<u8> = a.flags

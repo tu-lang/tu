@@ -55,9 +55,11 @@ const TcpStream::from_netio_interest(inner<nettcp.TcpStream>, peer<net.SocketAdd
     ioh<rtio.IoHandle> = null
     ioh = ioh_bits
 
-    interest<netio.Interest> = netio.readable_interest()
+    // Accept path: level-triggered READABLE so peer data after accept is not
+    // lost under EPOLLET. Connect path: LT WRITABLE (completed before enroll).
+    interest<netio.Interest> = netio.readable_level_interest()
     if want_write == 1 {
-        interest = netio.interest_merge(netio.readable_interest(), netio.writable_interest())
+        interest = netio.interest_merge(netio.readable_level_interest(), netio.writable_level_interest())
     }
     holder<u64> = 0
     holder = inner
@@ -66,6 +68,10 @@ const TcpStream::from_netio_interest(inner<nettcp.TcpStream>, peer<net.SocketAdd
     if perr != 0 return perr, null
     if pe == null return shut_err, null
     if want_write == 0 {
+        pe.seed_writable()
+    } else {
+        // Connect may already be complete before enroll; seed so the first
+        // poll_write_ready does not depend solely on a polled edge.
         pe.seed_writable()
     }
     out<TcpStream> = new TcpStream
@@ -276,7 +282,15 @@ TcpStream::poll_read_priv(ctx<u64>, buf<aio.ReadBuf>) i32 {
     sock<nettcp.TcpStream> = this.raw_sock()
     loop {
         rerr<i32>, ev<rtio.ReadyEvent> = this.poll_ev.poll_read_ready(ctx)
-        if rerr == pend return pend
+        if rerr == pend {
+            // Stream only: MSG_PEEK + reseed. Must not live on PollEvented —
+            // listen sockets under WSAPoll would busy-loop accept.
+            this.poll_ev.reseed_readable_if_buffered()
+            rerr, ev = this.poll_ev.poll_read_ready(ctx)
+            if rerr == pend {
+                return pend
+            }
+        }
         if rerr != 0 return runtime.PollError
 
         rem2<u64> = buf.remaining()
