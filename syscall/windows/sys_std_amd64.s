@@ -91,191 +91,89 @@ sun_out:
 
 .globl win_fd_get
 win_fd_get:
-	cmp $0, %rdi
-	jl win_fd_bad
-	cmp $256, %rdi
-	jge win_fd_bad
+	# SysV rdi=fd → Tu stack ABI: push table, push fd.
+	# Tu callee cleans args (do not add %rsp after call).
 	lea win_fds(%rip), %rax
-	shl $3, %rdi
-	add %rdi, %rax
-	mov (%rax), %rax
-	ret
-win_fd_bad:
-	xor %rax, %rax
+	push %rax
+	push %rdi
+	call runtime_win_fd_get_tu
 	ret
 
 .globl win_fd_alloc
 win_fd_alloc:
-	push %rbx
-	mov %rdi, %rbx
-	mov $3, %ecx
-win_fd_al:
-	cmp $256, %ecx
-	jge win_fd_af
-	mov %ecx, %edx
-	shl $3, %rdx
 	lea win_fds(%rip), %rax
-	add %rdx, %rax
-	mov (%rax), %r8
-	cmp $0, %r8
-	jne win_fd_an
-	mov %rbx, (%rax)
-	mov %ecx, %eax
-	pop %rbx
-	ret
-win_fd_an:
-	add $1, %ecx
-	jmp win_fd_al
-win_fd_af:
-	mov $-1, %eax
-	pop %rbx
+	push %rax
+	push %rdi
+	call runtime_win_fd_alloc_tu
+	movsxd %eax, %rax
 	ret
 
-# Mark fd as Winsock SOCKET (closesocket on close). rdi=fd
 .globl win_fd_mark_sock
 win_fd_mark_sock:
-	cmp $0, %rdi
-	jl wms_out
-	cmp $256, %rdi
-	jge wms_out
 	lea win_fd_sock(%rip), %rax
-	add %rdi, %rax
-	movb $1, (%rax)
-wms_out:
+	push %rax
+	push %rdi
+	call runtime_win_fd_mark_sock_tu
 	ret
 
-# Clear sock mark. rdi=fd
 win_fd_clear_sock:
-	cmp $0, %rdi
-	jl wcs_out
-	cmp $256, %rdi
-	jge wcs_out
 	lea win_fd_sock(%rip), %rax
-	add %rdi, %rax
-	movb $0, (%rax)
-wcs_out:
+	push %rax
+	push %rdi
+	call runtime_win_fd_clear_sock_tu
 	ret
 
-# Return 1 if sock. rdi=fd
 .globl win_fd_is_sock
 win_fd_is_sock:
-	xor %eax, %eax
-	cmp $0, %rdi
-	jl wis_out
-	cmp $256, %rdi
-	jge wis_out
 	lea win_fd_sock(%rip), %rax
-	add %rdi, %rax
-	movzbl (%rax), %eax
-wis_out:
+	push %rax
+	push %rdi
+	call runtime_win_fd_is_sock_tu
+	movsxd %eax, %rax
 	ret
 
-# Map tu epoll fd → ep_idx (0..15), or 0xFF if not epoll.
+# Clear win_fds[tu_fd] via Tu (also used from close path).
+.globl win_fd_slot_clear
+win_fd_slot_clear:
+	lea win_fds(%rip), %rax
+	push %rax
+	push %rdi
+	call runtime_win_fd_slot_clear_tu
+	ret
+
 win_ep_map_ensure:
-	# Init sentinel at fd_of[255]=0xFE (tu fds are 0..254). Avoids peff AV on a
-	# separate .long ready flag and survives store of ep_idx+1 into other slots.
 	lea win_ep_fd_of(%rip), %rax
-	add $255, %rax
-	movzbl (%rax), %eax
-	cmp $0xFE, %eax
-	je weme_ok
-	xor %ecx, %ecx
-weme_fill:
-	lea win_ep_fd_of(%rip), %rax
-	add %rcx, %rax
-	movb $0xFF, (%rax)
-	add $1, %ecx
-	cmp $256, %ecx
-	jl weme_fill
-	lea win_ep_fd_of(%rip), %rax
-	add $255, %rax
-	movb $0xFE, (%rax)
-weme_ok:
+	push %rax
+	call runtime_win_ep_map_ensure_tu
 	ret
 
 .globl win_ep_set_fd
 win_ep_set_fd:
-	# rdi=tu_fd rsi=ep_idx. Store ep_idx+1 so 0 means "not epoll".
-	push %rbp
-	mov %rsp, %rbp
-	push %rbx
-	push %r12
-	mov %rdi, %rbx
-	mov %rsi, %r12
-	call win_ep_map_ensure
-	cmp $0, %rbx
-	jl wes_out
-	cmp $256, %rbx
-	jge wes_out
+	# rdi=tu_fd rsi=ep_idx
 	lea win_ep_fd_of(%rip), %rax
-	add %rbx, %rax
-	mov %r12, %rdx
-	add $1, %rdx
-	movb %dl, (%rax)
-wes_out:
-	pop %r12
-	pop %rbx
-	pop %rbp
+	push %rax
+	push %rsi
+	push %rdi
+	call runtime_win_ep_set_fd_tu
 	ret
 
 .globl win_ep_get_fd
 win_ep_get_fd:
-	# rdi=tu_fd → eax=ep_idx or 0xFF
-	push %rbp
-	mov %rsp, %rbp
-	push %rbx
-	mov %rdi, %rbx
-	call win_ep_map_ensure
-	mov $0xFF, %eax
-	cmp $0, %rbx
-	jl weg_out
-	cmp $256, %rbx
-	jge weg_out
 	lea win_ep_fd_of(%rip), %rax
-	add %rbx, %rax
-	movzbl (%rax), %eax
-	cmp $0, %eax
-	je weg_none
-	sub $1, %eax
-	jmp weg_out
-weg_none:
-	mov $0xFF, %eax
-weg_out:
-	pop %rbx
-	pop %rbp
+	push %rax
+	push %rdi
+	call runtime_win_ep_get_fd_tu
+	movsxd %eax, %rax
 	ret
 
 .globl win_ep_clear_fd
 win_ep_clear_fd:
-	push %rbp
-	mov %rsp, %rbp
-	push %rbx
-	mov %rdi, %rbx
-	call win_ep_map_ensure
-	cmp $0, %rbx
-	jl wec_out
-	cmp $256, %rbx
-	jge wec_out
+	# Map clear only; callers that free a software-epoll set call
+	# win_ep_release_idx first (see std_close epoll path).
 	lea win_ep_fd_of(%rip), %rax
-	add %rbx, %rax
-	movb $0, (%rax)
-wec_out:
-	pop %rbx
-	pop %rbp
-	ret
-
-# Clear win_fds[tu_fd] slot. rdi=fd
-.globl win_fd_slot_clear
-win_fd_slot_clear:
-	cmp $0, %rdi
-	jl wfsc_out
-	cmp $256, %rdi
-	jge wfsc_out
-	shl $3, %rdi
-	lea win_fds(%rip), %rax
-	add %rdi, %rax
-	movq $0, (%rax)
-wfsc_out:
+	push %rax
+	push %rdi
+	call runtime_win_ep_clear_fd_tu
 	ret
 
 .global std_open
@@ -327,15 +225,24 @@ so_trunc_only:
 	mov $5, %eax
 so_disp_store:
 	mov %eax, 32(%rsp)
-so_call:
+	# O_DIRECTORY (65536): open dir handle for getdents/opendir.
 	mov $128, %eax
+	mov %rbx, %rcx
+	and $65536, %rcx
+	cmp $0, %rcx
+	je so_flags_store
+	mov $0x02000080, %eax
+so_flags_store:
 	mov %eax, 40(%rsp)
+so_call:
 	movq $0, 48(%rsp)
 	mov %r12, %rcx
 	# Reload access — do not rely on edx surviving the disposition block.
 	mov 56(%rsp), %rdx
 	mov $7, %r8
 	xor %r9, %r9
+	# Keep flags across win_fd_alloc (Tu may clobber rbx).
+	mov %rbx, 64(%rsp)
 	call CreateFileA
 	cmp $-1, %rax
 	je so_err
@@ -344,6 +251,33 @@ so_call:
 	cmp $-1, %eax
 	je so_err
 	movsxd %eax, %rax
+	# If O_DIRECTORY, remember path for getdents (FindFirstFile needs a path).
+	mov 64(%rsp), %rcx
+	and $65536, %rcx
+	cmp $0, %rcx
+	je so_out
+	# rax=fd; copy cstring at r12 into win_dir_path[fd]
+	push %rax
+	lea win_dir_path(%rip), %rdi
+	mov %rax, %rcx
+	shl $8, %rcx
+	add %rcx, %rdi
+	mov %r12, %rsi
+	mov $255, %edx
+so_pcpy:
+	cmp $0, %edx
+	je so_pcpy_done
+	movb (%rsi), %cl
+	movb %cl, (%rdi)
+	cmp $0, %cl
+	je so_pcpy_done
+	add $1, %rsi
+	add $1, %rdi
+	sub $1, %edx
+	jmp so_pcpy
+so_pcpy_done:
+	movb $0, (%rdi)
+	pop %rax
 	jmp so_out
 so_err:
 	call GetLastError
@@ -443,6 +377,23 @@ std_close:
 	mov %rdi, %rbx
 	cmp $3, %rbx
 	jl sc_ok0
+	# Software epoll tu-fd: no OS handle (slot holds sentinel 1). Free set only.
+	mov %rbx, %rdi
+	call win_ep_get_fd
+	cmp $0xFF, %eax
+	je sc_normal
+	mov %eax, %r12d
+	mov %r12, %rdi
+	call win_ep_release_idx
+	mov %rbx, %rdi
+	call win_ep_clear_fd
+	mov %rbx, %rdi
+	shl $3, %rdi
+	lea win_fds(%rip), %rax
+	add %rdi, %rax
+	movq $0, (%rax)
+	jmp sc_ok0
+sc_normal:
 	mov %rbx, %rdi
 	call win_fd_get
 	cmp $0, %rax
@@ -461,6 +412,27 @@ sc_file:
 sc_cleared:
 	mov %rbx, %rdi
 	call win_fd_clear_sock
+	# Drop listen mark + any accept stash for this tu fd.
+	cmp $0, %rbx
+	jl sc_fdslot
+	cmp $256, %rbx
+	jge sc_fdslot
+	lea win_fd_listen(%rip), %rax
+	add %rbx, %rax
+	movb $0, (%rax)
+	lea win_accept_stash(%rip), %rax
+	mov %rbx, %rcx
+	shl $3, %rcx
+	add %rcx, %rax
+	mov (%rax), %rcx
+	movq $0, (%rax)
+	cmp $0, %rcx
+	je sc_fdslot
+	# closesocket stashed peer (Win64 rcx)
+	sub $32, %rsp
+	call closesocket
+	add $32, %rsp
+sc_fdslot:
 	mov %rbx, %rdi
 	call win_ep_clear_fd
 	mov %rbx, %rdi
@@ -603,12 +575,44 @@ ns_ok:
 
 .globl std_getdents
 std_getdents:
+	# Directory listing for the driver uses os.win_find_* (path-based).
+	# Keep ENOSYS here until a full HANDLE-based getdents lands.
 	mov $-38, %rax
 	retq
 
 .globl std_stat
 std_stat:
-	mov $-38, %rax
+	# SysV: rdi=path, rsi=Stat*. Fill st_mode (S_IFDIR/S_IFREG) via GetFileAttributesA.
+	push %rbp
+	mov %rsp, %rbp
+	push %rbx
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rsi, %rbx
+	mov %rdi, %rcx
+	call GetFileAttributesA
+	cmp $-1, %eax
+	je sst_err
+	movq $0, (%rbx)
+	movq $0, 8(%rbx)
+	movq $0, 16(%rbx)
+	mov %eax, %edx
+	and $0x10, %edx
+	cmp $0, %edx
+	je sst_reg
+	movl $16384, 24(%rbx)
+	jmp sst_ok
+sst_reg:
+	movl $32768, 24(%rbx)
+sst_ok:
+	xor %eax, %eax
+	jmp sst_out
+sst_err:
+	mov $-2, %rax
+sst_out:
+	lea -8(%rbp), %rsp
+	pop %rbx
+	pop %rbp
 	retq
 
 .globl std_fstat
@@ -618,8 +622,7 @@ std_fstat:
 
 .globl std_lstat
 std_lstat:
-	mov $-38, %rax
-	retq
+	jmp std_stat
 
 .globl std_execve
 std_execve:
@@ -836,12 +839,19 @@ std_pipe2:
 
 .data
 .align 8
+.globl win_fds
 win_fds:
 	.zero 2048
+.globl win_fd_sock
 win_fd_sock:
 	.zero 256
+.globl win_ep_fd_of
 win_ep_fd_of:
 	.zero 256
+win_find_h:
+	.zero 2048
+win_dir_path:
+	.zero 65536
 win_brk_base:
 	.quad 0
 win_brk_pos:

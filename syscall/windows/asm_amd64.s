@@ -10,15 +10,14 @@ mainCRTStartup:
 	call win_init_stdio
 	call std_stdinit
 	call runtime_osinit
-	xor %edi, %edi
-	xor %esi, %esi
-	xor %edx, %edx
-	# Win64: RSP 16-aligned at call; 3 arg pushes need an 8-byte pad first.
-	sub $8, %rsp
-	push %rdx
-	push %rsi
-	push %rdi
-	call runtime_args_init
+	# Real argv/env: raw pointers parsed by runtime_win_args_init (Tu side).
+	call GetCommandLineA
+	mov %rax, %rbx
+	call GetEnvironmentStringsA
+	# Win64: RSP 16-aligned at call; 2 arg pushes keep alignment.
+	push %rax
+	push %rbx
+	call runtime_win_args_init
 	call runtime_runtimeinit
 	call main_init.0
 	call main_main
