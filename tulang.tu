@@ -7,8 +7,9 @@ use compiler.parser
 use asmer.asm
 use linker.link
 use linker.darwin
+use linker.peff
 use runtime
-//TODO: set by compiler
+// Prefix for coasm / copkg / copeff. Overridden by CO_PREFIX / TU_PREFIX / CO_PKG.
 root = "/usr/local/lib"
 version = "1.0.0"
 printlat = false
@@ -64,6 +65,26 @@ func arg_has_prefix(arg, pref) {
 }
 Compiler::init() {
     this.target = utils.target_default()
+    // Resolve install prefix from env (Windows MSVC layout uses build-win/lib).
+    for (ek, ev : os.envs()) {
+        arr = string.split(ev, "=")
+        if std.len(arr) < 2 {
+            continue
+        }
+        if arr[0] == "CO_PREFIX" && arr[1] != "" {
+            root = utils.norm_slash(arr[1]) + "/lib"
+            break
+        }
+        if arr[0] == "TU_PREFIX" && arr[1] != "" {
+            root = utils.norm_slash(arr[1]) + "/lib"
+            break
+        }
+        if arr[0] == "CO_PKG" && arr[1] != "" {
+            pkg = utils.norm_slash(arr[1])
+            root = utils.path_dirname(pkg)
+            break
+        }
+    }
 }
 Compiler::apply_target(name) {
     asm.requested_target = name
@@ -76,8 +97,8 @@ Compiler::apply_target(name) {
         return
     }
     if name == "windows" || name == "win64" || name == "pe" {
-        fmt.printf("[tu] --target=%s is not implemented yet\n", name)
-        os.exit(-1)
+        this.target = utils.TARGET_WINDOWS
+        return
     }
     fmt.printf("[tu] unknown --target=%s (want linux|darwin|windows)\n", name)
     os.exit(-1)
@@ -102,7 +123,7 @@ Compiler::print_help(){
         "  --workdir DIR              中间产物写到 DIR（.s/.o/a.out）\n" +
         "  --workdir-cwd              中间产物写当前目录（旧行为）\n" +
         "  --work                     保留中间产物\n" +
-        "  --target linux|darwin      对象/链接后端（默认=host；可用 TU_TARGET）\n" +
+        "  --target linux|darwin|windows  对象/链接后端（默认=host；可用 TU_TARGET）\n" +
         "  -v                         打印版本\n" +
         "\n" +
         "Default workdir: $TMPDIR/tu-build-<stem>-...\n"
@@ -214,17 +235,26 @@ Compiler::scandir(dir,dstext){
         this.code_files[] = dir
         return true
     }
-    fd = std.opendir(dir)
-    loop {
-        file = fd.readdir()
-        if !file break
-        if !file.isFile() continue
-        filename = file.path
-        ext = string.sub(filename,std.len(filename) - 2)
-        if ext == dstext {
-            utils.debugf("main.scandir: add %s ",file.path)
-            this.code_files[] = file.path
+    // Windows: std.opendir/readdir rely on getdents (ENOSYS); use FindFirst.
+    names = utils.list_dir_basenames(dir)
+    extlen = std.len(dstext)
+    for name : names {
+        if name == "." || name == ".." {
+            continue
         }
+        flen = std.len(name)
+        if flen < extlen {
+            continue
+        }
+        if string.sub(name, flen - extlen) != dstext {
+            continue
+        }
+        path = utils.path_join(dir, name)
+        if std.is_dir(path) {
+            continue
+        }
+        utils.debugf("main.scandir: add %s ", path)
+        this.code_files[] = path
     }
 }
 Compiler::compiler(file){
@@ -235,8 +265,8 @@ Compiler::compiler(file){
     if compile.nostd && !this.flag_gcc {
         compile.nostd = true
     }
-    // Darwin has no prebuilt colib; run/build includes std+coasm unless -nostd.
-    if this.target == utils.TARGET_DARWIN && this.flag_link && !this.flag_nostd_explicit {
+    // Darwin/Windows have no prebuilt colib; run/build includes std+coasm unless -nostd.
+    if (this.target == utils.TARGET_DARWIN || this.target == utils.TARGET_WINDOWS) && this.flag_link && !this.flag_nostd_explicit {
         compile.nostd = false
     }
     compile.initWorkdir(file, this.workdir_cwd, this.workdir_explicit)
@@ -248,20 +278,29 @@ Compiler::compiler(file){
     if wd == null || wd == "" {
         wd = "."
     }
+    exe_name = "a.out"
+    if this.target == utils.TARGET_WINDOWS {
+        exe_name = "a.exe"
+    }
     if this.flag_link {
         if this.target == utils.TARGET_DARWIN && this.flag_gcc {
             utils.error("-gcc is linux-only; use the self-hosted darwin linker")
+        }
+        if this.target == utils.TARGET_WINDOWS && this.flag_gcc {
+            utils.error("-gcc is not supported for --target=windows; use peff host link")
         }
         //By Gcc Link
         if this.flag_gcc {
             compile.gcclink()
             if !this.flag_work {
-                os.shell("rm -f '" + wd + "'/*.s")
+                utils.remove_files_ext(wd, ".s")
             }
-            os.shell("chmod 777 '" + utils.pathInWorkdir("a.out") + "'")
+            if this.target != utils.TARGET_WINDOWS {
+                os.shell("chmod 777 '" + utils.pathInWorkdir(exe_name) + "'")
+            }
         }else {
         // Self asmer+linker: copy prefix coasm into workdir (same as mother tuc),
-        // then assemble only there. Never write .o back into /usr/local/lib/coasm*.
+        // then assemble only there. Never write .o back into prefix coasm*.
             this.code_files = []
             if !compile.nostd {
                 if this.target == utils.TARGET_DARWIN {
@@ -272,42 +311,70 @@ Compiler::compiler(file){
                         utils.error("missing Darwin coasm at " + src)
                     }
                     std.close(fp)
-                    os.shell("cp '" + src + "'/*.s '" + wd + "/'")
+                    utils.copy_dir_ext(src, wd, ".s")
+                } else if this.target == utils.TARGET_WINDOWS {
+                    src = root + "/coasm-windows"
+                    for (ek, ev : os.envs()) {
+                        arr = string.split(ev, "=")
+                        if std.len(arr) >= 2 && arr[0] == "CO_WINDOWS_COASM" && arr[1] != "" {
+                            src = utils.norm_slash(arr[1])
+                            break
+                        }
+                    }
+                    probe = src + "/asm_amd64.s"
+                    fp<i32> = std.fopen(*probe, *"r")
+                    if fp <= 0 {
+                        utils.error("missing Windows coasm at " + src)
+                    }
+                    std.close(fp)
+                    utils.copy_dir_ext(src, wd, ".s")
                 } else {
-                    os.shell("cp '" + root + "/coasm'/*.s '" + wd + "/'")
+                    utils.copy_dir_ext(root + "/coasm", wd, ".s")
                 }
             }
             this.scandir(wd,".s")
             this.asmer()
 
             this.code_files = []
-            if compile.nostd && this.target != utils.TARGET_DARWIN {
-                os.shell("cp '" + root + "/colib'/*.o '" + wd + "/'")
+            if compile.nostd && this.target != utils.TARGET_DARWIN && this.target != utils.TARGET_WINDOWS {
+                utils.copy_dir_ext(root + "/colib", wd, ".o")
             }
             this.scandir(wd,".o")
-            this.out = utils.pathInWorkdir("a.out")
+            this.out = utils.pathInWorkdir(exe_name)
             this.linker()
             if !this.flag_work {
-                os.shell("rm -f '" + wd + "'/*.o '" + wd + "'/*.s")
+                utils.remove_files_ext(wd, ".o")
+                utils.remove_files_ext(wd, ".s")
             }
         }
-        os.shell("chmod 777 '" + utils.pathInWorkdir("a.out") + "'")
+        if this.target != utils.TARGET_WINDOWS {
+            os.shell("chmod 777 '" + utils.pathInWorkdir(exe_name) + "'")
+        }
         if this.flag_work {
             fmt.printf("[tu] work: keeping %s\n", wd)
         }
     }
-    exe = utils.pathInWorkdir("a.out")
+    exe = utils.pathInWorkdir(exe_name)
     utils.msg2(100,"Finished",fmt.sprintf(
         "%s target(%s)",file, exe
     ))
     // `tu run`: execute linked binary
     if this.flag_exec {
-        cmd = "'" + exe + "'"
-        for a : this.args {
-            cmd += " '" + a + "'"
+        if this.target == utils.TARGET_WINDOWS || runtime.host_os() == 2 {
+            cmd = exe
+            for a : this.args {
+                cmd += " " + a
+            }
+            fmt.println(cmd)
+            utils.host_run(cmd)
+        } else {
+            cmd = "'" + exe + "'"
+            for a : this.args {
+                cmd += " '" + a + "'"
+            }
+            fmt.println(cmd)
+            os.shell(cmd)
         }
-        fmt.println(cmd)
-        os.shell(cmd)
     }
 }
 Compiler::asmer(){
@@ -331,14 +398,26 @@ Compiler::linker(){
     total = std.len(this.code_files)
     if total <= 0 utils.error("please provide at lease one .o file")
 
-    // Default a.out next to the first .o, same as tul.
+    // Default outfile next to the first .o, same as tul.
     if this.out == "a.out" && total > 0 {
-        this.out = utils.path_join(utils.path_dirname(this.code_files[0]), "a.out")
+        name = "a.out"
+        if this.target == utils.TARGET_WINDOWS {
+            name = "a.exe"
+        }
+        this.out = utils.path_join(utils.path_dirname(this.code_files[0]), name)
     }
     fmt.printf("[tu] outfile: %s\n", this.out)
 
     if this.target == utils.TARGET_DARWIN {
         rc = darwin.link_objects(this.code_files, this.out)
+        if rc != 0 {
+            utils.error("Generate " + this.out + " Failed")
+        }
+        utils.msg(100,"Generate " + this.out + " Passed")
+        return
+    }
+    if this.target == utils.TARGET_WINDOWS {
+        rc = peff.link_objects(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
         }
