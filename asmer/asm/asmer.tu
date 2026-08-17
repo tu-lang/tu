@@ -3,6 +3,7 @@ use asmer.elf
 use asmer.utils
 use asmer.parser
 use asmer.darwin
+use asmer.peff
 use std
 use std.map
 use fmt
@@ -21,6 +22,9 @@ Asmer::init(filename)
     }
     if requested_target == "linux" {
         this.target = TARGET_LINUX
+    }
+    if requested_target == "windows" || requested_target == "win64" || requested_target == "pe" {
+        this.target = TARGET_WINDOWS
     }
     this.elf   = new elf.ElfFile(this)
     this.parser = new parser.Parser(filename,this.elf)
@@ -46,6 +50,15 @@ Asmer::execute() {
         this.close()
         outp = this.parser.outname
         darwin.emit_object(this.parser, this.elf, outp)
+        return
+    }
+    if this.target == TARGET_WINDOWS {
+        this.close()
+        outp = this.parser.outname
+        rc<i32> = peff.emit_object(this.parser, this.elf, outp)
+        if rc != 0 {
+            utils.error("peff COFF emit failed: " + outp)
+        }
         return
     }
     this.buildElf()
