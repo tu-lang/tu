@@ -9,15 +9,19 @@ SockaddrUn::sun_offset() i64 {
     return this - &this.sun_path
 }
 
+// Wire IPv4 address (network/host layout matches OS sockaddr_in.s_addr).
+// Keep as bare u32 — nested `mem InAddr` becomes a pointer field and
+// breaks the 16-byte sockaddr_in ABI (bind appears to use 0.0.0.0;
+// Windows connect then returns WSAEADDRNOTAVAIL).
 mem InAddr {
     u32 s_addr
 }
 
 mem SockaddrIn {
-    u16    sin_family
-    u16    sin_port
-    InAddr sin_addr
-    u8     sin_zero[8]
+    u16 sin_family
+    u16 sin_port
+    u32 sin_addr
+    u8  sin_zero[8]
 }
 
 mem In6Addr {

@@ -219,8 +219,10 @@ fn sockaddr_to_addr(storage<SockaddrStorage>, len<u64>) i32,net.SocketAddr {
                 return io.InvalidInputArgument, null
             }
             addr<SockaddrIn> = storage
-            sinaddr<InAddr> = addr.sin_addr
-            ipv4<net.Ipv4Addr> = net.Ipv4Addr::from(&sinaddr.s_addr)
+            // sin_addr is a flat u32 on the wire (not nested InAddr mem).
+            tmp_addr<u32> = addr.sin_addr
+            ip_p<u8*> = &tmp_addr
+            ipv4<net.Ipv4Addr> = net.Ipv4Addr::from(ip_p)
             saddr<net.SocketAddrV4> = net.socket_addr_v4_from_ipv4_port(ipv4, U16::from_be(addr.sin_port))
             return Ok, net.socket_addr_from_v4(saddr)
         }
