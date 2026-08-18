@@ -41,6 +41,10 @@ func isr4(tk<i32>){
     if r4ishigh(tk) return true
     return false
 }
+fn isr2(tk<i32>){
+    if tk == KW_AX return true
+    return false
+}
 fn isfreg(tk<i32>){
     if tk >= KW_XMM0 && tk <= KW_XMM15 return true
     return false
@@ -90,6 +94,9 @@ func reglen(tk<i32>){
     else if(tk >= KW_EAX && tk <= KW_EDI){
         return 4.(i8)
     }
+    else if tk == KW_AX {
+        return 2.(i8)
+    }
     else if r4ishigh(tk){
         return 4.(i8)
     }
@@ -131,6 +138,7 @@ func tk_to_string(tk<i32>){
         KW_POP:    return "pop"
         KW_RET:    return "ret"
         KW_RAX:    return "rax"
+        KW_AX:     return "ax"
         KW_RCX:    return "rcx"
         KW_RDX:    return "rdx"
         KW_RBX:    return "rbx"
@@ -156,4 +164,44 @@ func tk_to_string(tk<i32>){
             return "unknown" + int(tk)
         }
     }
+}
+
+func undef_vocab_hint(name) {
+    if name == null || name == "" {
+        return
+    }
+    n = name
+    if std.len(n) > 0 && n[0] == '%' {
+        n = string.sub(n, 1)
+    }
+    kind = ""
+    regs = ["rax","rbx","rcx","rdx","rsi","rdi","rbp","rsp","rip",
+            "r8","r9","r10","r11","r12","r13","r14","r15",
+            "eax","ebx","ecx","edx","esi","edi","ebp","esp","ax",
+            "r8d","r9d","r10d","r11d","r12d","r13d","r14d","r15d",
+            "al","bl","cl","dl","ah","bh","ch","dh"]
+    insns = ["mov","movb","movw","movl","movq","movabsq",
+             "movzbl","movzwl","movzb","movzx","movsbl","movswl","movsxd",
+             "cmp","cmpl","cmpq","test","testl","testq",
+             "add","addq","sub","and","or","orl","xor","xorl",
+             "lea","neg","inc","dec","not","shl","shr","sar",
+             "push","pop","jmp","call","ret"]
+    for r : regs {
+        if n == r {
+            kind = "register"
+            break
+        }
+    }
+    if kind == "" {
+        for r : insns {
+            if n == r {
+                kind = "mnemonic"
+                break
+            }
+        }
+    }
+    if kind == "" {
+        return
+    }
+    fmt.printf("[asmer] undefined symbol '%s' looks like a %s; unknown instructions/regs must fail at assemble time. If you meant a register or insn, check the .s.\n", name, kind)
 }

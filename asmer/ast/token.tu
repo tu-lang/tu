@@ -58,6 +58,7 @@ enum {
     KW_XMM0, KW_XMM1, KW_XMM2,  KW_XMM3,  KW_XMM4,  KW_XMM5,  KW_XMM6,  KW_XMM7, 
     KW_XMM8, KW_XMM9, KW_XMM10, KW_XMM11, KW_XMM12, KW_XMM13, KW_XMM14, KW_XMM15, 
     KW_FS,KW_RIP,
+    KW_AX, // 16-bit; append-only after RIP
 }
 
 enum {

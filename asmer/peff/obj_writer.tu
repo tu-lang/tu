@@ -189,6 +189,7 @@ CoffObjWriter::add_defined(sym<ast.Sym>) {
         o.section = IMAGE_SYM_UNDEFINED
         o.value = 0
         o.storage = IMAGE_SYM_CLASS_EXTERNAL
+        ast.undef_vocab_hint(string.new(o.name.str()))
         this.undef_syms.push(o)
         return
     }
@@ -247,6 +248,7 @@ CoffObjWriter::collect_syms(ps<parser.Parser>, elfh<elf.ElfFile>) {
                 o.sym_type = 0
                 o.storage = IMAGE_SYM_CLASS_EXTERNAL
                 o.is_undef = 1
+                ast.undef_vocab_hint(string.new(o.name.str()))
                 this.undef_syms.push(o)
             }
         }
