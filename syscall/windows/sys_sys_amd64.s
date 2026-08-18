@@ -3,9 +3,11 @@
 .text
 
 # ---- WSAStartup + Linux-style -errno from WSAGetLastError ----
-# Always call WSAStartup (safe to repeat). A separate ready .long symbol
-# AV'd under peff/asmer rip-relative loads.
+# Ready flag is a .long; access it with 32-bit movl (not 64-bit cmp/mem).
 win_wsa_ensure:
+	movl win_wsa_ready(%rip), %eax
+	cmpl $1, %eax
+	je wwe_ok
 	push %rbp
 	mov %rsp, %rbp
 	and $-16, %rsp
@@ -15,8 +17,11 @@ win_wsa_ensure:
 	call WSAStartup
 	cmp $0, %eax
 	jne wwe_fail
+	lea win_wsa_ready(%rip), %rax
+	movl $1, (%rax)
 	mov %rbp, %rsp
 	pop %rbp
+wwe_ok:
 	xor %eax, %eax
 	ret
 wwe_fail:
@@ -26,7 +31,7 @@ wwe_fail:
 	ret
 
 # edi = positive WSA error; rax = Linux -errno
-# Thin trampoline: Tu stack ABI �?push arg, call; callee cleans args.
+# Thin trampoline: Tu stack ABI ï¿½?push arg, call; callee cleans args.
 .globl win_wsa_errno_neg
 win_wsa_errno_neg:
 	movsxd %edi, %rax
@@ -103,7 +108,7 @@ runtime_win_api_sleep:
 runtime_win_api_wsafail:
 	jmp win_wsa_fail
 
-# SysV trampolines → Tu stack ABI. Framed sys_* must call these, not Tu directly.
+# SysV trampolines â Tu stack ABI. Framed sys_* must call these, not Tu directly.
 .global win_sockaddr_win_copy
 win_sockaddr_win_copy:
 	push %rdx
@@ -1179,7 +1184,12 @@ sys_kill:
 
 .data
 .align 8
-# WSADATA (~408B on x64). Ready flag omitted: peff AV on separate .long label.
+# 32-bit ready flag; load/store with movl, never 64-bit cmp/mem.
+.globl win_wsa_ready
+win_wsa_ready:
+	.long 0
+.align 8
+# WSADATA (~408B on x64).
 win_wsadata:
 	.zero 512
 .align 8

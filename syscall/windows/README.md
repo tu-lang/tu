@@ -25,7 +25,9 @@ Reactor: software `sys_epoll_*` over `WSAPoll` (policy in `platform/windows/epol
 ## FS / threads
 
 `sys_mkdir` / `sys_rmdir` / `sys_unlink` / `sys_openat(AT_FDCWD)` map to Win32
-file APIs. Process start creates drive `\tmp` for Linux-style `/tmp/...` paths.
+file APIs. `std_pipe2` is `CreatePipe` plus the fd table (`platform/windows/pipe.tu`);
+ends are file HANDLEs (ReadFile/WriteFile), not SOCKETs. Process start creates
+drive `\tmp` for Linux-style `/tmp/...` paths.
 Threads: `CreateThread` + `WaitOnAddress` / `WakeByAddressAll`.
 
 ## Host gate

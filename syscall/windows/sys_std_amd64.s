@@ -832,9 +832,78 @@ std_dup2:
 	mov $-38, %rax
 	retq
 
+# SysV no-body APIs for runtime/pipe.tu (registercall).
+# CreatePipe(PHANDLE, PHANDLE, NULL, 0)
+.global runtime_win_api_create_pipe
+runtime_win_api_create_pipe:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rdi, %rcx
+	mov %rsi, %rdx
+	xor %r8, %r8
+	xor %r9, %r9
+	call CreatePipe
+	movsxd %eax, %rax
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+.global runtime_win_api_set_handle_info
+runtime_win_api_set_handle_info:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rdx, %r8
+	mov %rsi, %rdx
+	mov %rdi, %rcx
+	call SetHandleInformation
+	movsxd %eax, %rax
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+.global runtime_win_api_pipe_nowait
+runtime_win_api_pipe_nowait:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $48, %rsp
+	mov $1, %eax
+	mov %eax, 32(%rsp)
+	mov %rdi, %rcx
+	lea 32(%rsp), %rdx
+	xor %r8, %r8
+	xor %r9, %r9
+	call SetNamedPipeHandleState
+	movsxd %eax, %rax
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+.global runtime_win_api_close_handle
+runtime_win_api_close_handle:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rdi, %rcx
+	call CloseHandle
+	movsxd %eax, %rax
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
 .globl std_pipe2
 std_pipe2:
-	mov $-38, %rax
+	# SysV rdi=fds* rsi=flags. Tu stack ABI, callee cleans.
+	lea win_fds(%rip), %rax
+	push %rax
+	push %rsi
+	push %rdi
+	call runtime_win_pipe2_tu
 	retq
 
 .data
