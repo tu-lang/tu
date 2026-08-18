@@ -2,6 +2,7 @@ use std
 use fmt
 use os 
 use string
+use runtime
 
 #func fwrite(buffer<i8*> , size<u64> , count<u64> , fd<u64*>){
 func fwrite(fd<i64>,buffer<u64>,size<u64>){
@@ -100,7 +101,62 @@ func path_join(d,f){
 		return f
 	dlen = std.len(d)
 	last = d[dlen - 1]
-	if last == '/'
+	bs = runtime.newobject(runtime.Char, 92.(i8))
+	if last == '/' || last == bs
 		return d + f
 	return d + "/" + f
+}
+
+// Directory basenames. Windows uses FindFirstFile (getdents is ENOSYS).
+func list_basenames(dir) {
+	out = []
+	if runtime.host_os() == 2 {
+		pat = ""
+		i = 0
+		dn = std.len(dir)
+		bs = runtime.newobject(runtime.Char, 92.(i8))
+		while i < dn {
+			c = dir[i]
+			if c == '/' {
+				pat += "\\"
+			} else {
+				pat += c
+			}
+			i += 1
+		}
+		if dn > 0 {
+			last = pat[std.len(pat) - 1]
+			if last != bs {
+				pat = pat + "\\"
+			}
+		}
+		pat = pat + "*"
+		h<u64> = os.win_find_first(*pat)
+		if h == 0 {
+			return out
+		}
+		loop {
+			np<i8*> = os.win_find_name()
+			nm = "" + string.new(np)
+			out[] = nm
+			rc<i32> = os.win_find_next(h)
+			if rc == 0 {
+				break
+			}
+		}
+		os.win_find_close(h)
+		return out
+	}
+	fd = std.opendir(dir)
+	if !fd {
+		return out
+	}
+	loop {
+		f = fd.readdir()
+		if !f {
+			break
+		}
+		out[] = f.name
+	}
+	return out
 }

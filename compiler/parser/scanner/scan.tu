@@ -40,6 +40,7 @@ Scanner::init(filepath,parser){
     this.parser = parser
     //TODO:
     this.buffer = this.fs.ReadAll()
+    this.fs.Close()
 }
 Scanner::transaction()
 {

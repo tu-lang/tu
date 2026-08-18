@@ -65,6 +65,7 @@ ParseHexBytes::init(filepath){
     }
     totalsize = fs.size
     this.buffersize = *totalsize
+    fs.Close()
     debug("ParseHexBytes::init() end %s".(i8),*filepath)
 }
 ParseHexBytes::parse(){

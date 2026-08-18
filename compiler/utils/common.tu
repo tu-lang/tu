@@ -23,6 +23,13 @@ func max(l<i32>,r<i32>){
 	return r
 }
 func pwd(){
+	if is_windows_host() {
+		buf<i8*> = new 260
+		n<i32> = os.win_getcwd(buf, 260.(i32))
+		if n > 0 {
+			return norm_slash(string.new(buf))
+		}
+	}
 	if std.exist("PWD",envs) {
 		return envs["PWD"]
 	}	
