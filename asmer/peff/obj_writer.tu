@@ -141,6 +141,30 @@ CoffObjWriter::sym_in_list(list<std.Array>, name<string.String>) i32 {
 }
 
 // Mirror of mother add_defined: externed -> undef, else .text/.data defined.
+// Insertion-sort defined symbols by name so the COFF table matches
+// mother CoffWriter (C++ std::map iteration is lexicographic).
+CoffObjWriter::sort_defined_by_name() {
+    n<i32> = this.defined_syms.len()
+    i<i32> = 1
+    while i < n {
+        key<CoffSym> = this.defined_syms.addr[i]
+        j<i32> = i
+        loop {
+            if j <= 0 {
+                break
+            }
+            prev<CoffSym> = this.defined_syms.addr[j - 1]
+            if prev.name.cmp(key.name) <= 0 {
+                break
+            }
+            this.defined_syms.addr[j] = prev
+            j -= 1
+        }
+        this.defined_syms.addr[j] = key
+        i += 1
+    }
+}
+
 CoffObjWriter::add_defined(sym<ast.Sym>) {
     if sym == null {
         return
@@ -149,6 +173,12 @@ CoffObjWriter::add_defined(sym<ast.Sym>) {
         return
     }
     if sym.name.empty() == string.True {
+        return
+    }
+    if this.sym_in_list(this.defined_syms, sym.name) {
+        return
+    }
+    if this.sym_in_list(this.undef_syms, sym.name) {
         return
     }
     o<CoffSym> = new CoffSym
@@ -222,6 +252,7 @@ CoffObjWriter::collect_syms(ps<parser.Parser>, elfh<elf.ElfFile>) {
         }
         i += 1
     }
+    this.sort_defined_by_name()
     i = 0
     while i < this.defined_syms.len() {
         this.all_syms.push(this.defined_syms.addr[i])

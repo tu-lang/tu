@@ -29,9 +29,11 @@ COFF_SECTION_HEADER_LEN<i32> = 40
 COFF_RELOC_LEN<i32>          = 10
 COFF_SYMBOL_LEN<i32>         = 18
 
+// Round up to a multiple of 4. Avoid (v+3)&-4 — Tu bitwise on negatives
+// has been observed to drop the +3 and round down (100 -> 96).
 fn coff_align4(v<i32>) i32 {
-    r<i32> = (v + 3) & (0 - 4)
-    return r
+    a<i32> = v + 3
+    return (a / 4) * 4
 }
 
 fn coff_i32_u32(v<i32>) u32 {
