@@ -179,6 +179,20 @@ os_win_find_name:
 	lea win_find_name(%rip), %rax
 	retq
 
+# GetCurrentDirectoryA(nBufferLength, lpBuffer). SysV: rdi=buf rsi=n.
+.global os_win_getcwd
+os_win_getcwd:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %esi, %ecx
+	mov %rdi, %rdx
+	call GetCurrentDirectoryA
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
 .data
 .align 8
 win_find_name:

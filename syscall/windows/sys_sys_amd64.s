@@ -26,7 +26,7 @@ wwe_fail:
 	ret
 
 # edi = positive WSA error; rax = Linux -errno
-# Thin trampoline: Tu stack ABI — push arg, call; callee cleans args.
+# Thin trampoline: Tu stack ABI �?push arg, call; callee cleans args.
 .globl win_wsa_errno_neg
 win_wsa_errno_neg:
 	movsxd %edi, %rax
@@ -38,6 +38,90 @@ win_wsa_fail:
 	call WSAGetLastError
 	mov %eax, %edi
 	call win_wsa_errno_neg
+	ret
+
+# SysV no-body fns called from runtime/epoll_soft.tu (registercall).
+.global runtime_win_api_wsapoll
+runtime_win_api_wsapoll:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rdx, %r8
+	mov %rsi, %rdx
+	mov %rdi, %rcx
+	call WSAPoll
+	movsxd %eax, %rax
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+.global runtime_win_api_accept
+runtime_win_api_accept:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rdi, %rcx
+	xor %edx, %edx
+	xor %r8, %r8
+	call accept
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+.global runtime_win_api_recv
+runtime_win_api_recv:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rcx, %r9
+	mov %rdx, %r8
+	mov %rsi, %rdx
+	mov %rdi, %rcx
+	call recv
+	movsxd %eax, %rax
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+.global runtime_win_api_sleep
+runtime_win_api_sleep:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %edi, %ecx
+	call Sleep
+	xor %eax, %eax
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+.global runtime_win_api_wsafail
+runtime_win_api_wsafail:
+	jmp win_wsa_fail
+
+# SysV trampolines → Tu stack ABI. Framed sys_* must call these, not Tu directly.
+.global win_sockaddr_win_copy
+win_sockaddr_win_copy:
+	push %rdx
+	push %rsi
+	push %rdi
+	call runtime_win_sockaddr_win_copy_tu
+	ret
+
+.global win_sockaddr_to_linux
+win_sockaddr_to_linux:
+	push %rdi
+	call runtime_win_sockaddr_to_linux_tu
+	ret
+
+.global win_eventfd_loopback
+win_eventfd_loopback:
+	push %rdi
+	call runtime_win_eventfd_loopback_tu
 	ret
 
 # ---- socket ----
@@ -130,13 +214,18 @@ sys_bind:
 	push %r12
 	push %r13
 	and $-16, %rsp
-	sub $32, %rsp
+	sub $192, %rsp
 	mov %rsi, %r12
 	mov %rdx, %r13
 	call win_fd_get
 	cmp $0, %rax
 	je sb_err
 	mov %rax, %rbx
+	mov %r12, %rdi
+	mov %r13, %rsi
+	lea 32(%rsp), %rdx
+	call win_sockaddr_win_copy
+	mov %rax, %r12
 	mov %rbx, %rcx
 	mov %r12, %rdx
 	mov %r13, %r8
@@ -165,13 +254,18 @@ sys_connect:
 	push %r12
 	push %r13
 	and $-16, %rsp
-	sub $32, %rsp
+	sub $192, %rsp
 	mov %rsi, %r12
 	mov %rdx, %r13
 	call win_fd_get
 	cmp $0, %rax
 	je scn_err
 	mov %rax, %rbx
+	mov %r12, %rdi
+	mov %r13, %rsi
+	lea 32(%rsp), %rdx
+	call win_sockaddr_win_copy
+	mov %rax, %r12
 	mov %rbx, %rcx
 	mov %r12, %rdx
 	mov %r13, %r8
@@ -294,8 +388,11 @@ sa4_nostash:
 	cmp $-1, %rax
 	je sa4_wsa
 	mov %rax, %rbx
-	# Skip AF_INET6 family rewrite: peff asmer rejects/misencodes 1(%r12) stores.
+	# Skip AF_INET6 family rewrite on the listen socket itself.
+	# Peer sockaddr is rewritten via win_sockaddr_to_linux_tu after accept/getpeername.
 sa4_nb:
+	mov %r12, %rdi
+	call win_sockaddr_to_linux
 	mov %r14, %rax
 	and $0x800, %rax
 	cmp $0, %rax
@@ -406,7 +503,7 @@ sys_sendto:
 	push %r14
 	push %r15
 	and $-16, %rsp
-	sub $160, %rsp
+	sub $192, %rsp
 	mov %rsi, %r12
 	mov %rdx, %r13
 	mov %rcx, %r14
@@ -418,31 +515,22 @@ sys_sendto:
 	call win_fd_get
 	cmp $0, %rax
 	je ssto_err
-	mov %rax, 56(%rsp)
-	cmp $0, %r15
-	je ssto_call
-	movzbl (%r15), %eax
-	cmp $10, %eax
-	jne ssto_call
-	# Copy sockaddr to stack and rewrite AF_INET6.
-	xor %ecx, %ecx
-ssto_cpy:
-	cmp %rbx, %rcx
-	jge ssto_cpy_done
-	mov %r15, %rsi
-	add %rcx, %rsi
-	movzbl (%rsi), %edx
-	lea 64(%rsp), %rdi
-	add %rcx, %rdi
-	movb %dl, (%rdi)
-	add $1, %ecx
-	jmp ssto_cpy
-ssto_cpy_done:
-	movb $23, 64(%rsp)
-	movb $0, 65(%rsp)
-	lea 64(%rsp), %r15
+	mov %rax, 48(%rsp)
+	mov %r12, 8(%rsp)
+	mov %r13, 16(%rsp)
+	mov %r14, 24(%rsp)
+	mov %rbx, 56(%rsp)
+	mov %r15, %rdi
+	mov %rbx, %rsi
+	lea 64(%rsp), %rdx
+	call win_sockaddr_win_copy
+	mov %rax, %r15
+	mov 8(%rsp), %r12
+	mov 16(%rsp), %r13
+	mov 24(%rsp), %r14
+	mov 56(%rsp), %rbx
 ssto_call:
-	mov 56(%rsp), %rcx
+	mov 48(%rsp), %rcx
 	mov %r12, %rdx
 	mov %r13, %r8
 	mov %r14, %r9
@@ -530,7 +618,11 @@ sys_recvfrom:
 	call win_wsa_fail
 	jmp srf_out
 srf_fix:
-	# Skip AF_INET6 rewrite (avoid 1(%r15) displacement form).
+	mov %eax, 24(%rsp)
+	mov %r15, %rdi
+	call win_sockaddr_to_linux
+	mov 24(%rsp), %eax
+	movsxd %eax, %rax
 	jmp srf_out
 srf_err:
 	mov $-9, %rax
@@ -757,16 +849,8 @@ sys_eventfd:
 	cmp $-1, %rax
 	je sefd_wsa
 	mov %rax, %rbx
-	# sockaddr_in 127.0.0.1:0
-	lea 48(%rsp), %rax
-	movq $0, (%rax)
-	movq $0, 8(%rax)
-	movb $2, (%rax)
-	movb $0, 1(%rax)
-	movb $127, 4(%rax)
-	movb $0, 5(%rax)
-	movb $0, 6(%rax)
-	movb $1, 7(%rax)
+	lea 48(%rsp), %rdi
+	call win_eventfd_loopback
 	mov %rbx, %rcx
 	lea 48(%rsp), %rdx
 	mov $16, %r8
@@ -842,562 +926,54 @@ sys_epoll_create1:
 
 .global sys_epoll_ctl
 sys_epoll_ctl:
-	push %rbp
-	mov %rsp, %rbp
-	push %rbx
-	push %r12
-	push %r13
-	push %r14
-	push %r15
-	and $-16, %rsp
-	mov %rsi, %r12
-	mov %rdx, %r13
-	mov %rcx, %r14
-	# rdi still epfd
-	call win_ep_get_fd
-	cmp $0xFF, %eax
-	je sectl_err
-	cmp $16, %eax
-	jge sectl_err
-	mov %rax, %rbx
+	# SysV rdi=epfd rsi=op rdx=fd rcx=event*
+	# Tu stack ABI: rightmost pushed first; callee cleans.
+	lea win_ep_fd_of(%rip), %rax
+	push %rax
+	lea win_ep_toks(%rip), %rax
+	push %rax
+	lea win_ep_evs(%rip), %rax
+	push %rax
+	lea win_ep_fds(%rip), %rax
+	push %rax
+	lea win_ep_n(%rip), %rax
+	push %rax
 	lea win_ep_used(%rip), %rax
-	add %rbx, %rax
-	movzbl (%rax), %eax
-	cmp $0, %eax
-	je sectl_err
-	# Linux epoll_ctl ops (netio/sys/epoll.tu): ADD=1 DEL=2 MOD=3.
-	cmp $2, %r12
-	je sectl_del
-	cmp $1, %r12
-	je sectl_add
-	cmp $3, %r12
-	je sectl_mod
-	mov $-22, %rax
-	jmp sectl_out
-sectl_add:
-	lea win_ep_n(%rip), %rax
-	mov %rbx, %rcx
-	shl $2, %rcx
-	add %rcx, %rax
-	mov (%rax), %eax
-	mov %rax, %r15
-	xor %ecx, %ecx
-sectl_af:
-	cmp %r15, %rcx
-	jge sectl_anew
-	mov %ebx, %eax
-	shl $7, %eax
-	add %ecx, %eax
-	lea win_ep_fds(%rip), %rdx
-	mov %eax, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %eax
-	cmp %r13, %rax
-	je sectl_aupd
-	add $1, %ecx
-	jmp sectl_af
-sectl_anew:
-	cmp $128, %r15
-	jge sectl_enospc
-	# Slot index = ep_idx*128 + n. fds/evs/toks must all use slot (wait does).
-	mov %ebx, %eax
-	shl $7, %eax
-	add %r15, %rax
-	mov %rax, %r9
-	lea win_ep_fds(%rip), %rdx
-	mov %r9d, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov %r13d, (%rdx)
-	mov (%r14), %edx
-	lea win_ep_evs(%rip), %rcx
-	mov %r9d, %esi
-	shl $2, %esi
-	add %rsi, %rcx
-	mov %edx, (%rcx)
-	mov 4(%r14), %rdx
-	lea win_ep_toks(%rip), %rcx
-	mov %r9d, %esi
-	shl $3, %esi
-	add %rsi, %rcx
-	mov %rdx, (%rcx)
-	add $1, %r15
-	lea win_ep_n(%rip), %rax
-	mov %rbx, %rcx
-	shl $2, %rcx
-	add %rcx, %rax
-	mov %r15, %rdx
-	mov %edx, (%rax)
-	xor %eax, %eax
-	jmp sectl_out
-sectl_aupd:
-sectl_mod:
-	xor %ecx, %ecx
-	lea win_ep_n(%rip), %rax
-	mov %rbx, %rdx
-	shl $2, %rdx
-	add %rdx, %rax
-	mov (%rax), %eax
-	mov %rax, %r15
-sectl_mf:
-	cmp %r15, %rcx
-	jge sectl_enoent
-	mov %ebx, %eax
-	shl $7, %eax
-	add %ecx, %eax
-	lea win_ep_fds(%rip), %rdx
-	mov %eax, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %eax
-	cmp %r13, %rax
-	je sectl_mdo
-	add $1, %ecx
-	jmp sectl_mf
-sectl_mdo:
-	# ecx = index in set; rebuild slot (eax currently holds fd from fds[slot]).
-	mov %ebx, %eax
-	shl $7, %eax
-	add %ecx, %eax
-	mov %rax, %r9
-	mov (%r14), %edx
-	lea win_ep_evs(%rip), %rcx
-	mov %r9d, %esi
-	shl $2, %esi
-	add %rsi, %rcx
-	mov %edx, (%rcx)
-	mov 4(%r14), %rdx
-	lea win_ep_toks(%rip), %rcx
-	mov %r9d, %esi
-	shl $3, %esi
-	add %rsi, %rcx
-	mov %rdx, (%rcx)
-	xor %eax, %eax
-	jmp sectl_out
-sectl_del:
-	xor %ecx, %ecx
-	lea win_ep_n(%rip), %rax
-	mov %rbx, %rdx
-	shl $2, %rdx
-	add %rdx, %rax
-	mov (%rax), %eax
-	mov %rax, %r15
-sectl_df:
-	cmp %r15, %rcx
-	jge sectl_ok0
-	mov %ebx, %eax
-	shl $7, %eax
-	add %ecx, %eax
-	lea win_ep_fds(%rip), %rdx
-	mov %eax, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %eax
-	cmp %r13, %rax
-	je sectl_ddo
-	add $1, %ecx
-	jmp sectl_df
-sectl_ddo:
-	mov %r15, %r8
-	sub $1, %r8
-	mov %ebx, %eax
-	shl $7, %eax
-	mov %eax, %r9
-	add %ecx, %eax
-	add %r8, %r9
-	lea win_ep_fds(%rip), %rdx
-	mov %r9, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %esi
-	lea win_ep_fds(%rip), %rdx
-	mov %eax, %edi
-	shl $2, %edi
-	add %rdi, %rdx
-	mov %esi, (%rdx)
-	lea win_ep_evs(%rip), %rdx
-	mov %r9, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %esi
-	lea win_ep_evs(%rip), %rdx
-	mov %eax, %edi
-	shl $2, %edi
-	add %rdi, %rdx
-	mov %esi, (%rdx)
-	lea win_ep_toks(%rip), %rdx
-	mov %r9, %esi
-	shl $3, %esi
-	add %rsi, %rdx
-	mov (%rdx), %rsi
-	lea win_ep_toks(%rip), %rdx
-	mov %eax, %edi
-	shl $3, %edi
-	add %rdi, %rdx
-	mov %rsi, (%rdx)
-	lea win_ep_n(%rip), %rax
-	mov %rbx, %rcx
-	shl $2, %rcx
-	add %rcx, %rax
-	# win_ep_n is i32[16]; must store 32-bit or adjacent slots corrupt.
-	mov %r8d, (%rax)
-sectl_ok0:
-	xor %eax, %eax
-	jmp sectl_out
-sectl_enospc:
-	mov $-24, %rax
-	jmp sectl_out
-sectl_enoent:
-	mov $-2, %rax
-	jmp sectl_out
-sectl_err:
-	mov $-9, %rax
-sectl_out:
-	lea -40(%rbp), %rsp
-	pop %r15
-	pop %r14
-	pop %r13
-	pop %r12
-	pop %rbx
-	pop %rbp
+	push %rax
+	push %rcx
+	push %rdx
+	push %rsi
+	push %rdi
+	call runtime_win_epoll_ctl_tu
 	retq
 
 .global sys_epoll_wait
 sys_epoll_wait:
-	push %rbp
-	mov %rsp, %rbp
-	push %rbx
-	push %r12
-	push %r13
-	push %r14
-	push %r15
-	and $-16, %rsp
-	sub $2112, %rsp
-	mov %rsi, %r12
-	mov %rdx, %r13
-	mov %rcx, %r14
-	call win_ep_get_fd
-	cmp $0xFF, %eax
-	je sew_err
-	cmp $16, %eax
-	jge sew_err
-	mov %rax, %rbx
-	lea win_ep_used(%rip), %rax
-	add %rbx, %rax
-	movzbl (%rax), %eax
-	cmp $0, %eax
-	je sew_err
+	# SysV rdi=epfd rsi=events rdx=maxevents rcx=timeout
+	lea win_accept_stash(%rip), %rax
+	push %rax
+	lea win_fd_listen(%rip), %rax
+	push %rax
+	lea win_fds(%rip), %rax
+	push %rax
+	lea win_ep_fd_of(%rip), %rax
+	push %rax
+	lea win_ep_toks(%rip), %rax
+	push %rax
+	lea win_ep_evs(%rip), %rax
+	push %rax
+	lea win_ep_fds(%rip), %rax
+	push %rax
 	lea win_ep_n(%rip), %rax
-	mov %rbx, %rcx
-	shl $2, %rcx
-	add %rcx, %rax
-	mov (%rax), %eax
-	mov %rax, %r15
-	cmp $0, %r15
-	jne sew_build
-	mov %r14, %rcx
-	cmp $-1, %r14
-	jne sew_sl
-	mov $0xFFFFFFFF, %ecx
-sew_sl:
-	call Sleep
-	xor %eax, %eax
-	jmp sew_out
-sew_build:
-	xor %ecx, %ecx
-sew_bloop:
-	cmp %r15, %rcx
-	jge sew_poll
-	mov %ebx, %eax
-	shl $7, %eax
-	add %ecx, %eax
-	lea win_ep_fds(%rip), %rdx
-	mov %eax, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %edi
+	push %rax
+	lea win_ep_used(%rip), %rax
 	push %rax
 	push %rcx
-	call win_fd_get
-	pop %rcx
-	pop %r8
-	mov %rcx, %rdx
-	shl $4, %rdx
-	lea 64(%rsp), %r9
-	add %rdx, %r9
-	mov %rax, (%r9)
-	lea win_ep_evs(%rip), %rdx
-	mov %r8, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %eax
-	xor %edi, %edi
-	mov %eax, %edx
-	and $0x1, %edx
-	cmp $0, %edx
-	je sew_po
-	add $0x100, %edi
-sew_po:
-	mov %eax, %edx
-	and $0x4, %edx
-	cmp $0, %edx
-	je sew_ps
-	add $0x10, %edi
-sew_ps:
-	mov %edi, %eax
-	lea 8(%r9), %rsi
-	movb %al, (%rsi)
-	shr $8, %eax
-	movb %al, 1(%rsi)
-	movb $0, 2(%rsi)
-	movb $0, 3(%rsi)
-	add $1, %ecx
-	jmp sew_bloop
-sew_poll:
-	# save ep_idx; r14 becomes out-count after poll
-	mov %rbx, 56(%rsp)
-	# WSAPoll never signals listen FD_ACCEPT. Accept/peek probes used to run
-	# only AFTER WSAPoll returned — so timeout=-1 parked forever while the
-	# listen backlog was already non-empty (MT stress hung after a few accepts).
-	# Preflight listen fds: stash a connection and force timeout 0 when ready.
-	mov %r14, 8(%rsp)
-	xor %ecx, %ecx
-sew_pre:
-	cmp %r15, %rcx
-	jge sew_pre_done
-	mov 56(%rsp), %eax
-	shl $7, %eax
-	add %ecx, %eax
-	lea win_ep_evs(%rip), %rdx
-	mov %eax, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %eax
-	and $0x1, %eax
-	cmp $0, %eax
-	je sew_pre_n
-	lea win_ep_fds(%rip), %rdx
-	mov 56(%rsp), %eax
-	shl $7, %eax
-	add %ecx, %eax
-	mov %eax, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %edi
-	cmp $0, %edi
-	jl sew_pre_n
-	cmp $256, %edi
-	jge sew_pre_n
-	lea win_fd_listen(%rip), %rax
-	add %rdi, %rax
-	movzbl (%rax), %eax
-	cmp $0, %eax
-	je sew_pre_n
-	mov %edi, 40(%rsp)
-	lea win_accept_stash(%rip), %rax
-	mov %rdi, %rsi
-	shl $3, %rsi
-	add %rsi, %rax
-	cmp $0, (%rax)
-	jne sew_pre_hit
-	mov 40(%rsp), %edi
-	call win_fd_get
-	cmp $0, %rax
-	je sew_pre_n
-	mov %rax, %rcx
-	xor %edx, %edx
-	xor %r8, %r8
-	call accept
-	cmp $-1, %rax
-	je sew_pre_n
-	lea win_accept_stash(%rip), %rdx
-	mov 40(%rsp), %edi
-	mov %rdi, %rsi
-	shl $3, %rsi
-	add %rsi, %rdx
-	mov %rax, (%rdx)
-sew_pre_hit:
-	movq $0, 8(%rsp)
-	jmp sew_pre_done
-sew_pre_n:
-	add $1, %ecx
-	jmp sew_pre
-sew_pre_done:
-	# Infinite wait + silent listen/stream readiness would park forever.
-	# Cap at 1ms so post-WSAPoll accept/MSG_PEEK probes can retry.
-	mov 8(%rsp), %r8
-	cmp $-1, %r8
-	jne sew_do_poll
-	movq $1, 8(%rsp)
-sew_do_poll:
-	lea 64(%rsp), %rcx
-	mov %r15, %rdx
-	mov 8(%rsp), %r8
-	call WSAPoll
-	cmp $-1, %eax
-	je sew_wsa
-	xor %ecx, %ecx
-	xor %r14, %r14
-sew_pack:
-	cmp %r15, %rcx
-	jge sew_done
-	cmp %r13, %r14
-	jge sew_done
-	mov %rcx, %rdx
-	shl $4, %rdx
-	lea 64(%rsp), %r9
-	add %rdx, %r9
-	# WSAPOLLFD.revents is a 16-bit SHORT at +10. POLLIN=0x0100 lives in the
-	# high byte ? reading only the low byte drops all readable events (UDP hang).
-	movzwl 10(%r9), %eax
-	cmp $0, %eax
-	jne sew_have
-	# WSAPoll misses listen FD_ACCEPT and often level-triggered POLLIN on
-	# connected sockets (MSG_PEEK can succeed while revents stays 0).
-	mov 56(%rsp), %eax
-	shl $7, %eax
-	add %ecx, %eax
-	lea win_ep_evs(%rip), %rdx
-	mov %eax, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %eax
-	and $0x1, %eax
-	cmp $0, %eax
-	je sew_pn
-	lea win_ep_fds(%rip), %rdx
-	mov 56(%rsp), %eax
-	shl $7, %eax
-	add %ecx, %eax
-	mov %eax, %esi
-	shl $2, %esi
-	add %rsi, %rdx
-	mov (%rdx), %edi
-	cmp $0, %edi
-	jl sew_pn
-	cmp $256, %edi
-	jge sew_pn
-	# Save pack index / tu-fd across Win64 calls (no push — pollfd at 64(%rsp)).
-	mov %ecx, 32(%rsp)
-	mov %edi, 40(%rsp)
-	lea win_accept_stash(%rip), %rax
-	mov %rdi, %rsi
-	shl $3, %rsi
-	add %rsi, %rax
-	cmp $0, (%rax)
-	jne sew_force_in_rest
-	movq $0, 48(%rsp)
-	mov 40(%rsp), %edi
-	call win_fd_get
-	cmp $0, %rax
-	je sew_peek
-	mov %rax, 48(%rsp)
-	mov %rax, %rcx
-	xor %edx, %edx
-	xor %r8, %r8
-	call accept
-	cmp $-1, %rax
-	je sew_peek
-	lea win_accept_stash(%rip), %rdx
-	mov 40(%rsp), %edi
-	mov %rdi, %rsi
-	shl $3, %rsi
-	add %rsi, %rdx
-	mov %rax, (%rdx)
-	jmp sew_force_in_rest
-sew_peek:
-	# MSG_PEEK one byte — force POLLIN when kernel buffer has data.
-	mov 48(%rsp), %rcx
-	cmp $0, %rcx
-	jne sew_peek_recv
-	mov 40(%rsp), %edi
-	call win_fd_get
-	cmp $0, %rax
-	je sew_probe_miss
-	mov %rax, %rcx
-sew_peek_recv:
-	lea 24(%rsp), %rdx
-	movb $0, (%rdx)
-	mov $1, %r8
-	mov $2, %r9
-	call recv
-	cmp $0, %eax
-	jle sew_probe_miss
-sew_force_in_rest:
-	mov 32(%rsp), %ecx
-	mov $0x100, %eax
-	jmp sew_have
-sew_probe_miss:
-	mov 32(%rsp), %ecx
-	jmp sew_pn
-sew_force_in:
-	mov $0x100, %eax
-sew_have:
-	xor %edi, %edi
-	mov %eax, %edx
-	# POLLIN = POLLRDNORM|POLLRDBAND (0x0100|0x0200)
-	and $0x300, %edx
-	cmp $0, %edx
-	je sew_pq
-	add $0x1, %edi
-sew_pq:
-	mov %eax, %edx
-	and $0x10, %edx
-	cmp $0, %edx
-	je sew_pr
-	add $0x4, %edi
-sew_pr:
-	mov %eax, %edx
-	and $0x1, %edx
-	cmp $0, %edx
-	je sew_ph
-	add $0x8, %edi
-sew_ph:
-	mov %eax, %edx
-	and $0x2, %edx
-	cmp $0, %edx
-	je sew_pw
-	add $0x10, %edi
-sew_pw:
-	mov %r14, %rax
-	mov %rax, %rdx
-	shl $3, %rax
-	shl $2, %rdx
-	add %rdx, %rax
-	add %r12, %rax
-	mov %edi, (%rax)
-	mov 56(%rsp), %edx
-	shl $7, %edx
-	add %ecx, %edx
-	lea win_ep_toks(%rip), %r8
-	mov %edx, %esi
-	shl $3, %esi
-	add %rsi, %r8
-	mov (%r8), %r8
-	mov %r8, 4(%rax)
-	add $1, %r14
-sew_pn:
-	add $1, %ecx
-	jmp sew_pack
-sew_done:
-	mov %r14, %rax
-	jmp sew_out
-sew_wsa:
-	call win_wsa_fail
-	jmp sew_out
-sew_err:
-	mov $-9, %rax
-sew_out:
-	lea -40(%rbp), %rsp
-	pop %r15
-	pop %r14
-	pop %r13
-	pop %r12
-	pop %rbx
-	pop %rbp
+	push %rdx
+	push %rsi
+	push %rdi
+	call runtime_win_epoll_wait_tu
 	retq
-
 .global sys_kqueue
 sys_kqueue:
 	mov $-38, %rax
@@ -1620,9 +1196,11 @@ win_ep_n:
 win_ep_fds:
 	.zero 8192
 .align 8
+.globl win_ep_evs
 win_ep_evs:
 	.zero 8192
 .align 8
+.globl win_ep_toks
 win_ep_toks:
 	.zero 16384
 .align 8

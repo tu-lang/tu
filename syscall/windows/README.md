@@ -18,8 +18,8 @@ Nonblocking `connect` maps `WSAEWOULDBLOCK`/`WSAEINPROGRESS` → `-EINPROGRESS` 
 `send`/`recv`/`recvfrom`/`sendto` treat Winsock `SOCKET_ERROR` via **32-bit**
 `cmp $-1, %eax` (high half of `rax` is zero on error).
 
-Reactor: software `sys_epoll_*` over `WSAPoll` (same `packages/netio/sys/epoll.tu`
-path as Linux). `sys_eventfd` is a UDP loopback waker. True overlapped IOCP
+Reactor: software `sys_epoll_*` over `WSAPoll` (policy in `platform/windows/epoll_soft.tu`).
+`sys_eventfd` is a UDP loopback waker (sockaddr fill in `sock_flags.tu`). True overlapped IOCP
 (AcceptEx / ConnectEx / WSARecv) is a later slice.
 
 ## FS / threads

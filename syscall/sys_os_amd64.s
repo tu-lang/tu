@@ -50,3 +50,7 @@ os_win_find_close:
 os_win_find_name:
 	mov $-38, %rax
 	retq
+.global os_win_getcwd
+os_win_getcwd:
+	mov $-38, %rax
+	retq
