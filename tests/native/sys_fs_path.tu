@@ -260,5 +260,48 @@ fn main(){
     sys.close(cfd)
     sys.close(lfd)
 
+    // pipe2: anonymous pipe + fd table; blocking write/read round-trip.
+    // Same API as asyncio.process make_pipe (O_CLOEXEC) and POSIX pipe2.
+    _pfd<i32:2> = null
+    pfp<i32*> = &_pfd
+    p2<i32> = std.pipe2(pfp, 0)
+    if p2 != 0 {
+        os.dief("pipe2 %d", p2)
+    }
+    prd<i32> = pfp[0]
+    pwr<i32> = pfp[1]
+    if prd < 3 {
+        os.dief("pipe2 read fd %d", prd)
+    }
+    if pwr < 3 {
+        os.dief("pipe2 write fd %d", pwr)
+    }
+    if prd == pwr {
+        os.die("pipe2 same fd")
+    }
+    pwn<i64> = sys.write(pwr, wbuf, 6)
+    if pwn != 6 {
+        os.dief("pipe2 write %d", pwn)
+    }
+    pbuf<u8*> = runtime.malloc(8, 0.(i8), 1.(i8))
+    prn<i64> = sys.read(prd, pbuf, 6)
+    if prn != 6 {
+        os.dief("pipe2 read %d", prn)
+    }
+    if pbuf[0] != 104 {
+        os.die("pipe2 byte0")
+    }
+    if pbuf[1] != 105 {
+        os.die("pipe2 byte1")
+    }
+    sys.close(prd)
+    sys.close(pwr)
+    p2c<i32> = std.pipe2(pfp, std.O_CLOEXEC)
+    if p2c != 0 {
+        os.dief("pipe2 cloexec %d", p2c)
+    }
+    sys.close(pfp[0])
+    sys.close(pfp[1])
+
     fmt.println("test sys fs path success")
 }

@@ -35,6 +35,7 @@ rem RFC-107 P1: fd / epoll maps, ctl/wait, AF rewrite, eventfd loopback fill.
 copy /y "%ROOT%platform\windows\fd_table.tu" "%COPKG%\runtime\fd_table.tu" >nul
 copy /y "%ROOT%platform\windows\epoll_soft.tu" "%COPKG%\runtime\epoll_soft.tu" >nul
 copy /y "%ROOT%platform\windows\sock_flags.tu" "%COPKG%\runtime\sock_flags.tu" >nul
+copy /y "%ROOT%platform\windows\pipe.tu" "%COPKG%\runtime\pipe.tu" >nul
 rem Overlay Windows netio platform hooks (connect finish / accept prep).
 copy /y "%ROOT%platform\windows\netio_platform.tu" "%COPKG%\netio\sys\platform.tu" >nul
 if errorlevel 1 (
