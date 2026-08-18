@@ -1,8 +1,8 @@
 基于tu-lang自举实现的tol链接器,0依赖glibc,目前已支持任意amd64-linux下的编译执行，见:`linker/bin/amd64_bin`
 - [x] amd64
     - [x] linux
-    - [ ] mac
-    - [ ] windows
+    - [x] mac
+    - [x] windows
 
 # 链接测试demo
 ```

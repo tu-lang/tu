@@ -245,5 +245,11 @@ func link_objects(files, outfile) {
     if all == null {
         return 1
     }
-    return peff_link_objects_host(all, outfile)
+    // Do not `return` a static i32 straight through a dyn func — the driver
+    // `rc = peff.link_objects(...)` then sees a null dyn value (unary-op).
+    st<i32> = peff_link_objects_host(all, outfile)
+    if st != 0 {
+        return 1
+    }
+    return 0
 }
