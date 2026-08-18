@@ -10,11 +10,11 @@ Instruct::insthead(){
     // skips register-pair REX paths (truncates on Darwin high VA).
     if this.type == ast.KW_LEA && this.left == ast.TY_IMMED {
         if ast.r8islow(this.tks.addr[1]) {
-            this.append1(0x48.(i8))
+            this.appendRexW(0x48.(i8))
             return true
         }
         if ast.r8ishigh(this.tks.addr[1]) {
-            this.append1(0x4c.(i8))
+            this.appendRexW(0x4c.(i8))
             return true
         }
         return true
@@ -27,9 +27,9 @@ Instruct::insthead(){
         if this.left == ast.TY_MEM {
             if this.type == ast.KW_CVTSI2SSQ {
                 if ast.isfreghi(this.tks.addr[1])
-                    this.append1(0x4c.(i8))
+                    this.appendRexW(0x4c.(i8))
                 else
-                    this.append1(0x48.(i8))
+                    this.appendRexW(0x48.(i8))
                 return true
             }else if ast.r8ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1])
                 this.append1(0x45.(i8))
@@ -99,9 +99,7 @@ Instruct::insthead(){
     match this.type {
         ast.KW_MOVW: {
             this.append1(0x66.(i8))
-            return true
         }
-        ast.KW_MOVL | ast.KW_MOVB: return true 
     }
     if this.type == ast.KW_MOV && this.has16bits {
         this.append1(0x66.(i8))
@@ -132,7 +130,7 @@ Instruct::insthead(){
             return true
         }
         if ast.r4ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1]) {
-            this.append1(0x4d.(i8))
+            this.appendRexW(0x4d.(i8))
             return true
         }
         if ast.r8ishigh(this.tks.addr[0]) && ast.r4ishigh(this.tks.addr[1]) {
@@ -141,29 +139,31 @@ Instruct::insthead(){
         }
     }
     if ast.r8ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1]){
-        this.append1(0x4d.(i8))
+        this.appendRexW(0x4d.(i8))
         return true
     }
     if( (this.tks.addr[0] == ast.TK_NUMBER || ast.r8islow(this.tks.addr[0])) && ast.r8islow(this.tks.addr[1])){
         if this.type == ast.KW_CVTSI2SDL || this.type == ast.KW_CVTSI2SSL {}
-        else    this.append1(0x48.(i8))
+        else    this.appendRexW(0x48.(i8))
         return true
     }
     if( (this.tks.addr[0] == ast.TK_NUMBER || ast.r8islow(this.tks.addr[0])) && ast.r8ishigh(this.tks.addr[1])){
         if(this.type == ast.KW_MUL){
             if(this.tks.addr[0] == ast.TK_NUMBER)
-                return this.append1(0x4d.(i8))
+                this.appendRexW(0x4d.(i8))
+                return true
             else
-                return this.append1(0x4c.(i8))
+                this.appendRexW(0x4c.(i8))
+                return true
         }
         if this.type == ast.KW_CVTSI2SDL || this.type == ast.KW_CVTSI2SSL
             this.append1(0x44.(i8))
         else if(this.left == ast.TY_MEM || this.is_rel)
-            this.append1(0x4c.(i8))
+            this.appendRexW(0x4c.(i8))
         else if ast.isfreg(this.tks.addr[1]) || ast.isfreg(this.tks.addr[0])
-            this.append1(0x4c.(i8))
+            this.appendRexW(0x4c.(i8))
         else 
-            this.append1(0x49.(i8))
+            this.appendRexW(0x49.(i8))
         return true
     }
     if(ast.r8ishigh(this.tks.addr[0]) && ast.isr4(this.tks.addr[1])){
@@ -172,21 +172,23 @@ Instruct::insthead(){
     }
     if(ast.r8ishigh(this.tks.addr[0]) && ast.r8islow(this.tks.addr[1])){
         if(this.left == ast.TY_MEM || this.type == ast.KW_MUL)
-            this.append1(0x49.(i8))
+            this.appendRexW(0x49.(i8))
         else if ast.isfreg(this.tks.addr[1]) || ast.isfreg(this.tks.addr[0])
-            this.append1(0x49.(i8))
+            this.appendRexW(0x49.(i8))
         else 
-            this.append1(0x4c.(i8))
+            this.appendRexW(0x4c.(i8))
         return true
     }
     if(ast.r8ishigh(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1])){
-        this.append1(0x4d.(i8))
+        this.appendRexW(0x4d.(i8))
         return true
     }
     if(ast.isr4(this.tks.addr[0]) && ast.r8islow(this.tks.addr[1])){
         if this.type == ast.KW_CVTSI2SDL || this.type ==ast.KW_CVTSI2SSL {}
-        else if this.right != ast.TY_MEM
-            return this.append1(0x48.(i8))
+        else if this.right != ast.TY_MEM {
+            this.appendRexW(0x48.(i8))
+            return true
+        }
     }
     if(ast.isr4(this.tks.addr[0]) && ast.r8ishigh(this.tks.addr[1])){
         if(this.right == ast.TY_MEM)
@@ -194,18 +196,28 @@ Instruct::insthead(){
         else if this.type == ast.KW_CVTSI2SDL || this.type == ast.KW_CVTSI2SSL
             this.append1(0x44.(i8))
         else 
-            this.append1(0x4c.(i8))
+            this.appendRexW(0x4c.(i8))
         return true
     }
     if(ast.isr1(this.tks.addr[0]) && this.right != ast.TY_MEM){
         if(ast.r8islow(this.tks.addr[1]))
-            this.append1(0x48.(i8))
+            this.appendRexW(0x48.(i8))
         if(ast.r8ishigh(this.tks.addr[1])){
             if(this.type == ast.KW_SHL || this.type == ast.KW_SHR || this.type == ast.KW_SAR)
-                this.append1(0x49.(i8))
+                this.appendRexW(0x49.(i8))
             else
-                this.append1(0x4c.(i8))
+                this.appendRexW(0x4c.(i8))
         }
+        return true
+    }
+    if(ast.isr1(this.tks.addr[0]) && this.right == ast.TY_MEM){
+        if ast.r8ishigh(this.tks.addr[1])
+            this.append1(0x41.(i8))
+        return true
+    }
+    if(ast.isr1(this.tks.addr[1]) && this.left == ast.TY_MEM){
+        if ast.r8ishigh(this.tks.addr[0])
+            this.append1(0x41.(i8))
         return true
     }
 }
@@ -259,8 +271,10 @@ Instruct::genTwoInst()
         -1 : {
             this.insthead()
             match this.type {
-                ast.KW_MOV | ast.KW_MOVQ :{
-                    if(ast.isr4(this.tks.addr[1])){
+                ast.KW_MOV | ast.KW_MOVQ | ast.KW_MOVL :{
+                    // B8+rd is imm32->%eXX only. label(%rip),%eax is is_rel and must
+                    // not become mov $0,%eax. movl shares this path (mod=-1).
+                    if ast.isr4(this.tks.addr[1]) && this.is_rel == 0 {
                         opcode = 0xb8 + this.modrm.reg
                         this.append1(opcode)
                         this.append(this.inst.imm,4.(i8))
@@ -303,7 +317,7 @@ Instruct::genTwoInst()
                     else
                         exchar = 0xc0 + this.modrm.reg
                 }
-                ast.KW_CMP:{
+                ast.KW_CMP | ast.KW_CMPL:{
                     len = 1
                     imm<i32> = this.inst.imm
                     exchar = 0xf8
@@ -449,6 +463,34 @@ Instruct::genTwoInst()
                 }
                 ast.KW_MOVW: len = 2
                 ast.KW_MOVQ | ast.KW_MOVL: len = 4
+                ast.KW_CMP | ast.KW_CMPL: {
+                    needprefix = false
+                    imm<i32> = this.inst.imm
+                    mrm_byte<i8> = 0x38 + (this.modrm.mod << 6) + (this.modrm.rm & 7)
+                    if imm > I8_MAX || imm <= I8_MIN {
+                        opcode = 0x81
+                        len = 4
+                        needprefix = true
+                    }else{
+                        opcode  = 0x83
+                        len = 1
+                    }
+                    if needprefix
+                        this.insthead()
+                    else if this.type == ast.KW_CMPL && this.right == ast.TY_MEM &&
+                            (this.modrm.rm == 4 || this.modrm.rm == 5 ||
+                             ast.r8ishigh(this.tks.addr[1]) || ast.r4ishigh(this.tks.addr[1]))
+                        this.insthead()
+                    this.append1(opcode.(i8))
+                    this.append1(mrm_byte)
+                    if this.modrm.rm == 4 || this.modrm.rm == 5
+                        this.writeSIB()
+                    if this.inst.dispLen
+                        this.append(this.inst.disp,this.inst.dispLen)
+                    if this.left == ast.TY_IMMED
+                        this.append(this.inst.imm,len)
+                    return true
+                }
             }
             if(needprefix)
                 this.insthead()
@@ -494,23 +536,28 @@ Instruct::genTwoInst()
                         opcode = 0x68 +  this.modrm.rm
                     }
                 }
-                ast.KW_CMP:{
+                ast.KW_CMP | ast.KW_CMPL:{
                     needprefix = false
                     imm<i32> = this.inst.imm
+                    mrm_byte<i8> = 0x38 + (this.modrm.mod << 6) + (this.modrm.rm & 7)
                     if imm > I8_MAX || imm <= I8_MIN {
-                        opcode = 0x8178
+                        opcode = 0x81
                         len = 4
                         needprefix = true
                     }else{
-                        opcode  = 0x8378
+                        opcode  = 0x83
                         len = 1
                     }
-                    opcode += this.modrm.rm
                     
                     if needprefix
                         this.insthead()
+                    else if this.type == ast.KW_CMPL && this.right == ast.TY_MEM &&
+                            (this.modrm.rm == 4 || this.modrm.rm == 5 ||
+                             ast.r8ishigh(this.tks.addr[1]) || ast.r4ishigh(this.tks.addr[1]))
+                        this.insthead()
 
-                    this.append2(opcode)
+                    this.append1(opcode.(i8))
+                    this.append1(mrm_byte)
                     if this.modrm.rm == 4 || this.modrm.rm == 5
                         this.writeSIB()
                     if this.inst.dispLen
