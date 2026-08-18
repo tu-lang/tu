@@ -22,6 +22,16 @@ func r4ishigh(tk<i32>){
     if tk >= KW_R8D && tk <= KW_R15D return true
     return false
 }
+// rm low-3-bits: rsp/r12/esp/r12d must emit SIB.
+func rm_needs_sib(tk<i32>){
+    if tk == KW_RSP || tk == KW_ESP || tk == KW_R12 || tk == KW_R12D return true
+    return false
+}
+// rbp/r13/ebp/r13d: mod=00 is RIP-relative, not base-only.
+func rm_needs_disp0(tk<i32>){
+    if tk == KW_RBP || tk == KW_EBP || tk == KW_R13 || tk == KW_R13D return true
+    return false
+}
 func isr8(tk<i32>){
     if(r8ishigh(tk) || r8islow(tk)) return true 
     return false
@@ -96,6 +106,7 @@ func tk_to_string(tk<i32>){
     match tk {
         KW_MOV:    return "mov"
         KW_CMP:    return "cmp"
+        KW_CMPL:   return "cmpl"
         KW_SUB:    return "sub"
         KW_ADD:    return "add"
         KW_MUL:    return "mul"

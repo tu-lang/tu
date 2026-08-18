@@ -32,6 +32,7 @@ enum {
     KW_DIVSD,   KW_DIVSS,   KW_UNPCKLPS,  KW_XORPS,           KW_XORPD,
     KW_LEA,
     KW_TEST, // last 2-op; append-only so opcode2 index stays stable
+    KW_CMPL, // 32-bit cmp; append-only after TEST
     // need 1 op
     KW_CALL,    KW_SETZ,    KW_SETE,    KW_SETL,    KW_SETLE,   KW_SETAE,   KW_SETGE,
     KW_SETBE,   KW_SETA,    KW_SETG,    KW_SETNZ,   KW_SETNE,   KW_SETP,    KW_SETNP,   KW_SETB,    KW_INT,
