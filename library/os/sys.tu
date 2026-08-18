@@ -15,6 +15,7 @@ func win_find_first(pattern<i8*>)
 func win_find_next(h<u64>)
 func win_find_close(h<u64>)
 func win_find_name()
+func win_getcwd(buf<i8*>, n<i32>)
 
 //user space
 func getpid() {
