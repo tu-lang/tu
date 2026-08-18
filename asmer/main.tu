@@ -22,22 +22,27 @@ func print_help () {
         "  -c *.s   翻译单个汇编文件（与 -c 前的路径等价）\n" +
         "  -p ...   批量翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" +
         "  -d       打印编译过程信息信息\n" +
-        "  --target linux|darwin   object backend (default: host / TU_TARGET)\n"
+        "  --target linux|darwin|windows   object backend (default: host / TU_TARGET)\n"
     )
 }
 func asmergen(){
     utils.debug(*"main.asmergen")
     for(dir : scan_dirs){
         if !std.is_dir(dir) os.die(dir + " not exist")
-        fd = std.opendir(dir)
-        loop {
-            file = fd.readdir()
-            if !file break
-            if !file.isFile() continue
-            filename = file.path
-            if string.sub(filename,std.len(filename) - 2) == ".s" {
-                scan_files[] = file.path
+        names = utils.list_basenames(dir)
+        for name : names {
+            if name == "." || name == ".." {
+                continue
             }
+            nlen = std.len(name)
+            if nlen < 2 {
+                continue
+            }
+            if string.sub(name, nlen - 2) != ".s" {
+                continue
+            }
+            path = utils.path_join(dir, name)
+            scan_files[] = path
         }
     }
     total = std.len(scan_files)
@@ -66,6 +71,9 @@ func parse_as_target(name) {
     if name == "linux" {
         return 0
     }
+    if name == "windows" || name == "win64" || name == "pe" {
+        return 2
+    }
     os.die("unknown --target=" + name)
 }
 func as_target_default() {
@@ -73,7 +81,7 @@ func as_target_default() {
         arr = string.split(v, "=")
         if std.len(arr) >= 2 {
             if arr[0] == "TU_TARGET" || arr[0] == "CO_TARGET" {
-                if arr[1] == "darwin" || arr[1] == "macos" || arr[1] == "osx" || arr[1] == "linux" {
+                if arr[1] == "darwin" || arr[1] == "macos" || arr[1] == "osx" || arr[1] == "linux" || arr[1] == "windows" || arr[1] == "win64" || arr[1] == "pe" {
                     parse_as_target(arr[1])
                     return
                 }
@@ -82,6 +90,8 @@ func as_target_default() {
     }
     if runtime.host_os() == 1 {
         asm.requested_target = "darwin"
+    } else if runtime.host_os() == 2 {
+        asm.requested_target = "windows"
     } else {
         asm.requested_target = "linux"
     }
@@ -94,6 +104,9 @@ func command() {
     as_target = 0
     if asm.requested_target == "darwin" || asm.requested_target == "macos" || asm.requested_target == "osx" {
         as_target = 1
+    }
+    if asm.requested_target == "windows" || asm.requested_target == "win64" || asm.requested_target == "pe" {
+        as_target = 2
     }
     i = 0
     av = os.argv()

@@ -6,6 +6,7 @@ use std
 use string
 use os
 use fmt
+use runtime
 True<i32>  = 1
 False<i32> = 0
 Pad1<i32>  = 1
@@ -37,6 +38,22 @@ Parser::init(filepath,elf<elf.ElfFile>)
     this.symtable = new ast.SymTable()
 
     this.filepath = filepath
+
+    // Split on '/' only; Windows workdir paths may mix '\' and '/'.
+    npath = std.len(filepath)
+    norm = ""
+    ni = 0
+    bs = runtime.newobject(runtime.Char, 92.(i8))
+    while ni < npath {
+        ch = filepath[ni]
+        if ch == bs {
+            norm += "/"
+        } else {
+            norm += ch
+        }
+        ni += 1
+    }
+    filepath = norm
 
     fullname = std.pop(string.split(filepath,"/"))
     fullname = string.split(fullname,".s")

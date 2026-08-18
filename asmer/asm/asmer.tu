@@ -28,12 +28,18 @@ Asmer::init(filename)
     }
     this.elf   = new elf.ElfFile(this)
     this.parser = new parser.Parser(filename,this.elf)
-    outname    = this.parser.outname
-    fp<i32>    = utils.fopen(outname,"w+")
-    if fp <= 0 {
-        utils.error("open failed " + outname)
+    // Darwin/Windows emit_object opens the .o itself. Skip the dummy
+    // w+ here so we do not burn a win_fds slot (and truncate the file)
+    // before parse even starts.
+    this.out = 0
+    if this.target != TARGET_DARWIN && this.target != TARGET_WINDOWS {
+        outname    = this.parser.outname
+        fp<i32>    = utils.fopen(outname,"w+")
+        if fp <= 0 {
+            utils.error("open failed " + outname)
+        }
+        this.out   = fp
     }
-    this.out   = fp
 }
 Asmer::close(){
     if this.out != 0 {

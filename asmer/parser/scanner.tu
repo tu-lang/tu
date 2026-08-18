@@ -119,6 +119,9 @@ Scanner::init(filepath)
     }
     totalsize = fs.size
     this.buffersize = *totalsize
+    // Body is in this.buffer; close so Windows fd-table (256) is not leaked
+    // across hundreds of .s files in a self-host assemble pass.
+    fs.Close()
     utils.debug("Scanner::init() end %s".(i8),*filepath)
 }
 Scanner::next() {
