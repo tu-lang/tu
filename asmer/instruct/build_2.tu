@@ -149,12 +149,13 @@ Instruct::insthead(){
     }
     if( (this.tks.addr[0] == ast.TK_NUMBER || ast.r8islow(this.tks.addr[0])) && ast.r8ishigh(this.tks.addr[1])){
         if(this.type == ast.KW_MUL){
-            if(this.tks.addr[0] == ast.TK_NUMBER)
+            if(this.tks.addr[0] == ast.TK_NUMBER) {
                 this.appendRexW(0x4d.(i8))
                 return true
-            else
+            } else {
                 this.appendRexW(0x4c.(i8))
                 return true
+            }
         }
         if this.type == ast.KW_CVTSI2SDL || this.type == ast.KW_CVTSI2SSL
             this.append1(0x44.(i8))
