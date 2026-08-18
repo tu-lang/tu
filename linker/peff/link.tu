@@ -229,6 +229,7 @@ fn peff_link_objects_host(all, outfile) i32 {
     }
     if rc != 0 {
         fmt.printf("[tul/peff] %s failed (rc=%d)\n", linkbin, rc)
+        fmt.printf("[tul/peff] if LNK2019 names look like registers (r8d) or mnemonics (cmpl/test), that is usually an asmer fail-open leftover (RFC-107).\n")
         return 1
     }
     fmt.printf("[tul] outfile: %s\n", outfile)

@@ -1,6 +1,7 @@
 // Merge MH_OBJECT files into one MH_EXECUTE image.
 
 use asmer.asm
+use asmer.ast
 use linker.utils
 use std
 use string
@@ -241,9 +242,11 @@ MachImage::resolve_imports() i32 {
             continue
         }
         if libsystem_allows(this.names, off) == 0 {
+            nm = string.new(this.names.ptr_at(off))
             fmt.printf("[tu/darwin] undefined symbol: ")
-            fmt.printf(string.new(this.names.ptr_at(off)))
+            fmt.printf(nm)
             fmt.printf("\n")
+            ast.undef_vocab_hint(nm)
             return 1
         }
         this.data.align_to(8, 0)

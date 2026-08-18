@@ -3,7 +3,7 @@
 .text
 
 # ---- WSAStartup + Linux-style -errno from WSAGetLastError ----
-# Ready flag is a .long; access it with 32-bit movl (not 64-bit cmp/mem).
+# Ready flag is a .long; load/store with 32-bit movl (dialect: not 64-bit cmp/mem).
 win_wsa_ensure:
 	movl win_wsa_ready(%rip), %eax
 	cmpl $1, %eax
@@ -31,7 +31,7 @@ wwe_fail:
 	ret
 
 # edi = positive WSA error; rax = Linux -errno
-# Thin trampoline: Tu stack ABI ï¿½?push arg, call; callee cleans args.
+# Thin trampoline: Tu stack ABI — push arg, call; callee cleans args.
 .globl win_wsa_errno_neg
 win_wsa_errno_neg:
 	movsxd %edi, %rax
@@ -108,7 +108,7 @@ runtime_win_api_sleep:
 runtime_win_api_wsafail:
 	jmp win_wsa_fail
 
-# SysV trampolines â Tu stack ABI. Framed sys_* must call these, not Tu directly.
+# SysV trampolines -> Tu stack ABI. Framed sys_* must call these, not Tu directly.
 .global win_sockaddr_win_copy
 win_sockaddr_win_copy:
 	push %rdx
@@ -1184,7 +1184,7 @@ sys_kill:
 
 .data
 .align 8
-# 32-bit ready flag; load/store with movl, never 64-bit cmp/mem.
+# 32-bit ready flag (.long). movl is the correct width; 64-bit mem cmp is not.
 .globl win_wsa_ready
 win_wsa_ready:
 	.long 0

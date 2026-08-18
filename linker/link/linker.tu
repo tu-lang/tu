@@ -1,6 +1,7 @@
 use runtime
 use linker.linux
 use linker.utils
+use asmer.ast
 use fmt
 
 bytes
@@ -118,6 +119,7 @@ Linker::symValid()
 				type = "symbol"
 			}
 			utils.debug("file:%s type:%s var:%s undefine",undefine.recv.elfdir,type,undefine.name)
+			ast.undef_vocab_hint(undefine.name)
 			if  flag {
 				utils.errorf(
 					"file:%s type:%s var:%s undefine",
