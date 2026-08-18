@@ -197,6 +197,11 @@ install-windows:
 	@cp -R packages/* $(prefix)/lib/copkg/
 	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/darwin.tu
 	@cp platform/windows/runtime_os.tu $(prefix)/lib/copkg/runtime/windows.tu
+	@cp platform/windows/wsa_errno.tu $(prefix)/lib/copkg/runtime/wsa_errno.tu
+	@cp platform/windows/fd_table.tu $(prefix)/lib/copkg/runtime/fd_table.tu
+	@cp platform/windows/epoll_soft.tu $(prefix)/lib/copkg/runtime/epoll_soft.tu
+	@cp platform/windows/netio_platform.tu $(prefix)/lib/copkg/netio/sys/platform.tu
+	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
 	@rm -f $(prefix)/lib/coasm-windows/*
 	@cp syscall/windows/*.s $(prefix)/lib/coasm-windows/
 	@cp syscall/*.s $(prefix)/lib/coasm/

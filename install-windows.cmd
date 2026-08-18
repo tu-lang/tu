@@ -31,9 +31,10 @@ del /f /q "%COPKG%\runtime\darwin.tu" 2>nul
 copy /y "%ROOT%platform\windows\runtime_os.tu" "%COPKG%\runtime\windows.tu" >nul
 rem RFC-107 P1: WSA errno map in Tu (same runtime package → runtime_win_wsa_errno_neg).
 copy /y "%ROOT%platform\windows\wsa_errno.tu" "%COPKG%\runtime\wsa_errno.tu" >nul
-rem RFC-107 P1: fd / epoll-fd maps + epoll create1 policy in Tu.
+rem RFC-107 P1: fd / epoll maps, ctl/wait, AF rewrite, eventfd loopback fill.
 copy /y "%ROOT%platform\windows\fd_table.tu" "%COPKG%\runtime\fd_table.tu" >nul
 copy /y "%ROOT%platform\windows\epoll_soft.tu" "%COPKG%\runtime\epoll_soft.tu" >nul
+copy /y "%ROOT%platform\windows\sock_flags.tu" "%COPKG%\runtime\sock_flags.tu" >nul
 rem Overlay Windows netio platform hooks (connect finish / accept prep).
 copy /y "%ROOT%platform\windows\netio_platform.tu" "%COPKG%\netio\sys\platform.tu" >nul
 if errorlevel 1 (
