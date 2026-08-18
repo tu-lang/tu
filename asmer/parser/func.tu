@@ -14,14 +14,14 @@ Parser::parseFunction(labelname<string.String>) {
 
         token<i32> = this.scanner.curtoken
 
-        if( token >= ast.KW_MOV && token <= ast.KW_TEST )
+        if( token >= ast.KW_MOV && token <= ast.KW_CMPL )
             inst  = this.parseTwoInstruct()
         else if( token >= ast.KW_CALL && token <= ast.KW_POP )
             inst  = this.parseOneInstruct()
         else if(token >= ast.KW_RET && token <= ast.KW_CDQ)
             inst  = this.parseZeroInstruct()
         else
-            utils.errorf("[Parser] unknow instruct:%s\n",this.scanner.curlex.dyn())
+            utils.errorf("[Parser] unknown mnemonic:%s\n",this.scanner.curlex.dyn())
         if inst == null 
             utils.errorf("[Parser] something wrong:%s\n",this.scanner.curlex.dyn())
 

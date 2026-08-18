@@ -36,7 +36,7 @@ labels = {
     "jle" : ast.KW_JLE,        "jna": ast.KW_JNA,
     "dec" : ast.KW_DEC,        "inc" : ast.KW_INC,       "neg" : ast.KW_NEG,
     "test": ast.KW_TEST,       "testq": ast.KW_TEST,     "testl": ast.KW_TEST,
-    "cmpl": ast.KW_CMP,
+    "cmpl": ast.KW_CMPL,
 
     "callq": ast.KW_CALL,        "call": ast.KW_CALL,       "sete": ast.KW_SETE,       "setl": ast.KW_SETL,      "setle": ast.KW_SETLE,    
     "setge": ast.KW_SETGE,       "setbe": ast.KW_SETBE,     "setg": ast.KW_SETG,       "setne": ast.KW_SETNE,    "setb": ast.KW_SETB,

@@ -47,7 +47,7 @@ Parser::parseLabel() {
     //next
     this.scanner.scan()
     // :
-    this.check(this.scanner.curtoken == ast.TK_COLON,"missing :, should be " + labelname.dyn() + ":")
+    this.check(this.scanner.curtoken == ast.TK_COLON,"unknown mnemonic '" + labelname.dyn() + "' (identifier in .text without ':')")
 
     sym<ast.Sym> = null
     tk<i32> = this.scanner.scan()

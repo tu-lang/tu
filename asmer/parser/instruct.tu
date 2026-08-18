@@ -141,9 +141,9 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
                 inst.inst.setDisp(num,4.(i8))
             }
             inst.modrm.rm = this.regoffset()
-            if( this.scanner.curtoken == ast.KW_RSP)//sib
+            if ast.rm_needs_sib(this.scanner.curtoken)
             {
-                inst.modrm.rm  = 4//rm = 4
+                inst.modrm.rm  = 4
                 inst.sib.scale = 0
                 inst.sib.index = 4
                 inst.sib.base  = 4
@@ -158,25 +158,21 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
         }
         ast.TK_LPAREN:{
             inst.str.cat(this.scanner.curlex)
-            tk<i32> = this.scanner.scan()
-            match tk {
-                ast.KW_RSP: {
-                    inst.modrm.mod = 0
-                    inst.modrm.rm  = 4
-                    inst.sib.scale = 0
-                    inst.sib.index = 4
-                    inst.sib.base  = 4
-                }
-                ast.KW_RBP:{
-                    inst.modrm.mod = 1
-                    inst.modrm.rm  = 5
-                    inst.inst.setDisp(0.(i8),1.(i8))
-                }
-                _ :{
-                    inst.modrm.mod = 0
-                    inst.modrm.rm  = this.regoffset()
-                    this.check(this.scanner.curtoken >= ast.KW_EAX && this.scanner.curtoken <= ast.KW_RIP,"should be any register in default1")
-                }
+            this.scanner.scan()
+            if ast.rm_needs_sib(this.scanner.curtoken) {
+                inst.modrm.mod = 0
+                inst.modrm.rm  = 4
+                inst.sib.scale = 0
+                inst.sib.index = 4
+                inst.sib.base  = 4
+            } else if ast.rm_needs_disp0(this.scanner.curtoken) {
+                inst.modrm.mod = 1
+                inst.modrm.rm  = 5
+                inst.inst.setDisp(0.(i8),1.(i8))
+            } else {
+                inst.modrm.mod = 0
+                inst.modrm.rm  = this.regoffset()
+                this.check(this.scanner.curtoken >= ast.KW_EAX && this.scanner.curtoken <= ast.KW_RIP,"should be any register in default1")
             }
             inst.tks.push(this.scanner.curtoken)
             //eat )
@@ -275,7 +271,7 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
     }
 }
 Parser::parseTwoInstruct() {
-    this.check(this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_TEST ,"should be in [mov-test] register")
+    this.check(this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_CMPL ,"should be in [mov-cmpl] register")
     inst<instruct.Instruct> = new instruct.Instruct(this.scanner.curtoken,this)
     inst.left      = this.parseInstruct(inst)
     this.check(this.scanner.curtoken == ast.TK_COMMA,"should be ,in two inst")

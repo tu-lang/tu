@@ -141,7 +141,7 @@ Parser::parseLex()
                 if this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_CDQ && this.scanner.peek_is_colon() {
                     this.parseLabel()
                 }else{
-                    this.check(False,"lex unkown instruct")
+                    this.check(False,"unknown mnemonic '" + this.scanner.curlex.dyn() + "'")
                 }
             }
         }
