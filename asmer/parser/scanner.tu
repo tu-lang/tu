@@ -79,7 +79,7 @@ labels = {
     "%xmm8": ast.KW_XMM8,    "%xmm9": ast.KW_XMM9,   "%xmm10": ast.KW_XMM10,  "%xmm11": ast.KW_XMM11,
     "%xmm12": ast.KW_XMM12,    "%xmm13": ast.KW_XMM13,   "%xmm14": ast.KW_XMM14,  "%xmm15": ast.KW_XMM15,
     "%rsp": ast.KW_RSP,      "%rbp": ast.KW_RBP,     "%rip": ast.KW_RIP,    "%fs": ast.KW_FS,
-    "%ax": ast.KW_RAX,
+    "%ax": ast.KW_AX,
     //debug 
     ".file": ast.KW_DEBUG_FILE,
     ".loc" : ast.KW_DEBUG_LOC

@@ -8,6 +8,8 @@ use os
 
 Parser::regoffset(){
     ty<i32> = this.scanner.curtoken
+    if ty == ast.KW_AX
+        return 0
     if ty >= ast.KW_XMM0 && ty < ast.KW_XMM8
         return ty - ast.KW_XMM0
     if ty >= ast.KW_XMM8 && ty <= ast.KW_XMM15
@@ -222,11 +224,12 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
                 (this.scanner.curtoken >= ast.KW_RAX && this.scanner.curtoken <= ast.KW_RIP) ||
                 (this.scanner.curtoken >= ast.KW_AL && this.scanner.curtoken <= ast.KW_BH) ||
                 (this.scanner.curtoken >= ast.KW_EAX && this.scanner.curtoken <= ast.KW_EDI) ||
-                (this.scanner.curtoken >= ast.KW_R8D && this.scanner.curtoken <= ast.KW_R15D),
+                (this.scanner.curtoken >= ast.KW_R8D && this.scanner.curtoken <= ast.KW_R15D) ||
+                ast.isr2(this.scanner.curtoken),
                 "should be any register in default"
             )
             inst.tks.push(this.scanner.curtoken)
-            if(this.scanner.curlex.cmpstr(*"%ax") == string.Equal)
+            if ast.isr2(this.scanner.curtoken)
                 inst.has16bits = true
 
             if (inst.regnum)
@@ -270,6 +273,24 @@ Parser::parseInstruct(inst<instruct.Instruct>) {
         }
     }
 }
+Parser::checkAxAllowed(inst<instruct.Instruct>) {
+    if inst == null {
+        return
+    }
+    i<i32> = 0
+    while i < inst.tks.used {
+        if ast.isr2(inst.tks.addr[i]) {
+            ok<i32> = 0
+            if inst.type == ast.KW_MOV || inst.type == ast.KW_MOVW ||
+               inst.type == ast.KW_MOVZWL || inst.type == ast.KW_MOVSWL ||
+               inst.type == ast.KW_MOVZX {
+                ok = 1
+            }
+            inst.check(ok, "16-bit %ax is only valid with mov/movw/movzwl/movswl/movzx (not a %rax alias)")
+        }
+        i += 1
+    }
+}
 Parser::parseTwoInstruct() {
     this.check(this.scanner.curtoken >= ast.KW_MOV && this.scanner.curtoken <= ast.KW_CMPL ,"should be in [mov-cmpl] register")
     inst<instruct.Instruct> = new instruct.Instruct(this.scanner.curtoken,this)
@@ -277,11 +298,13 @@ Parser::parseTwoInstruct() {
     this.check(this.scanner.curtoken == ast.TK_COMMA,"should be ,in two inst")
     //eat ,
     inst.right     = this.parseInstruct(inst)
+    this.checkAxAllowed(inst)
     return inst
 }
 Parser::parseOneInstruct() {
     inst<instruct.Instruct> = new instruct.Instruct(this.scanner.curtoken,this)
     inst.left      = this.parseInstruct(inst)
+    this.checkAxAllowed(inst)
     return inst
 }
 Parser::parseZeroInstruct() {
