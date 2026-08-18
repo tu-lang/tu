@@ -210,6 +210,13 @@ Instruct::insthead(){
         }
         return true
     }
+    if ast.isr2(this.tks.addr[0]) && this.right != ast.TY_MEM {
+        if ast.r8islow(this.tks.addr[1])
+            this.appendRexW(0x48.(i8))
+        else if ast.r8ishigh(this.tks.addr[1])
+            this.appendRexW(0x4c.(i8))
+        return true
+    }
     if(ast.isr1(this.tks.addr[0]) && this.right == ast.TY_MEM){
         if ast.r8ishigh(this.tks.addr[1])
             this.append1(0x41.(i8))

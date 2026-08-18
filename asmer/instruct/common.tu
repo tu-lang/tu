@@ -34,13 +34,14 @@ Instruct::check(check<i8>,err)
 }
 Instruct::opoffset(){
     len<i32> = 0
-    //src
     if(this.left == ast.TY_REG){
         len = ast.reglen(this.tks.addr[0]) 
     }
-    //dst
     if(this.right == ast.TY_REG){
         len = ast.reglen(this.tks.addr[1]) 
+    }
+    if len == 2 {
+        len = 4
     }
     return len
 }
