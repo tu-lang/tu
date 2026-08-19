@@ -16,6 +16,24 @@ func is_windows_host() {
 	return false
 }
 
+func is_darwin_host() {
+	if runtime.host_os() == 1 {
+		return true
+	}
+	return false
+}
+
+// Overlay file install copies into copkg/runtime (linux.tu / darwin.tu / windows.tu).
+func host_runtime_overlay() {
+	if is_windows_host() {
+		return "windows.tu"
+	}
+	if is_darwin_host() {
+		return "darwin.tu"
+	}
+	return "linux.tu"
+}
+
 // Replace backslashes with forward slashes (Win32 APIs accept both; the
 // toolchain normalizes early so .string paths never carry backslashes).
 func norm_slash(path) {
@@ -246,4 +264,70 @@ func list_dir_basenames(dir) {
 		out[] = f.name
 	}
 	return out
+}
+
+// First matching KEY=value from os.envs(); empty if unset.
+func env_get(name) {
+	for (ek, ev : os.envs()) {
+		arr = string.split(ev, "=")
+		if std.len(arr) >= 2 && arr[0] == name && arr[1] != "" {
+			return arr[1]
+		}
+	}
+	return ""
+}
+
+// Absolute path of this tu/tuc process. Windows: GetModuleFileNameA.
+// Unix: runtime.self_path (/proc/self/exe or argv[0]).
+func exe_path() {
+	if is_windows_host() {
+		buf<i8*> = new 260
+		n<i32> = os.win_exe_path(buf, 260.(i32))
+		if n > 0 {
+			return norm_slash(string.new(buf))
+		}
+	}
+	p<i8*> = runtime.self_path
+	if p != null {
+		s = string.new(p)
+		if s != "" {
+			return norm_slash(s)
+		}
+	}
+	return ""
+}
+
+// Install prefix: TU_PREFIX / CO_PREFIX, else parent of the exe directory
+// (bin/tu.exe or RelWithDebInfo/tu.exe → prefix/).
+func install_prefix() {
+	v = env_get("TU_PREFIX")
+	if v != "" {
+		return norm_slash(v)
+	}
+	v = env_get("CO_PREFIX")
+	if v != "" {
+		return norm_slash(v)
+	}
+	ep = exe_path()
+	if ep != "" {
+		return path_dirname(path_dirname(ep))
+	}
+	return "/usr/local"
+}
+
+// Directory that contains copkg / coasm-windows / copeff.
+func lib_root() {
+	v = env_get("CO_PKG")
+	if v != "" {
+		return path_dirname(norm_slash(v))
+	}
+	return path_join(install_prefix(), "lib")
+}
+
+func copkg_dir() {
+	v = env_get("CO_PKG")
+	if v != "" {
+		return norm_slash(v)
+	}
+	return path_join(lib_root(), "copkg")
 }

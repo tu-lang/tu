@@ -16,6 +16,11 @@ func win_find_next(h<u64>)
 func win_find_close(h<u64>)
 func win_find_name()
 func win_getcwd(buf<i8*>, n<i32>)
+func win_exe_path(buf<i8*>, n<i32>)
+func win_command_line_w()
+func win_cl_to_argv(cmdline_w<u64>, argc_out<i32*>)
+func win_local_free(p<u64>)
+func win_wchar_utf8(wstr<u64>, dst<i8*>, n<i32>)
 
 //user space
 func getpid() {

@@ -36,13 +36,67 @@ fn peff_stub_dir() {
             }
         }
     }
-    pref = "/usr/local/lib/copeff"
+    pref = hostu.lib_root() + "/copeff"
     fp<i32> = utils.fopen(pref + "/stub_entry.s", "r")
     if fp > 0 {
         utils.fclose(fp)
         return pref
     }
-    return pref
+    return "/usr/local/lib/copeff"
+}
+
+fn peff_file_exists(p) {
+    fp<i32> = utils.fopen(p, "r")
+    if fp > 0 {
+        utils.fclose(fp)
+        return true
+    }
+    return false
+}
+
+fn peff_str_has(s, frag) {
+    n = std.len(s)
+    m = std.len(frag)
+    if m <= 0 || n < m {
+        return false
+    }
+    i = 0
+    while i + m <= n {
+        hit = true
+        j = 0
+        while j < m {
+            if s[i + j] != frag[j] {
+                hit = false
+                break
+            }
+            j += 1
+        }
+        if hit {
+            return true
+        }
+        i += 1
+    }
+    return false
+}
+
+// Prefer the MSVC linker, not a Unix `link` that some PATHs put first.
+fn peff_find_vs_link() {
+    editions = ["Community", "Professional", "BuildTools", "Enterprise"]
+    root = "C:\\Program Files\\Microsoft Visual Studio\\2022\\"
+    for ed : editions {
+        tools = root + ed + "\\VC\\Tools\\MSVC"
+        names = hostu.list_dir_basenames(tools)
+        for nm : names {
+            if nm == "." || nm == ".." {
+                continue
+            }
+            p = tools + "\\" + nm + "\\bin\\Hostx64\\x64\\link.exe"
+            if peff_file_exists(p) {
+                return p
+            }
+        }
+    }
+    return ""
 }
 
 fn peff_linker_bin() {
@@ -52,10 +106,35 @@ fn peff_linker_bin() {
             return arr[1]
         }
     }
-    if runtime.host_os() == 2 {
-        return "link"
+    if runtime.host_os() != 2 {
+        return "lld-link"
     }
-    return "lld-link"
+    vs = peff_find_vs_link()
+    if vs != "" {
+        return vs
+    }
+    path = hostu.env_get("PATH")
+    parts = string.split(path, ";")
+    fallback = ""
+    for dir : parts {
+        p = dir + "\\link.exe"
+        if !peff_file_exists(p) {
+            continue
+        }
+        if peff_str_has(dir, "usr\\bin") || peff_str_has(dir, "usr/bin") {
+            continue
+        }
+        if peff_str_has(dir, "Hostx64") || peff_str_has(dir, "MSVC") {
+            return p
+        }
+        if fallback == "" {
+            fallback = p
+        }
+    }
+    if fallback != "" {
+        return fallback
+    }
+    return "link.exe"
 }
 
 fn peff_objs_have_basename(files, name) {
@@ -194,6 +273,83 @@ fn peff_maybe_quote(s) {
     return s
 }
 
+fn peff_prefix_before(s, frag) {
+    n = std.len(s)
+    m = std.len(frag)
+    if m <= 0 || n < m {
+        return ""
+    }
+    i = 0
+    while i + m <= n {
+        hit = true
+        j = 0
+        while j < m {
+            if s[i + j] != frag[j] {
+                hit = false
+                break
+            }
+            j += 1
+        }
+        if hit {
+            out = ""
+            k = 0
+            while k < i {
+                out += s[k]
+                k += 1
+            }
+            return out
+        }
+        i += 1
+    }
+    return ""
+}
+
+fn peff_write_libpath(fp, dir) {
+    if dir == "" {
+        return
+    }
+    peff_write_line(fp, "/LIBPATH:" + peff_maybe_quote(dir) + "\n")
+}
+
+fn peff_write_sdk_libpaths(fp) {
+    roots = [
+        "C:\\Program Files (x86)\\Windows Kits\\10\\Lib",
+        "C:\\Program Files\\Windows Kits\\10\\Lib"
+    ]
+    best_root = ""
+    best_ver = ""
+    for root : roots {
+        names = hostu.list_dir_basenames(root)
+        for nm : names {
+            if nm == "." || nm == ".." {
+                continue
+            }
+            k32 = root + "\\" + nm + "\\um\\x64\\kernel32.lib"
+            if peff_file_exists(k32) {
+                if best_ver == "" || nm > best_ver {
+                    best_ver = nm
+                    best_root = root
+                }
+            }
+        }
+    }
+    if best_ver != "" {
+        peff_write_libpath(fp, best_root + "\\" + best_ver + "\\um\\x64")
+        peff_write_libpath(fp, best_root + "\\" + best_ver + "\\ucrt\\x64")
+    }
+}
+
+fn peff_write_msvc_libpaths(fp, linkbin) {
+    pre = peff_prefix_before(linkbin, "\\bin\\Hostx64\\x64\\link.exe")
+    if pre == "" {
+        pre = peff_prefix_before(linkbin, "/bin/Hostx64/x64/link.exe")
+    }
+    if pre != "" {
+        peff_write_libpath(fp, pre + "\\lib\\x64")
+    }
+    peff_write_sdk_libpaths(fp)
+}
+
 fn peff_link_objects_host(all, outfile) i32 {
     rsp = outfile + ".link.rsp"
     fp<i32> = utils.fopen(rsp, "w+")
@@ -209,12 +365,14 @@ fn peff_link_objects_host(all, outfile) i32 {
     for f : all {
         peff_write_line(fp, f + "\n")
     }
+    linkbin = peff_linker_bin()
+    peff_write_msvc_libpaths(fp, linkbin)
     peff_write_line(fp, "kernel32.lib\n")
+    peff_write_line(fp, "shell32.lib\n")
     peff_write_line(fp, "synchronization.lib\n")
     peff_write_line(fp, "ws2_32.lib\n")
     utils.fclose(fp)
 
-    linkbin = peff_linker_bin()
     cmd = peff_maybe_quote(linkbin) + " @" + peff_maybe_quote(rsp)
     fmt.printf("[tul/peff] host-ld: %s (%d objs, rsp=%s)\n", cmd, std.len(all), rsp)
     rc = 0

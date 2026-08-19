@@ -6,7 +6,9 @@
 WSAEWOULDBLOCK<i32> = 10035
 WSAEINPROGRESS<i32> = 10036
 WSAEALREADY<i32> = 10037
+WSAEACCES<i32> = 10013
 WSAEADDRINUSE<i32> = 10048
+WSAEADDRNOTAVAIL<i32> = 10049
 WSAECONNRESET<i32> = 10054
 WSAECONNABORTED<i32> = 10053
 WSAECONNREFUSED<i32> = 10061
@@ -32,8 +34,15 @@ fn win_wsa_errno_neg(code<i32>) i64 {
 	if code == WSAEISCONN {
 		return -106.(i64)
 	}
+	if code == WSAEACCES {
+		// Occupied exclusive listen sockets report WSAEACCES, not INUSE.
+		return -98.(i64)
+	}
 	if code == WSAEADDRINUSE {
 		return -98.(i64)
+	}
+	if code == WSAEADDRNOTAVAIL {
+		return -99.(i64)
 	}
 	if code == WSAECONNRESET {
 		return -104.(i64)

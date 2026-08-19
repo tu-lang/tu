@@ -326,138 +326,43 @@ fn segsegv_rip(ctxt<u64>) u64 {
 fn segsegv_walkstack(){
 }
 
-// Parse GetCommandLineA / GetEnvironmentStringsA raw pointers into
-// argc/argv/envp vectors and delegate to args_init (entry asm calls this).
-// Command-line quoting follows the classic CRT rules: quotes toggle a
-// quoted span, n backslashes before a quote emit n/2 (odd keeps a literal
-// quote), backslashes elsewhere are literal.
+// Split GetCommandLineW with CommandLineToArgvW (same API the CRT uses),
+// convert each token to UTF-8, then parse GetEnvironmentStringsA.
+// Do not tokenize the ANSI line in place: writing a NUL over the space
+// after an unquoted argv[0] ("tu -v") drops every following argument.
 fn win_args_init(cmdline<i8*>, envblk<i8*>) {
-	if cmdline == null {
+	ac<i32> = 0
+	wcl<u64> = os.win_command_line_w()
+	wargv<u64> = os.win_cl_to_argv(wcl, &ac)
+	if wargv == 0 || ac <= 0 {
 		args_init(0.(u64), null, null)
 		return
 	}
-	n<i32> = std.strlen(cmdline)
-	n64<u64> = n + 1
-	buf<i8*> = malloc(n64, 1.(i8), 1.(i8))
-	std.memcpy(buf, cmdline, n64)
-	// Upper bound on argv entries: one per two chars, plus program + NULL.
-	vecn<u64> = (n / 2 + 3) * 8
+	vecn<u64> = (ac + 1) * 8
 	vec<u64*> = malloc(vecn, 1.(i8), 1.(i8))
-	argc<i32> = 0
-	i<i32> = 0
-	w<i32> = 0
-	c<i8> = buf[i]
-	// argv[0] program path: quotes group, no backslash rules.
-	start<i32> = w
-	if c == 34 {
-		i += 1
-		loop {
-			c = buf[i]
-			if c == 0 {
-				break
-			}
-			if c == 34 {
-				i += 1
-				break
-			}
-			d0<i8*> = buf + w
-			*d0 = c
-			w += 1
-			i += 1
-		}
-	} else {
-		loop {
-			c = buf[i]
-			if c == 0 || c == 32 || c == 9 {
-				break
-			}
-			d1<i8*> = buf + w
-			*d1 = c
-			w += 1
-			i += 1
-		}
-	}
-	t0<i8*> = buf + w
-	*t0 = 0
-	w += 1
-	slot0<u64*> = vec
-	tok0<u64> = buf + start
-	*slot0 = tok0
-	argc = 1
-	// Remaining args with CRT backslash/quote rules.
+	wi<i32> = 0
+	wbase<u64*> = wargv
 	loop {
-		loop {
-			c = buf[i]
-			if c != 32 && c != 9 {
-				break
-			}
-			i += 1
-		}
-		if buf[i] == 0 {
+		if wi >= ac {
 			break
 		}
-		start = w
-		inq<i32> = 0
-		loop {
-			c = buf[i]
-			if c == 0 {
-				break
-			}
-			if c == 92 {
-				k<i32> = 0
-				loop {
-					if buf[i] != 92 {
-						break
-					}
-					k += 1
-					i += 1
-				}
-				h<i32> = k
-				if buf[i] == 34 {
-					h = k / 2
-				}
-				e<i32> = 0
-				while e < h {
-					d2<i8*> = buf + w
-					*d2 = 92.(i8)
-					w += 1
-					e += 1
-				}
-				if buf[i] == 34 && (k % 2) == 1 {
-					d3<i8*> = buf + w
-					*d3 = 34.(i8)
-					w += 1
-					i += 1
-				}
-				continue
-			}
-			if c == 34 {
-				if inq {
-					inq = 0
-				} else {
-					inq = 1
-				}
-				i += 1
-				continue
-			}
-			if inq == 0 && (c == 32 || c == 9) {
-				break
-			}
-			d4<i8*> = buf + w
-			*d4 = c
-			w += 1
-			i += 1
+		wslot<u64*> = wbase + wi * 8
+		wp<u64> = *wslot
+		need<i32> = os.win_wchar_utf8(wp, null, 0.(i32))
+		if need <= 0 {
+			need = 1
 		}
-		t1<i8*> = buf + w
-		*t1 = 0
-		w += 1
-		slot1<u64*> = vec + argc * 8
-		tok1<u64> = buf + start
-		*slot1 = tok1
-		argc += 1
+		n64<u64> = need
+		dst<i8*> = malloc(n64, 1.(i8), 1.(i8))
+		os.win_wchar_utf8(wp, dst, need)
+		aslot<u64*> = vec + wi * 8
+		*aslot = dst
+		wi += 1
 	}
-	endslot<u64*> = vec + argc * 8
+	endslot<u64*> = vec + ac * 8
 	*endslot = 0
+	os.win_local_free(wargv)
+	argc<i32> = ac
 	// Environment block: NUL-separated entries, double NUL terminates.
 	ecnt<i32> = 0
 	j<i32> = 0

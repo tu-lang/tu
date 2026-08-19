@@ -13,7 +13,13 @@ use asyncio.io.util as ioutil
 fn parse_addr_dyn(addr) (i32, net.SocketAddr) {
     addr_s<string.String> = dyn_string(addr)
     slen<i32> = std.strlen(addr_s.str())
-    perr<i32>, sa<net.SocketAddr> = util.net_parse_ascii_bytes(addr_s.str(), slen)
+    // Cross-pkg (i32, Mem) drops SocketAddr fields on Windows PE; take bits.
+    perr<i32>, bits<u64> = util.net_parse_ascii_bytes_bits(addr_s.str(), slen)
+    if perr != io.Ok {
+        empty<net.SocketAddr> = null
+        return perr, empty
+    }
+    sa<net.SocketAddr> = util.net_socket_addr_from_bits(bits)
     return perr, sa
 }
 

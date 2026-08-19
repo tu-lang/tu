@@ -40,6 +40,34 @@ Package::init(name , path , multi) {
     this.fparser = null
 
 }
+
+fn pkg_dir_has_tu(dir) {
+    names = utils.list_dir_basenames(dir)
+    for name : names {
+        nlen = std.len(name)
+        if nlen >= 3 && string.sub(name, nlen - 3) == ".tu" {
+            return true
+        }
+    }
+    return false
+}
+
+// cwd/<pkg> is usable only if it has .tu, and runtime also has the host overlay
+// (linux.tu / darwin.tu / windows.tu). Repo runtime/ is Unix-only; without this
+// check Windows/Darwin host syscall objects miss overlay symbols at link.
+fn cwd_pkg_usable(dir, pkg_path) {
+    if !std.is_dir(dir) {
+        return false
+    }
+    if !pkg_dir_has_tu(dir) {
+        return false
+    }
+    if pkg_path == "runtime" {
+        return std.is_file(utils.path_join(dir, utils.host_runtime_overlay()))
+    }
+    return true
+}
+
 Package::parse()
 {
 
@@ -47,21 +75,12 @@ Package::parse()
     abpath += "/" + this.path
     utils.debugf("found import.start parser.. %s",abpath)
 
-    if !std.is_dir(abpath) {
+    if !cwd_pkg_usable(abpath, this.path) {
         utils.debugf("Parser: current package import not exist :%s",abpath)
-        pkgroot = "/usr/local/lib/copkg/"
-        for (ek, ev : os.envs()) {
-            arr = string.split(ev, "=")
-            if std.len(arr) >= 2 && arr[0] == "CO_PKG" && arr[1] != "" {
-                // Keep host separators for std.is_dir on Windows.
-                pkgroot = arr[1]
-                last = pkgroot[std.len(pkgroot) - 1]
-                if last != '/' && last != utils.char1(92.(i8)) {
-                    // Prefer /; Win32 accepts both.
-                    pkgroot = pkgroot + "/"
-                }
-                break
-            }
+        pkgroot = utils.copkg_dir()
+        last = pkgroot[std.len(pkgroot) - 1]
+        if last != '/' && last != utils.char1(92.(i8)) {
+            pkgroot = pkgroot + "/"
         }
         abpath = pkgroot + this.path
         if !std.is_dir(abpath) {
