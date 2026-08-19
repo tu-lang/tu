@@ -65,26 +65,8 @@ func arg_has_prefix(arg, pref) {
 }
 Compiler::init() {
     this.target = utils.target_default()
-    // Resolve install prefix from env (Windows MSVC layout uses build-win/lib).
-    for (ek, ev : os.envs()) {
-        arr = string.split(ev, "=")
-        if std.len(arr) < 2 {
-            continue
-        }
-        if arr[0] == "CO_PREFIX" && arr[1] != "" {
-            root = utils.norm_slash(arr[1]) + "/lib"
-            break
-        }
-        if arr[0] == "TU_PREFIX" && arr[1] != "" {
-            root = utils.norm_slash(arr[1]) + "/lib"
-            break
-        }
-        if arr[0] == "CO_PKG" && arr[1] != "" {
-            pkg = utils.norm_slash(arr[1])
-            root = utils.path_dirname(pkg)
-            break
-        }
-    }
+    // copkg/coasm: env override, else dirname(dirname(exe))/lib (install layout).
+    root = utils.lib_root()
 }
 Compiler::apply_target(name) {
     asm.requested_target = name
@@ -259,6 +241,12 @@ Compiler::scandir(dir,dstext){
 }
 Compiler::compiler(file){
     utils.debug("main.compiler")
+    // Relative paths are cwd only (same as linux/darwin). Do not
+    // search $HOME / USERPROFILE, and do not create a TEMP workdir
+    // if the source is missing.
+    if file == null || file == "" || !std.is_file(file) {
+        os.die("error opening file :" + file)
+    }
     utils.msg2(10,"Compiling",fmt.sprintf(
         "%s v0.0.0",file
     ))

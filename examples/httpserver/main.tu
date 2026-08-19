@@ -46,6 +46,8 @@ fn main() {
     server = new HttpServer()
     val = asyncio.blockOnMt(10, server.run())
     if val != 0 {
+        fmt.println("httpserver listen failed")
+        fmt.println(val)
         os.die("httpserver stopped")
     }
 }

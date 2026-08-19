@@ -32,7 +32,7 @@ async getHello(addr) {
 }
 
 fn main() {
-    val = asyncio.blockOnCt(getHello("127.0.0.1:18080"))
+    val = asyncio.blockOnCt(getHello("127.0.0.1:18081"))
     if val != 0 {
         os.die("httpclient failed")
     }
