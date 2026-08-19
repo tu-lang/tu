@@ -208,7 +208,18 @@ install-windows:
 	@cp syscall/windows/*.s $(prefix)/lib/coasm-windows/
 	@cp syscall/*.s $(prefix)/lib/coasm/
 	@cp ../co/linker/peff/stub_entry.s ../co/linker/peff/stub_runtime.s $(prefix)/lib/copeff/ 2>/dev/null || true
+	@if [ -f release/tu-windows ]; then \
+		mkdir -p $(prefix)/bin; \
+		cp release/tu-windows $(prefix)/bin/tu.exe; \
+		if [ -d $(prefix)/RelWithDebInfo ]; then cp release/tu-windows $(prefix)/RelWithDebInfo/tu.exe; fi; \
+		echo "[install] tu.exe ← release/tu-windows"; \
+	fi
 	@echo "install-windows: copkg + coasm-windows (+ coasm) + copeff"
+
+# Windows: mother tuc → tu/release/tu-windows (never clobber Linux release/tu).
+.PHONY: bootstrap-windows
+bootstrap-windows:
+	powershell -NoProfile -File ../co/windows/dev_release.ps1
 
 # Rebuild tu-darwin with the just-installed self-hosted tu (B4 loop).
 .PHONY: bootstrap-darwin

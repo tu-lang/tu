@@ -54,3 +54,23 @@ os_win_find_name:
 os_win_getcwd:
 	mov $-38, %rax
 	retq
+.global os_win_exe_path
+os_win_exe_path:
+	mov $-38, %rax
+	retq
+.global os_win_command_line_w
+os_win_command_line_w:
+	mov $-38, %rax
+	retq
+.global os_win_cl_to_argv
+os_win_cl_to_argv:
+	mov $-38, %rax
+	retq
+.global os_win_local_free
+os_win_local_free:
+	mov $-38, %rax
+	retq
+.global os_win_wchar_utf8
+os_win_wchar_utf8:
+	mov $-38, %rax
+	retq

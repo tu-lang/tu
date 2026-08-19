@@ -193,6 +193,98 @@ os_win_getcwd:
 	pop %rbp
 	retq
 
+# GetModuleFileNameA(NULL, buf, n). SysV: rdi=buf rsi=n. Full exe path.
+.global os_win_exe_path
+os_win_exe_path:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rdi, %rdx
+	mov %esi, %r8d
+	xor %ecx, %ecx
+	call GetModuleFileNameA
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+# Console UTF-8 (65001) so help/errors match the UTF-8 source, not ACP/GBK.
+.global os_win_init_console
+os_win_init_console:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov $65001, %ecx
+	call SetConsoleOutputCP
+	mov $65001, %ecx
+	call SetConsoleCP
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+# GetCommandLineW. Returns LPCWSTR in rax. Register ABI (no-body os. func).
+.global os_win_command_line_w
+os_win_command_line_w:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	call GetCommandLineW
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+# CommandLineToArgvW(lpCmdLine, pNumArgs). SysV rdi/rsi -> Win64 rcx/rdx.
+# Returns LPWSTR* (LocalAlloc); caller LocalFree.
+.global os_win_cl_to_argv
+os_win_cl_to_argv:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rdi, %rcx
+	mov %rsi, %rdx
+	call CommandLineToArgvW
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+# LocalFree(p). SysV rdi -> rcx.
+.global os_win_local_free
+os_win_local_free:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $32, %rsp
+	mov %rdi, %rcx
+	call LocalFree
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
+# WideCharToMultiByte(CP_UTF8, 0, wstr, -1, dst, n, NULL, NULL).
+# SysV rdi=wstr rsi=dst rdx=n. Returns byte count including NUL, or 0.
+.global os_win_wchar_utf8
+os_win_wchar_utf8:
+	push %rbp
+	mov %rsp, %rbp
+	and $-16, %rsp
+	sub $64, %rsp
+	mov %rdi, %r8
+	mov %rsi, 32(%rsp)
+	mov %edx, 40(%rsp)
+	mov $65001, %ecx
+	xor %edx, %edx
+	mov $-1, %r9
+	movq $0, 48(%rsp)
+	movq $0, 56(%rsp)
+	call WideCharToMultiByte
+	movsxd %eax, %rax
+	mov %rbp, %rsp
+	pop %rbp
+	retq
+
 .data
 .align 8
 win_find_name:

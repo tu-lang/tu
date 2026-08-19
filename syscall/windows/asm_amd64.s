@@ -7,16 +7,16 @@ mainCRTStartup:
 	mov %rsp, %rbp
 	and $-16, %rsp
 	sub $32, %rsp
+	call os_win_init_console
 	call win_init_stdio
 	call std_stdinit
 	call runtime_osinit
-	# Real argv/env: raw pointers parsed by runtime_win_args_init (Tu side).
-	call GetCommandLineA
-	mov %rax, %rbx
 	call GetEnvironmentStringsA
 	# Win64: RSP 16-aligned at call; 2 arg pushes keep alignment.
+	# cmdline slot unused: win_args_init reads GetCommandLineW itself.
 	push %rax
-	push %rbx
+	xor %eax, %eax
+	push %rax
 	call runtime_win_args_init
 	call runtime_runtimeinit
 	call main_init.0
