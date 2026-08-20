@@ -40,19 +40,19 @@ func fopen(filename<i8*> , mode<i8*>){
 		flags |= O_WRONLY | O_CREAT | O_TRUNC
 	}
 	if strcmp(mode,*"w+") == runtime.Zero {
-		flags |= O_RDWR | O_CREAT | O_TRUNC
+		flags |= O_RDWR | O_CREAT | O_TRUNC | O_BINARY
 	}
 	if strcmp(mode,*"r") == runtime.Zero {
 		flags |= O_RDONLY
 	}
 	if strcmp(mode,*"r+") == runtime.Zero {
-		flags |= O_RDWR | O_CREAT 
+		flags |= O_RDWR | O_CREAT | O_BINARY
 	}
 	if strcmp(mode,*"a") == runtime.Zero {
 		flags |= O_WRONLY | O_CREAT | O_APPEND
 	}
 	if strcmp(mode,*"a+") == runtime.Zero {
-		flags |= O_RDWR | O_CREAT | O_APPEND
+		flags |= O_RDWR | O_CREAT | O_APPEND | O_BINARY
 	}
 	if strcmp(mode,*"rb") == runtime.Zero {
 		flags |= O_RDONLY | O_BINARY

@@ -275,7 +275,7 @@ Compiler::compiler(file){
             utils.error("-gcc is linux-only; use the self-hosted darwin linker")
         }
         if this.target == utils.TARGET_WINDOWS && this.flag_gcc {
-            utils.error("-gcc is not supported for --target=windows; use peff host link")
+            utils.error("-gcc is not supported for --target=windows; use the self-hosted peff linker")
         }
         //By Gcc Link
         if this.flag_gcc {
