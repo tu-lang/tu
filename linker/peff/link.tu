@@ -1,4 +1,4 @@
-// PE link backend (W1): collect COFF .o, write .link.rsp, invoke host link.exe / lld-link.
+// PE link backend: collect COFF .o, self-hosted PE writer (no host link.exe).
 // When asm_amd64.o is present (full Windows runtime), nostd stubs are skipped.
 
 use asmer.asm
@@ -42,99 +42,7 @@ fn peff_stub_dir() {
         utils.fclose(fp)
         return pref
     }
-    return "/usr/local/lib/copeff"
-}
-
-fn peff_file_exists(p) {
-    fp<i32> = utils.fopen(p, "r")
-    if fp > 0 {
-        utils.fclose(fp)
-        return true
-    }
-    return false
-}
-
-fn peff_str_has(s, frag) {
-    n = std.len(s)
-    m = std.len(frag)
-    if m <= 0 || n < m {
-        return false
-    }
-    i = 0
-    while i + m <= n {
-        hit = true
-        j = 0
-        while j < m {
-            if s[i + j] != frag[j] {
-                hit = false
-                break
-            }
-            j += 1
-        }
-        if hit {
-            return true
-        }
-        i += 1
-    }
-    return false
-}
-
-// Prefer the MSVC linker, not a Unix `link` that some PATHs put first.
-fn peff_find_vs_link() {
-    editions = ["Community", "Professional", "BuildTools", "Enterprise"]
-    root = "C:\\Program Files\\Microsoft Visual Studio\\2022\\"
-    for ed : editions {
-        tools = root + ed + "\\VC\\Tools\\MSVC"
-        names = hostu.list_dir_basenames(tools)
-        for nm : names {
-            if nm == "." || nm == ".." {
-                continue
-            }
-            p = tools + "\\" + nm + "\\bin\\Hostx64\\x64\\link.exe"
-            if peff_file_exists(p) {
-                return p
-            }
-        }
-    }
-    return ""
-}
-
-fn peff_linker_bin() {
-    for (k, v : os.envs()) {
-        arr = string.split(v, "=")
-        if std.len(arr) >= 2 && arr[0] == "CO_PEFF_LINK" && arr[1] != "" {
-            return arr[1]
-        }
-    }
-    if runtime.host_os() != 2 {
-        return "lld-link"
-    }
-    vs = peff_find_vs_link()
-    if vs != "" {
-        return vs
-    }
-    path = hostu.env_get("PATH")
-    parts = string.split(path, ";")
-    fallback = ""
-    for dir : parts {
-        p = dir + "\\link.exe"
-        if !peff_file_exists(p) {
-            continue
-        }
-        if peff_str_has(dir, "usr\\bin") || peff_str_has(dir, "usr/bin") {
-            continue
-        }
-        if peff_str_has(dir, "Hostx64") || peff_str_has(dir, "MSVC") {
-            return p
-        }
-        if fallback == "" {
-            fallback = p
-        }
-    }
-    if fallback != "" {
-        return fallback
-    }
-    return "link.exe"
+    return hostu.lib_root() + "/copeff"
 }
 
 fn peff_objs_have_basename(files, name) {
@@ -153,31 +61,6 @@ fn peff_is_stub_obj_name(b) {
     return false
 }
 
-// Write one rsp line. Dyn strings are runtime.Value(String) whose .data is
-// string.Str (SDS); mirror std.File::Write — not *s / .str().
-func peff_write_line(fp, s) {
-    if s == null {
-        return
-    }
-    sv<runtime.Value> = s
-    if sv.type != runtime.String {
-        fmt.printf("[tul/peff] rsp line not a string\n")
-        return
-    }
-    st<string.Str> = sv.data
-    n<i32> = st.len()
-    if n <= 0 {
-        return
-    }
-    n64<u64> = n
-    ret<u64> = std.write(fp, sv.data, n64)
-    if ret != n64 {
-        fmt.printf("[tul/peff] rsp write short: got %d want %d\n", int(ret), int(n))
-        os.die("peff rsp write failed")
-    }
-}
-
-// Assemble stub .s with asmer peff into out_o next to outfile.
 fn peff_ensure_stub_obj(src_s, out_o) i32 {
     sdir = utils.path_dirname(out_o)
     stem = peff_path_basename(out_o)
@@ -204,7 +87,7 @@ fn peff_ensure_stub_obj(src_s, out_o) i32 {
     eng.close()
     fp<i32> = utils.fopen(out_o, "r")
     if fp <= 0 {
-        fmt.printf("[tul/peff] expected stub object missing: %s\n", out_o)
+        fmt.printf("[tu/peff] expected stub object missing: %s\n", out_o)
         return 1
     }
     utils.fclose(fp)
@@ -235,7 +118,7 @@ fn peff_collect_with_stubs(files, outfile) {
         entry_s = sdir + "/stub_entry.s"
         fp<i32> = utils.fopen(entry_s, "r")
         if fp <= 0 {
-            fmt.printf("[tul/peff] missing stub_entry.s (looked in %s; set CO_PEFF_LIB)\n", sdir)
+            fmt.printf("[tu/peff] missing stub_entry.s (looked in %s; set CO_PEFF_LIB)\n", sdir)
             return null
         }
         utils.fclose(fp)
@@ -260,154 +143,25 @@ fn peff_collect_with_stubs(files, outfile) {
     return all
 }
 
-fn peff_maybe_quote(s) {
-    n = std.len(s)
-    i = 0
-    while i < n {
-        c = s[i]
-        if c == ' ' || c == '\t' {
-            return "\"" + s + "\""
-        }
-        i += 1
-    }
-    return s
-}
-
-fn peff_prefix_before(s, frag) {
-    n = std.len(s)
-    m = std.len(frag)
-    if m <= 0 || n < m {
-        return ""
-    }
-    i = 0
-    while i + m <= n {
-        hit = true
-        j = 0
-        while j < m {
-            if s[i + j] != frag[j] {
-                hit = false
-                break
-            }
-            j += 1
-        }
-        if hit {
-            out = ""
-            k = 0
-            while k < i {
-                out += s[k]
-                k += 1
-            }
-            return out
-        }
-        i += 1
-    }
-    return ""
-}
-
-fn peff_write_libpath(fp, dir) {
-    if dir == "" {
-        return
-    }
-    peff_write_line(fp, "/LIBPATH:" + peff_maybe_quote(dir) + "\n")
-}
-
-fn peff_write_sdk_libpaths(fp) {
-    roots = [
-        "C:\\Program Files (x86)\\Windows Kits\\10\\Lib",
-        "C:\\Program Files\\Windows Kits\\10\\Lib"
-    ]
-    best_root = ""
-    best_ver = ""
-    for root : roots {
-        names = hostu.list_dir_basenames(root)
-        for nm : names {
-            if nm == "." || nm == ".." {
-                continue
-            }
-            k32 = root + "\\" + nm + "\\um\\x64\\kernel32.lib"
-            if peff_file_exists(k32) {
-                if best_ver == "" || nm > best_ver {
-                    best_ver = nm
-                    best_root = root
-                }
-            }
-        }
-    }
-    if best_ver != "" {
-        peff_write_libpath(fp, best_root + "\\" + best_ver + "\\um\\x64")
-        peff_write_libpath(fp, best_root + "\\" + best_ver + "\\ucrt\\x64")
-    }
-}
-
-fn peff_write_msvc_libpaths(fp, linkbin) {
-    pre = peff_prefix_before(linkbin, "\\bin\\Hostx64\\x64\\link.exe")
-    if pre == "" {
-        pre = peff_prefix_before(linkbin, "/bin/Hostx64/x64/link.exe")
-    }
-    if pre != "" {
-        peff_write_libpath(fp, pre + "\\lib\\x64")
-    }
-    peff_write_sdk_libpaths(fp)
-}
-
-fn peff_link_objects_host(all, outfile) i32 {
-    rsp = outfile + ".link.rsp"
-    fp<i32> = utils.fopen(rsp, "w+")
-    if fp <= 0 {
-        fmt.printf("[tul/peff] open rsp %s failed\n", rsp)
-        return 1
-    }
-    peff_write_line(fp, "/NOLOGO\n")
-    peff_write_line(fp, "/SUBSYSTEM:CONSOLE\n")
-    peff_write_line(fp, "/ENTRY:mainCRTStartup\n")
-    peff_write_line(fp, "/NODEFAULTLIB\n")
-    peff_write_line(fp, "/OUT:" + outfile + "\n")
-    for f : all {
-        peff_write_line(fp, f + "\n")
-    }
-    linkbin = peff_linker_bin()
-    peff_write_msvc_libpaths(fp, linkbin)
-    peff_write_line(fp, "kernel32.lib\n")
-    peff_write_line(fp, "shell32.lib\n")
-    peff_write_line(fp, "synchronization.lib\n")
-    peff_write_line(fp, "ws2_32.lib\n")
-    utils.fclose(fp)
-
-    cmd = peff_maybe_quote(linkbin) + " @" + peff_maybe_quote(rsp)
-    fmt.printf("[tul/peff] host-ld: %s (%d objs, rsp=%s)\n", cmd, std.len(all), rsp)
-    rc = 0
-    if runtime.host_os() == 2 {
-        rc = hostu.host_run(cmd)
-    } else {
-        os.shell(cmd)
-        rc = 0
-    }
-    if runtime.host_os() != 2 {
-        os.shell("rm -f '" + rsp + "'")
-    }
-    if rc != 0 {
-        fmt.printf("[tul/peff] %s failed (rc=%d)\n", linkbin, rc)
-        fmt.printf("[tul/peff] if LNK2019 names look like registers (r8d) or mnemonics (cmpl/test), that is usually an asmer fail-open leftover (RFC-107).\n")
-        return 1
-    }
-    fmt.printf("[tul] outfile: %s\n", outfile)
-    return 0
-}
-
-// Public entry: link COFF objects into a PE exe. Returns 0 on success.
 func link_objects(files, outfile) {
     if std.len(files) <= 0 {
-        fmt.printf("[tul/peff] no object files\n")
+        fmt.printf("[tu/peff] no object files\n")
         return 1
     }
+
     all = peff_collect_with_stubs(files, outfile)
     if all == null {
         return 1
     }
-    // Do not `return` a static i32 straight through a dyn func — the driver
-    // `rc = peff.link_objects(...)` then sees a null dyn value (unary-op).
-    st<i32> = peff_link_objects_host(all, outfile)
-    if st != 0 {
+
+    img<PeImage> = PeImage::create()
+    for f : all {
+        if img.add_object(f) != 0 {
+            return 1
+        }
+    }
+    rc<i32> = img.link(outfile)
+    if rc != 0 {
         return 1
     }
     return 0
