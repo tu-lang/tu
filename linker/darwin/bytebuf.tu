@@ -4,6 +4,12 @@
 use std
 use runtime
 
+// Hash-table byte count. Untyped `64 * 4` is compiled as a boxed multiply.
+fn ht_bytes(nslot<i32>) i32 {
+    w<i32> = 4
+    return nslot * w
+}
+
 mem ByteBuf {
     i8* store
     i32 len
@@ -51,16 +57,27 @@ ByteBuf::bits() u64 {
 }
 
 ByteBuf::reserve(need<i32>) {
-    if this.len + need <= this.cap {
+    if need < 0 {
+        runtime.dief(*"macho ByteBuf reserve negative")
+    }
+    total<i32> = this.len + need
+    if total < this.len {
+        runtime.dief(*"macho ByteBuf reserve overflow")
+    }
+    if total <= this.cap {
         return
     }
     ncap<i32> = this.cap
     if ncap < 64 {
         ncap = 64
     }
+    lim<i32> = 1073741823
     loop {
-        if ncap >= this.len + need {
+        if ncap >= total {
             break
+        }
+        if ncap > lim {
+            runtime.dief(*"macho ByteBuf cap overflow")
         }
         ncap = ncap * 2
     }

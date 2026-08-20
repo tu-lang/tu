@@ -62,10 +62,11 @@ mem OffMap {
 
 const OffMap::create() OffMap {
     m<OffMap> = new OffMap
-    m.nslot = 64
+    init_n<i32> = 64
+    m.nslot = init_n
     m.nused = 0
-    m.keys = ByteBuf::zeros(64 * 4)
-    m.vals = ByteBuf::zeros(64 * 4)
+    m.keys = ByteBuf::zeros(ht_bytes(init_n))
+    m.vals = ByteBuf::zeros(ht_bytes(init_n))
     return m
 }
 
@@ -75,8 +76,8 @@ OffMap::grow() {
     oldn<i32> = this.nslot
     this.nslot = this.nslot * 2
     this.nused = 0
-    this.keys = ByteBuf::zeros(this.nslot * 4)
-    this.vals = ByteBuf::zeros(this.nslot * 4)
+    this.keys = ByteBuf::zeros(ht_bytes(this.nslot))
+    this.vals = ByteBuf::zeros(ht_bytes(this.nslot))
     j<i32> = 0
     while j < oldn {
         k<i32> = oldk.i32_at(j)
@@ -136,7 +137,7 @@ mem NameTab {
 }
 
 fn nametab_ht_new(nslot<i32>) ByteBuf {
-    return ByteBuf::zeros(nslot * 4)
+    return ByteBuf::zeros(ht_bytes(nslot))
 }
 
 const NameTab::create() NameTab {
