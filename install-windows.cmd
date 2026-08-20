@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableExtensions
 rem One-click Windows install: copkg + coasm + tu.exe into a prefix, then user PATH.
 rem Default prefix: %LOCALAPPDATA%\tu  (override with TU_PREFIX, e.g. build-win for toolchain).
-rem Requires: release\tu-windows (from co\windows\dev_release.ps1) and VS link.exe on PATH to compile.
+rem Requires: release\tu-windows (from `make dev_release` on Unix, or VS INSTALL / dev_release.ps1).
 set ROOT=%~dp0
 set DEVINSTALL=0
 if not "%TU_PREFIX%"=="" set DEVINSTALL=1
@@ -13,13 +13,12 @@ if "%PREFIX%"=="" set PREFIX=%LOCALAPPDATA%\tu
 set COPKG=%PREFIX%\lib\copkg
 set COASM=%PREFIX%\lib\coasm-windows
 set COPEFF=%PREFIX%\lib\copeff
-set COPEFF_SRC=%ROOT%..\co\linker\peff
-if not exist "%COPEFF_SRC%\stub_entry.s" set COPEFF_SRC=E:\Workspace\co\linker\peff
+set COPEFF_SRC=%ROOT%linker\peff
 
 if not exist "%ROOT%release\tu-windows" (
   if "%DEVINSTALL%"=="0" (
     echo [install-windows] ERROR: missing "%ROOT%release\tu-windows"
-    echo [install-windows] maintainers: powershell -NoProfile -File "%ROOT%..\co\windows\dev_release.ps1"
+    echo [install-windows] maintainers: from Linux/macOS run `make dev_release`; on Windows VS INSTALL or powershell -NoProfile -File "%ROOT%..\co\windows\dev_release.ps1"
     exit /b 4
   )
 )
@@ -107,7 +106,7 @@ echo     tu -v
 echo     tu run hello.tu
 echo.
 echo   Same commands in cmd, PowerShell, and Git Bash.
-echo   Compiling still needs Visual Studio 2022 link.exe on PATH.
+echo   tu.exe compiles, assembles, and links by itself. No Visual Studio required.
 echo ============================================================
 echo.
 
