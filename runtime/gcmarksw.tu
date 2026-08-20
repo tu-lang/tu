@@ -381,12 +381,12 @@ fn findObject(p<u64>, ss<u64*> , objIndex<u64*>)
 		return Null
 	} 
 	if p < s.startaddr {
-		printf(*"[warning] %p < %p\n",p,s.startaddr)
+		dgc(*"[warning] %p < %p\n",p,s.startaddr)
 		// s.debug()
 		return Null
 	} 
 	if p >= s.limit {
-		printf(*"[warning] %p >= %p\n",p,s.limit)
+		dgc(*"[warning] %p >= %p\n",p,s.limit)
 		// s.debug()
 		return Null
 	} 
