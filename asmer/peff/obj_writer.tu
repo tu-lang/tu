@@ -480,10 +480,6 @@ CoffObjWriter::emit(outpath) i32 {
     }
     utils.fwrite(fp, ob.bits(), ob.len)
     utils.fclose(fp)
-
-    nrels<i32> = ntr + ndr
-    fmt.printf("[tu/peff] wrote COFF %s (text=%d data=%d syms=%d rels=%d)\n",
-        outpath, int(text_size), int(data_size), int(nall), int(nrels))
     return 0
 }
 
