@@ -114,11 +114,12 @@ build-liba:
 .PHONY: release
 # Recreate tulang.a from scratch. ar -r keeps stale members when asmer
 # output names change (co_*.tu.o vs tu_*.o) and install would mix both.
+# Needs install-full (copkg + coasm) before build-liba.
 release:
 	rm -f release/tulang.a
-	$(MAKE) install
+	$(MAKE) install-full
 	$(MAKE) build-liba
-	$(MAKE) install
+	$(MAKE) install-full
 	@echo "release tu liba success"
 	@echo "release bin lib success"
 
@@ -129,8 +130,41 @@ release:
 dev_release:
 	@prefix="$(prefix)" bash scripts/dev_release.sh
 
-.PHONY: install
-install:
+# Default install: host tu binary only. Stdlib / coasm / stubs come from the
+# embedded stdroot inside the binary (RFC-107). Use install-full for disk.
+.PHONY: install install-bin
+install install-bin:
+	@mkdir -p $(prefix)/bin
+ifeq ($(TARGET),darwin)
+	@if [ -f release/tu-darwin ]; then \
+		cp release/tu-darwin $(prefix)/bin/tu; \
+		echo "[install] $(prefix)/bin/tu ← release/tu-darwin (bin only)"; \
+	else \
+		echo "[install] skip: missing release/tu-darwin (run make dev_release)"; \
+	fi
+else ifeq ($(TARGET),windows)
+	@if [ -f release/tu-windows ]; then \
+		cp release/tu-windows $(prefix)/bin/tu.exe; \
+		if [ -d $(prefix)/RelWithDebInfo ]; then cp release/tu-windows $(prefix)/RelWithDebInfo/tu.exe; fi; \
+		echo "[install] $(prefix)/bin/tu.exe ← release/tu-windows (bin only)"; \
+	else \
+		echo "[install] skip: missing release/tu-windows (run make dev_release)"; \
+	fi
+else
+	@if [ "$(UNAME_S)" != "Linux" ]; then \
+		echo "[install] TARGET=linux binary install only on Linux host (have $(UNAME_S))"; \
+	elif [ -f release/tu ]; then \
+		cp release/tu $(prefix)/bin/tu; \
+		echo "[install] $(prefix)/bin/tu ← release/tu (bin only)"; \
+	else \
+		echo "[install] skip: missing release/tu (run make dev_release)"; \
+	fi
+endif
+
+# Legacy full prefix: copkg overlay + coasm/stubs + colib (Linux) + binary.
+# Required for --stdlib=disk / TU_STDLIB=disk, mother tuc bootstrap, build-liba.
+.PHONY: install-full
+install-full:
 ifeq ($(TARGET),darwin)
 	@$(MAKE) install-darwin
 else ifeq ($(TARGET),windows)
@@ -146,38 +180,32 @@ else
 			rm -rf "$$XD"; \
 			if ls $(prefix)/lib/colib/co_* >/dev/null 2>&1 && \
 			   ls $(prefix)/lib/colib/tu_* >/dev/null 2>&1; then \
-				echo "[install] mixed co_/tu_ objects in colib; stale tulang.a — run: rm -f release/tulang.a && make release" >&2; \
+				echo "[install-full] mixed co_/tu_ objects in colib; stale tulang.a — run: rm -f release/tulang.a && make release" >&2; \
 				exit 1; \
 			fi; \
 		else \
-			echo "[install] skip extracting tulang.a on $(UNAME_S)"; \
+			echo "[install-full] skip extracting tulang.a on $(UNAME_S)"; \
 		fi; \
 	fi
-	@if [ "$(UNAME_S)" = "Linux" ]; then \
-		cp release/tu $(prefix)/bin/tu 2>/dev/null || true; \
-	fi
 	@$(MAKE) install-coasm-all
-	@echo "tu env installed"
+	@$(MAKE) install TARGET=linux
+	@echo "tu env installed (full: copkg + coasm + colib + bin)"
 endif
 
-# Darwin copkg overlay + all-target coasm. On macOS, `make install` routes here.
+# Darwin: full disk tree + binary. Prefer `make install` (bin only) for embed.
 .PHONY: install-darwin
 install-darwin:
 	@$(MAKE) overlay-copkg TARGET=darwin
 	@$(MAKE) install-coasm-all
-	@if [ -f release/tu-darwin ]; then cp release/tu-darwin $(prefix)/bin/tu; echo "[install] tu ← release/tu-darwin"; fi
+	@$(MAKE) install TARGET=darwin
 	@echo "install-darwin: copkg overlay + all-target coasm + tu-darwin"
 
+# Windows: full disk tree + binary. Prefer `make install` / install-windows.cmd (bin).
 .PHONY: install-windows
 install-windows:
 	@$(MAKE) overlay-copkg TARGET=windows
 	@$(MAKE) install-coasm-all
-	@if [ -f release/tu-windows ]; then \
-		mkdir -p $(prefix)/bin; \
-		cp release/tu-windows $(prefix)/bin/tu.exe; \
-		if [ -d $(prefix)/RelWithDebInfo ]; then cp release/tu-windows $(prefix)/RelWithDebInfo/tu.exe; fi; \
-		echo "[install] tu.exe ← release/tu-windows"; \
-	fi
+	@$(MAKE) install TARGET=windows
 	@echo "install-windows: copkg overlay + all-target coasm + tu-windows"
 
 # Windows: mother tuc → tu/release/tu-windows (never clobber Linux release/tu).

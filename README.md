@@ -20,7 +20,7 @@
 
 ---
 
-Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态 `mem` / 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现；异步侧原生支持多线程协程调度。Linux、Windows 与 macOS 共用同一份语言与标准库表面；本机 `make install`（Windows：`install-windows.cmd`）即可装好对应运行时。
+Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态/ 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现；异步侧原生支持多线程协程调度。Linux、Windows 与 macOS 共用同一份语言与标准库表面；本机 `make install`（Windows：`install-windows.cmd`）只装二进制，标准库已嵌在 `tu` 内。
 
 ```
 Usage: tu <command|option> [arguments]

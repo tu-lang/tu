@@ -63,6 +63,7 @@ stage="$(mktemp -d "${TMPDIR:-/tmp}/tu-devrel-stage-XXXXXX")"
 cleanup() { rm -rf "$stage"; }
 on_err() {
     echo "[dev_release] restoring host overlay TARGET=$HOST_TARGET after failure"
+    make_tu overlay-copkg TARGET="$HOST_TARGET" || true
     make_tu install TARGET="$HOST_TARGET" || true
 }
 trap cleanup EXIT
@@ -151,7 +152,7 @@ bootstrap_one() {
     echo "[dev_release] wrote release/$dest ($(wc -c < "$ROOT/release/$dest") bytes)"
 }
 
-# Shared syscall/stub trees for every --target= (cross from this host).
+# Shared syscall/stub trees for mother tuc / --stdlib=disk during bootstrap.
 make_tu install-coasm-all
 
 # Host gen1 via mother tuc (ELF / Mach-O). Needed before Windows: peff lives in tu.
@@ -177,17 +178,18 @@ else
     bootstrap_one windows tu-windows "$HOST_TU"
 fi
 
-# Restore this host's copkg overlay and install the matching tu binary.
-echo "[dev_release] restore host overlay TARGET=$HOST_TARGET"
+# Restore this host's copkg overlay (disk/bootstrap) and install the host binary.
+echo "[dev_release] restore host overlay TARGET=$HOST_TARGET + install bin"
+make_tu overlay-copkg TARGET="$HOST_TARGET"
 make_tu install TARGET="$HOST_TARGET"
 
-# Linux colib archive (Darwin/Windows compile std from source; no .a).
+# Linux colib archive (Darwin/Windows compile std from embed; no .a required for run).
 if [ "$HOST_TARGET" = "linux" ]; then
     echo "[dev_release] rebuild linux tulang.a"
     make_tu build-liba
-    make_tu install TARGET=linux
+    make_tu install-full TARGET=linux
 else
-    echo "[dev_release] skip tulang.a on $HOST_TARGET (no colib; std compiled from copkg)"
+    echo "[dev_release] skip tulang.a on $HOST_TARGET (no colib; std from embed)"
 fi
 
 echo
@@ -196,4 +198,5 @@ ls -l "$ROOT/release"/tu "$ROOT/release"/tu-darwin "$ROOT/release"/tu-windows "$
 if [ ! -f "$ROOT/release/tu-windows" ]; then
     echo "[dev_release] note: release/tu-windows missing"
 fi
-echo "[dev_release] each platform: make install  (Windows: install-windows.cmd / CMake INSTALL)"
+echo "[dev_release] install bin: make install   | disk tree: make install-full"
+echo "[dev_release] Windows: install-windows.cmd (bin) / install-windows-full.cmd (disk)"
