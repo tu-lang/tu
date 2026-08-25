@@ -85,7 +85,18 @@ CoffObjWriter::collect_data(ps<parser.Parser>) {
     while i < ds.len() {
         sym<ast.Sym> = ds.addr[i]
         off<i32> = sym.addr
-        if sym.isstr {
+        if sym.isbin {
+            slen<i32> = sym.bin_len
+            j<i32> = 0
+            while j < slen {
+                if off + j < this.data.len {
+                    slot<i8*> = this.data.ptr() + off + j
+                    src<i8*> = sym.bin_ptr
+                    *slot = src[j]
+                }
+                j += 1
+            }
+        } else if sym.isstr {
             slen<i32> = sym.str.len()
             j<i32> = 0
             while j < slen {
