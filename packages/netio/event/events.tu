@@ -20,6 +20,22 @@ fn make_events(capacity<u64>) Events {
     return Events::with_capacity(capacity)
 }
 
+// In-package smoke: hub capacity + empty slot count.
+// Cross-package Events returns lose the hub pointer; callers assert this i32.
+fn events_smoke_capacity(capacity<u64>) i32 {
+	ev<Events> = Events::with_capacity(capacity)
+	hub<sys.Events> = events_hub(ev)
+	cap<u64> = sys.events_get_capacity(hub)
+	n<u64> = sys.events_slot_count(hub)
+	if cap != capacity {
+		return 0
+	}
+	if n != 0.(u64) {
+		return 0
+	}
+	return 1
+}
+
 const Events::with_capacity(capacity<u64>) Events {
 	return new Events {
 		hub: sys.Events::with_capacity(capacity)
