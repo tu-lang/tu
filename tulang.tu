@@ -14,6 +14,18 @@ root = "/usr/local/lib"
 version = "1.0.0"
 printlat = false
 
+// RFC-107 Phase B: stdroot embedded at tu link time (paths relative to repo root).
+stdroot_embed<runtime.EmbedFS> = embed("library", "packages", "runtime", "syscall", "platform")
+
+// Export embed table/count for pkgfs helpers in compiler.utils.
+fn pkgfs_stdroot_table() u64 {
+	return stdroot_embed.table
+}
+
+fn pkgfs_stdroot_count() i32 {
+	return stdroot_embed.nentries
+}
+
 class Compiler {
     // origin file
     code_files = []
@@ -36,8 +48,8 @@ class Compiler {
     workdir_explicit = ""
     // Keep .s/.o after build when --work is set
     flag_work = false
-    // linux=0 / darwin=1 / windows=2
-    target = 0
+    // PKGFS_MODE_* ; default embed unless --stdlib=disk / TU_STDLIB=disk
+    stdlib_mode<i32> = 0
 }
 func arg_after_prefix(arg, n) {
     out = ""
@@ -64,22 +76,14 @@ func arg_has_prefix(arg, pref) {
     return true
 }
 Compiler::init() {
-    this.target = utils.target_default()
+    // Target lives in asm.requested_target (string). Avoid class i32 0 traps.
+    asm.requested_target = utils.target_name(utils.target_default())
     // copkg/coasm: env override, else dirname(dirname(exe))/lib (install layout).
     root = utils.lib_root()
 }
 Compiler::apply_target(name) {
-    asm.requested_target = name
-    if name == "linux" {
-        this.target = utils.TARGET_LINUX
-        return
-    }
-    if name == "darwin" || name == "macos" || name == "osx" {
-        this.target = utils.TARGET_DARWIN
-        return
-    }
-    if name == "windows" || name == "win64" || name == "pe" {
-        this.target = utils.TARGET_WINDOWS
+    if name == "linux" || name == "darwin" || name == "macos" || name == "osx" || name == "windows" || name == "win64" || name == "pe" {
+        asm.requested_target = name
         return
     }
     fmt.printf("[tu] unknown --target=%s (want linux|darwin|windows)\n", name)
@@ -106,6 +110,7 @@ Compiler::print_help(){
         "  --workdir-cwd              中间产物写当前目录（旧行为）\n" +
         "  --work                     保留中间产物\n" +
         "  --target linux|darwin|windows  对象/链接后端（默认=host；可用 TU_TARGET）\n" +
+        "  --stdlib embed|disk            标准库来源（默认 embed）\n" +
         "  -v                         打印版本\n" +
         "\n" +
         "Default workdir: $TMPDIR/tu-build-<stem>-...\n"
@@ -126,6 +131,17 @@ Compiler::commadparse(){
         if arg_has_prefix(arg, "--target=") {
             preflen = std.len("--target=")
             this.apply_target(arg_after_prefix(arg, preflen))
+            i += 1
+            continue
+        }
+        if arg_has_prefix(arg, "--stdlib=") {
+            preflen = std.len("--stdlib=")
+            val = arg_after_prefix(arg, preflen)
+            if val == "disk" {
+                this.stdlib_mode = 1
+            } else if val == "embed" {
+                this.stdlib_mode = 0
+            }
             i += 1
             continue
         }
@@ -184,12 +200,21 @@ Compiler::commadparse(){
                 this.apply_target(os.argv()[i + 1])
                 i += 1
             }
+            "--stdlib" : {
+                val = os.argv()[i + 1]
+                if val == "disk" {
+                    this.stdlib_mode = 1
+                } else if val == "embed" {
+                    this.stdlib_mode = 0
+                }
+                i += 1
+            }
             "-v"   : {
                 fmt.printf(
                     "tu-lang version: %s\n" +
                     "Target         : x86_64 %s\n",
                     version,
-                    utils.target_name(this.target)
+                    asm.requested_target
                 )
                 os.exit(0)
             }
@@ -254,7 +279,7 @@ Compiler::compiler(file){
         compile.nostd = true
     }
     // Darwin/Windows have no prebuilt colib; run/build includes std+coasm unless -nostd.
-    if (this.target == utils.TARGET_DARWIN || this.target == utils.TARGET_WINDOWS) && this.flag_link && !this.flag_nostd_explicit {
+    if (utils.target_parse(asm.requested_target) == utils.TARGET_DARWIN || utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS) && this.flag_link && !this.flag_nostd_explicit {
         compile.nostd = false
     }
     compile.initWorkdir(file, this.workdir_cwd, this.workdir_explicit)
@@ -267,14 +292,14 @@ Compiler::compiler(file){
         wd = "."
     }
     exe_name = "a.out"
-    if this.target == utils.TARGET_WINDOWS {
+    if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS {
         exe_name = "a.exe"
     }
     if this.flag_link {
-        if this.target == utils.TARGET_DARWIN && this.flag_gcc {
+        if utils.target_parse(asm.requested_target) == utils.TARGET_DARWIN && this.flag_gcc {
             utils.error("-gcc is linux-only; use the self-hosted darwin linker")
         }
-        if this.target == utils.TARGET_WINDOWS && this.flag_gcc {
+        if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS && this.flag_gcc {
             utils.error("-gcc is not supported for --target=windows; use the self-hosted peff linker")
         }
         //By Gcc Link
@@ -283,48 +308,29 @@ Compiler::compiler(file){
             if !this.flag_work {
                 utils.remove_files_ext(wd, ".s")
             }
-            if this.target != utils.TARGET_WINDOWS {
+            if utils.target_parse(asm.requested_target) != utils.TARGET_WINDOWS {
                 os.shell("chmod 777 '" + utils.pathInWorkdir(exe_name) + "'")
             }
         }else {
-        // Self asmer+linker: copy prefix coasm into workdir (same as mother tuc),
-        // then assemble only there. Never write .o back into prefix coasm*.
+        // Self asmer+linker: copy coasm .s into workdir (embed stdroot or disk
+        // prefix). Never write .o back into prefix coasm*.
             this.code_files = []
             if !compile.nostd {
-                if this.target == utils.TARGET_DARWIN {
-                    src = root + "/coasm-darwin"
-                    probe = src + "/asm_amd64.s"
-                    fp<i32> = std.fopen(*probe, *"r")
-                    if fp <= 0 {
-                        utils.error("missing Darwin coasm at " + src)
-                    }
-                    std.close(fp)
-                    utils.copy_dir_ext(src, wd, ".s")
-                } else if this.target == utils.TARGET_WINDOWS {
-                    src = root + "/coasm-windows"
-                    for (ek, ev : os.envs()) {
-                        arr = string.split(ev, "=")
-                        if std.len(arr) >= 2 && arr[0] == "CO_WINDOWS_COASM" && arr[1] != "" {
-                            src = utils.norm_slash(arr[1])
-                            break
-                        }
-                    }
-                    probe = src + "/asm_amd64.s"
-                    fp<i32> = std.fopen(*probe, *"r")
-                    if fp <= 0 {
-                        utils.error("missing Windows coasm at " + src)
-                    }
-                    std.close(fp)
-                    utils.copy_dir_ext(src, wd, ".s")
-                } else {
-                    utils.copy_dir_ext(root + "/coasm", wd, ".s")
+                // RFC-107: default embed materialize → syscall/{,darwin,windows}/.
+                src = utils.pkgfs_coasm_dir()
+                probe = utils.path_join(src, "asm_amd64.s")
+                fp<i32> = std.fopen(*probe, *"r")
+                if fp <= 0 {
+                    utils.error("missing coasm asm_amd64.s at " + src)
                 }
+                std.close(fp)
+                utils.copy_dir_ext(src, wd, ".s")
             }
             this.scandir(wd,".s")
             this.asmer()
 
             this.code_files = []
-            if compile.nostd && this.target != utils.TARGET_DARWIN && this.target != utils.TARGET_WINDOWS {
+            if compile.nostd && utils.target_parse(asm.requested_target) != utils.TARGET_DARWIN && utils.target_parse(asm.requested_target) != utils.TARGET_WINDOWS {
                 utils.copy_dir_ext(root + "/colib", wd, ".o")
             }
             this.scandir(wd,".o")
@@ -335,7 +341,7 @@ Compiler::compiler(file){
                 utils.remove_files_ext(wd, ".s")
             }
         }
-        if this.target != utils.TARGET_WINDOWS {
+        if utils.target_parse(asm.requested_target) != utils.TARGET_WINDOWS {
             os.shell("chmod 777 '" + utils.pathInWorkdir(exe_name) + "'")
         }
         if this.flag_work {
@@ -348,7 +354,7 @@ Compiler::compiler(file){
     ))
     // `tu run`: execute linked binary
     if this.flag_exec {
-        if this.target == utils.TARGET_WINDOWS || runtime.host_os() == 2 {
+        if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS || runtime.host_os() == 2 {
             cmd = exe
             for a : this.args {
                 cmd += " " + a
@@ -389,14 +395,14 @@ Compiler::linker(){
     // Default outfile next to the first .o, same as tul.
     if this.out == "a.out" && total > 0 {
         name = "a.out"
-        if this.target == utils.TARGET_WINDOWS {
+        if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS {
             name = "a.exe"
         }
         this.out = utils.path_join(utils.path_dirname(this.code_files[0]), name)
     }
     fmt.printf("[tu] outfile: %s\n", this.out)
 
-    if this.target == utils.TARGET_DARWIN {
+    if utils.target_parse(asm.requested_target) == utils.TARGET_DARWIN {
         rc = darwin.link_objects(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
@@ -404,7 +410,7 @@ Compiler::linker(){
         utils.msg(100,"Generate " + this.out + " Passed")
         return
     }
-    if this.target == utils.TARGET_WINDOWS {
+    if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS {
         rc = peff.link_objects(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
@@ -447,6 +453,24 @@ func main() {
     }
     os.set_stack(10.(i8))
     eng.commadparse() // handle options
+    // RFC-107: default embed; TU_STD > --stdlib=disk / TU_STDLIB=disk > embed
+    pmode<i32> = utils.pkgfs_parse_mode_from_env()
+    if eng.stdlib_mode == 1 {
+        pmode = utils.PKGFS_MODE_DISK
+    }
+    tu_std = utils.pkgfs_tu_std_from_env()
+    tbl<u64> = pkgfs_stdroot_table()
+    cnt<i32> = pkgfs_stdroot_count()
+    if pmode == utils.PKGFS_MODE_EMBED && (tbl == 0 || cnt <= 0) {
+        utils.notice("pkgfs: empty stdroot; falling back to disk")
+        pmode = utils.PKGFS_MODE_DISK
+    }
+    utils.pkgfs_set_stdroot_table(tbl, cnt)
+    tname = asm.requested_target
+    if tname == null || tname == "" {
+        tname = utils.target_name(utils.target_default())
+    }
+    utils.pkgfs_configure_named(pmode, tu_std, tname)
     eng.compile()
 
     end<i64> = std.ntime()
