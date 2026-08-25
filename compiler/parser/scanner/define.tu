@@ -22,6 +22,7 @@ builtins = {
     "int" : true , "sizeof" : true , "type" : true, "float" : true,
 	"inter_get_bp" : true,
 	"inter_get_sp" : true,
+	"embed" : true,
 }
 specs = {
 	"\\n"  : 10.(i8),

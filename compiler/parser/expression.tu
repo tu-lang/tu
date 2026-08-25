@@ -152,6 +152,17 @@ Parser::parseExpression(oldPriority)
         assignExpr.lhs = p
         reader.scan()
         assignExpr.rhs = this.parseExpression(1)
+        // RFC-107: LHS type stamp on embed() for string / mem EmbedFS / dyn object
+        if assignExpr.rhs != null &&
+            type(assignExpr.rhs) == type(gen.BuiltinFuncExpr) &&
+            type(assignExpr.lhs) == type(gen.VarExpr) {
+            be = assignExpr.rhs
+            ve = assignExpr.lhs
+            if be.funcname == "embed" && ve.structtype && ve.structname == "EmbedFS" {
+                be.embed_kind = gen.EmbedKindFS
+                ve.structpkg = "runtime"
+            }
+        }
         assignExpr.checkawait()
         return assignExpr
     }
@@ -219,6 +230,38 @@ Parser::parsePrimaryExpr()
         builtinfunc = new gen.BuiltinFuncExpr(reader.curLex.dyn(),int(reader.line),int(reader.column))
         this.next_expect( ast.LPAREN )
         reader.scan()
+        if builtinfunc.funcname == "embed" {
+            this.check(
+                reader.curToken == ast.STRING,
+                "embed() args must be string literals"
+            )
+            while reader.curToken == ast.STRING {
+                builtinfunc.embed_paths[] = reader.curLex.dyn()
+                reader.scan()
+                if reader.curToken == ast.COMMA {
+                    reader.scan()
+                    this.check(
+                        reader.curToken == ast.STRING,
+                        "embed() args must be string literals"
+                    )
+                    continue
+                }
+                break
+            }
+            this.expect(ast.RPAREN)
+            reader.scan()
+            set = gen.embed_collect(
+                this.filepath,
+                this,
+                builtinfunc.embed_paths,
+                builtinfunc.line,
+                builtinfunc.column
+            )
+            this.check(set != null, "embed() failed to collect files")
+            builtinfunc.embed_set = set
+            this.pkg.add_embed(set)
+            return builtinfunc
+        }
         if builtinfunc.funcname == "sizeof" {
             // Primitive names are keywords; synthesize VarExpr for gen lookup.
             if reader.curToken >= ast.I8 && reader.curToken <= ast.F64 {
@@ -689,6 +732,10 @@ Parser::parseVarExpr(var)
                     reader.scan()
                 }else {
                     expr.structpkg = this.pkg.full_package
+                }
+                // RFC-107: bare EmbedFS is runtime built-in mem
+                if expr.structname == "EmbedFS" {
+                    expr.structpkg = "runtime"
                 }
                 if ( reader.curToken ==  ast.COLON){
                     this.parseVarStack(expr)

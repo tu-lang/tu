@@ -4,8 +4,10 @@ use compiler.utils
 use compiler.ast
 use compiler.parser
 use compiler.compile
+use compiler.pkgfs
 use os
 use string
+use fmt
 
 class Package {
     parsers = {} // parsers map[filepath + name] = parser
@@ -23,8 +25,13 @@ class Package {
     impls   = {}
     imports = {} // map[string: string}
     gstrs = {}
+    embeds = []
 
     cfgs    = new ast.ConfigOpts()
+}
+
+Package::add_embed(set) {
+    this.embeds[] = set
 }
 
 Package::init(name , path , multi) {
@@ -53,8 +60,10 @@ fn pkg_dir_has_tu(dir) {
 }
 
 // cwd/<pkg> is usable only if it has .tu, and runtime also has the host overlay
-// (linux.tu / darwin.tu / windows.tu). Repo runtime/ is Unix-only; without this
-// check Windows/Darwin host syscall objects miss overlay symbols at link.
+// (linux.tu / darwin.tu / windows.tu). Scan still keeps the --target overlay
+// file, not the host one: Darwin cwd with both files + --target=linux parses
+// linux.tu (Palloc). Repo runtime/ is Unix-only; without the host-file check
+// Darwin default would compile linux-only host_os.
 fn cwd_pkg_usable(dir, pkg_path) {
     if !std.is_dir(dir) {
         return false
@@ -75,49 +84,80 @@ Package::parse()
     abpath += "/" + this.path
     utils.debugf("found import.start parser.. %s",abpath)
 
-    if !cwd_pkg_usable(abpath, this.path) {
-        utils.debugf("Parser: current package import not exist :%s",abpath)
-        pkgroot = utils.copkg_dir()
-        last = pkgroot[std.len(pkgroot) - 1]
-        if last != '/' && last != utils.char1(92.(i8)) {
-            pkgroot = pkgroot + "/"
+    if cwd_pkg_usable(abpath, this.path) {
+        utils.notice("start scan the package:%s",abpath)
+        names = utils.list_dir_basenames(abpath)
+        if std.len(names) <= 0 {
+            utils.error("file|dir not exist " +abpath)
         }
-        abpath = pkgroot + this.path
-        if !std.is_dir(abpath) {
-            utils.debugf("Parser: global pkg path not exist! :%s %s",abpath,this.path)
-            return false  
+        for name : names {
+            if name == "." || name == ".." {
+                continue
+            }
+            nlen = std.len(name)
+            if nlen < 3 {
+                continue
+            }
+            if string.sub(name, nlen - 3) != ".tu" {
+                continue
+            }
+            if this.path == "runtime" {
+                want = pkgfs.overlay_runtime_name(pkgfs.pkgfs_target)
+                if name == "linux.tu" || name == "darwin.tu" || name == "windows.tu" {
+                    if name != want {
+                        continue
+                    }
+                }
+            }
+            filepath = abpath
+            last = filepath[std.len(filepath) - 1]
+            bs = utils.char1(92.(i8))
+            if last != '/' && last != bs {
+                filepath = filepath + "/"
+            }
+            filepath = utils.norm_slash(filepath + name)
+            if !std.is_file(filepath) {
+                continue
+            }
+            p = new parser.Parser(filepath,this)
+            p.fileno = compile.fileno
+            this.parsers[filepath] = p
+            utils.notice("start parse the package:%s file:%s",abpath,filepath)
+            p.parse()
         }
+        return true
     }
-    utils.notice("start scan the package:%s",abpath)
-    names = utils.list_dir_basenames(abpath)
-    if std.len(names) <= 0 {
-        utils.error("file|dir not exist " +abpath)
+
+    utils.debugf("Parser: cwd package missing; pkgfs stdlib %s",this.path)
+    std_dir = pkgfs.pkgfs_resolve_std_dir(this.path)
+    if std_dir == "" {
+        utils.debugf("Parser: pkgfs could not resolve :%s",this.path)
+        return false
     }
+    err<i32> = pkgfs.pkgfs_list_package_tu(this.path)
+    names = pkgfs.pkgfs_take_list_cache()
+    if err != 0 || std.len(names) <= 0 {
+        utils.error(fmt.sprintf("pkgfs: no .tu in stdlib package %s mode=%d", this.path, int(pkgfs.pkgfs_mode)))
+    }
+    utils.notice("start scan pkgfs package:%s dir:%s",this.path,std_dir)
     for name : names {
-        if name == "." || name == ".." {
-            continue
+        scan_path = pkgfs.pkgfs_scan_filepath(std_dir, name)
+        disk_path = ""
+        if pkgfs.pkgfs_mode == pkgfs.PKGFS_MODE_EMBED {
+            disk_path = pkgfs.pkgfs_materialize_embed(std_dir, this.path, name)
+            if disk_path == "" {
+                utils.error("pkgfs: materialize failed " + scan_path)
+            }
+        } else {
+            disk_path = pkgfs.pkgfs_disk_source_path(std_dir, this.path, name)
+            if !std.is_file(disk_path) {
+                utils.error("pkgfs: missing " + disk_path)
+            }
         }
-        nlen = std.len(name)
-        if nlen < 3 {
-            continue
-        }
-        if string.sub(name, nlen - 3) != ".tu" {
-            continue
-        }
-        filepath = abpath
-        last = filepath[std.len(filepath) - 1]
-        bs = utils.char1(92.(i8))
-        if last != '/' && last != bs {
-            filepath = filepath + "/"
-        }
-        filepath = utils.norm_slash(filepath + name)
-        if !std.is_file(filepath) {
-            continue
-        }
-        p = new parser.Parser(filepath,this)
+        p = new parser.Parser(disk_path, this)
         p.fileno = compile.fileno
-        this.parsers[filepath] = p
-        utils.notice("start parse the package:%s file:%s",abpath,filepath)
+        this.parsers[scan_path] = p
+        utils.notice("start parse pkgfs file:%s",scan_path)
         p.parse()
     }
     return true

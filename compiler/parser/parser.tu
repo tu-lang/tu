@@ -62,10 +62,8 @@ Parser::init(filepath,pkg) {
         "parser.Parser::init() filename:%s package:%s full_package:%s"
         filepath,pkg.package,pkg.full_package
     )
-    // Windows paths may use \; normalize so basename split on "/" works.
     fpn = utils.norm_slash(filepath)
     fullname = std.pop(string.split(fpn,"/"))
-    //this.filename = string.sub(fullname,0,std.len(fullname) - 3)
     this.filename = fullname
     this.asmfile  = this.filename + ".s"
     if pkg.package != "main"
@@ -75,6 +73,23 @@ Parser::init(filepath,pkg) {
     this.scanner = new scanner.ScannerStatic(filepath,this)
     this.filenameid = this.label() + ".L.filename." +  ast.incr_labelid()
 
+}
+
+Parser::initFromBuffer(filepath, buf<i8*>, sz<i32>, pkg) {
+    utils.debugf(
+        "parser.Parser::initFromBuffer() filename:%s package:%s",
+        filepath,pkg.full_package
+    )
+    fpn = utils.norm_slash(filepath)
+    fullname = std.pop(string.split(fpn,"/"))
+    this.filename = fullname
+    this.asmfile  = this.filename + ".s"
+    if pkg.package != "main"
+        this.asmfile  = "co_" + pkg.getFullName() + "_" + this.asmfile
+    this.asmfile = utils.pathInWorkdir(this.asmfile)
+    this.scanner = new scanner.ScannerStatic
+    this.scanner.initFromBuffer(filepath, buf, sz, this)
+    this.filenameid = this.label() + ".L.filename." +  ast.incr_labelid()
 }
 Parser::label(){
     return this.pkg.full_package

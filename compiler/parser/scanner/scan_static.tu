@@ -57,9 +57,16 @@ ScannerStatic::init(filepath,parser){
     }
     totalsize = fs.size
     this.buffersize = *totalsize
-    // Slurp is done; drop the fd. Windows win_fds has 256 slots and
-    // a tulang compile keeps hundreds of parsers alive until link.
     fs.Close()
+}
+
+ScannerStatic::initFromBuffer(filepath, buf<i8*>, sz<i32>, parser){
+    utils.debugf("parser.scanner.ScannerStatic::initFromBuffer() filepath:%s sz:%d",filepath,sz)
+    this.pos = 0
+    this.filepath = filepath
+    this.parser = parser
+    this.buffer = buf
+    this.buffersize = sz
 }
 ScannerStatic::transaction()
 {
