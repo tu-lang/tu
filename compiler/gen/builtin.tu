@@ -11,6 +11,9 @@ use compiler.parser.scanner
 class BuiltinFuncExpr : ast.Ast {
     funcname  = funcname
 	expr from
+	embed_paths = []
+	embed_kind = 0
+	embed_set = null
 	func init(funcname,line,column){
 		super.init(line,column)
 	}
@@ -48,6 +51,48 @@ BuiltinFuncExpr::compile(ctx,load){
 		}
 		"inter_get_sp" : {
 			compile.writeln("   mov %%rsp , %%rax")
+			return null
+		}
+		"inter_get_sp" : {
+			compile.writeln("   mov %%rsp , %%rax")
+			return null
+		}
+		"embed" : {
+			this.check(
+				this.embed_set != null && this.embed_set.entries_sym != "",
+				"embed: symbols not assigned"
+			)
+			kind = this.embed_kind
+			if kind == EmbedKindAuto {
+				if this.embed_set.single_file {
+					kind = EmbedKindString
+				} else {
+					kind = EmbedKindFS
+				}
+			}
+			if kind == EmbedKindString {
+				this.check(
+					this.embed_set.single_file,
+					"embed: dynamic string requires exactly one file"
+				)
+				f = this.embed_set.files[0]
+				compile.writeln("    mov $%d, %%rax", f.size)
+				compile.Push()
+				compile.writeln("    lea %s(%%rip), %%rax", f.blob_sym)
+				compile.Push()
+				internal.call("runtime_embed_string")
+				return null
+			}
+			want_mem = this.embed_kind == EmbedKindFS
+			compile.writeln("    mov $%d, %%rax", std.len(this.embed_set.files))
+			compile.Push()
+			compile.writeln("    lea %s(%%rip), %%rax", this.embed_set.entries_sym)
+			compile.Push()
+			if want_mem {
+				internal.call("runtime_embed_fs_new")
+			} else {
+				internal.call("runtime_embed_box")
+			}
 			return null
 		}
 		"type": {
@@ -154,6 +199,18 @@ BuiltinFuncExpr::compile(ctx,load){
 	return null
 }
 BuiltinFuncExpr::toString(){
+	if this.funcname == "embed" {
+		arg = ""
+		i = 0
+		while i < std.len(this.embed_paths) {
+			if i > 0 {
+				arg += ","
+			}
+			arg += "\"" + this.embed_paths[i] + "\""
+			i += 1
+		}
+		return fmt.sprintf("BuiltinFuncExpr:embed(%s)", arg)
+	}
 	exprs = ""
 	if this.expr != null {
 		exprs = this.expr.toString("")
@@ -168,6 +225,9 @@ BuiltinFuncExpr::isMem(ctx){
     if this.funcname == "sizeof" {
         return true
     }
+	if this.funcname == "embed" {
+		return this.embed_kind == EmbedKindFS
+	}
 	if this.funcname == "inter_get_bp" {
 		return true
 	}
