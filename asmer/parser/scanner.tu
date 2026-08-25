@@ -23,6 +23,7 @@ labels = {
     ".global" : ast.KW_GLOBAL, ".globl"  : ast.KW_GLOBAL, ".text"   : ast.KW_TEXT,
     ".data"   : ast.KW_DATA,   ".string": ast.KW_STRING, ".size"   : ast.KW_SIZE,
     ".quad": ast.KW_QUAD,    ".long": ast.KW_LONG,      ".value": ast.KW_VALUE,   ".byte": ast.KW_BYTE,
+    ".incbin": ast.KW_INCBIN,
     ".zero": ast.KW_ZERO,
     ".balign": ast.KW_BALIGN, ".align": ast.KW_BALIGN, ".p2align": ast.KW_P2ALIGN,
 

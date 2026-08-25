@@ -2,6 +2,7 @@ use asmer.ast
 use asmer.utils
 use std
 use string
+use os
 
 Parser::parseGlobal() {
     utils.debug("Parser::parseGlobal() ".(i8))
@@ -56,6 +57,8 @@ Parser::parseLabel() {
             return this.parseData(labelname)
         ast.KW_STRING:
             return this.parseString(labelname)
+        ast.KW_INCBIN:
+            return this.parseIncbin(labelname)
         ast.KW_LABEL:{
             sym = ast.newSym(labelname, False)
             this.symtable.addSym(sym)
@@ -124,5 +127,51 @@ Parser::parseString(labelname<string.String>) {
     this.symtable.addSym(sym)
 
     //next
+    this.scanner.scan()
+}
+Parser::parseIncbin(labelname<string.String>) {
+    this.check(this.scanner.curtoken == ast.KW_INCBIN, "should be .incbin")
+    this.check(this.scanner.scan() == ast.TK_STRING, ".incbin needs a quoted path")
+    // curlex is string.String*; filepath slots hold dyn strings (same as Scanner::init).
+    path = this.scanner.curlex.dyn()
+    full = path
+    if std.len(path) == 0 || path[0] != '/' {
+        // Do not call .str() on this.filepath — it is a dyn Value stored in a String* field.
+        fp = this.filepath
+        slash = -1
+        i = 0
+        n = std.len(fp)
+        while i < n {
+            if fp[i] == '/' {
+                slash = i
+            }
+            i += 1
+        }
+        dir = "./"
+        if slash >= 0 {
+            dir = ""
+            j = 0
+            end = slash + 1
+            while j < end {
+                dir += fp[j]
+                j += 1
+            }
+        }
+        full = dir + path
+    }
+    fs = new std.File(full)
+    if !fs.IsOpen() {
+        os.die(".incbin cannot open: " + full)
+    }
+    buf<i8*> = fs.ReadAllNative()
+    if buf == 0 {
+        os.die(".incbin read failed: " + full)
+    }
+    szp = fs.size
+    sz<i32> = *szp
+    fs.Close()
+    sym<ast.Sym> = ast.newBinSym(labelname, buf, sz, this.data_size)
+    this.data_size += sz
+    this.symtable.addSym(sym)
     this.scanner.scan()
 }
