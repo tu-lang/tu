@@ -45,8 +45,20 @@ make_tu() {
     make -C "$ROOT" prefix="$prefix" "$@"
 }
 
-# Staging: only tulang.tu + compiler/asmer/linker. cwd runtime/linux.tu would
-# hide copkg overlays (darwin.tu / windows.tu) and break cross targets.
+# Staging layout (RFC-107 embed + overlay isolation):
+#
+#   stage/
+#     compiler/ asmer/ linker/     ← cwd package lookup (use compiler)
+#     bin/
+#       tulang.tu
+#       library → repo, packages →, runtime →, syscall →, platform →
+#                                  ↑ embed() roots next to tulang.tu
+#
+# Package parse uses getcwd(); embed() uses dirname(tulang.tu). Keeping
+# stdroot under bin/ means cwd/runtime is absent → copkg overlays win
+# (overlay-copkg), while embed still sees the full unfiltered tree.
+# Cross-compile never runs `make install TARGET=…` (that extracts
+# tulang.a / copies a host-mismatched tu binary).
 stage="$(mktemp -d "${TMPDIR:-/tmp}/tu-devrel-stage-XXXXXX")"
 cleanup() { rm -rf "$stage"; }
 on_err() {
@@ -57,15 +69,28 @@ trap cleanup EXIT
 trap on_err ERR
 
 echo "[dev_release] stage=$stage prefix=$prefix host=$HOST_TARGET"
-cp "$ROOT/tulang.tu" "$stage/"
+mkdir -p "$stage/bin"
+cp "$ROOT/tulang.tu" "$stage/bin/"
 cp -a "$ROOT/compiler" "$ROOT/asmer" "$ROOT/linker" "$stage/"
+for d in library packages runtime syscall platform; do
+    if [ ! -d "$ROOT/$d" ]; then
+        echo "[dev_release] ERROR: missing $ROOT/$d (needed for embed stdroot)" >&2
+        exit 1
+    fi
+    ln -sfn "$ROOT/$d" "$stage/bin/$d"
+done
+echo "[dev_release] embed stdroot → stage/bin/{library,packages,runtime,syscall,platform}"
 
+# Copkg sources for the compile --target. Does not smash colib/coasm/tu.
 install_overlay() {
     case "$1" in
-    linux) make_tu install TARGET=linux ;;
-    darwin) make_tu install-darwin ;;
-    windows) make_tu install-windows ;;
-    *) echo "[dev_release] unknown overlay $1" >&2; return 1 ;;
+    linux|darwin|windows)
+        make_tu overlay-copkg TARGET="$1"
+        ;;
+    *)
+        echo "[dev_release] unknown overlay $1" >&2
+        return 1
+        ;;
     esac
 }
 
@@ -84,21 +109,26 @@ bootstrap_one() {
     echo "[dev_release] === $target → $dest  ($compiler) ==="
     install_overlay "$target"
 
-    rm -f "$stage/tulang" "$stage/tulang.exe" "$stage/a.out" "$stage/a.exe"
+    rm -f "$stage/bin/tulang" "$stage/bin/tulang.exe" "$stage/a.out" "$stage/a.exe" \
+        "$stage/tulang" "$stage/tulang.exe"
     (
         cd "$stage"
-        "$compiler" build tulang.tu --target="$target" --workdir "$work"
+        "$compiler" build bin/tulang.tu --target="$target" --workdir "$work"
     )
 
     local produced=""
     if [ "$target" = "windows" ]; then
-        if [ -f "$stage/tulang.exe" ]; then
+        if [ -f "$stage/bin/tulang.exe" ]; then
+            produced="$stage/bin/tulang.exe"
+        elif [ -f "$stage/tulang.exe" ]; then
             produced="$stage/tulang.exe"
         elif [ -f "$work/a.exe" ]; then
             produced="$work/a.exe"
         fi
     else
-        if [ -f "$stage/tulang" ]; then
+        if [ -f "$stage/bin/tulang" ]; then
+            produced="$stage/bin/tulang"
+        elif [ -f "$stage/tulang" ]; then
             produced="$stage/tulang"
         elif [ -f "$work/a.out" ]; then
             produced="$work/a.out"

@@ -52,47 +52,47 @@ DEFAULT_TARGET := linux
 endif
 TARGET ?= $(DEFAULT_TARGET)
 
-INSTALL_ALL = install_all() {                              			\
-    if [ ! -d $(prefix)/lib/colib ]; then                        	\
-        mkdir -p $(prefix)/lib/colib;                            	\
-    fi;                                                     	 	\
-    if [ ! -d $(prefix)/lib/copkg ]; then                        	\
-        mkdir -p $(prefix)/lib/copkg;                            	\
-    fi;                                                     	 	\
-    if [ ! -d $(prefix)/lib/coasm ]; then                        	\
-        mkdir -p $(prefix)/lib/coasm;                            	\
-    fi;                                                     	 	\
-	rm -rf $(prefix)/lib/colib/*;									\
-	rm -rf $(prefix)/lib/copkg/*;									\
-	rm -rf $(prefix)/lib/coasm/*;									\
-	cp release/tu $(prefix)/bin/tu 2>/dev/null || true;				\
-	cp -r runtime $(prefix)/lib/copkg/;								\
-	cp -r library/* $(prefix)/lib/copkg/;							\
-	cp -r packages/* $(prefix)/lib/copkg/;							\
-	rm -f $(prefix)/lib/copkg/runtime/darwin.tu;					\
-	rm -f $(prefix)/lib/copkg/runtime/windows.tu;					\
-	rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu;					\
-	rm -f $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu;				\
-	if [ -f release/tulang.a ]; then								\
-		XD=$$(mktemp -d "$${TMPDIR:-/tmp}/tu-extract-liba-XXXXXX");	\
-		(cd "$$XD" && ar -x "$(CURDIR)/release/tulang.a");			\
-		mv "$$XD"/*.o $(prefix)/lib/colib/;							\
-		rm -rf "$$XD";												\
-		if ls $(prefix)/lib/colib/co_* >/dev/null 2>&1 &&			\
-		   ls $(prefix)/lib/colib/tu_* >/dev/null 2>&1; then		\
-			echo "[install] mixed co_/tu_ objects in colib; stale tulang.a — run: rm -f release/tulang.a && make release" >&2; \
-			return 1;												\
-		fi;															\
-	fi;																\
-}
+# Copkg sources for TARGET only. No colib, no tu binary, no coasm, no ar.
+# Cross-bootstrap on Darwin must not `ar -x` a Linux tulang.a or copy ELF tu.
+.PHONY: overlay-copkg
+overlay-copkg:
+	@mkdir -p $(prefix)/lib/copkg
+	@rm -rf $(prefix)/lib/copkg/*
+	@cp -R runtime $(prefix)/lib/copkg/
+	@cp -R library/* $(prefix)/lib/copkg/
+	@cp -R packages/* $(prefix)/lib/copkg/
+ifeq ($(TARGET),darwin)
+	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/windows.tu
+	@cp platform/darwin/runtime_os.tu $(prefix)/lib/copkg/runtime/darwin.tu
+	@cp platform/darwin/os_signal.tu $(prefix)/lib/copkg/os/signal.tu
+	@cp packages/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/epoll.tu
+	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu
+	@cp packages/netio/sys/waker_kqueue.tu $(prefix)/lib/copkg/netio/sys/waker.tu
+	@rm -f $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
+	@cp platform/darwin/netio_platform.tu $(prefix)/lib/copkg/netio/sys/platform.tu
+else ifeq ($(TARGET),windows)
+	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/darwin.tu
+	@cp platform/windows/runtime_os.tu $(prefix)/lib/copkg/runtime/windows.tu
+	@cp platform/windows/wsa_errno.tu $(prefix)/lib/copkg/runtime/wsa_errno.tu
+	@cp platform/windows/fd_table.tu $(prefix)/lib/copkg/runtime/fd_table.tu
+	@cp platform/windows/epoll_soft.tu $(prefix)/lib/copkg/runtime/epoll_soft.tu
+	@cp platform/windows/sock_flags.tu $(prefix)/lib/copkg/runtime/sock_flags.tu
+	@cp platform/windows/pipe.tu $(prefix)/lib/copkg/runtime/pipe.tu
+	@cp platform/windows/netio_platform.tu $(prefix)/lib/copkg/netio/sys/platform.tu
+	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
+else
+	@rm -f $(prefix)/lib/copkg/runtime/darwin.tu $(prefix)/lib/copkg/runtime/windows.tu
+	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
+endif
+	@echo "overlay-copkg: TARGET=$(TARGET) (sources only)"
 TEST_COMPILER = test_compiler() {									\
 	sh compiler/test.sh;											\
 	sh asmer/test.sh;												\
 	sh linker/test.sh;												\
 }
 
-# All target asm/stub trees. copkg overlay stays host-specific (linux.tu /
-# darwin.tu / windows.tu are mutually exclusive in one copkg).
+# All-target asm/stub trees for --stdlib=disk. Embed mode uses syscall/ +
+# platform/*/stub_*.s from the materialized stdroot (no prefix required).
 .PHONY: install-coasm-all
 install-coasm-all:
 	@mkdir -p $(prefix)/lib/coasm $(prefix)/lib/coasm-darwin $(prefix)/lib/coasm-windows \
@@ -101,8 +101,8 @@ install-coasm-all:
 	@for f in syscall/*.s; do cp "$$f" $(prefix)/lib/coasm/; done
 	@cp syscall/darwin/*.s $(prefix)/lib/coasm-darwin/
 	@cp syscall/windows/*.s $(prefix)/lib/coasm-windows/
-	@cp linker/darwin/stub_entry.s linker/darwin/stub_runtime.s $(prefix)/lib/costub-darwin/
-	@cp linker/peff/stub_entry.s linker/peff/stub_runtime.s $(prefix)/lib/copeff/
+	@cp platform/darwin/stub_entry.s platform/darwin/stub_runtime.s $(prefix)/lib/costub-darwin/
+	@cp platform/windows/stub_entry.s platform/windows/stub_runtime.s $(prefix)/lib/copeff/
 	@echo "install-coasm-all: coasm + coasm-darwin + coasm-windows + costub-darwin + copeff"
 
 .PHONY: build-liba
@@ -136,7 +136,26 @@ ifeq ($(TARGET),darwin)
 else ifeq ($(TARGET),windows)
 	@$(MAKE) install-windows
 else
-	@$(INSTALL_ALL); install_all
+	@$(MAKE) overlay-copkg TARGET=linux
+	@mkdir -p $(prefix)/lib/colib $(prefix)/bin
+	@if [ -f release/tulang.a ]; then \
+		if [ "$(UNAME_S)" = "Linux" ]; then \
+			XD=$$(mktemp -d "$${TMPDIR:-/tmp}/tu-extract-liba-XXXXXX"); \
+			(cd "$$XD" && ar -x "$(CURDIR)/release/tulang.a"); \
+			mv "$$XD"/*.o $(prefix)/lib/colib/; \
+			rm -rf "$$XD"; \
+			if ls $(prefix)/lib/colib/co_* >/dev/null 2>&1 && \
+			   ls $(prefix)/lib/colib/tu_* >/dev/null 2>&1; then \
+				echo "[install] mixed co_/tu_ objects in colib; stale tulang.a — run: rm -f release/tulang.a && make release" >&2; \
+				exit 1; \
+			fi; \
+		else \
+			echo "[install] skip extracting tulang.a on $(UNAME_S)"; \
+		fi; \
+	fi
+	@if [ "$(UNAME_S)" = "Linux" ]; then \
+		cp release/tu $(prefix)/bin/tu 2>/dev/null || true; \
+	fi
 	@$(MAKE) install-coasm-all
 	@echo "tu env installed"
 endif
@@ -144,41 +163,14 @@ endif
 # Darwin copkg overlay + all-target coasm. On macOS, `make install` routes here.
 .PHONY: install-darwin
 install-darwin:
-	@mkdir -p $(prefix)/lib/copkg $(prefix)/lib/coasm $(prefix)/lib/coasm-darwin
-	@rm -rf $(prefix)/lib/copkg/*
-	@cp -R runtime $(prefix)/lib/copkg/
-	@cp -R library/* $(prefix)/lib/copkg/
-	@cp -R packages/* $(prefix)/lib/copkg/
-	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/windows.tu
-	@cp platform/darwin/runtime_os.tu $(prefix)/lib/copkg/runtime/darwin.tu
-	# Darwin signal numbers (SIGUSR1=30, …); keep Linux signal.tu in the tree.
-	@cp platform/darwin/os_signal.tu $(prefix)/lib/copkg/os/signal.tu
-	# Native kqueue Selector: overlay epoll/waker so consumers keep netio.sys names.
-	@cp packages/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/epoll.tu
-	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu
-	@cp packages/netio/sys/waker_kqueue.tu $(prefix)/lib/copkg/netio/sys/waker.tu
-	@rm -f $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
-	@cp platform/darwin/netio_platform.tu $(prefix)/lib/copkg/netio/sys/platform.tu
+	@$(MAKE) overlay-copkg TARGET=darwin
 	@$(MAKE) install-coasm-all
 	@if [ -f release/tu-darwin ]; then cp release/tu-darwin $(prefix)/bin/tu; echo "[install] tu ← release/tu-darwin"; fi
 	@echo "install-darwin: copkg overlay + all-target coasm + tu-darwin"
 
 .PHONY: install-windows
 install-windows:
-	@mkdir -p $(prefix)/lib/copkg $(prefix)/lib/coasm $(prefix)/lib/coasm-windows $(prefix)/lib/copeff
-	@rm -rf $(prefix)/lib/copkg/*
-	@cp -R runtime $(prefix)/lib/copkg/
-	@cp -R library/* $(prefix)/lib/copkg/
-	@cp -R packages/* $(prefix)/lib/copkg/
-	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/darwin.tu
-	@cp platform/windows/runtime_os.tu $(prefix)/lib/copkg/runtime/windows.tu
-	@cp platform/windows/wsa_errno.tu $(prefix)/lib/copkg/runtime/wsa_errno.tu
-	@cp platform/windows/fd_table.tu $(prefix)/lib/copkg/runtime/fd_table.tu
-	@cp platform/windows/epoll_soft.tu $(prefix)/lib/copkg/runtime/epoll_soft.tu
-	@cp platform/windows/sock_flags.tu $(prefix)/lib/copkg/runtime/sock_flags.tu
-	@cp platform/windows/pipe.tu $(prefix)/lib/copkg/runtime/pipe.tu
-	@cp platform/windows/netio_platform.tu $(prefix)/lib/copkg/netio/sys/platform.tu
-	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
+	@$(MAKE) overlay-copkg TARGET=windows
 	@$(MAKE) install-coasm-all
 	@if [ -f release/tu-windows ]; then \
 		mkdir -p $(prefix)/bin; \
