@@ -36,13 +36,22 @@ fn peff_stub_dir() {
             }
         }
     }
+    d = hostu.pkgfs_stub_dir()
+    if d != null && d != "" {
+        probe = hostu.path_join(d, "stub_entry.s")
+        fp<i32> = utils.fopen(probe, "r")
+        if fp > 0 {
+            utils.fclose(fp)
+            return d
+        }
+    }
     pref = hostu.lib_root() + "/copeff"
     fp<i32> = utils.fopen(pref + "/stub_entry.s", "r")
     if fp > 0 {
         utils.fclose(fp)
         return pref
     }
-    return hostu.lib_root() + "/copeff"
+    return pref
 }
 
 fn peff_objs_have_basename(files, name) {

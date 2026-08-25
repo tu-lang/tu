@@ -3,6 +3,7 @@
 use asmer.asm
 use asmer.ast
 use linker.utils
+use compiler.utils as cutil
 use std
 use string
 use fmt
@@ -49,13 +50,23 @@ fn stub_dir() {
             return arr[1]
         }
     }
-    pref = "/usr/local/lib/costub-darwin"
+    // Embed/TU_STD: platform/darwin/stub_*.s from materialized stdroot.
+    d = cutil.pkgfs_stub_dir()
+    if d != null && d != "" {
+        probe = cutil.path_join(d, "stub_entry.s")
+        fp<i32> = utils.fopen(probe, "r")
+        if fp > 0 {
+            utils.fclose(fp)
+            return d
+        }
+    }
+    pref = cutil.lib_root() + "/costub-darwin"
     fp<i32> = utils.fopen(pref + "/stub_entry.s", "r")
     if fp > 0 {
         utils.fclose(fp)
         return pref
     }
-    alt = "/usr/local/lib/codarwin"
+    alt = cutil.lib_root() + "/codarwin"
     fp = utils.fopen(alt + "/stub_entry.s", "r")
     if fp > 0 {
         utils.fclose(fp)

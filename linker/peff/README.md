@@ -19,7 +19,8 @@ Directory name **peff** is the object/image format (same idea as `elf`).
 | Merge / relocs / PE write | `image.tu` |
 | Win32 IAT + jmp stubs | `imports.tu` |
 | pclntab | `pcln.tu` (expand + fill, same layout as ELF/Darwin) |
-| nostd stubs | `stub_entry.s` / `stub_runtime.s` |
+| nostd stubs | `platform/windows/stub_entry.s` / `stub_runtime.s`（embed；disk 装到 `copeff/`） |
+
 
 ImageBase is `0x140000000`, `/FIXED`-style (no `.reloc`). Imports come from the syscall allowlist:
 

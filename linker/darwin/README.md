@@ -15,7 +15,8 @@ Symbol names live in a `NameTab` (Mach-O strtab shape: leading NUL + `name\0`) w
 
 | File | Purpose |
 |------|---------|
-| `stub_entry.s` | `_main` → `main_init.0` + `main_main` |
+| `stub_entry.s` | `_main` → `main_init.0` + `main_main`（源在 `platform/darwin/`，embed 随 stdroot） |
+
 | `stub_runtime.s` | Minimal fillers for `-nostd` |
 
 Install path: `/usr/local/lib/costub-darwin/` (override with `CO_DARWIN_LIB`).
