@@ -28,9 +28,12 @@ mem Sym {
     i32  addr
     std.Array*      datas # ByteBlock*
     string.String*  str
+    i8*             bin_ptr
+    i32             bin_len
 
     i32             global
     i32             isstr
+    i32             isbin
     i32             isrel
 }
 func newSym(name<string.String>, externed<i32>)
@@ -43,6 +46,7 @@ func newSym(name<string.String>, externed<i32>)
         datas : std.NewArray(),
         externed : externed,
         isstr : false,
+        isbin : false,
         isrel : false
     }
     if externed {
@@ -60,9 +64,27 @@ func newStringSym(name<string.String>, str<string.String>,pos<i32>)
         datas : std.NewArray(),
         externed : false,
         isstr : true,
+        isbin : false,
         isrel : false,
         global: false,
         str : str
+    }
+}
+// Raw .incbin bytes (pointer + length; may contain interior NULs).
+func newBinSym(name<string.String>, ptr<i8*>, len<i32>, pos<i32>)
+{
+    return new Sym {
+        segName : string.S(".data".(i8)),
+        name : name,
+        addr : pos,
+        datas : std.NewArray(),
+        externed : false,
+        isstr : false,
+        isbin : true,
+        isrel : false,
+        global: false,
+        bin_ptr : ptr,
+        bin_len : len
     }
 }
 func newDataSym(name<string.String>,pos<i32>)
@@ -73,6 +95,7 @@ func newDataSym(name<string.String>,pos<i32>)
         global : false,
         addr : pos,
         isstr : false,
+        isbin : false,
         isrel : false,
         segName : string.S(".data".(i8)),
         externed : false,

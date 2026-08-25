@@ -59,6 +59,7 @@ enum {
     KW_XMM8, KW_XMM9, KW_XMM10, KW_XMM11, KW_XMM12, KW_XMM13, KW_XMM14, KW_XMM15, 
     KW_FS,KW_RIP,
     KW_AX, // 16-bit; append-only after RIP
+    KW_INCBIN, // .incbin raw bytes; append-only after AX
 }
 
 enum {

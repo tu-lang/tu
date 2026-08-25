@@ -65,6 +65,9 @@ func codegen(filename){
     if string.sub(filename, std.len(filename) - 8) == "balign.s" {
         check_balign_layout(gen)
     }
+    if string.sub(filename, std.len(filename) - 8) == "incbin.s" {
+        check_incbin_layout(gen)
+    }
     fmt.printf("[all test passed] %s\n",filename )
 }
 
@@ -78,6 +81,35 @@ func check_balign_layout(gen){
     expect_one(pgen, "aligned4", 20.(i32))
     expect_one(pgen, "aligned_p2", 24.(i32))
     expect_one(pgen, "already8", 32.(i32))
+}
+
+func check_incbin_layout(gen){
+    // payload ABC\\0DE (6) then .byte 0x7a at 6
+    pgen<parser.Parser> = gen
+    expect_one(pgen, "blob", 0.(i32))
+    expect_one(pgen, "after", 6.(i32))
+    data_symbol<std.Array> = pgen.symtable.data_symbol
+    for(i<i32> = 0; i < data_symbol.len(); i += 1) {
+        sym<ast.Sym> = data_symbol.addr[i]
+        n = string.new(sym.name.str())
+        if n == "blob" {
+            if sym.isbin == 0 || sym.isstr != 0 {
+                os.dief("[incbin] blob should be isbin")
+            }
+            if sym.bin_len != 6 {
+                os.dief("[incbin] blob len=%d want 6", int(sym.bin_len))
+            }
+            p<i8*> = sym.bin_ptr
+            if p[0] != 'A' || p[1] != 'B' || p[2] != 'C' || p[3] != 0 || p[4] != 'D' || p[5] != 'E' {
+                os.dief("[incbin] payload bytes mismatch")
+            }
+            if pgen.data_size != 7 {
+                os.dief("[incbin] data_size=%d want 7", int(pgen.data_size))
+            }
+            return
+        }
+    }
+    os.dief("[incbin] missing sym blob")
 }
 
 func expect_one(pgen<parser.Parser>, name, want<i32>){

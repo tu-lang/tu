@@ -157,6 +157,7 @@ func tk_to_string(tk<i32>){
         KW_LONG:   return ".long"
         KW_VALUE:  return ".value"
         KW_BYTE:   return ".byte"
+        KW_INCBIN: return ".incbin"
         KW_BALIGN: return ".balign"
         KW_P2ALIGN: return ".p2align"
         TK_NUMBER: return "number"

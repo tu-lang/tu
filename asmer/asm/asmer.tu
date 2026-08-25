@@ -104,7 +104,9 @@ Asmer::writeElf() {
     data_symbol<std.Array> = this.parser.symtable.data_symbol
     for(i<i32> = 0 ; i < data_symbol.len() ; i += 1){
         sym<ast.Sym> =  data_symbol.addr[i]
-        if sym.isstr {
+        if sym.isbin {
+            this.writeBytes(sym.bin_ptr, sym.bin_len)
+        } else if sym.isstr {
             this.writeBytes(sym.str.str(),sym.str.len() + Pad1)
         }else{//[block,block...]
             for(j<i32> = 0 ; j < sym.datas.len() ; j += 1){
