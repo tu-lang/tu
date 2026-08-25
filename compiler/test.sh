@@ -22,42 +22,9 @@ check(){
 }
 
 assert(){
-    if [ "$(uname -s)" = "Darwin" ]; then
-        log "[run] tu run $1"
-        tu run "$1"
-        check
-        echo "exec done..."
-        return
-    fi
-    log "[compile] tu -s compiler/$1 "
-    ERR=$(mktemp)
-    tu -s "$1" >"$ERR" 2>&1
+    log "[run] tu run $1"
+    tu run "$1"
     check
-    cat "$ERR"
-    WD=$(sed -n 's/^\[tu\] workdir: //p' "$ERR" | tail -1 | tr -d '\t\r ')
-    rm -f "$ERR"
-    if [ -z "$WD" ]; then
-        failed "missing [tu] workdir line"
-    fi
-    if [ "$WD" = "(cwd)" ]; then
-        WD="."
-    fi
-    echo "[test] workdir=$WD"
-    tu -c "$WD"
-    check
-    tu -o "$WD" -o /usr/local/lib/colib/
-    check
-    OUT="$WD/a.out"
-    chmod 777 "$OUT"
-    "$OUT"
-    check
-    if [ "$WD" != "." ]; then
-        rm -rf "$WD"
-    else
-        clean "a.out"
-        clean "*.s"
-        clean "*.o"
-    fi
     echo "exec done..."
     return
 }

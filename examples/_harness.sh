@@ -68,34 +68,16 @@ ex_build(){
 
     local ERR OUT
     ERR=$(mktemp)
-    if [ "$(uname -s)" = Darwin ]; then
-        if ! (cd "$demo_dir" && tu build main.tu --workdir-cwd >"$ERR" 2>&1); then
-            cat "$ERR" >&2
-            rm -f "$ERR"
-            ex_fail "tu build failed: $src"
-        fi
+    # Default embed: tu build pulls std+coasm (no prefix colib).
+    if ! (cd "$demo_dir" && tu build main.tu --workdir-cwd >"$ERR" 2>&1); then
         cat "$ERR" >&2
         rm -f "$ERR"
-        OUT="$demo_dir/a.out"
-        [ -f "$OUT" ] || ex_fail "missing binary $OUT (tu build)"
-        chmod 755 "$OUT" || ex_fail "chmod failed: $OUT"
-        echo "$OUT"
-        return
-    fi
-    if ! tu -s "$src" >"$ERR" 2>&1; then
-        cat "$ERR" >&2
-        rm -f "$ERR"
-        ex_fail "tu -s failed: $src"
+        ex_fail "tu build failed: $src"
     fi
     cat "$ERR" >&2
-    WD=$(sed -n 's/^\[tu\] workdir: //p' "$ERR" | tail -1 | tr -d '\t\r ')
     rm -f "$ERR"
-    [ -n "$WD" ] || ex_fail "missing [tu] workdir for $src"
-    [ "$WD" = "(cwd)" ] && WD="."
-    tu -c "$WD" >&2 || ex_fail "tu -c failed: $name"
-    tu -o "$WD" -o /usr/local/lib/colib >&2 || ex_fail "tu -o failed: $name"
-    OUT="$WD/a.out"
-    [ -f "$OUT" ] || ex_fail "missing binary $OUT"
+    OUT="$demo_dir/a.out"
+    [ -f "$OUT" ] || ex_fail "missing binary $OUT (tu build)"
     chmod 755 "$OUT" || ex_fail "chmod failed: $OUT"
     echo "$OUT"
 }

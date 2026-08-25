@@ -21,55 +21,21 @@ check(){
     fi
 }
 
-# Compile one .tu via workdir; run optional args against the binary.
-if [ "$(uname -s)" = "Darwin" ]; then
-    # Instruction .i cases do not need an ELF tua binary; main.tu -p is linux CLI.
-    log "[run] tu run asmer/test.tu"
-    tu run asmer/test.tu
-    check
-    log "all passing...."
-    exit 0
-fi
-run_tu_build(){
+# Default embed: tu run compiles std+coasm (no prefix colib).
+run_tu(){
     src="$1"
     shift
-    log "[compile] tu -s $src "
-    ERR=$(mktemp)
-    tu -s "$src" >"$ERR" 2>&1
+    log "[run] tu run $src $*"
+    tu run "$src" "$@"
     check
-    cat "$ERR"
-    WD=$(sed -n 's/^\[tu\] workdir: //p' "$ERR" | tail -1 | tr -d '\t\r ')
-    rm -f "$ERR"
-    if [ -z "$WD" ]; then
-        failed "missing [tu] workdir line"
-    fi
-    if [ "$WD" = "(cwd)" ]; then
-        WD="."
-    fi
-    echo "[test] workdir=$WD"
-    tu -c "$WD"
-    check
-    tu -o "$WD" -o /usr/local/lib/colib/
-    check
-    OUT="$WD/a.out"
-    chmod 777 "$OUT"
-    "$OUT" "$@"
-    check
-    if [ "$WD" != "." ]; then
-        rm -rf "$WD"
-    else
-        clean "a.out"
-        clean "*.s"
-        clean "*.o"
-    fi
 }
 
 test_asmer_compile(){
-    run_tu_build asmer/main.tu -p asmer/cases
+    run_tu asmer/main.tu -p asmer/cases
     echo "test asmer_compile done..."
 }
 test_all(){
-    run_tu_build asmer/test.tu
+    run_tu asmer/test.tu
     echo "test asmer_compile done..."
 }
 test_asmer_compile

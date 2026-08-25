@@ -278,8 +278,9 @@ Compiler::compiler(file){
     if compile.nostd && !this.flag_gcc {
         compile.nostd = true
     }
-    // Darwin/Windows have no prebuilt colib; run/build includes std+coasm unless -nostd.
-    if (utils.target_parse(asm.requested_target) == utils.TARGET_DARWIN || utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS) && this.flag_link && !this.flag_nostd_explicit {
+    // run/build: compile std+coasm from embed (or disk) unless user passed -nostd.
+    // Linux no longer defaults to prefix colib; -nostd still links colib when present.
+    if this.flag_link && !this.flag_nostd_explicit {
         compile.nostd = false
     }
     compile.initWorkdir(file, this.workdir_cwd, this.workdir_explicit)
