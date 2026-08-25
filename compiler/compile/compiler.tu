@@ -1,6 +1,7 @@
 use compiler.utils
 use compiler.parser
 use compiler.parser.package
+use compiler.gen
 use os 
 use compiler.internal
 use compiler.ast
@@ -31,6 +32,12 @@ func compile(){
             str.name = fmt.sprintf(
                 "string.%s.L.%d",pkg.getuid(),ast.incr_labelid()
             )        
+        }
+        // RFC-107: assign embed symbol names before codegen
+        embed_seq = 0
+        for eset : pkg.embeds {
+            gen.embed_assign_symbols(eset, pkg.getuid(), embed_seq)
+            embed_seq += 1
         }
     }
 

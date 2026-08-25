@@ -2,6 +2,7 @@ use compiler.ast
 use compiler.parser
 use compiler.parser.package
 use compiler.utils
+use compiler.gen
 use fmt
 
 // Emit .balign before .data labels so gas+ld packing after .string cannot
@@ -56,6 +57,18 @@ fn globalVarDataAlign(v, p) {
 fn registerStrings(){
     for(var : currentParser.strs){
         CreateGlobalString(var)
+    }
+}
+
+fn registerEmbeds(){
+    if currentParser == null || currentParser.pkg == null {
+        return
+    }
+    for set : currentParser.pkg.embeds {
+        if set == null || set.owner != currentParser {
+            continue
+        }
+        gen.embed_emit_set(set)
     }
 }
 
