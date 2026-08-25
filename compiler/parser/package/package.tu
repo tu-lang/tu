@@ -4,7 +4,6 @@ use compiler.utils
 use compiler.ast
 use compiler.parser
 use compiler.compile
-use compiler.pkgfs
 use os
 use string
 use fmt
@@ -102,7 +101,7 @@ Package::parse()
                 continue
             }
             if this.path == "runtime" {
-                want = pkgfs.overlay_runtime_name(pkgfs.pkgfs_target)
+                want = utils.overlay_runtime_name(utils.pkgfs_target)
                 if name == "linux.tu" || name == "darwin.tu" || name == "windows.tu" {
                     if name != want {
                         continue
@@ -129,27 +128,27 @@ Package::parse()
     }
 
     utils.debugf("Parser: cwd package missing; pkgfs stdlib %s",this.path)
-    std_dir = pkgfs.pkgfs_resolve_std_dir(this.path)
+    std_dir = utils.pkgfs_resolve_std_dir(this.path)
     if std_dir == "" {
         utils.debugf("Parser: pkgfs could not resolve :%s",this.path)
         return false
     }
-    err<i32> = pkgfs.pkgfs_list_package_tu(this.path)
-    names = pkgfs.pkgfs_take_list_cache()
+    err<i32> = utils.pkgfs_list_package_tu(this.path)
+    names = utils.pkgfs_take_list_cache()
     if err != 0 || std.len(names) <= 0 {
-        utils.error(fmt.sprintf("pkgfs: no .tu in stdlib package %s mode=%d", this.path, int(pkgfs.pkgfs_mode)))
+        utils.error(fmt.sprintf("pkgfs: no .tu in stdlib package %s mode=%d", this.path, int(utils.pkgfs_mode)))
     }
     utils.notice("start scan pkgfs package:%s dir:%s",this.path,std_dir)
     for name : names {
-        scan_path = pkgfs.pkgfs_scan_filepath(std_dir, name)
+        scan_path = utils.pkgfs_scan_filepath(std_dir, name)
         disk_path = ""
-        if pkgfs.pkgfs_mode == pkgfs.PKGFS_MODE_EMBED {
-            disk_path = pkgfs.pkgfs_materialize_embed(std_dir, this.path, name)
+        if utils.pkgfs_mode == utils.PKGFS_MODE_EMBED {
+            disk_path = utils.pkgfs_materialize_embed(std_dir, this.path, name)
             if disk_path == "" {
                 utils.error("pkgfs: materialize failed " + scan_path)
             }
         } else {
-            disk_path = pkgfs.pkgfs_disk_source_path(std_dir, this.path, name)
+            disk_path = utils.pkgfs_disk_source_path(std_dir, this.path, name)
             if !std.is_file(disk_path) {
                 utils.error("pkgfs: missing " + disk_path)
             }
