@@ -1,0 +1,13 @@
+# RFC-109 component VERSION paths (relative to tu repo root).
+# Format: SECTION|name|relative/VERSION/path
+# Empty name = section has only a top-level VERSION (runtime, library, etc.).
+# Library: one VERSION for the whole stdlib tree (no per-subpackage versions).
+Toolchain|compiler|compiler/VERSION
+Toolchain|asmer|asmer/VERSION
+Toolchain|linker|linker/VERSION
+Runtime||runtime/VERSION
+Syscall||syscall/VERSION
+Platform||platform/VERSION
+Library||library/VERSION
+Packages|asyncio|packages/asyncio/VERSION
+Packages|netio|packages/netio/VERSION

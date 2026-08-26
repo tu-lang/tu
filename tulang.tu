@@ -209,12 +209,7 @@ Compiler::commadparse(){
                 i += 1
             }
             "-v" | "--version" : {
-                fmt.printf(
-                    "tu %s\n" +
-                    "target %s\n",
-                    utils.tool_version(),
-                    asm.requested_target
-                )
+                utils.print_version_report(asm.requested_target)
                 os.exit(0)
             }
             _     : {
