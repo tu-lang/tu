@@ -41,6 +41,9 @@ need_cmd tua
 need_cmd tul
 mkdir -p "$ROOT/release"
 
+# RFC-109: keep generated version strings in sync with VERSION
+bash "$ROOT/scripts/sync_version.sh"
+
 make_tu() {
     make -C "$ROOT" prefix="$prefix" "$@"
 }

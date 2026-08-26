@@ -11,7 +11,6 @@ use linker.peff
 use runtime
 // Prefix for coasm / copkg / copeff. Overridden by CO_PREFIX / TU_PREFIX / CO_PKG.
 root = "/usr/local/lib"
-version = "1.0.0"
 printlat = false
 
 // RFC-107 Phase B: stdroot embedded at tu link time (paths relative to repo root).
@@ -111,7 +110,7 @@ Compiler::print_help(){
         "  --work                     保留中间产物\n" +
         "  --target linux|darwin|windows  对象/链接后端（默认=host；可用 TU_TARGET）\n" +
         "  --stdlib embed|disk            标准库来源（默认 embed）\n" +
-        "  -v                         打印版本\n" +
+        "  -v, --version                  打印版本\n" +
         "\n" +
         "Default workdir: $TMPDIR/tu-build-<stem>-...\n"
     )
@@ -209,11 +208,11 @@ Compiler::commadparse(){
                 }
                 i += 1
             }
-            "-v"   : {
+            "-v" | "--version" : {
                 fmt.printf(
-                    "tu-lang version: %s\n" +
-                    "Target         : x86_64 %s\n",
-                    version,
+                    "tu %s\n" +
+                    "target %s\n",
+                    utils.tool_version(),
                     asm.requested_target
                 )
                 os.exit(0)
