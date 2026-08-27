@@ -61,6 +61,8 @@ overlay-copkg:
 	@cp -R runtime $(prefix)/lib/copkg/
 	@cp -R library/* $(prefix)/lib/copkg/
 	@cp -R packages/* $(prefix)/lib/copkg/
+	# Flat copkg: never leave a root tu.mod (would force runtime/packages static).
+	@rm -f $(prefix)/lib/copkg/tu.mod
 ifeq ($(TARGET),darwin)
 	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/windows.tu
 	@cp platform/darwin/runtime_os.tu $(prefix)/lib/copkg/runtime/darwin.tu
@@ -84,7 +86,9 @@ else
 	@rm -f $(prefix)/lib/copkg/runtime/darwin.tu $(prefix)/lib/copkg/runtime/windows.tu
 	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
 endif
-	@echo "overlay-copkg: TARGET=$(TARGET) (sources only)"
+	# RFC-110: flat copkg drops library/packages ancestors; materialize nearest tu.mod
+	@bash scripts/materialize_tu_mod.sh "$(CURDIR)" "$(prefix)/lib/copkg"
+	@echo "overlay-copkg: TARGET=$(TARGET) (sources only + tu.mod materialize)"
 TEST_COMPILER = test_compiler() {									\
 	sh compiler/test.sh;											\
 	sh asmer/test.sh;												\
@@ -258,9 +262,9 @@ test_dev:
 # Directory-level suites. dirs with tests/<dir>/.make_tests only run allowlisted files.
 # Toolchain self-tests (compiler/asmer/linker) run as peer targets so `make tests -j`
 # overlaps them with tests/* instead of waiting until every suite finishes.
-cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio toolchain_compiler toolchain_asmer toolchain_linker examples
+cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio pkgmode pkgmode_negative toolchain_compiler toolchain_asmer toolchain_linker examples
 
-.PHONY: toolchain_compiler toolchain_asmer toolchain_linker examples
+.PHONY: toolchain_compiler toolchain_asmer toolchain_linker examples pkgmode_negative
 toolchain_compiler:
 	@sh compiler/test.sh
 	@echo "compiler tests passed"
@@ -278,6 +282,9 @@ toolchain_linker:
 examples:
 	@bash examples/test.sh
 	@echo "examples tests passed"
+pkgmode_negative:
+	@bash tests/pkgmode/negative/run.sh
+	@echo "pkgmode negative tests passed"
 
 # make test -j9
 tests_cases: $(cases)

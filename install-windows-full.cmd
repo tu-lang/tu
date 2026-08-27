@@ -65,6 +65,16 @@ if not exist "%COPKG%\std" (
   exit /b 2
 )
 
+rem RFC-110: materialize nearest ancestor tu.mod into flat copkg package dirs.
+rem Prefer Git Bash / WSL bash when available (same script as Makefile overlay-copkg).
+where bash >nul 2>&1
+if not errorlevel 1 (
+  bash "%ROOT%scripts\materialize_tu_mod.sh" "%ROOT%" "%COPKG%"
+  if errorlevel 1 echo [install-windows-full] warn: materialize_tu_mod.sh failed
+) else (
+  echo [install-windows-full] warn: bash not found — skip tu.mod materialize ^(待 Windows 验证: run scripts/materialize_tu_mod.sh via Git Bash/WSL^)
+)
+
 if exist "%ROOT%release\tu-windows" (
   copy /y "%ROOT%release\tu-windows" "%PREFIX%\bin\tu.exe" >nul
   if errorlevel 1 (
