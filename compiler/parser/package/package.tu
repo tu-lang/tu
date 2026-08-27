@@ -8,6 +8,9 @@ use os
 use string
 use fmt
 
+// RFC110: package mode from tu.mod; only dyn|static. Default dyn when absent.
+// Tags live in parent compiler.parser (parser.tu); reference as parser.PkgMode*.
+
 class Package {
     parsers = {} // parsers map[filepath + name] = parser
     package = name
@@ -27,6 +30,8 @@ class Package {
     embeds = []
 
     cfgs    = new ast.ConfigOpts()
+    // RFC110: nearest-ancestor tu.mod; migration default Mixed (no pkgmode checks).
+    pkg_mode = parser.PkgModeMixed
 }
 
 Package::add_embed(set) {
@@ -44,6 +49,8 @@ Package::init(name , path , multi) {
 
     this.gc_moudles = "gc." + this.full_package + ".ms"
     this.fparser = null
+    // RFC110: migration default Mixed; explicit tu.mod overrides.
+    this.pkg_mode = parser.PkgModeMixed
 
 }
 
@@ -76,6 +83,139 @@ fn cwd_pkg_usable(dir, pkg_path) {
     return true
 }
 
+// RFC110 migration: no tu.mod => Mixed (no checks). static/dyn only via explicit manifest.
+fn pkgmode_engine_default(pkgpath) {
+    return parser.PkgModeMixed
+}
+
+fn pkgmode_push_tok(toks, cur) {
+    if cur != "" && cur != null {
+        toks[] = cur
+    }
+}
+
+fn pkgmode_next_tok(toks, idx) {
+    if idx >= std.len(toks) {
+        ast.parse_err("pkgmode: manifest truncated, expect %s\n", "token")
+    }
+    v = toks[idx]
+    return v, idx + 1
+}
+
+// RFC110: parse tu.mod manifest; migration accepts mixed; final state dyn|static only (Step5).
+fn parseTuMod(file) {
+    if !std.is_file(file) {
+        ast.parse_err("pkgmode: cannot open manifest %s\n", file)
+    }
+    fs = new std.File(file)
+    if !fs.IsOpen() {
+        ast.parse_err("pkgmode: cannot open manifest %s\n", file)
+    }
+    content = fs.ReadAll()
+    fs.Close()
+    toks = []
+    cur = ""
+    pos = 0
+    n = std.len(content)
+    while pos < n {
+        ch = content[pos]
+        if ch == '/' && pos + 1 < n && content[pos + 1] == '/' {
+            while pos < n && content[pos] != '\n' {
+                pos += 1
+            }
+            pkgmode_push_tok(toks, cur)
+            cur = ""
+            continue
+        }
+        if ch == '{' || ch == '}' {
+            pkgmode_push_tok(toks, cur)
+            cur = ""
+            if ch == '{' {
+                toks[] = "{"
+            } else {
+                toks[] = "}"
+            }
+            pos += 1
+            continue
+        }
+        if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+            pkgmode_push_tok(toks, cur)
+            cur = ""
+            pos += 1
+            continue
+        }
+        cur = cur + ch
+        pos += 1
+    }
+    pkgmode_push_tok(toks, cur)
+
+    idx = 0
+    tok = ""
+    tok, idx = pkgmode_next_tok(toks, idx)
+    if tok != "package" {
+        ast.parse_err("pkgmode: manifest %s must start with 'package'\n", file)
+    }
+    tok, idx = pkgmode_next_tok(toks, idx)
+    if tok != "{" {
+        ast.parse_err("pkgmode: manifest %s expect '{' after 'package'\n", file)
+    }
+    m = parser.PkgModeMixed
+    has_mode = false
+    loop {
+        tok, idx = pkgmode_next_tok(toks, idx)
+        if tok == "}" break
+        if tok == "mode" {
+            val = ""
+            val, idx = pkgmode_next_tok(toks, idx)
+            if val == "dyn" {
+                m = parser.PkgModeDyn
+            } else if val == "static" {
+                m = parser.PkgModeStatic
+            } else if val == "mixed" {
+                m = parser.PkgModeMixed
+            } else {
+                ast.parse_err("pkgmode: manifest %s unknown mode '%s'\n", file, val)
+            }
+            has_mode = true
+        } else {
+            ast.parse_err("pkgmode: manifest %s unknown attribute '%s'\n", file, tok)
+        }
+    }
+    if idx < std.len(toks) {
+        ast.parse_err("pkgmode: manifest %s trailing tokens after '}'\n", file)
+    }
+    if !has_mode {
+        ast.parse_err("pkgmode: manifest %s missing 'mode'\n", file)
+    }
+    return m
+}
+
+// RFC110: nearest tu.mod wins; absent manifest stays Mixed (no checks).
+Package::loadMode(abpath) {
+    this.pkg_mode = parser.PkgModeMixed
+    depth = 1
+    for i = 0; i < std.len(this.path); i += 1 {
+        if this.path[i] == '/' {
+            depth += 1
+        }
+    }
+    if depth < 8 depth = 8
+    dir = abpath
+    for i = 0; i < depth; i += 1 {
+        f = utils.path_join(dir, "tu.mod")
+        if std.is_file(f) {
+            this.pkg_mode = parseTuMod(f)
+            return
+        }
+        dir = utils.path_dirname(dir)
+        if dir == "" || dir == "/" break
+    }
+    eng = pkgmode_engine_default(this.path)
+    if eng != parser.PkgModeMixed {
+        this.pkg_mode = eng
+    }
+}
+
 Package::parse()
 {
 
@@ -84,6 +224,7 @@ Package::parse()
     utils.debugf("found import.start parser.. %s",abpath)
 
     if cwd_pkg_usable(abpath, this.path) {
+        this.loadMode(abpath)
         utils.notice("start scan the package:%s",abpath)
         names = utils.list_dir_basenames(abpath)
         if std.len(names) <= 0 {
@@ -138,6 +279,11 @@ Package::parse()
     if err != 0 || std.len(names) <= 0 {
         utils.error(fmt.sprintf("pkgfs: no .tu in stdlib package %s mode=%d", this.path, int(utils.pkgfs_mode)))
     }
+    mode_root = utils.pkgfs_mode_root(this.path)
+    if mode_root == "" {
+        mode_root = std_dir
+    }
+    this.loadMode(mode_root)
     utils.notice("start scan pkgfs package:%s dir:%s",this.path,std_dir)
     for name : names {
         scan_path = utils.pkgfs_scan_filepath(std_dir, name)

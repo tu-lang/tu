@@ -44,6 +44,19 @@ func isUpper(str)
 	return str[0] >= 'A' && str[0] <= 'Z'
 }
 
+// Prefix test for dynamic strings (string.sub is start-index only, no length).
+func str_starts_with(s, prefix) {
+	plen = std.len(prefix)
+	slen = std.len(s)
+	if slen < plen return false
+	i = 0
+	while i < plen {
+		if s[i] != prefix[i] return false
+		i += 1
+	}
+	return true
+}
+
 func path_is_sep(c) {
 	if c == '/' {
 		return true

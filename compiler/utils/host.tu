@@ -266,8 +266,8 @@ func list_dir_basenames(dir) {
 	return out
 }
 
-// First matching KEY=value from os.envs(); empty if unset.
-func env_get(name) {
+// First matching KEY=value from os.envs(); empty if unset (static helper).
+fn env_get(name) {
 	for (ek, ev : os.envs()) {
 		arr = string.split(ev, "=")
 		if std.len(arr) >= 2 && arr[0] == name && arr[1] != "" {

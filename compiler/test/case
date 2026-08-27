@@ -34,4 +34,5 @@ api impl as     # API IMPL AS
 f32 f64         # F32 F64
 float(          # BUILTIN LPAREN
 try catch finally throw defer  # TRY CATCH FINALLY THROW DEFER
+export unsafe   # EXPORT UNSAFE
 embed(          # BUILTIN LPAREN

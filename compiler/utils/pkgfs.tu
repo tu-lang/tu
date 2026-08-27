@@ -252,6 +252,29 @@ fn pkgfs_repo_std_dir(pkg_path) {
 	return pkg_path
 }
 
+// Absolute package root for tu.mod lookup (must not walk from process cwd).
+fn pkgfs_mode_root(pkg_path) {
+	if pkgfs_mode == PKGFS_MODE_DISK {
+		abs = disk_resolve_copkg(pkg_path)
+		if abs != "" {
+			return abs
+		}
+	}
+	if pkgfs_mode == PKGFS_MODE_TU_STD && pkgfs_tu_std != "" {
+		abs = disk_resolve_repo_root(pkgfs_tu_std, pkg_path)
+		if abs != "" {
+			return abs
+		}
+	}
+	if pkgfs_mode == PKGFS_MODE_EMBED && pkgfs_stdroot != null {
+		abs = embed_resolve_repo_dir(pkgfs_stdroot, pkg_path)
+		if abs != "" {
+			return abs
+		}
+	}
+	return ""
+}
+
 fn pkgfs_list_runtime_tu() i32 {
 	out = []
 	want = overlay_runtime_name(pkgfs_target)

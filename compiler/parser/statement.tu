@@ -62,6 +62,10 @@ Parser::parseStatement()
             reader.scan()
             node = this.parseDeferStmt()
         }
+        ast.UNSAFE: {
+            reader.scan()
+            node = this.parseUnsafeStmt()
+        }
         ast.LBRACE: {
             node = this.parseBlock(false,false)
         }
@@ -656,5 +660,16 @@ Parser::parseDeferStmt(){
 		node.block = b
 	}
 	this.check(node.block != null, "defer requires a block")
+	return node
+}
+
+// RFC110: unsafe must be followed by an explicit block.
+Parser::parseUnsafeStmt() {
+	reader<scanner.ScannerStatic> = this.scanner
+	this.check(reader.curToken == ast.LBRACE, "pkgmode: unsafe must be followed by { block }")
+	node = new gen.UnsafeStmt(this.line, this.column)
+	this.unsafe_stmt_depth += 1
+	node.block = this.parseBlock(false, false)
+	this.unsafe_stmt_depth -= 1
 	return node
 }

@@ -17,6 +17,7 @@ keywords = {
 	"as"    : ast.AS,
 	"try"   : ast.TRY,     "catch": ast.CATCH,   "finally" : ast.FINALLY,
 	"throw" : ast.THROW,   "defer": ast.DEFER,
+	"export": ast.EXPORT,  "unsafe": ast.UNSAFE,
 }
 builtins = {
     "int" : true , "sizeof" : true , "type" : true, "float" : true,
