@@ -62,6 +62,6 @@ class Exception {
 }
 
 // Install global uncaught handler bits; returns previous handler bits.
-func setExceptionHandler(h){
+export func setExceptionHandler(h){
 	return runtime.set_exception_handler(h.(u64))
 }

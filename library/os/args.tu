@@ -1,12 +1,12 @@
 use runtime
 
 # start at userspace init process
-func argc(){
+export func argc(){
 	return runtime.ori_argc
 } 
-func argv(){
+export func argv(){
 	return runtime.ori_argv
 }
-func envs(){
+export func envs(){
 	return runtime.ori_envs
 }

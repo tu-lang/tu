@@ -24,7 +24,7 @@ mem Sigactiont  {
 // Always set SA_RESTORER to std.sigreturn_pc() on Linux. Darwin's
 // std.rt_sigaction translates this layout and injects std_sigtramp.
 // Do not set SA_ONSTACK without a configured sigaltstack.
-func setsignal(i<u32> , fc<u64>) {
+fn setsignal(i<u32> , fc<u64>) {
 	sa<Sigactiont> = new Sigactiont
 	sa.sa_flags = _SA_SIGINFO | _SA_RESTART | _SA_RESTORER
 	sa.sa_mask = EMPTY_MASK

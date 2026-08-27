@@ -20,8 +20,8 @@ mem TimeSpec {
 	i64 sec,nsec
 }
 
-seed<i64>
-func stdinit(){
+seed<i64> = 0
+export func stdinit(){
 	seed = time()
 	initmalloc()
 }

@@ -1,7 +1,7 @@
 
 use os
 
-func assert(a,b,str){
+export func assert(a, b, str){
 	check<u8> = str
 	if  a != b  {
 		expr = "assert: " + a + " != " + b

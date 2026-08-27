@@ -7,12 +7,12 @@ use string
 
 // cfg(mod_static,true)
 
-func fatal(args...){
+export func fatal(args...){
     println(args)
     os.exit(-1)
 }
 //format
-func println(_args...){
+export func println(_args...){
     args<u64*> = _args
 	total<i32> = args[0]
     args<u64*> = args + 8
@@ -53,7 +53,7 @@ func println(_args...){
     }
     vfprintf(std.STDOUT,*"\n")
 }
-func print(_args...){
+export func print(_args...){
     args<u64*> = _args
 	total<i32> = args[0]
 	var<runtime.Value> = null
@@ -91,11 +91,11 @@ func print(_args...){
 // %u  unsigned int
 // %U  long unsigned int
 // %%  to '%'
-func sprintf(args...){
+export func sprintf(args...){
     ret<i8*> = string.dynstringfmt(args)
     return string.new(ret)
 }
-func printf(args...){
+export func printf(args...){
     ret<i8*> = string.dynstringfmt(args)
     if ret != null {
 		vfprintf(std.STDOUT,ret)

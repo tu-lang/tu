@@ -3,7 +3,8 @@ use runtime
 
 EXIT_CODE<i32> = 127
 
-func system_argv(sh<u64*>,c<u64*>,cmd<u64*>){
+// Static helper for shell(); not a dyn facade.
+fn system_argv(sh<u64*>, c<u64*>, cmd<u64*>){
     argv<i8*> = new 32 
     p<u64*> = argv
     *p = sh  p += 8
@@ -13,7 +14,7 @@ func system_argv(sh<u64*>,c<u64*>,cmd<u64*>){
     return argv
 }
  
-func shell(cmd)
+export func shell(cmd)
 {
     argv<u64*> = system_argv(*"sh",*"-c",*cmd)
     if fork() == 0 {

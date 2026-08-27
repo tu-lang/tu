@@ -2,7 +2,7 @@ use runtime
 use std
 use fmt
 
-func fputs(s<i8*>,out<u64>)
+fn fputs(s<i8*>,out<u64>)
 {
 	ll<u64>		= std.strlen(s)
 	c<i8> = 1
@@ -13,7 +13,7 @@ func fputs(s<i8*>,out<u64>)
 	}
 }
 
-func fputc(c<i8>,out<u64*>){
+fn fputc(c<i8>,out<u64*>){
 	l<u64> = 1
 	if l != std.fwrite(&c,l,l,out) {
 		return std.EOF
@@ -21,7 +21,7 @@ func fputc(c<i8>,out<u64*>){
 	return c
 }
 //vfprintf
-func vfprintf(out<u64>, format<i8*>, args_<u64*>...)
+fn vfprintf(out<u64>, format<i8*>, args_<u64*>...)
 {
 	translating<u64> = 0
 	ret<u64>		 = 0

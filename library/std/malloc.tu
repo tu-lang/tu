@@ -14,9 +14,9 @@ mem Heap_header {
 }
 
 //global heap
-ghead<Heap_header>
-gtail<u64>
-func free(ptr<u64*>)
+ghead<Heap_header> = null
+gtail<u64> = 0
+fn free(ptr<u64*>)
 {
 	header<Heap_header> = ptr - sizeof(Heap_header)
 	if header.type != BLOCK_USED return ZERO
@@ -40,7 +40,7 @@ func free(ptr<u64*>)
 	}
 }
 
-func realloc1(p<u64*>, nbytes<u64>){
+fn realloc1(p<u64*>, nbytes<u64>){
 	if p == null {
 		if nbytes < 0 {
 			fmt.vfprintf(STDOUT,*"realloc failed\n")
@@ -58,7 +58,7 @@ func realloc1(p<u64*>, nbytes<u64>){
 	return newp
 }
 //TODO: memory expansion
-func malloc(size<u64>){
+fn malloc(size<u64>){
 	header<Heap_header> = null
 	if size == 0 {
 		return ZERO
@@ -99,7 +99,7 @@ func malloc(size<u64>){
 	return malloc(size)
 }
 
-func initmalloc()
+fn initmalloc()
 {
 	base<u64> = 0
 	header<Heap_header> = null
