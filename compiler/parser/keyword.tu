@@ -5,6 +5,7 @@ use compiler.parser.package
 use compiler.gen
 use compiler.compile
 use compiler.utils
+use compiler.parser.package
 
 Parser::parseClassDef()
 {
@@ -81,11 +82,21 @@ Parser::parseClassDef()
                 s.initmembers[] = member
                 s.membervars[] = var
             }
-        }else if reader.curToken == ast.FUNC {
+        }else if reader.curToken == ast.UNSAFE || reader.curToken == ast.FUNC {
+            // Class members: `func` or `unsafe func` (cross-mode body).
+            unsafe_body = false
+            if reader.curToken == ast.UNSAFE {
+                unsafe_body = true
+                reader.scan()
+                this.check(reader.curToken == ast.FUNC, "pkgmode: unsafe must prefix func in class body")
+            }
+            this.pending_unsafe_body = unsafe_body
             this.ctx = new ast.Context()
             f = this.parseFuncDef(ast.ClassFunc,s,null,constdef)
             this.ctx = null
+            this.pending_unsafe_body = false
             this.check(f != null)
+            f.unsafe_body = unsafe_body
 
             s.funcs[] = f
             
@@ -103,6 +114,83 @@ Parser::parseClassDef()
     this.pkg.addClass(s.name,s)
     this.classes[s.name] = s
     reader.scan()
+    return s
+}
+
+// RFC110: parse top-level `export func|async` and `unsafe func|fn|async`.
+// export marks static-package dynamic facades; body is implicit cross-mode (no export unsafe).
+Parser::parseModifiers() {
+    reader<scanner.ScannerStatic> = this.scanner
+    exported = false
+    unsafe_body = false
+    if reader.curToken == ast.EXPORT {
+        exported = true
+        reader.scan()
+    }
+    if reader.curToken == ast.UNSAFE {
+        unsafe_body = true
+        reader.scan()
+    }
+    if reader.curToken == ast.EXPORT || reader.curToken == ast.UNSAFE {
+        this.panic("pkgmode: modifiers must be `export` or `unsafe` (not both, not repeated)")
+    }
+    if exported && unsafe_body {
+        this.panic("pkgmode: export facade body is already cross-mode; do not write export unsafe")
+    }
+    if exported && this.pkg.pkg_mode != PkgModeStatic {
+        this.panic("pkgmode: export only allowed in static package")
+    }
+    match reader.curToken {
+        ast.FUNC : {
+            if exported && std.strcmp(reader.curLex.str(), *"fn") == 0 {
+                this.panic("pkgmode: export fn is illegal; export marks dynamic facades (func/async)")
+            }
+            this.pending_exported = exported
+            this.pending_unsafe_body = unsafe_body
+            this.ctx = new ast.Context()
+            f = this.parseFuncDef(ast.CommonFunc, null, null, false)
+            this.ctx = null
+            this.pending_exported = false
+            this.pending_unsafe_body = false
+            f.exported = exported
+            f.unsafe_body = unsafe_body
+            if this.pkg.pkg_mode == PkgModeDyn && f.fn_static && f.name != "main" {
+                this.panic("pkgmode: fn definition not allowed in dyn package (except fn main)")
+            }
+            if this.pkg.pkg_mode == PkgModeStatic && !f.exported && !f.fn_static && f.name != "init" {
+                this.panic("pkgmode: bare func in static package requires export (dynamic facade)")
+            }
+            this.addFunc(f.name, f)
+        }
+        ast.ASYNC : {
+            tx = reader.transaction()
+            reader.scan()
+            is_member = reader.curToken == ast.VAR && reader.peek() == ':'
+            reader.rollback(tx)
+            if exported && is_member {
+                this.panic("pkgmode: export only marks package-level dynamic async")
+            }
+            this.pending_exported = exported
+            this.pending_unsafe_body = unsafe_body
+            f = this.parseAsyncDef()
+            this.pending_exported = false
+            this.pending_unsafe_body = false
+            if f != null {
+                f.exported = exported
+                f.unsafe_body = unsafe_body
+            }
+        }
+        ast.CLASS : {
+            if exported {
+                this.panic("pkgmode: export cannot mark class; export is for func/async only")
+            }
+            if unsafe_body {
+                this.panic("pkgmode: unsafe class is illegal")
+            }
+            this.parseClassDef()
+        }
+        _ : this.panic("pkgmode: export/unsafe must prefix func or async")
+    }
 }
 
 Parser::parseFuncDef(ft, pdefine , node , constdef)
@@ -115,12 +203,21 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
     if ft != ast.AsyncFunc
         this.expect(ast.FUNC,"parse func define ,tok not fun")
 
+    // RFC110: record fn (static) vs func (dynamic) before consuming FUNC token
+    fnkw_static = false
+    if ft != ast.AsyncFunc && reader.curToken == ast.FUNC && std.strcmp(reader.curLex.str(), *"fn") == 0 {
+        fnkw_static = true
+    }
+
     cls = pdefine
     st  = pdefine
     reader.scan()
     if node == null
         node = new ast.Function()
     node.fntype = ft
+    node.fn_static = fnkw_static
+    if this.pending_exported node.exported = true
+    if this.pending_unsafe_body node.unsafe_body = true
     node.start_line = this.line
 
     match ft {
@@ -194,6 +291,10 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
         hasFuncDefine = true
     }
     if  ast.isFuncRetType(reader.curToken) {
+        // RFC110 scheme A: export facade cannot declare static return types
+        if node.exported {
+            this.panic("pkgmode: export facade signature must be dynamic; static return type is illegal")
+        }
         tx = reader.transaction()
         maxrts = 0
         hasFuncRetDef = true
@@ -558,6 +659,10 @@ Parser::parseImportDef()
             utils.notice("praser package :%s failed",path)
             this.check(false,"SyntaxError: package:" + path + " not exist in local or global ")
         }
+    }
+    target = package.packages[path]
+    if this.pkg.pkg_mode == PkgModeStatic && target != null && target.pkg_mode == PkgModeDyn {
+        this.panic("pkgmode: static package must not use dyn package '" + target.full_package + "'")
     }
     utils.notice("import package :%s done",path)
     

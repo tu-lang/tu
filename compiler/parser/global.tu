@@ -8,6 +8,9 @@ use compiler.parser.package
 use string
 
 Parser::parseEnumDef(){
+    if this.pkg.pkg_mode == PkgModeDyn {
+        this.panic("pkgmode: enum definition not allowed in dyn package")
+    }
     utils.debug("parser.Parser::parseEnumDef()")
     reader<scanner.ScannerStatic> = this.scanner
     reader.scan()
@@ -38,6 +41,9 @@ Parser::parseEnumDef(){
 
 Parser::parseStructVar(varname)
 {
+    if this.pkg.pkg_mode == PkgModeDyn {
+        this.panic("pkgmode: typed global var not allowed in dyn package")
+    }
     utils.debug("parser.Parsr::parseStructVar()")
     reader<scanner.ScannerStatic> = this.scanner
     this.expect( ast.LT )
@@ -58,6 +64,9 @@ Parser::parseStructVar(varname)
     varexpr.package  = this.pkg.full_package
 }
 Parser::parseFlatVar(var){
+    if this.pkg.pkg_mode == PkgModeStatic {
+        this.panic("pkgmode: dynamic global var not allowed in static package")
+    }
     utils.debugf("parser.Parser::parseFlatVar() varname:%s",var)
     varexpr = new gen.VarExpr(var,this.line,this.column)
     
@@ -238,6 +247,9 @@ Parser::parseGlobalAssign(is_const_var)
             if type(ae.lhs) != type(gen.VarExpr)
                 this.panic("unsupport global synatix: " + expr.toString(""))
             var = ae.lhs
+            if var.structtype && this.pkg.pkg_mode == PkgModeDyn {
+                this.panic("pkgmode: typed global var not allowed in dyn package")
+            }
             assign = ae
             if is_const_var {
                 var.imut = true
@@ -294,6 +306,9 @@ Parser::parseGlobalAssign(is_const_var)
         }
         type(gen.VarExpr) : {
             var   = expr
+            if this.pkg.pkg_mode == PkgModeStatic {
+                this.panic("pkgmode: dynamic global var not allowed in static package")
+            }
             if is_const_var {
                 var.imut = true
             }

@@ -5,6 +5,12 @@ use compiler.parser.scanner
 use compiler.utils
 use runtime
 use compiler.parser.future
+use compiler.parser.package
+
+// RFC110: tu.mod package mode tags (shared across parser + package subpackages).
+PkgModeMixed  = 0
+PkgModeDyn    = 1
+PkgModeStatic = 2
 
 EMPTY_STR = ""
 
@@ -52,6 +58,11 @@ class Parser {
 
     cfgs          = new ast.ConfigOpts()
 
+    // RFC110: unsafe block depth and pending export/unsafe from parseModifiers
+    unsafe_stmt_depth = 0
+    pending_exported = false
+    pending_unsafe_body = false
+
     //gc moudle
     next          = null
     gvid          = 0
@@ -97,6 +108,29 @@ Parser::label(){
 Parser::getImport(pkgname){
     return this.pkg.getImport(pkgname)
 }
+
+// RFC110: inside unsafe block, unsafe-prefixed function, or export facade body
+Parser::inUnsafeCtx() {
+    if this.unsafe_stmt_depth > 0 return true
+    if this.currentFunc == null return false
+    if this.currentFunc.unsafe_body return true
+    // Scheme A: export facade body is implicit cross-mode
+    if this.currentFunc.exported return true
+    return false
+}
+
+// RFC110: reject static syntax outside cross-mode in dynamic contexts.
+// dyn package = whole package dynamic (except unsafe).
+// static package: non-export dynamic defs (class methods) restricted; export via inUnsafeCtx.
+Parser::forbidStaticSyntax() {
+    if this.inUnsafeCtx() return false
+    if this.pkg == null return false
+    if this.pkg.pkg_mode == PkgModeMixed return false
+    if this.pkg.pkg_mode == PkgModeDyn return true
+    if this.currentFunc == null return false
+    return this.currentFunc.isDynamicDef()
+}
+
 Parser::parse()
 {
     reader<scanner.ScannerStatic> = this.scanner
@@ -109,10 +143,23 @@ Parser::parse()
                 this.ctx = new ast.Context()
                 f = this.parseFuncDef(ast.CommonFunc,null,null,false)
                 this.ctx = null
+                if this.pkg.pkg_mode == PkgModeDyn && f.fn_static && f.name != "main" {
+                    this.panic("pkgmode: fn definition not allowed in dyn package (except fn main)")
+                }
+                if this.pkg.pkg_mode == PkgModeStatic && !f.fn_static && f.name != "init" {
+                    this.panic("pkgmode: bare func in static package requires export (dynamic facade)")
+                }
                 this.addFunc(f.name,f)
             }
             ast.ASYNC: {
-                this.parseAsyncDef()
+                tx = this.scanner.transaction()
+                this.scanner.scan()
+                is_member = this.scanner.curToken == ast.VAR && this.scanner.peek() == ':'
+                this.scanner.rollback(tx)
+                f = this.parseAsyncDef()
+                if f != null && this.pkg.pkg_mode == PkgModeStatic && !is_member && !f.exported {
+                    this.panic("pkgmode: package-level async in static package requires export")
+                }
             }
             ast.EXTERN : {
                 f = this.parseExternDef()
@@ -120,12 +167,32 @@ Parser::parse()
             }
             ast.EXTRA : this.parseExtra()
             ast.USE   : this.parseImportDef()
-            ast.CLASS : this.parseClassDef()
-            ast.IMPL  : this.parseApiImpl()
-            ast.API   : this.parseApiDef()
-            ast.MEM   : this.parseStructDef()
+            ast.CLASS : {
+                // RFC110: class is never export-marked; bare class in static/dyn/mixed
+                this.parseClassDef()
+            }
+            ast.IMPL  : {
+                if this.pkg.pkg_mode == PkgModeDyn {
+                    this.panic("pkgmode: impl definition not allowed in dyn package")
+                }
+                this.parseApiImpl()
+            }
+            ast.API   : {
+                if this.pkg.pkg_mode == PkgModeDyn {
+                    this.panic("pkgmode: api definition not allowed in dyn package")
+                }
+                this.parseApiDef()
+            }
+            ast.MEM   : {
+                if this.pkg.pkg_mode == PkgModeDyn {
+                    this.panic("pkgmode: mem definition not allowed in dyn package")
+                }
+                this.parseStructDef()
+            }
             ast.ENUM  : this.parseEnumDef()
             ast.CFG   : this.parseCfg()
+            ast.EXPORT : this.parseModifiers()
+            ast.UNSAFE : this.parseModifiers()
             ast.END   : return null 
             _     : this.parseGlobalDef()
         }

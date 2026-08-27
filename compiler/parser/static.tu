@@ -10,6 +10,9 @@ Parser::parseTypeAssert(lastdot){
 	reader<scanner.ScannerStatic> = this.scanner
 	ta = null
 	if reader.curToken == ast.LPAREN {
+		if this.forbidStaticSyntax() {
+			this.panic("pkgmode: type assert not allowed in dynamic context outside unsafe")
+		}
 		ta = new gen.TypeInfo(this.line,this.column)
 		reader.scan()//eat (
 		this.check(reader.curToken == ast.VAR || this.isbase(),"a.(?) must be var")
