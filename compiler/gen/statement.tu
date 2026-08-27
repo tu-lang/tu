@@ -729,3 +729,23 @@ DeferStmt::compile(ctx){
 	compile.writeln("    call runtime_defer_push")
 	return null
 }
+
+// RFC110: unsafe { ... } — transparent codegen; adjusts cross-mode permission depth.
+class UnsafeStmt : ast.Ast {
+	block = null
+	func init(line, column){
+		super.init(line, column)
+	}
+}
+UnsafeStmt::toString(){
+	return "unsafe"
+}
+UnsafeStmt::compile(ctx){
+	this.record()
+	compile.unsafe_depth += 1
+	if this.block != null {
+		this.block.compile(ctx)
+	}
+	compile.unsafe_depth -= 1
+	return null
+}

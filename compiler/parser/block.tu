@@ -89,6 +89,10 @@ Parser::parseParameterList()
                 reader.scan()
                 
                 if reader.curToken == ast.LT {
+                    // RFC110 scheme A: export signature must stay dynamic
+                    if this.currentFunc.exported {
+                        this.panic("pkgmode: export facade signature must be dynamic; static type on parameter is illegal")
+                    }
                     var.structtype = true
                     reader.scan()
                     if reader.curToken == ast.VAR {

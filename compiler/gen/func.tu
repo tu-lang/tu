@@ -5,9 +5,58 @@ use compiler.internal
 use compiler.parser
 use compiler.parser.package
 use std
+use string
 use compiler.utils
 
 defaultfunc = new ast.Function()
+
+// RFC110: true inside unsafe { }, unsafe-prefixed body, or export facade body.
+fn pkgmode_in_unsafe() {
+	if compile.unsafe_depth > 0 return true
+	cur = compile.currentFunc
+	if cur == null return false
+	if cur.unsafe_body return true
+	if cur.exported return true
+	return false
+}
+
+// RFC110: cross-mode static call gate (StaticCall resolution path only).
+fn pkgmode_check_call(callee) {
+	cur = compile.currentFunc
+	if cur == null || callee == null return
+	if cur.package == null || callee.package == null return
+	if callee.fntype == ast.ExternFunc return
+	if callee.name == "init" return
+	if utils.str_starts_with(callee.name, "init.") return
+	if utils.str_starts_with(callee.name, "initvars_") return
+	from = cur.package
+	to = callee.package
+	if from == to {
+		if from.pkg_mode == parser.PkgModeStatic && cur.isDynamicDef() && callee.isStaticDef() && !pkgmode_in_unsafe() {
+			ast.parse_err("pkgmode: dynamic facade calling static symbol '%s' requires unsafe\n", callee.name)
+		}
+		return
+	}
+	if from.pkg_mode == parser.PkgModeDyn && to.pkg_mode == parser.PkgModeStatic {
+		if callee.isDynamicDef() && callee.exported return
+		if !pkgmode_in_unsafe() {
+			ast.parse_err("pkgmode: static symbol '%s' not exported from static package '%s'; call an export or use unsafe\n", callee.name, to.full_package)
+		}
+		return
+	}
+	if from.pkg_mode == parser.PkgModeStatic && to.pkg_mode == parser.PkgModeDyn {
+		if !pkgmode_in_unsafe() {
+			ast.parse_err("pkgmode: static package '%s' calling dyn package '%s' requires unsafe\n", from.full_package, to.full_package)
+		}
+		return
+	}
+	if from.pkg_mode == parser.PkgModeStatic && to.pkg_mode == parser.PkgModeStatic {
+		if callee.exported && callee.isDynamicDef() return
+		if cur.isStaticDef() && callee.isDynamicDef() && !pkgmode_in_unsafe() {
+			ast.parse_err("pkgmode: static fn calling dynamic facade '%s' of package '%s' requires unsafe\n", callee.name, to.full_package)
+		}
+	}
+}
 
 class ClosureExpr : ast.Ast { 
 	varname = varname
@@ -147,6 +196,7 @@ FunCallExpr::geninit(ctx)
 			if(fc == null) 
 				this.check(false,"func not exist in funccall expr compile var:" + var.toString(""))
 			this.checkFirstThis(ctx,var)
+			pkgmode_check_call(fc)
 			this.fcs = fc
 			this.dt = ast.StaticCall
 			if !fc.st.isasync && fc.st.name != s.name {
@@ -165,6 +215,7 @@ FunCallExpr::geninit(ctx)
 					.getStruct(this.tyassert.name)
 			fc = s.getFunc(this.funcname)
 			this.checkFirstThis(ctx,var)
+			pkgmode_check_call(fc)
 			this.dt = ast.StaticCall
 			if s.isapi {
 				this.var = var
@@ -213,6 +264,7 @@ FunCallExpr::geninit(ctx)
 		)
 	}
 
+	pkgmode_check_call(fc)
 	this.dt = ast.StaticCall
 	this.fcs = fc
 	return this

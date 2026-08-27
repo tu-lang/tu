@@ -20,6 +20,8 @@ nostd  = true
 trace  = false
 // True while compiling a defer thunk body: GenAddr uses arg0 as enclosing %rbp.
 defer_frame_mode = false
+// RFC110: codegen depth inside unsafe { } blocks
+unsafe_depth = 0
 
 func pathInWorkdir(basename){
     return utils.pathInWorkdir(basename)
@@ -32,6 +34,14 @@ func genast(filename)
 {
     utils.debugf("compile.genast filename:%s",filename)
     mpkg = new package.Package("main","main",false)
+    // RFC110: main package mode from source file directory (nearest tu.mod)
+    main_ab = filename
+    if main_ab == "" || main_ab[0] != "/" {
+        main_ab = utils.path_join(utils.pwd(), main_ab)
+    }
+    main_dir = utils.path_dirname(main_ab)
+    if main_dir == "" main_dir = utils.pwd()
+    mpkg.loadMode(main_dir)
     main_parser = new parser.Parser(filename,mpkg)
 
     main_parser.fileno = fileno

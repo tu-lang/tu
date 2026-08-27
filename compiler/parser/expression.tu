@@ -6,6 +6,7 @@ use compiler.compile
 use compiler.gen
 use compiler.utils
 use compiler.parser.scanner
+use compiler.parser.package
 
 Parser::parseChainExpr(first){
     utils.debug("parser.Parser::parseChainExpr()")
@@ -313,6 +314,11 @@ Parser::parsePrimaryExpr()
         utils.debug("find token delref")
         
         reader.scan()
+        if reader.curToken == ast.STRING {
+            if this.forbidStaticSyntax() {
+                this.panic("pkgmode: native cstring not allowed in dynamic context outside unsafe")
+            }
+        }
         
         p = this.parsePrimaryExpr()
         delref = new gen.DelRefExpr(this.line,this.column)
@@ -548,6 +554,9 @@ Parser::parseNewExpr()
         reader.scan()
     }
     if reader.curToken == ast.LBRACE {
+        if this.forbidStaticSyntax() {
+            this.panic("pkgmode: mem literal not allowed in dynamic context outside unsafe")
+        }
 
         ret = new gen.NewStructExpr(this.line,this.column)
         ret.init = this.parseStructInit(package,name)
@@ -612,6 +621,9 @@ Parser::parseVarExpr(var)
             }
 
             if reader.curToken == ast.AWAIT {
+                if this.unsafe_stmt_depth > 0 {
+                    this.panic("pkgmode: .await not allowed inside unsafe block; use unsafe func or export async")
+                }
                 gvar = new gen.VarExpr(package,this.line,this.column)
                 gvar.hasawait = true
                 reader.scan()
@@ -746,6 +758,10 @@ Parser::parseVarExpr(var)
                 }
                 reader.scan()
 
+                if this.forbidStaticSyntax() {
+                    this.panic("pkgmode: static type annotation not allowed in dynamic context outside unsafe")
+                }
+
                 return expr
             }else if reader.curToken <= ast.F64 && reader.curToken >= ast.I8{
             
@@ -763,6 +779,9 @@ Parser::parseVarExpr(var)
                 }
                 this.expect( ast.GT,"mut be > at var expression")
                 reader.scan()
+                if this.forbidStaticSyntax() {
+                    this.panic("pkgmode: static type annotation not allowed in dynamic context outside unsafe")
+                }
                 return expr
             }
             
@@ -789,6 +808,9 @@ Parser::parseVarExpr(var)
 
 Parser::parseStaticCall(pkg , mname){
     utils.debugf("parser.Parser::parseStaticCall() var:%s",mname)
+    if this.forbidStaticSyntax() {
+        this.panic("pkgmode: static call not allowed in dynamic context outside unsafe")
+    }
     reader<scanner.ScannerStatic> = this.scanner
     mc = new gen.MemberCallExpr(this.line, this.column)
     if compile.phase == compile.FunctionPhase {
@@ -835,6 +857,9 @@ Parser::parseFuncallExpr(callname)
         tx = reader.transaction()
         reader.scan()
         if reader.curToken == ast.AWAIT {
+            if this.unsafe_stmt_depth > 0 {
+                this.panic("pkgmode: .await not allowed inside unsafe block; use unsafe func or export async")
+            }
             val.hasawait = true
             reader.scan()
         }else{
