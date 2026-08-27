@@ -167,6 +167,8 @@ func getTokenString(tk) {
         FINALLY: return "finally"
         THROW: return "throw"
         DEFER: return "defer"
+        EXPORT: return "export"
+        UNSAFE: return "unsafe"
         _ :	return "undefine"
     }
 }

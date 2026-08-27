@@ -16,6 +16,8 @@ class Class
 	parser      // Parser
 	type_id     = 0
 	found       = false
+	// RFC110: export prefix on class in static package
+	exported    = false
 	func init(pkg){}
 }
 

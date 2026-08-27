@@ -75,6 +75,11 @@ class Function {
     has_defer = false
     // return-through-try finally entry labels (inner→outer); pushed only while compiling try body
     finally_stack = []
+    // RFC110: export marks dynamic facade in static package; unsafe opens cross-mode body
+    exported = false
+    unsafe_body = false
+    // RFC110: spelled `fn` (static) vs `func` (dynamic) at definition site
+    fn_static = false
 
 
     fn isasync(){
@@ -94,6 +99,20 @@ class Function {
                 i += 1
         }
         return i
+    }
+    // RFC110: static-side definition (fn / Mem::method / mem async member)
+    fn isStaticDef() {
+        if this.fn_static return true
+        if this.fntype == StructFunc return true
+        if this.st != null return true
+        return false
+    }
+    // RFC110: dynamic-side definition (func / class method / package async)
+    fn isDynamicDef() {
+        if this.isStaticDef() return false
+        if this.fntype == ClosureFunc return false
+        if this.fntype == ExternFunc return false
+        return true
     }
 }
 func incr_closureidx(){
