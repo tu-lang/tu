@@ -49,7 +49,7 @@ LSTRING_TYPE_64<i32> = 4
 LSTRING_TYPE_MASK<i32> =  7
 LSTRING_TYPE_BITS<i32> =  3
 
-func LSTRING_HDR(type<i32>,s<u8*>){
+fn LSTRING_HDR(type<i32>,s<u8*>){
     l<i32> = 0
     match type {
         LSTRING_TYPE_5 : l = sizeof(Stringhdr5)
@@ -61,11 +61,11 @@ func LSTRING_HDR(type<i32>,s<u8*>){
     }
     return s - l
 } 
-func LSTRING_TYPE_5_LEN(f<u8>){
+fn LSTRING_TYPE_5_LEN(f<u8>){
     return f >> LSTRING_TYPE_BITS
 }
 
-func stringavail(s<u8*>) {
+fn stringavail(s<u8*>) {
     flags<u8> = s[-1] 
     match flags & LSTRING_TYPE_MASK {
 
@@ -90,7 +90,7 @@ func stringavail(s<u8*>) {
     return runtime.Null
 }
 
-func stringsetlen(s<u8*>, newlen<u64>) {
+fn stringsetlen(s<u8*>, newlen<u64>) {
     flags<u8> = s[-1] 
     
     match flags & LSTRING_TYPE_MASK {
@@ -118,7 +118,7 @@ func stringsetlen(s<u8*>, newlen<u64>) {
     }
 }
 
-func stringinclen(s<u8*>, inc<u64>) {
+fn stringinclen(s<u8*>, inc<u64>) {
     flags<u8> = s[-1] 
     match flags & LSTRING_TYPE_MASK {
         LSTRING_TYPE_5:{
@@ -148,7 +148,7 @@ func stringinclen(s<u8*>, inc<u64>) {
 }
 
 //stringalloc() == stringavail() + string.len()
-func stringalloc(s<u8*>) {
+fn stringalloc(s<u8*>) {
     flags<u8> = s[-1]
     
     match flags & LSTRING_TYPE_MASK {
@@ -173,7 +173,7 @@ func stringalloc(s<u8*>) {
     }
 }
 
-func stringsetalloc(s<u8*>, newlen<u64>) {
+fn stringsetalloc(s<u8*>, newlen<u64>) {
     flags<u8> = s[-1]
     
     match flags & LSTRING_TYPE_MASK {

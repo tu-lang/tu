@@ -2,7 +2,7 @@ use runtime
 use fmt
 
 // func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
-func dynstringfmt(_args...){
+export func dynstringfmt(_args...){
     curr<u64> = 0
 	dyncurr<runtime.Value> = null
 

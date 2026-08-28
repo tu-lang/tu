@@ -3,35 +3,35 @@ use fmt
 use string
 
 //open syscall; implement by asm
-func open(filename<i8*> , flags<i64> , mode<i64>)
+fn open(filename<i8*> , flags<i64> , mode<i64>)
 
 //read syscall ; implement by asm
-func read(fd<i64> , buffer<u64*> , size<u64>)
+fn read(fd<i64> , buffer<u64*> , size<u64>)
 
 //write syscall; implement by asm
-func write(fd<i64>,buffer<i8*>,size<u64>)
+fn write(fd<i64>,buffer<i8*>,size<u64>)
 
 //close syscall; implement by asm
-func close(fd<i64>)
+fn close(fd<i64>)
 
 //seek syscall ; implement by asm
-func seek(fd<i64> , offset<i64> , mode<i64>)
+fn seek(fd<i64> , offset<i64> , mode<i64>)
 
 //stat syscall; implement by syscall/sys_std_amd64.s
-func stat(filename<i8*>,statbuf<Stat>)
+fn stat(filename<i8*>,statbuf<Stat>)
 
 //fstat syscall; implement by syscall/sys_std_amd64.s
-func fstat(fd<i64>,statbuf<Stat>)
+fn fstat(fd<i64>,statbuf<Stat>)
 
 //lstat syscall; implement by syscall/sys_std_amd64.s
-func lstat(filename<i8*>,statbuf<Stat>)
+fn lstat(filename<i8*>,statbuf<Stat>)
 
 //fwrite
-func fwrite(buffer<i8*> , size<u64> , count<u64> , fd<u64*>){
+fn fwrite(buffer<i8*> , size<u64> , count<u64> , fd<u64*>){
 	return write(fd,buffer,size * count)
 }
 //fopen
-func fopen(filename<i8*> , mode<i8*>){
+fn fopen(filename<i8*> , mode<i8*>){
 	fd<i64> = -1
 	flags<i64> = 0
 	access<i32> = 438 # 0666
@@ -60,13 +60,13 @@ func fopen(filename<i8*> , mode<i8*>){
 	fd = open(filename,flags,access)
 	return fd
 }
-func fread(fd<u64>,buffer<i8*>,size<i64>,count<i64>){
+fn fread(fd<u64>,buffer<i8*>,size<i64>,count<i64>){
 	return read(fd,buffer,size * count)
 }
-func fclose(fp<u64>){
+fn fclose(fp<u64>){
 	return close(fp)
 }
-func fseek(fp<u64>,offset<i64> , set<i64>){
+fn fseek(fp<u64>,offset<i64> , set<i64>){
 	return seek(fp,offset,set)
 }
 
@@ -75,7 +75,7 @@ class File {
 	open 
 	size
 	filepath = filepath
-	func init(filepath<runtime.Value>,perm<runtime.Value>){
+	unsafe func init(filepath<runtime.Value>,perm<runtime.Value>){
 		this.open = false
 		if filepath == null {
 			fmt.println("File::init null filepath")
@@ -105,7 +105,7 @@ class File {
 	func Size(){
 		return this.size
 	}
-	func ReadAllNative(){
+	unsafe func ReadAllNative(){
 		s<i32> = *this.size
 		//last pos \0
 		fs<i32> = s + 1
@@ -117,7 +117,7 @@ class File {
 		}
 		return buf
 	}
-	func ReadAll(){
+	unsafe func ReadAll(){
 		s<i32> = *this.size
 		//last pos \0
 		fs<i32> = s + 1
@@ -129,7 +129,7 @@ class File {
 		}
 		return string.new(buf)
 	}
-	func Write(buffer<runtime.Value>){
+	unsafe func Write(buffer<runtime.Value>){
 		if buffer.type != runtime.String {
 			return false
 		}
@@ -143,7 +143,7 @@ class File {
 		}
 		return true
 	}
-	func NWrite(buffer<i8*>){
+	unsafe func NWrite(buffer<i8*>){
 		size<i32> = strlen(buffer)
 		ret<u64> = std.write(this.fd , buffer,size)
 		if ret != size {
@@ -152,7 +152,7 @@ class File {
 		}
 		return true
 	}
-	func Close(){
+	unsafe func Close(){
 		close(this.fd)
 	}
 }
