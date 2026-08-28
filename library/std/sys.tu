@@ -1,35 +1,35 @@
 //die;implement by asm
-func die(code<i8>)
+fn die(code<i8>)
 
 //time ; implement by asm
-func time(t<u64>)
+fn time(t<u64>)
 
-func clock_gettime(clockid<i64>,tp<u64*>)
+fn clock_gettime(clockid<i64>,tp<u64*>)
 
 //nanossleep ; implement by asm
-func nanosleep(req<u64*>,rem<u64*>)
+fn nanosleep(req<u64*>,rem<u64*>)
 
 //brk ; implement by asm
-func brk(brk<u64>)
+fn brk(brk<u64>)
 
 //segsegv recv; implement by asm
-func segsegvrecv()
+fn segsegvrecv()
 # Raw PC of std_segsegvrecv for sigaction (not a Tu func descriptor).
-func segsegvrecv_pc()
+fn segsegvrecv_pc()
 
 //execv ; implement by asm
-func execve(filename<i8*>,argv<i8*>,envp<i8*>)
+fn execve(filename<i8*>,argv<i8*>,envp<i8*>)
 
-func sigreturn()
+fn sigreturn()
 # Raw PC of std_sigreturn for sa_restorer (not a Tu func descriptor).
-func sigreturn_pc()
+fn sigreturn_pc()
 # Darwin nostd: raw PC of std_sigtramp for __sigaction.sa_tramp (Linux: unused).
-func sigtramp_pc()
+fn sigtramp_pc()
 //sig %rdi
 //act %rsi
 //oact %rdx
 //size %r10
-func rt_sigaction(sig<i32>,act<u64>,oact<u64>,size<u64>)
+fn rt_sigaction(sig<i32>,act<u64>,oact<u64>,size<u64>)
 
 //sys_mmap	0x9
 //@param addr  u64 %rdi
@@ -38,37 +38,37 @@ func rt_sigaction(sig<i32>,act<u64>,oact<u64>,size<u64>)
 //@param flags u64 %r10	
 //@param fd	   u64 %r8
 //@param off   u64 %r9
-func mmap(addr<u64> , len<u64> , prot<u64> ,flags<u64>, fd<u64>,off<u64>)
+fn mmap(addr<u64> , len<u64> , prot<u64> ,flags<u64>, fd<u64>,off<u64>)
 //sys_madvise 28	
 //@param start u64
 //@param len_in	u64 
 //@param behavior i32
-func madvise(start<u64> , len_in<u64> , behavior<i32>)
+fn madvise(start<u64> , len_in<u64> , behavior<i32>)
 //sys_munmap 11
 //@param addr u64
 //@param len u64
-func munmap(addr<u64> , len<u64>)
+fn munmap(addr<u64> , len<u64>)
 //@return u64
-fn   cputicks()
+fn cputicks() (u64)
 //@return u64
-fn 	 gettid()
+fn gettid() (u64)
 
 // Linux x86_64 syscall 289. fd=-1 creates a new signalfd; flags accept
 // SFD_CLOEXEC | SFD_NONBLOCK. Returns new fd or -errno.
-func signalfd4(fd<i32>, mask<u64>, sizemask<u64>, flags<i32>)
+fn signalfd4(fd<i32>, mask<u64>, sizemask<u64>, flags<i32>)
 
 // Linux x86_64 syscall 14. how is SIG_BLOCK / SIG_UNBLOCK / SIG_SETMASK;
 // set/oldset may be NULL.
-func rt_sigprocmask(how<i32>, set<u64>, oldset<u64>, sigsetsize<u64>)
+fn rt_sigprocmask(how<i32>, set<u64>, oldset<u64>, sigsetsize<u64>)
 
 // Linux x86_64 syscall 434. flags supports 0 or PIDFD_NONBLOCK on current
 // kernels. Returns new pidfd or -errno.
-func pidfd_open(pid<i32>, flags<u32>)
+fn pidfd_open(pid<i32>, flags<u32>)
 
 // Linux x86_64 syscall 61. x86_64 has no dedicated waitpid syscall; libc's
 // waitpid is wait4 with rusage=NULL. Returns reaped pid (>=0), 0 for WNOHANG
 // with no exited child, or -errno.
-func wait4(pid<i32>, status<u64>, options<i32>, rusage<u64>)
+fn wait4(pid<i32>, status<u64>, options<i32>, rusage<u64>)
 
 // Linux x86_64 syscall 57. Parent receives the child pid, child receives 0.
 fn fork() (i64)

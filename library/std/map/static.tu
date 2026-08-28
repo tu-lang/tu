@@ -36,7 +36,7 @@ MapIter::next(){
     return this.node
 }
 
-func map_new(hashfn<u64>,insertfn<u64>){
+fn map_new(hashfn<u64>,insertfn<u64>){
 
     if insertfn == null {
         insertfn = map_insert_or_update_default.(u64)
@@ -56,7 +56,7 @@ func map_new(hashfn<u64>,insertfn<u64>){
 	}
 }
 
-func map_insert_or_update_default(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode>)
+fn map_insert_or_update_default(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode>)
 {
     p<u64*> = null
     loop {

@@ -4,7 +4,7 @@ use runtime
 use std
 
 
-func replace(str,src,dst){
+export func replace(str, src, dst){
 	ret<runtime.Value> = string.split(str,src)
 	arr<std.Array> = ret.data	
 	

@@ -1,15 +1,15 @@
 use runtime
 use string
 
-func tolower(c<u8>){
+fn tolower(c<u8>){
 	if c >= 65 && c <= 90 return c + 32
 	return c
 }
-func toupper(c<u8>){
+fn toupper(c<u8>){
 	if c >= 97 && c <= 122 return c - 32
 	return c
 }
-func strlen(str<i8*>){
+fn strlen(str<i8*>){
 	cnt<u64> = 0
 	if str == null return runtime.Zero
 
@@ -22,12 +22,12 @@ func strlen(str<i8*>){
 
 
 
-func swap_i8(l<i8*>,r<i8*>){
+fn swap_i8(l<i8*>,r<i8*>){
     tmp<i8> = *l
     *l = *r
     *r = tmp
 }
-func reverse(str<i8*>, length<i32>)
+fn reverse(str<i8*>, length<i32>)
 {
     start<i32> = 0
     end<i32>   = length - 1
@@ -38,7 +38,7 @@ func reverse(str<i8*>, length<i32>)
     }
 }
 
-func itoa(num<i64>, str<i8*>, base<i32>)
+fn itoa(num<i64>, str<i8*>, base<i32>)
 {
     i<i32> = 0
 	isNegative<i32> = 0
@@ -83,7 +83,7 @@ func itoa(num<i64>, str<i8*>, base<i32>)
     return str
 }
 
-func strtoul(nptr<i8*>, endptr<u64*>, base<i32>)
+fn strtoul(nptr<i8*>, endptr<u64*>, base<i32>)
 {
     s<i8*> = nptr
     acc<u64> = 0
@@ -193,7 +193,7 @@ func strtoul(nptr<i8*>, endptr<u64*>, base<i32>)
 //@param endptr NULL
 //@param base 10
 //@return long
-func strtol(nptr<i8*>, endptr<u64*>, base<i32>)
+fn strtol(nptr<i8*>, endptr<u64*>, base<i32>)
 {
     s<i8*> = nptr
     acc<i64> = 0
@@ -302,7 +302,7 @@ func strtol(nptr<i8*>, endptr<u64*>, base<i32>)
 }
 prime64<u64>    = 1099511628211
 
-func hash64(bytes<u8*>,len<u64>){
+fn hash64(bytes<u8*>,len<u64>){
 	hash<u64> = 14695981039346656037
 	for i<i64> = 0 ; i < len ; i += 1 {
 		hash ^= bytes[i]

@@ -7,10 +7,11 @@ use fmt
 fn type_hash_key(k<string.String>)
 fn type_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode>)
 
-func map_create(insertfn<u64>){
-
-    if insertfn == null {
-        insertfn = map_insert_or_update.(i64)
+// Static-only map factory; insertfn is a typed tree callback pointer.
+fn map_create(insertfn<u64>){
+    fn_bits<u64> = insertfn
+    if fn_bits == 0.(u64) {
+        fn_bits = map_insert_or_update.(u64)
     }
     sentinel<RbtreeNode> = new RbtreeNode
 	sentinel.black()
@@ -18,12 +19,13 @@ func map_create(insertfn<u64>){
 	return new Rbtree {
 		root : sentinel,
 		sentinel : sentinel,
-		insert: insertfn,
+		insert: fn_bits,
         count: 0,
 	}
 }
 
-func map_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode>)
+// Static tree callback — not an export facade (needs mem-typed params).
+fn map_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>, sentinel<RbtreeNode>)
 {
     // **p
     // FIXME: p<rebtree_node*> parser
@@ -68,7 +70,7 @@ func map_insert_or_update(temp<RbtreeNode>, node<RbtreeNode>,sentinel<RbtreeNode
     node.color = 1
 }
 
-func hash_key(data<u8*>,len<u64>){
+fn hash_key(data<u8*>, len<u64>){
     i<i64>   = 0
     key<i64> = 0
     for(i = 0 ; i < len ; i += 1){
@@ -79,31 +81,33 @@ func hash_key(data<u8*>,len<u64>){
     return key
 }
 
-func map_insert( m<runtime.Value> ,k<runtime.Value>,v<runtime.Value>)
+export func map_insert(m, k, v)
 {
-    tree<Rbtree> = m.data
+    mv<runtime.Value> = m
+    kv<runtime.Value> = k
+    tree<Rbtree> = mv.data
     node<RbtreeNode> = new RbtreeNode
     hk<u64> = 0
-    match k.type {
-        runtime.Bool | runtime.Int | runtime.Float : hk = k.data
-        runtime.String: hk = k.data.(string.Str).hash64()
+    match kv.type {
+        runtime.Bool | runtime.Int | runtime.Float : hk = kv.data
+        runtime.String: hk = kv.data.(string.Str).hash64()
     }
     node.key = hk
-    node.k = k
+    node.k = kv
     node.v = v
     tree.insert(node)
 }
 
-func map_find(m<runtime.Value>, key<runtime.Value>){
+export func map_find(m, key){
+    mv<runtime.Value> = m
+    kv<runtime.Value> = key
     hk<u64> = 0
-    match key.type {
-        runtime.Bool   | runtime.Int | runtime.Float : hk = key.data
+    match kv.type {
+        runtime.Bool   | runtime.Int | runtime.Float : hk = kv.data
         runtime.String : {
-            hk = key.data.(string.Str).hash64()
-            // str<string.Str> = key.data
-            // hk = hash_key(key.data,str.len())
+            hk = kv.data.(string.Str).hash64()
         }
     }
-    tree<Rbtree>  = m.data
+    tree<Rbtree>  = mv.data
     return tree.find(hk)
 }

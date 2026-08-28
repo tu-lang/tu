@@ -4,7 +4,7 @@ OP_T_THERS<i8> = 16
 
 OPSIZE<i8> = 8
 
-func byte_copy(dst<u8*>,src<u8*>,bytes<u64>){
+fn byte_copy(dst<u8*>,src<u8*>,bytes<u64>){
 	
     while  bytes > 0 {								      
 		x<u8> = *src
@@ -16,10 +16,10 @@ func byte_copy(dst<u8*>,src<u8*>,bytes<u64>){
 		dst += 1
 	}
 }
-func memcpy(dst<u8*>,src<u8*>,bytes<u64>){
+fn memcpy(dst<u8*>,src<u8*>,bytes<u64>){
 	byte_copy(dst,src,bytes)
 }
-func strcopy(dst<i8*>,src<i8*>){
+fn strcopy(dst<i8*>,src<i8*>){
 	ret<i8*> = dst	
     while  *src != 0 {								      
 		*dst = *src
@@ -30,7 +30,7 @@ func strcopy(dst<i8*>,src<i8*>){
 	return ret
 }
 
-func strcmp(p1<i8*>, p2<i8*>) i32 {
+fn strcmp(p1<i8*>, p2<i8*>) i32 {
 	s1<i8*> = p1
 	s2<i8*> = p2
 	c1<i8>  = 0
@@ -47,12 +47,12 @@ func strcmp(p1<i8*>, p2<i8*>) i32 {
 
   	return c1 - c2
 }
-func strcat(dest<i8*> , src<i8*>){
+fn strcat(dest<i8*> , src<i8*>){
 	strcopy(dest + strlen(dest) , src)
 	return dest
 }
 
-func memcmp(vl<u64> , vr<u64>, n<u64>) i32 {
+fn memcmp(vl<u64> , vr<u64>, n<u64>) i32 {
 	l<u8*> = vl
 	r<u8*> = vr
 	while n  && *l == *r {
@@ -65,7 +65,7 @@ func memcmp(vl<u64> , vr<u64>, n<u64>) i32 {
 	}
 	return 0
 }
-func memset(s<u64> , c<i32> , n<u64>)
+fn memset(s<u64> , c<i32> , n<u64>)
 {
 	uc<u8> = c
 	su<i8*> = s

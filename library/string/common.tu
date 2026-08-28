@@ -1,7 +1,7 @@
 use runtime
 // cfg(mod_static,true)
 
-func isspace(c<i32>){
+fn isspace(c<i32>){
     match c {
         ' ': return runtime.True
         '\t': return runtime.True
@@ -12,7 +12,7 @@ func isspace(c<i32>){
         _   : return runtime.False
     }
 }
-func isxdigit(c<i32>){
+fn isxdigit(c<i32>){
     if '0' <= c && c <= '9'
         return 1.(i8)
     if 'a' <= c && c <= 'f'
@@ -21,7 +21,7 @@ func isxdigit(c<i32>){
         return 1.(i8)
     return 0.(i8)
 }
-func isdigit(c<i32>)
+fn isdigit(c<i32>)
 {
     b<u32> = c
     if (b - '0') < 10 {
@@ -29,24 +29,24 @@ func isdigit(c<i32>)
     }
     return runtime.False
 }
-func isalpha(c<i32>){
+fn isalpha(c<i32>){
     if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
         return runtime.True
     }
     return runtime.False
 }
-func isupper(c<i32>){
+fn isupper(c<i32>){
     if c >= 'A' && c <= 'Z' {
         return runtime.True
     }
     return runtime.False
 }
-func tolower(c<i32>) {
+fn tolower(c<i32>) {
     return c | 0x20
 }
 // mystring = newstringlen("abc",3)
 // mystring = newstringlen(NULL,0)
-func newlen(init<u64*>, initlen<u64>) {
+fn newlen(init<u64*>, initlen<u64>) {
     sh<u64*> = null
     s<u8*> = null
 
@@ -100,39 +100,39 @@ func newlen(init<u64*>, initlen<u64>) {
     
     return s
 }
-func empty() {
+fn empty() {
     return newlen(*"",runtime.Zero)
 }
-func newstring(init<i8*>) {
+fn newstring(init<i8*>) {
     initlen<u64>  = null
     if  init == null  initlen = 0  
     else              initlen = std.strlen(init)
 
     return newlen(init, initlen)
 }
-func fromlonglong(value<i64>) {
+fn fromlonglong(value<i64>) {
 
     buf<i8*> = new LSTRING_LLSTR_SIZE 
     len<i32> = stringll2str(buf,value)
 
     return newlen(buf,len)
 }
-func fromulonglong(value<u64>) {
+fn fromulonglong(value<u64>) {
 
     buf<i8*> = new LSTRING_LLSTR_SIZE 
     len<i32> = stringull2str(buf,value)
 
     return newlen(buf,len)
 }
-func malloc(size<u64>) { 
+fn malloc(size<u64>) { 
     return runtime.gc_malloc(size) 
 }
-func free(ptr<u64*>) {
+fn free(ptr<u64*>) {
     runtime.gc_free(ptr) 
 }
 
 // func stringfmt(fmt<i8*>, args , _1 , _2 , _3 , _4) {
-func stringfmt(_args...){
+fn stringfmt(_args...){
     curr<u64> = 0
     args<u64*> = _args
 	count<i32> = args[0]
@@ -244,7 +244,7 @@ func stringfmt(_args...){
     return s
 }
 //stringll2str
-func stringll2str(s<i8*>,value<i64>) {
+fn stringll2str(s<i8*>,value<i64>) {
     p<i8*> = null
     aux<i8> = null
     v<i64> = null
@@ -283,7 +283,7 @@ func stringll2str(s<i8*>,value<i64>) {
     }
     return l
 }
-func stringull2str(s<i8*> ,v<u64>) {
+fn stringull2str(s<i8*> ,v<u64>) {
     p<i8*> = null
     aux<i8> = null
     l<u64> = null
