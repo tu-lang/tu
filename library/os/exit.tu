@@ -7,12 +7,16 @@ use runtime.debug
 
 debug_stack<i64> = 5
 
-func set_stack(size<i32>){
-    debug_stack = size
+// Dyn facade: backtrace depth from Int Value.data.
+export func set_stack(size){
+    sv<runtime.Value> = size
+    if sv != null {
+        debug_stack = sv.data
+    }
 }
 NewLine<i8> = '\n'
 
-func panic(args...){
+export func panic(args...){
     ret<i8*> = string.dynstringfmt(args)
     if ret != null {
 		fmt.vfprintf(std.STDOUT,ret)
@@ -26,7 +30,7 @@ func panic(args...){
     }
     os.exit(-1)
 }
-func die(str){
+export func die(str){
     fmt.println(str)
     code<i8> = -1
     infos = debug.stack(debug_stack)
@@ -38,7 +42,7 @@ func die(str){
     }
     std.die(code)
 }
-func dief(args...){
+export func dief(args...){
     ret<string.Str> = string.dynstringfmt(args)
     if ret != null {
 		  fmt.vfprintf(std.STDOUT,ret.putc(NewLine))
@@ -53,6 +57,10 @@ func dief(args...){
     }
     std.die(code)
 }
-func exit(code){
-    std.die(*code)
+export func exit(code){
+    cv<runtime.Value> = code
+    if cv == null {
+        std.die(-1.(i8))
+    }
+    std.die(cv.data.(i8))
 }

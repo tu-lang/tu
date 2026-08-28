@@ -16,7 +16,12 @@ fn system_argv(sh<u64*>, c<u64*>, cmd<u64*>){
  
 export func shell(cmd)
 {
-    argv<u64*> = system_argv(*"sh",*"-c",*cmd)
+    cv<runtime.Value> = cmd
+    if cv == null || cv.type != runtime.String {
+        std.die(EXIT_CODE)
+    }
+    cstr<i8*> = cv.data
+    argv<u64*> = system_argv(*"sh",*"-c",cstr)
     if fork() == 0 {
         std.execve(*"/bin/sh",argv,runtime.ori_envp)
         std.die(EXIT_CODE)

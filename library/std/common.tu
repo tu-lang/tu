@@ -6,61 +6,82 @@ use os
 
 // cfg(mod_static,true)
 
-func rand(v<runtime.Value>){
+export func rand(v){
 
 	seed = (seed * 1103515245) + 12345
 	ret<u64> = (seed / 65536) % 32768
 	if v != null {
-		ret %= v.data
+		vv<runtime.Value> = v
+		ret %= vv.data
 	}
 	return int(ret)
 }
-func srand_i64(max<i64>){
+export func srand_i64(max){
 	r<i64> = ntime()
 	if max != null {
-		r %= max
+		mv<runtime.Value> = max
+		r %= mv.data
 	}
 	return r
 }
-func srand(v<u64>){
+export func srand(v){
 
 	seed = (seed * 1103515245) + 12345
 	ret<u64> = (seed / 65536) % 32768
 	if v != null {
-		ret %= v
+		vv<runtime.Value> = v
+		ret %= vv.data
 	}
 	return ret
 }
 
 
-func empty(v<runtime.Value>){
-	match v.type {
+export func empty(v){
+	vv<runtime.Value> = v
+	match vv.type {
 		runtime.String: {
-			ret<i8> = strlen(v.data)
+			ret<i8> = strlen(vv.data)
 			if ret == 0 return true
 		}
 		runtime.Null: return true
 		_: {
-			os.dief("[warn] empty: unsupport type :%s\n",runtime.type_string(v))
-			// fmt.println("[warn] empty: unsuport type")
+			os.dief("[warn] empty: unsupport type :%s\n",runtime.type_string(vv))
 		}
 	}	
 	return false
 }
-func len(v){
+// Static engine API (typed Value container).
+fn len_value(v<runtime.Value>) i32 {
 	return runtime.len(v)
 }
-func pop(v){
+
+// Dyn facade: bare Array via native type id; other containers as Value.
+export func len(v){
+	if v == null {
+		return runtime.len(null)
+	}
+	tv<i32> = int(type(v))
+	if tv == int(runtime.Array) {
+		unsafe {
+			a<Array> = v
+			return int(a.used)
+		}
+	}
+	vv<runtime.Value> = v
+	return len_value(vv)
+}
+export func pop(v){
 	return runtime.pop(v)	
 }
-func pop_head(v<runtime.Value>){
-	if v == null {
+export func pop_head(v){
+	vv<runtime.Value> = v
+	if vv == null {
 		fmt.println("[warn] pop_head args is null")
 		return false
 	}
-	match v.type {
+	match vv.type {
 		runtime.Array:{
-			arr<Array> = v.data
+			arr<Array> = vv.data
 			if  arr == null os.die("[arr_pop_head] not array_type")
 			if arr.used <= 0 {
 				fmt.println("[warn] array_pop for empty array")
@@ -79,32 +100,35 @@ func pop_head(v<runtime.Value>){
 		}
 	}
 }
-func head(v){
+export func head(v){
 	if (ret<u64> = runtime.head(v))	!= runtime.Null {
 		return ret
 	}
 	return null
 }
-func tail(v<runtime.Value>){
-	match v.type {
+export func tail(v){
+	vv<runtime.Value> = v
+	match vv.type {
 		runtime.Array : {
-			arr<Array> = v.data
+			arr<Array> = vv.data
 			return arr.tail()
 		}
 		_: fmt.println("[warn] std.back unsupport type")
 	}
 	return null
 }
-func merge(v1<runtime.Value>,v2<runtime.Value>){
-	match v1.type {
+export func merge(v1, v2){
+	a<runtime.Value> = v1
+	b<runtime.Value> = v2
+	match a.type {
 		runtime.Map : fmt.println("[warn] unsupport merge(map,..)")
 		runtime.Array   : {
-			if v2.type != runtime.Array {
+			if b.type != runtime.Array {
 				fmt.println("[warn] merge unsupport not array value")
 				return false
 			}
-			arr<Array> = v1.data
-			if arr.merge(v2.data) != runtime.True {
+			arr<Array> = a.data
+			if arr.merge(b.data) != runtime.True {
 				fmt.println("[warn] array merge failed")
 				return false
 			}
@@ -114,47 +138,63 @@ func merge(v1<runtime.Value>,v2<runtime.Value>){
 	}
 	return false
 }
-func exist(key,v<runtime.Value>){
-	type<i8> = v.type
-	data<i8> = v.data
-	match type {
-		runtime.Array : {
-			if runtime.array_in(key,v.data) == runtime.True {
-				return true
-			}
+// Static engine API (typed Value container).
+fn exist_value(key, v<runtime.Value>) i32 {
+	t<i32> = int(v.type)
+	if t == int(runtime.Array) {
+		if runtime.array_in(key, v.data) == runtime.True {
+			return 1
 		}
-		runtime.Map   : {
-			has<i32> = map.map_find(v,key)
-			if has != null return true
-		}
-		_     : fmt.printf("[warn] unsupport exist(,%s)\n",runtime.type_string(v))
 	}
-	return false
+	if t == int(runtime.Map) {
+		has<i32> = map.map_find(v, key)
+		if has != null {
+			return 1
+		}
+	}
+	fmt.printf("[warn] unsupport exist(,%s)\n", runtime.type_string(v))
+	return 0
 }
-func is_map(m<runtime.Value>){
-	if  m.type == runtime.Map {
+
+// Dyn facade: bare map via native type id; Value containers via exist_value.
+export func exist(key, v){
+	if v == null {
+		return false
+	}
+	tv<i32> = int(type(v))
+	if tv == int(runtime.Map) {
+		hit = v[key]
+		if hit {
+			return true
+		}
+		return false
+	}
+	vv<runtime.Value> = v
+	return exist_value(key, vv) != 0
+}
+export func is_map(m){
+	mv<runtime.Value> = m
+	if  mv.type == runtime.Map {
 		return true
 	}
 	return false
 }
-func is_array(arr<runtime.Value>){
-	if  arr.type == runtime.Array {
+export func is_array(arr){
+	av<runtime.Value> = arr
+	if  av.type == runtime.Array {
 		return true
 	}
 	return false
 }
 
-func ntime(){
-	ts<TimeSpec:> = null
-	clock_gettime(CLOCK_REALTIME,ts)
+export func ntime(){
+	ts<TimeSpec> = new TimeSpec
+	clock_gettime(CLOCK_REALTIME, ts)
 	return ts.sec * 1000000000 + ts.nsec
 }
 
-fn printf(str<i8*>,args...){
-	fmt.vfprintf(STDOUT,str,args)
-}
-
-fn dief(str<i8*>,args...){
+// Static-only formatted die; format must be a C string.
+fn dief(str<i8*>, args...){
 	fmt.vfprintf(std.STDOUT,str,args)
     fmt.vfprintf(std.STDOUT,*"\ndebug backtrace:\n")
 	infos = debug.stack(10.(i8))

@@ -3,12 +3,12 @@ use fmt
 use string
 
 //getdents syscall; implement by syscall/sys_std_amd64.s
-func getdents(fd<u32> , dirent<Dirent> , count<u32>)
+fn getdents(fd<u32> , dirent<Dirent> , count<u32>)
 
 //sys_readlink ; implement by asm
-func readlink(name<i8*> , buf<i8*> , bufsize<i32>)
+fn readlink(name<i8*> , buf<i8*> , bufsize<i32>)
 
-func realpath(name<i8*>) {
+fn realpath(name<i8*>) {
 	len<i32> = 0
 	buffer_o<i8:128> = null
 	buffer<i8*> = &buffer_o
@@ -64,12 +64,13 @@ class FileFd {type name path}
 //opendir
 //@param  dir_path
 //@return Dir
-func opendir(dir_path<runtime.Value>){
-     fd<i32> = open(dir_path.data,O_RDONLY | O_DIRECTORY)
+export func opendir(dir_path){
+     path<runtime.Value> = dir_path
+     fd<i32> = open(path.data,O_RDONLY | O_DIRECTORY)
      if fd < 0 {
 	    fmt.vfprintf(STDOUT,string.stringfmt(
             "open %s failed ret:%d\n".(i8),
-            dir_path.data,fd
+            path.data,fd
         ))
         return false
      }
@@ -79,12 +80,13 @@ func opendir(dir_path<runtime.Value>){
         pos  : 0,
         dir  : new DIRENT_BUF_SIZE,
         init : 0,
-        path : dir_path
+        path : path
      }
      dir.dirent = d
      return dir
 }
 Dir1::readdir(){
+    unsafe {
     dir<Dir> = this.dirent
     //need init
     if dir.init == 0 {
@@ -125,6 +127,8 @@ init_dents:
     dir_path += "/" + file_name 
     file.path = dir_path
     return file
+
+    }
 }
 FileFd::isFile(){
     if this.type == "file" return true
@@ -134,7 +138,7 @@ FileFd::isDir(){
     if this.type == "directory" return true
     return false
 }
-func dirtype(t<i8>){
+fn dirtype(t<i8>){
     match t {
         DT_REG : return "file"
         DT_DIR : return "directory"
@@ -149,9 +153,10 @@ func dirtype(t<i8>){
     }
 }
 
-func is_dir(filepath<runtime.Value>){
+export func is_dir(filepath){
+    path<runtime.Value> = filepath
     s<Stat> = new Stat
-    ret<i8> = stat(filepath.data,s)
+    ret<i8> = stat(path.data,s)
     if ret != 0 return false
 
     if s.st_mode & S_IFDIR > 0 {
@@ -159,9 +164,10 @@ func is_dir(filepath<runtime.Value>){
     }
     return false
 }
-func is_file(filepath<runtime.Value>){
+export func is_file(filepath){
+    path<runtime.Value> = filepath
     s<Stat> = new Stat
-    ret<i8> = stat(filepath.data,s)
+    ret<i8> = stat(path.data,s)
     if ret != 0 return false
 
     if s.st_mode & S_IFREG > 0 {

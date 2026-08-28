@@ -7,7 +7,8 @@ mem Buf {
 	u8* data_ptr
     u64 byte_len
 }
-func NewBuf(cap<i32>){
+// Static-only buffer factory; dyn callers do not pass raw capacities.
+fn NewBuf(cap<i32>){
 	return new Buf {
 		data_ptr : new cap,
         byte_len: cap
