@@ -6,17 +6,17 @@ Null<i64> = 0
 mem String {
 	u8* inner
 }
-func S(s<i8*>){
+fn S(s<i8*>){
 	return new String {
 		inner : newstring(s)
 	}
 }
-func emptyS(){
+fn emptyS(){
 	return new String {
 		inner : newlen(*"",Null)
 	}
 }
-func string(){
+fn string(){
 	return new String {
 		inner : newlen(*"" , Null)
 	}
@@ -88,6 +88,7 @@ String::sub(start<i64> , len<i64>){
 	return new String {
 		inner : newlen(this.inner + start , len)
 	}
+
 }
 String::tonumber(){
 	dl<i64> = 0

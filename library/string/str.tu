@@ -1,7 +1,7 @@
 use runtime
 use std
 
-func stringHdrSize(type<i8>) {
+fn stringHdrSize(type<i8>) {
     match type & LSTRING_TYPE_MASK {
         LSTRING_TYPE_5: return sizeof(Stringhdr5)
         LSTRING_TYPE_8: return sizeof(Stringhdr8)
@@ -11,7 +11,7 @@ func stringHdrSize(type<i8>) {
     }
     return runtime.Null
 }
-func stringReqType(string_size<u64>) {
+fn stringReqType(string_size<u64>) {
     flag<u64> = 1
     if string_size < flag << 5     return LSTRING_TYPE_5
     if string_size < flag << 8     return LSTRING_TYPE_8
@@ -44,39 +44,38 @@ Str::len() {
         }
     }
     return runtime.Null
+
 }
-
-
 Str::mark(){
     s<u8*> = this
     if !s return runtime.Null
     size<i32> = stringHdrSize(s[-1])
     if size == 0 return runtime.Null
     // runtime.gc_mark(s - size)
-}
 
+}
 Str::dup() {
     return newlen(this, this.len())
-}
 
+}
 Str::free() {
     s<u8*> = this
     if s == null return runtime.Null
     
     runtime.gc_free(s - stringHdrSize(s[-1]))
-}
 
+}
 Str::updatelen() {
     reallen<u64> = std.strlen(this)
     stringsetlen(this, reallen)
-}
 
+}
 Str::clear() {
     stringsetlen(this, runtime.Zero)
     s<u8*> = this
     *s = 0
-}
 
+}
 Str::MakeRoomFor(addlen<u64>) {
     s<u8*> = this
     sh<u64*> = null
@@ -120,8 +119,8 @@ Str::MakeRoomFor(addlen<u64>) {
     }
     stringsetalloc(s, newlen)
     return s
-}
 
+}
 Str::catlen(t<u64*>, len<u64>) {
     s<u8*> = this
     curlen<u64> = this.len()
@@ -133,8 +132,8 @@ Str::catlen(t<u64*>, len<u64>) {
 
     s[curlen + len] = '\0'
     return s
-}
 
+}
 Str::cat(t<i8*>) {
     return this.catlen(t,std.strlen(t))
 }
@@ -153,8 +152,8 @@ Str::cpylen( t<i8*>, len<u64>) {
     s[len] = '\0'
     stringsetlen(s, len)
     return s
-}
 
+}
 Str::cpy(t<i8*>) {
     return this.cpylen(t,std.strlen(t))
 }
@@ -310,9 +309,8 @@ Str::catfmt(fmt<i8*>, _args<u64*>...){
     }
     s[i] = 0
     return s
+
 }
-//TODO: return new
-//stringputc
 Str::putc(c<i8>){
     s<i8*> = this
     single<i64> = 1
@@ -325,8 +323,8 @@ Str::putc(c<i8>){
     s[i] = c
     s[i + 1] = 0
     return s
-}
 
+}
 Str::hash64(){
     return std.hash64(this,this.len())
 }

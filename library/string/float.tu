@@ -135,6 +135,7 @@ FloatBytes::format(neg<i32>,dcount<i32>)
 		return this.formatstr
 	}
 	return this.formatstr.sub(0.(i8),this.decn + dcount)
+
 }
 FloatBytes::inf_nan(neg<i32> , mantissa<u64>)
 {
@@ -147,8 +148,8 @@ FloatBytes::inf_nan(neg<i32> , mantissa<u64>)
 	else
 		this.formatstr = S("NaN".(i8))
 	return this.formatstr
-}
 
+}
 FloatBytes::format_itoa(n<i32> , add<i32>)
 {
 	len<u16> = 0
@@ -181,8 +182,8 @@ FloatBytes::format_itoa(n<i32> , add<i32>)
 		this.pos += std.strlen(numstr)
 	}
 	return S(numstr)
-}
 
+}
 FloatBytes::format_init(neg<i32>)
 {
 	i<u16> = 0
@@ -270,8 +271,8 @@ FloatBytes::zero_double(neg<i32>,dcount<i32>)
 			s.putc('0'.(i8))
 	}
 	return s
-}
 
+}
 fn f64tostring(x<f64>,dcount<i32>)
 {
 	x2<u64*> = &x

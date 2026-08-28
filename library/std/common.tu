@@ -62,10 +62,9 @@ export func len(v){
 	}
 	tv<i32> = int(type(v))
 	if tv == int(runtime.Array) {
-		unsafe {
-			a<Array> = v
-			return int(a.used)
-		}
+		// export body is implicit cross-mode (RFC-110); no nested unsafe needed.
+		a<Array> = v
+		return int(a.used)
 	}
 	vv<runtime.Value> = v
 	return len_value(vv)

@@ -2,67 +2,85 @@ use runtime
 use fmt
 use std
 use os
-func hash64(s<runtime.Value>){
-	if s == 0 return int(std.prime64)
+
+// Export facades: dynamic ABI params; bind to typed locals in body (scheme A).
+
+export func hash64(s){
+	sv<runtime.Value> = s
+	if sv == 0 return int(std.prime64)
 	
-	if s.type != runtime.String 
+	if sv.type != runtime.String 
 		os.die("hash64: invalid string type")
-	return int(
-		s.data.(Str).hash64()
-	)
+	return int(std.hash64(sv.data, std.strlen(sv.data)))
 }
-func hash64string(s<runtime.Value>){
-	if s == 0 {
-		return string.new(fromulonglong(std.prime64))
+export func hash64string(s){
+	sv<runtime.Value> = s
+	if sv == 0 {
+		return new(fromulonglong(std.prime64))
 	}
 	
-	if s.type != runtime.String 
+	if sv.type != runtime.String 
 		os.die("hash64: invalid string type")
-	return string.new(
+	return new(
 		fromulonglong(
-			s.data.(Str).hash64()
+			std.hash64(sv.data, std.strlen(sv.data))
 		)
 	)
 }
 
-func new(init<i8*>){
+// Static cross-package API: C string → dynamic String Value (string.new in callers).
+fn new(init<i8*>){
 	return runtime.newobject(
 		runtime.STRING,
 		init,
 		std.hash64(init,std.strlen(init))
 	)
 }
-func newstringfromlen(init<i8*>,l<i32>){
+// Dyn facade when the argument is already a dynamic Value (not a bare i8*).
+export func new_value(init){
+	sv<runtime.Value> = init
+	if sv == null {
+		return new(null)
+	}
+	if sv.type != runtime.String {
+		os.die("string.new_value: invalid string type")
+	}
+	return new(sv.data)
+}
+// Wrap a counted byte buffer as a dynamic String Value (static callers only).
+fn newstringfromlen(init<i8*>, l<i32>){
 	r<i8*> = newlen(init,l)
 	if r == null fmt.println("newlen failed")
 	return runtime.newobject(
 		runtime.STRING,
 		r,
-		r.(Str).hash64()
+		std.hash64(r, l)
 	)
 }
-func sub(v<runtime.Value>,lo){
-	str<Str> = v.data
-	l<i32> = *lo
-	if l > str.len() {
+export func sub(v, lo){
+	sv<runtime.Value> = v
+	lov<runtime.Value> = lo
+	str<i8*> = sv.data
+	l<i32> = lov.data
+	if l > std.strlen(str) {
 		return ""
 	}
 
 	str += l
 	return new(str)
 }
-func split(s<runtime.Value> , se<runtime.Value>) {
+export func split(s, se) {
+	sv<runtime.Value> = s
+	sev<runtime.Value> = se
 	tokens = []
-	sp<i8*> = s.data
-	sep<i8*> = se.data
+	sp<i8*> = sv.data
+	sep<i8*> = sev.data
 
 	elements<i32> = 0
 	start<i64> = 0
 	j<i64> = 0
-	sep1<Str> = sep
-	sp1<Str>  = sp
-	seplen<i32> = sep1.len()
-	len<i32>    = sp1.len()
+	seplen<i32> = std.strlen(sep)
+	len<i32>    = std.strlen(sp)
     if seplen < 1 || len <= 0 return tokens
 
     for (j = 0; j < len - seplen + 1 ; j += 1) {
@@ -83,20 +101,22 @@ func split(s<runtime.Value> , se<runtime.Value>) {
 
 	return tokens
 }
-func index_get(v<runtime.Value>,index<runtime.Value>){
-	if  v.type != runtime.String {
+export func index_get(v, index){
+	sv<runtime.Value> = v
+	idx<runtime.Value> = index
+	if  sv.type != runtime.String {
         fmt.println("warn: string index not string type")
         os.exit(-1)
     }
 
-    if  v == null || v.data == null || index == null {
+    if  sv == null || sv.data == null || idx == null {
         fmt.println("warn: string index is null ,probably something wrong\n")
         os.exit(-1)
     }
 
-	str<i8*> = v.data
-	l<i32> = index.data
-	if l >= str.(Str).len() {
+	str<i8*> = sv.data
+	l<i32> = idx.data
+	if l >= std.strlen(str) {
 		fmt.println("warn: string index out of bound ")
 		return 0
 	}
@@ -105,62 +125,65 @@ func index_get(v<runtime.Value>,index<runtime.Value>){
 	cn<u8> = *str
 	return runtime.newobject(runtime.Char,cn)
 }
-func tostring(num<runtime.Value>){
-	str<Str> = null
-	match num.type {
+export func tostring(num){
+	nv<runtime.Value> = num
+	match nv.type {
 		runtime.Char :{
-			str = empty()
-			str = str.putc(num.data)
-			return string.new(str)
+			buf<i8:2> = null
+			buf[0] = nv.data.(u8)
+			buf[1] = 0
+			return new(&buf)
 		}
-		runtime.String : return num
+		runtime.String : return nv
 		runtime.Int :{
     		buf<i8:21> = null
-    		std.itoa(num.data,&buf,10.(i8)) 
-    		return string.new(&buf)
+    		std.itoa(nv.data,&buf,10.(i8)) 
+    		return new(&buf)
 		}
 		runtime.Float: {
-			fnum<runtime.FloatValue> = num
+			fnum<runtime.FloatValue> = nv
 			s<string.String> = f64tostring(fnum.data,5.(i8))
 			return s.dyn()
 		}
-		_: os.dief("[tostring] unsupport type:%s",runtime.type_string(str))
+		_: os.dief("[tostring] unsupport type:%s",runtime.type_string(nv))
 	}
 }
-func tonumber(str<runtime.Value>){
-	match str.type {
+export func tonumber(str){
+	sv<runtime.Value> = str
+	match sv.type {
 		runtime.String:{
 			base<i8> = 10
-			ret<i64> = std.strtol(str.data,runtime.Null,base)
+			ret<i64> = std.strtol(sv.data,runtime.Null,base)
 			return int(ret) 
 		}
-		runtime.Int:  return str
-		runtime.Char: return int(str.data)
+		runtime.Int:  return sv
+		runtime.Char: return int(sv.data)
 		runtime.Float: {
-			vf<runtime.FloatValue> = str
+			vf<runtime.FloatValue> = sv
 			v<i64> = vf.data
 			return int(v)
 		}
-		_: os.dief("[tonumber] unsupport type:%s",runtime.type_string(str))
+		_: os.dief("[tonumber] unsupport type:%s",runtime.type_string(sv))
 
 	}
 }
-func tofloat(str<runtime.Value>){
-	match str.type {
+export func tofloat(str){
+	sv<runtime.Value> = str
+	match sv.type {
 		runtime.String:{
-        	f<f64> = strtof64(str.data)
+        	f<f64> = strtof64(sv.data)
 			return runtime.newfobject(f)
 		}
 		runtime.Int:  {
-			f<f64> = str.data
+			f<f64> = sv.data
 			return runtime.newfobject(f)
 		}
 		runtime.Char: {
-			f<f64> = str.data
+			f<f64> = sv.data
 			return runtime.newobject(f)
 		}
-		runtime.Float: return str
-		_: os.dief("[tofloat] unsupport type:%s",runtime.type_string(str))
+		runtime.Float: return sv
+		_: os.dief("[tofloat] unsupport type:%s",runtime.type_string(sv))
 
 	}
 }
