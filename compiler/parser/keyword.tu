@@ -165,7 +165,11 @@ Parser::parseModifiers() {
         ast.ASYNC : {
             tx = reader.transaction()
             reader.scan()
-            is_member = reader.curToken == ast.VAR && reader.peek() == ':'
+            nexc<i8> = reader.peek()
+            is_member<i32> = 0
+            if reader.curToken == ast.VAR && nexc == ':' {
+                is_member = 1
+            }
             reader.rollback(tx)
             if exported && is_member {
                 this.panic("pkgmode: export only marks package-level dynamic async")

@@ -156,7 +156,7 @@ Parser::next_expect(tk<i32>,err){
 Parser::expect(tk<i32>,err){
     if(this.scanner.curtoken == tk) return true
     err += "\nexpect:" + ast.tk_to_string(tk)
-    err += "\nfound:" + string.new(this.scanner.curlex)
+    err += "\nfound:" + string.new(this.scanner.curlex.inner)
     err += "\t:" + ast.tk_to_string(this.scanner.curtoken)
     this.check(False,err)
     return false

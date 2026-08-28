@@ -2,11 +2,10 @@
 use os
 
 export func assert(a, b, str){
-	check<u8> = str
 	if  a != b  {
 		expr = "assert: " + a + " != " + b
 		println(expr)
-		if  int(check)  != null {
+		if  str != null {
 			msg  = "warmsg: " + str
 			println(msg)
 		}

@@ -33,7 +33,10 @@ fn pkgmode_check_call(callee) {
 	to = callee.package
 	if from == to {
 		if from.pkg_mode == parser.PkgModeStatic && cur.isDynamicDef() && callee.isStaticDef() && !pkgmode_in_unsafe() {
-			ast.parse_err("pkgmode: dynamic facade calling static symbol '%s' requires unsafe\n", callee.name)
+			// Module init (renamed init.N during compile) wires static helpers.
+			if cur.name != "init" && !utils.str_starts_with(cur.name, "init.") {
+				ast.parse_err("pkgmode: dynamic facade calling static symbol '%s' requires unsafe\n", callee.name)
+			}
 		}
 		return
 	}

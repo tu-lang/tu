@@ -128,6 +128,10 @@ Parser::forbidStaticSyntax() {
     if this.pkg.pkg_mode == PkgModeMixed return false
     if this.pkg.pkg_mode == PkgModeDyn return true
     if this.currentFunc == null return false
+    // Static engine packages: module init wires vtables / one-shot static setup.
+    if this.pkg.pkg_mode == PkgModeStatic && this.currentFunc.name == "init" {
+        return false
+    }
     return this.currentFunc.isDynamicDef()
 }
 
@@ -152,10 +156,14 @@ Parser::parse()
                 this.addFunc(f.name,f)
             }
             ast.ASYNC: {
-                tx = this.scanner.transaction()
-                this.scanner.scan()
-                is_member = this.scanner.curToken == ast.VAR && this.scanner.peek() == ':'
-                this.scanner.rollback(tx)
+                tx = reader.transaction()
+                reader.scan()
+                nexc<i8> = reader.peek()
+                is_member<i32> = 0
+                if reader.curToken == ast.VAR && nexc == ':' {
+                    is_member = 1
+                }
+                reader.rollback(tx)
                 f = this.parseAsyncDef()
                 if f != null && this.pkg.pkg_mode == PkgModeStatic && !is_member && !f.exported {
                     this.panic("pkgmode: package-level async in static package requires export")
