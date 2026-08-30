@@ -96,8 +96,8 @@ File::readElf(file)
 		}
 	}
 	utils.fclose(fp)
-}
 
+}
 File::getSymIndex(symname)
 {
 	index = 0

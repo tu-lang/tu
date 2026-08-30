@@ -26,7 +26,7 @@ mem Sigactiont  {
 // Install a SA_SIGINFO handler. fc must be a raw code PC (e.g.
 // std.segsegvrecv_pc()), not a Tu func value — those are heap descriptors.
 // Darwin's std.rt_sigaction translates this layout and injects std_sigtramp.
-func setsignal(i<u32> , fc<u64>) {
+fn setsignal(i<u32> , fc<u64>) {
 	sa<Sigactiont> = new Sigactiont
 	sa.sa_flags = _SA_SIGINFO | _SA_RESTART | _SA_RESTORER
 	sa.sa_mask = EMPTY_MASK
