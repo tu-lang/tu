@@ -93,7 +93,7 @@ fn objfuncofs(hdr<VObjHeader>, hid<u64>){
     return Null
 }
 
-func newfuncobject(entry<u64>,asize<i32>,isvarf<i32>,retsize<i32>,capture<i32>){
+fn newfuncobject(entry<u64>,asize<i32>,isvarf<i32>,retsize<i32>,capture<i32>){
     hid<i64> = 0 
     //need capture
     if capture {
@@ -123,7 +123,7 @@ func newfuncobject(entry<u64>,asize<i32>,isvarf<i32>,retsize<i32>,capture<i32>){
     } 
 }
 
-func newclsobject(vid<VObjHeader>, objsize<i64>)
+fn newclsobject(vid<VObjHeader>, objsize<i64>)
 {
     if vid == null dief("new cls obj is null".(i8))
     if objsize < 0 dief("new cls size is invalid".(i8))
@@ -151,7 +151,7 @@ func newclsobject(vid<VObjHeader>, objsize<i64>)
     return obj
 }
 
-func object_parent_get2(obj<ObjectValue>){
+fn object_parent_get2(obj<ObjectValue>){
     if obj == null {
         dief("[error] super()  obj is null".(i8))
     }
