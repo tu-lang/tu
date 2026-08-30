@@ -42,6 +42,8 @@ fn embed_fs_from_bits(bits<u64>) EmbedFS {
 	return bits.(EmbedFS)
 }
 
+// Compiler ABI entry for embed() codegen (builtin.tu → runtime_embed_box). Do not
+// change param types without updating compiler/gen/builtin.tu.
 fn embed_box(table<u64>, count<i32>) {
 	fs<EmbedFS> = embed_fs_new(table, count)
 	return new EmbedFSObj(fs)
@@ -150,19 +152,8 @@ EmbedFS::entry(i<i32>) i32, i8*, u64, i8*, u64 {
 	return 0, npp, nl, dpp, dl
 }
 
-EmbedFSObj::read(name) {
-	h<EmbedFS> = this.inner
-	err<i32>, data<i8*>, lenu<u64> = h.read(name)
-	if err != 0 {
-		return 1, ""
-	}
-	ln<i32> = lenu.(i32)
-	body = string.newstringfromlen(data, ln)
-	return 0, body
-}
-
-EmbedFSObj::list(dir) {
-	h<EmbedFS> = this.inner
+// List helper; called only from export func embed_list body.
+fn embed_mem_list(fs<EmbedFS>, dir) {
 	prefix = ""
 	if dir != null {
 		prefix = dir
@@ -173,8 +164,8 @@ EmbedFSObj::list(dir) {
 		pre_n = 0
 	}
 	arr = []
-	t<u64> = h.table
-	c<i32> = h.nentries
+	t<u64> = fs.table
+	c<i32> = fs.nentries
 	i<i32> = 0
 	while i < c {
 		base<u64*> = t
@@ -191,7 +182,6 @@ EmbedFSObj::list(dir) {
 				w<u64> = pre_p
 				pn<u64> = pre_n.(u64)
 				if std.memcmp(np, w, pn) == 0 {
-					// Require '/' separator after prefix (path under dir).
 					sep_off<i32> = pre_n
 					sep_ptr<u64> = np + sep_off.(u64)
 					sep<i8*> = sep_ptr
@@ -210,4 +200,36 @@ EmbedFSObj::list(dir) {
 		i += 1
 	}
 	return 0, arr
+}
+
+export func embed_read(inner, name) {
+	fs<EmbedFS> = inner.(EmbedFS)
+	p<i8*> = embed_dyn_name_ptr(name)
+	n<i32> = embed_dyn_name_len(name)
+	z<i8*> = 0
+	if p == 0 {
+		return 1, ""
+	}
+	err<i32>, data<i8*>, lenu<u64> = embed_find(fs.table, fs.nentries, p, n)
+	if err != 0 {
+		return 1, ""
+	}
+	ln<i32> = lenu.(i32)
+	body = string.newstringfromlen(data, ln)
+	return 0, body
+}
+
+export func embed_list(inner, dir) {
+	fs<EmbedFS> = inner.(EmbedFS)
+	return embed_mem_list(fs, dir)
+}
+
+EmbedFSObj::read(name) {
+	err, body = embed_read(this.inner, name)
+	return err, body
+}
+
+EmbedFSObj::list(dir) {
+	err, names = embed_list(this.inner, dir)
+	return err, names
 }

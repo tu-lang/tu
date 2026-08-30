@@ -162,7 +162,7 @@ fn parkunlock(lk<MutexInter>){
 
 // Spawn an OS thread running fc; returns Core* bits for core_join.
 // Callers that never join may ignore the return (fire-and-forget).
-func newcore(fc<u64>) u64 {
+fn newcore(fc<u64>) u64 {
 	c<Core> = new Core()
     c.init()
 	c.cfn = fc
@@ -181,7 +181,7 @@ func newcore(fc<u64>) u64 {
 	return c.(u64)
 }
 
-func newosthread(fc<u64> , arg<i64*> , stk<i64*>, tls<i64*>, ctid<u32*>){
+fn newosthread(fc<u64> , arg<i64*> , stk<i64*>, tls<i64*>, ctid<u32*>){
 	cloneFlags<u32> = 
         SIGCHLD  | CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID |
         CLONE_VM | CLONE_FS | 

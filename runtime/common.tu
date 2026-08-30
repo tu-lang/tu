@@ -4,8 +4,6 @@ use os
 use string
 use runtime.debug
 
-// cfg(mod_static,true)
-
 gcBitsChunkBytes<u64>  = 65536
 gcBitsHeaderBytes<u64> = 16
 arenaBaseOffset<u64> =  140737488355328
@@ -49,8 +47,8 @@ _GCmark<i64> =  2
 _GCmarktermination<i64> =  3
 ARRAY_SIZE<i64> =  8
 
-heap_<Heap:> 
-emptyspan<Span:>
+heap_<Heap:> = null
+emptyspan<Span:> = null
 //print log
 enable_trace<i64> = 0
 enable_debug_gc<i64> = 0

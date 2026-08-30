@@ -183,7 +183,7 @@ fn exc_nest() i32 {
 }
 
 // Dyn helper: return in-flight exception as object Value* (or null).
-func exc_current_obj(){
+fn exc_current_obj(){
 	bits<u64> = exc_current()
 	if bits == 0.(u64) {
 		return null
