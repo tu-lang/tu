@@ -2,7 +2,7 @@
 // OS-thread capture_stack remains the production backtrace path.
 
 // Returns empty frames until async stack capture is enabled.
-func async_stack(max){
+fn async_stack(max){
 	return []
 }
 

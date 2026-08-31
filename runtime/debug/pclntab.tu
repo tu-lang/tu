@@ -164,7 +164,7 @@ fn funcname(r<PclnRec>) {
     return string.new(r.name)
 }
 
-func pcln_format_pc(pc){
+fn pcln_format_pc(pc){
     r<PclnRec> = findfunc(pc.(u64))
     if r == null {
         return int(pc) + ":??"

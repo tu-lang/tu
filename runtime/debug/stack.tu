@@ -16,7 +16,7 @@ mem Frame {
 
 FRAME_SIZE<u64> = 24.(u64)
 
-func callerpc(){
+fn callerpc(){
 	sinfo = stack(CUR_CALLER)
 	if std.len(sinfo) >= 3 {
 		return sinfo[2]
@@ -128,7 +128,7 @@ fn capture_stack_probe(max<i32>) (i32, i32, u64) {
 	return n, trunc, pc0
 }
 
-func stack(level<i32>){
+fn stack(level<i32>){
 	if level <= 0 {
 		return []
 	}
@@ -159,7 +159,7 @@ func stack(level<i32>){
 }
 
 // Return formatted frame for caller skip levels above this helper.
-func Caller(skip<i32>){
+fn Caller(skip<i32>){
 	level<i32> = skip + 3
 	if level < 3 {
 		level = 3
@@ -182,7 +182,7 @@ func Caller(skip<i32>){
 }
 
 // File path of the caller at skip levels above this helper.
-func CallerFile(skip<i32>){
+fn CallerFile(skip<i32>){
 	pc<u64> = caller_pc_at(skip)
 	if pc == 0.(u64) {
 		return ""
@@ -195,7 +195,7 @@ func CallerFile(skip<i32>){
 }
 
 // Source line of the caller at skip levels above this helper.
-func CallerLine(skip<i32>){
+fn CallerLine(skip<i32>){
 	pc<u64> = caller_pc_at(skip)
 	if pc == 0.(u64) {
 		return 0
