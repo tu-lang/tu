@@ -6,7 +6,7 @@ chars<std.Array> = null
 strings<map.Rbtree> = null
 enable_object_pool<i64> = 0
 
-func string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.RbtreeNode>)
+fn string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.RbtreeNode>)
 {
     p<u64*> = null
 
@@ -41,7 +41,7 @@ func string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.Rbtre
     return map.Insert
 }
 
-func pools_init(){
+fn pools_init(){
 	//init array
 	chars = std.NewArray(256.(i8),8.(i8))
 	for i<i32> = 0 ; i < 256 ; i += 1 {

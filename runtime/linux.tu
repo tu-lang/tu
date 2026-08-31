@@ -279,8 +279,8 @@ mem Palloc {
     u64    off
 }
 
-globalAlloc<Palloc>   = null
-ga_lock<MutexInter> = null
+globalAlloc<Palloc:>   = null
+ga_lock<MutexInter:>
 persistentChunks<u64*> = 0
 
 fn type_fixalloc_first(h<Heap> , s<Span>)

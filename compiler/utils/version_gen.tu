@@ -3,7 +3,7 @@
 
 use fmt
 
-TU_TOOL_VERSION = "1.2.3"
+TU_TOOL_VERSION = "1.2.4"
 
 fn tool_version() {
 	return TU_TOOL_VERSION
@@ -18,7 +18,7 @@ fn print_version_report(target_os) {
 	fmt.printf("  compiler    : %s\n", "1.2.3")
 	fmt.printf("  asmer       : %s\n", "1.2.3")
 	fmt.printf("  linker      : %s\n", "1.2.3")
-	fmt.printf("Runtime       : %s\n", "1.2.3")
+	fmt.printf("Runtime       : %s\n", "1.2.4")
 	fmt.printf("Syscall       : %s\n", "1.2.3")
 	fmt.printf("Platform      : %s\n", "1.2.3")
 	fmt.printf("Library       : %s\n", "1.2.3")

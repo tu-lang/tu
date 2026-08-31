@@ -88,7 +88,7 @@ mem TreapNode {
 mem Treap {
     TreapNode* root
 }
-func rotateLeft(root<Treap>,x<TreapNode>)
+fn rotateLeft(root<Treap>,x<TreapNode>)
 {
 	p<TreapNode> = x.parent
 	a<TreapNode> = null
@@ -128,7 +128,7 @@ func rotateLeft(root<Treap>,x<TreapNode>)
 	}
 }
 
-func rotateRight(root<Treap>,y<TreapNode>)
+fn rotateRight(root<Treap>,y<TreapNode>)
 {
 
 	p<TreapNode> = y.parent

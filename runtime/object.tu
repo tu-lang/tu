@@ -4,7 +4,7 @@ use string
 use std
 use std.map
 
-func newobject(type<i32> , data<u64*>,hk<u64>)
+fn newobject(type<i32> , data<u64*>,hk<u64>)
 {
     match type {
         Int:   {
@@ -87,14 +87,14 @@ func newobject(type<i32> , data<u64*>,hk<u64>)
     } 
     return Null
 }
-func newfobject(data<f64>)
+fn newfobject(data<f64>)
 {
     return new FloatValue {
         type : Float,
         data : data
     }
 }
-func newinherit_object(typeid<i32>,father<Value>){
+fn newinherit_object(typeid<i32>,father<Value>){
     ret<Value> = new Value
     ret.type   = Object
 
@@ -108,7 +108,7 @@ func newinherit_object(typeid<i32>,father<Value>){
 
     return ret
 }
-func object_parent_get(obj<Value>){
+fn object_parent_get(obj<Value>){
     if obj == null return obj
     if obj.type != Object {
         println(*"[warn] super()  not object")
@@ -127,14 +127,14 @@ func object_parent_get(obj<Value>){
 // NOTICE: get_object_value called by compiler
 // so it didn't save the %rdi,%rsi,%rdx,%rcx,%r8,%r9
 // don't do anything in those who called by compiler,will cause terriable problem
-func get_object_value(obj<Value>){
+fn get_object_value(obj<Value>){
     if obj == null {
         return Null
     }
     return obj.data
 }
 
-func member_insert_or_update(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.RbtreeNode>)
+fn member_insert_or_update(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.RbtreeNode>)
 {
 	// RbtreeNode **
 	p<u64*> = null

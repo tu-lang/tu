@@ -17,7 +17,7 @@ W_PROT_READWRITE<i64> = 0x3
 W_MAP_ANON_PRIVATE<i64> = 0x22
 W_MAP_ANON_PRIVATE_FIXED<i64> = 0x32
 
-func sys_fixalloc(size<u64> , align<u64>)
+fn sys_fixalloc(size<u64> , align<u64>)
 {
 	p<u64> = null
 	maxBlock<u64> = 65536
@@ -74,7 +74,7 @@ func sys_fixalloc(size<u64> , align<u64>)
 }
 
 adviseUnused<u32> = 0x8
-func sys_alloc(n<u64>)
+fn sys_alloc(n<u64>)
 {
 	p<u64> = std.mmap(0.(i8), n, W_PROT_READWRITE, W_MAP_ANON_PRIVATE, -1.(i8), 0.(i8))
 	if p == _EACCES {
@@ -86,7 +86,7 @@ func sys_alloc(n<u64>)
 	return p
 }
 
-func sys_unused(v<u64> , n<u64>)
+fn sys_unused(v<u64> , n<u64>)
 {
 	if ( v & (physPageSize - 1) != 0 || n & (physPageSize - 1) != 0) {
 		dief("unaligned sysUnused".(i8))
@@ -94,19 +94,19 @@ func sys_unused(v<u64> , n<u64>)
 	std.madvise(v, n, adviseUnused)
 }
 
-func sys_used(v<u64>,n<u64>)
+fn sys_used(v<u64>,n<u64>)
 {
 }
 
-func sys_free(v<u64>,n<u64>)
+fn sys_free(v<u64>,n<u64>)
 {
 	std.munmap(v, n)
 }
-func fault(v<u64>,n<u64>)
+fn fault(v<u64>,n<u64>)
 {
 	std.mmap(v, n, _PROT_NONE, W_MAP_ANON_PRIVATE_FIXED, -1.(i8), 0.(i8))
 }
-func sys_reserve(v<u64>,n<u64>)
+fn sys_reserve(v<u64>,n<u64>)
 {
 	p<u64> = std.mmap(v, n, _PROT_NONE, W_MAP_ANON_PRIVATE, -1.(i8), 0.(i8))
 	if p == 0 {
@@ -121,7 +121,7 @@ func sys_reserve(v<u64>,n<u64>)
 
 // VirtualFree(MEM_RELEASE) only accepts the base of a whole reservation.
 // Partial munmap (Linux/Darwin reserveAligned) is invalid on Windows.
-func reserveAligned(v<u64> , ssize<u64*> , align<u64>)
+fn reserveAligned(v<u64> , ssize<u64*> , align<u64>)
 {
 	size<u64> = *ssize
 	p<u64> = 0
@@ -161,7 +161,7 @@ func reserveAligned(v<u64> , ssize<u64*> , align<u64>)
 	return 0.(i8)
 }
 
-func sys_map(v<u64>,n<u64>)
+fn sys_map(v<u64>,n<u64>)
 {
 	p<u64> = std.mmap(v, n, W_PROT_READWRITE, W_MAP_ANON_PRIVATE_FIXED, -1.(i8), 0.(i8))
 	if p == _ENOMEM {
@@ -203,11 +203,11 @@ fn futexwakeup(addr<u32*> , cnt<u32>) {
     *panic = 0x1006
 }
 
-func round(n<u64>,a<u64>)
+fn round(n<u64>,a<u64>)
 {
     return (n + a - 1) &~ (a - 1)
 }
-func fastrand()
+fn fastrand()
 {
 	c<Core> = core()
     s1<u32> = 0
@@ -220,7 +220,7 @@ func fastrand()
     c.fastrand[1] = s1
     return s0 + s1
 }
-func ctz64(x<u64>)
+fn ctz64(x<u64>)
 {
     x &= 0 - x
     y<i32>  = x * deBruijn64 >> 58
@@ -301,7 +301,6 @@ Fixalloc::alloc()
     this.inuse  += this.size
     return v
 }
-
 mem LinearAlloc { u64   next , mapped , end}
 
 LinearAlloc::alloc(size<u64>,align<u64>)
@@ -318,7 +317,6 @@ LinearAlloc::alloc(size<u64>,align<u64>)
 	}
 	return p
 }
-
 fn segsegv_rip(ctxt<u64>) u64 {
 	return 0.(u64)
 }
