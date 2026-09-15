@@ -8,17 +8,17 @@ use runtime.debug
 
 // scheduler init
 coretlssize<i64> = 48
-core0<Core:>
-coretls<i64:6>
-sched<Sched:>
+core0<Core:> = null
+coretls<i64:6> = 0
+sched<Sched:> = null
 
 // start at core space init
-ori_envp<u64*>
-ori_argc<u64>
-ori_argv<u64>
-ori_envs<u64>
-ori_execout<u64*>
-self_path<i8*>
+ori_envp<u64*> = null
+ori_argc<u64> = 0
+ori_argv<u64> = 0
+ori_envs<u64> = 0
+ori_execout<u64*> = null
+self_path<i8*> = null
 ErrorCode<i32> = -1
 fn gcmentryptr() 
 
