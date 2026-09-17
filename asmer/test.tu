@@ -8,7 +8,7 @@ use asmer.parser
 use asmer.ast
 use asmer.instruct
 
-func codegen(filename){
+unsafe fn codegen(filename){
     fmt.printf("[buiding] %s\n",filename)
     // return
     exb = string.split(filename,".s")
@@ -71,7 +71,7 @@ func codegen(filename){
     fmt.printf("[all test passed] %s\n",filename )
 }
 
-func check_balign_layout(gen){
+unsafe fn check_balign_layout(gen){
     // "x\\0"(2)+pad6→aligned8@8; +"ab\\0"(3)=19+pad1→aligned4@20;
     // +long4=24→aligned_p2@24; +quad8=32→already8@32.
     pgen<parser.Parser> = gen
@@ -83,7 +83,7 @@ func check_balign_layout(gen){
     expect_one(pgen, "already8", 32.(i32))
 }
 
-func check_incbin_layout(gen){
+unsafe fn check_incbin_layout(gen){
     // payload ABC\\0DE (6) then .byte 0x7a at 6
     pgen<parser.Parser> = gen
     expect_one(pgen, "blob", 0.(i32))
@@ -112,7 +112,7 @@ func check_incbin_layout(gen){
     os.dief("[incbin] missing sym blob")
 }
 
-func expect_one(pgen<parser.Parser>, name, want<i32>){
+unsafe fn expect_one(pgen<parser.Parser>, name, want<i32>){
     data_symbol<std.Array> = pgen.symtable.data_symbol
     for(i<i32> = 0; i < data_symbol.len(); i += 1) {
         sym<ast.Sym> = data_symbol.addr[i]
@@ -127,7 +127,7 @@ func expect_one(pgen<parser.Parser>, name, want<i32>){
     os.dief("[balign] missing sym %s", name)
 }
 
-func main()
+unsafe fn main()
 {
     if(os.argc() > 1) return codegen(os.argv()[0])
     dir = "./asmer/cases"

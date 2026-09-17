@@ -15,7 +15,7 @@ scan_files
 
 as_target = 0
 
-func print_help () {
+unsafe fn print_help () {
     fmt.println(
         "usage: ./ta [options] file.s  可用的选项:\n" + 
         "  *.s      翻译汇编为cpu指令，并生成可重定向elf二进制文件\n" + 
@@ -25,7 +25,7 @@ func print_help () {
         "  --target linux|darwin|windows   object backend (default: host / TU_TARGET)\n"
     )
 }
-func asmergen(){
+unsafe fn asmergen(){
     utils.debug(*"main.asmergen")
     for(dir : scan_dirs){
         if !std.is_dir(dir) os.die(dir + " not exist")
@@ -62,7 +62,7 @@ func asmergen(){
     utils.msg(100,"Generate all Passed")
 }
 
-func parse_as_target(name) {
+unsafe fn parse_as_target(name) {
     asm.requested_target = name
     if name == "darwin" || name == "macos" || name == "osx" {
         // Dynamic return must be a boxed int; native TARGET_* (0) is a null Value*.
@@ -76,7 +76,7 @@ func parse_as_target(name) {
     }
     os.die("unknown --target=" + name)
 }
-func as_target_default() {
+unsafe fn as_target_default() {
     for (k, v : os.envs()) {
         arr = string.split(v, "=")
         if std.len(arr) >= 2 {
@@ -96,7 +96,7 @@ func as_target_default() {
         asm.requested_target = "linux"
     }
 }
-func command() {
+unsafe fn command() {
     scan_dirs = []
     scan_files = []
     as_target_default()
@@ -163,7 +163,7 @@ func command() {
         }
     }
 }
-func main() {
+unsafe fn main() {
     if  os.argc() < 1 {
         return print_help()
     }

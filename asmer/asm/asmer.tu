@@ -33,12 +33,14 @@ Asmer::init(filename)
     // before parse even starts.
     this.out = 0
     if this.target != TARGET_DARWIN && this.target != TARGET_WINDOWS {
-        outname    = this.parser.outname
-        fp<i32>    = utils.fopen(outname,"w+")
-        if fp <= 0 {
-            utils.error("open failed " + outname)
+        unsafe {
+            outname = this.parser.outname
+            fp<i32> = utils.fopen(outname,"w+")
+            if fp <= 0 {
+                utils.error("open failed " + outname)
+            }
+            this.out = fp
         }
-        this.out   = fp
     }
 }
 Asmer::close(){
@@ -54,16 +56,20 @@ Asmer::execute() {
     this.data = this.parser.data_size
     if this.target == TARGET_DARWIN {
         this.close()
-        outp = this.parser.outname
-        darwin.emit_object(this.parser, this.elf, outp)
+        unsafe {
+            outp = this.parser.outname
+            darwin.emit_object(this.parser, this.elf, outp)
+        }
         return
     }
     if this.target == TARGET_WINDOWS {
         this.close()
-        outp = this.parser.outname
-        rc<i32> = peff.emit_object(this.parser, this.elf, outp)
-        if rc != 0 {
-            utils.error("peff COFF emit failed: " + outp)
+        unsafe {
+            outp = this.parser.outname
+            rc<i32> = peff.emit_object(this.parser, this.elf, outp)
+            if rc != 0 {
+                utils.error("peff COFF emit failed: " + outp)
+            }
         }
         return
     }
@@ -124,9 +130,11 @@ Asmer::writeElf() {
     this.check(this.bytes == offset,"3 bytes != offset :" + int(this.bytes) + " : " + int(offset))
     shdrTab<map.Map> = this.elf.shdrTab
     for(i<i32> = 0 ; i < this.elf.shdrNames.len() ; i += 1){
-        name = this.elf.shdrNames.addr[i]
-        sh<elf.Elf64_Shdr> = shdrTab.find(name)
-        this.writeBytes(sh,this.elf.ehdr.e_shentsize)
+        unsafe {
+            name = this.elf.shdrNames.addr[i]
+            sh<elf.Elf64_Shdr> = shdrTab.find(name)
+            this.writeBytes(sh,this.elf.ehdr.e_shentsize)
+        }
     }
     // FIXME: offset += this.elf.ehdr.e_shentsize * 8
     offset += ehdr.e_shentsize * 8
@@ -148,15 +156,19 @@ Asmer::writeElf() {
     this.check(this.bytes == offset)
 
     for(i<i32> = 0 ; i < this.elf.relTextTab.len() ; i += 1){
-        rel = this.elf.relTextTab.addr[i]
-        this.writeBytes(rel,sizeof(elf.Elf64_Rela))
+        unsafe {
+            rel = this.elf.relTextTab.addr[i]
+            this.writeBytes(rel,sizeof(elf.Elf64_Rela))
+        }
     }
     offset += this.elf.relTextTab.len() * sizeof(elf.Elf64_Rela)
     this.check(this.bytes == offset)
 
     for(i<i32> = 0 ; i < this.elf.relDataTab.len() ;i += 1){
-        rel = this.elf.relDataTab.addr[i]
-        this.writeBytes(rel,sizeof(elf.Elf64_Rela))
+        unsafe {
+            rel = this.elf.relDataTab.addr[i]
+            this.writeBytes(rel,sizeof(elf.Elf64_Rela))
+        }
     }
     offset += this.elf.relDataTab.len() * sizeof(elf.Elf64_Rela)
     this.check(this.bytes == offset)
