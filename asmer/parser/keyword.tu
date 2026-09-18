@@ -12,7 +12,7 @@ Parser::parseGlobal() {
     this.check(this.scanner.scan() == ast.KW_LABEL,"should be label")
 
     labelname<string.String> = this.scanner.curlex
-    sym<ast.Sym> = ast.newSym(labelname, False)
+    sym<ast.Sym> = ast.newSym(labelname, false)
     sym.global = true
     this.symtable.addSym(sym)
 
@@ -60,7 +60,7 @@ Parser::parseLabel() {
         ast.KW_INCBIN:
             return this.parseIncbin(labelname)
         ast.KW_LABEL:{
-            sym = ast.newSym(labelname, False)
+            sym = ast.newSym(labelname, false)
             this.symtable.addSym(sym)
 
             fc<ast.Function> = new ast.Function(labelname)
@@ -69,7 +69,7 @@ Parser::parseLabel() {
         }
     }
 
-    sym = ast.newSym(labelname, False)
+    sym = ast.newSym(labelname, false)
     this.symtable.addSym(sym)
     fc<ast.Function> = this.parseFunction(labelname)
     this.funcs.push(fc)
@@ -129,48 +129,75 @@ Parser::parseString(labelname<string.String>) {
     //next
     this.scanner.scan()
 }
+
+// Parent dir with trailing '/'; no slash → "./" (for joining a relative .incbin path).
+fn path_dir_slash(p<string.String>) string.String {
+    n<i32> = p.len()
+    if n == 0 {
+        return string.S(*"./")
+    }
+    s<i8*> = p.str()
+    slash<i32> = -1
+    i<i32> = 0
+    while i < n {
+        if s[i] == '/' {
+            slash = i
+        }
+        i += 1
+    }
+    if slash < 0 {
+        return string.S(*"./")
+    }
+    return p.sub(0, slash + 1)
+}
+
 Parser::parseIncbin(labelname<string.String>) {
     this.check(this.scanner.curtoken == ast.KW_INCBIN, "should be .incbin")
     this.check(this.scanner.scan() == ast.TK_STRING, ".incbin needs a quoted path")
-    // curlex is string.String*; filepath slots hold dyn strings (same as Scanner::init).
-    path = this.scanner.curlex.dyn()
-    full = path
-    if std.len(path) == 0 || path[0] != '/' {
-        // Do not call .str() on this.filepath — it is a dyn Value stored in a String* field.
-        fp = this.filepath
-        slash = -1
-        i = 0
-        n = std.len(fp)
-        while i < n {
-            if fp[i] == '/' {
-                slash = i
-            }
-            i += 1
+
+    path<string.String> = this.scanner.curlex
+    full<string.String> = path
+    pc<i8*> = path.str()
+    if path.len() == 0 || *pc != '/' {
+        // CLI asm path is still a dyn Value in this.filepath; convert once then join statically.
+        base<string.String> = null
+        unsafe {
+            fp = this.filepath
+            base = string.S(*fp)
         }
-        dir = "./"
-        if slash >= 0 {
-            dir = ""
-            j = 0
-            end = slash + 1
-            while j < end {
-                dir += fp[j]
-                j += 1
-            }
+        dir<string.String> = path_dir_slash(base)
+        full = dir.dup()
+        full.cat(path)
+    }
+
+    fd<i64> = std.fopen(full.str(), *"r")
+    if fd == null || fd < 0 {
+        unsafe {
+            utils.errorf(".incbin cannot open: %s", full.str())
         }
-        full = dir + path
     }
-    fs = new std.File(full)
-    if !fs.IsOpen() {
-        os.die(".incbin cannot open: " + full)
+    sz64<i64> = std.fseek(fd, 0, std.SEEK_END)
+    std.fseek(fd, 0, std.SEEK_SET)
+    if sz64 < 0 {
+        std.fclose(fd)
+        unsafe {
+            utils.errorf(".incbin size failed: %s", full.str())
+        }
     }
-    buf<i8*> = fs.ReadAllNative()
-    if buf == 0 {
-        os.die(".incbin read failed: " + full)
+    sz<i32> = sz64.(i32)
+    alloc_n<i32> = sz + 1
+    buf<u64*> = new alloc_n
+    read_n<i64> = std.read(fd, buf, sz.(u64))
+    std.fclose(fd)
+    if read_n != sz64 {
+        unsafe {
+            utils.errorf(".incbin read failed: %s", full.str())
+        }
     }
-    szp = fs.size
-    sz<i32> = *szp
-    fs.Close()
-    sym<ast.Sym> = ast.newBinSym(labelname, buf, sz, this.data_size)
+    raw_bits<u64> = buf.(u64)
+    raw<i8*> = raw_bits
+
+    sym<ast.Sym> = ast.newBinSym(labelname, raw, sz, this.data_size)
     this.data_size += sz
     this.symtable.addSym(sym)
     this.scanner.scan()

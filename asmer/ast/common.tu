@@ -7,109 +7,148 @@ use fmt
 True<i64>  = 1
 False<i64> = 0
 
-func r8islow(tk<i32>){
-    if (tk >= KW_RAX && tk < KW_R8 ) || tk == KW_RIP return true
-    if tk >= KW_XMM0 && tk < KW_XMM8  return true
+// Register / opcode predicates: static fn returning i32.
+// true/false are cast to 1/0 by return-type staticCompile (not dyn bool objects).
+
+fn r8islow(tk<i32>) i32 {
+    if (tk >= KW_RAX && tk < KW_R8) || tk == KW_RIP {
+        return true
+    }
+    if tk >= KW_XMM0 && tk < KW_XMM8 {
+        return true
+    }
     return false
 }
-func r8ishigh(tk<i32>){
-    if tk >= KW_R8 && tk <= KW_R15 return true
-    if tk >= KW_XMM8 && tk <= KW_XMM15 return true
+fn r8ishigh(tk<i32>) i32 {
+    if tk >= KW_R8 && tk <= KW_R15 {
+        return true
+    }
+    if tk >= KW_XMM8 && tk <= KW_XMM15 {
+        return true
+    }
     return false
 }
 // 32-bit forms of r8-r15; need REX.B/R but not REX.W
-func r4ishigh(tk<i32>){
-    if tk >= KW_R8D && tk <= KW_R15D return true
+fn r4ishigh(tk<i32>) i32 {
+    if tk >= KW_R8D && tk <= KW_R15D {
+        return true
+    }
     return false
 }
 // rm low-3-bits: rsp/r12/esp/r12d must emit SIB.
-func rm_needs_sib(tk<i32>){
-    if tk == KW_RSP || tk == KW_ESP || tk == KW_R12 || tk == KW_R12D return true
+fn rm_needs_sib(tk<i32>) i32 {
+    if tk == KW_RSP || tk == KW_ESP || tk == KW_R12 || tk == KW_R12D {
+        return true
+    }
     return false
 }
 // rbp/r13/ebp/r13d: mod=00 is RIP-relative, not base-only.
-func rm_needs_disp0(tk<i32>){
-    if tk == KW_RBP || tk == KW_EBP || tk == KW_R13 || tk == KW_R13D return true
+fn rm_needs_disp0(tk<i32>) i32 {
+    if tk == KW_RBP || tk == KW_EBP || tk == KW_R13 || tk == KW_R13D {
+        return true
+    }
     return false
 }
-func isr8(tk<i32>){
-    if(r8ishigh(tk) || r8islow(tk)) return true 
+fn isr8(tk<i32>) i32 {
+    if r8ishigh(tk) || r8islow(tk) {
+        return true
+    }
     return false
 }
-func isr4(tk<i32>){
-    if(tk >= KW_EAX && tk <= KW_EDI) return true
-    if r4ishigh(tk) return true
+fn isr4(tk<i32>) i32 {
+    if tk >= KW_EAX && tk <= KW_EDI {
+        return true
+    }
+    if r4ishigh(tk) {
+        return true
+    }
     return false
 }
-fn isr2(tk<i32>){
-    if tk == KW_AX return true
+fn isr2(tk<i32>) i32 {
+    if tk == KW_AX {
+        return true
+    }
     return false
 }
-fn isfreg(tk<i32>){
-    if tk >= KW_XMM0 && tk <= KW_XMM15 return true
+fn isfreg(tk<i32>) i32 {
+    if tk >= KW_XMM0 && tk <= KW_XMM15 {
+        return true
+    }
     return false
 }
-fn isfreglow(tk<i32>){
-    if tk >= KW_XMM0 && tk < KW_XMM8 return true
+fn isfreglow(tk<i32>) i32 {
+    if tk >= KW_XMM0 && tk < KW_XMM8 {
+        return true
+    }
     return false
 }
-fn isfreghi(tk<i32>){
-    if tk >= KW_XMM8 && tk <= KW_XMM15 return true
+fn isfreghi(tk<i32>) i32 {
+    if tk >= KW_XMM8 && tk <= KW_XMM15 {
+        return true
+    }
     return false
 }
-func isr1(tk<i32>){
-    if(tk >= KW_AL && tk <= KW_BH) return true
+fn isr1(tk<i32>) i32 {
+    if tk >= KW_AL && tk <= KW_BH {
+        return true
+    }
     return false
 }
-fn isfloatinst(ty<i32> , dword<i32*>) {
+fn isfloatinst(ty<i32>, dword<i32*>) i32 {
     *dword = 0
     match ty {
-        KW_MOVSD | KW_ADDSD | KW_SUBSD | KW_MULSD | KW_DIVSD :{
+        KW_MOVSD | KW_ADDSD | KW_SUBSD | KW_MULSD | KW_DIVSD : {
             *dword = 1
             return true
         }
-        KW_MOVSS | KW_ADDSS | KW_SUBSS | KW_MULSS | KW_DIVSS :{
+        KW_MOVSS | KW_ADDSS | KW_SUBSS | KW_MULSS | KW_DIVSS : {
             *dword = 0
             return true
         }
     }
     return false
 }
-func typesize(ty<i32>){
+fn typesize(ty<i32>) i32 {
     match ty {
-        KW_QUAD:  return 8.(i8)
-        KW_LONG:  return 4.(i8)
-        KW_VALUE: return 2.(i8)
-        KW_ZERO:  return 1.(i8)
-        KW_BYTE:  return 1.(i8)
-        _ : {
-            utils.error("unkown type in typesize:" + tk_to_string(ty))
+        KW_QUAD:  return 8
+        KW_LONG:  return 4
+        KW_VALUE: return 2
+        KW_ZERO:  return 1
+        KW_BYTE:  return 1
+        _: {
+            unsafe {
+                utils.error("unkown type in typesize:" + tk_to_string(ty))
+            }
+            return 0
         }
     }
 }
-func reglen(tk<i32>){
-    if(tk >= KW_AL && tk <= KW_BH){ 
-        return 1.(i8)
+fn reglen(tk<i32>) i32 {
+    if tk >= KW_AL && tk <= KW_BH {
+        return 1
     }
-    else if(tk >= KW_EAX && tk <= KW_EDI){
-        return 4.(i8)
+    if tk >= KW_EAX && tk <= KW_EDI {
+        return 4
     }
-    else if tk == KW_AX {
-        return 2.(i8)
+    if tk == KW_AX {
+        return 2
     }
-    else if r4ishigh(tk){
-        return 4.(i8)
+    if r4ishigh(tk) {
+        return 4
     }
-    else if(tk >= KW_RAX && tk <= KW_R15){
-        return 8.(i8)
-    }else if tk >= KW_XMM0 && tk <= KW_XMM15 {
-        return 8.(i8)
-    }else{
+    if tk >= KW_RAX && tk <= KW_R15 {
+        return 8
+    }
+    if tk >= KW_XMM0 && tk <= KW_XMM15 {
+        return 8
+    }
+    unsafe {
         utils.error("reglen unkown tk:" + int(tk))
     }
     return 0
 }
-func tk_to_string(tk<i32>){
+// Dyn string names for diagnostics; keep unsafe (returns dyn string).
+unsafe fn tk_to_string(tk<i32>) {
     match tk {
         KW_MOV:    return "mov"
         KW_CMP:    return "cmp"
@@ -161,13 +200,14 @@ func tk_to_string(tk<i32>){
         KW_BALIGN: return ".balign"
         KW_P2ALIGN: return ".p2align"
         TK_NUMBER: return "number"
-        _ : {
+        _: {
             return "unknown" + int(tk)
         }
     }
 }
 
-func undef_vocab_hint(name) {
+// Dyn diagnostic helper for undef COFF symbols.
+unsafe fn undef_vocab_hint(name) {
     if name == null || name == "" {
         return
     }

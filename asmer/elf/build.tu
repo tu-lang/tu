@@ -181,8 +181,8 @@ ElfFile::buildRelTab(){
         rela.r_info    = ELF64_R_INFO(
             this.getSymIndex(
                 relTab.addr[i].(RelInfo).name
-            ),
-            relTab.addr[i].(RelInfo).type
+            ).(u64),
+            relTab.addr[i].(RelInfo).type.(u64)
         )
         if rel.tarSeg.cmpstr(".data".(i8)) != string.Equal
             rela.r_addend  = -4
@@ -195,8 +195,8 @@ ElfFile::buildRelTab(){
                 rela.r_info    = ELF64_R_INFO(
                     this.getSymIndex(
                         relTab.addr[i].(RelInfo).name
-                    ),
-                    relTab.addr[i].(RelInfo).type
+                    ).(u64),
+                    relTab.addr[i].(RelInfo).type.(u64)
                 )
             }
 

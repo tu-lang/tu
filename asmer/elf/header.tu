@@ -37,7 +37,7 @@ mem ElfFile
 	i32 	shstrtab_size,strtab_size,sh_info
 	asm.Asmer*  asmer
 }
-func mapstringhashkey(k<string.String>){
+fn mapstringhashkey(k<string.String>) u64 {
     return k.hash64()
 }
 ElfFile::init(ac<asm.Asmer>){

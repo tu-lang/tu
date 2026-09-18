@@ -7,7 +7,7 @@ mem SymTable {
     map.Map*   symbols //string => Sym*
     std.Array* data_symbol // Sym*
 }
-func mapstringhashkey(k<string.String>){
+fn mapstringhashkey(k<string.String>) u64 {
     return k.hash64()
 }
 SymTable::init(){
@@ -36,7 +36,7 @@ SymTable::getSym(name<string.String>) {
     if this.hasName(name) == True {
         return this.symbols.find(name)
     }else{
-        sym<Sym> = newSym(name,True)
+        sym<Sym> = newSym(name, true)
         this.symbols.insert(name,sym)
         return sym
     }

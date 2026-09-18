@@ -45,7 +45,7 @@ mem MachObjWriter {
     i32  wr_off
 }
 
-func mapstringhashkey(k<string.String>) {
+fn mapstringhashkey(k<string.String>) u64 {
     return k.hash64()
 }
 

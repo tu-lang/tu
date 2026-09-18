@@ -1,4 +1,5 @@
 use asmer.instruct
+use asmer.utils
 use std
 use string
 use fmt
@@ -36,9 +37,10 @@ mem Sym {
     i32             isbin
     i32             isrel
 }
-func newSym(name<string.String>, externed<i32>)
-{
-    utils.debug("newSym: name:%S externed:%d".(i8),name.str(),externed)
+fn newSym(name<string.String>, externed<i32>) Sym {
+    unsafe {
+        utils.debug("newSym: name:%S externed:%d".(i8),name.str(),externed)
+    }
     s<Sym> = new Sym {
         segName : string.S(".text".(i8)),
         name : name,
@@ -54,9 +56,10 @@ func newSym(name<string.String>, externed<i32>)
     }
     return s
 }
-func newStringSym(name<string.String>, str<string.String>,pos<i32>)
-{
-    utils.debug("newStringSym: name:%S %S pos:%d".(i8),name.str(),str.str(),pos)
+fn newStringSym(name<string.String>, str<string.String>, pos<i32>) Sym {
+    unsafe {
+        utils.debug("newStringSym: name:%S %S pos:%d".(i8),name.str(),str.str(),pos)
+    }
     return new Sym {
         segName : string.S(".data".(i8)),
         name : name,
@@ -71,8 +74,7 @@ func newStringSym(name<string.String>, str<string.String>,pos<i32>)
     }
 }
 // Raw .incbin bytes (pointer + length; may contain interior NULs).
-func newBinSym(name<string.String>, ptr<i8*>, len<i32>, pos<i32>)
-{
+fn newBinSym(name<string.String>, ptr<i8*>, len<i32>, pos<i32>) Sym {
     return new Sym {
         segName : string.S(".data".(i8)),
         name : name,
@@ -87,9 +89,10 @@ func newBinSym(name<string.String>, ptr<i8*>, len<i32>, pos<i32>)
         bin_len : len
     }
 }
-func newDataSym(name<string.String>,pos<i32>)
-{
-    utils.debug("newDataSym: name:%S pos:%d".(i8),name.str(),pos)
+fn newDataSym(name<string.String>, pos<i32>) Sym {
+    unsafe {
+        utils.debug("newDataSym: name:%S pos:%d".(i8),name.str(),pos)
+    }
     return new Sym {
         name : name,
         global : false,

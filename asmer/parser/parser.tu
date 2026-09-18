@@ -39,41 +39,44 @@ Parser::init(filepath,elf<elf.ElfFile>)
 
     this.filepath = filepath
 
-    // Split on '/' only; Windows workdir paths may mix '\' and '/'.
-    npath = std.len(filepath)
-    norm = ""
-    ni = 0
-    bs = runtime.newobject(runtime.Char, 92.(i8))
-    while ni < npath {
-        ch = filepath[ni]
-        if ch == bs {
-            norm += "/"
-        } else {
-            norm += ch
+    // Path normalize/split uses dyn strings; confine to unsafe (mem method stays static).
+    unsafe {
+        // Split on '/' only; Windows workdir paths may mix '\' and '/'.
+        npath = std.len(filepath)
+        norm = ""
+        ni = 0
+        bs = runtime.newobject(runtime.Char, 92.(i8))
+        while ni < npath {
+            ch = filepath[ni]
+            if ch == bs {
+                norm += "/"
+            } else {
+                norm += ch
+            }
+            ni += 1
         }
-        ni += 1
-    }
-    filepath = norm
+        filepath = norm
 
-    fullname = std.pop(string.split(filepath,"/"))
-    fullname = string.split(fullname,".s")
-    base = fullname[0]
-    this.filename = base
-    parts = string.split(filepath,"/")
-    pn = std.len(parts)
-    if pn <= 1 {
-        this.outname = base + ".o"
-    }else{
-        dir = parts[0]
-        pi = 1
-        while pi < pn - 1 {
-            dir = dir + "/" + parts[pi]
-            pi += 1
-        }
-        if dir == "" {
-            this.outname = "/" + base + ".o"
+        fullname = std.pop(string.split(filepath,"/"))
+        fullname = string.split(fullname,".s")
+        base = fullname[0]
+        this.filename = base
+        parts = string.split(filepath,"/")
+        pn = std.len(parts)
+        if pn <= 1 {
+            this.outname = base + ".o"
         }else{
-            this.outname = dir + "/" + base + ".o"
+            dir = parts[0]
+            pi = 1
+            while pi < pn - 1 {
+                dir = dir + "/" + parts[pi]
+                pi += 1
+            }
+            if dir == "" {
+                this.outname = "/" + base + ".o"
+            }else{
+                this.outname = dir + "/" + base + ".o"
+            }
         }
     }
 }
@@ -88,7 +91,7 @@ Parser::genInst() {
     utils.debug(*"Parser::genInst() instructs collection")
     for(i<i32> = 0 ; i < this.funcs.len() ; i += 1){
         fc<ast.Function> = this.funcs.addr[i]
-        sym<ast.Sym> = ast.newSym(fc.labelname,0.(i8))
+        sym<ast.Sym> = ast.newSym(fc.labelname, false)
         sym.addr = this.text_size
         this.symtable.addSym(sym)
         utils.debug(
@@ -180,7 +183,7 @@ Parser::check(check<u64>,err)
     if check == 1 return  null
     if check == 0 goto tap_check_panic 
     //dyn
-    c = check
+    c<i32> = check
     if c return null
 tap_check_panic:
     os.dief(
