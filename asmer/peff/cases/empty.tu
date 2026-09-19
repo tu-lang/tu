@@ -1,2 +1,2 @@
-func main() {
+unsafe fn main() {
 }

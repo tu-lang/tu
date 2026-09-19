@@ -5,7 +5,7 @@ use string
 use runtime
 
 #func fwrite(buffer<i8*> , size<u64> , count<u64> , fd<u64*>){
-func fwrite(fd<i64>,buffer<u64>,size<u64>){
+unsafe fn fwrite(fd<i64>,buffer<u64>,size<u64>){
 	s<i8> = 1
 	ret<u64> = std.fwrite(buffer,size,s,fd)
 	if ret != size {
@@ -16,7 +16,7 @@ func fwrite(fd<i64>,buffer<u64>,size<u64>){
 }
 
 //fn fopen(filename,mode)
-func fopen(filename,mode){
+unsafe fn fopen(filename,mode){
 	utils.debug("linker.io:fopen %s %s".(i8),*filename,*mode)
 	if filename == "" {
 		fmt.print("fopen filename is empty\n")
@@ -35,19 +35,19 @@ func fopen(filename,mode){
 	return ret
 }
 //func fclose(fp<u64>)
-func fclose(fp<i64>){
+unsafe fn fclose(fp<i64>){
 	return std.fclose(fp)
 }
 
 
 //func seek(fd<i64> , offset<i64> , mode<i64>)
-func rewind(fd){
+unsafe fn rewind(fd){
 	st<i8> = 0
 	std.seek(fd,st,std.SEEK_SET)	
 }
 
 //func read(fd<i64> , size<u64>
-func fread(fd<i32>,size<i64>){
+unsafe fn fread(fd<i32>,size<i64>){
 	//utils.debug("fread fd:",int(fd),int(size))
 	buffer<u64*> = new size
 	read_size<i64> = std.read(fd,buffer,size)
@@ -59,7 +59,7 @@ func fread(fd<i32>,size<i64>){
 	return buffer
 }
 //func read(fd<i64> , buffer<u64*> , size<u64>
-func fread_with_buf(fd<i32>,buf<u64*> , size<i64>){
+unsafe fn fread_with_buf(fd<i32>,buf<u64*> , size<i64>){
 	//utils.debug("fread fd:",int(fd),int(size))
 	read_size<i64> = std.read(fd,buf,size)
 	if read_size != size {
@@ -71,14 +71,14 @@ func fread_with_buf(fd<i32>,buf<u64*> , size<i64>){
 }
 
 //func fseek(fp<u64>,offset<i64> , set<i64>)
-func fseek(fp,offset<i64>){
+unsafe fn fseek(fp,offset<i64>){
 	utils.debug("utils.fseek:",int(fp),int(offset))
 	std.fseek(fp,offset,std.SEEK_SET)
 	return true
 }
 
 // Parent directory of path; no slash → "."
-func path_dirname(path){
+unsafe fn path_dirname(path){
 	n = std.len(path)
 	if n == 0 return "."
 	i = n - 1
@@ -96,7 +96,7 @@ func path_dirname(path){
 	}
 	return out
 }
-func path_join(d,f){
+unsafe fn path_join(d,f){
 	if d == null || d == "" || d == "."
 		return f
 	dlen = std.len(d)
@@ -108,7 +108,7 @@ func path_join(d,f){
 }
 
 // Directory basenames. Windows uses FindFirstFile (getdents is ENOSYS).
-func list_basenames(dir) {
+unsafe fn list_basenames(dir) {
 	out = []
 	if runtime.host_os() == 2 {
 		pat = ""

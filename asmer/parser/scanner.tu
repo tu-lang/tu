@@ -99,7 +99,7 @@ specs =
      "\\r" : 13,
      "\\v" :11,
 }
-func char(cn<i8>){
+unsafe fn char(cn<i8>){
     return runtime.newobject(runtime.Char,cn)
 }
 
@@ -108,21 +108,22 @@ Scanner::init(filepath)
     utils.debug("Scanner::init() %s".(i8),*filepath)
     this.filepath = filepath
     this.pos      = 0
-    fs = new std.File(filepath)
-
-    if !fs.IsOpen() {
-        os.die("error opening file :" + filepath )
+    // std.File is a dynamic class; keep the dyn I/O in a narrow unsafe block.
+    unsafe {
+        fs = new std.File(filepath)
+        if !fs.IsOpen() {
+            os.die("error opening file :" + filepath )
+        }
+        this.buffer = fs.ReadAllNative()
+        if this.buffer == 0 {
+            os.die("error reade file:" + filepath)
+        }
+        totalsize = fs.size
+        this.buffersize = *totalsize
+        // Body is in this.buffer; close so Windows fd-table (256) is not leaked
+        // across hundreds of .s files in a self-host assemble pass.
+        fs.Close()
     }
-
-    this.buffer = fs.ReadAllNative()
-    if this.buffer == 0 {
-        os.die("error reade file:" + filepath)
-    }
-    totalsize = fs.size
-    this.buffersize = *totalsize
-    // Body is in this.buffer; close so Windows fd-table (256) is not leaked
-    // across hundreds of .s files in a self-host assemble pass.
-    fs.Close()
     utils.debug("Scanner::init() end %s".(i8),*filepath)
 }
 Scanner::next() {
@@ -199,20 +200,20 @@ Scanner::parseString(c<i8>)
     while(cn != '"'){
         c = this.next()
         if ( c == '\\'){
-            ts = "\\"
-            c = this.next()
-            //dyn type
-            ts += char(c)
-
-            if ts != "\\0" && !specs[ts] {
-                utils.errorf(
-                    "SyntaxError: sepc [%s] character literal should surround with single-quote %s line:%d column:%d\n ",
-                    ts, this.filepath,int(this.line),int(this.column)
-                )
+            // Escape lookup uses dyn map `specs`; keep in unsafe.
+            unsafe {
+                ts = "\\"
+                c = this.next()
+                ts += char(c)
+                if ts != "\\0" && !specs[ts] {
+                    utils.errorf(
+                        "SyntaxError: sepc [%s] character literal should surround with single-quote %s line:%d column:%d\n ",
+                        ts, this.filepath,int(this.line),int(this.column)
+                    )
+                }
+                specsv = specs[ts]
+                lexeme.putc(*specsv)
             }
-            //dyn type
-            specsv = specs[ts]
-            lexeme.putc(*specsv)
         }else{
             lexeme.putc(c)
         }
@@ -232,20 +233,22 @@ Scanner::parseKeyword(c<i8>)
         lexeme.putc(c)
         cn = this.peek()
     }
-    //dyn str
-    lex = lexeme.dyn()
-    if std.exist(lex,labels) {
-       return this.token(labels[lex],lexeme) 
-    }
-    // RFC-107: unknown %reg must hard-fail (never become KW_LABEL / undef COFF)
-    if lexeme.inner[0] == '%' {
-        utils.errorf(
-            "AsmError: unknown register '%s' line:%d column:%d file:%s\n(asmer fail-fast: do not emit undef COFF symbols for bad %%regs)\n",
-            lexeme.dyn(),
-            int(this.line),
-            int(this.column),
-            this.filepath.dyn()
-        )
+    // Keyword table `labels` is a dyn map.
+    unsafe {
+        lex = lexeme.dyn()
+        if std.exist(lex,labels) {
+           return this.token(labels[lex],lexeme) 
+        }
+        // RFC-107: unknown %reg must hard-fail (never become KW_LABEL / undef COFF)
+        if lexeme.inner[0] == '%' {
+            utils.errorf(
+                "AsmError: unknown register '%s' line:%d column:%d file:%s\n(asmer fail-fast: do not emit undef COFF symbols for bad %%regs)\n",
+                lexeme.dyn(),
+                int(this.line),
+                int(this.column),
+                this.filepath.dyn()
+            )
+        }
     }
     return this.token(ast.KW_LABEL, lexeme)
 }

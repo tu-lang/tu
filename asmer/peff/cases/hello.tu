@@ -1,5 +1,5 @@
 use fmt
 
-func main() {
+unsafe fn main() {
 	fmt.println("hello windows")
 }

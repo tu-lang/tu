@@ -53,19 +53,20 @@ ParseHexBytes::init(filepath){
     this.vs = std.NewArray(0.(i8),1.(i8)) //1 byte
     printf("ParseHexBytes::init() %s\n".(i8),*filepath)
     this.pos      = 0
-    fs = new std.File(filepath)
-
-    if !fs.IsOpen() {
-        os.die("error opening file :" + filepath )
+    // std.File is dynamic; confine dyn I/O to unsafe.
+    unsafe {
+        fs = new std.File(filepath)
+        if !fs.IsOpen() {
+            os.die("error opening file :" + filepath )
+        }
+        this.buffer = fs.ReadAllNative()
+        if this.buffer == 0 {
+            os.die("error reade file:" + filepath)
+        }
+        totalsize = fs.size
+        this.buffersize = *totalsize
+        fs.Close()
     }
-
-    this.buffer = fs.ReadAllNative()
-    if this.buffer == 0 {
-        os.die("error reade file:" + filepath)
-    }
-    totalsize = fs.size
-    this.buffersize = *totalsize
-    fs.Close()
     debug("ParseHexBytes::init() end %s".(i8),*filepath)
 }
 ParseHexBytes::parse(){

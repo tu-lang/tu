@@ -62,27 +62,27 @@ True<i64> = 1
 Pad1<i64> = 1
 
 
-func ELF64_R_SYM(i<u64>)	{
+fn ELF64_R_SYM(i<u64>) u64 {
 	return i >> 32
 }
-func ELF32_ST_BIND(val<u8>){
+fn ELF32_ST_BIND(val<u8>) u8 {
 	return val >> 4
 }
-func ELF64_ST_BIND(val){
+fn ELF64_ST_BIND(val<u8>) u8 {
 	return ELF32_ST_BIND(val)
 }
-func ELF64_ST_TYPE(val<u8>){
+fn ELF64_ST_TYPE(val<u8>) u8 {
 	return val & 0xf
 }
-func ELF64_R_TYPE(val<i64>){
-	return val & 0xffffffff
+fn ELF64_R_TYPE(val<i64>) u8 {
+	return (val & 0xffffffff).(u8)
 }
-func ELF64_R_INFO(sym<u64>,type<u64>) {
-	return ( sym << 32 ) + type
+fn ELF64_R_INFO(sym<u64>, type<u64>) u64 {
+	return (sym << 32) + type
 }
-func ELF32_ST_INFO(bind<i32>, type<i32>)       {
-	return (bind << 4) + (type & 0xf)
+fn ELF32_ST_INFO(bind<i32>, type<i32>) u8 {
+	return ((bind << 4) + (type & 0xf)).(u8)
 }
-func ELF64_ST_INFO(bind<i32>, type<i32>){
+fn ELF64_ST_INFO(bind<i32>, type<i32>) u8 {
 	return ELF32_ST_INFO(bind, type)
 }       
