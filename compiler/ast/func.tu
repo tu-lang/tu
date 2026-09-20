@@ -82,17 +82,17 @@ class Function {
     fn_static = false
 
 
-    fn isasync(){
+    func isasync() {
         if this.asyncst != null
             return true
         return this.fntype == AsyncFunc
     }
-    fn argscount(){
+    func argscount() {
         if this.fntype == AsyncFunc
             return 2
         return std.len(this.params_order_var)
     }
-    fn argsmem(){
+    func argsmem() {
         i = 0
         for it : this.params_order_var {
             if it.onmem
@@ -101,32 +101,32 @@ class Function {
         return i
     }
     // RFC110: static-side definition (fn / Mem::method / mem async member)
-    fn isStaticDef() {
+    func isStaticDef() {
         if this.fn_static return true
         if this.fntype == StructFunc return true
         if this.st != null return true
         return false
     }
     // RFC110: dynamic-side definition (func / class method / package async)
-    fn isDynamicDef() {
+    func isDynamicDef() {
         if this.isStaticDef() return false
         if this.fntype == ClosureFunc return false
         if this.fntype == ExternFunc return false
         return true
     }
 }
-func incr_closureidx(){
+func incr_closureidx() {
     idx = closureidx
     closureidx += 1
     return idx
 }
-func incr_labelid(){
+func incr_labelid() {
     idx = labelidx
     labelidx += 1
     return idx
 }
 
-Function::InsertFuncallHead(inits){
+Function::InsertFuncallHead(inits) {
 	if std.len(inits) <= 0  return true
 
     exprs = []
@@ -144,7 +144,7 @@ Function::InsertFuncallHead(inits){
 	this.block.InsertExpressionsHead(exprs)
 }
 
-Function::InsertFuncall(fullpackage,funcname){
+Function::InsertFuncall(fullpackage,funcname) {
     utils.debugf("ast.Function::InsertFuncall() fullpackage:%s funcname:%s",
         fullpackage,funcname
     )
@@ -159,7 +159,7 @@ Function::InsertFuncall(fullpackage,funcname){
     //FIXME: if current function return|exit early will cause this init instruct not avaiable
 	this.block.stmts[] = call
 } 
-Function::InsertExpression(expr){
+Function::InsertExpression(expr) {
     utils.debug("ast.Function::InsertExpression()")
 	if this.block == null {
 		this.block = new gen.BlockStmt()
@@ -168,7 +168,7 @@ Function::InsertExpression(expr){
 } 
 
 //function signature
-Function::fullname(){
+Function::fullname() {
     funcsig = fmt.sprintf("%s_%s",this.parser.getpkgname(),this.name)
     utils.debugf(
         "ast.Function.fullname(): funcname signature:%s fntype:%d",
@@ -189,7 +189,7 @@ Function::fullname(){
     }
     return funcsig
 }
-Function::getVar(name){
+Function::getVar(name) {
     utils.debugf("ast.Function::getVar() this:%s varname:%s",this.name,name)
 
     if name == "" return null
@@ -202,7 +202,7 @@ Function::getVar(name){
 
     return null
 }
-Function::beautyName(){
+Function::beautyName() {
     funcsig = this.parser.getpkgname() + "::" + this.name
     match this.fntype {
         ClassFunc: {
@@ -219,7 +219,7 @@ Function::beautyName(){
     }
     return funcsig
 }
-Function::getVariadic(){
+Function::getVariadic() {
 	for var : this.params_order_var {
     	if var.is_variadic
 		    return var
@@ -227,7 +227,7 @@ Function::getVariadic(){
 	return null
 }
 
-Function::InsertLocalVar(level , var){
+Function::InsertLocalVar(level , var) {
 
     newname = var.varname
     if level >= 0 {
@@ -249,11 +249,11 @@ Function::InsertLocalVar(level , var){
 	this.locals[var.varname] = var
 }
 
-Function::FindLocalVar(varname){
+Function::FindLocalVar(varname) {
     return this.getVar(varname)
 }
 
-Function::getIterVar(){
+Function::getIterVar() {
     varname = "iter."
 	varname += this.iterid
 
@@ -267,7 +267,7 @@ Function::getIterVar(){
 	return iter
 }
 
-Function::getMatchcondVar(){
+Function::getMatchcondVar() {
 	varname = "mcond."
 	varname += this.iterid
 	this.iterid += 1
@@ -277,7 +277,7 @@ Function::getMatchcondVar(){
     return  var
 }
 
-Function::createParentCapture(var){
+Function::createParentCapture(var) {
     if std.exist(var.varname,this.captures){
         return true
     }

@@ -16,12 +16,10 @@ class Ctx {
     breakto continueto
 }
 
-Ctx::createVar(varname,ident)
-{
+Ctx::createVar(varname,ident) {
     this.vars[varname] = ident
 }
-Ctx::getVar(varname)
-{
+Ctx::getVar(varname) {
     if this.vars[varname] != null {
         return this.vars[varname]
     } 
@@ -29,8 +27,7 @@ Ctx::getVar(varname)
 }
 
 //compile phase
-Context::getLocalVar(varname)
-{
+Context::getLocalVar(varname) {
     var = GF().FindLocalVar(varname)
     if var != null return var
 
@@ -50,7 +47,7 @@ Context::getLocalVar(varname)
     return null
 }
 
-Context::jmpReturn(){
+Context::jmpReturn() {
     for i = std.len(this.ctxs) - 1 ; i >= 0 ; i -= 1 {
         p = this.ctxs[i]
         funcName = p.cur_funcname

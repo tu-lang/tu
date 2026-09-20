@@ -65,8 +65,7 @@ class Member
 }
 
 
-Struct::getMember(name)
-{
+Struct::getMember(name) {
 	for(i : this.member){
 		if i.name == name
 		return i
@@ -74,7 +73,7 @@ Struct::getMember(name)
 	return null
 }
 
-Member::clone(){
+Member::clone() {
 	m = new Member()
 	m.parent = this.parent
 	m.name = this.name
@@ -101,7 +100,7 @@ Member::clone(){
 	return m
 }
 
-Struct::getPoll(){
+Struct::getPoll() {
 	if !this.isasync {
 		this.parser.check(false,"not async struct,can't get poll")
 	}
@@ -115,14 +114,14 @@ Struct::getPoll(){
 	return this.getFunc("poll")
 }
 
-Struct::getFunc(name){
+Struct::getFunc(name) {
 	if this.funcs[name] != null
 		return this.funcs[name]
 	return null
 }
 
 // Resolve async mem member poll fn: parse3 funcs first, else GlobalPhase asyncMemberLeaves.
-Struct::resolveAsyncMember(method){
+Struct::resolveAsyncMember(method) {
 	memfn = this.getFunc(method)
 	if memfn != null
 		return memfn
@@ -134,7 +133,7 @@ Struct::resolveAsyncMember(method){
 	return leaf.asyncfn
 }
 
-Struct::futurepollname(){
+Struct::futurepollname() {
 	p = this.parser
 	name = "virtfh_" + p.getpkgname()
 	name += "_"
@@ -143,7 +142,7 @@ Struct::futurepollname(){
 	return name
 }
 
-Struct::apiname(apiname){
+Struct::apiname(apiname) {
 	p = this.parser
 	name = "apitl_" + p.getpkgname()
 	name += "_"

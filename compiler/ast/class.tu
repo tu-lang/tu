@@ -18,10 +18,10 @@ class Class
 	found       = false
 	// RFC110: export prefix on class in static package
 	exported    = false
-	func init(pkg){}
+	func init(pkg) {}
 }
 
-Class::getFunc(name){
+Class::getFunc(name) {
 	for it : this.funcs {
 		if it.name == name {
 			return it
@@ -30,8 +30,7 @@ Class::getFunc(name){
 	return null
 }
 
-Class::getMember(name)
-{
+Class::getMember(name) {
 	utils.debugf("ast.Class::getMember() name:%s",name)
 	for(i : this.members){
 		assign = i
@@ -51,8 +50,7 @@ Class::getMember(name)
 	return ""
 }
 
-Class::initClassInitFunc()
-{
+Class::initClassInitFunc() {
   	utils.debugf("ast.Class::initClassInitFunc() cls:%s",this.name)
     f = null
     for fc : this.funcs {
@@ -81,7 +79,7 @@ Class::initClassInitFunc()
     return true
 } 
 
-Class::checkRmSupers(){
+Class::checkRmSupers() {
 	utils.debug("ast.Class::checkRmSupers()")
 	if this.father != null return true
 	for f : this.funcs {
@@ -105,7 +103,7 @@ Member::initStructRef() {
 	this.structref = package.getStruct(pkg,this.structname)
 }
 
-Member::getarrcount(){
+Member::getarrcount() {
 	arrcount = this.arrsize
 
 	if this.isarr && this.arrvar != null {
@@ -119,7 +117,7 @@ Member::getarrcount(){
 	this.arrsize = arrcount
 	return arrcount
 }
-Class::virtname(){
+Class::virtname() {
 	if this.found {
 		return "virth_" + this.parser.getpkgname() + "_" + this.name
 	}else{
@@ -139,7 +137,7 @@ Class::virtname(){
 	}
 }
 
-Class::getReal(){
+Class::getReal() {
     s = null
     if this.pkg != "" {
         pkg = this.parser.pkg.getPackage(this.pkg)

@@ -6,8 +6,7 @@ class Context {
     level = 0
     ctxs = [] //Ctx
 }
-Context::hasVar(varname)
-{
+Context::hasVar(varname) {
     for(i = std.len(this.ctxs) - 1 ; i >= 0 ; i -= 1){
         ctx = this.ctxs[i]
         var = ctx.getVar(varname)
@@ -18,7 +17,7 @@ Context::hasVar(varname)
     return null
 }
 
-Context::create(){
+Context::create() {
     temp = new ast.Ctx()
     temp.end_str = ""
     temp.start_str = ""
@@ -28,26 +27,25 @@ Context::create(){
     this.level += 1
     this.ctxs[] = temp
 }
-Context::destroy(){
+Context::destroy() {
     return std.pop(this.ctxs)
 }
-Context::cancel(){
+Context::cancel() {
     this.destroy()
     this.level -= 1
 }
-Context::top(){
+Context::top() {
     return std.tail(this.ctxs)
 }
-Context::toplevel(){
+Context::toplevel() {
     return this.top().level
 }
-Context::createVar(varname ,var){
+Context::createVar(varname ,var) {
     this.top().createVar(varname,var)
 }
 
 //parser phase
-Context::getVar(gf , varname)
-{
+Context::getVar(gf , varname) {
     hasctx = false
     ret = null
     for(i = std.len(this.ctxs) - 1 ; i >= 0 ; i -= 1){

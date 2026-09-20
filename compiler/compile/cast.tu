@@ -73,7 +73,8 @@ types = {
 }
 
 
-func Cast(from<i32> ,to<i32>) {
+// Dyn signature; no whole-func unsafe — typed locals only if needed via unsafe{}.
+func Cast(from, to) {
 	ff = int(from)
 	tt = int(to)
 	f = types[ff]
