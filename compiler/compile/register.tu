@@ -81,7 +81,7 @@ func LoadMember(m){
 func Load(){
     writeln("    mov (%%rax), %%rax")
 }
-fn Loadf(ty<i32>){
+func Loadf(ty){
     match ty {
         ast.F32: writeln("  movss (%%rax), %%xmm0")
         ast.F64: writeln("  movsd (%%rax), %%xmm0")
@@ -100,7 +100,7 @@ func LoadSize(size , isunsigned){
     }
 
 }
-func CreateCmp(size<u64>){
+func CreateCmp(size){
     if size == null {
         writeln("    cmp $0, %%rax")
     //specific bit size to cmp
@@ -109,7 +109,7 @@ func CreateCmp(size<u64>){
         else            writeln("  cmp $0, %%rax")
     }
 }
-fn CreateFCmp(tk<i32>){
+func CreateFCmp(tk){
     if tk == ast.F32 {
         writeln("  xorps %%xmm1, %%xmm1")
         writeln("  ucomiss %%xmm1, %%xmm0")
@@ -131,7 +131,7 @@ func Push(){
     writeln("    push %%rax")
 }
 
-fn Pushf(ty<i32>){
+func Pushf(ty){
     writeln("  sub $8, %%rsp")
     if ty == ast.F32
         writeln("  movss %%xmm0, (%%rsp)")
@@ -141,7 +141,7 @@ fn Pushf(ty<i32>){
         utils.error("unsupport ty in pushf")
 }
 
-fn PushfDst(ty<i32>, dst,ofs){
+func PushfDst(ty, dst,ofs){
     if ty == ast.F32
         writeln("  movss %%xmm0, %d(%s)",ofs,dst)
     else if ty == ast.F64
@@ -150,7 +150,7 @@ fn PushfDst(ty<i32>, dst,ofs){
         utils.error("unsupport ty in pushf dst")
 }
 
-fn PopfDst(ty<i32>, dst,ofs){
+func PopfDst(ty, dst,ofs){
     if ty == ast.F32
         writeln("  movss %d(%s), %%xmm0",ofs,dst)
     else if ty == ast.F64
@@ -159,7 +159,7 @@ fn PopfDst(ty<i32>, dst,ofs){
         utils.error("unsupport ty in popf dst")
 }
 
-fn PopMRet(sz<i32>){
+func PopMRet(sz){
     for sz -= 1; sz >= 0 ; sz -= 1 {
         Pop(argm64[int(sz)])
     }
@@ -169,7 +169,7 @@ func Pop(arg){
     writeln("    pop %s",arg)
 }
 
-fn Popf(ty<i32>) {
+func Popf(ty) {
     if ty == ast.F32
         writeln("  movss (%%rsp), %%xmm0")
     else if ty == ast.F64

@@ -16,7 +16,7 @@ func Store_gp(r, offset, sz){
 
 }
 
-func Store(size<u64>) {
+func Store(size) {
     //dyn version
     if size == null {
         Pop("%rdi")
@@ -33,7 +33,7 @@ func Store(size<u64>) {
         _ : writeln("   mov %%rax, (%%rdi)")
     }
 }
-fn Storef(ty<i32>)
+func Storef(ty)
 {
     Pop("%rdi")
     if ty == ast.F32
@@ -43,7 +43,7 @@ fn Storef(ty<i32>)
     else 
         utils.error("unkndown storef type")
 }
-fn StorefNoPop(ty)
+func StorefNoPop(ty)
 {
     if ty == ast.F32
         writeln("   movss %%xmm0, (%%rdi)")
@@ -64,12 +64,12 @@ func StoreNoPop(size)
 
 // Copy mem layout from %rax (src heap object) into (%rdi) (dst field).
 // Used for by-value nested mem assignment; asmer has no rep movsb.
-fn StoreStructPayload(size) {
+func StoreStructPayload(size) {
 	Pop("%rdi")
 	StoreStructPayloadNoPop(size)
 }
 
-fn StoreStructPayloadNoPop(size) {
+func StoreStructPayloadNoPop(size) {
 	if size <= 0 {
 		utils.error("StoreStructPayload: invalid size")
 		return null

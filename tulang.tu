@@ -75,14 +75,14 @@ func arg_has_prefix(arg, pref) {
     return true
 }
 Compiler::init() {
-    // Target lives in asm.requested_target (string). Avoid class i32 0 traps.
-    asm.requested_target = utils.target_name(utils.target_default())
+    // Target lives in asm.get_requested_target() (string). Avoid class i32 0 traps.
+    asm.set_requested_target(utils.target_name(utils.target_default()))
     // copkg/coasm: env override, else dirname(dirname(exe))/lib (install layout).
     root = utils.lib_root()
 }
 Compiler::apply_target(name) {
     if name == "linux" || name == "darwin" || name == "macos" || name == "osx" || name == "windows" || name == "win64" || name == "pe" {
-        asm.requested_target = name
+        asm.set_requested_target(name)
         return
     }
     fmt.printf("[tu] unknown --target=%s (want linux|darwin|windows)\n", name)
@@ -209,7 +209,7 @@ Compiler::commadparse(){
                 i += 1
             }
             "-v" | "--version" : {
-                utils.print_version_report(asm.requested_target)
+                utils.print_version_report(asm.get_requested_target())
                 os.exit(0)
             }
             _     : {
@@ -287,14 +287,14 @@ Compiler::compiler(file){
         wd = "."
     }
     exe_name = "a.out"
-    if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS {
+    if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS {
         exe_name = "a.exe"
     }
     if this.flag_link {
-        if utils.target_parse(asm.requested_target) == utils.TARGET_DARWIN && this.flag_gcc {
+        if utils.target_parse(asm.get_requested_target()) == utils.TARGET_DARWIN && this.flag_gcc {
             utils.error("-gcc is linux-only; use the self-hosted darwin linker")
         }
-        if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS && this.flag_gcc {
+        if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS && this.flag_gcc {
             utils.error("-gcc is not supported for --target=windows; use the self-hosted peff linker")
         }
         //By Gcc Link
@@ -303,7 +303,7 @@ Compiler::compiler(file){
             if !this.flag_work {
                 utils.remove_files_ext(wd, ".s")
             }
-            if utils.target_parse(asm.requested_target) != utils.TARGET_WINDOWS {
+            if utils.target_parse(asm.get_requested_target()) != utils.TARGET_WINDOWS {
                 os.shell("chmod 777 '" + utils.pathInWorkdir(exe_name) + "'")
             }
         }else {
@@ -325,7 +325,7 @@ Compiler::compiler(file){
             this.asmer()
 
             this.code_files = []
-            if compile.nostd && utils.target_parse(asm.requested_target) != utils.TARGET_DARWIN && utils.target_parse(asm.requested_target) != utils.TARGET_WINDOWS {
+            if compile.nostd && utils.target_parse(asm.get_requested_target()) != utils.TARGET_DARWIN && utils.target_parse(asm.get_requested_target()) != utils.TARGET_WINDOWS {
                 utils.copy_dir_ext(root + "/colib", wd, ".o")
             }
             this.scandir(wd,".o")
@@ -336,7 +336,7 @@ Compiler::compiler(file){
                 utils.remove_files_ext(wd, ".s")
             }
         }
-        if utils.target_parse(asm.requested_target) != utils.TARGET_WINDOWS {
+        if utils.target_parse(asm.get_requested_target()) != utils.TARGET_WINDOWS {
             os.shell("chmod 777 '" + utils.pathInWorkdir(exe_name) + "'")
         }
         if this.flag_work {
@@ -349,7 +349,7 @@ Compiler::compiler(file){
     ))
     // `tu run`: execute linked binary
     if this.flag_exec {
-        if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS || runtime.host_os() == 2 {
+        if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS || runtime.host_os() == 2 {
             cmd = exe
             for a : this.args {
                 cmd += " " + a
@@ -390,14 +390,14 @@ Compiler::linker(){
     // Default outfile next to the first .o, same as tul.
     if this.out == "a.out" && total > 0 {
         name = "a.out"
-        if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS {
+        if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS {
             name = "a.exe"
         }
         this.out = utils.path_join(utils.path_dirname(this.code_files[0]), name)
     }
     fmt.printf("[tu] outfile: %s\n", this.out)
 
-    if utils.target_parse(asm.requested_target) == utils.TARGET_DARWIN {
+    if utils.target_parse(asm.get_requested_target()) == utils.TARGET_DARWIN {
         rc = darwin.link_objects(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
@@ -405,7 +405,7 @@ Compiler::linker(){
         utils.msg(100,"Generate " + this.out + " Passed")
         return
     }
-    if utils.target_parse(asm.requested_target) == utils.TARGET_WINDOWS {
+    if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS {
         rc = peff.link_objects(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
@@ -461,7 +461,7 @@ func main() {
         pmode = utils.PKGFS_MODE_DISK
     }
     utils.pkgfs_set_stdroot_table(tbl, cnt)
-    tname = asm.requested_target
+    tname = asm.get_requested_target()
     if tname == null || tname == "" {
         tname = utils.target_name(utils.target_default())
     }

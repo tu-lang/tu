@@ -167,6 +167,9 @@ Parser::parseParameterList()
 
 Parser::genSuperInitStmt(f){
     utils.debug("parser.Parser.genSuperInitStmt()")
+    // RFC110: injected runtime.object_parent_get2 is non-export static.
+    // Mark the whole method cross-mode (insertsuper hits every method of subclasses).
+    f.unsafe_body = true
     if this.getImport("runtime") == "" {
         this.pkg.imports["runtime"] = "runtime"
     }

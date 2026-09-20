@@ -96,7 +96,8 @@ Parser::parseClassDef()
             this.ctx = null
             this.pending_unsafe_body = false
             this.check(f != null)
-            f.unsafe_body = unsafe_body
+            // insertsuper may have set unsafe_body for object_parent_get2; keep it.
+            f.unsafe_body = f.unsafe_body || unsafe_body
 
             s.funcs[] = f
             
@@ -153,7 +154,8 @@ Parser::parseModifiers() {
             this.pending_exported = false
             this.pending_unsafe_body = false
             f.exported = exported
-            f.unsafe_body = unsafe_body
+            // Keep insertsuper / parseFuncDef unsafe_body if already set.
+            f.unsafe_body = f.unsafe_body || unsafe_body
             if this.pkg.pkg_mode == PkgModeDyn && f.fn_static && f.name != "main" {
                 this.panic("pkgmode: fn definition not allowed in dyn package (except fn main)")
             }
@@ -181,7 +183,8 @@ Parser::parseModifiers() {
             this.pending_unsafe_body = false
             if f != null {
                 f.exported = exported
-                f.unsafe_body = unsafe_body
+                // Async members may insertsuper; do not clobber with bare false.
+                f.unsafe_body = f.unsafe_body || unsafe_body
             }
         }
         ast.CLASS : {
