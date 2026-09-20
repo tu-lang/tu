@@ -6,6 +6,15 @@ use os
 
 // cfg(mod_static,true)
 
+// Static RNG for typed callers (no dyn boxing per call).
+fn srand_max(max<i32>) i32 {
+	seed = (seed * 1103515245) + 12345
+	ret<u64> = (seed / 65536) % 32768
+	if max > 0 {
+		ret %= max.(u64)
+	}
+	return ret.(i32)
+}
 export func rand(v){
 
 	seed = (seed * 1103515245) + 12345
@@ -32,6 +41,7 @@ export func srand(v){
 		vv<runtime.Value> = v
 		ret %= vv.data
 	}
+	// Native u64 so typed locals can assign without dyn unbox.
 	return ret
 }
 
@@ -196,11 +206,13 @@ export func ntime(){
 fn dief(str<i8*>, args...){
 	fmt.vfprintf(std.STDOUT,str,args)
     fmt.vfprintf(std.STDOUT,*"\ndebug backtrace:\n")
-	infos = debug.stack(10.(i8))
-    i = 1
-    for v : infos {
-        fmt.printf("%d: %s\n",i,v)
-        i += 1
-    }
+	unsafe {
+		infos = debug.stack(10.(i8))
+		i = 1
+		for v : infos {
+			fmt.printf("%d: %s\n",i,v)
+			i += 1
+		}
+	}
 	std.die(-1.(i8))
 }

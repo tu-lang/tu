@@ -20,7 +20,7 @@ scan_files
 out
 out_set = 0
 
-func print_help(){
+unsafe fn print_help(){
     fmt.println("usage: ./cld [options|file.o...]\n" +
                 "  -p        指定扫描目录下所有.0文件进行链接生成可执行程序\n" +
                 "  -d        debug\n" +
@@ -30,7 +30,7 @@ func print_help(){
     )
 }
 
-func darwin_default_out() {
+unsafe fn darwin_default_out() {
     if out_set != 0 {
         return
     }
@@ -50,7 +50,7 @@ func darwin_default_out() {
     }
 }
 
-func link(){
+unsafe fn link(){
     utils.debug("main.link")
     darwin_default_out()
     lt<i32> = link_target
@@ -77,7 +77,7 @@ func link(){
     linker.link(out)
 }
 
-func scan(){
+unsafe fn scan(){
     utils.debug("main.scan")
     darwin_default_out()
     linker  = new link.Linker()
@@ -127,7 +127,7 @@ func scan(){
     utils.msg(100,"Generate " + out + " Passed")
 }
 
-func link_target_default() {
+unsafe fn link_target_default() {
     for (k, v : os.envs()) {
         arr = string.split(v, "=")
         if std.len(arr) >= 2 {
@@ -153,7 +153,7 @@ func link_target_default() {
     }
     return 0
 }
-func command() {
+unsafe fn command() {
     scan_dirs = []
     scan_files = []
     out = "a.out"
@@ -251,7 +251,7 @@ func command() {
     }
 }
 
-func main() {
+unsafe fn main() {
     if  os.argc() < 1 {
         return print_help()
     }

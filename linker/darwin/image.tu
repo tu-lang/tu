@@ -3,7 +3,6 @@
 use asmer.asm
 use asmer.ast
 use linker.utils
-use compiler.utils as cutil
 use std
 use string
 use fmt
@@ -31,7 +30,7 @@ mem MachImage {
     std.Array* undef_names
 }
 
-fn path_basename(path) {
+unsafe fn path_basename(path) {
     n = std.len(path)
     i = n - 1
     while i >= 0 {
@@ -43,7 +42,7 @@ fn path_basename(path) {
     return string.sub(path, i + 1)
 }
 
-fn stub_dir() {
+unsafe fn stub_dir() {
     for (k, v : os.envs()) {
         arr = string.split(v, "=")
         if std.len(arr) >= 2 && arr[0] == "CO_DARWIN_LIB" && arr[1] != "" {
@@ -51,22 +50,22 @@ fn stub_dir() {
         }
     }
     // Embed/TU_STD: platform/darwin/stub_*.s from materialized stdroot.
-    d = cutil.pkgfs_stub_dir()
+    d = utils.stub_dir_for(1)
     if d != null && d != "" {
-        probe = cutil.path_join(d, "stub_entry.s")
+        probe = utils.path_join(d, "stub_entry.s")
         fp<i32> = utils.fopen(probe, "r")
         if fp > 0 {
             utils.fclose(fp)
             return d
         }
     }
-    pref = cutil.lib_root() + "/costub-darwin"
+    pref = utils.lib_root() + "/costub-darwin"
     fp<i32> = utils.fopen(pref + "/stub_entry.s", "r")
     if fp > 0 {
         utils.fclose(fp)
         return pref
     }
-    alt = cutil.lib_root() + "/codarwin"
+    alt = utils.lib_root() + "/codarwin"
     fp = utils.fopen(alt + "/stub_entry.s", "r")
     if fp > 0 {
         utils.fclose(fp)
@@ -253,11 +252,13 @@ MachImage::resolve_imports() i32 {
             continue
         }
         if libsystem_allows(this.names, off) == 0 {
-            nm = string.new(this.names.ptr_at(off))
-            fmt.printf("[tu/darwin] undefined symbol: ")
-            fmt.printf(nm)
-            fmt.printf("\n")
-            ast.undef_vocab_hint(nm)
+            unsafe {
+                nm = string.new(this.names.ptr_at(off))
+                fmt.printf("[tu/darwin] undefined symbol: ")
+                fmt.printf(nm)
+                fmt.printf("\n")
+                ast.undef_vocab_hint(nm)
+            }
             return 1
         }
         this.data.align_to(8, 0)
@@ -273,8 +274,7 @@ MachImage::resolve_imports() i32 {
         this.slots.push(slot)
         i += 1
     }
-    nm_main = "_main"
-    main_off<i32> = this.names.intern_cstr(*nm_main)
+    main_off<i32> = this.names.intern_cstr(*"_main")
     if this.find_defined_off(main_off) == null {
         fmt.printf("[tu/darwin] missing _main (stub_entry not linked?)\n")
         return 1
@@ -383,12 +383,18 @@ MachImage::link(outfile) i32 {
     pagezero_size<u64> = text_va_base()
     text_va<u64> = text_va_base()
     page_size<u32> = i32_u32(PAGE_SIZE)
-    dyld_dyn = "/usr/lib/dyld"
-    libsys_dyn = "/usr/lib/libSystem.B.dylib"
-    dyld_path<i8*> = *dyld_dyn
-    libsys_path<i8*> = *libsys_dyn
-    dylinker_sz<u32> = path_cmdsize(i32_u32(DYLINKER_COMMAND_FIXED), dyld_path)
-    dylib_sz<u32> = path_cmdsize(i32_u32(DYLIB_COMMAND_FIXED), libsys_path)
+    dyld_path<i8*> = null
+    libsys_path<i8*> = null
+    dylinker_sz<u32> = 0
+    dylib_sz<u32> = 0
+    unsafe {
+        dyld_dyn = "/usr/lib/dyld"
+        libsys_dyn = "/usr/lib/libSystem.B.dylib"
+        dyld_path = *dyld_dyn
+        libsys_path = *libsys_dyn
+        dylinker_sz = path_cmdsize(i32_u32(DYLINKER_COMMAND_FIXED), dyld_path)
+        dylib_sz = path_cmdsize(i32_u32(DYLIB_COMMAND_FIXED), libsys_path)
+    }
     has_imports<i32> = 0
     if this.slots.len() > 0 {
         has_imports = 1
@@ -454,8 +460,7 @@ MachImage::link(outfile) i32 {
     n_extdef<u32> = i32_u32(ndef_i)
     n_undef<u32> = i32_u32(nimp_i)
     nsyms<u32> = n_extdef + n_undef
-    nm_main2 = "_main"
-    main_off<i32> = this.names.intern_cstr(*nm_main2)
+    main_off<i32> = this.names.intern_cstr(*"_main")
     this.names.align_strtab()
     stroff<u32> = symoff + nsyms * i32_u32(NLIST64_LEN)
     linkedit_sz<u32> = align_up_u32((stroff - linkedit_off) + i32_u32(this.names.strsize()), page_size)
@@ -468,7 +473,6 @@ MachImage::link(outfile) i32 {
         return 1
     }
     entryoff<u64> = main_va - text_va
-
     fi<i32> = 0
     while fi < this.objects.len() {
         f<MachObject> = this.objects.addr[fi]
@@ -740,7 +744,7 @@ MachImage::link(outfile) i32 {
 }
 
 // Assemble stub .s with asmer.darwin into out_o next to outfile.
-fn ensure_stub_obj(src_s, out_o) i32 {
+unsafe fn ensure_stub_obj(src_s, out_o) i32 {
     sdir = utils.path_dirname(out_o)
     stem = path_basename(out_o)
     s_name = string.sub(stem, 0)
@@ -765,7 +769,7 @@ fn ensure_stub_obj(src_s, out_o) i32 {
     return 0
 }
 
-fn objs_have_basename(files, name) {
+unsafe fn objs_have_basename(files, name) {
     for f : files {
         if path_basename(f) == name {
             return true
@@ -775,7 +779,7 @@ fn objs_have_basename(files, name) {
 }
 
 // Collect user objects + nostd stubs, then link.
-func link_objects(files, outfile) {
+unsafe fn link_objects(files, outfile) {
     all = []
     full_rt = objs_have_basename(files, "asm_amd64.o")
     for f : files {

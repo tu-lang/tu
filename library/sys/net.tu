@@ -283,17 +283,19 @@ fn lookuphost_fromstr(s<string.String>) i32, LookupHost {
 
 //NOTICE: free lookuphost.original
 const LookupHost::lookuphost_fromstr(s<string.String>) i32 , LookupHost {
-    // Mother: s.rsplit_once(':') then parse port.
-    sep = string.S(*":")
-    err<i32>, host_v, port_v = string.rsplit_once(s, sep)
-    if err != Ok return io.InvalidInputSocketAddress, null
+    // Mother: s.rsplit_once(':') then parse port (dyn string path).
+    unsafe {
+        sep = string.S(*":")
+        err<i32>, host_v, port_v = string.rsplit_once(s, sep)
+        if err != Ok return io.InvalidInputSocketAddress, null
 
-    port_i64<i64> = string.tonumber_i64(port_v)
-    port_num<u16> = port_i64.(u16)
-    if port_num <= 0 return io.InvalidInputPortValue, null
+        port_i64<i64> = string.tonumber_i64(port_v)
+        port_num<u16> = port_i64.(u16)
+        if port_num <= 0 return io.InvalidInputPortValue, null
 
-    err,ret<LookupHost> = LookupHost::from(host_v, port_num)
-    return err, ret
+        err,ret<LookupHost> = LookupHost::from(host_v, port_num)
+        return err, ret
+    }
 }
 
 const LookupHost::from(host<string.String> , port_num<u16>) i32, LookupHost {
