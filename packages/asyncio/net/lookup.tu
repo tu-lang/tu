@@ -66,7 +66,7 @@ LookupHostFut::poll(ctx){
         this.poll_stage = 1
     }
     if this.poll_stage == 1 {
-        st, val = this.jh.poll(ctx)
+        st<i32>, val<i64> = this.jh.poll(ctx)
         if st == runtime.PollPending {
             return runtime.PollPending
         }

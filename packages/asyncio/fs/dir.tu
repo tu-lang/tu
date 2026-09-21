@@ -63,7 +63,7 @@ fn is_dot_name_cstr(name_c<i8*>) i32 {
 fn read_dir_open_sync(path_c<i8*>) i32, ReadDir {
     ok_code<i32> = io.Ok
     pc<i8*> = path_c
-    clo_raw = std.O_CLOEXEC
+    clo_raw<i32> = std.O_CLOEXEC
     clo<i64> = clo_raw.(i64)
     flags<i64> = std.O_RDONLY | clo
     mode_i<i64> = 0

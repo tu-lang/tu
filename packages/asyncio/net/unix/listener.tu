@@ -10,6 +10,7 @@ use runtime
 use netio
 use netio.event as evsrc
 use netio.net.uds as netuds
+use netio.sys.uds as sysuds
 use asyncio.io as aio
 use asyncio.runtime as rt
 use asyncio.runtime.io as rtio
@@ -95,7 +96,7 @@ UnixAcceptFut::poll(ctx){
         if rerr == pend return pend
         if rerr != 0 return ready, rerr, null
 
-        acc_err<i32>, inner<netuds.UnixStream>, _ = this.listener.accept()
+        acc_err<i32>, inner<netuds.UnixStream>, peer<sysuds.SocketAddr> = this.listener.accept()
         if acc_err == would_block {
             this.poll_ev.clear_readiness(ev)
             continue

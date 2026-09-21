@@ -41,15 +41,13 @@ fn sleep(d<sys.Duration>) runtime.Future {
     rttime.sleep_set_handle(current_time_handle())
     // Defer now+duration until Sleep::poll — dual() may be built before
     // block_on publishes TimeHandle (eager arg eval).
-    s = rttime.sleep_new_duration(d.as_millis())
-    fut<runtime.Future> = s
+    fut<runtime.Future> = rttime.sleep_new_duration(d.as_millis())
     return fut
 }
 
 fn sleep_until(when<rttime.Instant>) runtime.Future {
     rttime.sleep_set_handle(current_time_handle())
     deadline<u64> = deadline_from_instant(when)
-    s = rttime.sleep_new(deadline)
-    fut<runtime.Future> = s
+    fut<runtime.Future> = rttime.sleep_new(deadline)
     return fut
 }

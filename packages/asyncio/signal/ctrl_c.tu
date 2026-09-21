@@ -21,7 +21,7 @@ CtrlCFut::poll(ctx) {
         this.stage = 1
     }
     // Unpack multi-return; bare `return recv_fut.poll(ctx)` can drop the value.
-    code<i32>, val = this.recv_fut.poll(ctx)
+    code<i32>, val<i32> = this.recv_fut.poll(ctx)
     return code, val
 }
 

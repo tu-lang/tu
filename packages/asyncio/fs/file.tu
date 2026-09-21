@@ -25,7 +25,7 @@ fn file_open_sync_cstr(path_cstr<i8*>, opts<OpenOptions>) i32, File {
     ferr<i32>, flags<i64> = opts.to_flags()
     if ferr != io.Ok return ferr, null
     mode_u<u32> = opts.mode
-    clo_raw = std.O_CLOEXEC
+    clo_raw<i32> = std.O_CLOEXEC
     clo<i64> = clo_raw.(i64)
     err<i32>, fd<u64> = sys.cvt(sys.openat(std.AT_FDCWD, path_cstr, flags | clo, mode_u.(i64)))
     if err != io.Ok return err, null
@@ -34,7 +34,7 @@ fn file_open_sync_cstr(path_cstr<i8*>, opts<OpenOptions>) i32, File {
 
 fn file_open_read_sync(path<string.String>) i32, File {
     // Hardcoded O_RDONLY|O_CLOEXEC for V1 read path (same pattern as create).
-    clo_raw = std.O_CLOEXEC
+    clo_raw<i32> = std.O_CLOEXEC
     clo<i64> = clo_raw.(i64)
     flags<i64> = std.O_RDONLY | clo
     mode_i<i64> = 0
@@ -52,7 +52,7 @@ fn file_create_sync(path<string.String>) i32, File {
 fn file_create_sync_cstr(path_cstr<i8*>) i32, File {
     // O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC — hardcoded for V1 create path
     // (avoids OpenOptions field loads until that path is hardened).
-    clo_raw = std.O_CLOEXEC
+    clo_raw<i32> = std.O_CLOEXEC
     clo<i64> = clo_raw.(i64)
     flags<i64> = std.O_WRONLY | std.O_CREAT | std.O_TRUNC | clo
     mode_i<i64> = 420
