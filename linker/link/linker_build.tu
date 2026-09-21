@@ -3,15 +3,16 @@ use fmt
 use os
 use linker.linux
 use linker.utils
+use string
 
-Linker::buildExe()
-{
-	utils.msg(90,"Building executable binary")
-	exe = this.exe
+// Fill ET_EXEC headers and program headers from collected segments.
+Linker::buildExe() i32 {
+	utils.msg(90, "Building executable binary")
+	exe<linux.File> = this.exe
 
 	ehdr<linux.Elf64_Ehdr> = exe.ehdr
 	pid<i32*> = &ehdr.e_ident
-	*pid  = 0x464c457f
+	*pid = 0x464c457f
 	pid += 4
 	*pid = 0x010102
 	pid += 4
@@ -23,105 +24,124 @@ Linker::buildExe()
 	ehdr.e_machine = linux.EM_X86_64
 	ehdr.e_version = linux.EV_CURRENT
 	ehdr.e_flags = 0
-	ehdr.e_ehsize = sizeof(linux.Elf64_Ehdr)
+	ehdr.e_ehsize = linux.ELF64_EHDR_SIZE
 
-	//curOff = sizeof(linux.Elf64_Ehdr) + sizeof(linux.Elf64_Phdr) * std.len(this.segNames)
-	curOff = int(sizeof(linux.Elf64_Ehdr)) + int(sizeof(linux.Elf64_Phdr)) * std.len(this.segNames)
-	zero = 0
-	exe.addShdr("",zero,zero,zero,zero,zero,zero,zero,zero,zero)
+	zero_u32<u32> = 0
+	zero_u64<u64> = 0
+	exe.addShdr(
+		string.emptyS(),
+		zero_u32, zero_u64, zero_u64, zero_u64,
+		zero_u64, zero_u32, zero_u32, zero_u64, zero_u64
+	)
 
-	shstrtabSize = 26
-	for(seg : this.segNames){
-		shstrtabSize += std.len(seg) + 1
+	si<i32> = 0
+	while si < this.segNames.len() {
+		seg<string.String> = this.segNames.addr[si]
+		sl<Seglist> = this.segLists.find(seg)
 
-		flags<i32> = linux.PF_W | linux.PF_R
-		filesz = this.segLists[seg].size
-		if  seg == ".text" {
-			flags = linux.PF_X | linux.PF_R
+		flags<u32> = (linux.PF_W | linux.PF_R).(u32)
+		filesz<u64> = sl.size.(u64)
+		if seg.cmpstr(*".text") == string.Equal {
+			flags = (linux.PF_X | linux.PF_R).(u32)
 		}
-		if  seg == ".bss"  {
+		if seg.cmpstr(*".bss") == string.Equal {
 			filesz = 0
 		}
-		exe.addPhdr(int(linux.PT_LOAD),
-			this.segLists[seg].offset,
-			this.segLists[seg].baseAddr,
+		exe.addPhdr(
+			linux.PT_LOAD.(u32),
+			sl.offset.(u64),
+			sl.baseAddr.(u64),
 			filesz,
-			this.segLists[seg].size,
-			int(flags),
-			int(MEM_ALIGN)
+			sl.size.(u64),
+			flags,
+			MEM_ALIGN.(u64)
 		)
-		curOff = this.segLists[seg].offset
-		sh_type = int(linux.SHT_PROGBITS)
-		sh_flags<i32> = linux.SHF_ALLOC | linux.SHF_WRITE
-		sh_align = 4
-		if  seg == ".bss" {
-			sh_type = int(linux.SHT_NOBITS)
-		}
-		if  seg == ".text" {
-			sh_flags = linux.SHF_ALLOC | linux.SHF_EXECINSTR
-			sh_align = 16
-		}
+		si += 1
 	}
-	ehdr.e_phoff = sizeof(linux.Elf64_Ehdr)
-	ehdr.e_phentsize = sizeof(linux.Elf64_Phdr)
-	segnames_len = std.len(this.segNames)
-	ehdr.e_phnum = *segnames_len
+	ehdr.e_phoff = linux.ELF64_EHDR_SIZE.(u64)
+	ehdr.e_phentsize = linux.ELF64_PHDR_SIZE
+	ehdr.e_phnum = this.segNames.len().(u16)
 
-	ehdr.e_shentsize = sizeof(linux.Elf64_Shdr)
-	start<linux.Elf64_Sym> = this.symDef["main"].prov.symTab["main"]
+	ehdr.e_shentsize = linux.ELF64_SHDR_SIZE
+	main_sl<SymLink> = this.symDef.find(string.S(*"main"))
+	start<linux.Elf64_Sym> = main_sl.prov.symTab.find(string.S(*"main"))
 	ehdr.e_entry = start.st_value
-	//no need keep write strtab ... sort or things;
-	return true
+	return 1
 }
 
-Linker::writeExe(out)
-{
-	utils.msg(100,"Generating executable binary")
-	exe = this.exe
-    ehdr<linux.Elf64_Ehdr> = exe.ehdr
-	offset = exe.writeHeader(out)
-	slen = int(sizeof(linux.Elf64_Ehdr)) + std.len(exe.phdrTab) * int(sizeof(linux.Elf64_Phdr))
-	fmt.assert(offset,slen,"Linker::writeExe")
-	fp = utils.fopen(out,"a+")
-	pad<i8*> = 0
-	one<i8> = 1
-	for(seg : this.segNames){
-		sl = this.segLists[seg]
-		padnum = sl.offset - sl.begin
-		offset += padnum
-		while padnum {
-			padnum -= 1
-			utils.fwrite(fp,&pad,one)
-		}
-		if  seg != ".bss" {
-			old<Block> = null
-			instPad<i8*> = 0x90
-			for(b<Block> : sl.blocks){
-				if  old != null {
+// Write ELF image to path.
+Linker::writeExe(path<string.String>) i32 {
+	utils.msg(100, "Generating executable binary")
+	exe<linux.File> = this.exe
+	offset<i32> = exe.writeHeader(path)
+	slen<i32> = linux.ELF64_EHDR_SIZE + this.exe.phdrTab.len().(i32) * linux.ELF64_PHDR_SIZE
+	if offset != slen {
+		os.die("Linker::writeExe header size mismatch")
+	}
 
-					padnum1<i32> = b.offset - old.offset - old.size
-					offset += int(padnum1)
-					while padnum1 {
+	fp<i32> = std.fopen(path.str(), *"a+")
+	if fp <= 0 {
+		os.die("writeExe fopen failed")
+	}
+	zero_b<i8> = 0
+	nop_b<i8> = 0x90
+	one_u<u64> = 1
+	si<i32> = 0
+	while si < this.segNames.len() {
+		seg<string.String> = this.segNames.addr[si]
+		sl<Seglist> = this.segLists.find(seg)
+		padnum<i32> = sl.offset - sl.begin
+		if padnum < 0 {
+			os.die("writeExe negative segment pad")
+		}
+		offset += padnum
+		while padnum > 0 {
+			padnum -= 1
+			utils.fwrite(fp, &zero_b, one_u)
+		}
+		is_bss<i32> = seg.cmpstr(*".bss")
+		if is_bss != string.Equal {
+			old<Block> = null
+			have_old<i32> = 0
+			bi<i32> = 0
+			blen<i32> = sl.blocks.len().(i32)
+			while bi < blen {
+				b<Block> = sl.blocks.addr[bi]
+				if have_old == 1 {
+					padnum1<i32> = (b.offset - old.offset - old.size).(i32)
+					if padnum1 < 0 {
+						os.die("writeExe negative block pad")
+					}
+					offset += padnum1
+					while padnum1 > 0 {
 						padnum1 -= 1
-						utils.fwrite(fp,&instPad,one)
+						utils.fwrite(fp, &nop_b, one_u)
 					}
 				}
 				old = b
-				offset += int(b.size)
-				utils.fwrite(fp,b.data,b.size)
+				have_old = 1
+				offset += b.size.(i32)
+				bsz<u64> = b.size.(u64)
+				if bsz != 0 {
+					if b.data == null {
+						os.die("writeExe null block data")
+					}
+					utils.fwrite(fp, b.data, bsz)
+				}
+				bi += 1
 			}
 		}
+		si += 1
 	}
 	utils.fclose(fp)
-	return true
+	return 1
 }
 
-Linker::link(out)
-{
-	utils.debug("Linker::link")
+Linker::link(path<string.String>) i32 {
+	utils.debug("Linker::link".(i8))
 	this.collectInfo()
-	if   !this.symValid() {
-		return false
+	if this.symValid() == 0 {
+		return 0
 	}
 	this.allocAddr()
 	this.symParser()
@@ -129,6 +149,6 @@ Linker::link(out)
 	this.relocate()
 	this.fillPclntab()
 	this.buildExe()
-	this.writeExe(out)
-	return true
+	this.writeExe(path)
+	return 1
 }

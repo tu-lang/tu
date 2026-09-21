@@ -1,4 +1,5 @@
 use std
+use std.map
 use string
 use linker.linux
 use linker.utils
@@ -8,29 +9,33 @@ const TU_PCLN_HDR_I<i32> = 24
 const TU_PCLN_REC_I<i32> = 48
 const TU_PCLN_MAGIC_U<u32> = 0xFFFFFFF2.(u32)
 
-fn pcln_is_frag(name){
-	if std.len(name) <= 10 {
-		return false
+fn pcln_is_frag(name<string.String>) i32 {
+	if name.len() <= 10 {
+		return 0
 	}
-	rest = string.sub(name, 10)
-	return "__tu_pcln." + rest == name
+	head<string.String> = name.sub(0, 10)
+	if head.cmpstr(*"__tu_pcln.") == string.Equal {
+		return 1
+	}
+	return 0
 }
 
-fn pcln_frag_func(name){
-	return string.sub(name, 10)
+fn pcln_frag_func(name<string.String>) string.String {
+	return name.sub(10, name.len() - 10)
 }
 
 // Merge __tu_pcln.* + __tu_ln.* into runtime_pclntab (exact-sized by allocAddr).
-Linker::fillPclntab()
-{
-	if !std.exist("runtime_pclntab", this.symDef) {
-		return true
+Linker::fillPclntab() i32 {
+	if this.symDef.find(string.S(*"runtime_pclntab")) == map.Null {
+		return 1
 	}
-	dataSeg = this.segLists[".data"]
-	tab_sym<linux.Elf64_Sym> = this.symDef["runtime_pclntab"].prov.symTab["runtime_pclntab"]
+	dataSeg<Seglist> = this.segLists.find(string.S(*".data"))
+	tab_sl<SymLink> = this.symDef.find(string.S(*"runtime_pclntab"))
+	tab_sym<linux.Elf64_Sym> = tab_sl.prov.symTab.find(string.S(*"runtime_pclntab"))
 	tab_end_va<u64> = tab_sym.st_value
-	if std.exist("runtime_pclntab_end", this.symDef) {
-		end_sym<linux.Elf64_Sym> = this.symDef["runtime_pclntab_end"].prov.symTab["runtime_pclntab_end"]
+	if this.symDef.find(string.S(*"runtime_pclntab_end")) != map.Null {
+		end_sl<SymLink> = this.symDef.find(string.S(*"runtime_pclntab_end"))
+		end_sym<linux.Elf64_Sym> = end_sl.prov.symTab.find(string.S(*"runtime_pclntab_end"))
 		tab_end_va = end_sym.st_value
 	}
 	cap_u<u64> = 0.(u64)
@@ -39,19 +44,21 @@ Linker::fillPclntab()
 	}
 
 	ncount<i32> = 0
-	for(def : this.symDef){
-		sname = def.name
-		if !pcln_is_frag(sname) {
+	iter0<map.MapIter> = this.symDef.iter()
+	while iter0.next() != map.End {
+		def0<SymLink> = iter0.v()
+		sname0<string.String> = def0.name
+		if pcln_is_frag(sname0) == 0 {
 			continue
 		}
-		fname = pcln_frag_func(sname)
-		if !std.exist(fname, this.symDef) {
+		fname0<string.String> = pcln_frag_func(sname0)
+		if this.symDef.find(fname0) == map.Null {
 			continue
 		}
 		ncount += 1
 	}
 	if ncount == 0 {
-		return true
+		return 1
 	}
 
 	need_i<i32> = TU_PCLN_HDR_I + ncount * TU_PCLN_REC_I
@@ -61,7 +68,7 @@ Linker::fillPclntab()
 		utils.error("pclntab: allocated size too small for functab")
 	}
 
-	baddr_u<u32> = *dataSeg.baseAddr
+	baddr_u<u32> = dataSeg.baseAddr.(u32)
 	tab_u<u32> = tab_sym.st_value.(u32)
 	rel_u<u32> = tab_u - baddr_u
 	span_u32<u32> = cap_u.(u32)
@@ -71,7 +78,9 @@ Linker::fillPclntab()
 	}
 	dst<i8*> = null
 	found<i32> = 0
-	for(v<Block> : dataSeg.blocks){
+	bi<i32> = 0
+	while bi < dataSeg.blocks.len() {
+		v<Block> = dataSeg.blocks.addr[bi]
 		if v.offset <= rel_u && rel_u + span_u32 <= v.offset + v.size {
 			base<i8*> = v.data
 			off_i<i32> = (rel_u - v.offset).(i32)
@@ -79,6 +88,7 @@ Linker::fillPclntab()
 			found = 1
 			break
 		}
+		bi += 1
 	}
 	if found == 0 {
 		utils.error("pclntab: cannot locate runtime_pclntab in .data")
@@ -119,24 +129,29 @@ Linker::fillPclntab()
 	o36u<u32> = 36.(u32)
 	o40u<u32> = 40.(u32)
 	ri<i32> = 0
-	for(def : this.symDef){
-		sname = def.name
-		if !pcln_is_frag(sname) {
+	iter1<map.MapIter> = this.symDef.iter()
+	while iter1.next() != map.End {
+		def<SymLink> = iter1.v()
+		sname<string.String> = def.name
+		if pcln_is_frag(sname) == 0 {
 			continue
 		}
-		fname = pcln_frag_func(sname)
-		if !std.exist(fname, this.symDef) {
+		fname<string.String> = pcln_frag_func(sname)
+		if this.symDef.find(fname) == map.Null {
 			continue
 		}
-		fsym<linux.Elf64_Sym> = this.symDef[fname].prov.symTab[fname]
+		fsl<SymLink> = this.symDef.find(fname)
+		fsym<linux.Elf64_Sym> = fsl.prov.symTab.find(fname)
 		entry_u<u64> = fsym.st_value
 		end_u<u64> = entry_u
-		endname = "__tu_end_" + fname
-		if std.exist(endname, this.symDef) {
-			esym<linux.Elf64_Sym> = this.symDef[endname].prov.symTab[endname]
+		endname<string.String> = string.S(*"__tu_end_")
+		endname.cat(fname)
+		if this.symDef.find(endname) != map.Null {
+			esl<SymLink> = this.symDef.find(endname)
+			esym<linux.Elf64_Sym> = esl.prov.symTab.find(endname)
 			end_u = esym.st_value
 		}
-		fr<linux.Elf64_Sym> = def.prov.symTab[sname]
+		fr<linux.Elf64_Sym> = def.prov.symTab.find(sname)
 		fva_u<u32> = fr.st_value.(u32)
 		name_u<u64> = 0.(u64)
 		file_u<u64> = 0.(u64)
@@ -150,15 +165,17 @@ Linker::fillPclntab()
 		dataSeg.pcln_read_i32_into(fva_u + o40u, &framesize_i)
 
 		pcln_off_u<u32> = 0.(u32)
-		lnname = "__tu_ln." + fname
-		if nlines_i > 0 && nlines_i < 100000 && std.exist(lnname, this.symDef) {
+		lnname<string.String> = string.S(*"__tu_ln.")
+		lnname.cat(fname)
+		if nlines_i > 0 && nlines_i < 100000 && this.symDef.find(lnname) != map.Null {
 			chunk_i<i32> = 4 + nlines_i * 8
 			if cursor_i + chunk_i <= cap_i {
 				pcln_off_u = cursor_i.(u32)
 				pn<u32*> = dst + cursor_i
 				*pn = nlines_i.(u32)
 				cursor_i += 4
-				ln_sym<linux.Elf64_Sym> = this.symDef[lnname].prov.symTab[lnname]
+				ln_sl<SymLink> = this.symDef.find(lnname)
+				ln_sym<linux.Elf64_Sym> = ln_sl.prov.symTab.find(lnname)
 				lnva_u<u32> = ln_sym.st_value.(u32)
 				li<i32> = 0
 				while li < nlines_i {
@@ -232,6 +249,6 @@ Linker::fillPclntab()
 		}
 		i += 1
 	}
-	utils.debug("pclntab filled nfunc=", ncount)
-	return true
+	utils.debug("pclntab filled nfunc= %d".(i8), ncount)
+	return 1
 }

@@ -53,19 +53,26 @@ SHT_SYMTAB<i32>   = 2
 SHT_STRTAB<i32>   = 3
 SHT_NOBITS<i32>   = 8
 
+// Named sizes: sizeof(pkg.Type) is rejected across packages.
+ELF64_EHDR_SIZE<i32> = 64
+ELF64_PHDR_SIZE<i32> = 56
+ELF64_SHDR_SIZE<i32> = 64
+ELF64_SYM_SIZE<i32>  = 24
+ELF64_RELA_SIZE<i32> = 24
 
-func ELF64_R_SYM(i<u64>)	{
+
+fn ELF64_R_SYM(i<u64>) u64 {
 	return i >> 32
 }
-func ELF32_ST_BIND(val<u8>){
+fn ELF32_ST_BIND(val<u8>) u8 {
 	return val >> 4
 }
-func ELF64_ST_BIND(val){
+fn ELF64_ST_BIND(val<u8>) u8 {
 	return ELF32_ST_BIND(val)
 }
-func ELF64_ST_TYPE(val<u8>){
+fn ELF64_ST_TYPE(val<u8>) u8 {
 	return val & 0xf
 }
-func ELF64_R_TYPE(val<i64>){
-	return val & 0xffffffff
+fn ELF64_R_TYPE(val<i64>) u8 {
+	return (val & 0xffffffff).(u8)
 }

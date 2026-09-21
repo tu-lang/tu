@@ -3,183 +3,234 @@ use linker.linux
 use linker.utils
 use asmer.ast
 use fmt
+use std
+use std.map
+use string
+use os
 
-bytes
-trace
-strip_pcln_file = 0 // zero file fields in PclnRec when non-zero
+trace<i32> = 0
+strip_pcln_file<i32> = 0
 
-class Linker
-{
-	segLists = {}		// map[string]SegList
-	symLinks = []		// arr[SymLink*]
-	symDef	 = {}		// map[string]symLink*
-	secDef	 = []		// arr[symLink*]
-	elfs	 = []		// arr[elf,elf,elf]
-	segNames = [ 		// arr[string] 
-		".text" , ".data" , 
-		".bss"  ,
-		".rodata" , ".data.rel.local"
-	]		
-	exe				    // File* 
-	startOwner			// _start owner file
-	bssaddr  = 0
-	pclntab_size = 0    // exact need bytes after computePclntabNeed
-	bytes
+fn link_mapstringhashkey(k<string.String>) u64 {
+	return k.hash64()
 }
-Linker::init(){
-	utils.debug("Linker::init")
-	file = new linux.File()
-	this.exe = file
 
-	sl = this.segLists
-	for(name : this.segNames){
-		sl[name] = new Seglist()
+// Linux ELF linker: collect objects, resolve symbols, layout, relocate, emit ET_EXEC.
+mem Linker {
+	map.Map*   segLists // string.String* -> Seglist*
+	std.Array* symLinks // SymLink*
+	map.Map*   symDef   // string.String* -> SymLink*
+	std.Array* secDef   // SymLink*
+	std.Array* elfs     // linux.File*
+	std.Array* segNames // string.String*
+	linux.File* exe
+	linux.File* startOwner
+	i32 bssaddr
+	i32 pclntab_size
+	i32 bytes
+}
+
+Linker::init(){
+	utils.debug("Linker::init".(i8))
+	this.exe = new linux.File()
+	this.startOwner = null
+	this.bssaddr = 0
+	this.pclntab_size = 0
+	this.bytes = 0
+
+	this.segLists = map.map_new(link_mapstringhashkey.(u64), 0.(i8))
+	this.symLinks = std.NewArray()
+	this.symDef = map.map_new(link_mapstringhashkey.(u64), 0.(i8))
+	this.secDef = std.NewArray()
+	this.elfs = std.NewArray()
+	this.segNames = std.NewArray()
+
+	this.segNames.push(string.S(*".text"))
+	this.segNames.push(string.S(*".data"))
+	this.segNames.push(string.S(*".bss"))
+	this.segNames.push(string.S(*".rodata"))
+	this.segNames.push(string.S(*".data.rel.local"))
+
+	i<i32> = 0
+	while i < this.segNames.len() {
+		name<string.String> = this.segNames.addr[i]
+		this.segLists.insert(name, new Seglist())
+		i += 1
 	}
 }
-Linker::addElf(obj)
-{
-	utils.debug("Linker::addElf add a elffile:",obj)
-	e = new linux.File()
-	e.readElf(obj)
-	this.elfs[] = e
+
+Linker::addElf(path<string.String>){
+	utils.debug("Linker::addElf add a elffile".(i8))
+	e<linux.File> = new linux.File()
+	e.readElf(path)
+	this.elfs.push(e)
 }
-Linker::collectInfo()
-{
-	utils.msg(30,"Collecting object info")
-	Null<i8> = 0
-	for(e : this.elfs){
-		utils.debug("Collect object info " + e.elfdir)
-		for(seg : this.segNames){
-			if std.exist(seg,e.shdrTab) {
-				this.segLists[seg].ownerList[] = e
+
+// Dyn-ABI facades for linker/main (unsafe dyn CLI) to drive mem Linker.
+export func linker_new() {
+	return new Linker()
+}
+export func linker_add_elf(l, obj) {
+	lk<Linker> = l
+	path<string.String> = linux.file_path_from_dyn(obj)
+	lk.addElf(path)
+}
+export func linker_link(l, out) {
+	lk<Linker> = l
+	path<string.String> = linux.file_path_from_dyn(out)
+	// Box i32 for dyn callers (main compares return with == 0).
+	return int(lk.link(path))
+}
+
+Linker::collectInfo(){
+	utils.msg(30, "Collecting object info")
+	ei<i32> = 0
+	while ei < this.elfs.len() {
+		e<linux.File> = this.elfs.addr[ei]
+		utils.debug("Collect object info %S".(i8), e.elfdir.str())
+		si<i32> = 0
+		while si < this.segNames.len() {
+			seg<string.String> = this.segNames.addr[si]
+			if e.shdrTab.find(seg) != map.Null {
+				sl<Seglist> = this.segLists.find(seg)
+				sl.ownerList.push(e)
 			}
+			si += 1
 		}
-		for(name,sym<linux.Elf64_Sym> : e.symTab){
-			symLink = new SymLink()
+		iter<map.MapIter> = e.symTab.iter()
+		while iter.next() != map.End {
+			name<string.String> = iter.k()
+			sym<linux.Elf64_Sym> = iter.v()
+			symLink<SymLink> = new SymLink()
 			symLink.name = name
 			if sym.st_name == 0 {
-				utils.debug("found sec sym:",name)
+				utils.debug("found sec sym: %S".(i8), name.str())
 				symLink.prov = e
 				symLink.recv = null
-				this.secDef[] = symLink
-			}else if  sym.st_shndx == linux.SHN_UNDEF {
-				utils.debug("found undef sym:",name)
+				this.secDef.push(symLink)
+			} else if sym.st_shndx == linux.SHN_UNDEF {
+				utils.debug("found undef sym: %S".(i8), name.str())
 				symLink.recv = e
 				symLink.prov = null
-				this.symLinks[] = symLink
-			}else if  sym.st_shndx != linux.SHN_ABS {
-				utils.debug("found sym:",name)
+				this.symLinks.push(symLink)
+			} else if sym.st_shndx != linux.SHN_ABS {
+				utils.debug("found sym: %S".(i8), name.str())
 				symLink.prov = e
 				symLink.recv = null
-				if std.exist(symLink.name,this.symDef) {
-					def = this.symDef[symLink.name]
-					defm<linux.Elf64_Sym> = def.prov.symTab[def.name]
-					if linux.ELF64_ST_BIND(defm.st_info) == linux.STB_GLOBAL {
+				if this.symDef.find(symLink.name) != map.Null {
+					def<SymLink> = this.symDef.find(symLink.name)
+					defm<linux.Elf64_Sym> = def.prov.symTab.find(def.name)
+					bind<u8> = defm.st_info >> 4
+					if bind == linux.STB_GLOBAL.(u8) {
 						utils.errorf(
 							"symbol conflict: %s file:%s  from:%s",
-							symLink.name,e.elfdir,def.prov.elfdir
+							name.dyn(0), e.elfdir.dyn(0), def.prov.elfdir.dyn(0)
 						)
 					}
 				}
-				this.symDef[symLink.name] = symLink
+				this.symDef.insert(symLink.name, symLink)
 			}
-
 		}
+		ei += 1
 	}
-
 }
 
-Linker::symValid()
-{
-	utils.msg(40,"Checking symbol valid")
-	flag = true
+Linker::symValid() i32 {
+	utils.msg(40, "Checking symbol valid")
+	flag<i32> = 1
 
-	if !std.exist("main",this.symDef) {
+	if this.symDef.find(string.S(*"main")) == map.Null {
 		os.die("not entry address: main")
 	}
 
-	startOwner = this.symDef["main"]
-	for(undefine : this.symLinks){
-		if std.exist(undefine.name , this.symDef) {
-			def = this.symDef[undefine.name]
-			undefine.prov = def.prov 
+	this.startOwner = null
+	startLink<SymLink> = this.symDef.find(string.S(*"main"))
+	ui<i32> = 0
+	while ui < this.symLinks.len() {
+		undefine<SymLink> = this.symLinks.addr[ui]
+		if this.symDef.find(undefine.name) != map.Null {
+			def<SymLink> = this.symDef.find(undefine.name)
+			undefine.prov = def.prov
 			def.recv = def.prov
-
 		} else {
-			msym<linux.Elf64_Sym> = undefine.recv.symTab[undefine.name]
+			msym<linux.Elf64_Sym> = undefine.recv.symTab.find(undefine.name)
 			info<u8> = msym.st_info
-			type = ""
-			if   linux.ELF64_ST_TYPE(info)  == linux.STT_OBJECT {
-				type = "variable"
+			stype<u8> = info & 0xf
+			type_s<string.String> = string.S(*"symbol")
+			if stype == linux.STT_OBJECT.(u8) {
+				type_s = string.S(*"variable")
 			}
-			if   linux.ELF64_ST_TYPE(info)  == linux.STT_FUNC {
-				type = "function"
+			if stype == linux.STT_FUNC.(u8) {
+				type_s = string.S(*"function")
 			}
-			if  type == "" {
-				type = "symbol"
+			utils.debug("file undefine".(i8))
+			unsafe {
+				ast.undef_vocab_hint(undefine.name.dyn(0))
 			}
-			utils.debug("file:%s type:%s var:%s undefine",undefine.recv.elfdir,type,undefine.name)
-			ast.undef_vocab_hint(undefine.name)
-			if  flag {
+			if flag == 1 {
 				utils.errorf(
 					"file:%s type:%s var:%s undefine",
-					undefine.recv.elfdir,
-					type,
-					undefine.name
+					undefine.recv.elfdir.dyn(0),
+					type_s.dyn(0),
+					undefine.name.dyn(0)
 				)
-				flag = false
+				flag = 0
 			}
 		}
+		ui += 1
 	}
-	utils.debug("done symValid",flag)
+	utils.debug("done symValid %d".(i8), flag)
 	return flag
 }
-Linker::allocAddr()
-{
-	utils.msg(50,"Allocing address ")
+
+Linker::allocAddr(){
+	utils.msg(50, "Allocing address ")
 	curAddr<i32> = BASE_ADDR
-	curOff = int(sizeof(linux.Elf64_Ehdr)) + int(sizeof(linux.Elf64_Phdr)) * std.len(this.segNames)
-	//for reference
-	mcurOff<i32> = *curOff
+	curOff<i32> = linux.ELF64_EHDR_SIZE + linux.ELF64_PHDR_SIZE * this.segNames.len().(i32)
 	need_u<u32> = this.computePclntabNeed()
 
-	for(seg : this.segNames){
+	si<i32> = 0
+	while si < this.segNames.len() {
+		seg<string.String> = this.segNames.addr[si]
 		pass_need<u32> = 0
-		if seg == ".data" {
+		if seg.cmpstr(*".data") == string.Equal {
 			pass_need = need_u
 		}
-		this.segLists[seg].allocAddr(seg,&curAddr,&mcurOff,pass_need)
+		sl<Seglist> = this.segLists.find(seg)
+		sl.allocAddr(seg, &curAddr, &curOff, pass_need)
+		si += 1
 	}
-	this.bssaddr = int(curAddr)
+	this.bssaddr = curAddr
 }
 
 // Scan __tu_pcln.* before allocAddr; st_value still section-relative.
-Linker::computePclntabNeed()
-{
+Linker::computePclntabNeed() u32 {
 	this.pclntab_size = 0
-	if !std.exist("runtime_pclntab", this.symDef) {
+	if this.symDef.find(string.S(*"runtime_pclntab")) == map.Null {
 		return 0
 	}
 	hdr_sz<i32> = 24
 	rec_sz<i32> = 48
 	nfunc<i32> = 0
 	pctab_i<i32> = 0
-	for(def : this.symDef){
-		sname = def.name
-		if !pcln_is_frag(sname) {
+	iter<map.MapIter> = this.symDef.iter()
+	while iter.next() != map.End {
+		def<SymLink> = iter.v()
+		sname<string.String> = def.name
+		if pcln_is_frag(sname) == 0 {
 			continue
 		}
-		fname = pcln_frag_func(sname)
-		if !std.exist(fname, this.symDef) {
+		fname<string.String> = pcln_frag_func(sname)
+		if this.symDef.find(fname) == map.Null {
 			continue
 		}
 		nfunc += 1
-		prov = def.prov
-		if !std.exist(".data", prov.shdrTab) {
+		prov<linux.File> = def.prov
+		if prov.shdrTab.find(string.S(*".data")) == map.Null {
 			continue
 		}
-		data_sh<linux.Elf64_Shdr> = prov.shdrTab[".data"]
-		fr<linux.Elf64_Sym> = prov.symTab[sname]
+		data_sh<linux.Elf64_Shdr> = prov.shdrTab.find(string.S(*".data"))
+		fr<linux.Elf64_Sym> = prov.symTab.find(sname)
 		off_u<u64> = fr.st_value
 		sz_u<u64> = data_sh.sh_size
 		frag_u<u64> = 48
@@ -203,98 +254,116 @@ Linker::computePclntabNeed()
 		need_i = hdr_sz
 	}
 	this.pclntab_size = need_i
-	ret_u<u32> = need_i.(u32)
-	return ret_u
+	return need_i.(u32)
 }
 
 // After symParser: end = start + need for lea/cap.
-Linker::fixPclntabEnd()
-{
+Linker::fixPclntabEnd() i32 {
 	ps<i32> = this.pclntab_size
 	if ps == 0 {
-		return true
+		return 1
 	}
-	if !std.exist("runtime_pclntab", this.symDef) {
-		return true
+	if this.symDef.find(string.S(*"runtime_pclntab")) == map.Null {
+		return 1
 	}
-	if !std.exist("runtime_pclntab_end", this.symDef) {
-		return true
+	if this.symDef.find(string.S(*"runtime_pclntab_end")) == map.Null {
+		return 1
 	}
-	start_sym<linux.Elf64_Sym> = this.symDef["runtime_pclntab"].prov.symTab["runtime_pclntab"]
-	end_sym<linux.Elf64_Sym> = this.symDef["runtime_pclntab_end"].prov.symTab["runtime_pclntab_end"]
+	start_sl<SymLink> = this.symDef.find(string.S(*"runtime_pclntab"))
+	end_sl<SymLink> = this.symDef.find(string.S(*"runtime_pclntab_end"))
+	start_sym<linux.Elf64_Sym> = start_sl.prov.symTab.find(string.S(*"runtime_pclntab"))
+	end_sym<linux.Elf64_Sym> = end_sl.prov.symTab.find(string.S(*"runtime_pclntab_end"))
 	end_sym.st_value = start_sym.st_value + ps.(u64)
-	for(sym : this.symLinks){
-		if sym.name == "runtime_pclntab_end" {
+	si<i32> = 0
+	while si < this.symLinks.len() {
+		sym<SymLink> = this.symLinks.addr[si]
+		if sym.name.cmpstr(*"runtime_pclntab_end") == string.Equal {
 			if sym.recv != null {
-				if std.exist("runtime_pclntab_end", sym.recv.symTab) {
-					rs<linux.Elf64_Sym> = sym.recv.symTab["runtime_pclntab_end"]
+				if sym.recv.symTab.find(string.S(*"runtime_pclntab_end")) != map.Null {
+					rs<linux.Elf64_Sym> = sym.recv.symTab.find(string.S(*"runtime_pclntab_end"))
 					rs.st_value = end_sym.st_value
 				}
 			}
 		}
+		si += 1
 	}
-	return true
+	return 1
 }
 
-Linker::symParser()
-{
-	utils.msg(60,"Relocating symbol")
-	for(def : this.symDef){
-		sym<linux.Elf64_Sym> = def.prov.symTab[def.name]
-		segName = ""
-		if  sym.st_shndx == linux.SHN_COMMON {
-			segName = ".bss"
-		}else{
-			segName = def.prov.shdrNames[int(sym.st_shndx)]
+Linker::symParser(){
+	utils.msg(60, "Relocating symbol")
+	iter<map.MapIter> = this.symDef.iter()
+	while iter.next() != map.End {
+		def<SymLink> = iter.v()
+		sym<linux.Elf64_Sym> = def.prov.symTab.find(def.name)
+		segName<string.String> = null
+		if sym.st_shndx == linux.SHN_COMMON {
+			segName = string.S(*".bss")
+		} else {
+			shndx<i32> = sym.st_shndx.(i32)
+			segName = def.prov.shdrNames.addr[shndx]
 		}
-		if  segName == ".bss" && def.name != ".bss" {
-			this.bssaddr += int(sym.st_size)
-			sym.st_value = *this.bssaddr
-		}else{
-			sh<linux.Elf64_Shdr> = def.prov.shdrTab[segName]
+		if segName.cmpstr(*".bss") == string.Equal && def.name.cmpstr(*".bss") != string.Equal {
+			this.bssaddr += sym.st_size.(i32)
+			sym.st_value = this.bssaddr.(u64)
+		} else {
+			sh<linux.Elf64_Shdr> = def.prov.shdrTab.find(segName)
 			sym.st_value = sym.st_value + sh.sh_addr
 		}
 	}
-	utils.debug("secDef parse")
-	for(sec : this.secDef){
-		sec_sym<linux.Elf64_Sym> = sec.prov.symTab[sec.name]
-		segName = sec.prov.shdrNames[int(sec_sym.st_shndx)]
+	utils.debug("secDef parse".(i8))
+	sci<i32> = 0
+	while sci < this.secDef.len() {
+		sec<SymLink> = this.secDef.addr[sci]
+		sec_sym<linux.Elf64_Sym> = sec.prov.symTab.find(sec.name)
+		sec_shndx<i32> = sec_sym.st_shndx.(i32)
+		segName2<string.String> = sec.prov.shdrNames.addr[sec_shndx]
 
-		if  segName == ".bss" && sec.name != ".bss" {
-			this.bssaddr += int(sec_sym.st_size)
-			sec_sym.st_value = *this.bssaddr
-		}else{
-			sec_sh<linux.Elf64_Shdr> = sec.prov.shdrTab[segName]
+		if segName2.cmpstr(*".bss") == string.Equal && sec.name.cmpstr(*".bss") != string.Equal {
+			this.bssaddr += sec_sym.st_size.(i32)
+			sec_sym.st_value = this.bssaddr.(u64)
+		} else {
+			sec_sh<linux.Elf64_Shdr> = sec.prov.shdrTab.find(segName2)
 			sec_sym.st_value = sec_sym.st_value + sec_sh.sh_addr
 		}
+		sci += 1
 	}
-	for(syml : this.symLinks){
-		provsym<linux.Elf64_Sym> = syml.prov.symTab[syml.name]
-		recvsym<linux.Elf64_Sym> = syml.recv.symTab[syml.name]
+	sli<i32> = 0
+	while sli < this.symLinks.len() {
+		syml<SymLink> = this.symLinks.addr[sli]
+		provsym<linux.Elf64_Sym> = syml.prov.symTab.find(syml.name)
+		recvsym<linux.Elf64_Sym> = syml.recv.symTab.find(syml.name)
 		recvsym.st_value = provsym.st_value
+		sli += 1
 	}
 }
 
-Linker::relocate()
-{
-	utils.msg(80,"Relocating address")
-	for(e : this.elfs){
-		//TODO: copy on write
-		tab = e.relTab
-		for(t : tab){
-			utils.debug(t,t.relname)
-			if  t.relname == "" {
+Linker::relocate(){
+	utils.msg(80, "Relocating address")
+	ei<i32> = 0
+	while ei < this.elfs.len() {
+		e<linux.File> = this.elfs.addr[ei]
+		tab<std.Array> = e.relTab
+		ti<i32> = 0
+		while ti < tab.len() {
+			t<linux.RelItem> = tab.addr[ti]
+			utils.debug("relocate item".(i8))
+			if t.relname.empty() == string.True {
+				ti += 1
 				continue
 			}
-			symname = t.relname
-			sym<linux.Elf64_Sym> = e.symTab[symname]
+			symname<string.String> = t.relname
+			sym<linux.Elf64_Sym> = e.symTab.find(symname)
 			rel<linux.Elf64_Rela> = t.rel
-			sh<linux.Elf64_Shdr> = e.shdrTab[t.segname]
-			file = e.elfdir
-			symAddr<u32> = sym.st_value + rel.r_addend
-			relAddr<u32> = sh.sh_addr + rel.r_offset
-			obj = this.segLists[t.segname]
-			obj.relocAddr(relAddr,linux.ELF64_R_TYPE(rel.r_info),symAddr,rel.r_addend)
+			sh<linux.Elf64_Shdr> = e.shdrTab.find(t.segname)
+			symAddr<u32> = (sym.st_value + rel.r_addend).(u32)
+			relAddr<u32> = (sh.sh_addr + rel.r_offset).(u32)
+			obj<Seglist> = this.segLists.find(t.segname)
+			rinfo2<i64> = rel.r_info.(i64)
+			rtype<u8> = (rinfo2 & 0xffffffff).(u8)
+			obj.relocAddr(relAddr, rtype, symAddr, rel.r_addend.(i32))
+			ti += 1
 		}
+		ei += 1
 	}
 }

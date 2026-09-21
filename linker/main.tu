@@ -8,17 +8,17 @@ use string
 use linker.utils
 use runtime
 
-link_target = 0
+link_target<i32> = 0
 
 //[dir,dir,dir]
-scan_dirs
+scan_dirs = []
 
 //[file,file]
-scan_files
+scan_files = []
 
 // executable file name
-out
-out_set = 0
+out = "a.out"
+out_set<i32> = 0
 
 unsafe fn print_help(){
     fmt.println("usage: ./cld [options|file.o...]\n" +
@@ -70,17 +70,17 @@ unsafe fn link(){
         utils.msg(100,"Generate " + out + " Passed")
         return
     }
-    linker  = new link.Linker()
+    lk = link.linker_new()
     for(obj : scan_files){
-        linker.addElf(obj)
+        link.linker_add_elf(lk, obj)
     }
-    linker.link(out)
+    link.linker_link(lk, out)
 }
 
 unsafe fn scan(){
     utils.debug("main.scan")
     darwin_default_out()
-    linker  = new link.Linker()
+    lk = link.linker_new()
 
     for(dir : scan_dirs){
         if !std.is_dir(dir) os.die(dir + " not exist")
@@ -118,10 +118,10 @@ unsafe fn scan(){
     i = 1
     for f : scan_files {
 	    utils.smsg("[ " + i + "/" + total +"]","Reading elf object info " + f)
-        linker.addElf(f)
+        link.linker_add_elf(lk, f)
         i += 1
     }
-    if !linker.link(out) {
+    if link.linker_link(lk, out) == 0 {
         utils.error("Generate " + out + " Failed")
     }
     utils.msg(100,"Generate " + out + " Passed")
@@ -209,7 +209,7 @@ unsafe fn command() {
                 i += 2
             }
             "-d" : {
-                link.trace = true
+                link.trace = 1
                 i += 1
             }
             "-o" : {
