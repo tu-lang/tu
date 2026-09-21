@@ -17,11 +17,13 @@ mem Frame {
 FRAME_SIZE<u64> = 24.(u64)
 
 fn callerpc(){
-	sinfo = stack(CUR_CALLER)
-	if std.len(sinfo) >= 3 {
-		return sinfo[2]
+	unsafe {
+		sinfo = stack(CUR_CALLER)
+		if std.len(sinfo) >= 3 {
+			return sinfo[2]
+		}
+		return "??:??"
 	}
-	return "??:??"
 }
 
 fn bp_usable(bp<u64*>) i32 {
@@ -118,7 +120,7 @@ fn capture_stack_probe(max<i32>) (i32, i32, u64) {
 		return 0.(i32), 0.(i32), 0.(u64)
 	}
 	bytes<u64> = FRAME_SIZE * max.(u64)
-	raw = std.malloc(bytes)
+	raw<i8*> = std.malloc(bytes)
 	dst<Frame> = raw.(Frame)
 	n<i32>, trunc<i32> = capture_stack(dst, max)
 	pc0<u64> = 0.(u64)
@@ -130,32 +132,36 @@ fn capture_stack_probe(max<i32>) (i32, i32, u64) {
 
 fn stack(level<i32>){
 	if level <= 0 {
-		return []
+		unsafe {
+			return []
+		}
 	}
 	bytes<u64> = FRAME_SIZE * level.(u64)
-	raw = std.malloc(bytes)
+	raw<i8*> = std.malloc(bytes)
 	dst<Frame> = raw.(Frame)
 	n<i32>, trunc<i32> = capture_stack(dst, level)
-	arr = []
-	i<i32> = 0
-	base<u64> = dst.(u64)
-	if n > 0 {
-		i = 1
-	}
-	while i < n {
-		fr_bits<u64> = base + i.(u64) * FRAME_SIZE
-		fr<Frame> = fr_bits.(Frame)
-		lookup<u64> = fr.pc
-		if lookup > 0.(u64) {
-			lookup = lookup - 1.(u64)
+	unsafe {
+		arr = []
+		i<i32> = 0
+		base<u64> = dst.(u64)
+		if n > 0 {
+			i = 1
 		}
-		arr[] = findpc(lookup)
-		i += 1
+		while i < n {
+			fr_bits<u64> = base + i.(u64) * FRAME_SIZE
+			fr<Frame> = fr_bits.(Frame)
+			lookup<u64> = fr.pc
+			if lookup > 0.(u64) {
+				lookup = lookup - 1.(u64)
+			}
+			arr[] = findpc(lookup)
+			i += 1
+		}
+		if trunc != 0 {
+			arr[] = "...truncated"
+		}
+		return arr
 	}
-	if trunc != 0 {
-		arr[] = "...truncated"
-	}
-	return arr
 }
 
 // Return formatted frame for caller skip levels above this helper.
@@ -165,7 +171,7 @@ fn Caller(skip<i32>){
 		level = 3
 	}
 	bytes<u64> = FRAME_SIZE * level.(u64)
-	raw = std.malloc(bytes)
+	raw<i8*> = std.malloc(bytes)
 	dst<Frame> = raw.(Frame)
 	n<i32>, trunc<i32> = capture_stack(dst, level)
 	idx<i32> = skip + 1
@@ -213,7 +219,7 @@ fn caller_pc_at(skip<i32>) u64 {
 		level = 3
 	}
 	bytes<u64> = FRAME_SIZE * level.(u64)
-	raw = std.malloc(bytes)
+	raw<i8*> = std.malloc(bytes)
 	dst<Frame> = raw.(Frame)
 	n<i32>, trunc<i32> = capture_stack(dst, level)
 	idx<i32> = skip + 1

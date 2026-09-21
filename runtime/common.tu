@@ -162,12 +162,14 @@ fn dieinter(str<i8*>,args<i64*>...){
 fn dief(str<i8*>,args<i64*>...){
 	fmt.vfprintf(std.STDOUT,str,args)
     fmt.vfprintf(std.STDOUT,*"\ndebug backtrace:\n")
-	infos = debug.stack(10.(i8))
-    i = 1
-    for v : infos {
-        fmt.printf("%d: %s\n",i,v)
-        i += 1
-    }
+	unsafe {
+		infos = debug.stack(10.(i8))
+		i = 1
+		for v : infos {
+			fmt.printf("%d: %s\n",i,v)
+			i += 1
+		}
+	}
 	std.die(-1.(i8))
 }
 

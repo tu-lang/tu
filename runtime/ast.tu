@@ -226,8 +226,10 @@ fn type_string(obj<Value>){
 		Object : return "object".(i8)
         Func : return "func".(i8)
 		_    : {
-            ty = "unknown type:" + int(t)
-            return *ty
+            unsafe {
+                ty = "unknown type:" + int(t)
+                return *ty
+            }
         }
 	}
 }

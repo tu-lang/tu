@@ -153,7 +153,7 @@ EmbedFS::entry(i<i32>) i32, i8*, u64, i8*, u64 {
 }
 
 // List helper; called only from export func embed_list body.
-fn embed_mem_list(fs<EmbedFS>, dir) {
+unsafe fn embed_mem_list(fs<EmbedFS>, dir) {
 	prefix = ""
 	if dir != null {
 		prefix = dir

@@ -383,7 +383,7 @@ fn segsegv_walkstack(){
 		return
 	}
 	bp = *bp
-	i = 1
+	i<i32> = 1
 	max_frames<i32> = 64
 	loop {
 		if i > max_frames break
@@ -391,7 +391,7 @@ fn segsegv_walkstack(){
 		pc_slot<u64*> = bp + 8
 		rip<u64> = *pc_slot
 		if rip == null break
-		pc2 = debug.findpc(rip)
+		pc2<i8*> = debug.findpc(rip)
 		println(*"%d: %s" ,i,*pc2)
 		bp = *bp
 		i += 1

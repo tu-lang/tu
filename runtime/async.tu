@@ -18,12 +18,14 @@ fn get_future_poll(fut<Future>){
 
 fn futuredone(){
     printf(*"Future already Done!:\n")
-	infos = debug.stack(5.(i8))
-    i = 1
-    for v : infos {
-        printf(*"%d: %s\n",i,v)
-        i += 1
-    }
+	unsafe {
+		infos = debug.stack(5.(i8))
+		i = 1
+		for v : infos {
+			printf(*"%d: %s\n",i,v)
+			i += 1
+		}
+	}
 	std.die(-1.(i8))
 }
 

@@ -94,41 +94,44 @@ fn args_init(argc<u64>, argv<u64*>, envp_in<u64*>){
 			envp = argv + (argc + 1.(u64)) * PointerSize
 		}
 	}
-	c = int(argc)
-	c -= 1
 	ori_envp = envp
-	//save args
-	arr = []
-	while argc > 0 && argv != null {
-		if *argv == null {
-			break
+	// Dyn argv/env array construction (RFC-110 cross-mode).
+	unsafe {
+		c = int(argc)
+		c -= 1
+		//save args
+		arr = []
+		while argc > 0 && argv != null {
+			if *argv == null {
+				break
+			}
+			str<Value> = new Value
+			str.type = String
+			str.data = string.newstring(*argv)
+			arr_pushone(str,arr)
+			argv += PointerSize
+			argc -= 1
 		}
-		str<Value> = new Value
-		str.type = String
-		str.data = string.newstring(*argv)
-		arr_pushone(str,arr)
-		argv += PointerSize
-		argc -= 1
-	}
-	ori_argc = c
-	ori_argv = arr
-	//save env
-	envs = []
-	if envp != null {
-		while *envp != null {
-			str1<Value> = new Value
-			str1.type = String
-			str1.data = string.newstring(*envp)
-			arr_pushone(str1,envs)
-			envp += PointerSize
+		ori_argc = c
+		ori_argv = arr
+		//save env
+		envs = []
+		if envp != null {
+			while *envp != null {
+				str1<Value> = new Value
+				str1.type = String
+				str1.data = string.newstring(*envp)
+				arr_pushone(str1,envs)
+				envp += PointerSize
+			}
 		}
-	}
-	ori_envs = envs
-	// Linux: /proc/self/exe. Darwin has no /proc — realpath returns null;
-	// fall back to argv[0].
-	self_path = std.realpath("/proc/self/exe".(i8))
-	if self_path == null {
-		self_path = ori_execout
+		ori_envs = envs
+		// Linux: /proc/self/exe. Darwin has no /proc — realpath returns null;
+		// fall back to argv[0].
+		self_path = std.realpath("/proc/self/exe".(i8))
+		if self_path == null {
+			self_path = ori_execout
+		}
 	}
 }
 fn runtimeinit(){
@@ -145,8 +148,10 @@ fn segsegv_handler(sig<u32>,info<Siginfo> , ctxt<u64>){
 	// Platform-specific: linux.tu / darwin.tu implement segsegv_rip.
 	rip<u64> = segsegv_rip(ctxt)
 	// L2a: pclntab only; never fork addr2line
-	pc = debug.findpc(rip)
-	println(*"0: %s" ,*pc)
+	unsafe {
+		pc = debug.findpc(rip)
+		println(*"0: %s" ,*pc)
+	}
 	// Optional rbp frames: linux.tu walks; darwin.tu is a no-op (sigtramp).
 	segsegv_walkstack()
 	// os.exit expects a pointer operand (*code); use std.die for a raw code.

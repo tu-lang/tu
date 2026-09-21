@@ -165,18 +165,20 @@ fn funcname(r<PclnRec>) {
 }
 
 fn pcln_format_pc(pc){
-    r<PclnRec> = findfunc(pc.(u64))
-    if r == null {
-        return int(pc) + ":??"
+    unsafe {
+        r<PclnRec> = findfunc(pc.(u64))
+        if r == null {
+            return int(pc) + ":??"
+        }
+        name_s = "??"
+        file_s = "??"
+        if r.name != 0.(u64) {
+            name_s = string.new(r.name)
+        }
+        if r.file != 0.(u64) {
+            file_s = string.new(r.file)
+        }
+        ln<i32> = funcline(r, pc.(u64))
+        return fmt.sprintf("%s @ %s:%d", name_s, file_s, int(ln))
     }
-    name_s = "??"
-    file_s = "??"
-    if r.name != 0.(u64) {
-        name_s = string.new(r.name)
-    }
-    if r.file != 0.(u64) {
-        file_s = string.new(r.file)
-    }
-    ln<i32> = funcline(r, pc.(u64))
-    return fmt.sprintf("%s @ %s:%d", name_s, file_s, int(ln))
 }

@@ -275,8 +275,11 @@ fn for_first(data<Value>,iter<KvIter>){
 			if  arr.used <= 0 { return Null}
 			iter.type = Array
 			iter.addr = arr.addr
-			init_index = 0
-			iter.cur  = init_index
+			// Dyn Int Value index slot stored in cur (for_get_next mutates .data).
+			unsafe {
+				init_index = 0
+				iter.cur  = init_index
+			}
 			return iter
 		}
 		_     : dief(*"[for range]: first unsupport type:%d" , data.type)
@@ -347,8 +350,11 @@ fn for_first2(data<Value>){
 			if  arr.used <= 0 { return Null}
 			iter<std.Array_iter> = new std.Array_iter
 			iter.addr = arr.addr
-			init_index = 0
-			iter.cur  = init_index
+			// Dyn Int Value index slot (same as KvIter.cur).
+			unsafe {
+				init_index = 0
+				iter.cur  = init_index
+			}
 			return iter
 		}
 		_     : dief(*"[for range]: first unsupport type:%s\n" , type_string(data))

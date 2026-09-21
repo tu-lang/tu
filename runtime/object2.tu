@@ -203,8 +203,10 @@ fn object_member_get2(k<u64>,obj<ObjectValue>){
         if v != null {
             return v
         }
-        dsinfo = debug.callerpc()
-        printf(*"[warn] class memeber not define in %s\n", *dsinfo)
+        unsafe {
+            dsinfo = debug.callerpc()
+            printf(*"[warn] class memeber not define in %s\n", *dsinfo)
+        }
         return &internal_null
     }
     return *v
@@ -222,8 +224,10 @@ fn object_unary_operator2(opt<i32>,k<u64>,v<Value>,obj<ObjectValue>){
         if mber != null {
             origin = mber
         }else {
-            dsinfo = debug.callerpc()
-            printf(*"[warn] unary class memeber not define in %s\n", *dsinfo)
+            unsafe {
+                dsinfo = debug.callerpc()
+                printf(*"[warn] unary class memeber not define in %s\n", *dsinfo)
+            }
             origin = &internal_null
         }
     } else {
