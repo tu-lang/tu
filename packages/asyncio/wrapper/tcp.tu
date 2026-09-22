@@ -10,7 +10,8 @@ use asyncio.net.tcp as tcp
 use asyncio.io as aio
 use asyncio.io.util as ioutil
 
-fn parse_addr_dyn(addr) (i32, net.SocketAddr) {
+// Dyn addr string → SocketAddr (unsafe: dyn parameter).
+unsafe fn parse_addr_dyn(addr) (i32, net.SocketAddr) {
     addr_s<string.String> = dyn_string(addr)
     slen<i32> = std.strlen(addr_s.str())
     // Cross-pkg (i32, Mem) drops SocketAddr fields on Windows PE; take bits.
@@ -53,7 +54,7 @@ fn tcp_close_leaf(bits<u64>) {
     }
 }
 
-func listen(addr) {
+export func listen(addr) {
     perr<i32>, sa<net.SocketAddr> = parse_addr_dyn(addr)
     if perr != io.Ok {
         return int(perr), null
@@ -66,7 +67,7 @@ func listen(addr) {
     return 0, out
 }
 
-async dialTo(addr) {
+export async dialTo(addr) {
     perr<i32>, sa<net.SocketAddr> = parse_addr_dyn(addr)
     if perr != io.Ok {
         return int(perr), null
@@ -83,7 +84,7 @@ async dialTo(addr) {
     return 0, st
 }
 
-func streamClose(st) {
+export func streamClose(st) {
     if st == null {
         return
     }

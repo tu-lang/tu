@@ -29,7 +29,7 @@ UnixDatagram::std_socket() net.UnixDatagram {
 }
 
 UnixDatagram::recv_from(buf<io.Buf>) i32, u64, u64 {
-	err<i32>, n<u64>, addr = sysuds.recv_from(this.std_socket(), buf)
+	err<i32>, n<u64>, addr<sysuds.SocketAddr> = sysuds.recv_from(this.std_socket(), buf)
 	bits<u64> = addr.(u64)
 	return err, n, bits
 }

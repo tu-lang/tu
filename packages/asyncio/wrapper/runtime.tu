@@ -1,5 +1,5 @@
 // Runtime blockOn / spawn entry for asyncio.wrapper (camelCase public API).
-// Public surface is func; engine Builder stays internal.
+// Public surface is export func; engine Builder stays internal.
 
 use asyncio.runtime as rt
 use asyncio.task as task
@@ -28,7 +28,7 @@ fn runtime_block_on(kind<i32>, workers<u32>, io_on<i32>, time_on<i32>, fut_bits<
 
 // Block on fut with current_thread + enable_all.
 // Returns a dynamic int: runtime err, or the async body result.
-func blockOnCt(fut) {
+export func blockOnCt(fut) {
     bits<u64> = fut.(u64)
     err<i32>, val<i64> = runtime_block_on(0, 1.(u32), 1, 1, bits)
     if err != 0 {
@@ -41,7 +41,7 @@ func blockOnCt(fut) {
 
 // Block on fut with multi_thread(workers) + enable_all.
 // Returns a dynamic int: runtime err, or the async body result.
-func blockOnMt(workers, fut) {
+export func blockOnMt(workers, fut) {
     w_i<i32> = dyn_i32(workers)
     if w_i <= 0 {
         w_i = 1
@@ -60,7 +60,7 @@ func blockOnMt(workers, fut) {
 // Schedule fut on the current runtime Handle.
 // Detach the JoinHandle immediately — Tu has no Drop; discarding the handle
 // without detach leaks task refs and wedges long-lived servers (ab n=50k).
-func spawn(fut) {
+export func spawn(fut) {
     err<i32>, h<rt.Handle> = rt.Handle::current()
     if err != 0 {
         return err

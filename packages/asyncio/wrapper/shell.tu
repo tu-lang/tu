@@ -1,5 +1,6 @@
 // Listener / Stream dynamic shells + OOP camelCase methods.
 // Member async await engine Mem via same-package leaf helpers (tcp.tu fns).
+// Class methods are dyn defs in a static package — static syntax needs unsafe.
 
 use io
 use asyncio.net.tcp as tcp
@@ -23,23 +24,23 @@ class Stream {
     }
 }
 
-func listenerFrom(engine_obj) {
+export func listenerFrom(engine_obj) {
     lis = new Listener(0)
     lis.raw = engine_obj
     return lis
 }
 
-func streamFrom(engine_obj) {
+export func streamFrom(engine_obj) {
     st = new Stream(0)
     st.raw = engine_obj
     return st
 }
 
-func dial() {
+export func dial() {
     return new Stream(0)
 }
 
-async Listener::takeConn() {
+unsafe async Listener::takeConn() {
     bits<u64> = this.raw
     afut<tcp.AcceptFut> = tcp_accept_leaf(bits)
     aerr<i32>, peer<tcp.TcpStream> = afut.await
@@ -53,7 +54,7 @@ async Listener::takeConn() {
     return 0, st
 }
 
-async Stream::sendStr(s) {
+unsafe async Stream::sendStr(s) {
     bits<u64> = this.raw
     buf<io.Buf> = dyn_buf(s)
     wfut<ioutil.WriteAll> = tcp_write_leaf(bits, buf)
@@ -64,7 +65,7 @@ async Stream::sendStr(s) {
     return 0, ""
 }
 
-async Stream::recvStr(max_n) {
+unsafe async Stream::recvStr(max_n) {
     bits<u64> = this.raw
     n_i<i32> = dyn_i32(max_n)
     if n_i <= 0 {
@@ -80,7 +81,7 @@ async Stream::recvStr(max_n) {
     return 0, buf_to_dyn_string(own, rn)
 }
 
-async Stream::drain(max_n) {
+unsafe async Stream::drain(max_n) {
     bits<u64> = this.raw
     n_i<i32> = dyn_i32(max_n)
     if n_i <= 0 {

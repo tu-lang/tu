@@ -25,6 +25,40 @@ fn pkgfs_stdroot_count() i32 {
 	return stdroot_embed.nentries
 }
 
+// Mother tuc parity: foo.tu → foo (windows → foo.exe).
+func build_output_name(file) {
+	base = utils.path_basename(file)
+	dest = ""
+	n = std.len(base)
+	if n >= 3 {
+		ext = string.sub(base, n - 3)
+		if ext == ".tu" {
+			dest = ""
+			i = 0
+			while i < n - 3 {
+				dest = dest + base[i]
+				i = i + 1
+			}
+		}
+	}
+	if dest == "" {
+		if base != "" {
+			dest = base
+		} else if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS {
+			dest = "a.exe"
+		} else {
+			dest = "a.out"
+		}
+	}
+	if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS {
+		dn = std.len(dest)
+		if dn < 4 || string.sub(dest, dn - 4) != ".exe" {
+			dest = dest + ".exe"
+		}
+	}
+	return dest
+}
+
 class Compiler {
     // origin file
     code_files = []
@@ -47,8 +81,8 @@ class Compiler {
     workdir_explicit = ""
     // Keep .s/.o after build when --work is set
     flag_work = false
-    // PKGFS_MODE_* ; default embed unless --stdlib=disk / TU_STDLIB=disk
-    stdlib_mode<i32> = 0
+    // -1 unset (follow env); 0 embed; 1 disk. Explicit --stdlib= overrides TU_STDLIB.
+    stdlib_mode<i32> = -1
 }
 func arg_after_prefix(arg, n) {
     out = ""
@@ -344,6 +378,20 @@ Compiler::compiler(file){
         }
     }
     exe = utils.pathInWorkdir(exe_name)
+    // `tu build`: copy product to cwd (same as mother tuc); workdir may be removed.
+    if this.flag_link && !this.flag_exec {
+        dest = build_output_name(file)
+        fmt.printf("[tu] copy %s -> ./%s\n", exe, dest)
+        crc = utils.copy_file(exe, dest)
+        if crc != 0 {
+            utils.error("build: copy to ./" + dest + " failed")
+        }
+        if utils.target_parse(asm.get_requested_target()) != utils.TARGET_WINDOWS {
+            os.shell("chmod 777 './" + dest + "'")
+        }
+        fmt.printf("[tu] build: ./%s\n", dest)
+        exe = dest
+    }
     utils.msg2(100,"Finished",fmt.sprintf(
         "%s target(%s)",file, exe
     ))
@@ -398,7 +446,7 @@ Compiler::linker(){
     fmt.printf("[tu] outfile: %s\n", this.out)
 
     if utils.target_parse(asm.get_requested_target()) == utils.TARGET_DARWIN {
-        rc = darwin.link_objects(this.code_files, this.out)
+        rc<i32> = darwin.link_objects(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
         }
@@ -406,7 +454,7 @@ Compiler::linker(){
         return
     }
     if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS {
-        rc = peff.link_objects(this.code_files, this.out)
+        rc<i32> = peff.link_objects(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
         }
@@ -414,14 +462,15 @@ Compiler::linker(){
         return
     }
 
-    linker = new link.Linker()
+    // mem Linker: drive via export facades (dyn class call on mem → object_func_addr).
+    lk = link.linker_new()
     i = 1
     for f : this.code_files {
 	    utils.smsg("[ " + i + "/" + total +"]","Reading elf object info " + f)
-        linker.addElf(f)
+        link.linker_add_elf(lk, f)
         i += 1
     }
-    if !linker.link(this.out) {
+    if link.linker_link(lk, this.out) == 0 {
         utils.error("Generate " + this.out + " Failed")
     }
     utils.msg(100,"Generate " + this.out + " Passed")
@@ -446,12 +495,17 @@ func main() {
     if os.argc() < 1 {
         return eng.print_help() 
     }
-    os.set_stack(10.(i8))
+    os.set_stack(10)
     eng.commadparse() // handle options
-    // RFC-107: default embed; TU_STD > --stdlib=disk / TU_STDLIB=disk > embed
-    pmode<i32> = utils.pkgfs_parse_mode_from_env()
+    // RFC-107: default embed; TU_STD / TU_STDLIB=disk when CLI does not set --stdlib=
+    // Explicit --stdlib=embed|disk always wins over env.
+    pmode<i32> = utils.PKGFS_MODE_EMBED
     if eng.stdlib_mode == 1 {
         pmode = utils.PKGFS_MODE_DISK
+    } else if eng.stdlib_mode == 0 {
+        pmode = utils.PKGFS_MODE_EMBED
+    } else {
+        pmode = utils.pkgfs_parse_mode_from_env()
     }
     tu_std = utils.pkgfs_tu_std_from_env()
     tbl<u64> = pkgfs_stdroot_table()

@@ -1,5 +1,6 @@
 // Dyn string / buffer helpers used across wrapper modules (internal).
 // Examples pass dynamic strings/ints; convert to mem types here.
+// Dyn params require unsafe fn (static package ModeCheck).
 
 use io
 use std
@@ -9,7 +10,7 @@ use runtime
 // Convert a dynamic string value into string.String (GC-traced mem).
 // Dynamic `"..."` is runtime.Value{type:String,data:cstr}; do NOT pass it to
 // string.S as if it were i8* — that treats the Value object as a C string.
-fn dyn_string(v) string.String {
+unsafe fn dyn_string(v) string.String {
     if v == null {
         return string.emptyS()
     }
@@ -24,7 +25,7 @@ fn dyn_string(v) string.String {
 }
 
 // Dynamic int → i32 (Value.data holds the integer payload).
-fn dyn_i32(v) i32 {
+unsafe fn dyn_i32(v) i32 {
     if v == null {
         return 0
     }
@@ -38,7 +39,7 @@ fn dyn_i32(v) i32 {
 }
 
 // Build io.Buf from dynamic string content.
-fn dyn_buf(v) io.Buf {
+unsafe fn dyn_buf(v) io.Buf {
     s<string.String> = dyn_string(v)
     slen<i32> = std.strlen(s.str())
     b<io.Buf> = io.NewBuf(slen)
