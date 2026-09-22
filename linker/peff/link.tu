@@ -3,17 +3,16 @@
 
 use asmer.asm
 use linker.utils
-use compiler.utils as hostu
 use std
 use string
 use fmt
 use os
 use runtime
 
-fn peff_path_basename(path) {
+unsafe fn peff_path_basename(path) {
     n = std.len(path)
     i = n - 1
-    bs = hostu.char1(92.(i8))
+    bs = utils.char1(92.(i8))
     while i >= 0 {
         c = path[i]
         if c == '/' || c == bs {
@@ -24,7 +23,7 @@ fn peff_path_basename(path) {
     return string.sub(path, i + 1)
 }
 
-fn peff_stub_dir() {
+unsafe fn peff_stub_dir() {
     for (k, v : os.envs()) {
         arr = string.split(v, "=")
         if std.len(arr) >= 2 {
@@ -36,16 +35,16 @@ fn peff_stub_dir() {
             }
         }
     }
-    d = hostu.pkgfs_stub_dir()
+    d = utils.stub_dir_for(2)
     if d != null && d != "" {
-        probe = hostu.path_join(d, "stub_entry.s")
+        probe = utils.path_join(d, "stub_entry.s")
         fp<i32> = utils.fopen(probe, "r")
         if fp > 0 {
             utils.fclose(fp)
             return d
         }
     }
-    pref = hostu.lib_root() + "/copeff"
+    pref = utils.lib_root() + "/copeff"
     fp<i32> = utils.fopen(pref + "/stub_entry.s", "r")
     if fp > 0 {
         utils.fclose(fp)
@@ -54,7 +53,7 @@ fn peff_stub_dir() {
     return pref
 }
 
-fn peff_objs_have_basename(files, name) {
+unsafe fn peff_objs_have_basename(files, name) {
     for f : files {
         if peff_path_basename(f) == name {
             return true
@@ -63,14 +62,14 @@ fn peff_objs_have_basename(files, name) {
     return false
 }
 
-fn peff_is_stub_obj_name(b) {
-    if b == "copeff_stub_entry.o" || b == "copeff_stub_runtime.o" {
-        return true
+// Assemble stub .s into out_o. Reuses existing .o; otherwise shells tua
+// (embedded Asmer::execute for TARGET_WINDOWS can strlen-panic inside tul/tu).
+unsafe fn peff_ensure_stub_obj(src_s, out_o) i32 {
+    fp0<i32> = utils.fopen(out_o, "r")
+    if fp0 > 0 {
+        utils.fclose(fp0)
+        return 0
     }
-    return false
-}
-
-fn peff_ensure_stub_obj(src_s, out_o) i32 {
     sdir = utils.path_dirname(out_o)
     stem = peff_path_basename(out_o)
     n = std.len(stem)
@@ -86,33 +85,37 @@ fn peff_ensure_stub_obj(src_s, out_o) i32 {
     }
     s_path = utils.path_join(sdir, s_name)
     if runtime.host_os() == 2 {
-        hostu.copy_file(src_s, s_path)
+        utils.copy_file(src_s, s_path)
     } else {
-        os.shell("cp '" + src_s + "' '" + s_path + "'")
+        utils.run_shell("cp '" + src_s + "' '" + s_path + "'")
     }
-    asm.requested_target = "windows"
-    eng<asm.Asmer> = new asm.Asmer(s_path)
-    eng.execute()
-    eng.close()
+    // Prefer host tua: same COFF writer as `tu build` asmer phase.
+    utils.run_shell("tua --target=windows -c '" + s_path + "'")
     fp<i32> = utils.fopen(out_o, "r")
     if fp <= 0 {
-        fmt.printf("[tu/peff] expected stub object missing: %s\n", out_o)
-        return 1
+        // Fallback: in-process asmer.
+        asm.requested_target = "windows"
+        eng<asm.Asmer> = new asm.Asmer(s_path)
+        eng.execute()
+        eng.close()
+        fp = utils.fopen(out_o, "r")
+        if fp <= 0 {
+            fmt.printf("[tu/peff] expected stub object missing: %s (tua / asmer failed)\n", out_o)
+            return 1
+        }
     }
     utils.fclose(fp)
     return 0
 }
 
-fn peff_collect_with_stubs(files, outfile) {
+unsafe fn peff_collect_with_stubs(files, outfile) {
     all = []
     full_rt = peff_objs_have_basename(files, "asm_amd64.o")
-    need_entry = !full_rt
-    need_runtime_stub = !full_rt && !peff_objs_have_basename(files, "sys_std_amd64.o")
+    have_entry = peff_objs_have_basename(files, "copeff_stub_entry.o")
+    have_runtime = peff_objs_have_basename(files, "copeff_stub_runtime.o")
+    need_entry = !full_rt && !have_entry
+    need_runtime_stub = !full_rt && !peff_objs_have_basename(files, "sys_std_amd64.o") && !have_runtime
     for f : files {
-        b = peff_path_basename(f)
-        if peff_is_stub_obj_name(b) {
-            continue
-        }
         all[] = f
     }
     if !need_entry && !need_runtime_stub {
@@ -139,9 +142,9 @@ fn peff_collect_with_stubs(files, outfile) {
     }
     if need_runtime_stub {
         runtime_s = sdir + "/stub_runtime.s"
-        fp = utils.fopen(runtime_s, "r")
-        if fp > 0 {
-            utils.fclose(fp)
+        fp2<i32> = utils.fopen(runtime_s, "r")
+        if fp2 > 0 {
+            utils.fclose(fp2)
             runtime_o = utils.path_join(out_dir, "copeff_stub_runtime.o")
             if peff_ensure_stub_obj(runtime_s, runtime_o) != 0 {
                 return null
@@ -152,7 +155,7 @@ fn peff_collect_with_stubs(files, outfile) {
     return all
 }
 
-func link_objects(files, outfile) {
+unsafe fn link_objects(files, outfile) i32 {
     if std.len(files) <= 0 {
         fmt.printf("[tu/peff] no object files\n")
         return 1

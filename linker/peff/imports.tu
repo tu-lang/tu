@@ -118,7 +118,7 @@ fn win_dll_id(tab<NameTab>, off<i32>) i32 {
 fn count_dll_slots(slots<std.Array>, dll_id<i32>) i32 {
     n<i32> = 0
     i<i32> = 0
-    while i < slots.len() {
+    while i < slots.used {
         sl<ImportSlot> = slots.addr[i]
         if sl.dll_id == dll_id {
             n += 1
@@ -193,7 +193,7 @@ fn build_imports(slots<std.Array>, names<NameTab>, rdata_rva<u32>) ByteBuf {
         off += 1
     }
 
-    nslot<i32> = slots.len()
+    nslot<i32> = slots.used
     hints<ByteBuf> = ByteBuf::zeros(ht_bytes(nslot))
     i<i32> = 0
     while i < nslot {
@@ -240,7 +240,7 @@ fn build_imports(slots<std.Array>, names<NameTab>, rdata_rva<u32>) ByteBuf {
     c2<i32> = 0
     c3<i32> = 0
     i = 0
-    while i < slots.len() {
+    while i < slots.used {
         sl<ImportSlot> = slots.addr[i]
         hn<i32> = hints.i32_at(i)
         hn_rva<u32> = rdata_rva + i32_u32(hn)

@@ -267,7 +267,7 @@ CoffObject::load_rels(buf<i8*>, sz<i32>, reloff<u32>, nreloc<u16>, dst<std.Array
     if roff < 0 || roff + n_i * COFF_RELOC_LEN > sz {
         return 1
     }
-    nsyms<i32> = this.syms.len()
+    nsyms<i32> = this.syms.used
     i<u32> = 0
     while i < n {
         ii<i32> = u32_i32(i)

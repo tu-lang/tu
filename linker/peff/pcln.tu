@@ -62,7 +62,7 @@ PeImage::pcln_need() u64 {
     nfunc<u32> = 0
     pctab_bytes<u64> = 0
     i<i32> = 0
-    while i < this.defined.len() {
+    while i < this.defined.used {
         s<ImageSym> = this.defined.addr[i]
         if pcln_is_frag(this.names, s.name_off) == 0 {
             i += 1
@@ -141,7 +141,7 @@ PeImage::pcln_expand() i32 {
         delta_i<i32> = u64_i32(delta)
         this.data.insert_zeros(end_i, delta_i)
         i<i32> = 0
-        while i < this.defined.len() {
+        while i < this.defined.used {
             s<ImageSym> = this.defined.addr[i]
             if s.n_sect == 2 && s.sect_off >= end_off {
                 s.sect_off = s.sect_off + delta
@@ -149,10 +149,10 @@ PeImage::pcln_expand() i32 {
             i += 1
         }
         fi<i32> = 0
-        while fi < this.objects.len() {
+        while fi < this.objects.used {
             f<CoffObject> = this.objects.addr[fi]
             ri<i32> = 0
-            while ri < f.data_rels.len() {
+            while ri < f.data_rels.used {
                 r<ObjRel> = f.data_rels.addr[ri]
                 addr_u<u64> = i32_u64(r.address)
                 if addr_u >= end_off {
@@ -213,7 +213,7 @@ PeImage::pcln_fill(text_va<u64>, data_va<u64>) i32 {
     ln_pref<i8*> = *nm_ln_pref
     frags<std.Array> = std.NewArray()
     i<i32> = 0
-    while i < this.defined.len() {
+    while i < this.defined.used {
         s<ImageSym> = this.defined.addr[i]
         if pcln_is_frag(this.names, s.name_off) == 0 {
             i += 1
@@ -267,7 +267,7 @@ PeImage::pcln_fill(text_va<u64>, data_va<u64>) i32 {
     }
 
     a<i32> = 1
-    while a < frags.len() {
+    while a < frags.used {
         fg<PclnFrag> = frags.addr[a]
         b<i32> = a
         loop {
@@ -286,16 +286,16 @@ PeImage::pcln_fill(text_va<u64>, data_va<u64>) i32 {
         a += 1
     }
 
-    nfi<i32> = frags.len()
+    nfi<i32> = frags.used
     nfunc<u32> = i32_u32(nfi)
     pctab_bytes<u64> = 0
     four<u64> = 4
     eight<u64> = 8
     i = 0
-    while i < frags.len() {
+    while i < frags.used {
         fg<PclnFrag> = frags.addr[i]
-        if fg.lines.len() > 0 {
-            nli<i32> = fg.lines.len()
+        if fg.lines.used > 0 {
+            nli<i32> = fg.lines.used
             nl64<u64> = nli
             pctab_bytes = pctab_bytes + four + nl64 * 8
         }
@@ -333,17 +333,17 @@ PeImage::pcln_fill(text_va<u64>, data_va<u64>) i32 {
 
     cursor<u32> = pctabOff
     i = 0
-    while i < frags.len() {
+    while i < frags.used {
         fg<PclnFrag> = frags.addr[i]
-        if fg.lines.len() > 0 {
+        if fg.lines.used > 0 {
             fg.pcln_off = cursor
-            nli2<i32> = fg.lines.len()
+            nli2<i32> = fg.lines.used
             n<u32> = i32_u32(nli2)
             cur_i<i32> = u32_i32(cursor)
             std.memcpy(dst + cur_i, &n, four)
             cursor = cursor + 4.(u32)
             li<i32> = 0
-            while li < fg.lines.len() {
+            while li < fg.lines.used {
                 e<PclnLineEnt> = fg.lines.addr[li]
                 cur_i = u32_i32(cursor)
                 std.memcpy(dst + cur_i, &e.pc_off, four)

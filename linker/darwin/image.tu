@@ -97,7 +97,7 @@ MachImage::find_defined_off(off<i32>) ImageSym {
 
 MachImage::find_defined_bytes(p<i8*>, n<i32>) ImageSym {
     i<i32> = 0
-    while i < this.defined.len() {
+    while i < this.defined.used {
         s<ImageSym> = this.defined.addr[i]
         if this.names.len_at(s.name_off) == n {
             if name_eq_bytes(this.names.ptr_at(s.name_off), p, n) != 0 {
@@ -112,7 +112,7 @@ MachImage::find_defined_bytes(p<i8*>, n<i32>) ImageSym {
 MachImage::find_defined_concat(pre<i8*>, plen<i32>, suf<i8*>, slen<i32>) ImageSym {
     want<i32> = plen + slen
     i<i32> = 0
-    while i < this.defined.len() {
+    while i < this.defined.used {
         s<ImageSym> = this.defined.addr[i]
         if this.names.len_at(s.name_off) != want {
             i += 1
@@ -131,7 +131,7 @@ MachImage::find_defined_concat(pre<i8*>, plen<i32>, suf<i8*>, slen<i32>) ImageSy
 
 MachImage::find_slot_off(off<i32>) ImportSlot {
     i<i32> = 0
-    while i < this.slots.len() {
+    while i < this.slots.used {
         sl<ImportSlot> = this.slots.addr[i]
         if sl.name_off == off {
             return sl
@@ -174,7 +174,7 @@ MachImage::add_object(path) i32 {
 
 MachImage::merge() {
     fi<i32> = 0
-    while fi < this.objects.len() {
+    while fi < this.objects.used {
         f<MachObject> = this.objects.addr[fi]
         tl<i32> = this.text.len
         text_base<u64> = i32_u64(tl)
@@ -185,14 +185,14 @@ MachImage::merge() {
         this.data.append(f.data.ptr(), f.data.len)
 
         ri<i32> = 0
-        while ri < f.text_rels.len() {
+        while ri < f.text_rels.used {
             r<ObjRel> = f.text_rels.addr[ri]
             r.address = r.address + u64_i32(text_base)
             r.name_off = this.names.intern_off(f.names, r.name_off)
             ri += 1
         }
         ri = 0
-        while ri < f.data_rels.len() {
+        while ri < f.data_rels.used {
             r<ObjRel> = f.data_rels.addr[ri]
             r.address = r.address + u64_i32(data_base)
             r.name_off = this.names.intern_off(f.names, r.name_off)
@@ -200,7 +200,7 @@ MachImage::merge() {
         }
 
         si<i32> = 0
-        while si < f.syms.len() {
+        while si < f.syms.used {
             s<ObjSym> = f.syms.addr[si]
             ioff<i32> = this.names.intern_off(f.names, s.name_off)
             is_undef<i32> = 0
@@ -229,7 +229,7 @@ MachImage::merge() {
             } else {
                 ps.sect_off = s.sect_off
             }
-            idx<i32> = this.defined.len()
+            idx<i32> = this.defined.used
             this.defined.push(ps)
             this.def_by_off.put(ioff, idx)
             si += 1
@@ -240,7 +240,7 @@ MachImage::merge() {
 
 MachImage::resolve_imports() i32 {
     i<i32> = 0
-    while i < this.undef_names.len() {
+    while i < this.undef_names.used {
         nr<NameRef> = this.undef_names.addr[i]
         off<i32> = nr.off
         if this.find_defined_off(off) != null {
@@ -284,7 +284,7 @@ MachImage::resolve_imports() i32 {
 
 MachImage::apply_relocs(sec<ByteBuf>, sec_va<u64>, rels<std.Array>, text_sect_va<u64>, data_sect_va<u64>) i32 {
     i<i32> = 0
-    while i < rels.len() {
+    while i < rels.used {
         r<ObjRel> = rels.addr[i]
         if r.address < 0 || r.address >= sec.len {
             fmt.printf("[tu/darwin] reloc address OOB\n")
@@ -368,7 +368,7 @@ MachImage::write_path_cmd(fd<i64>, lcmd<u32>, cmdsize<u32>, name_off<u32>, path<
 }
 
 MachImage::link(outfile) i32 {
-    if this.objects.len() <= 0 {
+    if this.objects.used <= 0 {
         fmt.printf("[tu/darwin] no object files\n")
         return 1
     }
@@ -396,7 +396,7 @@ MachImage::link(outfile) i32 {
         dylib_sz = path_cmdsize(i32_u32(DYLIB_COMMAND_FIXED), libsys_path)
     }
     has_imports<i32> = 0
-    if this.slots.len() > 0 {
+    if this.slots.used > 0 {
         has_imports = 1
     }
     ncmds<u32> = 11
@@ -432,7 +432,7 @@ MachImage::link(outfile) i32 {
     data_sect_va<u64> = text_va + u32_u64(data_file_off)
 
     si<i32> = 0
-    while si < this.slots.len() {
+    while si < this.slots.used {
         sl<ImportSlot> = this.slots.addr[si]
         stub_va<u64> = text_sect_va + u32_u64(sl.stub_off)
         got_va<u64> = data_sect_va + u32_u64(sl.got_off)
@@ -455,8 +455,8 @@ MachImage::link(outfile) i32 {
         symoff = align_up_u32(bind_off + bind_size, 8)
     }
 
-    ndef_i<i32> = this.defined.len()
-    nimp_i<i32> = this.slots.len()
+    ndef_i<i32> = this.defined.used
+    nimp_i<i32> = this.slots.used
     n_extdef<u32> = i32_u32(ndef_i)
     n_undef<u32> = i32_u32(nimp_i)
     nsyms<u32> = n_extdef + n_undef
@@ -474,7 +474,7 @@ MachImage::link(outfile) i32 {
     }
     entryoff<u64> = main_va - text_va
     fi<i32> = 0
-    while fi < this.objects.len() {
+    while fi < this.objects.used {
         f<MachObject> = this.objects.addr[fi]
         if this.apply_relocs(this.text, text_sect_va, f.text_rels, text_sect_va, data_sect_va) != 0 {
             return 1
@@ -704,7 +704,7 @@ MachImage::link(outfile) i32 {
     }
     wr_off = this.pad_fd(fp, u32_i32(symoff), wr_off)
     i<i32> = 0
-    while i < this.defined.len() {
+    while i < this.defined.used {
         s<ImageSym> = this.defined.addr[i]
         nlb<u64> = macho_zero(nl_len)
         nl<Nlist64> = nlb
@@ -716,7 +716,7 @@ MachImage::link(outfile) i32 {
         i += 1
     }
     i = 0
-    while i < this.slots.len() {
+    while i < this.slots.used {
         sl2<ImportSlot> = this.slots.addr[i]
         nlb<u64> = macho_zero(nl_len)
         nl<Nlist64> = nlb
@@ -736,7 +736,7 @@ MachImage::link(outfile) i32 {
     le_end<i32> = u32_i32(linkedit_off + linkedit_sz)
     wr_off = this.pad_fd(fp, le_end, wr_off)
     utils.fclose(fp)
-    os.shell("chmod 755 '" + outfile + "'")
+    utils.run_shell("chmod 755 '" + outfile + "'")
     eoff_i<i32> = u64_i32(entryoff)
     fmt.printf("[tu/darwin] wrote MH_EXECUTE %s (entryoff=%d imports=%d)\n",
         outfile, int(eoff_i), int(nimp_i))
@@ -745,14 +745,16 @@ MachImage::link(outfile) i32 {
 
 // Assemble stub .s with asmer.darwin into out_o next to outfile.
 unsafe fn ensure_stub_obj(src_s, out_o) i32 {
+    fp0<i32> = utils.fopen(out_o, "r")
+    if fp0 > 0 {
+        utils.fclose(fp0)
+        return 0
+    }
     sdir = utils.path_dirname(out_o)
     stem = path_basename(out_o)
-    s_name = string.sub(stem, 0)
-    // stem is *.o → corresponding .s name
     n = std.len(stem)
+    s_name = stem + ".s"
     if n > 2 && stem[n - 2] == '.' {
-        s_name = string.sub(stem, 0)
-        // drop last 2 chars: use concat rebuild
         base = ""
         j = 0
         while j < n - 2 {
@@ -762,10 +764,22 @@ unsafe fn ensure_stub_obj(src_s, out_o) i32 {
         s_name = base + ".s"
     }
     s_path = utils.path_join(sdir, s_name)
-    os.shell("cp '" + src_s + "' '" + s_path + "'")
-    asm.requested_target = "darwin"
-    eng<asm.Asmer> = new asm.Asmer(s_path)
-    eng.execute()
+    utils.run_shell("cp '" + src_s + "' '" + s_path + "'")
+    // Prefer host tua (same Mach-O writer as `tu build` asmer phase).
+    utils.run_shell("tua --target=darwin -c '" + s_path + "'")
+    fp<i32> = utils.fopen(out_o, "r")
+    if fp <= 0 {
+        asm.requested_target = "darwin"
+        eng<asm.Asmer> = new asm.Asmer(s_path)
+        eng.execute()
+        eng.close()
+        fp = utils.fopen(out_o, "r")
+        if fp <= 0 {
+            fmt.printf("[tu/darwin] expected stub object missing: %s\n", out_o)
+            return 1
+        }
+    }
+    utils.fclose(fp)
     return 0
 }
 
@@ -779,32 +793,39 @@ unsafe fn objs_have_basename(files, name) {
 }
 
 // Collect user objects + nostd stubs, then link.
-unsafe fn link_objects(files, outfile) {
+unsafe fn link_objects(files, outfile) i32 {
     all = []
     full_rt = objs_have_basename(files, "asm_amd64.o")
+    have_entry = objs_have_basename(files, "codarwin_stub_entry.o")
+    have_runtime = objs_have_basename(files, "codarwin_stub_runtime.o")
     for f : files {
-        b = path_basename(f)
-        if b == "codarwin_stub_entry.o" || b == "codarwin_stub_runtime.o" {
-            continue
-        }
         all[] = f
     }
     if !full_rt {
         sdir = stub_dir()
         out_dir = utils.path_dirname(outfile)
-        entry_s = sdir + "/stub_entry.s"
-        entry_o = utils.path_join(out_dir, "codarwin_stub_entry.o")
-        if ensure_stub_obj(entry_s, entry_o) != 0 {
-            return 1
+        if out_dir == null || out_dir == "" {
+            out_dir = "."
         }
-        all[] = entry_o
-        runtime_s = sdir + "/stub_runtime.s"
-        fp<i32> = utils.fopen(runtime_s, "r")
-        if fp > 0 {
-            utils.fclose(fp)
-            runtime_o = utils.path_join(out_dir, "codarwin_stub_runtime.o")
-            ensure_stub_obj(runtime_s, runtime_o)
-            all[] = runtime_o
+        if !have_entry {
+            entry_s = sdir + "/stub_entry.s"
+            entry_o = utils.path_join(out_dir, "codarwin_stub_entry.o")
+            if ensure_stub_obj(entry_s, entry_o) != 0 {
+                return 1
+            }
+            all[] = entry_o
+        }
+        if !have_runtime {
+            runtime_s = sdir + "/stub_runtime.s"
+            fp<i32> = utils.fopen(runtime_s, "r")
+            if fp > 0 {
+                utils.fclose(fp)
+                runtime_o = utils.path_join(out_dir, "codarwin_stub_runtime.o")
+                if ensure_stub_obj(runtime_s, runtime_o) != 0 {
+                    return 1
+                }
+                all[] = runtime_o
+            }
         }
     }
     img<MachImage> = MachImage::create()

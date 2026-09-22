@@ -127,7 +127,7 @@ File::readElf(path<string.String>){
 File::getSymIndex(symname<string.String>) i32 {
 	index<i32> = 0
 	i<i32> = 0
-	while i < this.symNames.len() {
+	while i < this.symNames.used {
 		sn<string.String> = this.symNames.addr[i]
 		if sn.cmp(symname) == string.Equal {
 			break
@@ -140,7 +140,7 @@ File::getSymIndex(symname<string.String>) i32 {
 
 File::getSegIndex(segname<string.String>) i32 {
 	i<i32> = 0
-	while i < this.shdrNames.len() {
+	while i < this.shdrNames.used {
 		v<string.String> = this.shdrNames.addr[i]
 		if v.cmp(segname) == string.Equal {
 			return i

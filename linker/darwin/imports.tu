@@ -124,7 +124,7 @@ fn build_bind(slots<std.Array>, names<NameTab>) ByteBuf {
     seg_data<u8> = 2
     lib_ord<u8> = 1
     i<i32> = 0
-    while i < slots.len() {
+    while i < slots.used {
         sl<ImportSlot> = slots.addr[i]
         op0<u8> = BIND_OPCODE_SET_DYLIB_ORDINAL_IMM | (lib_ord & 0xf)
         out.push_u8(u8_i32(op0))

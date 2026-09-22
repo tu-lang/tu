@@ -35,7 +35,7 @@ Linker::buildExe() i32 {
 	)
 
 	si<i32> = 0
-	while si < this.segNames.len() {
+	while si < this.segNames.used {
 		seg<string.String> = this.segNames.addr[si]
 		sl<Seglist> = this.segLists.find(seg)
 
@@ -60,7 +60,7 @@ Linker::buildExe() i32 {
 	}
 	ehdr.e_phoff = linux.ELF64_EHDR_SIZE.(u64)
 	ehdr.e_phentsize = linux.ELF64_PHDR_SIZE
-	ehdr.e_phnum = this.segNames.len().(u16)
+	ehdr.e_phnum = this.segNames.used.(u16)
 
 	ehdr.e_shentsize = linux.ELF64_SHDR_SIZE
 	main_sl<SymLink> = this.symDef.find(string.S(*"main"))
@@ -87,7 +87,7 @@ Linker::writeExe(path<string.String>) i32 {
 	nop_b<i8> = 0x90
 	one_u<u64> = 1
 	si<i32> = 0
-	while si < this.segNames.len() {
+	while si < this.segNames.used {
 		seg<string.String> = this.segNames.addr[si]
 		sl<Seglist> = this.segLists.find(seg)
 		padnum<i32> = sl.offset - sl.begin

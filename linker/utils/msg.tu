@@ -2,18 +2,18 @@ use fmt
 use os
 use linker.link
 
-func debug(args...){
+unsafe fn debug(args...){
     if link.trace {
         fmt.println(args)
     }
 }
-func print_green(red){
+unsafe fn print_green(red){
    return " \033[32m" + red + "\033[0m"
 }
-func print_red(red){
+unsafe fn print_red(red){
    return " \033[31m" + red + "\033[0m"
 }
-func msg(progress,str) {
+unsafe fn msg(progress,str) {
     if progress == 0 {
         fmt.println(print_green(str))
     }else {
@@ -21,14 +21,14 @@ func msg(progress,str) {
         fmt.println(prefix + print_green(str))
     }
 }
-func smsg(pre,str) {
+unsafe fn smsg(pre,str) {
     fmt.println(pre + print_green(str))
 }
-func error(str) {
+unsafe fn error(str) {
     fmt.println(print_red(str))
     os.exit(-1)
 }
-func errorf(args...) {
+unsafe fn errorf(args...) {
     fmt.println(
         print_red(
             fmt.sprintf(

@@ -65,7 +65,7 @@ PeImage::find_defined_off(off<i32>) ImageSym {
 
 PeImage::find_defined_bytes(p<i8*>, n<i32>) ImageSym {
     i<i32> = 0
-    while i < this.defined.len() {
+    while i < this.defined.used {
         s<ImageSym> = this.defined.addr[i]
         if this.names.len_at(s.name_off) == n {
             if name_eq_bytes(this.names.ptr_at(s.name_off), p, n) != 0 {
@@ -80,7 +80,7 @@ PeImage::find_defined_bytes(p<i8*>, n<i32>) ImageSym {
 PeImage::find_defined_concat(pre<i8*>, plen<i32>, suf<i8*>, slen<i32>) ImageSym {
     want<i32> = plen + slen
     i<i32> = 0
-    while i < this.defined.len() {
+    while i < this.defined.used {
         s<ImageSym> = this.defined.addr[i]
         if this.names.len_at(s.name_off) != want {
             i += 1
@@ -99,7 +99,7 @@ PeImage::find_defined_concat(pre<i8*>, plen<i32>, suf<i8*>, slen<i32>) ImageSym 
 
 PeImage::find_slot_off(off<i32>) ImportSlot {
     i<i32> = 0
-    while i < this.slots.len() {
+    while i < this.slots.used {
         sl<ImportSlot> = this.slots.addr[i]
         if sl.name_off == off {
             return sl
@@ -142,7 +142,7 @@ PeImage::add_object(path) i32 {
 
 PeImage::merge() {
     fi<i32> = 0
-    while fi < this.objects.len() {
+    while fi < this.objects.used {
         f<CoffObject> = this.objects.addr[fi]
         this.text.align_to(16, 0x90)
         tl<i32> = this.text.len
@@ -154,14 +154,14 @@ PeImage::merge() {
         this.data.append(f.data.ptr(), f.data.len)
 
         ri<i32> = 0
-        while ri < f.text_rels.len() {
+        while ri < f.text_rels.used {
             r<ObjRel> = f.text_rels.addr[ri]
             r.address = r.address + u64_i32(text_base)
             r.name_off = this.names.intern_off(f.names, r.name_off)
             ri += 1
         }
         ri = 0
-        while ri < f.data_rels.len() {
+        while ri < f.data_rels.used {
             r<ObjRel> = f.data_rels.addr[ri]
             r.address = r.address + u64_i32(data_base)
             r.name_off = this.names.intern_off(f.names, r.name_off)
@@ -169,7 +169,7 @@ PeImage::merge() {
         }
 
         si<i32> = 0
-        while si < f.syms.len() {
+        while si < f.syms.used {
             s<ObjSym> = f.syms.addr[si]
             ioff<i32> = this.names.intern_off(f.names, s.name_off)
             if s.n_sect == 0 {
@@ -193,7 +193,7 @@ PeImage::merge() {
             } else {
                 ps.sect_off = i32_u64(s.value)
             }
-            idx<i32> = this.defined.len()
+            idx<i32> = this.defined.used
             this.defined.push(ps)
             this.def_by_off.put(ioff, idx)
             si += 1
@@ -204,7 +204,7 @@ PeImage::merge() {
 
 PeImage::resolve_imports() i32 {
     i<i32> = 0
-    while i < this.undef_names.len() {
+    while i < this.undef_names.used {
         nr<NameRef> = this.undef_names.addr[i]
         off<i32> = nr.off
         if this.find_defined_off(off) != null {
@@ -217,11 +217,16 @@ PeImage::resolve_imports() i32 {
         }
         dll<i32> = win_dll_id(this.names, off)
         if dll < 0 {
-            nm = string.new(this.names.ptr_at(off))
-            fmt.printf("[tu/peff] undefined symbol: ")
-            fmt.printf(nm)
-            fmt.printf("\n")
-            ast.undef_vocab_hint(nm)
+            unsafe {
+                nm = string.new(this.names.ptr_at(off))
+                fmt.printf("[tu/peff] undefined symbol: ")
+                fmt.printf(nm)
+                fmt.printf("\n")
+                if nm == "runtime_win_fd_alloc_tu" || nm == "runtime_win_fd_get_tu" {
+                    fmt.printf("[tu/peff] hint: Windows fd_table missing from stdlib; use default embed, or: make overlay-copkg TARGET=windows\n")
+                }
+                ast.undef_vocab_hint(nm)
+            }
             return 1
         }
         slot<ImportSlot> = new ImportSlot
@@ -232,8 +237,7 @@ PeImage::resolve_imports() i32 {
         this.slots.push(slot)
         i += 1
     }
-    nm_entry = "mainCRTStartup"
-    entry_off<i32> = this.names.intern_cstr(*nm_entry)
+    entry_off<i32> = this.names.intern_cstr(*"mainCRTStartup")
     if this.find_defined_off(entry_off) == null {
         fmt.printf("[tu/peff] missing mainCRTStartup (entry stub not linked?)\n")
         return 1
@@ -244,7 +248,7 @@ PeImage::resolve_imports() i32 {
 PeImage::apply_relocs(sec<ByteBuf>, sec_va<u64>, rels<std.Array>, text_va<u64>, data_va<u64>) i32 {
     seclen<i32> = sec.len
     i<i32> = 0
-    while i < rels.len() {
+    while i < rels.used {
         r<ObjRel> = rels.addr[i]
         if r.address < 0 || r.address >= seclen {
             fmt.printf("[tu/peff] reloc address OOB\n")
@@ -324,7 +328,7 @@ L_IAT_RVA<i32> = 84
 L_IAT_SIZE<i32> = 88
 
 PeImage::link(outfile) i32 {
-    if this.objects.len() <= 0 {
+    if this.objects.used <= 0 {
         fmt.printf("[tu/peff] no object files\n")
         return 1
     }
@@ -382,7 +386,7 @@ PeImage::link(outfile) i32 {
     data_va<u64> = ib + u32_u64(data_rva)
 
     si<i32> = 0
-    while si < this.slots.len() {
+    while si < this.slots.used {
         sl<ImportSlot> = this.slots.addr[si]
         stub_va<u64> = text_va + u32_u64(sl.stub_off)
         iat_va<u64> = rdata_va + u32_u64(sl.iat_off)
@@ -391,7 +395,7 @@ PeImage::link(outfile) i32 {
     }
 
     fi<i32> = 0
-    while fi < this.objects.len() {
+    while fi < this.objects.used {
         f<CoffObject> = this.objects.addr[fi]
         if this.apply_relocs(this.text, text_va, f.text_rels, text_va, data_va) != 0 {
             return 1
@@ -450,8 +454,7 @@ PeImage::link(outfile) i32 {
     dfile2<u32> = rfile2 + rraw2
     img2<u32> = pe_align_u32(drva2 + dv2, sa2)
 
-    nm_entry = "mainCRTStartup"
-    entry_off2<i32> = this.names.intern_cstr(*nm_entry)
+    entry_off2<i32> = this.names.intern_cstr(*"mainCRTStartup")
     tva2<u64> = ib2 + u32_u64(trva2)
     dva2<u64> = ib2 + u32_u64(drva2)
     eva2<u64> = 0
@@ -488,7 +491,7 @@ PeImage::link(outfile) i32 {
     import_size2<u32> = 0
     iat_rva2<u32> = 0
     iat_size2<u32> = 0
-    nslot2<i32> = this.slots.len()
+    nslot2<i32> = this.slots.used
     if nslot2 > 0 {
         rrva_live<u32> = ly.read_u32(L_RDATA_RVA)
         import_rva2 = rrva_live
@@ -509,7 +512,7 @@ PeImage::link(outfile) i32 {
         min_off2<u32> = 0xffffffff.(u32)
         max_end2<u32> = 0
         ii2<i32> = 0
-        while ii2 < this.slots.len() {
+        while ii2 < this.slots.used {
             sl2<ImportSlot> = this.slots.addr[ii2]
             off2<u32> = sl2.iat_off
             if off2 < min_off2 {
@@ -695,6 +698,6 @@ PeImage::write_pe(outfile) i32 {
     n64<u64> = out.len
     utils.fwrite(fp, out.bits(), n64)
     utils.fclose(fp)
-    fmt.printf("[tu/peff] wrote PE %s (text=%d data=%d imports=%d size=%d)\n", outfile, int(this.text.len), int(this.data.len), int(this.slots.len()), int(out.len))
+    fmt.printf("[tu/peff] wrote PE %s (text=%d data=%d imports=%d size=%d)\n", outfile, int(this.text.len), int(this.data.len), int(this.slots.used), int(out.len))
     return 0
 }

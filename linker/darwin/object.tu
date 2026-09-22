@@ -259,7 +259,7 @@ MachObject::load_rels(buf<i8*>, sz<i32>, reloff<u32>, nreloc<u32>, dst<std.Array
         ext<i32> = 0
         ty<u32> = 0
         address, symbolnum, pcrel, length, ext, ty = reloc_unpack(rp)
-        nsym_i<i32> = this.syms.len()
+        nsym_i<i32> = this.syms.used
         nsym<u32> = nsym_i
         if symbolnum >= nsym {
             return 1

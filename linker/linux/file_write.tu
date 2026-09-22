@@ -43,7 +43,7 @@ File::writeSecSym(path<string.String>) i32 {
 	bytes += shstrtabSize
 	utils.fwrite(fp, this.shstrtab, shstrtabSize.(u64))
 	i<i32> = 0
-	while i < this.shdrNames.len() {
+	while i < this.shdrNames.used {
 		sn<string.String> = this.shdrNames.addr[i]
 		sh<Elf64_Shdr> = this.shdrTab.find(sn)
 		bytes += ehdr.e_shentsize.(i32)
@@ -51,7 +51,7 @@ File::writeSecSym(path<string.String>) i32 {
 		i += 1
 	}
 	j<i32> = 0
-	while j < this.symNames.len() {
+	while j < this.symNames.used {
 		symname<string.String> = this.symNames.addr[j]
 		sym<Elf64_Sym> = this.symTab.find(symname)
 		bytes += ELF64_SYM_SIZE

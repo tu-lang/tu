@@ -8,6 +8,7 @@ use string
 use linker.utils
 use runtime
 
+// Native i32 slot — never assign a dyn Value* here (value_tag / strlen panics).
 link_target<i32> = 0
 
 //[dir,dir,dir]
@@ -55,7 +56,7 @@ unsafe fn link(){
     darwin_default_out()
     lt<i32> = link_target
     if lt == 1 {
-        rc = darwin.link_objects(scan_files, out)
+        rc<i32> = darwin.link_objects(scan_files, out)
         if rc != 0 {
             utils.error("Generate " + out + " Failed")
         }
@@ -63,8 +64,8 @@ unsafe fn link(){
         return
     }
     if lt == 2 {
-        rc = peff.link_objects(scan_files, out)
-        if rc != 0 {
+        rc2<i32> = peff.link_objects(scan_files, out)
+        if rc2 != 0 {
             utils.error("Generate " + out + " Failed")
         }
         utils.msg(100,"Generate " + out + " Passed")
@@ -99,7 +100,7 @@ unsafe fn scan(){
     if total <= 0 utils.error("please provide at lease one .o file")
 
     if link_target == 1 {
-        rc = darwin.link_objects(scan_files, out)
+        rc<i32> = darwin.link_objects(scan_files, out)
         if rc != 0 {
             utils.error("Generate " + out + " Failed")
         }
@@ -107,8 +108,8 @@ unsafe fn scan(){
         return
     }
     if link_target == 2 {
-        rc = peff.link_objects(scan_files, out)
-        if rc != 0 {
+        rc2<i32> = peff.link_objects(scan_files, out)
+        if rc2 != 0 {
             utils.error("Generate " + out + " Failed")
         }
         utils.msg(100,"Generate " + out + " Passed")
@@ -127,7 +128,8 @@ unsafe fn scan(){
     utils.msg(100,"Generate " + out + " Passed")
 }
 
-unsafe fn link_target_default() {
+// Native i32 — callers assign into link_target<i32>.
+unsafe fn link_target_default() i32 {
     for (k, v : os.envs()) {
         arr = string.split(v, "=")
         if std.len(arr) >= 2 {
@@ -144,7 +146,6 @@ unsafe fn link_target_default() {
             }
         }
     }
-    // Dynamic 0/1/2 — native i32 0 from host_os() is a null Value*.
     if runtime.host_os() == 1 {
         return 1
     }
@@ -153,6 +154,7 @@ unsafe fn link_target_default() {
     }
     return 0
 }
+
 unsafe fn command() {
     scan_dirs = []
     scan_files = []

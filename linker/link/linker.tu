@@ -52,7 +52,7 @@ Linker::init(){
 	this.segNames.push(string.S(*".data.rel.local"))
 
 	i<i32> = 0
-	while i < this.segNames.len() {
+	while i < this.segNames.used {
 		name<string.String> = this.segNames.addr[i]
 		this.segLists.insert(name, new Seglist())
 		i += 1
@@ -85,11 +85,11 @@ export func linker_link(l, out) {
 Linker::collectInfo(){
 	utils.msg(30, "Collecting object info")
 	ei<i32> = 0
-	while ei < this.elfs.len() {
+	while ei < this.elfs.used {
 		e<linux.File> = this.elfs.addr[ei]
 		utils.debug("Collect object info %S".(i8), e.elfdir.str())
 		si<i32> = 0
-		while si < this.segNames.len() {
+		while si < this.segNames.used {
 			seg<string.String> = this.segNames.addr[si]
 			if e.shdrTab.find(seg) != map.Null {
 				sl<Seglist> = this.segLists.find(seg)
@@ -146,7 +146,7 @@ Linker::symValid() i32 {
 	this.startOwner = null
 	startLink<SymLink> = this.symDef.find(string.S(*"main"))
 	ui<i32> = 0
-	while ui < this.symLinks.len() {
+	while ui < this.symLinks.used {
 		undefine<SymLink> = this.symLinks.addr[ui]
 		if this.symDef.find(undefine.name) != map.Null {
 			def<SymLink> = this.symDef.find(undefine.name)
@@ -186,11 +186,11 @@ Linker::symValid() i32 {
 Linker::allocAddr(){
 	utils.msg(50, "Allocing address ")
 	curAddr<i32> = BASE_ADDR
-	curOff<i32> = linux.ELF64_EHDR_SIZE + linux.ELF64_PHDR_SIZE * this.segNames.len().(i32)
+	curOff<i32> = linux.ELF64_EHDR_SIZE + linux.ELF64_PHDR_SIZE * this.segNames.used.(i32)
 	need_u<u32> = this.computePclntabNeed()
 
 	si<i32> = 0
-	while si < this.segNames.len() {
+	while si < this.segNames.used {
 		seg<string.String> = this.segNames.addr[si]
 		pass_need<u32> = 0
 		if seg.cmpstr(*".data") == string.Equal {
@@ -275,7 +275,7 @@ Linker::fixPclntabEnd() i32 {
 	end_sym<linux.Elf64_Sym> = end_sl.prov.symTab.find(string.S(*"runtime_pclntab_end"))
 	end_sym.st_value = start_sym.st_value + ps.(u64)
 	si<i32> = 0
-	while si < this.symLinks.len() {
+	while si < this.symLinks.used {
 		sym<SymLink> = this.symLinks.addr[si]
 		if sym.name.cmpstr(*"runtime_pclntab_end") == string.Equal {
 			if sym.recv != null {
@@ -313,7 +313,7 @@ Linker::symParser(){
 	}
 	utils.debug("secDef parse".(i8))
 	sci<i32> = 0
-	while sci < this.secDef.len() {
+	while sci < this.secDef.used {
 		sec<SymLink> = this.secDef.addr[sci]
 		sec_sym<linux.Elf64_Sym> = sec.prov.symTab.find(sec.name)
 		sec_shndx<i32> = sec_sym.st_shndx.(i32)
@@ -329,7 +329,7 @@ Linker::symParser(){
 		sci += 1
 	}
 	sli<i32> = 0
-	while sli < this.symLinks.len() {
+	while sli < this.symLinks.used {
 		syml<SymLink> = this.symLinks.addr[sli]
 		provsym<linux.Elf64_Sym> = syml.prov.symTab.find(syml.name)
 		recvsym<linux.Elf64_Sym> = syml.recv.symTab.find(syml.name)
@@ -341,7 +341,7 @@ Linker::symParser(){
 Linker::relocate(){
 	utils.msg(80, "Relocating address")
 	ei<i32> = 0
-	while ei < this.elfs.len() {
+	while ei < this.elfs.used {
 		e<linux.File> = this.elfs.addr[ei]
 		tab<std.Array> = e.relTab
 		ti<i32> = 0
