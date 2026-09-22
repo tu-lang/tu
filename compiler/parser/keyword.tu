@@ -1,6 +1,8 @@
 use compiler.ast
 use string
 use std
+use std.map
+use runtime
 use compiler.parser.package
 use compiler.gen
 use compiler.compile
@@ -658,7 +660,10 @@ Parser::parseImportDef()
         reader.scan()
     }
     
-    if !std.exist(path,package.packages) {
+    // Static if on dyn std.exist bool is broken; use map_find → u64.
+    pkgs<runtime.Value> = package.packages
+    pkg_hit<u64> = map.map_find(pkgs, path)
+    if pkg_hit == 0.(u64) {
         pkg = new package.Package(package,path,multi)
         package.packages[path] = pkg
         
@@ -679,7 +684,9 @@ Parser::parseImportDef()
         importName = asname
     
     //check conflict
-    if std.exist(importName,this.pkg.imports) {
+    imps<runtime.Value> = this.pkg.imports
+    imp_hit<u64> = map.map_find(imps, importName)
+    if imp_hit != 0.(u64) {
         path1 = this.pkg.imports[importName]
         this.check(path1 == path,"SynatxError: repeat import conflict :" + importName)
     }

@@ -136,10 +136,10 @@ Scanner::parseKeyword(c)
     if lexeme == "new" && cn == '('{
         return this.token(ast.VAR,lexeme)
     }
-    if std.exist(lexeme,keywords){
+    if utils.has(lexeme,keywords){
         return this.token(keywords[lexeme],lexeme)
     } 
-    if std.exist(lexeme,builtins) && this.peek() == '(' {
+    if utils.has(lexeme,builtins) && this.peek() == '(' {
         return this.token(ast.BUILTIN,lexeme)
     }
 

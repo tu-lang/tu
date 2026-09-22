@@ -25,7 +25,7 @@ Parser::parseApiDef()
     s.name  = reader.curLex.dyn()
 
     // s.compute()
-    if compile.phase == compile.GlobalPhase && std.exist(s.name,this.pkg.structs){
+    if compile.phase == compile.GlobalPhase && utils.has(s.name,this.pkg.structs){
         this.check(false,"already define " + s.name)
     }
 
@@ -126,7 +126,7 @@ Parser::parseApiImpl()
         apiImpl = new ast.ApiImpl()
         apiImpl.name = apiName
         for iter : apiDef.order_funcs {
-            if std.exist(iter.name ,impls) {
+            if utils.has(iter.name ,impls) {
                 implFunc = impls[iter.name]
                 this.checkImplSig(iter,implFunc)
                 apiImpl.funcs[] = implFunc
@@ -187,7 +187,11 @@ Parser::parseStructDef()
 	s.parser = this
 	s.name  = reader.curLex.dyn()
 	if compile.phase != compile.GlobalPhase {
-		s = this.pkg.getStruct(s.name)
+		found = this.pkg.getStruct(s.name)
+		if found == null {
+			this.check(false,"struct not found in package on reparse: " + s.name)
+		}
+		s = found
 		s.member = []
 	}
 
@@ -216,7 +220,7 @@ Parser::parseStructDef()
 	reader.scan()
 	//end for }
 	idx = 0
-	if s.isasync || std.exist(s.name,this.pkg.impls) {
+	if s.isasync || utils.has(s.name,this.pkg.impls) {
 		this.genAsyncPollMember(s,idx)
 	}
 	while(reader.curToken != ast.RBRACE)

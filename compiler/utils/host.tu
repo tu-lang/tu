@@ -198,14 +198,17 @@ func copy_dir_ext(src_dir, dst_dir, ext) {
 
 // TMPDIR (unix) / TEMP / TMP (windows) / "/tmp" fallback.
 func host_tmpdir() {
-	if std.exist("TMPDIR", envs) && envs["TMPDIR"] != "" {
-		return norm_slash(envs["TMPDIR"])
+	v = env_get("TMPDIR")
+	if v != "" {
+		return norm_slash(v)
 	}
-	if std.exist("TEMP", envs) && envs["TEMP"] != "" {
-		return norm_slash(envs["TEMP"])
+	v = env_get("TEMP")
+	if v != "" {
+		return norm_slash(v)
 	}
-	if std.exist("TMP", envs) && envs["TMP"] != "" {
-		return norm_slash(envs["TMP"])
+	v = env_get("TMP")
+	if v != "" {
+		return norm_slash(v)
 	}
 	return "/tmp"
 }

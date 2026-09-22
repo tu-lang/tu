@@ -161,13 +161,13 @@ Parser::parseForStmt()
             if obj != null   node.obj   = obj
 
             // if node.key != null 
-            //    && !std.exist(node.key.varname,this.currentFunc.params_var) 
-            //    && !std.exist(node.key.varname,this.currentFunc.locals)
+            //    && !utils.has(node.key.varname,this.currentFunc.params_var) 
+            //    && !utils.has(node.key.varname,this.currentFunc.locals)
             //     this.currentFunc.locals[node.key.varname] = node.key
 
             // if node.value != null 
-            //    && !std.exist(node.value.varname,this.currentFunc.params_var)
-            //    && !std.exist(node.value.varname,this.currentFunc.locals)
+            //    && !utils.has(node.value.varname,this.currentFunc.params_var)
+            //    && !utils.has(node.value.varname,this.currentFunc.locals)
             //     this.currentFunc.locals[node.value.varname] = node.value
             this.newvar(node.key)
             this.newvar(node.value)
@@ -440,7 +440,7 @@ Parser::parseReturnStmt(ret_line<i32>) {
                             }
                         }
                         for k, st : this.pkg.structs {
-                            if std.exist(method, st.funcs) {
+                            if utils.has(method, st.funcs) {
                                 f = st.funcs[method]
                                 if f != null {
                                     if best == null || f.mcount > best.mcount

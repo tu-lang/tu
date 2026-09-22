@@ -33,16 +33,18 @@ fn target_name(t<i32>) {
 }
 
 // TU_TARGET / CO_TARGET env, then runtime.host_os().
+// Use env_get (os.envs scan) — do not rely on package init() filling `envs`
+// before the first call (cross-package init order is not guaranteed).
 fn target_default() i32 {
-    if std.exist("TU_TARGET", envs) {
-        v = envs["TU_TARGET"]
+    v = env_get("TU_TARGET")
+    if v != "" {
         t<i32> = target_parse(v)
         if t >= 0 {
             return t
         }
     }
-    if std.exist("CO_TARGET", envs) {
-        v = envs["CO_TARGET"]
+    v = env_get("CO_TARGET")
+    if v != "" {
         t<i32> = target_parse(v)
         if t >= 0 {
             return t

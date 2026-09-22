@@ -2,9 +2,15 @@ use compiler.parser
 use compiler.ast
 use compiler.utils
 use std
+use std.map
 use string
 use runtime
+use os
 Eof<i32> = -1
+
+// Dyn Parser objects for ScannerStatic (mem cannot hold class fields).
+// Keyed by scanner heap pointer bits so scan() can update parser.line/column.
+scan_parsers = {}
 mem ScannerStatic {
     i8* buffer  // file body
     i32 buffersize
@@ -44,19 +50,25 @@ ScannerStatic::reset(){
 ScannerStatic::init(filepath,parser){
     utils.debugf("parser.scanner.ScannerStatic::init() filepath:%s",filepath)
     this.pos = 0
-    this.filepath = filepath
+    this.parser = parser
+    // Keep dyn Parser for line/column sync (u64 field is not a class object).
+    scan_parsers[int(this)] = parser
     fs = new std.File(filepath)
-
     if !fs.IsOpen() {
         os.die("error opening file :" + filepath )
     }
-    this.parser = parser
     this.buffer = fs.ReadAllNative()
     if this.buffer == 0 {
         os.die("error read file:" + filepath)
     }
-    totalsize = fs.size
-    this.buffersize = *totalsize
+    // ReadAllNative NUL-terminates; measure native length without dyn Int unwrap.
+    n<i32> = 0
+    while this.buffer[n] != 0 {
+        n += 1
+    }
+    this.buffersize = n
+    // Keep dyn path for %s formatting in dief (mem field typed String* historically).
+    this.filepath = filepath
     fs.Close()
 }
 
@@ -65,6 +77,7 @@ ScannerStatic::initFromBuffer(filepath, buf<i8*>, sz<i32>, parser){
     this.pos = 0
     this.filepath = filepath
     this.parser = parser
+    scan_parsers[int(this)] = parser
     this.buffer = buf
     this.buffersize = sz
 }
@@ -81,7 +94,7 @@ ScannerStatic::rollback(x<TxStatic>)
 ScannerStatic::next() {
     if this.pos >= this.buffersize {
         if this.pos > this.buffersize
-            os.dief("[error] scanner read char over the buffer pos:%d len:%d",this.pos,std.len(this.buffer))
+            os.dief("[error] scanner read char over the buffer pos:%d len:%d",this.pos,this.buffersize)
         this.pos += 1
         return Eof
     }
@@ -194,11 +207,17 @@ ScannerStatic::parseKeyword(c<i8>)
     if lexeme.cmpstr(*"new") == string.Equal && cn == '('{
         return this.token(ast.VAR,lexeme)
     }
-    if std.exist(lex,keywords){
-        return this.token(keywords[lex],lexeme)
-    } 
+    // Prefer map_find over std.exist: static `if export_func()` mis-handles dyn
+    // bool returns (isTrue on wrong bits). map_find yields u64 (unboxed tok or 0).
+    kw_map<runtime.Value> = keywords
+    kw_bits<u64> = map.map_find(kw_map, lex)
+    if kw_bits != 0.(u64) {
+        return this.token(kw_bits.(i32),lexeme)
+    }
     p<i8> = this.peek()
-    if std.exist(lex,builtins) && p == '(' {
+    bi_map<runtime.Value> = builtins
+    bi_bits<u64> = map.map_find(bi_map, lex)
+    if bi_bits != 0.(u64) && p == '(' {
         return this.token(ast.BUILTIN,lexeme)
     }
     return this.token(ast.VAR,lexeme)
@@ -228,9 +247,12 @@ ScannerStatic::scan(){
 
     //token
     this.get_next()
-    p = this.parser
-    p.line = int(this.line)
-    p.column = int(this.column)
+    // Sync dyn Parser.line/column via map (cannot p.line on u64 bits).
+    p = scan_parsers[int(this)]
+    if p != null {
+        p.line = int(this.line)
+        p.column = int(this.column)
+    }
     return this.curToken
 }
 

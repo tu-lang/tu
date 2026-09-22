@@ -36,8 +36,14 @@ func genast(filename)
     mpkg = new package.Package("main","main",false)
     // RFC110: main package mode from source file directory (nearest tu.mod)
     main_ab = filename
-    if main_ab == "" || main_ab[0] != "/" {
-        main_ab = utils.path_join(utils.pwd(), main_ab)
+    if main_ab == null || main_ab == "" {
+        main_ab = utils.pwd()
+    } else {
+        // Index yields Char; compare to '/' not "/".
+        c0 = main_ab[0]
+        if c0 != '/' {
+            main_ab = utils.path_join(utils.pwd(), main_ab)
+        }
     }
     main_dir = utils.path_dirname(main_ab)
     if main_dir == "" main_dir = utils.pwd()

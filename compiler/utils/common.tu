@@ -1,8 +1,59 @@
 use std
+use std.map
 use runtime
 use string
 use fmt
 use os
+
+// i32 map/array presence for mem/static typed compares.
+// Arg order matches std.exist / std.contains: (key, map_or_array).
+fn map_has(key, m) i32 {
+	if m == null {
+		return 0
+	}
+	mv<runtime.Value> = m
+	if mv.type == runtime.Map {
+		hit<u64> = map.map_find(mv, key)
+		if hit != 0.(u64) {
+			return 1
+		}
+		return 0
+	}
+	if mv.type == runtime.Array {
+		if runtime.array_in(key, mv.data) == runtime.True {
+			return 1
+		}
+		return 0
+	}
+	return 0
+}
+
+// Dyn bool facade for class methods (`if utils.has(key, map)`).
+// Arg order matches std.exist: (key, map_or_array).
+// Do not call map_has() from here: fn i32 0 is returned as null Value* across
+// dyn ABI and breaks `hit = map_has(...)`.
+func has(key, m){
+	if m == null {
+		return false
+	}
+	unsafe {
+		mv<runtime.Value> = m
+		if mv.type == runtime.Map {
+			hit<u64> = map.map_find(mv, key)
+			if hit != 0.(u64) {
+				return true
+			}
+			return false
+		}
+		if mv.type == runtime.Array {
+			if runtime.array_in(key, mv.data) == runtime.True {
+				return true
+			}
+			return false
+		}
+	}
+	return false
+}
 
 func char1(cn<i8>){
     return runtime.newobject(runtime.Char,cn)
@@ -30,9 +81,10 @@ func pwd(){
 			return norm_slash(string.new(buf))
 		}
 	}
-	if std.exist("PWD",envs) {
-		return envs["PWD"]
-	}	
+	v = env_get("PWD")
+	if v != "" {
+		return norm_slash(v)
+	}
 	return ""
 }
 func strRand() {			

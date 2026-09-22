@@ -338,7 +338,7 @@ Package::addClass(name, f)
 
 Package::addStruct(name, f)
 {
-    if std.exist(name,this.structs) {
+    if utils.has(name,this.structs) {
         this.structs[name] = f
         return true
     }
@@ -349,7 +349,7 @@ Package::addAsyncStruct(name, f)
 {
 
     f.isasync = true
-    if std.exist(name,this.structs) {
+    if utils.has(name,this.structs) {
         this.structs[name] = f
         return true
     }
@@ -358,13 +358,13 @@ Package::addAsyncStruct(name, f)
 
 Package::getStruct(name)
 {    
-    if std.exist(name,this.structs) 
+    if utils.has(name,this.structs) 
         return this.structs[name]
     return null
 }
 Package::addStructFunc(name , fcname , f, s)
 {
-    if std.exist(name,this.structs) {
+    if utils.has(name,this.structs) {
         this.structs[name].funcs[fcname] = f
         this.structs[name].order_funcs[] = f
         return null
@@ -375,7 +375,7 @@ Package::addStructFunc(name , fcname , f, s)
 }
 Package::addClassFunc(name,f,p)
 {
-    if std.exist(name,this.classes) {
+    if utils.has(name,this.classes) {
         this.classes[name].funcs[] = f
         return null
     }
@@ -388,12 +388,12 @@ Package::addClassFunc(name,f,p)
 }
 Package::hasClass(name)
 {
-    return std.exist(name,this.classes)
+    return utils.has(name,this.classes)
 }
 
 Package::getGlobalVar(name){
     for(p : this.parsers){
-        if std.exist(name,p.gvars){
+        if utils.has(name,p.gvars){
             return p.gvars[name]
         }
     }
@@ -401,14 +401,14 @@ Package::getGlobalVar(name){
 }
 Package::getClass(name)
 {    
-    if std.exist(name,this.classes) 
+    if utils.has(name,this.classes) 
         return this.classes[name]
     return null
 }
 
 Package::checkClassFunc(name , fc)
 {
-    if std.exist(name,this.classes)
+    if utils.has(name,this.classes)
         return false
     cs = this.classes[name]
     for(var : cs.funcs){

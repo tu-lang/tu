@@ -278,7 +278,7 @@ Function::getMatchcondVar() {
 }
 
 Function::createParentCapture(var) {
-    if std.exist(var.varname,this.captures){
+    if utils.has(var.varname,this.captures){
         return true
     }
 

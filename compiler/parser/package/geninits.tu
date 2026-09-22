@@ -1,3 +1,4 @@
+use compiler.utils
  use compiler.parser
  use compiler.internal
  use compiler.ast
@@ -16,7 +17,7 @@
 }
 hashInit = {} # map{string:bool}
 Package::parseinit(){
-	if std.exist(this.getFullName(),hashInit){
+	if utils.has(this.getFullName(), hashInit){
 		return hashInit[this.getFullName()]
 	}
 	hashInit[this.getFullName()] = std.len(this.inits)  > 0
@@ -37,7 +38,7 @@ Package::parseinit(){
 }
 HasGen = {}
 Package::geninit(){
-	if std.exist(this.getFullName(),HasGen){
+	if utils.has(this.getFullName(), HasGen){
 		return false
 	}
 	HasGen[this.getFullName()] = true
@@ -46,7 +47,7 @@ Package::geninit(){
 	}
 	mf = this.inits[0]
 	for(fullpackage : this.imports){
-		if !std.exist(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
+		if !utils.has(fullpackage,packages) utils.panic("not exist: %s" , fullpackage)
 		dpkg = packages[fullpackage]
 		if(dpkg.geninit()){
 			for( fc : dpkg.inits){

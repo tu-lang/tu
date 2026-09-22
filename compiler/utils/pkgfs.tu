@@ -301,50 +301,49 @@ fn pkgfs_list_runtime_tu() i32 {
 		}
 		return pkgfs_list_finish(out)
 	}
+	// TU_STD repo tree and flat copkg: same target-aware filter + inject.
+	// Disk keeps platform/ under copkg so cross --target works without re-overlay.
+	rt_abs = ""
 	if pkgfs_mode == PKGFS_MODE_TU_STD {
-		abs = path_join(pkgfs_tu_std, "runtime")
-		raw = disk_list_tu(abs)
-		// After materialize+overlay the tree already has the right *one* overlay file.
-		has_ov = false
-		seen = {}
-		for name : raw {
-			if name == "linux.tu" || name == "darwin.tu" || name == "windows.tu" {
-				if name == want {
-					has_ov = true
-					out[] = name
-					seen[name] = true
-				}
-				continue
-			}
-			// Drop Windows-only aux when not targeting Windows (raw TU_STD repo).
-			if pkgfs_target != TARGET_WINDOWS && pkgfs_is_windows_runtime_aux(name) != 0 {
-				continue
-			}
-			out[] = name
-			seen[name] = true
-		}
-		if !has_ov {
-			out[] = want
-			seen[want] = true
-		}
-		// Raw TU_STD: inject Windows aux from platform/windows/ into the runtime list.
-		if pkgfs_target == TARGET_WINDOWS {
-			for n : pkgfs_windows_runtime_aux() {
-				if !seen[n] {
-					out[] = n
-					seen[n] = true
-				}
-			}
-		}
-		return pkgfs_list_finish(out)
+		rt_abs = path_join(pkgfs_tu_std, "runtime")
+	} else {
+		rt_abs = disk_resolve_copkg("runtime")
 	}
-	abs = disk_resolve_copkg("runtime")
-	if abs == "" {
+	if rt_abs == "" {
 		pkgfs_list_cache = []
 		return 1
 	}
-	raw = disk_list_tu(abs)
-	return pkgfs_list_finish(raw)
+	raw = disk_list_tu(rt_abs)
+	has_ov = false
+	seen = {}
+	for name : raw {
+		if name == "linux.tu" || name == "darwin.tu" || name == "windows.tu" {
+			if name == want {
+				has_ov = true
+				out[] = name
+				seen[name] = true
+			}
+			continue
+		}
+		if pkgfs_target != TARGET_WINDOWS && pkgfs_is_windows_runtime_aux(name) != 0 {
+			continue
+		}
+		out[] = name
+		seen[name] = true
+	}
+	if !has_ov {
+		out[] = want
+		seen[want] = true
+	}
+	if pkgfs_target == TARGET_WINDOWS {
+		for n : pkgfs_windows_runtime_aux() {
+			if !seen[n] {
+				out[] = n
+				seen[n] = true
+			}
+		}
+	}
+	return pkgfs_list_finish(out)
 }
 
 fn pkgfs_list_netio_sys_tu(std_dir) i32 {
@@ -458,84 +457,97 @@ fn pkgfs_list_package_tu(pkg_path) i32 {
 	return pkgfs_list_finish(out)
 }
 
+// Root of a disk-backed std tree: TU_STD path or flat copkg (includes platform/).
+fn pkgfs_disk_tree_root() {
+	if pkgfs_mode == PKGFS_MODE_TU_STD && pkgfs_tu_std != "" {
+		return pkgfs_tu_std
+	}
+	return copkg_dir()
+}
+
 fn pkgfs_disk_source_path(std_dir, pkg_path, basename) {
 	if pkg_path == "runtime" {
+		tree = pkgfs_disk_tree_root()
 		if basename == "darwin.tu" {
-			if pkgfs_mode == PKGFS_MODE_TU_STD {
-				ov = path_join(pkgfs_tu_std, "runtime/darwin.tu")
+			if pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK {
+				ov = path_join(tree, "runtime/darwin.tu")
 				if std.is_file(ov) {
 					return ov
 				}
-				return path_join(pkgfs_tu_std, "platform/darwin/runtime_os.tu")
+				return path_join(tree, "platform/darwin/runtime_os.tu")
 			}
 		}
 		if basename == "windows.tu" {
-			if pkgfs_mode == PKGFS_MODE_TU_STD {
-				ov = path_join(pkgfs_tu_std, "runtime/windows.tu")
+			if pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK {
+				ov = path_join(tree, "runtime/windows.tu")
 				if std.is_file(ov) {
 					return ov
 				}
-				return path_join(pkgfs_tu_std, "platform/windows/runtime_os.tu")
+				return path_join(tree, "platform/windows/runtime_os.tu")
 			}
 		}
 		if basename == "linux.tu" {
-			if pkgfs_mode == PKGFS_MODE_TU_STD {
-				return path_join(pkgfs_tu_std, "runtime/linux.tu")
+			if pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK {
+				return path_join(tree, "runtime/linux.tu")
 			}
 		}
-		if pkgfs_mode == PKGFS_MODE_TU_STD && pkgfs_target == TARGET_WINDOWS {
+		if (pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK) && pkgfs_target == TARGET_WINDOWS {
 			if pkgfs_is_windows_runtime_aux(basename) != 0 {
-				ov = path_join(pkgfs_tu_std, "runtime/" + basename)
+				ov = path_join(tree, "runtime/" + basename)
 				if std.is_file(ov) {
 					return ov
 				}
-				return path_join(pkgfs_tu_std, "platform/windows/" + basename)
+				return path_join(tree, "platform/windows/" + basename)
 			}
 		}
 	}
-	if std_dir == "library/os" && basename == "signal.tu" && pkgfs_mode == PKGFS_MODE_TU_STD {
+	if std_dir == "library/os" && basename == "signal.tu" && (pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK) {
+		tree = pkgfs_disk_tree_root()
 		if pkgfs_target == TARGET_DARWIN {
-			ov = path_join(pkgfs_tu_std, "library/os/signal.tu")
-			// Prefer overlaid copy; raw TU_STD uses platform/darwin.
-			plat = path_join(pkgfs_tu_std, "platform/darwin/os_signal.tu")
+			ov = path_join(tree, "library/os/signal.tu")
+			plat = path_join(tree, "platform/darwin/os_signal.tu")
 			if std.is_file(plat) {
-				// After materialize, library/os/signal.tu is already Darwin; still OK to read plat.
 				return plat
 			}
 			return ov
 		}
 	}
-	if std_dir == "packages/netio/sys" && pkgfs_mode == PKGFS_MODE_TU_STD {
+	if std_dir == "packages/netio/sys" && (pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK) {
+		tree = pkgfs_disk_tree_root()
+		nsys = path_join(tree, "packages/netio/sys")
+		if pkgfs_mode == PKGFS_MODE_DISK {
+			nsys = path_join(tree, "netio/sys")
+		}
 		if pkgfs_target == TARGET_DARWIN {
 			if basename == "epoll.tu" {
-				ov = path_join(pkgfs_tu_std, "packages/netio/sys/epoll.tu")
+				ov = path_join(nsys, "epoll.tu")
 				if std.is_file(ov) {
 					return ov
 				}
-				return path_join(pkgfs_tu_std, "packages/netio/sys/kqueue.tu")
+				return path_join(nsys, "kqueue.tu")
 			}
 			if basename == "waker.tu" {
-				ov = path_join(pkgfs_tu_std, "packages/netio/sys/waker.tu")
+				ov = path_join(nsys, "waker.tu")
 				if std.is_file(ov) {
 					return ov
 				}
-				return path_join(pkgfs_tu_std, "packages/netio/sys/waker_kqueue.tu")
+				return path_join(nsys, "waker_kqueue.tu")
 			}
 			if basename == "platform.tu" {
-				ov = path_join(pkgfs_tu_std, "packages/netio/sys/platform.tu")
+				ov = path_join(nsys, "platform.tu")
 				if std.is_file(ov) {
 					return ov
 				}
-				return path_join(pkgfs_tu_std, "platform/darwin/netio_platform.tu")
+				return path_join(tree, "platform/darwin/netio_platform.tu")
 			}
 		}
 		if pkgfs_target == TARGET_WINDOWS {
 			if basename == "platform.tu" {
-				ov = path_join(pkgfs_tu_std, "packages/netio/sys/platform.tu")
+				ov = path_join(nsys, "platform.tu")
 				if std.is_file(ov) {
 					return ov
 				}
-				return path_join(pkgfs_tu_std, "platform/windows/netio_platform.tu")
+				return path_join(tree, "platform/windows/netio_platform.tu")
 			}
 		}
 	}
@@ -587,19 +599,19 @@ fn pkgfs_read_runtime(basename) (i32, i8*, i32) {
 			}
 			return embed_read_path(pkgfs_stdroot, "runtime/linux.tu")
 		}
-		if pkgfs_mode == PKGFS_MODE_TU_STD {
-			// Prefer overlaid name; fall back to platform/ for raw TU_STD repo trees.
-			ov = path_join(pkgfs_tu_std, "runtime/" + basename)
+		if pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK {
+			tree = pkgfs_disk_tree_root()
+			ov = path_join(tree, "runtime/" + basename)
 			if std.is_file(ov) {
 				return disk_read_file(ov)
 			}
 			if pkgfs_target == TARGET_DARWIN {
-				return disk_read_file(path_join(pkgfs_tu_std, "platform/darwin/runtime_os.tu"))
+				return disk_read_file(path_join(tree, "platform/darwin/runtime_os.tu"))
 			}
 			if pkgfs_target == TARGET_WINDOWS {
-				return disk_read_file(path_join(pkgfs_tu_std, "platform/windows/runtime_os.tu"))
+				return disk_read_file(path_join(tree, "platform/windows/runtime_os.tu"))
 			}
-			return disk_read_file(path_join(pkgfs_tu_std, "runtime/linux.tu"))
+			return disk_read_file(path_join(tree, "runtime/linux.tu"))
 		}
 		return disk_read_file(path_join(disk_resolve_copkg("runtime"), basename))
 	}
@@ -607,12 +619,13 @@ fn pkgfs_read_runtime(basename) (i32, i8*, i32) {
 		if pkgfs_mode == PKGFS_MODE_EMBED {
 			return embed_read_path(pkgfs_stdroot, "platform/windows/" + basename)
 		}
-		if pkgfs_mode == PKGFS_MODE_TU_STD {
-			ov = path_join(pkgfs_tu_std, "runtime/" + basename)
+		if pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK {
+			tree = pkgfs_disk_tree_root()
+			ov = path_join(tree, "runtime/" + basename)
 			if std.is_file(ov) {
 				return disk_read_file(ov)
 			}
-			return disk_read_file(path_join(pkgfs_tu_std, "platform/windows/" + basename))
+			return disk_read_file(path_join(tree, "platform/windows/" + basename))
 		}
 		return disk_read_file(path_join(disk_resolve_copkg("runtime"), basename))
 	}
@@ -681,7 +694,37 @@ fn pkgfs_read_netio_sys(basename) (i32, i8*, i32) {
 		}
 		return disk_read_file(path_join(path_join(pkgfs_tu_std, std_dir), read_name))
 	}
-	return disk_read_file(path_join(disk_resolve_copkg("netio/sys"), basename))
+	// Flat copkg: netio/sys + platform/ for cross --target without re-overlay.
+	nsys = path_join(copkg_dir(), "netio/sys")
+	if basename == "platform.tu" {
+		ov = path_join(nsys, "platform.tu")
+		if std.is_file(ov) {
+			return disk_read_file(ov)
+		}
+		if pkgfs_target == TARGET_DARWIN {
+			return disk_read_file(path_join(copkg_dir(), "platform/darwin/netio_platform.tu"))
+		}
+		if pkgfs_target == TARGET_WINDOWS {
+			return disk_read_file(path_join(copkg_dir(), "platform/windows/netio_platform.tu"))
+		}
+	}
+	read_name = basename
+	if pkgfs_target == TARGET_DARWIN {
+		if basename == "epoll.tu" {
+			ov = path_join(nsys, "epoll.tu")
+			if std.is_file(ov) {
+				return disk_read_file(ov)
+			}
+			read_name = "kqueue.tu"
+		} else if basename == "waker.tu" {
+			ov = path_join(nsys, "waker.tu")
+			if std.is_file(ov) {
+				return disk_read_file(ov)
+			}
+			read_name = "waker_kqueue.tu"
+		}
+	}
+	return disk_read_file(path_join(nsys, read_name))
 }
 
 fn pkgfs_read_package_file(std_dir, pkg_path, basename) (i32, i8*, i32) {

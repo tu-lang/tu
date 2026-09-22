@@ -1,4 +1,5 @@
 use std
+use compiler.utils
 use fmt
 use compiler.parser.package
 use compiler.compile
@@ -20,25 +21,26 @@ Parser::addFunc(name, f)
 Parser::hasFunc(name, is_extern)
 {
     if name == "init" { return false}
-
-    if is_extern  return std.exist(name,this.extern_funcs)
-    else          return std.exist(name,this.funcs)
+    if is_extern {
+        return utils.has(name,this.extern_funcs)
+    }
+    return utils.has(name,this.funcs)
 }
 
 Parser::getFunc(name, is_extern)
 {
     if is_extern {
-        if std.exist(name,this.extern_funcs) 
+        if utils.has(name,this.extern_funcs) 
             return this.extern_funcs[name]
     }else {
-        if std.exist(name,this.funcs)
+        if utils.has(name,this.funcs)
             return this.funcs[name]
     }
     return null
 }
 
 Parser::getGvar(name){
-    if std.exist(name,this.gvars) 
+    if utils.has(name,this.gvars) 
         return this.gvars[name]
     return null
 }
