@@ -120,7 +120,7 @@ ElfFile::buildShstrtab() {
 ElfFile::buildSymtab() {
     utils.debug("ElfFile::buildSymtab()".(i8))
     this.sortGlobal()
-    this.strtab_size = this.symNames.len() * sizeof(Elf64_Sym)
+    this.strtab_size = this.symNames.used * sizeof(Elf64_Sym)
     utils.debug(
         *"symtab: offset[%d,%d] size:%d", 
         this.offset, this.offset + this.strtab_size, this.strtab_size
@@ -143,8 +143,9 @@ ElfFile::buildStrtab() {
     utils.debug("ElfFile::buildStrtab()".(i8))
     this.strtab_size = 0
     symNames<std.Array>  = this.symNames
-    for (i<i32> = 0; i < this.symNames.len(); i += 1) {
-        this.strtab_size += symNames.addr[i].(string.String).len() + Pad1
+    for (i<i32> = 0; i < this.symNames.used; i += 1) {
+		sname<string.String> = symNames.addr[i]
+        this.strtab_size += sname.len() + Pad1
     }
     this.addShdr(
         string.S(*".strtab"), 
@@ -157,7 +158,7 @@ ElfFile::buildStrtab() {
     str<i8*> = new allstrsize
     this.strtab = str
     index<i32> = 0
-    for(i<i32> = 0 ; i < this.symNames.len() ; i += 1){
+    for(i<i32> = 0 ; i < this.symNames.used ; i += 1){
         strname<string.String> = this.symNames.addr[i]
         es<Elf64_Sym> = this.symTab.find(strname)
         es.st_name = index
@@ -173,41 +174,35 @@ ElfFile::buildStrtab() {
 ElfFile::buildRelTab(){
     utils.debug("ElfFile::buildRelTab()".(i8))
     relTab<std.Array> = this.relTab 
-    for(i<i32> = 0 ;i < this.relTab.len() ; i += 1)
+    for(i<i32> = 0 ;i < this.relTab.used ; i += 1)
     {
-        rel<RelInfo> = this.relTab.addr[i]
+		// addr[] holds RelInfo* (mem); do not .(RelInfo) — that is dyn typeassert
+		// and calls get_func_value on a raw pointer → SEGV.
+		rel<RelInfo> = this.relTab.addr[i]
         rela<Elf64_Rela> = new Elf64_Rela
-        rela.r_offset  = relTab.addr[i].(RelInfo).offset
-        rela.r_info    = ELF64_R_INFO(
-            this.getSymIndex(
-                relTab.addr[i].(RelInfo).name
-            ).(u64),
-            relTab.addr[i].(RelInfo).type.(u64)
-        )
+        rela.r_offset  = rel.offset
+        nm<string.String> = rel.name
+        si<i32> = this.getSymIndex(nm)
+        // Pass i32 directly; never field.(u64) (dyn typeassert trap).
+        rela.r_info    = ELF64_R_INFO(si, rel.relkind)
         if rel.tarSeg.cmpstr(".data".(i8)) != string.Equal
             rela.r_addend  = -4
 
-        if relTab.addr[i].(RelInfo).type == R_X86_64_PC32 {
-            sym<ast.Sym> = this.asmer.parser.symtable.getSym(
-                relTab.addr[i].(RelInfo).name
-            )
+        if rel.relkind == R_X86_64_PC32 {
+            sym<ast.Sym> = this.asmer.parser.symtable.getSym(rel.name)
             if !sym.externed {
-                rela.r_info    = ELF64_R_INFO(
-                    this.getSymIndex(
-                        relTab.addr[i].(RelInfo).name
-                    ).(u64),
-                    relTab.addr[i].(RelInfo).type.(u64)
-                )
+                si2<i32> = this.getSymIndex(rel.name)
+                rela.r_info = ELF64_R_INFO(si2, rel.relkind)
             }
 
         }
-        tarSeg<string.String> = relTab.addr[i].(RelInfo).tarSeg
+        tarSeg<string.String> = rel.tarSeg
         if tarSeg.cmpstr(".text".(i8)) == string.Equal
             this.relTextTab.push(rela)
         else if tarSeg.cmpstr(".data".(i8)) == string.Equal
             this.relDataTab.push(rela)
     }
-    text_size<i32> = this.relTextTab.len() * sizeof(Elf64_Rela)
+    text_size<i32> = this.relTextTab.used * sizeof(Elf64_Rela)
     this.addShdr(
         string.S(*".rela.text"),
         SHT_RELA,SHF_INFO_LINK,0.(i8),
@@ -219,7 +214,7 @@ ElfFile::buildRelTab(){
     utils.debug(*"text realation table:[%d,%d]",this.offset,this.offset + text_size)
     this.offset += text_size
 
-    data_size<i32> = this.relDataTab.len() * sizeof(Elf64_Rela)
+    data_size<i32> = this.relDataTab.used * sizeof(Elf64_Rela)
     this.addShdr(
         string.S(*".rela.data"),SHT_RELA,SHF_INFO_LINK,0.(i8),
         this.offset,data_size,
@@ -229,7 +224,7 @@ ElfFile::buildRelTab(){
     )//.rel.data
     utils.debug(*"data realation table:[%d,%d]",this.offset,this.offset + data_size)
     this.offset += data_size
-    for(i<i32> = 0 ; i < this.shdrNames.len() ; i += 1){
+    for(i<i32> = 0 ; i < this.shdrNames.used ; i += 1){
         index<i32> = this.strIndex.find(
             this.shdrNames.addr[i]
         )

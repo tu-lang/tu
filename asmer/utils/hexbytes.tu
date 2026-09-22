@@ -19,9 +19,9 @@ ParseHexBytes::print(){
     arr<u8*> = this.vs.addr
     // fmt.println(
         // "vs.len:"
-        // int(this.vs.len())
+        // int(this.vs.used)
     // )
-    for(i<i32> = 0 ; i < this.vs.len() ; i += 1){
+    for(i<i32> = 0 ; i < this.vs.used ; i += 1){
         std.itoa(arr[i],buf,16.(i8))
         printf("%s ".(i8),buf)
     }
@@ -36,7 +36,7 @@ ParseHexBytes::next() {
     this.pos += 1
     return this.buffer[p]
 }
-char ParseHexBytes::peek() {
+ParseHexBytes::peek() i8 {
     if this.pos >= this.buffersize{
         return EOF
     }

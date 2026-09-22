@@ -9,13 +9,13 @@ mem RelInfo {
 	string.String* tarSeg
 	string.String* name
 	i32			   offset
-	i32			   type
+	i32			   relkind // reloc kind (R_X86_64_*); not named `type` (parser .(type) trap)
 }
 RelInfo::init(seg<string.String> , addr<i32> ,name<string.String> , t<i32>){
 	this.tarSeg = seg
 	this.offset = addr
 	this.name = name
-	this.type = t
+	this.relkind = t
 }
 
 

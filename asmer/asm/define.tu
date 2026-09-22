@@ -16,5 +16,13 @@ mem Asmer
 }
 trace<i64> = 0
 Pad1<i64> = 1
-// Driver-requested target name ("linux"/"darwin"); empty → host_os().
+// Driver-requested target name ("linux"/"darwin"/"windows"); empty → host_os().
 requested_target = ""
+
+// Dyn-callable accessors for tulang / tua drivers (static package export facades).
+export func get_requested_target() {
+    return requested_target
+}
+export func set_requested_target(name) {
+    requested_target = name
+}

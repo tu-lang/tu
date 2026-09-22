@@ -104,18 +104,18 @@ Asmer::writeElf() {
     offset += this.text
     this.check(this.bytes == offset)
 
-    data_size<i32>  = this.parser.symtable.data_symbol.len() 
+    data_size<i32>  = this.parser.symtable.data_symbol.used 
     ds<i32> = 0
     i<i32> = 0
     data_symbol<std.Array> = this.parser.symtable.data_symbol
-    for(i<i32> = 0 ; i < data_symbol.len() ; i += 1){
+    for(i<i32> = 0 ; i < data_symbol.used ; i += 1){
         sym<ast.Sym> =  data_symbol.addr[i]
         if sym.isbin {
             this.writeBytes(sym.bin_ptr, sym.bin_len)
         } else if sym.isstr {
             this.writeBytes(sym.str.str(),sym.str.len() + Pad1)
         }else{//[block,block...]
-            for(j<i32> = 0 ; j < sym.datas.len() ; j += 1){
+            for(j<i32> = 0 ; j < sym.datas.used ; j += 1){
                 b<ast.ByteBlock> = sym.datas.addr[j]
                 tysize<i32> = ast.typesize(b.type)
                 if b.type == ast.KW_ZERO {
@@ -129,7 +129,7 @@ Asmer::writeElf() {
     offset += this.data
     this.check(this.bytes == offset,"3 bytes != offset :" + int(this.bytes) + " : " + int(offset))
     shdrTab<map.Map> = this.elf.shdrTab
-    for(i<i32> = 0 ; i < this.elf.shdrNames.len() ; i += 1){
+    for(i<i32> = 0 ; i < this.elf.shdrNames.used ; i += 1){
         unsafe {
             name = this.elf.shdrNames.addr[i]
             sh<elf.Elf64_Shdr> = shdrTab.find(name)
@@ -144,33 +144,33 @@ Asmer::writeElf() {
     this.check(this.bytes == offset)
 
     symTab<map.Map> = this.elf.symTab
-    for( i<i32> = 0 ; i < this.elf.symNames.len() ; i += 1){
+    for( i<i32> = 0 ; i < this.elf.symNames.used ; i += 1){
         symname<string.String> = this.elf.symNames.addr[i]
         sym<elf.Elf64_Sym> = symTab.find(symname)
         this.writeBytes(sym,sizeof(elf.Elf64_Sym))
     }
-    offset += this.elf.symNames.len() * sizeof(elf.Elf64_Sym)
+    offset += this.elf.symNames.used * sizeof(elf.Elf64_Sym)
     this.check(this.bytes == offset)
     this.writeBytes(this.elf.strtab,this.elf.strtab_size)
     offset += this.elf.strtab_size
     this.check(this.bytes == offset)
 
-    for(i<i32> = 0 ; i < this.elf.relTextTab.len() ; i += 1){
+    for(i<i32> = 0 ; i < this.elf.relTextTab.used ; i += 1){
         unsafe {
             rel = this.elf.relTextTab.addr[i]
             this.writeBytes(rel,sizeof(elf.Elf64_Rela))
         }
     }
-    offset += this.elf.relTextTab.len() * sizeof(elf.Elf64_Rela)
+    offset += this.elf.relTextTab.used * sizeof(elf.Elf64_Rela)
     this.check(this.bytes == offset)
 
-    for(i<i32> = 0 ; i < this.elf.relDataTab.len() ;i += 1){
+    for(i<i32> = 0 ; i < this.elf.relDataTab.used ;i += 1){
         unsafe {
             rel = this.elf.relDataTab.addr[i]
             this.writeBytes(rel,sizeof(elf.Elf64_Rela))
         }
     }
-    offset += this.elf.relDataTab.len() * sizeof(elf.Elf64_Rela)
+    offset += this.elf.relDataTab.used * sizeof(elf.Elf64_Rela)
     this.check(this.bytes == offset)
     utils.debug("Asmer::writeElf done".(i8))
 }

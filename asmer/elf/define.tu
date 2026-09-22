@@ -77,12 +77,18 @@ fn ELF64_ST_TYPE(val<u8>) u8 {
 fn ELF64_R_TYPE(val<i64>) u8 {
 	return (val & 0xffffffff).(u8)
 }
-fn ELF64_R_INFO(sym<u64>, type<u64>) u64 {
-	return (sym << 32) + type
+// Pack reloc r_info; args stay i32 — do not pass via .(u64) on fields
+// (i32 field.(u64) is codegen'd as dyn typeassert → get_func_value SEGV).
+fn ELF64_R_INFO(sym<i32>, rtype<i32>) u64 {
+	s<u64> = 0
+	t<u64> = 0
+	s = sym
+	t = rtype
+	return (s << 32) + t
 }
-fn ELF32_ST_INFO(bind<i32>, type<i32>) u8 {
-	return ((bind << 4) + (type & 0xf)).(u8)
+fn ELF32_ST_INFO(bind<i32>, rtype<i32>) u8 {
+	return ((bind << 4) + (rtype & 0xf)).(u8)
 }
-fn ELF64_ST_INFO(bind<i32>, type<i32>) u8 {
-	return ELF32_ST_INFO(bind, type)
+fn ELF64_ST_INFO(bind<i32>, rtype<i32>) u8 {
+	return ELF32_ST_INFO(bind, rtype)
 }       

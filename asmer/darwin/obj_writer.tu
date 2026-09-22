@@ -67,10 +67,10 @@ const MachObjWriter::create() MachObjWriter {
 
 MachObjWriter::collect_text(ps<parser.Parser>) {
     i<i32> = 0
-    while i < ps.funcs.len() {
+    while i < ps.funcs.used {
         fc<ast.Function> = ps.funcs.addr[i]
         j<i32> = 0
-        while j < fc.instructs.len() {
+        while j < fc.instructs.used {
             inst<instruct.Instruct> = fc.instructs.addr[j]
             if inst.size > 0 {
                 this.text.append(&inst.bytes, inst.size)
@@ -126,7 +126,7 @@ MachObjWriter::collect_data(ps<parser.Parser>) {
         } else {
             pos<i32> = off
             j<i32> = 0
-            while j < sym.datas.len() {
+            while j < sym.datas.used {
                 b<ast.ByteBlock> = sym.datas.addr[j]
                 if b.type == ast.KW_ZERO {
                     n<i32> = b.data
@@ -166,7 +166,7 @@ MachObjWriter::map_reloc(elf_type<i32>) u32, i32, i32 {
 
 MachObjWriter::sym_in_list(list<std.Array>, name<string.String>) i32 {
     i<i32> = 0
-    while i < list.len() {
+    while i < list.used {
         s<ObjSym> = list.addr[i]
         if s.name.cmp(name) == string.Equal {
             return 1
@@ -233,7 +233,7 @@ MachObjWriter::collect_syms(ps<parser.Parser>, elfh<elf.ElfFile>, text_size<u64>
         this.add_defined(sym, text_size)
     }
     i<i32> = 0
-    while i < ef.relTab.len() {
+    while i < ef.relTab.used {
         rel<elf.RelInfo> = ef.relTab.addr[i]
         if rel == null {
             i += 1
@@ -267,22 +267,22 @@ MachObjWriter::collect_syms(ps<parser.Parser>, elfh<elf.ElfFile>, text_size<u64>
         i += 1
     }
     i = 0
-    while i < this.local_syms.len() {
+    while i < this.local_syms.used {
         this.all_syms.push(this.local_syms.addr[i])
         i += 1
     }
     i = 0
-    while i < this.ext_syms.len() {
+    while i < this.ext_syms.used {
         this.all_syms.push(this.ext_syms.addr[i])
         i += 1
     }
     i = 0
-    while i < this.undef_syms.len() {
+    while i < this.undef_syms.used {
         this.all_syms.push(this.undef_syms.addr[i])
         i += 1
     }
     i = 0
-    while i < this.all_syms.len() {
+    while i < this.all_syms.used {
         s<ObjSym> = this.all_syms.addr[i]
         idx<i32> = i
         this.sym_index.insert(s.name, idx)
@@ -292,7 +292,7 @@ MachObjWriter::collect_syms(ps<parser.Parser>, elfh<elf.ElfFile>, text_size<u64>
 
 MachObjWriter::collect_rels(elfh<elf.ElfFile>) {
     ef<elf.ElfFile> = elfh
-    nrel<i32> = ef.relTab.len()
+    nrel<i32> = ef.relTab.used
     i<i32> = 0
     while i < nrel {
         rp<u64> = ef.relTab.addr[i]
@@ -307,7 +307,7 @@ MachObjWriter::collect_rels(elfh<elf.ElfFile>) {
         }
         idx<i32> = -1
         j<i32> = 0
-        while j < this.all_syms.len() {
+        while j < this.all_syms.used {
             s<ObjSym> = this.all_syms.addr[j]
             if s.name != null && s.name.cmp(rel.name) == string.Equal {
                 idx = j
@@ -322,8 +322,8 @@ MachObjWriter::collect_rels(elfh<elf.ElfFile>) {
         pcrel<i32> = 0
         length<i32> = 2
         ty<u32> = 0
-        ty, pcrel, length = this.map_reloc(rel.type)
-        if rel.type == 42 {
+        ty, pcrel, length = this.map_reloc(rel.relkind)
+        if rel.relkind == 42 {
             ty = X86_64_RELOC_BRANCH
             pcrel = 1
             length = 2
@@ -376,12 +376,12 @@ MachObjWriter::emit(outpath) i32 {
     this.text.align_to(8, 0x90)
     text_size<i32> = this.text.len
     data_size<i32> = this.data.len
-    ntr<i32> = this.text_rels.len()
-    ndr<i32> = this.data_rels.len()
-    nloc_i<i32> = this.local_syms.len()
-    nexts_i<i32> = this.ext_syms.len()
-    nund_i<i32> = this.undef_syms.len()
-    nall<i32> = this.all_syms.len()
+    ntr<i32> = this.text_rels.used
+    ndr<i32> = this.data_rels.used
+    nloc_i<i32> = this.local_syms.used
+    nexts_i<i32> = this.ext_syms.used
+    nund_i<i32> = this.undef_syms.used
+    nall<i32> = this.all_syms.used
 
     mh_len<i32> = 32
     seg_len<i32> = 72

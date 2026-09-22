@@ -55,10 +55,10 @@ const CoffObjWriter::create() CoffObjWriter {
 
 CoffObjWriter::collect_text(ps<parser.Parser>) {
     i<i32> = 0
-    while i < ps.funcs.len() {
+    while i < ps.funcs.used {
         fc<ast.Function> = ps.funcs.addr[i]
         j<i32> = 0
-        while j < fc.instructs.len() {
+        while j < fc.instructs.used {
             inst<instruct.Instruct> = fc.instructs.addr[j]
             if inst.size > 0 {
                 this.text.append(&inst.bytes, inst.size)
@@ -114,7 +114,7 @@ CoffObjWriter::collect_data(ps<parser.Parser>) {
         } else {
             pos<i32> = off
             j<i32> = 0
-            while j < sym.datas.len() {
+            while j < sym.datas.used {
                 b<ast.ByteBlock> = sym.datas.addr[j]
                 if b.type == ast.KW_ZERO {
                     n<i32> = b.data
@@ -141,7 +141,7 @@ CoffObjWriter::collect_data(ps<parser.Parser>) {
 
 CoffObjWriter::sym_in_list(list<std.Array>, name<string.String>) i32 {
     i<i32> = 0
-    while i < list.len() {
+    while i < list.used {
         s<CoffSym> = list.addr[i]
         if s.name.cmp(name) == string.Equal {
             return 1
@@ -155,7 +155,7 @@ CoffObjWriter::sym_in_list(list<std.Array>, name<string.String>) i32 {
 // Insertion-sort defined symbols by name so the COFF table matches
 // mother CoffWriter (C++ std::map iteration is lexicographic).
 CoffObjWriter::sort_defined_by_name() {
-    n<i32> = this.defined_syms.len()
+    n<i32> = this.defined_syms.used
     i<i32> = 1
     while i < n {
         key<CoffSym> = this.defined_syms.addr[i]
@@ -234,7 +234,7 @@ CoffObjWriter::collect_syms(ps<parser.Parser>, elfh<elf.ElfFile>) {
         this.add_defined(sym)
     }
     i<i32> = 0
-    while i < ef.relTab.len() {
+    while i < ef.relTab.used {
         rel<elf.RelInfo> = ef.relTab.addr[i]
         if rel == null {
             i += 1
@@ -267,12 +267,12 @@ CoffObjWriter::collect_syms(ps<parser.Parser>, elfh<elf.ElfFile>) {
     }
     this.sort_defined_by_name()
     i = 0
-    while i < this.defined_syms.len() {
+    while i < this.defined_syms.used {
         this.all_syms.push(this.defined_syms.addr[i])
         i += 1
     }
     i = 0
-    while i < this.undef_syms.len() {
+    while i < this.undef_syms.used {
         this.all_syms.push(this.undef_syms.addr[i])
         i += 1
     }
@@ -288,7 +288,7 @@ CoffObjWriter::map_reloc(elf_type<i32>) i32 {
 
 CoffObjWriter::collect_rels(elfh<elf.ElfFile>) i32 {
     ef<elf.ElfFile> = elfh
-    nrel<i32> = ef.relTab.len()
+    nrel<i32> = ef.relTab.used
     i<i32> = 0
     while i < nrel {
         rp<u64> = ef.relTab.addr[i]
@@ -303,7 +303,7 @@ CoffObjWriter::collect_rels(elfh<elf.ElfFile>) i32 {
         }
         idx<i32> = -1
         j<i32> = 0
-        while j < this.all_syms.len() {
+        while j < this.all_syms.used {
             s<CoffSym> = this.all_syms.addr[j]
             if s.name != null && s.name.cmp(rel.name) == string.Equal {
                 idx = j
@@ -318,7 +318,7 @@ CoffObjWriter::collect_rels(elfh<elf.ElfFile>) i32 {
         ro<CoffRelOut> = new CoffRelOut
         ro.va = rel.offset
         ro.sym = idx
-        ro.ty = this.map_reloc(rel.type)
+        ro.ty = this.map_reloc(rel.relkind)
         is_data<i32> = 0
         if rel.tarSeg != null {
             ts<i8*> = rel.tarSeg.str()
@@ -364,9 +364,9 @@ CoffObjWriter::emit_section_header(ob<ByteBuf>, n0<i32>, n1<i32>, n2<i32>, n3<i3
 CoffObjWriter::emit(outpath) i32 {
     text_size<i32> = this.text.len
     data_size<i32> = this.data.len
-    ntr<i32> = this.text_rels.len()
-    ndr<i32> = this.data_rels.len()
-    nall<i32> = this.all_syms.len()
+    ntr<i32> = this.text_rels.used
+    ndr<i32> = this.data_rels.used
+    nall<i32> = this.all_syms.used
 
     if ntr > 0xFFFF || ndr > 0xFFFF {
         fmt.printf("[tu/peff] too many relocs (need IMAGE_SCN_LNK_NRELOC_OVFL)\n")

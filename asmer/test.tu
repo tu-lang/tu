@@ -27,9 +27,9 @@ unsafe fn codegen(filename){
     psize<i32> = 0
     buf_o<i8:10> = null
     buf<i8*>	 = &buf_o
-    for(i<i32> = 0 ; i < gen.funcs.len() ; i += 1) {
+    for(i<i32> = 0 ; i < gen.funcs.used ; i += 1) {
         block<ast.Function> = gen.funcs.addr[i]
-        for(j<i32> = 0 ; j < block.instructs.len() ; j += 1){
+        for(j<i32> = 0 ; j < block.instructs.used ; j += 1){
             inst<instruct.Instruct> = block.instructs.addr[j]
             if psize >= expect_bytes.len() 
                 utils.errorf(
@@ -89,7 +89,7 @@ unsafe fn check_incbin_layout(gen){
     expect_one(pgen, "blob", 0.(i32))
     expect_one(pgen, "after", 6.(i32))
     data_symbol<std.Array> = pgen.symtable.data_symbol
-    for(i<i32> = 0; i < data_symbol.len(); i += 1) {
+    for(i<i32> = 0; i < data_symbol.used; i += 1) {
         sym<ast.Sym> = data_symbol.addr[i]
         n = string.new(sym.name.str())
         if n == "blob" {
@@ -114,7 +114,7 @@ unsafe fn check_incbin_layout(gen){
 
 unsafe fn expect_one(pgen<parser.Parser>, name, want<i32>){
     data_symbol<std.Array> = pgen.symtable.data_symbol
-    for(i<i32> = 0; i < data_symbol.len(); i += 1) {
+    for(i<i32> = 0; i < data_symbol.used; i += 1) {
         sym<ast.Sym> = data_symbol.addr[i]
         n = string.new(sym.name.str())
         if n == name {

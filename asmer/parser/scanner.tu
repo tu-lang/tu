@@ -1,6 +1,7 @@
 use asmer.ast
 use asmer.utils
 use std
+use std.map
 use string
 use os
 use runtime
@@ -10,13 +11,16 @@ Null<i32> = 0
 
 mem Scanner {
     i8*    buffer
-    i32    buffersize
-    i32    curtoken
-
-    i32    line,column
-	i32    pos
     string.String* curlex
     string.String* filepath
+
+    i32    buffersize
+    i32    line
+    i32    column
+    i32    pos
+    // u64: mother tuc miscompiles i32 member store when dyn map values / enums
+    // are written into packed i32 slots (same class of bug as compiler ScannerStatic).
+    u64    curtoken
 }
 
 labels = {
@@ -118,8 +122,8 @@ Scanner::init(filepath)
         if this.buffer == 0 {
             os.die("error reade file:" + filepath)
         }
-        totalsize = fs.size
-        this.buffersize = *totalsize
+        n<i32> = std.strlen(this.buffer)
+        this.buffersize = n
         // Body is in this.buffer; close so Windows fd-table (256) is not leaked
         // across hundreds of .s files in a self-host assemble pass.
         fs.Close()
@@ -158,7 +162,9 @@ Scanner::peek_is_colon() i32 {
 }
 Scanner::token(tk<i32>,lex<string.String>){
     this.curlex = lex
-    this.curtoken = tk
+    w<u64> = 0
+    w = tk.(u64)
+    this.curtoken = w
 }
 Scanner::scan(){
     this._scan()
@@ -233,11 +239,15 @@ Scanner::parseKeyword(c<i8>)
         lexeme.putc(c)
         cn = this.peek()
     }
-    // Keyword table `labels` is a dyn map.
+    // Keyword table `labels` is a dyn map — assign into i32 to unbox.
     unsafe {
         lex = lexeme.dyn()
-        if std.exist(lex,labels) {
-           return this.token(labels[lex],lexeme) 
+        // map_find: static if on dyn std.exist bool breaks isTrue.
+        lab<runtime.Value> = labels
+        lab_hit<u64> = map.map_find(lab, lex)
+        if lab_hit != 0.(u64) {
+           tki<i32> = lab_hit.(i32)
+           return this.token(tki,lexeme)
         }
         // RFC-107: unknown %reg must hard-fail (never become KW_LABEL / undef COFF)
         if lexeme.inner[0] == '%' {

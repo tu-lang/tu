@@ -8,12 +8,12 @@ use asmer.utils
 use runtime
 
 #[dir,dir,dir]
-scan_dirs
+scan_dirs = []
 
 #[file,file]
-scan_files
+scan_files = []
 
-as_target = 0
+as_target<i32> = 0
 
 unsafe fn print_help () {
     fmt.println(

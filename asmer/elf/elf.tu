@@ -7,7 +7,7 @@ use fmt
 ElfFile::getSegIndex(segName<string.String>)
 {
 	index<i32> = 0
-	for i<i32> = 0; i < this.shdrNames.len(); i += 1 {
+	for i<i32> = 0; i < this.shdrNames.used; i += 1 {
 		if segName.cmp(this.shdrNames.addr[i]) == string.Equal 
 			break
 		index += 1
@@ -17,7 +17,7 @@ ElfFile::getSegIndex(segName<string.String>)
 ElfFile::getSymIndex(symName<string.String>)
 {
 	index<i32> = 0
-	for i<i32> = 0;i < this.symNames.len(); i += 1 {
+	for i<i32> = 0;i < this.symNames.used; i += 1 {
 		if symName.cmp(this.symNames.addr[i]) == string.Equal 
 			break
 		index += 1
@@ -139,7 +139,7 @@ ElfFile::sortGlobal()
 	utils.debug("ElfFile::sortGlobal()".(i8))
 	global<std.Array> = std.NewArray()
 	local<std.Array>  = std.NewArray()
-	for(i<i32> = 0 ; i < this.symNames.len() ; i += 1){
+	for(i<i32> = 0 ; i < this.symNames.used ; i += 1){
 		str<string.String> = this.symNames.addr[i]
 		sym<Elf64_Sym> = this.symTab.find(str)
 		if sym.st_info == ELF64_ST_INFO(STB_GLOBAL,STT_NOTYPE) {
@@ -150,11 +150,11 @@ ElfFile::sortGlobal()
 	}
 	//clear
 	this.symNames = std.NewArray()
-	for(i<i32> = 0 ; i < local.len() ; i += 1)
+	for(i<i32> = 0 ; i < local.used ; i += 1)
 		this.symNames.push(local.addr[i])
 	//first index
-	this.sh_info = local.len()
-	for(i<i32> = 0 ; i < global.len() ; i += 1)
+	this.sh_info = local.used
+	for(i<i32> = 0 ; i < global.used ; i += 1)
 		this.symNames.push(global.addr[i])
 }
 ElfFile::addRel(seg<string.String>,addr<i32>,name<string.String>,type<i32>)

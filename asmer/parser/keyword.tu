@@ -74,17 +74,19 @@ Parser::parseLabel() {
     fc<ast.Function> = this.parseFunction(labelname)
     this.funcs.push(fc)
 }
-Parser::isdata(){
-    match this.scanner.curtoken {
-        ast.KW_ZERO |   ast.KW_QUAD |   ast.KW_LONG |   ast.KW_VALUE |  ast.KW_BYTE :
-            return true
+// Native i32 so `while` / `check` do not take dyn bool Value* (check truncates
+// heap pointers to i32 and spuriously panics when the low 32 bits are 0).
+Parser::isdata() i32 {
+    tk<i32> = this.scanner.curtoken
+    if tk == ast.KW_ZERO || tk == ast.KW_QUAD || tk == ast.KW_LONG || tk == ast.KW_VALUE || tk == ast.KW_BYTE {
+        return 1
     }
-    return false
+    return 0
 }
 Parser::parseData(labelname<string.String>) {
     utils.debug("Parser::parseData() %S".(i8),labelname.str())
     sym<ast.Sym> = ast.newDataSym(labelname,this.data_size)
-    while this.isdata() {
+    while this.isdata() != 0 {
         ty<i32> = this.scanner.curtoken
         tysize<i32> = ast.typesize(this.scanner.curtoken)
         tk<i32> = this.scanner.scan()
@@ -113,7 +115,7 @@ Parser::parseData(labelname<string.String>) {
         //next
         this.scanner.scan()
     }
-    this.check(!this.isdata(),"not should be here in data vec")
+    this.check(this.isdata() == 0,"not should be here in data vec")
     this.symtable.addSym(sym)
 }
 Parser::parseString(labelname<string.String>) {

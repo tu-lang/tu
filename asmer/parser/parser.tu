@@ -89,7 +89,7 @@ Parser::parse() {
 }
 Parser::genInst() {
     utils.debug(*"Parser::genInst() instructs collection")
-    for(i<i32> = 0 ; i < this.funcs.len() ; i += 1){
+    for(i<i32> = 0 ; i < this.funcs.used ; i += 1){
         fc<ast.Function> = this.funcs.addr[i]
         sym<ast.Sym> = ast.newSym(fc.labelname, false)
         sym.addr = this.text_size
@@ -100,7 +100,7 @@ Parser::genInst() {
             sym.addr
         )
 
-        for(j<i32> = 0 ; j < fc.instructs.len() ; j += 1){ 
+        for(j<i32> = 0 ; j < fc.instructs.used ; j += 1){ 
             inst<instruct.Instruct> = fc.instructs.addr[j]
             inst.gen()
         }
@@ -180,9 +180,24 @@ Parser::printToken()
 }
 Parser::check(check<u64>,err)
 {
+    // Native i32 predicates: 1 ok, 0 fail.
     if check == 1 return  null
-    if check == 0 goto tap_check_panic 
-    //dyn
+    if check == 0 goto tap_check_panic
+    // Dyn bool / other Value*: read Bool.data (or isTrue). Do NOT truncate the
+    // heap pointer to i32 — aligned Value* often has low 32 bits == 0.
+    unsafe {
+        v<runtime.Value> = check
+        if v != null {
+            if v.type == runtime.Bool {
+                if v.data != 0 return null
+                goto tap_check_panic
+            }
+            if runtime.isTrue(v) != runtime.False {
+                return null
+            }
+            goto tap_check_panic
+        }
+    }
     c<i32> = check
     if c return null
 tap_check_panic:

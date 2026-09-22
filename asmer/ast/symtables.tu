@@ -15,13 +15,20 @@ SymTable::init(){
     this.data_symbol = std.NewArray()
 }
 
-SymTable::hasName(name) {
-    return this.symbols.find(name) != map.Null
+// Native i32 presence. Do not compare find()!=Null in `if` / `== True`:
+// that path was dyn-bool and made getSym always miss, overwriting .data syms.
+SymTable::hasName(name) i32 {
+	hit<u64> = this.symbols.find(name)
+	if hit != 0.(u64) {
+		return 1
+	}
+	return 0
 }
 SymTable::addSym(sym<Sym>) {
     utils.debug("SymTable::addSym name:%S".(i8),sym.name.str())
-    if this.symbols.find(sym.name) != map.Null {
-        pre_sym<Sym> = this.symbols.find(sym.name)
+	hit<u64> = this.symbols.find(sym.name)
+	if hit != 0.(u64) {
+		pre_sym<Sym> = hit
         if pre_sym.global
             sym.global = true
     }
@@ -33,11 +40,11 @@ SymTable::addSym(sym<Sym>) {
 }
 SymTable::getSym(name<string.String>) {
     utils.debug("SymTable::getSym name:%S".(i8),name.str())
-    if this.hasName(name) == True {
-        return this.symbols.find(name)
-    }else{
-        sym<Sym> = newSym(name, true)
-        this.symbols.insert(name,sym)
-        return sym
+	hit<u64> = this.symbols.find(name)
+	if hit != 0.(u64) {
+		return hit
     }
+	sym<Sym> = newSym(name, true)
+	this.symbols.insert(name,sym)
+	return sym
 }
