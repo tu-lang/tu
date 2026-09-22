@@ -1,6 +1,7 @@
 use runtime
 use fmt
 use string
+use std
 
 //open syscall; implement by asm
 fn open(filename<i8*> , flags<i64> , mode<i64>)
@@ -106,27 +107,40 @@ class File {
 		return this.size
 	}
 	unsafe func ReadAllNative(){
-		s<i32> = *this.size
-		//last pos \0
+		sv<runtime.Value> = this.size
+		s<i32> = 0
+		if sv != null {
+			s = sv.data.(i32)
+		}
+		// last byte NUL
 		fs<i32> = s + 1
-		buf<u64*> = new fs
-		read_size<i64> = read(this.fd,buf,s)
-		if read_size != s {
+		buf<i8*> = new fs
+		bp<u64*> = buf
+		std.memset(bp, 0, fs.(u64))
+		read_size<i64> = read(this.fd, bp, s.(u64))
+		if read_size != s.(i64) {
 			fmt.println("fread err,",int(read_size))
 			return Null
 		}
+		buf[s] = 0
 		return buf
 	}
 	unsafe func ReadAll(){
-		s<i32> = *this.size
-		//last pos \0
+		sv<runtime.Value> = this.size
+		s<i32> = 0
+		if sv != null {
+			s = sv.data.(i32)
+		}
 		fs<i32> = s + 1
-		buf<u64*> = new fs
-		read_size<i64> = read(this.fd,buf,s)
-		if read_size != s {
+		buf<i8*> = new fs
+		bp<u64*> = buf
+		std.memset(bp, 0, fs.(u64))
+		read_size<i64> = read(this.fd, bp, s.(u64))
+		if read_size != s.(i64) {
 			fmt.println("fread err,",int(read_size))
 			return ""
 		}
+		buf[s] = 0
 		return string.new(buf)
 	}
 	unsafe func Write(buffer<runtime.Value>){

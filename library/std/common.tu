@@ -65,18 +65,17 @@ fn len_value(v<runtime.Value>) i32 {
 	return runtime.len(v)
 }
 
-// Dyn facade: bare Array via native type id; other containers as Value.
+// Dyn facade: detect Array via Value.type (not type(v)==runtime.Array —
+// dyn Int vs native enum compare is unreliable; int(type(v)) re-boxes wrong).
 export func len(v){
 	if v == null {
 		return runtime.len(null)
 	}
-	tv<i32> = int(type(v))
-	if tv == int(runtime.Array) {
-		// export body is implicit cross-mode (RFC-110); no nested unsafe needed.
-		a<Array> = v
+	vv<runtime.Value> = v
+	if vv.type == runtime.Array {
+		a<Array> = vv.data
 		return int(a.used)
 	}
-	vv<runtime.Value> = v
 	return len_value(vv)
 }
 export func pop(v){
@@ -148,38 +147,50 @@ export func merge(v1, v2){
 	return false
 }
 // Static engine API (typed Value container).
+// Map hits may be unboxed native ints (map-literal constant values) or
+// Value*; missing keys return 0/Null. Use u64 so heap pointers are not
+// truncated by i32.
 fn exist_value(key, v<runtime.Value>) i32 {
-	t<i32> = int(v.type)
-	if t == int(runtime.Array) {
+	if v.type == runtime.Array {
 		if runtime.array_in(key, v.data) == runtime.True {
 			return 1
 		}
+		return 0
 	}
-	if t == int(runtime.Map) {
-		has<i32> = map.map_find(v, key)
-		if has != null {
+	if v.type == runtime.Map {
+		has<u64> = map.map_find(v, key)
+		if has != 0.(u64) {
 			return 1
 		}
+		return 0
 	}
 	fmt.printf("[warn] unsupport exist(,%s)\n", runtime.type_string(v))
 	return 0
 }
 
-// Dyn facade: bare map via native type id; Value containers via exist_value.
+// Static i32 presence check for mem/static callers.
+// Dyn export exist() returns bool Values that static `if` / `!` mis-handle
+// (isTrue/binary_operator on wrong bits). Callers in static context must use
+// contains() and compare to 0.
+fn contains(key, v<runtime.Value>) i32 {
+	if v == null {
+		return 0
+	}
+	return exist_value(key, v)
+}
+
+// Dyn facade: use Value.type for Map/Array; avoid v[key]+isTrue (unboxed
+// map-literal values are not Value* and panic in isTrue/value_tag_ok).
 export func exist(key, v){
 	if v == null {
 		return false
 	}
-	tv<i32> = int(type(v))
-	if tv == int(runtime.Map) {
-		hit = v[key]
-		if hit {
-			return true
-		}
-		return false
-	}
 	vv<runtime.Value> = v
-	return exist_value(key, vv) != 0
+	// Return real dyn bools — do not `return exist_value(...) != 0` (native i32).
+	if exist_value(key, vv) != 0 {
+		return true
+	}
+	return false
 }
 export func is_map(m){
 	mv<runtime.Value> = m

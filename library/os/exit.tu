@@ -7,10 +7,20 @@ use runtime.debug
 
 debug_stack<i64> = 5
 
-// Dyn facade: backtrace depth from Int Value.data.
+// Dyn facade: backtrace depth. Accepts boxed Int Value* or small native immediates
+// (callers historically used 10.(i8) which must not be treated as a heap pointer).
 export func set_stack(size){
+    slot<u64> = size
+    if slot < 4096.(u64) {
+        debug_stack = slot.(i64)
+        return
+    }
+    if (slot >> 47.(u64)) != 0.(u64) {
+        debug_stack = slot.(i64)
+        return
+    }
     sv<runtime.Value> = size
-    if sv != null {
+    if runtime.value_tag_ok(sv) {
         debug_stack = sv.data
     }
 }
