@@ -8,18 +8,18 @@ use compiler.parser.scanner
 class Empty{}
 func test(){
 	filecase = "./compiler/test/case"
-	reader<scanner.ScannerStatic> = new scanner.ScannerStatic(filecase,new Empty())
+	reader = new scanner.Scanner(filecase,new Empty())
 
-	for v  : test.token {
-		if *v != reader.scan(){
+	for v  : test.tokens() {
+		if v != reader.scan(){
 			os.dief(
 				"token err: expect %s cur:%s lex:%s",
-				ast.getTokenString(*v) ,
+				ast.getTokenString(v) ,
 				ast.getTokenString(reader.curToken),
-				reader.curLex.dyn()
+				reader.curLex
 			)
 		}
-		fmt.printf("pass token:%s type:%s\n",reader.curLex.dyn(),ast.getTokenString(reader.curToken))
+		fmt.printf("pass token:%s type:%s\n",reader.curLex,ast.getTokenString(reader.curToken))
 	}
 
 }

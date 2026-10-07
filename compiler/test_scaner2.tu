@@ -22,13 +22,13 @@ func scan(abpath){
         if !file.isFile() continue
         filepath = file.path
         if string.sub(filepath,std.len(filepath) - 3) == ".tu" {
-            s<scanner.ScannerStatic> = new scanner.ScannerStatic(filepath,new Empty1())
+            s = new scanner.Scanner(filepath,new Empty1())
             fmt.println(filepath)
             loop {
                 if s.scan() == ast.END {
                     break
                 }
-                // fmt.println(s.curLex.dyn())
+                // fmt.println(s.curLex)
             }
         }
     }
