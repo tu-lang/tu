@@ -14,7 +14,7 @@ Parser::parseApiDef()
     // }
     // }
     utils.debug("found api start parser..")
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
     this.check(reader.curToken == ast.API,"parse api define, tok not mem")
     reader.scan()
     //must VAR
@@ -22,7 +22,7 @@ Parser::parseApiDef()
 	s = new ast.Struct()
     s.isapi = true
     s.parser = this
-    s.name  = reader.curLex.dyn()
+    s.name  = reader.curLex
 
     // s.compute()
     if compile.phase == compile.GlobalPhase && utils.has(s.name,this.pkg.structs){
@@ -64,20 +64,20 @@ Parser::parseApiDef()
 Parser::parseApiImpl()
 {
     utils.debug("found api impl start parser..")
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
     this.check(reader.curToken == ast.IMPL,"parse api impl, tok not mem")
     reader.scan()
     //must VAR
     this.check(reader.curToken == ast.VAR,"parse api impl,tok not var")
 	apiPkg  = ""
-	apiName = reader.curLex.dyn()
+	apiName = reader.curLex
     //eat
     reader.scan()
     if reader.curToken == ast.DOT {
         reader.scan()
         this.check(reader.curToken == ast.VAR,"should be impl name")
         apiPkg = apiName
-        apiName = reader.curLex.dyn()
+        apiName = reader.curLex
         //eat
         reader.scan()
     }
@@ -85,7 +85,7 @@ Parser::parseApiImpl()
     reader.scan()
     this.check(reader.curToken == ast.VAR)
     //eat
-    implName = reader.curLex.dyn()
+    implName = reader.curLex
     reader.scan()
     this.check(reader.curToken == ast.LBRACE,"neq {")
     //eat {
@@ -158,8 +158,7 @@ Parser::checkImplSig(dFunc , iFunc){
                 if dVar.structname != iVar.structname
                     iVar.check(false,"var type should eq with api param")
             }else{
-                dty<i32> = dVar.type
-                if dty != iVar.type
+                if dVar.type != iVar.type
                     iVar.check(false,"var type should eq with api param")
             }
         }
@@ -178,14 +177,14 @@ Parser::parseStructDef()
 	// 	u64  d
 	// }
 	utils.debug("found struct start parser..")
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
 	this.check(reader.curToken == ast.MEM,"parse struct define, tok not mem")
 	reader.scan()
 	//must VAR
 	this.check(reader.curToken == ast.VAR,"parse struct define,tok not var")
 	s = new ast.Struct()
 	s.parser = this
-	s.name  = reader.curLex.dyn()
+	s.name  = reader.curLex
 	if compile.phase != compile.GlobalPhase {
 		found = this.pkg.getStruct(s.name)
 		if found == null {
@@ -204,7 +203,7 @@ Parser::parseStructDef()
 		reader.scan()
 		//must var
 		// this.check(reader.curToken == ast.VAR)
-		cl = reader.curLex.dyn()
+		cl = reader.curLex
 		if cl == "pack" {
 			s.ispacked = true
 		} else if cl == "async" {
@@ -256,8 +255,8 @@ Parser::genAsyncPollMember(s , idx){
     member.file  = this.filepath
     member.isunsigned = ast.type_isunsigned(tk)
     member.type = tk
-    member.size = typesize[int(tk)]
-    member.align = typesize[int(tk)]
+    member.size = typesize[tk]
+    member.align = typesize[tk]
     member.arrsize = 1
     member.arrvar = null
     member.idx = idx
@@ -294,8 +293,8 @@ Parser::genAsyncParamMember(s , var){
     member.file  = this.filepath
     member.isunsigned = ast.type_isunsigned(tk)
     member.type = tk
-    member.size = typesize[int(tk)]
-    member.align = typesize[int(tk)]
+    member.size = typesize[tk]
+    member.align = typesize[tk]
     member.arrsize = 1
     member.arrvar = null
 	member.name = var.varname
@@ -305,21 +304,21 @@ Parser::genAsyncParamMember(s , var){
 
 
 Parser::parseMembers(s ,idx ,isstruct){
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
 	utils.debug("Parser::parseMembers ")
 	member = new ast.Member()
 	member.parent = s
 	tk = reader.curToken
     if(isstruct){
         this.expect(ast.VAR,"expect var token in struct member define")
-        structname = reader.curLex.dyn() 
+        structname = reader.curLex 
         structpkg  = this.pkg.full_package
         reader.scan()
         if(reader.curToken == ast.DOT){
             reader.scan()
             this.check(reader.curToken == ast.VAR)
             structpkg  = structname
-            structname = reader.curLex.dyn()
+            structname = reader.curLex
             reader.scan()
         }
         member.structpkg = structpkg
@@ -355,8 +354,8 @@ Parser::parseMembers(s ,idx ,isstruct){
     member.file  = this.filepath
     member.isunsigned = ast.type_isunsigned(tk)
     member.type = tk
-    member.size = typesize[int(tk)] 
-    member.align = typesize[int(tk)]
+    member.size = typesize[tk] 
+    member.align = typesize[tk]
     member.arrsize = 1    
     member.arrvar = null
 	loop {
@@ -364,14 +363,14 @@ Parser::parseMembers(s ,idx ,isstruct){
         field.idx    = idx 
 		idx += 1
         this.check(reader.curToken == ast.VAR,"should be var in struct field define")
-        field.name = reader.curLex.dyn()
+        field.name = reader.curLex
 
         reader.scan()
         if(reader.curToken == ast.COLON && !isstruct){
             reader.scan()
             this.check(reader.curToken == ast.INT,"should be number in struct field define")
             field.bitfield = true
-            field.bitwidth = string.tonumber(reader.curLex.dyn())
+            field.bitwidth = string.tonumber(reader.curLex)
             reader.scan()
         }else if(reader.curToken == ast.LBRACKET){ 
             field.isarr   = true
@@ -390,7 +389,7 @@ Parser::parseMembers(s ,idx ,isstruct){
 }
 
 Parser::parseStructInit(pkgname,name){
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
 	init = new gen.StructInitExpr(this.line,this.column)
 	init.pkgname = pkgname
 	init.name    = name
@@ -398,7 +397,7 @@ Parser::parseStructInit(pkgname,name){
 	reader.scan()//eat {
 	while(reader.curToken != ast.RBRACE){
 		this.expect(ast.VAR)
-		fieldname = reader.curLex.dyn()
+		fieldname = reader.curLex
 
 		this.next_expect(ast.COLON) 
 		reader.scan()//eat :

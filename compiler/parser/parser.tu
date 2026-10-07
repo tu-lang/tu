@@ -14,15 +14,16 @@ PkgModeStatic = 2
 
 EMPTY_STR = ""
 
-I8  = int(ast.I8)  U8  = int(ast.U8) 
-I16 = int(ast.I16) U16 = int(ast.U16) 
-I32 = int(ast.I32) U32 = int(ast.U32)
-I64 = int(ast.I64) U64 = int(ast.U64)
-F32 = int(ast.F32) F64 = int(ast.F64)
-typesize = {
-    I8 : 1 , I16 : 2 , I32 : 4 , I64 : 8,
-    U8 : 1 , U16 : 2 , U32 : 4 , U64 : 8,
-    F32: 4 , F64 : 8
+// Native type token -> byte size; filled in init() because ast tokens are
+// dyn globals whose initializers may run after this package's.
+typesize = {}
+
+func init(){
+    typesize = {
+        ast.I8 : 1 , ast.I16 : 2 , ast.I32 : 4 , ast.I64 : 8,
+        ast.U8 : 1 , ast.U16 : 2 , ast.U32 : 4 , ast.U64 : 8,
+        ast.F32: 4 , ast.F64 : 8
+    }
 }
 
 EOF = -1 //FXIME: EOF
@@ -81,12 +82,13 @@ Parser::init(filepath,pkg) {
         this.asmfile  = "co_" + pkg.getFullName() + "_" + this.asmfile
     this.asmfile = utils.pathInWorkdir(this.asmfile)
     
-    this.scanner = new scanner.ScannerStatic(filepath,this)
+    this.scanner = new scanner.Scanner(filepath,this)
     this.filenameid = this.label() + ".L.filename." +  ast.incr_labelid()
 
 }
 
-Parser::initFromBuffer(filepath, buf<i8*>, sz<i32>, pkg) {
+// Same as init but lexes an in-memory source text instead of reading filepath.
+Parser::initFromBuffer(filepath, text, pkg) {
     utils.debugf(
         "parser.Parser::initFromBuffer() filename:%s package:%s",
         filepath,pkg.full_package
@@ -98,8 +100,7 @@ Parser::initFromBuffer(filepath, buf<i8*>, sz<i32>, pkg) {
     if pkg.package != "main"
         this.asmfile  = "co_" + pkg.getFullName() + "_" + this.asmfile
     this.asmfile = utils.pathInWorkdir(this.asmfile)
-    this.scanner = new scanner.ScannerStatic
-    this.scanner.initFromBuffer(filepath, buf, sz, this)
+    this.scanner = scanner.fromText(filepath, text, this)
     this.filenameid = this.label() + ".L.filename." +  ast.incr_labelid()
 }
 Parser::label(){
@@ -135,11 +136,20 @@ Parser::forbidStaticSyntax() {
     return this.currentFunc.isDynamicDef()
 }
 
+// RFC110: reject dynamic syntax (untyped new locals) in static defs of a static package.
+Parser::forbidDynamicSyntax() {
+    if this.inUnsafeCtx() return false
+    if this.pkg == null return false
+    if this.pkg.pkg_mode != PkgModeStatic return false
+    if this.currentFunc == null return false
+    return this.currentFunc.isStaticDef()
+}
+
 Parser::parse()
 {
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     reader.scan()
-    utils.debug("parser.Parser::parse() tk:%s",reader.curLex.dyn())
+    utils.debug("parser.Parser::parse() tk:%s",reader.curLex)
 
     loop {
         match reader.curToken  {
@@ -158,8 +168,8 @@ Parser::parse()
             ast.ASYNC: {
                 tx = reader.transaction()
                 reader.scan()
-                nexc<i8> = reader.peek()
-                is_member<i32> = 0
+                nexc = reader.peek()
+                is_member = 0
                 if reader.curToken == ast.VAR && nexc == ':' {
                     is_member = 1
                 }
@@ -215,30 +225,33 @@ Parser::panic(err){
     fmt.println("Parser::panic:",)
     this.check(false,err)
 }
-Parser::check(check<runtime.Value> , err<i8*>)
+Parser::check(check, err)
 {
-    reader<scanner.ScannerStatic> = this.scanner
-    //static
-    if check == 1 return  null
-    if check == 0 goto check_panic 
-    //dyn
-    c = check
-    if c return null
-check_panic:
+    reader = this.scanner
+    // A raw 1/0 comes from a static compare inside unsafe code; anything else
+    // is a dyn value tested for truthiness.
+    native = 2
+    unsafe {
+        cv<u64> = check
+        if cv == 1 native = 1
+        if cv == 0 native = 0
+    }
+    if native == 1 return null
+    if native == 2 && check return null
     msg = err
     if err == null msg = ""
     os.dief (
         "parse: found token error token: %s \n" +
         "msg:%s \n" + 
         "line:%d column:%d file:%s\n",
-        reader.curLex.dyn(),
+        reader.curLex,
         msg,
-        int(reader.line),int(reader.column),this.filepath
+        reader.line,reader.column,this.filepath
     )
 }
 
-Parser::expect(tok<i32>,str){
-    reader<scanner.ScannerStatic> = this.scanner
+Parser::expect(tok,str){
+    reader = this.scanner
     if reader.curToken == tok {
         return  true
     }
@@ -249,14 +262,14 @@ Parser::expect(tok<i32>,str){
     err = fmt.sprintf(
         "parse: found token error token:%s(%s) expect:%s\n msg:%s\n line:%d column:%d file:%s\n",
         ast.getTokenString(reader.curToken),
-        reader.curLex.dyn(),
+        reader.curLex,
         ast.getTokenString(tok),
-        msg,int(reader.line),int(reader.column),this.filepath
+        msg,reader.line,reader.column,this.filepath
     )
     os.panic(err)
 }
-Parser::next_expect(tk,err<i8*>){
-    reader<scanner.ScannerStatic> = this.scanner
+Parser::next_expect(tk,err){
+    reader = this.scanner
     reader.scan()
     return this.expect(tk,err)
 }
@@ -276,7 +289,7 @@ Parser::lassigner(p){
 }
 
 Parser::isunary(){
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     match reader.curToken {
         ast.SUB | ast.SUB | ast.LOGNOT | ast.BITNOT : {
             return true
@@ -285,7 +298,7 @@ Parser::isunary(){
     }
 }
 Parser::isprimary(){
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     match reader.curToken {
         ast.FLOAT  | ast.INT      | ast.CHAR     | ast.STRING | ast.VAR    | 
         ast.FUNC   | ast.LPAREN   | ast.LBRACKET | ast.LBRACE | ast.RBRACE | 
@@ -297,7 +310,7 @@ Parser::isprimary(){
     }
 }
 Parser::ischain(){
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     match reader.curToken {
         ast.DOT | ast.LPAREN | ast.LBRACKET : {
             return true
@@ -306,7 +319,7 @@ Parser::ischain(){
     }
 }
 Parser::isassign(){
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     match reader.curToken {
         ast.ASSIGN | ast.ADD_ASSIGN | ast.SUB_ASSIGN | ast.MUL_ASSIGN |
         ast.DIV_ASSIGN | ast.BITXOR_ASSIGN | ast.MOD_ASSIGN | ast.BITAND_ASSIGN | ast.BITOR_ASSIGN | 
@@ -317,7 +330,7 @@ Parser::isassign(){
     }
 }
 Parser::isbinary(){
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     match reader.curToken {
         ast.SHL | ast.SHR | ast.BITOR | ast.BITXOR | ast.BITAND | ast.BITNOT | ast.LOGOR |  
         ast.LOGAND | ast.LOGNOT | ast.EQ | ast.NE | ast.GT | ast.GE | ast.LT |
@@ -328,7 +341,7 @@ Parser::isbinary(){
     }
 }
 Parser::isbase(){
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     match reader.curToken {
         ast.I8 | ast.U8 | ast.I16 | ast.U16 |
         ast.I32| ast.U32| ast.I64 | ast.U64 :
@@ -384,6 +397,10 @@ Parser::newvar(var){
                 if(!this.getvar(var.varname))
                     this.check(false,"ctx has var , local doesn't has")
             }else{
+                // Compiler temporaries (mcond.* / iter.* / .jmpbuf.*) contain '.' and stay untyped.
+                if !var.structtype && this.forbidDynamicSyntax() && std.len(string.split(var.varname, ".")) == 1 {
+                    this.panic("pkgmode: dynamic local var not allowed in static fn outside unsafe")
+                }
                 varname = var.varname
                 this.currentFunc.InsertLocalVar(this.ctx.toplevel(),var)
                 this.ctx.createVar(varname,var)

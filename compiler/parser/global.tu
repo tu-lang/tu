@@ -12,7 +12,7 @@ Parser::parseEnumDef(){
         this.panic("pkgmode: enum definition not allowed in dyn package")
     }
     utils.debug("parser.Parser::parseEnumDef()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     reader.scan()
     
     this.expect( ast.LBRACE)
@@ -20,7 +20,7 @@ Parser::parseEnumDef(){
     reader.scan()
     defaulte = 0
     while reader.curToken != ast.RBRACE {
-        gv = new gen.VarExpr(reader.curLex.dyn(),this.line,this.column)
+        gv = new gen.VarExpr(reader.curLex,this.line,this.column)
         gv.structtype = true
         //TODO: gv.ivalue = defaulte ++
         gv.ivalue = string.tostring(defaulte)        
@@ -45,7 +45,7 @@ Parser::parseStructVar(varname)
         this.panic("pkgmode: typed global var not allowed in dyn package")
     }
     utils.debug("parser.Parsr::parseStructVar()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     this.expect( ast.LT )
     var = this.parseVarExpr(varname)
     varexpr = var
@@ -55,7 +55,7 @@ Parser::parseStructVar(varname)
         
         reader.scan()
         this.expect( ast.INT)
-        varexpr.ivalue = reader.curLex.dyn()
+        varexpr.ivalue = reader.curLex
         
         reader.scan()
     }
@@ -77,7 +77,7 @@ Parser::parseFlatVar(var){
 
 Parser::parseClassFunc(var, constdef){
     utils.debugf("parser.Parser::parseClassFunc() varname:%s",var)
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     this.expect(  ast.COLON)
     
     reader.scan()
@@ -154,11 +154,11 @@ Parser::parseClassFunc(var, constdef){
 
 Parser::parseExternClassFunc(pkgname , constdef){
     utils.debugf("parser.Parser::parseExternClassFunc() name:%s",pkgname)
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     this.expect( ast.DOT)
     reader.scan()
     this.expect( ast.VAR)
-    clsname = reader.curLex.dyn()
+    clsname = reader.curLex
     reader.scan()
     if this.getImport(pkgname) == "" {
         this.check(false,fmt.sprintf("consider import package: use %s",this.package))
@@ -203,8 +203,8 @@ Parser::parseExternClassFunc(pkgname , constdef){
 }
 Parser::parseGlobalDef()
 {
-    reader<scanner.ScannerStatic> = this.scanner
-    utils.debugf("parser.Parser::parseGlobalDef() %s line:%d\n",reader.curLex.dyn(),this.line)
+    reader = this.scanner
+    utils.debugf("parser.Parser::parseGlobalDef() %s line:%d\n",reader.curLex,this.line)
     if reader.curToken != ast.VAR && reader.curToken != ast.CONST
         this.check(false,"SyntaxError: global var define invalid token:" + ast.getTokenString(reader.curToken))
     tx = reader.transaction() 
@@ -213,7 +213,7 @@ Parser::parseGlobalDef()
         constdef = true
         reader.scan()
     }
-    var = reader.curLex.dyn()
+    var = reader.curLex
     reader.scan()
     match reader.curToken{
         ast.COLON: return this.parseClassFunc(var , constdef)
@@ -329,25 +329,25 @@ Parser::parseGlobalAssign(is_const_var)
 } 
 
 Parser::parseCfg(){
-    reader<scanner.ScannerStatic> = this.scanner
-    utils.debugf("parser.Parser::parseCfg() %s line:%d\n",reader.curLex.dyn(),this.line)
+    reader = this.scanner
+    utils.debugf("parser.Parser::parseCfg() %s line:%d\n",reader.curLex,this.line)
     //eat cfg 
     this.next_expect(ast.LPAREN,"cfg()")
     this.next_expect(ast.VAR,"cfg(var,..)")
 
-    key = reader.curLex.dyn()
+    key = reader.curLex
     this.next_expect(ast.COMMA)
     tk = reader.scan()
 
     if key == "static" {
         this.expect(ast.BOOL)
-        if reader.curLex.dyn() == "true"
+        if reader.curLex == "true"
             this.cfgs.base_static =  true
         else
             this.cfgs.base_static =  false
     }else if key == "mode_static" {
         this.expect(ast.BOOL)
-        if reader.curLex.dyn() == "true"
+        if reader.curLex == "true"
             this.pkg.cfgs.base_static =  true
         else
             this.pkg.cfgs.base_static =  false

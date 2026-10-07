@@ -7,7 +7,7 @@ use compiler.gen
 
 Parser::parseTypeAssert(lastdot){
 	utils.debugf("Parser::parseTypeAssert() lastdot:%d",lastdot)
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
 	ta = null
 	if reader.curToken == ast.LPAREN {
 		if this.forbidStaticSyntax() {
@@ -16,7 +16,7 @@ Parser::parseTypeAssert(lastdot){
 		ta = new gen.TypeInfo(this.line,this.column)
 		reader.scan()//eat (
 		this.check(reader.curToken == ast.VAR || this.isbase(),"a.(?) must be var")
-		ta.name = reader.curLex.dyn()
+		ta.name = reader.curLex
 		if reader.curToken == ast.VAR {
 			ta.setMemType()
 		}else{
@@ -28,7 +28,7 @@ Parser::parseTypeAssert(lastdot){
 			reader.scan()//eat .
 			this.check(reader.curToken == ast.VAR || this.isbase(),"a.(,?) must be var")
 			ta.pkg = ta.name
-			ta.name = reader.curLex.dyn()
+			ta.name = reader.curLex
 			reader.scan()//eat last
 		}
 		this.check(reader.curToken == ast.RPAREN,"a.(,)  wrong")
@@ -50,13 +50,13 @@ Parser::parseTypeAssert(lastdot){
 
 Parser::parseVarStack(expr){
     this.expect(ast.COLON,"sould be : in stack var declare")
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
     reader.scan()
     expr.stack = true
     expr.stacksize = 1
     if reader.curToken != ast.GT {
         this.expect(ast.INT,"must be int (var<i8:-int-)")
-		expr.stacksize = string.tonumber(reader.curLex.dyn())
+		expr.stacksize = string.tonumber(reader.curLex)
         if expr.stacksize == 0 
             this.panic("stack size can't be 0")
         reader.scan()

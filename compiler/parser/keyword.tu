@@ -12,7 +12,7 @@ use compiler.parser.package
 Parser::parseClassDef()
 {
     utils.debug("parser.Parser::parseClassDef() found class. start parser..")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     this.expect(ast.CLASS)
     
     reader.scan()
@@ -21,7 +21,7 @@ Parser::parseClassDef()
     s = new ast.Class(this.pkg.package)
     s.found = true
     s.parser = this
-    s.name  = reader.curLex.dyn()
+    s.name  = reader.curLex
     this.check(utils.isUpper(s.name),"first char of class name need be Upper")
     reader.scan()
 
@@ -29,13 +29,13 @@ Parser::parseClassDef()
         utils.debug("found inherit")
         reader.scan()
         this.check(reader.curToken == ast.VAR)
-        ident = reader.curLex.dyn()
+        ident = reader.curLex
         reader.scan()
         if reader.curToken == ast.DOT {
             reader.scan()
             this.check(reader.curToken == ast.VAR)
             s.father = new ast.Class(ident)
-            s.father.name = reader.curLex.dyn()
+            s.father.name = reader.curLex
             reader.scan()
         }else{
             s.father = new ast.Class(this.pkg.package)
@@ -98,6 +98,10 @@ Parser::parseClassDef()
             this.ctx = null
             this.pending_unsafe_body = false
             this.check(f != null)
+            // RFC110: class methods in a dyn package must be spelled func.
+            if this.pkg.pkg_mode == PkgModeDyn && f.fn_static {
+                this.panic("pkgmode: fn member not allowed in dyn package; use func")
+            }
             // insertsuper may have set unsafe_body for object_parent_get2; keep it.
             f.unsafe_body = f.unsafe_body || unsafe_body
 
@@ -108,7 +112,7 @@ Parser::parseClassDef()
             this.panic(fmt.sprintf(
                     "SynatxError: token:%s %s\n" ,
                     ast.getTokenString(reader.curToken),
-                    reader.curLex.dyn()
+                    reader.curLex
                 )
             )
         }
@@ -123,7 +127,7 @@ Parser::parseClassDef()
 // RFC110: parse top-level `export func|async` and `unsafe func|fn|async`.
 // export marks static-package dynamic facades; body is implicit cross-mode (no export unsafe).
 Parser::parseModifiers() {
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     exported = false
     unsafe_body = false
     if reader.curToken == ast.EXPORT {
@@ -145,7 +149,7 @@ Parser::parseModifiers() {
     }
     match reader.curToken {
         ast.FUNC : {
-            if exported && std.strcmp(reader.curLex.str(), *"fn") == 0 {
+            if exported && reader.curLex == "fn" {
                 this.panic("pkgmode: export fn is illegal; export marks dynamic facades (func/async)")
             }
             this.pending_exported = exported
@@ -169,8 +173,8 @@ Parser::parseModifiers() {
         ast.ASYNC : {
             tx = reader.transaction()
             reader.scan()
-            nexc<i8> = reader.peek()
-            is_member<i32> = 0
+            nexc = reader.peek()
+            is_member = 0
             if reader.curToken == ast.VAR && nexc == ':' {
                 is_member = 1
             }
@@ -207,14 +211,14 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
     utils.debug(
         "parser.Parser::parseFuncDef() found function: "
     )
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
 
     if ft != ast.AsyncFunc
         this.expect(ast.FUNC,"parse func define ,tok not fun")
 
     // RFC110: record fn (static) vs func (dynamic) before consuming FUNC token
     fnkw_static = false
-    if ft != ast.AsyncFunc && reader.curToken == ast.FUNC && std.strcmp(reader.curLex.str(), *"fn") == 0 {
+    if ft != ast.AsyncFunc && reader.curToken == ast.FUNC && reader.curLex == "fn" {
         fnkw_static = true
     }
 
@@ -252,7 +256,7 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
     this.currentFunc    = node
     compile.currentFunc = node
     if ft != ast.ClosureFunc  && ft != ast.AsyncFunc {
-        cl = reader.curLex.dyn()
+        cl = reader.curLex
         if compile.phase == compile.GlobalPhase && ft != ast.StructFunc && ft != ast.ClassFunc && this.hasFunc(cl,false)
             this.check(false,"SyntaxError: already define function :" + cl)
         node.name = cl
@@ -318,7 +322,7 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
                 typeDefine.base = reader.curToken
             else {
                 typeDefine.setMemType()
-                typeDefine.name = reader.curLex.dyn()
+                typeDefine.name = reader.curLex
             }
 
             reader.scan()
@@ -330,7 +334,7 @@ Parser::parseFuncDef(ft, pdefine , node , constdef)
                     break
                 }
                 typeDefine.pkg = typeDefine.name
-                typeDefine.name = reader.curLex.dyn()
+                typeDefine.name = reader.curLex
 
                 //eat
                 reader.scan()
@@ -410,7 +414,7 @@ Parser::parseAsyncDef2(fcname , parethis)
     utils.debug(
         "parser.Parser::parseAsyncDef2() found function: "
     )
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
 
     st = null
     if compile.phase == compile.GlobalPhase {
@@ -490,7 +494,7 @@ Parser::parseAsyncDef()
     utils.debug(
         "parser.Parser::parseAsyncDef() found function: "
     )
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     this.ctx = new ast.Context()
     this.check(reader.curToken == ast.ASYNC,"should be async")
     reader.scan()
@@ -498,11 +502,11 @@ Parser::parseAsyncDef()
     st = null
     isstruct = false
     structname = ""
-    fcname = reader.curLex.dyn()
+    fcname = reader.curLex
 
     parethis = null
     parentst = null
-    nexc<i8> = reader.peek()
+    nexc = reader.peek()
     if nexc == ':' {
         reader.scan()
         this.check(reader.curToken == ast.COLON,"need be : in async::member")
@@ -510,7 +514,7 @@ Parser::parseAsyncDef()
         reader.scan()
 
         structname = fcname
-        fcname = reader.curLex.dyn()
+        fcname = reader.curLex
         isstruct = true
 
         //parent obj
@@ -572,7 +576,7 @@ Parser::parseAsyncDef()
 Parser::parseExternDef()
 {
     utils.debug("parser.Parser::parseExternDef() found extern .start parser..")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     
     this.expect(ast.EXTERN)
     node     = new ast.Function()
@@ -580,10 +584,10 @@ Parser::parseExternDef()
     node.parser   = this
 
     reader.scan()
-    node.rettype  = reader.curLex.dyn()
+    node.rettype  = reader.curLex
 
     reader.scan()
-    node.name     = reader.curLex.dyn()
+    node.name     = reader.curLex
     node.block    = null
 
     reader.scan()
@@ -606,11 +610,11 @@ Parser::parseExternDef()
 
 Parser::parseExtra() {
     utils.debug("parser.Parser::parseExtra() found #: parser..")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     this.expect(ast.EXTRA)
     
     reader.scan()
-    cl = reader.curLex.dyn() 
+    cl = reader.curLex 
     if cl == "link"{
         lines = reader.consumeLine()
         lines = lines.substr(0,std.len(lines))
@@ -626,13 +630,13 @@ Parser::parseExtra() {
 Parser::parseImportDef()
 {
     utils.debug("parser.Parser::parseImportDef() found import.start parser..")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     this.expect(ast.USE)
     
      reader.scan()
     
     this.expect(ast.VAR)
-    path = reader.curLex.dyn()
+    path = reader.curLex
     package = path
     multi = false
     
@@ -642,7 +646,7 @@ Parser::parseImportDef()
         reader.scan()
         
         this.expect(ast.VAR)
-        cl = reader.curLex.dyn() 
+        cl = reader.curLex 
         path += "_" + cl
         package = cl
         multi = true
@@ -655,15 +659,12 @@ Parser::parseImportDef()
         //eta
         reader.scan()
         this.check(reader.curToken == ast.VAR," import package rename should be var")
-        asname = reader.curLex.dyn()
+        asname = reader.curLex
         //eta
         reader.scan()
     }
     
-    // Static if on dyn std.exist bool is broken; use map_find → u64.
-    pkgs<runtime.Value> = package.packages
-    pkg_hit<u64> = map.map_find(pkgs, path)
-    if pkg_hit == 0.(u64) {
+    if !utils.has(path, package.packages) {
         pkg = new package.Package(package,path,multi)
         package.packages[path] = pkg
         
@@ -684,9 +685,7 @@ Parser::parseImportDef()
         importName = asname
     
     //check conflict
-    imps<runtime.Value> = this.pkg.imports
-    imp_hit<u64> = map.map_find(imps, importName)
-    if imp_hit != 0.(u64) {
+    if utils.has(importName, this.pkg.imports) {
         path1 = this.pkg.imports[importName]
         this.check(path1 == path,"SynatxError: repeat import conflict :" + importName)
     }

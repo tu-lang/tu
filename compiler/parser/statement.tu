@@ -8,7 +8,7 @@ use std
 Parser::parseStatement()
 {
     utils.debug("parser.Parser::parseStatement()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     node = null
     match reader.curToken {
         ast.IF: {
@@ -29,7 +29,7 @@ Parser::parseStatement()
         }
         ast.RETURN: {
             // Record return keyword line before scan(); next token may be on a later line.
-            ret_line<i32> = reader.line
+            ret_line = reader.line
             reader.scan()
             node = this.parseReturnStmt(ret_line)
         }
@@ -39,7 +39,7 @@ Parser::parseStatement()
         }
         ast.GOTO: {
             reader.scan()
-            node = new gen.GotoStmt(reader.curLex.dyn(),this.line,this.column)
+            node = new gen.GotoStmt(reader.curLex,this.line,this.column)
             reader.scan()
         }
         ast.CONTINUE: {
@@ -89,7 +89,7 @@ Parser::parseStatement()
 Parser::parseIfStmt()
 {
     utils.debug("parser.Parser::parseIfStmt()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     node = new gen.IfStmt(this.line,this.column)
     
     ifCase = new gen.IfCaseExpr(this.line,this.column)
@@ -120,7 +120,7 @@ Parser::parseForStmt()
 {
     utils.debug("parser.Parser::parseForStmt()")
     this.ctx.create()
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     node = new gen.ForStmt(this.line,this.column)
     
     hashlparen = false
@@ -214,7 +214,7 @@ Parser::parseForStmt()
 Parser::parseMatchSmt(){
     utils.debug("parser.Parser::parseMatchSmt()")
     this.ctx.create()
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     ms = new gen.MatchStmt(this.line,this.column)
     this.ctx.top().breakto = ms
 
@@ -229,7 +229,7 @@ Parser::parseMatchSmt(){
             tk = ms.cond.getType(this.ctx)
             condrecv.structtype = true
             condrecv.type = tk
-            condrecv.size = typesize[int(tk)]
+            condrecv.size = typesize[tk]
         }
     }
     this.newvar(ms.condrecv)
@@ -254,7 +254,7 @@ Parser::parseMatchSmt(){
 Parser::parseMatchCase(cond)
 {
     utils.debug("parser.Parser::parseMatchCase()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     cs = new gen.MatchCaseExpr(this.line,this.column)
     cs.matchCond = cond 
 
@@ -280,7 +280,7 @@ Parser::parseMatchCase(cond)
 }
 Parser::parseWhileStmt(dead) {
     utils.debug("parser.Parser::parseWhileStmt()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     node = new gen.WhileStmt(this.line, this.column)
     this.ctx.create()
     this.ctx.top().breakto    = node
@@ -307,8 +307,8 @@ Parser::parseWhileStmt(dead) {
     this.ctx.destroy()
     return node
 }
-Parser::parseReturnStmt(ret_line<i32>) {
-    reader<scanner.ScannerStatic> = this.scanner
+Parser::parseReturnStmt(ret_line) {
+    reader = this.scanner
     utils.debug("parser.Parser::parseReturnStmt()")
     node = new gen.ReturnStmt(this.line, this.column)
 
@@ -465,7 +465,7 @@ Parser::parseReturnStmt(ret_line<i32>) {
 
 Parser::parseMultiAssignStmt(firstv){
     utils.debug("parser.Parser::parseMultiAssignStmt()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
 
     this.expect(ast.COMMA)
     reader.scan()
@@ -486,7 +486,7 @@ Parser::parseMultiAssignStmt(firstv){
         this.newvar(p)
         stmt.ls[] = p
 
-        tk<i32> = reader.curToken
+        tk = reader.curToken
         if tk == ast.COMMA {
             reader.scan()
         }else if this.isassign() {
@@ -578,7 +578,7 @@ Parser::parseTryStmt(){
 	if this.currentFunc != null && this.currentFunc.isasync() {
 		this.check(false, "try/catch/finally not supported inside async (see RFC-106)")
 	}
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
 	node = new gen.TryStmt(this.line, this.column)
 	jbid = ast.incr_labelid()
 	jb = new gen.VarExpr(".jmpbuf." + jbid, this.line, this.column)
@@ -599,11 +599,11 @@ Parser::parseTryStmt(){
 		this.check(reader.curToken == ast.LPAREN, "catch expects (")
 		reader.scan()
 		this.check(reader.curToken == ast.VAR, "catch expects type or name")
-		first = reader.curLex.dyn()
+		first = reader.curLex
 		reader.scan()
 		if reader.curToken == ast.VAR {
 			cc.typeName = first
-			cc.varName = reader.curLex.dyn()
+			cc.varName = reader.curLex
 			reader.scan()
 		} else {
 			cc.typeName = ""
@@ -645,7 +645,7 @@ Parser::parseDeferStmt(){
 	if this.currentFunc != null && this.currentFunc.isasync() {
 		this.check(false, "defer not supported inside async (see RFC-106)")
 	}
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
 	node = new gen.DeferStmt(this.line, this.column)
 	if this.currentFunc != null {
 		this.currentFunc.has_defer = true
@@ -665,7 +665,7 @@ Parser::parseDeferStmt(){
 
 // RFC110: unsafe must be followed by an explicit block.
 Parser::parseUnsafeStmt() {
-	reader<scanner.ScannerStatic> = this.scanner
+	reader = this.scanner
 	this.check(reader.curToken == ast.LBRACE, "pkgmode: unsafe must be followed by { block }")
 	node = new gen.UnsafeStmt(this.line, this.column)
 	this.unsafe_stmt_depth += 1

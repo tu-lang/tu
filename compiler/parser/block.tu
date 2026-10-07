@@ -12,7 +12,7 @@ Parser::parseBlock(insertsuper,hasctx)
     if (!hasctx)
         this.ctx.create()
     
-    reader<scanner.ScannerStatic>  = this.scanner 
+    reader = this.scanner 
     if(reader.curToken != ast.LBRACE){
         stmt = this.parseStatement()
         node = new gen.BlockStmt()
@@ -64,7 +64,7 @@ Parser::parseBlock(insertsuper,hasctx)
 Parser::parseParameterList()
 {
     utils.debug("parser.Parser.parseParameterList()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     node = []
     reader.scan()
     
@@ -78,12 +78,12 @@ Parser::parseParameterList()
         if reader.curToken == ast.VAR
         {
             if this.currentFunc {
-                var = new gen.VarExpr(reader.curLex.dyn(),this.line,this.column)
+                var = new gen.VarExpr(reader.curLex,this.line,this.column)
                 
                 var.type = ast.U64
                 var.size = 8
                 var.isunsigned = true
-                this.currentFunc.params_var[reader.curLex.dyn()] = var
+                this.currentFunc.params_var[reader.curLex] = var
                 this.currentFunc.params_order_var[] = var
 
                 reader.scan()
@@ -96,14 +96,14 @@ Parser::parseParameterList()
                     var.structtype = true
                     reader.scan()
                     if reader.curToken == ast.VAR {
-                        sname = reader.curLex.dyn()
+                        sname = reader.curLex
                         var.structname = sname
                         reader.scan()
                         if reader.curToken == ast.DOT {
                             reader.scan()
                             this.expect(ast.VAR,null)
                             var.structpkg = sname
-                            var.structname = reader.curLex.dyn()
+                            var.structname = reader.curLex
                             reader.scan()
                         }else{
                             var.structpkg = this.pkg.full_package
@@ -112,7 +112,7 @@ Parser::parseParameterList()
                     
                         i = reader.curToken
                         this.check(i >= ast.I8 && i <= ast.F64)
-                        var.size = typesize[int(i)]
+                        var.size = typesize[i]
                         var.type = i
                         var.isunsigned = ast.type_isunsigned(i)
                         reader.scan()
@@ -135,23 +135,23 @@ Parser::parseParameterList()
 
                 
                 if reader.curToken != ast.DOT {
-                    this.panic("SynatxError: should be , or . but got " + reader.curLex.dyn())
+                    this.panic("SynatxError: should be , or . but got " + reader.curLex)
                 }
                 
                 reader.scan()
                 if reader.curToken != ast.DOT {
-                    this.panic("SynatxError: must be . but got :" + reader.curLex.dyn())
+                    this.panic("SynatxError: must be . but got :" + reader.curLex)
                 }
                 
                 reader.scan()
                 if reader.curToken != ast.DOT{
-                    this.panic("SynatxError: should be , or . but got :" + reader.curLex.dyn())
+                    this.panic("SynatxError: should be , or . but got :" + reader.curLex)
                 }
                 
                 this.currentFunc.is_variadic = true
                 var.is_variadic = true
             }
-            node[] = reader.curLex.dyn()
+            node[] = reader.curLex
         }
         else{
             this.expect( ast.COMMA )

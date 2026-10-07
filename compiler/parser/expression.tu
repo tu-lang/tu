@@ -7,10 +7,12 @@ use compiler.gen
 use compiler.utils
 use compiler.parser.scanner
 use compiler.parser.package
+use string
+use runtime
 
 Parser::parseChainExpr(first){
     utils.debug("parser.Parser::parseChainExpr()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     chainExpr = new gen.ChainExpr(this.line,this.column)
     ret  = chainExpr
     chainExpr.fields[] = first
@@ -63,7 +65,7 @@ Parser::parseChainExpr(first){
                     reader.scan()
                 }
                 this.expect(ast.VAR)
-                membername = reader.curLex.dyn()
+                membername = reader.curLex
                 reader.scan()
                 if reader.curToken == ast.LPAREN {
                     mc = new gen.MemberCallExpr(this.line,this.column)
@@ -130,7 +132,7 @@ Parser::parseChainExpr(first){
 
 Parser::parseExpression(oldPriority)
 {
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     //TODO: support default args value
     utils.debugf("parse.Parser::parseExpression() pri:%i",oldPriority)
     p = this.parseUnaryExpr()
@@ -190,10 +192,10 @@ Parser::parseExpression(oldPriority)
 
 Parser::parseUnaryExpr()
 {
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     utils.debugf("parser.Parser::parseUnaryExpr() %s \n",
         ast.getTokenString(reader.curToken),
-        // reader.curLex.dyn()
+        // reader.curLex
     )
     //unary expression: like -num | !var | ~var
     if this.isunary() {
@@ -212,8 +214,8 @@ Parser::parseUnaryExpr()
     }
     utils.debugf(
         "parseUnaryExpr: not found token:%d-%s file:%s line:%d\n",
-        int(reader.curToken),
-        reader.curLex.dyn(),
+        reader.curToken,
+        reader.curLex,
         this.filepath,
         this.line
     )
@@ -222,13 +224,13 @@ Parser::parseUnaryExpr()
 
 Parser::parsePrimaryExpr()
 {
-    reader<scanner.ScannerStatic> = this.scanner
-    utils.debugf("parser.Parser::parsePrimaryExpr() line:%d",int(reader.line))
+    reader = this.scanner
+    utils.debugf("parser.Parser::parsePrimaryExpr() line:%d",reader.line)
     tk   = reader.curToken
     prev = reader.prevToken
     
     if tk == ast.BUILTIN {
-        builtinfunc = new gen.BuiltinFuncExpr(reader.curLex.dyn(),int(reader.line),int(reader.column))
+        builtinfunc = new gen.BuiltinFuncExpr(reader.curLex,reader.line,reader.column)
         this.next_expect( ast.LPAREN )
         reader.scan()
         if builtinfunc.funcname == "embed" {
@@ -237,7 +239,7 @@ Parser::parsePrimaryExpr()
                 "embed() args must be string literals"
             )
             while reader.curToken == ast.STRING {
-                builtinfunc.embed_paths[] = reader.curLex.dyn()
+                builtinfunc.embed_paths[] = reader.curLex
                 reader.scan()
                 if reader.curToken == ast.COMMA {
                     reader.scan()
@@ -267,9 +269,9 @@ Parser::parsePrimaryExpr()
             // Primitive names are keywords; synthesize VarExpr for gen lookup.
             if reader.curToken >= ast.I8 && reader.curToken <= ast.F64 {
                 builtinfunc.expr = new gen.VarExpr(
-                    reader.curLex.dyn(),
-                    int(reader.line),
-                    int(reader.column)
+                    reader.curLex,
+                    reader.line,
+                    reader.column
                 )
                 reader.scan()
             } else if reader.curToken == ast.MUL {
@@ -289,10 +291,10 @@ Parser::parsePrimaryExpr()
     }
     
     if tk == ast.BITAND {
-        addr = new gen.AddrExpr(int(reader.line),int(reader.column))
+        addr = new gen.AddrExpr(reader.line,reader.column)
         tk = reader.scan()
         if tk == ast.VAR {
-            varname = reader.curLex.dyn()
+            varname = reader.curLex
             if this.currentFunc != null {
                 varexpr = this.getvar(varname)
                 if varexpr != null 
@@ -305,7 +307,7 @@ Parser::parsePrimaryExpr()
             addr.package = addr.varname
             reader.scan()
             this.expect( ast.VAR )
-            addr.varname = reader.curLex.dyn()
+            addr.varname = reader.curLex
             reader.scan()
         }
         return addr
@@ -329,7 +331,7 @@ Parser::parsePrimaryExpr()
         reader.scan()
         this.expect(ast.VAR)
         me = new gen.MemberExpr(this.line,this.column)
-        me.membername = reader.curLex.dyn()
+        me.membername = reader.curLex
         
         reader.scan()
         return me
@@ -368,7 +370,7 @@ Parser::parsePrimaryExpr()
         return var
     }else if tk == ast.VAR
     {
-        var = reader.curLex.dyn()
+        var = reader.curLex
         reader.scan()
         var0 = this.parseVarExpr(var)
         if type(var0) == type(gen.VarExpr) {
@@ -376,8 +378,7 @@ Parser::parsePrimaryExpr()
             if !var0.isdefine && var0.structtype {
                 if var0.structname != ovar.structname && var0.structpkg != ovar.structpkg
                     var0.check(false,"var already define,can't redefine new one1")
-                ty<i32> = var0.type
-                if ty != ovar.type
+                if var0.type != ovar.type
                     var0.check(false,"var already define,can't redefine new one2")
                 if var0.pointer != ovar.pointer
                     var0.check(false,"var already define,can't redefine new one3")
@@ -387,7 +388,7 @@ Parser::parsePrimaryExpr()
     }else if tk == ast.INT
     {
         ret = new gen.IntExpr(this.line,this.column)
-        ret.lit = reader.curLex.dyn()
+        ret.lit = reader.curLex
         reader.scan() //eat i
         if reader.curToken == ast.DOT {
             reader.scan()//eat .
@@ -397,19 +398,20 @@ Parser::parsePrimaryExpr()
         return ret
     }else if tk == ast.FLOAT
     {
-        //MENTION: use dyn 
-        val<f64> = utils.strtof64(reader.curLex.str())
+        fv = string.tofloat(reader.curLex)
         reader.scan()
         ret    = new gen.FloatExpr(this.line,this.column)
-        //MENTION: test bound value
-        valp<u64*> = &val
-        ret.lit = int(*valp)
+        // FloatExpr.lit carries the raw IEEE-754 bits of the literal.
+        unsafe {
+            fvv<runtime.Value> = fv
+            ret.lit = int(fvv.data)
+        }
         return ret
     }else if tk == ast.STRING {
         // fmt.vfprintf(std.STDOUT,*"1:%s\n",reader.curLex.inner)
         // fmt.vfprintf(std.STDOUT,*"2:%s\n",string.fromulonglong(reader.curLex.hash64()))
         // fmt.vfprintf(std.STDOUT,*"3:%d\n",reader.curLex.len())
-        val     = reader.curLex.dyn()
+        val     = reader.curLex
         reader.scan()
         ret    = new gen.StringExpr(this.line,this.column)
 
@@ -423,7 +425,7 @@ Parser::parsePrimaryExpr()
         return ret
     }else if tk == ast.CHAR
     {
-        val     = reader.curLex.dyn()
+        val     = reader.curLex
         reader.scan()
         ret    = new gen.CharExpr(this.line,this.column)
 
@@ -436,7 +438,7 @@ Parser::parsePrimaryExpr()
     }else if tk == ast.BOOL
     {
         val = 0
-        cl = reader.curLex.dyn()
+        cl = reader.curLex
         if cl == "true"
             val = 1
         reader.scan()
@@ -498,7 +500,7 @@ Parser::parsePrimaryExpr()
     }else if tk == ast.NEW
     {
         reader.scan()
-        utils.debugf("got new keywords:%s",reader.curLex.dyn())
+        utils.debugf("got new keywords:%s",reader.curLex)
         return this.parseNewExpr()
     }
     return null
@@ -507,14 +509,14 @@ Parser::parsePrimaryExpr()
 Parser::parseNewExpr()
 {
     utils.debug("parser.Parser::parseNewExpr()")
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     if reader.curToken == ast.INT {
         ret = new gen.NewExpr(this.line,this.column)
-        ret.len = string.tonumber(reader.curLex.dyn())
+        ret.len = string.tonumber(reader.curLex)
         reader.scan()
         return ret
     }
-    name    = reader.curLex.dyn()
+    name    = reader.curLex
     //new i8[3] 
     if this.isbase()
     match name {
@@ -523,7 +525,7 @@ Parser::parseNewExpr()
         {
             ret = new gen.NewExpr(this.line,this.column)
             ret.len = typesize[
-                int(scanner.keywords[name])
+                scanner.keywords[name]
             ]
             reader.scan()
             if reader.curToken != ast.LBRACKET
@@ -550,7 +552,7 @@ Parser::parseNewExpr()
         reader.scan()
         this.expect( ast.VAR )
         package = name
-        name = reader.curLex.dyn()
+        name = reader.curLex
         reader.scan()
     }
     if reader.curToken == ast.LBRACE {
@@ -597,7 +599,7 @@ Parser::parseNewExpr()
 Parser::parseVarExpr(var)
 {
     utils.debugf("parser.Parser::parseVarExpr() var:%s",var)
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     //FIXME: the var define order
     // package(var)
     package = var
@@ -630,10 +632,10 @@ Parser::parseVarExpr(var)
                 return gvar
             }
             this.expect( ast.VAR)
-            pfuncname = reader.curLex.dyn()
+            pfuncname = reader.curLex
             
             reader.scan()
-            p<i8> = reader.peek()
+            p = reader.peek()
             if reader.curToken == ast.COLON && p == ':' {
                 return this.parseStaticCall(package,pfuncname)
             }else if  reader.curToken == ast.LPAREN
@@ -689,7 +691,7 @@ Parser::parseVarExpr(var)
                     return me
                 }else if( (mvar = this.getvar(package)) && mvar != null ){
                     if ( mvar.structtype && mvar.structname != "") {
-                        mexpr = new gen.StructMemberExpr(mvar.varname,int(reader.line),int(reader.column))
+                        mexpr = new gen.StructMemberExpr(mvar.varname,reader.line,reader.column)
                         mexpr.tyassert = ta
                         mexpr.var = mvar
                         mexpr.member = pfuncname
@@ -733,14 +735,14 @@ Parser::parseVarExpr(var)
             reader.scan()
             
             if reader.curToken == ast.VAR{
-                sname = reader.curLex.dyn()
+                sname = reader.curLex
                 expr.structname = sname
                 reader.scan()
                 if reader.curToken == ast.DOT{
                     reader.scan()
                     this.expect( ast.VAR )
                     expr.structpkg = sname
-                    expr.structname = reader.curLex.dyn()
+                    expr.structname = reader.curLex
                     reader.scan()
                 }else {
                     expr.structpkg = this.pkg.full_package
@@ -765,7 +767,7 @@ Parser::parseVarExpr(var)
                 return expr
             }else if reader.curToken <= ast.F64 && reader.curToken >= ast.I8{
             
-                expr.size = typesize[int(reader.curToken)]
+                expr.size = typesize[reader.curToken]
                 expr.type = reader.curToken
                 expr.isunsigned = ast.type_isunsigned(reader.curToken)
                 reader.scan()
@@ -789,7 +791,7 @@ Parser::parseVarExpr(var)
             return varexpr
         }
          ast.COLON : {
-            p<i8> = reader.peek()
+            p = reader.peek()
             if p == ':'{
                 return this.parseStaticCall("",var)
             }else if reader.emptyline(){
@@ -811,7 +813,7 @@ Parser::parseStaticCall(pkg , mname){
     if this.forbidStaticSyntax() {
         this.panic("pkgmode: static call not allowed in dynamic context outside unsafe")
     }
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     mc = new gen.MemberCallExpr(this.line, this.column)
     if compile.phase == compile.FunctionPhase {
         st = this.getStruct(pkg,mname)
@@ -825,7 +827,7 @@ Parser::parseStaticCall(pkg , mname){
     reader.scan()
 
     this.check(reader.curToken == ast.VAR, "should be var")
-    membername = reader.curLex.dyn()
+    membername = reader.curLex
     reader.scan()
 
     mc.membername = membername
@@ -837,7 +839,7 @@ Parser::parseStaticCall(pkg , mname){
 Parser::parseFuncallExpr(callname)
 {
     utils.debug("parser.Parser::parseFuncallExpr() callname:%s",callname)
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     reader.scan()
     val = new gen.FunCallExpr(this.line,this.column)
     val.p = this
@@ -870,7 +872,7 @@ Parser::parseFuncallExpr(callname)
 }
 Parser::parseIndexExpr(varname){
     utils.debugf("parser.Parser::parseIndexExpr() varname:%s",varname) 
-    reader<scanner.ScannerStatic> = this.scanner
+    reader = this.scanner
     reader.scan()
     val = new gen.IndexExpr(this.line,this.column)
     val.varname = varname
