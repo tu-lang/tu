@@ -26,12 +26,12 @@ export func rand(v){
 	return int(ret)
 }
 export func srand_i64(max){
-	r<i64> = ntime()
+	r<i64> = ntime_ns()
 	if max != null {
 		mv<runtime.Value> = max
 		r %= mv.data
 	}
-	return r
+	return int(r)
 }
 export func srand(v){
 
@@ -207,10 +207,16 @@ export func is_array(arr){
 	return false
 }
 
-export func ntime(){
+// Wall-clock nanoseconds since the epoch (native i64 for static callers).
+fn ntime_ns() i64 {
 	ts<TimeSpec> = new TimeSpec
 	clock_gettime(CLOCK_REALTIME, ts)
 	return ts.sec * 1000000000 + ts.nsec
+}
+
+// Wall-clock nanoseconds since the epoch as a dyn int.
+export func ntime(){
+	return int(ntime_ns())
 }
 
 // Static-only formatted die; format must be a C string.
