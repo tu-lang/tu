@@ -161,7 +161,7 @@ func PopfDst(ty, dst,ofs){
 
 func PopMRet(sz){
     for sz -= 1; sz >= 0 ; sz -= 1 {
-        Pop(argm64[int(sz)])
+        Pop(argm64[sz])
     }
 }
 

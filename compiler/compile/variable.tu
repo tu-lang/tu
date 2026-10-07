@@ -7,7 +7,7 @@ use fmt
 
 // Emit .balign before .data labels so gas+ld packing after .string cannot
 // leave Note/MutexInter futex words on misaligned addresses.
-fn emitDataAlign(bytes){
+func emitDataAlign(bytes){
     if bytes < 1 {
         bytes = 1
     }
@@ -15,7 +15,7 @@ fn emitDataAlign(bytes){
 }
 
 // Natural alignment for a package-level global; mem stack objects at least 8.
-fn globalVarDataAlign(v, p) {
+func globalVarDataAlign(v, p) {
     if v == null {
         return 8
     }
@@ -54,13 +54,13 @@ fn globalVarDataAlign(v, p) {
     return 8
 }
 
-fn registerStrings(){
+func registerStrings(){
     for(var : currentParser.strs){
         CreateGlobalString(var)
     }
 }
 
-fn registerEmbeds(){
+func registerEmbeds(){
     if currentParser == null || currentParser.pkg == null {
         return
     }
@@ -72,7 +72,7 @@ fn registerEmbeds(){
     }
 }
 
-fn registerGcMList()
+func registerGcMList()
 {
     emitDataAlign(8)
     writeln("    .globl gc.ms.entry")
@@ -214,7 +214,7 @@ func CreateGlobalString(var){
     writeln("    .string \"%s\"",var.lit)
 }
 
-fn registerObjects(){
+func registerObjects(){
     for cls : currentParser.classes {
         //skip struct
         if !cls.found continue
@@ -243,12 +243,15 @@ fn registerObjects(){
             fc.namehid = utils.hash(fc.name)
             orderf[] = fc
         }
-        orderf = utils.quick_sort(orderf,fn(l,r){
-            ll<runtime.Value> = l.namehid
-            rr<runtime.Value> = r.namehid
-            lv<u64> = ll.data
-            rv<u64> = rr.data
-            if lv < rv return true
+        orderf = utils.quick_sort(orderf,func(l,r){
+            // Hash ids are unsigned; compare raw bits, not signed dyn ints.
+            unsafe {
+                ll<runtime.Value> = l.namehid
+                rr<runtime.Value> = r.namehid
+                lv<u64> = ll.data
+                rv<u64> = rr.data
+                if lv < rv return true
+            }
             return false
         })
         orderm = []
@@ -258,12 +261,15 @@ fn registerObjects(){
             var.varnamehid = utils.hash(var.varname)
             orderm[] = var
         }
-        orderm = utils.quick_sort(orderm,fn(l,r){
-            ll<runtime.Value> = l.varnamehid
-            rr<runtime.Value> = r.varnamehid
-            lv<u64> = ll.data
-            rv<u64> = rr.data
-            if lv < rv return true
+        orderm = utils.quick_sort(orderm,func(l,r){
+            // Hash ids are unsigned; compare raw bits, not signed dyn ints.
+            unsafe {
+                ll<runtime.Value> = l.varnamehid
+                rr<runtime.Value> = r.varnamehid
+                lv<u64> = ll.data
+                rv<u64> = rr.data
+                if lv < rv return true
+            }
             return false
         })
         for fc : orderf {
@@ -309,7 +315,7 @@ fn registerObjects(){
  // snapshots an empty order_funcs into ApiImpl.funcs, so codegen used to emit
 // empty apitl labels (asmer then dies on `.global`/`.text` after the label).
 // Resolve .quad slots from the API's final order_funcs + impl getFunc at emit time.
-fn registerApiTable(){
+func registerApiTable(){
     for st : currentParser.structs {
         if st.isasync continue
         if st.asyncobj continue
@@ -352,7 +358,7 @@ fn registerApiTable(){
 
 }
 
-fn registerFutures(){
+func registerFutures(){
     for st : currentParser.structs {
         if !st.isasync continue
         if st.asyncobj continue //skip class future member func

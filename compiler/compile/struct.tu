@@ -5,7 +5,7 @@ use os
 use compiler.parser
 use compiler.parser.package
 
-fn InitApiVptr(s, apiname,expr){
+func InitApiVptr(s, apiname,expr){
 	if s.isapi
 		return true
 	exist = false
@@ -143,7 +143,7 @@ func InitStructVar(gvar , s , fields){
 			size += InitStructVar(gvar,sm,mfields)
 		}else{
 			gvar.check(ast.isbase(m.type),"must be base type i8 - u64")
-			si = parser.typesize[int(m.type)]
+			si = parser.typesize[m.type]
 			mt = ast.typesizestring(m.type)
 			v = "0"
 			if fields[m.name] != null {

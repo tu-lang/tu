@@ -4,7 +4,7 @@ use compiler.compile
 
 func call_operator(opt,name)
 {
-    compile.writeln("   push $%d",int(opt))
+    compile.writeln("   push $%d",opt)
     call(name)
 }
 
@@ -14,7 +14,7 @@ func call_object_operator(opt, name,method) {
     compile.writeln("# [debug] call_object_operator name:%s  hk:%d",name,hk)
     compile.writeln("    mov $%d,%%rdx",hk)
     compile.writeln("   push %%rdx")
-    compile.writeln("   push $%d",int(opt))
+    compile.writeln("   push $%d",opt)
     call(method)
 }
 func gc_malloc(size)
@@ -38,7 +38,7 @@ func type_id(id,isobj){
     }
     call("runtime_type")
 }
-fn type_id2(){
+func type_id2(){
     compile.writeln("   push %%rax")
     call("runtime_type2")
 }
@@ -59,7 +59,7 @@ func newobject(typ,data)
 
     call("runtime_newobject")
 }
-fn newclsobject(vid,objsize){
+func newclsobject(vid,objsize){
     compile.writeln("   push    $%d",objsize)
     compile.writeln("   lea %s(%%rip) , %%rax",vid)
     compile.Push()
@@ -67,7 +67,7 @@ fn newclsobject(vid,objsize){
     call("runtime_newclsobject")
 }
 
-fn newfuncobject(funcargs,isvarf,retsize , capture, fname){
+func newfuncobject(funcargs,isvarf,retsize , capture, fname){
     if capture compile.writeln("    push $1")
     else       compile.writeln("    push $0")
 
@@ -116,11 +116,11 @@ func isTrue()
     compile.writeln("   push %%rax")
     call("runtime_isTrue")
 }
-fn get_func_value(){
+func get_func_value(){
     compile.writeln("   push %%rax")
     call("runtime_get_func_value")
 }
-fn get_future_poll(){
+func get_future_poll(){
     compile.writeln("   push %%rax")
     call("runtime_get_future_poll")
 }
@@ -177,7 +177,7 @@ func object_member_get(expr,name)
 
     call("runtime_object_member_get")
 }
-fn object_member_get2(expr,name)
+func object_member_get2(expr,name)
 {
     // check_object(expr)
     // compile.Pop("%rdi")
@@ -211,7 +211,7 @@ func object_func_addr(expr,name)
 
     call("runtime_object_func_addr")
 }
-fn object_func_addr2(expr,name)
+func object_func_addr2(expr,name)
 {
     // check_object(expr) 
     // compile.Pop("%rdi")
@@ -244,6 +244,6 @@ func miss_args(pos,funcname,isclass){
     call("runtime_miss_args")
 }
 
-fn dynarg_pass(){
+func dynarg_pass(){
     call("runtime_dynarg_pass")
 }

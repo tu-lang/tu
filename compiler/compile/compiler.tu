@@ -145,7 +145,7 @@ func genOffsets(fc)
     for local : fc.locals {
         order_locals[] = local
     }
-    order_locals = utils.quick_sort(order_locals,fn(l,r){
+    order_locals = utils.quick_sort(order_locals,func(l,r){
         return l.varid > r.varid
     })
 
@@ -203,7 +203,7 @@ func genFuture(fc)
     for local : fc.locals {
         order_locals[] = local
     }
-    order_locals = utils.quick_sort(order_locals,fn(l,r){
+    order_locals = utils.quick_sort(order_locals,func(l,r){
         return l.varid > r.varid
     })
 
