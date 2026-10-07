@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 # One-shot self-host publish for Linux + Darwin + Windows.
 #
-# Mother tuc builds the *host* tu (ELF or Mach-O). That tu then
-# --target=windows through the self-hosted peff linker — no lld-link,
-# no Win SDK, no mother tul.exe.
-# Darwin still goes through tuc (mother Mach-O linker).
-# Linux host also rebuilds tulang.a; Darwin/Windows compile std from copkg.
+# Self-hosted only: an existing host `tu` (release/tu or PATH) rebuilds
+# tulang for linux / darwin / windows. Never call mother tuc/tua/tul here.
+# Linux host also rebuilds tulang.a; Darwin/Windows compile std from embed.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -29,16 +27,31 @@ MINGW*|MSYS*|CYGWIN*)
     ;;
 esac
 
-need_cmd() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        echo "[dev_release] missing $1 in PATH" >&2
+# Require a self-hosted host tu before any rebuild (no mother tuc).
+require_host_tu() {
+    local cand=""
+    if [ "$HOST_TARGET" = "darwin" ] && [ -x "$ROOT/release/tu-darwin" ]; then
+        cand="$ROOT/release/tu-darwin"
+    elif [ -x "$ROOT/release/tu" ]; then
+        cand="$ROOT/release/tu"
+    elif command -v tu >/dev/null 2>&1; then
+        cand="$(command -v tu)"
+    fi
+    if [ -z "$cand" ] || [ ! -x "$cand" ]; then
+        echo "[dev_release] ERROR: need a self-hosted host tu (release/tu or PATH tu)" >&2
+        echo "[dev_release]       mother tuc is not used for self-host publish" >&2
         exit 1
     fi
+    # Reject shell wrappers; self-host must be a real binary.
+    if head -c 2 "$cand" 2>/dev/null | grep -q '^#!'; then
+        echo "[dev_release] ERROR: $cand looks like a script wrapper; install ELF/Mach-O tu" >&2
+        exit 1
+    fi
+    echo "$cand"
 }
 
-need_cmd tuc
-need_cmd tua
-need_cmd tul
+HOST_TU="$(require_host_tu)"
+echo "[dev_release] host tu: $HOST_TU"
 mkdir -p "$ROOT/release"
 
 # RFC-109: keep generated version strings in sync with VERSION
@@ -75,6 +88,9 @@ trap on_err ERR
 echo "[dev_release] stage=$stage prefix=$prefix host=$HOST_TARGET"
 mkdir -p "$stage/bin"
 cp "$ROOT/tulang.tu" "$stage/bin/"
+if [ -f "$ROOT/tu.mod" ]; then
+    cp "$ROOT/tu.mod" "$stage/bin/tu.mod"
+fi
 cp -a "$ROOT/compiler" "$ROOT/asmer" "$ROOT/linker" "$stage/"
 for d in library packages runtime syscall platform; do
     if [ ! -d "$ROOT/$d" ]; then
@@ -115,6 +131,8 @@ bootstrap_one() {
 
     rm -f "$stage/bin/tulang" "$stage/bin/tulang.exe" "$stage/a.out" "$stage/a.exe" \
         "$stage/tulang" "$stage/tulang.exe"
+    # Self-hosted tu embeds stdroot from stage/bin; overlay-copkg is for disk
+    # consumers and mother tooling only.
     (
         cd "$stage"
         "$compiler" build bin/tulang.tu --target="$target" --workdir "$work"
@@ -155,18 +173,18 @@ bootstrap_one() {
     echo "[dev_release] wrote release/$dest ($(wc -c < "$ROOT/release/$dest") bytes)"
 }
 
-# Shared syscall/stub trees for mother tuc / --stdlib=disk during bootstrap.
+# Shared syscall/stub trees for --stdlib=disk consumers (not used by embed tu).
 make_tu install-coasm-all
 
-# Host gen1 via mother tuc (ELF / Mach-O). Needed before Windows: peff lives in tu.
+# Rebuild all three targets with the self-hosted host tu only.
 if [ "$HOST_TARGET" = "linux" ]; then
-    bootstrap_one linux tu tuc
+    bootstrap_one linux tu "$HOST_TU"
     HOST_TU="$ROOT/release/tu"
-    bootstrap_one darwin tu-darwin tuc
+    bootstrap_one darwin tu-darwin "$HOST_TU"
 else
-    bootstrap_one darwin tu-darwin tuc
+    bootstrap_one darwin tu-darwin "$HOST_TU"
     HOST_TU="$ROOT/release/tu-darwin"
-    bootstrap_one linux tu tuc
+    bootstrap_one linux tu "$HOST_TU"
 fi
 
 if [ ! -x "$HOST_TU" ]; then
