@@ -1,3 +1,3 @@
 package {
-    mode mixed
+    mode dyn
 }

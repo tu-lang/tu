@@ -61,6 +61,9 @@ overlay-copkg:
 	@cp -R runtime $(prefix)/lib/copkg/
 	@cp -R library/* $(prefix)/lib/copkg/
 	@cp -R packages/* $(prefix)/lib/copkg/
+	# Keep platform/ so --stdlib=disk can resolve --target overlays without
+	# flipping the host runtime/ tree (linux host → windows/darwin cross).
+	@cp -R platform $(prefix)/lib/copkg/
 	# Flat copkg: never leave a root tu.mod (would force runtime/packages static).
 	@rm -f $(prefix)/lib/copkg/tu.mod
 ifeq ($(TARGET),darwin)
@@ -68,10 +71,9 @@ ifeq ($(TARGET),darwin)
 	@cp platform/darwin/runtime_os.tu $(prefix)/lib/copkg/runtime/darwin.tu
 	@cp platform/darwin/os_signal.tu $(prefix)/lib/copkg/os/signal.tu
 	@cp packages/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/epoll.tu
-	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu
 	@cp packages/netio/sys/waker_kqueue.tu $(prefix)/lib/copkg/netio/sys/waker.tu
-	@rm -f $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
 	@cp platform/darwin/netio_platform.tu $(prefix)/lib/copkg/netio/sys/platform.tu
+	# Retain kqueue* names for target-aware listing (do not delete).
 else ifeq ($(TARGET),windows)
 	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/darwin.tu
 	@cp platform/windows/runtime_os.tu $(prefix)/lib/copkg/runtime/windows.tu
@@ -81,10 +83,13 @@ else ifeq ($(TARGET),windows)
 	@cp platform/windows/sock_flags.tu $(prefix)/lib/copkg/runtime/sock_flags.tu
 	@cp platform/windows/pipe.tu $(prefix)/lib/copkg/runtime/pipe.tu
 	@cp platform/windows/netio_platform.tu $(prefix)/lib/copkg/netio/sys/platform.tu
-	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
+	# Retain kqueue* for cross listing; unused when --target=windows.
 else
 	@rm -f $(prefix)/lib/copkg/runtime/darwin.tu $(prefix)/lib/copkg/runtime/windows.tu
-	@rm -f $(prefix)/lib/copkg/netio/sys/kqueue.tu $(prefix)/lib/copkg/netio/sys/waker_kqueue.tu
+	@rm -f $(prefix)/lib/copkg/runtime/wsa_errno.tu $(prefix)/lib/copkg/runtime/fd_table.tu
+	@rm -f $(prefix)/lib/copkg/runtime/epoll_soft.tu $(prefix)/lib/copkg/runtime/sock_flags.tu
+	@rm -f $(prefix)/lib/copkg/runtime/pipe.tu
+	# Keep netio kqueue* sources so disk+darwin cross can resolve without re-overlay.
 endif
 	# RFC-110: flat copkg drops library/packages ancestors; materialize nearest tu.mod
 	@bash scripts/materialize_tu_mod.sh "$(CURDIR)" "$(prefix)/lib/copkg"
@@ -166,7 +171,7 @@ else
 endif
 
 # Legacy full prefix: copkg overlay + coasm/stubs + colib (Linux) + binary.
-# Required for --stdlib=disk / TU_STDLIB=disk, mother tuc bootstrap, build-liba.
+# Required for --stdlib=disk / TU_STDLIB=disk, self-host disk consumers, build-liba.
 .PHONY: install-full
 install-full:
 ifeq ($(TARGET),darwin)
@@ -262,7 +267,10 @@ test_dev:
 # Directory-level suites. dirs with tests/<dir>/.make_tests only run allowlisted files.
 # Toolchain self-tests (compiler/asmer/linker) run as peer targets so `make tests -j`
 # overlaps them with tests/* instead of waiting until every suite finishes.
-cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio pkgmode pkgmode_negative toolchain_compiler toolchain_asmer toolchain_linker examples
+# examples runs serially after parallel suites (avoids stdroot embed races under -j).
+parallel_cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio pkgmode pkgmode_negative
+toolchain_cases = toolchain_compiler toolchain_asmer toolchain_linker
+cases = $(toolchain_cases) $(parallel_cases) examples
 
 .PHONY: toolchain_compiler toolchain_asmer toolchain_linker examples pkgmode_negative
 toolchain_compiler:
@@ -292,8 +300,10 @@ tests_cases: $(cases)
 tests_start:
 	@echo "tests start"
 tests: tests_start
-	@$(TIME) $(MAKE) tests_cases
-	#Time elapsed: 2:16.05
+	@$(TIME) $(MAKE) $(toolchain_cases)
+	@$(TIME) $(MAKE) $(parallel_cases) -j$(nproc)
+	@$(TIME) $(MAKE) examples
+	@echo "all test cases passed"
 %: ./tests/%
 	@sh tests_all.sh $@ ;
 # GNU time -f is Linux-only; BSD time on Darwin only has -p.

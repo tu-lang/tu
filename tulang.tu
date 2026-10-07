@@ -14,16 +14,8 @@ root = "/usr/local/lib"
 printlat = false
 
 // RFC-107 Phase B: stdroot embedded at tu link time (paths relative to repo root).
-stdroot_embed<runtime.EmbedFS> = embed("library", "packages", "runtime", "syscall", "platform")
-
-// Export embed table/count for pkgfs helpers in compiler.utils.
-fn pkgfs_stdroot_table() u64 {
-	return stdroot_embed.table
-}
-
-fn pkgfs_stdroot_count() i32 {
-	return stdroot_embed.nentries
-}
+// Untyped: embed() yields the dynamic EmbedFSObj (read/list) consumed by compiler.utils pkgfs.
+stdroot_embed = embed("library", "packages", "runtime", "syscall", "platform")
 
 // Mother tuc parity: foo.tu → foo (windows → foo.exe).
 func build_output_name(file) {
@@ -69,6 +61,8 @@ class Compiler {
     flag_exec = false
     // Args forwarded to the linked binary when flag_exec
     args = []
+    // Exit code of the binary run by `tu run`; tu exits with it.
+    exit_code = 0
     // compiler || asmer || linker  
     // default compiler
     type = "compiler"
@@ -146,7 +140,8 @@ Compiler::print_help(){
         "  --stdlib embed|disk            标准库来源（默认 embed）\n" +
         "  -v, --version                  打印版本\n" +
         "\n" +
-        "Default workdir: $TMPDIR/tu-build-<stem>-...\n"
+        "Default workdir: $TMPDIR/tu-build-<stem>-... (removed after build/run unless --work)\n" +
+        "tu run exits with the program's exit code.\n"
     )
 }
 Compiler::commadparse(){
@@ -403,15 +398,20 @@ Compiler::compiler(file){
                 cmd += " " + a
             }
             fmt.println(cmd)
-            utils.host_run(cmd)
+            this.exit_code = utils.host_run(cmd)
         } else {
             cmd = "'" + exe + "'"
             for a : this.args {
                 cmd += " '" + a + "'"
             }
             fmt.println(cmd)
-            os.shell(cmd)
+            this.exit_code = utils.host_run(cmd)
         }
+    }
+    // build copied the product to cwd and run already executed it, so the
+    // private TMPDIR workdir is no longer needed (--work keeps it).
+    if this.flag_link && !this.flag_work {
+        utils.cleanupWorkdir()
     }
 }
 Compiler::asmer(){
@@ -490,7 +490,7 @@ Compiler::compile(){
     }
 }
 func main() {
-    start<i64> = std.ntime()
+    start = std.ntime()
     eng = new Compiler()
     if os.argc() < 1 {
         return eng.print_help() 
@@ -499,7 +499,7 @@ func main() {
     eng.commadparse() // handle options
     // RFC-107: default embed; TU_STD / TU_STDLIB=disk when CLI does not set --stdlib=
     // Explicit --stdlib=embed|disk always wins over env.
-    pmode<i32> = utils.PKGFS_MODE_EMBED
+    pmode = utils.PKGFS_MODE_EMBED
     if eng.stdlib_mode == 1 {
         pmode = utils.PKGFS_MODE_DISK
     } else if eng.stdlib_mode == 0 {
@@ -508,26 +508,27 @@ func main() {
         pmode = utils.pkgfs_parse_mode_from_env()
     }
     tu_std = utils.pkgfs_tu_std_from_env()
-    tbl<u64> = pkgfs_stdroot_table()
-    cnt<i32> = pkgfs_stdroot_count()
-    if pmode == utils.PKGFS_MODE_EMBED && (tbl == 0 || cnt <= 0) {
+    if pmode == utils.PKGFS_MODE_EMBED && stdroot_embed == null {
         utils.notice("pkgfs: empty stdroot; falling back to disk")
         pmode = utils.PKGFS_MODE_DISK
     }
-    utils.pkgfs_set_stdroot_table(tbl, cnt)
+    utils.pkgfs_set_stdroot(stdroot_embed)
     tname = asm.get_requested_target()
     if tname == null || tname == "" {
         tname = utils.target_name(utils.target_default())
     }
     utils.pkgfs_configure_named(pmode, tu_std, tname)
     eng.compile()
+    utils.pkgfs_cleanup()
 
-    end<i64> = std.ntime()
+    end = std.ntime()
     if printlat {
-        latency<i64> = end - start
-        latency /= 1000000 // ms
+        latency = (end - start) / 1000000 // ms
         utils.msg(0,
-            fmt.sprintf("latency: %d ms\n",int(latency))
+            fmt.sprintf("latency: %d ms\n",latency)
         )
+    }
+    if eng.exit_code != 0 {
+        os.exit(eng.exit_code)
     }
 }
