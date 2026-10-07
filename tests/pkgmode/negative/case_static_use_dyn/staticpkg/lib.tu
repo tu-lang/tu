@@ -1,0 +1,3 @@
+use dynpkg
+
+fn noop() {}

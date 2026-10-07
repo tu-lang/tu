@@ -1,0 +1,3 @@
+use staticpkg
+
+fn main() {}
