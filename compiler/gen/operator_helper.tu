@@ -425,7 +425,7 @@ OperatorHelper::genRight(isleft,expr)
 	match type(expr) {
 		type(BinaryExpr) | type(AssignExpr) : {
 			t = expr.getType(this.ctx)
-			size = parser.typesize[int(t)]
+			size = parser.typesize[t]
 			this.initcond(isleft,size,t,false)
 			return ret
 		}
@@ -436,7 +436,7 @@ OperatorHelper::genRight(isleft,expr)
 		type(FunCallExpr) : {
 
 			trtoken = expr.getType(this.ctx)
-			size = parser.typesize[int(trtoken)]
+			size = parser.typesize[trtoken]
 
 			ti = null
 			fc = expr
@@ -447,12 +447,12 @@ OperatorHelper::genRight(isleft,expr)
 			if ti != null && (ti.pointer || ti.memType()) {
 				this.initcond(isleft,8,ast.U64,true)
 			}else if ti != null && ti.baseType(){
-				size = parser.typesize[int(ti.base)]
+				size = parser.typesize[ti.base]
 				this.initcond(isleft,size,ti.base,false)
 			}else if isleft && ast.isfloattk(trtoken) {
 				this.initcond(isleft,size,trtoken,false)
 			}else if(!isleft && ast.isfloattk(this.ltoken)){
-				size = parser.typesize[int(this.ltoken)]
+				size = parser.typesize[this.ltoken]
 				this.initcond(isleft,size,this.ltoken,false)
 			}else{
 				this.initcond(isleft,size,trtoken,false)
@@ -475,7 +475,7 @@ OperatorHelper::genRight(isleft,expr)
 	{
 		v = ret
 		if ast.isfloattk(v.type)
-			this.initcond(isleft,parser.typesize[int(ast.I64)],v.type,false)
+			this.initcond(isleft,parser.typesize[ast.I64],v.type,false)
 		else if !v.structtype
 			this.initcond(isleft,8,ast.I64,false)
 		else
@@ -487,7 +487,7 @@ OperatorHelper::genRight(isleft,expr)
 		this.initcond(isleft,v.size,v.type,v.pointer)
 	}else if type(ret) == type(FunCallExpr) {
 		trtoken = ret.getType(this.ctx)
-		size = parser.typesize[int(trtoken)]
+		size = parser.typesize[trtoken]
 		ti = null
 		fc = ret
 		if std.len(fc.fcs.returnTypes) > 0 {
@@ -497,12 +497,12 @@ OperatorHelper::genRight(isleft,expr)
 		if ti != null && (ti.pointer || ti.memType()) {
 			this.initcond(isleft,8,ast.U64,true)
 		}else if ti != null && ti.baseType(){
-			size = parser.typesize[int(ti.base)]
+			size = parser.typesize[ti.base]
 			this.initcond(isleft,size,ti.base,false)
 		}else if isleft && ast.isfloattk(trtoken) {
 			this.initcond(isleft,size,trtoken,false)
 		}else if(!isleft && ast.isfloattk(this.ltoken)){
-			size = parser.typesize[int(this.ltoken)]
+			size = parser.typesize[this.ltoken]
 			this.initcond(isleft,size,this.ltoken,false)
 		}else{
 			this.initcond(isleft,size,trtoken,false)
@@ -685,7 +685,7 @@ OperatorHelper::staticCompile(expr)
 	match type(expr) {
 		type(BinaryExpr) | type(AssignExpr) : {
 			t = expr.getType(this.ctx)
-			size = parser.typesize[int(t)]
+			size = parser.typesize[t]
 			this.initcond(isleft,size,t,false)
 			return ret
 		}
@@ -697,7 +697,7 @@ OperatorHelper::staticCompile(expr)
 		type(FunCallExpr) : {
 
 			trtoken = expr.getType(this.ctx)
-			size = parser.typesize[int(trtoken)]
+			size = parser.typesize[trtoken]
 			ti = null
 			fc = expr
 			if std.len(fc.fcs.returnTypes) > 0 {
@@ -707,12 +707,12 @@ OperatorHelper::staticCompile(expr)
 			if ti != null && (ti.pointer || ti.memType()) {
 				this.initcond(isleft,8,ast.U64,true)
 			}else if ti != null && ti.baseType(){
-				size = parser.typesize[int(ti.base)]
+				size = parser.typesize[ti.base]
 				this.initcond(isleft,size,ti.base,false)
 			}else if isleft && ast.isfloattk(trtoken) {
 				this.initcond(isleft,size,trtoken,false)
 			}else if(!isleft && ast.isfloattk(this.ltoken)){
-				size = parser.typesize[int(this.ltoken)]
+				size = parser.typesize[this.ltoken]
 				this.initcond(isleft,size,this.ltoken,false)
 			}else{
 				this.initcond(isleft,size,trtoken,false)
@@ -733,7 +733,7 @@ OperatorHelper::staticCompile(expr)
 	{
 		v = ret
 		if ast.isfloattk(v.type)
-			this.initcond(isleft,parser.typesize[int(ast.I64)],v.type,false)
+			this.initcond(isleft,parser.typesize[ast.I64],v.type,false)
 		else if !v.structtype
 			this.initcond(isleft,8,ast.I64,false)
 		else
@@ -745,7 +745,7 @@ OperatorHelper::staticCompile(expr)
 		this.initcond(isleft,v.size,v.type,v.pointer)
 	}else if type(ret) == type(FunCallExpr) {
 		trtoken = expr.getType(this.ctx)
-		size = parser.typesize[int(trtoken)]
+		size = parser.typesize[trtoken]
 		ti = null
 		fc = ret
 		if std.len(fc.fcs.returnTypes) > 0 {
@@ -755,12 +755,12 @@ OperatorHelper::staticCompile(expr)
 		if ti != null && (ti.pointer || ti.memType()) {
 			this.initcond(isleft,8,ast.U64,true)
 		}else if ti != null && ti.baseType(){
-			size = parser.typesize[int(ti.base)]
+			size = parser.typesize[ti.base]
 			this.initcond(isleft,size,ti.base,false)
 		}else if isleft && ast.isfloattk(trtoken) {
 			this.initcond(isleft,size,trtoken,false)
 		}else if(!isleft && ast.isfloattk(this.ltoken)){
-			size = parser.typesize[int(this.ltoken)]
+			size = parser.typesize[this.ltoken]
 			this.initcond(isleft,size,this.ltoken,false)
 		}else{
 			this.initcond(isleft,size,trtoken,false)

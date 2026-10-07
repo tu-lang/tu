@@ -34,7 +34,7 @@ BuiltinFuncExpr::compile(ctx,load){
 			match ve.varname {
 				"i8" | "u8" | "i16" | "u16" | "i32" | "u32" |
 				"i64" | "u64" | "f32" | "f64" : {
-					tk = int(scanner.keywords[ve.varname])
+					tk = scanner.keywords[ve.varname]
 					compile.writeln("   mov $%d , %%rax", parser.typesize[tk])
 					return null
 				}
@@ -160,7 +160,7 @@ BuiltinFuncExpr::compile(ctx,load){
 	// %rax
 	ret = this.expr.compile(ctx,true)
 
-	tk<i32> = ast.I64
+	tk = ast.I64
 	if ret != null {
 		match type(ret){
 			type(VarExpr): {

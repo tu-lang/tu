@@ -82,7 +82,7 @@ FunCallExpr::DynPushStackArgs(prevCtxChain)
 		ret = arg.compile(prevCtxChain,true)
 
         if ret != null {
-			ty<i32> = ret.getType(prevCtxChain)
+			ty = ret.getType(prevCtxChain)
             if ast.isfloattk(ty)
                 compile.Pushf(ty)
             else

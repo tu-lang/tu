@@ -19,6 +19,7 @@ func init(){
         "bool":ast.Bool , "char": ast.Char, "array"  : ast.Array , "map"    : ast.Map,
         "function": ast.Func
     }
+    defaultfunc = new ast.Function()
 }
 func exprIsMtype(cond,ctx){
     ismtype = false

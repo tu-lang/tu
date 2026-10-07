@@ -8,10 +8,11 @@ use std
 use string
 use compiler.utils
 
-defaultfunc = new ast.Function()
+// Placeholder Function for dyn calls; built in init() after ast globals exist.
+defaultfunc = null
 
 // RFC110: true inside unsafe { }, unsafe-prefixed body, or export facade body.
-fn pkgmode_in_unsafe() {
+func pkgmode_in_unsafe() {
 	if compile.unsafe_depth > 0 return true
 	cur = compile.currentFunc
 	if cur == null return false
@@ -21,7 +22,7 @@ fn pkgmode_in_unsafe() {
 }
 
 // RFC110: cross-mode static call gate (StaticCall resolution path only).
-fn pkgmode_check_call(callee) {
+func pkgmode_check_call(callee) {
 	cur = compile.currentFunc
 	if cur == null || callee == null return
 	if cur.package == null || callee.package == null return
@@ -29,6 +30,9 @@ fn pkgmode_check_call(callee) {
 	if callee.name == "init" return
 	if utils.str_starts_with(callee.name, "init.") return
 	if utils.str_starts_with(callee.name, "initvars_") return
+	// Runtime async ABI injected by codegen; dyn state machines call it without source unsafe.
+	n = callee.name
+	if n == "futuredone" || n == "dynfuturenew" || n == "dynfuturenew2" || n == "get_future_poll" || n == "block" || n == "poll" return
 	from = cur.package
 	to = callee.package
 	if from == to {
@@ -83,7 +87,7 @@ ClosureExpr::compile(ctx,load){
 			ret = arg.compile(ctx,true)
             stack += 1
             if ret != null {
-				ty<i32> = ret.getType(ctx)
+				ty = ret.getType(ctx)
                 if ast.isfloattk(ty) 
                     compile.Pushf(ty)
                 else

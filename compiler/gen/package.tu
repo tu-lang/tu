@@ -4,7 +4,7 @@ use compiler.compile
 use compiler.utils
 use string
 
-fn genStruct(s)
+func genStruct(s)
 {
 	utils.debug("gen.package.Package::genStruct()")  
 	bits = 0
@@ -140,7 +140,7 @@ package.Package::defaultvarsinit(){
 	}
 }
 
-fn getGLobalFunc(pkgname ,name){
+func getGLobalFunc(pkgname ,name){
 	if pkgname == "" {
 		pkgname  = compile.currentFunc.parser.getpkgname()
 	}

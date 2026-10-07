@@ -15,23 +15,23 @@ class TypeInfo  {
     st      = null
     line    = line
     column  = column
-    fn init(line,column){}
-    fn setMemType() { this.type = 2}
-    fn baseType() { return this.type == 1}
-    fn memType() { return this.type == 2}
-    fn toString() { 
+    func init(line,column){}
+    func setMemType() { this.type = 2}
+    func baseType() { return this.type == 1}
+    func memType() { return this.type == 2}
+    func toString() { 
         if this.baseType() {
             return this.s + ast.getTokenString(this.base)
         }
         return this.s + this.pkg + "." + this.name
     }
-    fn dstCastType() {
+    func dstCastType() {
         if this.memType() return ast.I64
         if this.pointer return ast.I64
         return this.base
     }
     // getType/Cast ABI width: pointer|mem → U64, else base
-    fn abiToken() {
+    func abiToken() {
         if this.pointer return ast.U64
         if this.memType() return ast.U64
         return this.base
@@ -81,8 +81,8 @@ class StackPosExpr : ast.Ast {
     isdyn = false
     dstType = ast.ILLEGAL_END
     st      = null
-    fn init(line,column){ super.init(line,column) }
-    fn toString(){return "StackPosExpr"}
+    func init(line,column){ super.init(line,column) }
+    func toString(){return "StackPosExpr"}
 }
 
 StackPosExpr::compile(ctx , load){
@@ -265,14 +265,17 @@ class FloatExpr  : ast.Ast {
     func toString() {
         return "FloatExpr(" + this.lit + ")"
     }
-    fn tof32(){
-        nv<u64> = *this.lit
-        nvp<f64*> = &nv
-        ori<f64> = *nvp
-        ori32<f32> = ori
-        nv32p<i64*> = &ori32
-        nv32<i64> = *nv32p
-        return int(nv32)
+    // Narrows the f64 literal bits to f32 bits (low 32 bits significant).
+    func tof32(){
+        unsafe {
+            nv<u64> = *this.lit
+            nvp<f64*> = &nv
+            ori<f64> = *nvp
+            ori32<f32> = ori
+            nv32p<i64*> = &ori32
+            nv32<i64> = *nv32p
+            return int(nv32)
+        }
     }
 }
 class StringExpr  : ast.Ast { 
@@ -318,10 +321,10 @@ class StringExpr  : ast.Ast {
 
 class AsmExpr : ast.Ast {
     label = label
-    fn init(label,line,column){
+    func init(label,line,column){
         super.init(line,column)
     }
-    fn toString(){
+    func toString(){
         return this.label
     }
 }

@@ -397,7 +397,7 @@ class MultiAssignStmt : ast.Ast {
     ls = []
     rs = []
     opt
-    fn init(line,column){
+    func init(line,column){
         super.init(line,column)
     }
 }

@@ -34,7 +34,7 @@ VarExpr::expr_compile(){
 	return string.tonumber(realvar.ivalue)
 }
 
-fn toBinExpr(expr){
+func toBinExpr(expr){
 	be = new BinaryExpr(expr.line,expr.column)
     be.lhs = expr
     be.opt = ast.GT

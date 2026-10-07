@@ -3,13 +3,13 @@ use compiler.utils
 use std
 
 // TypeInfo ABI token for getType/Cast: delegate to TypeInfo.abiToken.
-fn typeInfoAbiToken(ti) {
+func typeInfoAbiToken(ti) {
 	if ti == null return ast.U64
 	return ti.abiToken()
 }
 
 // Type assert surface in getType: reuse ABI token (incl. .(i8*)).
-fn typeAssertGetType(ta) {
+func typeAssertGetType(ta) {
 	return typeInfoAbiToken(ta)
 }
 
@@ -61,6 +61,8 @@ VarExpr::getType(ctx){
 	if this.tyassert != null return typeAssertGetType(this.tyassert)
 	this.getVarType(ctx,this)
 	if this.ret.pointer return ast.U64
+	// Untyped (dynamic) vars carry no native token: report ILLEGAL (0), never null.
+	if this.ret.type == null return ast.ILLEGAL
 
 	return this.ret.type
 }
