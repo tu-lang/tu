@@ -869,6 +869,76 @@ fn test_class_fut_binop_await(){
     fmt.println("test class fut binop await success")
 }
 
+// Chain calls returning multiple values inside async bodies: the receiver
+// slot lives in the future and must survive suspension points.
+class ChainPair {
+    tag = 0
+    func init(t){ this.tag = t }
+    func who(){ return this.tag, this.tag * 2 }
+    func addpair(x){ return x + this.tag, x }
+}
+class ChainHolder {
+    cur
+    tcase
+    func init(){
+        this.cur = new ChainPair(6)
+        this.tcase = new TestCase(1,10,20,30)
+    }
+}
+async TestCase::chain_who_suspend(){
+    h = new ChainHolder()
+    a, b = h.cur.who()
+    fut<PollFuture> = new PollFuture{}
+    count<i32> = fut.await
+    c, d = h.cur.who()
+    // 6 + 12 + 6 + 12 + 2
+    return a + b + c + d + int(count)
+}
+async chain_who_noawait(){
+    h = new ChainHolder()
+    a, b = h.cur.who()
+    return a + b
+}
+// The chained call itself targets an async method and yields a future.
+func chain_async_callee(){
+    h = new ChainHolder()
+    r1 = runtime.block(h.tcase.work_seven())
+    r2 = runtime.block(h.tcase.work_add())
+    return r1 + r2
+}
+// An awaited value feeds the arguments of a chained multi-return call,
+// and the same chain is called again after the next suspension point.
+async chain_await_in_args(){
+    h = new ChainHolder()
+    j = new TestCase(1,10,20,30)
+    v = j.work_seven().await
+    a, b = h.cur.addpair(v)
+    v2 = j.work_seven().await
+    c, d = h.cur.addpair(v2 - 7)
+    // c == 6, d == 0
+    return a * 100 + b + c * 10000 + d
+}
+fn test_chain_multiret_async(){
+    fmt.println("test chain multiret async")
+    r = runtime.block(case1.chain_who_suspend())
+    if r != 38 {
+        os.dief("chain who across await want 38 got %d", r)
+    }
+    r2 = runtime.block(chain_who_noawait())
+    if r2 != 18 {
+        os.dief("chain who in async no await want 18 got %d", r2)
+    }
+    r3 = chain_async_callee()
+    if r3 != 37 {
+        os.dief("chain async callee want 37 got %d", r3)
+    }
+    r4 = runtime.block(chain_await_in_args())
+    if r4 != 61307 {
+        os.dief("chain await in args want 61307 got %d", r4)
+    }
+    fmt.println("test chain multiret async success")
+}
+
 fn main(){
     fmt.println("test async class func member")
     test_case1()
@@ -884,5 +954,6 @@ fn main(){
     test_class_fut_str_await()
     test_class_fut_binop_await()
     test_dyn_cross_ready_leaf()
+    test_chain_multiret_async()
     fmt.println("test async dyn class func member success")
 }

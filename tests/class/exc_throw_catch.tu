@@ -94,6 +94,28 @@ class Worker {
 	func bubbleToCaller(){
 		throw new exception.Exception("bubble")
 	}
+
+	func pairTag(){ return this.tag, this.tag + 10 }
+
+	// Chained multi-return in the body and in a defer thunk (enclosing frame).
+	func deferChainInner(h){
+		defer {
+			a, b = h.cur.pairTag()
+			g_chain = g_chain + a + b
+		}
+		a, b = h.cur.pairTag()
+		g_chain = g_chain + a * 100 + b * 100
+	}
+}
+
+g_chain = 0
+
+class WorkerHolder {
+	cur
+	func init(){
+		this.cur = new Worker()
+		this.cur.tag = 2
+	}
 }
 
 func test_method_throw_caught_by_caller(){
@@ -185,7 +207,38 @@ func test_new_in_throw(){
 	fmt.println("test_new_in_throw passed")
 }
 
+func test_chain_multiret_in_exc(){
+	fmt.println("test_chain_multiret_in_exc")
+	h = new WorkerHolder()
+	g_chain = 0
+	w = new Worker()
+	w.deferChainInner(h)
+	// body 200 + 1200, defer 2 + 12
+	if g_chain != 1414 {
+		os.dief("chain multiret in defer want 1414 got %d", g_chain)
+	}
+	hit = 0
+	try {
+		a, b = h.cur.pairTag()
+		if a != 2 || b != 12 {
+			os.die("chain multiret in try")
+		}
+		h.cur.throwUp()
+	} catch (e) {
+		c, d = h.cur.pairTag()
+		hit = hit + c + d
+	} finally {
+		e1, e2 = h.cur.pairTag()
+		hit = hit + e1 * 100 + e2 * 1000
+	}
+	if hit != 12214 {
+		os.dief("chain multiret in catch/finally want 12214 got %d", hit)
+	}
+	fmt.println("test_chain_multiret_in_exc passed")
+}
+
 func main(){
+	test_chain_multiret_in_exc()
 	test_method_throw_caught_by_caller()
 	test_method_catch_inside()
 	test_method_defer()
