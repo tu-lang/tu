@@ -151,7 +151,7 @@ Gc::gc0(){
 		}
 	}
 	this.markinit()
-    now<u64> = std.ntime()
+    now<u64> = std.ntime_ns()
 	this.finishsweep()
 	this.cycles += 1
 	this.startcycle()
