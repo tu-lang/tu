@@ -10,7 +10,7 @@ func test_runtimemalloc()
 	//用个数组存起来
 	arr<i64*> = runtime.malloc(count * 8,0.(i8),1.(i8)) //每个元素为指针
 	for(i<i64> = 0 ; i < count ; i += 1){
-		size<i32> = std.srand(maxsize)//每次分配的内存随机大小
+		size<i32> = std.srand_max(maxsize)
 		if size == 0 || size < 8 {
 			size = 8
 		}
@@ -38,7 +38,7 @@ func test_stdmalloc(){
 	//用个数组存起来
 	arr<i64*> = std.malloc(count * 8,0.(i8),1.(i8)) //每个元素为指针
 	for(i<i64> = 0 ; i < count ; i += 1){
-		size<i32> = std.srand(maxsize)//每次分配的内存随机大小
+		size<i32> = std.srand_max(maxsize)
 		if size == 0 || size < 8 {
 			size = 8
 		}

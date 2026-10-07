@@ -1,0 +1,3 @@
+package {
+    mode mixed
+}
