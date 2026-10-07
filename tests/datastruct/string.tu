@@ -77,6 +77,99 @@ fn test_string_bits_bridge(){
     fmt.println("test string bits bridge success")
 }
 
+// string.Cursor static core: runs, blanks/lines, rollback, quoted errors.
+fn test_cursor_static(){
+    fmt.println("test string cursor static")
+    e<string.Cursor> = string.cursor_from_string("")
+    if e.peek() != -1 os.die("empty cursor peek should be EOF")
+    if e.next() != -1 os.die("empty cursor next should be EOF")
+
+    c<string.Cursor> = string.cursor_from_string("ab_1 0x1F\n  3.5 \"q\\\"x\" tail")
+    id = c.take_run(string.CURSOR_IDENT)
+    if id != "ab_1" os.die("ident run mismatch")
+    ch<i32> = c.skip_space()
+    if ch != '0' os.die("skip_space should stop at 0")
+    lead = c.take_run(string.CURSOR_DIGIT)
+    hex = c.take_run(string.CURSOR_ALNUM)
+    if lead + hex != "0x1F" os.die("hex runs mismatch")
+    if c.line != 1 os.die("line should still be 1")
+    ch = c.skip_space()
+    if c.line != 2 os.die("newline should bump line")
+    if c.column != 2 os.die("column should count bytes after newline")
+    save<i32> = c.pos
+    ip = c.take_run(string.CURSOR_DIGIT)
+    if c.next() != '.' os.die("expected dot")
+    frac = c.take_run(string.CURSOR_DIGIT)
+    if ip + "." + frac != "3.5" os.die("float runs mismatch")
+    c.pos = save
+    again = c.take_run(string.CURSOR_DIGIT)
+    if again != "3" os.die("rollback via pos failed")
+    c.next()
+    c.take_run(string.CURSOR_DIGIT)
+    c.skip_space()
+    if c.next() != '"' os.die("expected opening quote")
+    qerr<i32>, qbody<u64> = c.take_quoted('"')
+    if qerr != 0 os.die("terminated quote should succeed")
+    if c.peek() != ' ' os.die("closing quote should be consumed")
+    if c.slice(save, save + 3) != "3.5" os.die("slice mismatch")
+
+    u<string.Cursor> = string.cursor_from_string("\"abc\\")
+    u.next()
+    uerr<i32>, ubody<u64> = u.take_quoted('"')
+    if uerr != 1 os.die("unterminated quote should fail")
+    fmt.println("test string cursor static success")
+}
+
+// string.cursor_text / CursorObj: same lexing surface without mem annotations.
+func test_cursor_dyn(){
+    fmt.println("test string cursor dyn")
+    e = string.cursor_text("")
+    if e.next() != -1 os.die("dyn empty cursor should be EOF")
+    if e.size() != 0 os.die("dyn empty size")
+
+    c = string.cursor_text("ab_1 0x1F\n  3.5 \"q\\\"x\" // note\nz")
+    if c.peek() != 'a' os.die("dyn peek")
+    if c.peekAt(1) != 'b' os.die("dyn peekAt")
+    if c.ident() != "ab_1" os.die("dyn ident")
+    if c.skipSpace() != '0' os.die("dyn skipSpace")
+    hex = c.digits() + c.alnum()
+    if hex != "0x1F" os.die("dyn hex")
+    c.skipSpace()
+    if c.line() != 2 os.die("dyn line")
+    if c.column() != 2 os.die("dyn column")
+    save = c.pos()
+    num = c.digits()
+    num += c.next()
+    num += c.digits()
+    if num != "3.5" os.die("dyn float")
+    c.setPos(save)
+    if c.digits() != "3" os.die("dyn rollback")
+    c.setPos(save + 3)
+    c.skipSpace()
+    if c.next() != '"' os.die("dyn opening quote")
+    err, body = c.quoted('"')
+    if err != 0 os.die("dyn quoted err")
+    if body != "q\\\"x" os.die("dyn quoted body keeps escapes")
+    c.skipSpace()
+    c.skipLine()
+    if c.peek() != '\n' os.die("dyn skipLine stops before newline")
+    if c.skipSpace() != 'z' os.die("dyn after comment")
+    c.next()
+    if c.next() != -1 os.die("dyn EOF")
+    if c.slice(0, 4) != "ab_1" os.die("dyn slice")
+
+    u = string.cursor_text("\"abc")
+    u.next()
+    uerr, ubody = u.quoted('"')
+    if uerr != 1 os.die("dyn unterminated quote")
+    if ubody != "abc" os.die("dyn partial body")
+
+    ferr, f = string.cursor_open_file("no/such/cursor_file.tu")
+    if ferr != 1 os.die("missing file should fail")
+    if f != null os.die("missing file cursor should be null")
+    fmt.println("test string cursor dyn success")
+}
+
 //native memory operte
 func main(){
     test_string()
@@ -84,4 +177,6 @@ func main(){
     test_index()
     test_nativeop()
     test_string_bits_bridge()
+    test_cursor_static()
+    test_cursor_dyn()
 }
