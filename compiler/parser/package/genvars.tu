@@ -17,6 +17,8 @@ Package::InsertInitVarExpression(expr){
         p.addFunc(f.name,f) 
     }
     f.InsertExpression(expr)
+    // Caller registers hidden chain receiver slots into this function.
+    return f
 }
 
 Package::genvarsinit(){

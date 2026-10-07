@@ -203,6 +203,7 @@ class MemberCallExpr : ast.Ast {
 	call      // funcallexpr
     obj = null
     staticCall = null
+    recv = null // hidden local VarExpr holding the dynamic chain receiver
 	func init(line,column){
 		super.init(line,column)
 	}
@@ -364,25 +365,25 @@ MemberCallExpr::compile(ctx,load)
         if s.isapi return this.api_static_compile(ctx, s, null, load)
         return this.static_compile(ctx,s,load)
     }
+    // Dynamic chain call: the receiver is in %rax and objgen's pushed copy
+    // stays on stack for the method lookup. Park %rax in the hidden frame
+    // slot (as arg0) so the stack shape matches a plain obj.method() call;
+    // multi-return blocks then stay at the top of stack.
+    this.check(this.recv != null && GF().locals[this.recv.varname] != null,
+        "dynamic chain member call without hidden receiver slot: " + this.membername)
     compile.Push()
-	params = this.call.args
-    
-	pos = new ArgsPosExpr(0,this.line,this.column)
-    pos.pos = std.len(params) + 1 + 1
-    //push obj
-    //push $arg6
-    //push $arg5
-    //push $arg4
-    //push $arg3
-    //push $arg2
+    compile.GenAddr(this.recv)
+    compile.writeln("    mov %%rax, %%rdi")
+    compile.Pop("%rax")
+    compile.writeln("    mov %%rax, (%%rdi)")
+
 	call = this.call
-	call.args = [pos]
+	params = call.args
+	call.args = [this.recv]
 	std.merge(call.args , params)
 
     call.funcname = this.membername
     call.compile2(ctx,load, ast.MemberCall,null)
-    compile.writeln("    add $8, %%rsp")
-    
     return call
 }
 

@@ -55,7 +55,11 @@ Parser::parseClassDef()
             reader.scan()
         }
         if reader.curToken == ast.VAR{
+            this.pendingRecv = []
             member = this.parseExpression(1)
+            // Chain receiver slots in the default value land in class init.
+            std.merge(s.initrecvs,this.pendingRecv)
+            this.pendingRecv = []
             if type(member) == type(gen.VarExpr) {
                 // s.members[] = member
                 se = new gen.AssignExpr(this.line,this.column)

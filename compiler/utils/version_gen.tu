@@ -3,7 +3,7 @@
 
 use fmt
 
-TU_TOOL_VERSION = "1.2.48"
+TU_TOOL_VERSION = "1.2.49"
 
 func tool_version() {
 	return TU_TOOL_VERSION
@@ -15,7 +15,7 @@ func print_version_report(target_os) {
 	fmt.printf("Target         : x86_64 %s\n", target_os)
 	fmt.printf("\n")
 	fmt.printf("Toolchain\n")
-	fmt.printf("  compiler    : %s\n", "1.2.27")
+	fmt.printf("  compiler    : %s\n", "1.2.28")
 	fmt.printf("  asmer       : %s\n", "1.2.18")
 	fmt.printf("  linker      : %s\n", "1.2.11")
 	fmt.printf("Runtime       : %s\n", "1.2.8")

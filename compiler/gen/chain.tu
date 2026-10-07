@@ -94,6 +94,9 @@ ChainExpr::objgen(ctx,load)
 			if type(expr) == type(FunCallExpr){
 				fc = expr
 				return fc.compile2(ctx,load,ast.ChainCall,null)
+			}else if type(expr) == type(MemberCallExpr){
+				// Forward load: multi-assign (load=false) keeps the return block.
+				return expr.compile(ctx, load)
 			}else
 				return expr.compile(ctx, true)
 		}else{

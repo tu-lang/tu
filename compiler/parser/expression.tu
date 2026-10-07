@@ -78,6 +78,7 @@ Parser::parseChainExpr(first){
                         mc.obj   = var
                         chainExpr.fields[0] = mc
                     }else{
+                        if ta == null this.bindChainRecv(mc)
                         chainExpr.fields[] = mc
                     }
                 }else{

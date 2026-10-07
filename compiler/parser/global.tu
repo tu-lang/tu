@@ -236,6 +236,7 @@ Parser::parseGlobalAssign(is_const_var)
 {
     utils.debug("parser.Parser::parseGlobalAssign()")
     needinit = true
+    this.pendingRecv = []
     expr = this.parseExpression(1)
     if expr == null this.panic("parseGlobalAssign wrong")
 
@@ -323,9 +324,13 @@ Parser::parseGlobalAssign(is_const_var)
     this.gvars[var.varname] = var
     var.is_local = false 
     var.package  = this.pkg.full_package
-    if !needinit return false
+    if !needinit {
+        this.flushChainRecv(null)
+        return false
+    }
 
-    this.pkg.InsertInitVarExpression(assign)
+    initvars = this.pkg.InsertInitVarExpression(assign)
+    this.flushChainRecv(initvars)
 } 
 
 Parser::parseCfg(){

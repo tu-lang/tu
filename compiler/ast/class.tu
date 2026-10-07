@@ -9,6 +9,7 @@ class Class
 	name
 	members     = [] // [Expression]
 	initmembers = [] // [Expression]
+	initrecvs   = [] // [VarExpr] hidden chain receiver slots used by initmembers
 	membervars  = [] // use by gen
 	funcs       = [] // [Function] 
 
@@ -75,6 +76,11 @@ Class::initClassInitFunc() {
     }
 	
     f.block.InsertExpressionsHead(this.initmembers)
+    for var : this.initrecvs {
+        if f.locals[var.varname] == null {
+            f.InsertLocalVar(-1,var)
+        }
+    }
 
     return true
 } 

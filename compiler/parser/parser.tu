@@ -28,6 +28,9 @@ func init(){
 
 EOF = -1 //FXIME: EOF
 count = 1 
+// Global sequence for hidden chain receiver slots; unique across closures
+// and parse passes so captured/outer names never collide.
+chainRecvSeq = 0
 
 class Parser {
     ctx 
@@ -48,6 +51,9 @@ class Parser {
 
     pkg         = pkg   // Package*
     currentFunc = null
+    // Hidden chain receiver slots parsed outside any function (global init /
+    // class member defaults); flushed to the hosting init function later.
+    pendingRecv = []
     filename   
     filenameid  = ""
     asmfile
@@ -407,6 +413,33 @@ Parser::newvar(var){
             }
         }
     }
+}
+
+// Binds a hidden local slot to an anonymous dynamic chain member call so the
+// receiver lives in the frame instead of above the multi-return area.
+// The name contains '.', so user code can never refer to it.
+Parser::bindChainRecv(mc){
+    varname = "chain.recv."
+    varname += chainRecvSeq
+    chainRecvSeq += 1
+    var = new gen.VarExpr(varname,mc.line,mc.column)
+    var.size = 8
+    mc.recv = var
+    if this.currentFunc != null {
+        this.currentFunc.InsertLocalVar(-1,var)
+    }else{
+        this.pendingRecv[] = var
+    }
+}
+
+// Registers pending out-of-function slots into host (null drops them).
+Parser::flushChainRecv(host){
+    if host != null {
+        for var : this.pendingRecv {
+            host.InsertLocalVar(-1,var)
+        }
+    }
+    this.pendingRecv = []
 }
 
 Parser::add_string(str){
