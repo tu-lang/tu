@@ -66,20 +66,21 @@ casts = [
 	[f32i8, f32i16, f32i32, f32i64, f32u8, f32u16, f32u32, f32u64, null,   f32f64], // f32
 	[f64i8, f64i16, f64i32, f64i64, f64u8, f64u16, f64u32, f64u64, f64f32, null],   // f64
 ]
-types = {
-	int(ast.I8) : 0 , int(ast.I16) : 1 , int(ast.I32) : 2 , int(ast.I64) : 3,
-	int(ast.U8) : 4 , int(ast.U16) : 5 , int(ast.U32) : 6 , int(ast.U64) : 7,
-	int(ast.F32): 8 , int(ast.F64) : 9
-}
+// Native type token -> casts row/column; filled in init() (ast tokens are dyn globals).
+types = {}
 
+func init(){
+	types = {
+		ast.I8 : 0 , ast.I16 : 1 , ast.I32 : 2 , ast.I64 : 3,
+		ast.U8 : 4 , ast.U16 : 5 , ast.U32 : 6 , ast.U64 : 7,
+		ast.F32: 8 , ast.F64 : 9
+	}
+}
 
 // Dyn signature; no whole-func unsafe — typed locals only if needed via unsafe{}.
 func Cast(from, to) {
-	ff = int(from)
-	tt = int(to)
-	f = types[ff]
-	t = types[tt]
-	utils.debugf("compile.Cast ff:%d tt:%d f:%d t:%d",ff,tt,f,t)
+	f = types[from]
+	t = types[to]
 	// if f == null || t == null {
 		// utils.errorf("compile.Cast() f:%d or t:%d is null",int(from),int(to))
 	// }

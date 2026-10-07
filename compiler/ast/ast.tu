@@ -51,15 +51,18 @@ Ast::panic(err){
         err,this.line,this.column,cfunc.parser.filepath
     )
 }
-Ast::check( check<runtime.Value> , err<i8*>)
+Ast::check(check, err)
 {
-    //static
-    if check == 1 return  null
-    if check == 0 goto astcheck_panic 
-    //dyn
-    c = check
-    if c return null
-astcheck_panic:
+    // A raw 1/0 comes from a static compare inside unsafe code; anything else
+    // is a dyn value tested for truthiness.
+    native = 2
+    unsafe {
+        cv<u64> = check
+        if cv == 1 native = 1
+        if cv == 0 native = 0
+    }
+    if native == 1 return null
+    if native == 2 && check return null
 
     if err != null {
         fmt.printf("AsmError:%s \n" + 
@@ -69,7 +72,7 @@ astcheck_panic:
     }else{
         fmt.printf("AsmError:\n" +
                 "line:%d column:%d file:%s\n\n" +
-                "expression:\n%s\n",this.line,this.column,GP().parser.filepath,this.toString()
+                "expression:\n%s\n",this.line,this.column,GP().filepath,this.toString()
         )
     }
     os.die("check failed")
@@ -173,14 +176,14 @@ func getTokenString(tk) {
     }
 }
 
-func type_isunsigned(ty<i64>){
+func type_isunsigned(ty){
     match ty {
         U8 | U16 | U32 | U64 | F32 | F64 : return true
         _ : return false
     }
 }
 
-fn isFuncRetType(tk<i64>){
+func isFuncRetType(tk){
     if tk >= I8 && tk <= F64
         return true
     if tk == VAR
