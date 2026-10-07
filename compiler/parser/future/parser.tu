@@ -100,7 +100,7 @@ AsyncBlock::compile(){
     for (case1 : this.childs){
         total[] = case1
     }
-    total = utils.quick_sort(total,fn(a,b){
+    total = utils.quick_sort(total,func(a,b){
         return a.id < b.id
     })
 

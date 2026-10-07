@@ -29,7 +29,7 @@ class AsyncBlock {
     queue     = []
     childs    = []
     stmts     = []
-    fn init(fc,root){
+    func init(fc,root){
         this.root = root
         this.fc   = fc
         if root == null {
@@ -43,10 +43,10 @@ class AsyncBlock {
         case1.id = this.genstateid()
         this.queue[] = case1
     }
-    fn gstatevar(){return this.root.state}
-    fn gpollvar(){return this.root.pollstate}
+    func gstatevar(){return this.root.state}
+    func gpollvar(){return this.root.pollstate}
 
-    fn gencasevar(){
+    func gencasevar(){
         pollvarname = "fut.c." + this.topid()
         casevar = new gen.VarExpr(pollvarname,0,0)
         casevar.structtype = true
@@ -55,7 +55,7 @@ class AsyncBlock {
         this.fc.InsertLocalVar(-1,casevar)
         return casevar
     }
-    fn genretvar(isstatic){
+    func genretvar(isstatic){
         retvarname = "fut.r." + this.topid()
         retvar = new gen.VarExpr(retvarname,0,0)
         retvar.size = 8
@@ -68,7 +68,7 @@ class AsyncBlock {
     }
     // mem:async leaf await value slot: static type from poll value return.
     // Dynamic slots store raw i8 as fake Value* → binary_operator SEGV.
-    fn genretvarForLeaf(s){
+    func genretvarForLeaf(s){
         retvarname = "fut.r." + this.topid()
         retvar = new gen.VarExpr(retvarname,0,0)
         if s == null || !s.isasync || this.isRuntimeFutureStruct(s) ||
@@ -128,7 +128,7 @@ class AsyncBlock {
         this.fc.InsertLocalVar(-1,retvar)
         return retvar
     }
-    fn leafAwaitValueDynamic(s){
+    func leafAwaitValueDynamic(s){
         if s == null || !s.isasync return true
         if this.isRuntimeFutureStruct(s) return true
         poll = s.getPoll()
@@ -148,12 +148,12 @@ class AsyncBlock {
         }
         return poll.async_value_dynamic
     }
-    fn genstateid(){
+    func genstateid(){
         stateid = this.root.stateid
         this.root.stateid += 1
         return stateid
     }
-    fn get_label_id(){
+    func get_label_id(){
         ret = ""
         ret += this.topid()
         ret += "_"
@@ -161,22 +161,22 @@ class AsyncBlock {
         this.labelid += 1
         return ret
     }
-    fn gen_continue_label(){
+    func gen_continue_label(){
         return  this.root.fc.fullname() + "_asyncconti_" + this.get_label_id()
     }
-    fn gen_end_label(){
+    func gen_end_label(){
         return this.root.fc.fullname() + "_asyncend_" + this.get_label_id()
     }
-    fn gen_start_label(){
+    func gen_start_label(){
         return this.root.fc.fullname()+ "_asyncstart_" + this.get_label_id()
     }
-    fn create(){
+    func create(){
         case1 = new gen.MatchCaseExpr(0,0)
         case1.id = this.genstateid()
 
         this.queue[] = case1
     }
-    fn merge(o){
+    func merge(o){
         for  b : o.queue {
             this.childs[] = b
         }
@@ -184,7 +184,7 @@ class AsyncBlock {
             this.childs[] = b
         }
     }
-    fn createend(){
+    func createend(){
         case1 = new gen.MatchCaseExpr(0,0)
         case1.id = -1
 
@@ -196,18 +196,18 @@ class AsyncBlock {
         case1.blocks[] = fc
         this.queue[]   = case1
     }
-    fn topid(){
+    func topid(){
         return std.tail(this.queue).id
     }
-    fn push(stmt){
+    func push(stmt){
         case1 = std.tail(this.queue)
         case1.blocks[] = stmt
     }
-    fn pushi(i , stmt){
+    func pushi(i , stmt){
         case1 = this.queue[i]
         case1.blocks[] = stmt
     }
-    fn pushendstate(endlabel){
+    func pushendstate(endlabel){
         last = std.tail(this.queue)
         last.blocks[] = new gen.GotoStmt(endlabel,0,0)
     }

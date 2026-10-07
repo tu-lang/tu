@@ -54,7 +54,7 @@ Package::init(name , path , multi) {
 
 }
 
-fn pkg_dir_has_tu(dir) {
+func pkg_dir_has_tu(dir) {
     names = utils.list_dir_basenames(dir)
     for name : names {
         nlen = std.len(name)
@@ -70,7 +70,7 @@ fn pkg_dir_has_tu(dir) {
 // file, not the host one: Darwin cwd with both files + --target=linux parses
 // linux.tu (Palloc). Repo runtime/ is Unix-only; without the host-file check
 // Darwin default would compile linux-only host_os.
-fn cwd_pkg_usable(dir, pkg_path) {
+func cwd_pkg_usable(dir, pkg_path) {
     if !std.is_dir(dir) {
         return false
     }
@@ -84,17 +84,17 @@ fn cwd_pkg_usable(dir, pkg_path) {
 }
 
 // RFC110 migration: no tu.mod => Mixed (no checks). static/dyn only via explicit manifest.
-fn pkgmode_engine_default(pkgpath) {
+func pkgmode_engine_default(pkgpath) {
     return parser.PkgModeMixed
 }
 
-fn pkgmode_push_tok(toks, cur) {
+func pkgmode_push_tok(toks, cur) {
     if cur != "" && cur != null {
         toks[] = cur
     }
 }
 
-fn pkgmode_next_tok(toks, idx) {
+func pkgmode_next_tok(toks, idx) {
     if idx >= std.len(toks) {
         ast.parse_err("pkgmode: manifest truncated, expect %s\n", "token")
     }
@@ -103,7 +103,7 @@ fn pkgmode_next_tok(toks, idx) {
 }
 
 // RFC110: parse tu.mod manifest; migration accepts mixed; final state dyn|static only (Step5).
-fn parseTuMod(file) {
+func parseTuMod(file) {
     if !std.is_file(file) {
         ast.parse_err("pkgmode: cannot open manifest %s\n", file)
     }
@@ -251,8 +251,7 @@ Package::parse()
             }
             filepath = abpath
             last = filepath[std.len(filepath) - 1]
-            bs = utils.char1(92.(i8))
-            if last != '/' && last != bs {
+            if last != '/' && last != '\\' {
                 filepath = filepath + "/"
             }
             filepath = utils.norm_slash(filepath + name)
@@ -274,10 +273,10 @@ Package::parse()
         utils.debugf("Parser: pkgfs could not resolve :%s",this.path)
         return false
     }
-    err<i32> = utils.pkgfs_list_package_tu(this.path)
+    err = utils.pkgfs_list_package_tu(this.path)
     names = utils.pkgfs_take_list_cache()
     if err != 0 || std.len(names) <= 0 {
-        utils.error(fmt.sprintf("pkgfs: no .tu in stdlib package %s mode=%d", this.path, int(utils.pkgfs_mode)))
+        utils.error(fmt.sprintf("pkgfs: no .tu in stdlib package %s mode=%d", this.path, utils.pkgfs_mode))
     }
     mode_root = utils.pkgfs_mode_root(this.path)
     if mode_root == "" {
@@ -287,17 +286,9 @@ Package::parse()
     utils.notice("start scan pkgfs package:%s dir:%s",this.path,std_dir)
     for name : names {
         scan_path = utils.pkgfs_scan_filepath(std_dir, name)
-        disk_path = ""
-        if utils.pkgfs_mode == utils.PKGFS_MODE_EMBED {
-            disk_path = utils.pkgfs_materialize_embed(std_dir, this.path, name)
-            if disk_path == "" {
-                utils.error("pkgfs: materialize failed " + scan_path)
-            }
-        } else {
-            disk_path = utils.pkgfs_disk_source_path(std_dir, this.path, name)
-            if !std.is_file(disk_path) {
-                utils.error("pkgfs: missing " + disk_path)
-            }
+        disk_path = utils.pkgfs_disk_source_path(std_dir, this.path, name)
+        if !std.is_file(disk_path) {
+            utils.error("pkgfs: missing " + disk_path)
         }
         p = new parser.Parser(disk_path, this)
         p.fileno = compile.fileno

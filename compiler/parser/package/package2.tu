@@ -28,7 +28,7 @@ Package::parse2()
 Package::parse3()
 {
     for(p : this.parsers){
-		reader<scanner.ScannerStatic> = p.scanner
+		reader = p.scanner
         reader.reset()
 
         compile.currentParser = p

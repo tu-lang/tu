@@ -32,7 +32,7 @@ func getStruct(packagename,name) {
     return pkg.getStruct(name)
 }
 
-fn getClass(package,name)
+func getClass(package,name)
 {    
     pkgname = package
     if GP().pkg != null && GP().pkg.imports[package] != null {
@@ -51,7 +51,7 @@ fn getClass(package,name)
 }
 
 // Resolve catch type in current package then imported packages.
-fn resolveCatchClass(name) {
+func resolveCatchClass(name) {
 	cls = getClass("", name)
 	if cls != null {
 		return cls
