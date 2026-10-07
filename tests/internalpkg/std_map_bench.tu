@@ -35,7 +35,7 @@ func string_insert(temp<map.RbtreeNode>, node<map.RbtreeNode>,sentinel<map.Rbtre
 }
 func bench1(){
 	fmt.println("test bench1")
-    start<i64> = std.ntime()
+    start<i64> = std.ntime_ns()
     for i<i32> = 0 ; i < 1000000 ; i += 1  {
         s<string.Str> = string.stringfmt(*"str-%d",i)
         node<map.RbtreeNode> = new map.RbtreeNode {
@@ -44,7 +44,7 @@ func bench1(){
         }
         strings.insert(node)
     }
-    end<i64> = std.ntime()
+    end<i64> = std.ntime_ns()
     lat<i64> = end - start
     lat /= 1000000 // ms
 	if lat > 10000 {
@@ -63,6 +63,6 @@ func bench1(){
     return true
 }
 func main(){
-	strings = map.map_create(string_insert.(i64))
+	strings = map.map_create(string_insert.(u64))
     bench1()
 }
