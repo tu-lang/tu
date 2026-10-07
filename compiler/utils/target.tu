@@ -3,12 +3,12 @@
 use std
 use runtime
 
-TARGET_LINUX<i32>   = 0
-TARGET_DARWIN<i32>  = 1
-TARGET_WINDOWS<i32> = 2
+TARGET_LINUX   = 0
+TARGET_DARWIN  = 1
+TARGET_WINDOWS = 2
 
 // Parse "linux" / "darwin" / "windows" (plus aliases). Unknown → -1.
-fn target_parse(name) i32 {
+func target_parse(name) {
     if name == "linux" {
         return TARGET_LINUX
     }
@@ -22,7 +22,7 @@ fn target_parse(name) i32 {
 }
 
 // Stable short name for -v and logs.
-fn target_name(t<i32>) {
+func target_name(t) {
     if t == TARGET_DARWIN {
         return "darwin"
     }
@@ -35,26 +35,28 @@ fn target_name(t<i32>) {
 // TU_TARGET / CO_TARGET env, then runtime.host_os().
 // Use env_get (os.envs scan) — do not rely on package init() filling `envs`
 // before the first call (cross-package init order is not guaranteed).
-fn target_default() i32 {
+func target_default() {
     v = env_get("TU_TARGET")
     if v != "" {
-        t<i32> = target_parse(v)
+        t = target_parse(v)
         if t >= 0 {
             return t
         }
     }
     v = env_get("CO_TARGET")
     if v != "" {
-        t<i32> = target_parse(v)
+        t = target_parse(v)
         if t >= 0 {
             return t
         }
     }
-    return runtime.host_os()
+    unsafe {
+        return int(runtime.host_os())
+    }
 }
 
 // linux, darwin and windows object/link backends are wired.
-fn target_ready(t<i32>) i32 {
+func target_ready(t) {
     if t == TARGET_LINUX {
         return 1
     }

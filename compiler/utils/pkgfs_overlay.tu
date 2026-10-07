@@ -1,7 +1,7 @@
 // Target overlay selection for embed/TU_STD stdroot (RFC-107 §7.3).
 
 // Runtime overlay basename for a compile --target (not host OS).
-fn overlay_runtime_name(target<i32>) {
+func overlay_runtime_name(target) {
 	if target == TARGET_DARWIN {
 		return "darwin.tu"
 	}
@@ -15,7 +15,7 @@ fn overlay_runtime_name(target<i32>) {
 // Darwin install / embed materialize already rewrite epoll.tu←kqueue and drop
 // kqueue.tu. Listing must still keep epoll.tu / waker.tu / platform.tu on that
 // tree. Prefer kqueue* when both raw names exist (see pkgfs_list_netio_sys_tu).
-fn overlay_netio_sys_name(basename, target<i32>) {
+func overlay_netio_sys_name(basename, target) {
 	if target == TARGET_DARWIN {
 		if basename == "kqueue.tu" {
 			return "epoll.tu"
@@ -45,7 +45,7 @@ fn overlay_netio_sys_name(basename, target<i32>) {
 }
 
 // Apply overlay rules for generic package directories (not runtime/netio special cases).
-fn overlay_filter_basename(pkg_dir, basename, target<i32>) {
+func overlay_filter_basename(pkg_dir, basename, target) {
 	if pkg_dir == "packages/netio/sys" {
 		return overlay_netio_sys_name(basename, target)
 	}

@@ -5,28 +5,6 @@ use string
 use fmt
 use os
 
-// i32 map/array presence for mem/static typed compares.
-// Arg order matches std.exist / std.contains: (key, map_or_array).
-fn map_has(key, m) i32 {
-	if m == null {
-		return 0
-	}
-	mv<runtime.Value> = m
-	if mv.type == runtime.Map {
-		hit<u64> = map.map_find(mv, key)
-		if hit != 0.(u64) {
-			return 1
-		}
-		return 0
-	}
-	if mv.type == runtime.Array {
-		if runtime.array_in(key, mv.data) == runtime.True {
-			return 1
-		}
-		return 0
-	}
-	return 0
-}
 
 // Dyn bool facade for class methods (`if utils.has(key, map)`).
 // Arg order matches std.exist: (key, map_or_array).
@@ -55,11 +33,10 @@ func has(key, m){
 	return false
 }
 
-func char1(cn<i8>){
-    return runtime.newobject(runtime.Char,cn)
-}
 func hash(data){
-	return int(runtime.get_hash_key(data))
+	unsafe {
+		return int(runtime.get_hash_key(data))
+	}
 }
 // func ALIGN_DOWN(x<u64>,a<u64>) {
 func ALIGN_DOWN(x,a) {
@@ -69,16 +46,22 @@ func ALIGN_DOWN(x,a) {
 func ALIGN_UP(x , a) {
 	return ( x + (a - 1) ) & ( ~ (a - 1))
 }
-func max(l<i32>,r<i32>){
+func max(l,r){
 	if l > r return l
 	return r
 }
 func pwd(){
 	if is_windows_host() {
-		buf<i8*> = new 260
-		n<i32> = os.win_getcwd(buf, 260.(i32))
-		if n > 0 {
-			return norm_slash(string.new(buf))
+		cwd = ""
+		unsafe {
+			buf<i8*> = new 260
+			n<i32> = os.win_getcwd(buf, 260.(i32))
+			if n > 0 {
+				cwd = string.new(buf)
+			}
+		}
+		if cwd != "" {
+			return norm_slash(cwd)
 		}
 	}
 	v = env_get("PWD")
@@ -113,8 +96,7 @@ func path_is_sep(c) {
 	if c == '/' {
 		return true
 	}
-	bs = char1(92.(i8))
-	if c == bs {
+	if c == '\\' {
 		return true
 	}
 	return false
@@ -189,7 +171,7 @@ func make_tu_build_dir(stem){
 		dir = tmp + "/tu-build-" + safe + "-" + fmt.sprintf(
 			"%d-%d-%d",
 			os.getpid(),
-			int(std.ntime()),
+			std.ntime(),
 			std.rand(1000000000)
 		)
 		if std.is_dir(dir) {
@@ -205,6 +187,9 @@ func make_tu_build_dir(stem){
 }
 
 workdir = ""
+// True only when workdir is a private TMPDIR/tu-build-* dir created by this
+// process (not --workdir / --workdir-cwd), so it may be removed after use.
+workdir_auto = false
 
 func pathInWorkdir(basename){
 	if workdir == null || workdir == ""
@@ -232,54 +217,63 @@ func initWorkdir(code_file, use_cwd, explicit_dir){
 		stem = parts[0]
 	}
 	workdir = make_tu_build_dir(stem)
+	workdir_auto = true
 	fmt.printf("[tu] workdir: %s\n", workdir)
 }
 
-specs = {
-	"\\n"  : 10.(i8),
-	"\\\\" : 92.(i8),
-	"\\t"  : 9.(i8),
-	"\\\'" : 39.(i8),
-	"\\\"" : 34.(i8),
-	"\\b"  : 8.(i8),
-	"\\r"  : 13.(i8),
-	"\\f"  : 12.(i8),
-	"\\0"  : 0.(i8),
-	"\\r"  : 13.(i8),
-	"\\v"  : 11.(i8)
+// Removes the private auto workdir (no-op for --workdir / --workdir-cwd).
+func cleanupWorkdir(){
+	if !workdir_auto return
+	host_remove_tree(workdir)
+	workdir_auto = false
 }
-func getescapestr(dstr<runtime.Value>){
-	str<string.Str> = dstr.data
+
+specs = {
+	"\\n"  : 10,
+	"\\\\" : 92,
+	"\\t"  : 9,
+	"\\\'" : 39,
+	"\\\"" : 34,
+	"\\b"  : 8,
+	"\\r"  : 13,
+	"\\f"  : 12,
+	"\\0"  : 0,
+	"\\r"  : 13,
+	"\\v"  : 11
+}
+// Expands backslash escapes of a string literal body into raw bytes.
+unsafe func getescapestr(dstr){
+	dv<runtime.Value> = dstr
+	str<string.Str> = dv.data
 	i<i32>  = 0
 	total<i32> = str.len()
 	p<i8*> = str
-	//NOTICE: unstable ,compiler do this
-	Null<u64> = &runtime.internal_null
-
+	// Map misses return the shared internal_null Value, not a zero pointer.
+	rnull<u64> = &runtime.internal_null
 	lex<string.String> = string.emptyS()
 	while i < total {
 		c<i8> = p[i]
-        if c == '\\' {
-			ts = "\\"
-            i += 1
+		if c == '\\' {
+			i += 1
 			c = p[i]
-            ts += char1(c)
+			ts = "\\" + string.tostring(runtime.newobject(runtime.Char, c))
+			sv<runtime.Value> = specs[ts]
 			if ts == "\\0" {
 				lex.putc(0.(i8))
-			}
-            else if specs[ts] == Null {
+			} else if sv == rnull {
 				os.dief(
-                    "utils: sepc character -%s- literal should surround with single-quote ori:%s",
+					"utils: sepc character -%s- literal should surround with single-quote ori:%s",
 					ts,
 					dstr
-                )
-            }else{
-				lex.putc(specs[ts])
+				)
+			} else {
+				ch<i8> = sv.data
+				lex.putc(ch)
 			}
-        }else{
+		} else {
 			lex.putc(c)
-        }
-        i += 1
-    }
+		}
+		i += 1
+	}
 	return lex.dyn()
 }

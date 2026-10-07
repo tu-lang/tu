@@ -7,23 +7,23 @@ use os
 use fmt
 use sys
 
-PKGFS_MODE_EMBED<i32>   = 0
-PKGFS_MODE_DISK<i32>    = 1
-PKGFS_MODE_TU_STD<i32>  = 2
+// Stdlib source modes. EMBED is only a request: pkgfs_configure materializes the
+// embedded tree to a temp dir and switches to TU_STD (or DISK on failure).
+PKGFS_MODE_EMBED   = 0
+PKGFS_MODE_DISK    = 1
+PKGFS_MODE_TU_STD  = 2
 
-pkgfs_mode<i32> = PKGFS_MODE_EMBED
-pkgfs_target<i32> = 0
-pkgfs_stdroot<runtime.EmbedFS> = null
-pkgfs_stdroot_table_slot<u64> = 0
-pkgfs_stdroot_count_slot<i32> = 0
+pkgfs_mode = 0
+pkgfs_target = 0
+pkgfs_stdroot = null   // runtime.EmbedFSObj from embed(...), or null
 pkgfs_tu_std = ""
 pkgfs_list_cache = []
 
-fn pkgfs_take_list_cache() {
+func pkgfs_take_list_cache() {
 	return pkgfs_list_cache
 }
 
-fn pkgfs_list_finish(out) i32 {
+func pkgfs_list_finish(out) {
 	pkgfs_list_cache = out
 	if std.len(out) <= 0 {
 		return 1
@@ -31,52 +31,137 @@ fn pkgfs_list_finish(out) i32 {
 	return 0
 }
 
-fn pkgfs_set_stdroot_table(table<u64>, count<i32>) {
-	pkgfs_stdroot_table_slot = table
-	pkgfs_stdroot_count_slot = count
-	if table == 0 || count <= 0 {
-		pkgfs_stdroot = null
-		return
-	}
-	pkgfs_stdroot = runtime.embed_fs_new(table, count)
+// Installs the embedded stdroot (an embed(...) object) used by materialize.
+func pkgfs_set_stdroot(fs) {
+	pkgfs_stdroot = fs
 }
 
-// Expand embedded stdroot into a temp tree; subsequent lookup uses TU_STD disk paths.
-fn pkgfs_materialize_stdroot() {
-	t<u64> = pkgfs_stdroot_table_slot
-	c<i32> = pkgfs_stdroot_count_slot
-	if t == 0 || c <= 0 {
+
+// Marker written last into a materialized stdroot; a tree without it is never trusted.
+PKGFS_STDROOT_MARK = ".tu-stdroot-complete"
+// Private (unpublished) stdroot of this process, removed by pkgfs_cleanup; "" if none.
+pkgfs_private_root = ""
+
+// Creates a private, fresh staging dir under TMPDIR, or returns "" after retries.
+// The pid keeps concurrent tu processes apart (std.rand is seeded per second, so
+// rand alone collides); ns clock + rand avoid stale dirs left by a dead pid.
+func pkgfs_new_stdroot_dir() {
+	tmp = host_tmpdir()
+	host_mkdir_p(tmp)
+	tries = 0
+	while tries < 32 {
+		root = path_join(tmp, fmt.sprintf(
+			"tu-stdroot-tmp-%d-%d-%d",
+			os.getpid(),
+			std.ntime(),
+			std.rand(1000000000)
+		))
+		tries += 1
+		if std.is_dir(root) {
+			continue
+		}
+		made = false
+		unsafe {
+			rc<i32> = sys.mkdir(*root, 511.(i64))
+			if rc == 0 {
+				made = true
+			}
+		}
+		if made && std.is_dir(root) {
+			return root
+		}
+	}
+	return ""
+}
+
+// Content key of the embedded stdroot for the current target: FNV-1a over every
+// entry's name and body hash. Appends [name, body] to files so each is read once.
+func pkgfs_stdroot_key(names, files) {
+	hi = 0
+	lo = 0
+	unsafe {
+		h<u64> = 14695981039346656037
+		for name : names {
+			rerr, body = pkgfs_stdroot.read(name)
+			if rerr != 0 {
+				continue
+			}
+			files[] = [name, body]
+			hn<u64> = runtime.get_hash_key(name)
+			hb<u64> = runtime.get_hash_key(body)
+			h = (h ^ hn) * 1099511628211
+			h = (h ^ hb) * 1099511628211
+		}
+		h1<u64> = h >> 32
+		h0<u64> = h & 4294967295
+		hi = int(h1)
+		lo = int(h0)
+	}
+	return fmt.sprintf("%d-%d-%d", pkgfs_target, hi, lo)
+}
+
+func pkgfs_stdroot_complete(root) {
+	return std.is_file(path_join(root, PKGFS_STDROOT_MARK))
+}
+
+// Expands the embedded stdroot into a shared, content-addressed tree under TMPDIR
+// (tu-stdroot-<target>-<hash>) and returns its path; "" on failure.
+// A staging dir is filled and marked complete, then atomically renamed into place,
+// so concurrent tu processes either publish or reuse a complete tree. When rename
+// is unavailable (or the shared path is unusable) the staging tree is used privately
+// and removed by pkgfs_cleanup.
+func pkgfs_materialize_stdroot() {
+	if pkgfs_stdroot == null {
 		return ""
 	}
-	root = path_join(host_tmpdir(), "tu-stdroot-" + strRand())
-	host_mkdir_p(root)
-	i<i32> = 0
-	while i < c {
-		np<u64>, nl<u64>, dp<u64>, dl<u64> = runtime.embed_entry_ptrs(t, i)
-		npp<i8*> = np
-		nln<i32> = nl.(i32)
-		dpp<i8*> = dp
-		name_s = string.newstringfromlen(npp, nln)
-		out = path_join(root, name_s)
-		dir = path_dirname(out)
-		host_mkdir_p(dir)
-		fp<i64> = std.fopen(*out, *"w")
-		if fp >= 0 {
-			std.fwrite(dpp, 1.(u64), dl, fp)
-			std.fclose(fp)
-		}
-	i += 1
+	err, names = pkgfs_stdroot.list("")
+	if err != 0 || std.len(names) <= 0 {
+		return ""
+	}
+	files = []
+	shared = path_join(host_tmpdir(), "tu-stdroot-" + pkgfs_stdroot_key(names, files))
+	if pkgfs_stdroot_complete(shared) {
+		return shared
+	}
+	root = pkgfs_new_stdroot_dir()
+	if root == "" {
+		return ""
+	}
+	for f : files {
+		out = path_join(root, f[0])
+		host_mkdir_p(path_dirname(out))
+		host_write_file(out, f[1])
 	}
 	pkgfs_apply_target_overlay(root)
+	host_write_file(path_join(root, PKGFS_STDROOT_MARK), "ok\n")
+	if host_rename(root, shared) && pkgfs_stdroot_complete(shared) {
+		return shared
+	}
+	// Lost the publish race: another process installed the same content first.
+	if pkgfs_stdroot_complete(shared) {
+		host_remove_tree(root)
+		return shared
+	}
+	pkgfs_private_root = root
 	return root
 }
 
+// Removes this process's private stdroot (if any). Shared trees are kept for reuse.
+func pkgfs_cleanup() {
+	if pkgfs_private_root == "" {
+		return
+	}
+	host_remove_tree(pkgfs_private_root)
+	pkgfs_private_root = ""
+}
+
+
 // Windows runtime auxiliaries installed from platform/windows/ (Makefile install-windows).
-fn pkgfs_windows_runtime_aux() {
+func pkgfs_windows_runtime_aux() {
 	return ["wsa_errno.tu", "fd_table.tu", "epoll_soft.tu", "sock_flags.tu", "pipe.tu"]
 }
 
-fn pkgfs_is_windows_runtime_aux(basename) i32 {
+func pkgfs_is_windows_runtime_aux(basename) {
 	for n : pkgfs_windows_runtime_aux() {
 		if n == basename {
 			return 1
@@ -86,7 +171,7 @@ fn pkgfs_is_windows_runtime_aux(basename) i32 {
 }
 
 // Mirror Makefile install-{linux,darwin,windows} overlays onto a stdroot tree.
-fn pkgfs_apply_target_overlay(root) {
+func pkgfs_apply_target_overlay(root) {
 	rt = path_join(root, "runtime")
 	nsys = path_join(root, "packages/netio/sys")
 	if pkgfs_target == TARGET_DARWIN {
@@ -126,36 +211,24 @@ fn pkgfs_apply_target_overlay(root) {
 	pkgfs_rm(path_join(nsys, "waker_kqueue.tu"))
 }
 
-fn pkgfs_rm(path) {
+func pkgfs_rm(path) {
 	if std.is_file(path) {
-		sys.unlink(*path)
+		unsafe {
+			sys.unlink(*path)
+		}
 	}
 }
 
-fn pkgfs_copy_file(src, dst) {
-	fs = new std.File(src)
-	if !fs.IsOpen() {
-		return
-	}
-	buf<i8*> = fs.ReadAllNative()
-	tot = fs.size
-	sz<i32> = 0
-	if tot != null {
-		sz = *tot
-	}
-	fs.Close()
-	if buf == 0 || sz <= 0 {
+func pkgfs_copy_file(src, dst) {
+	if !std.is_file(src) {
 		return
 	}
 	host_mkdir_p(path_dirname(dst))
-	fp<i64> = std.fopen(*dst, *"w")
-	if fp >= 0 {
-		std.fwrite(buf, 1.(u64), sz.(u64), fp)
-		std.fclose(fp)
-	}
+	copy_file(src, dst)
 }
 
-fn pkgfs_configure(mode<i32>, tu_std_path, _unused_bits<u64>, target<i32>) {
+
+func pkgfs_configure(mode, tu_std_path, target) {
 	pkgfs_mode = mode
 	pkgfs_target = target
 	pkgfs_tu_std = ""
@@ -173,24 +246,20 @@ fn pkgfs_configure(mode<i32>, tu_std_path, _unused_bits<u64>, target<i32>) {
 			debugf("pkgfs: embed stdroot at %s", root)
 		}
 	}
-	if pkgfs_mode == PKGFS_MODE_EMBED && pkgfs_stdroot != null {
-		if pkgfs_stdroot.count() <= 0 {
-			notice("pkgfs: empty embed stdroot; falling back to disk copkg")
-			pkgfs_mode = PKGFS_MODE_DISK
-		}
-	}
 }
 
+
 // Prefer string target name so overlay selection does not depend on class i32 0.
-fn pkgfs_configure_named(mode<i32>, tu_std_path, target_name) {
-	t<i32> = target_parse(target_name)
+func pkgfs_configure_named(mode, tu_std_path, target_name) {
+	t = target_parse(target_name)
 	if t < 0 {
 		t = target_default()
 	}
-	pkgfs_configure(mode, tu_std_path, 0.(u64), t)
+	pkgfs_configure(mode, tu_std_path, t)
 }
 
-fn pkgfs_parse_mode_from_env() i32 {
+
+func pkgfs_parse_mode_from_env() {
 	v = env_get("TU_STD")
 	if v != null && v != "" {
 		return PKGFS_MODE_TU_STD
@@ -202,7 +271,7 @@ fn pkgfs_parse_mode_from_env() i32 {
 	return PKGFS_MODE_EMBED
 }
 
-fn pkgfs_tu_std_from_env() {
+func pkgfs_tu_std_from_env() {
 	v = env_get("TU_STD")
 	if v != null && v != "" {
 		return norm_slash(v)
@@ -210,7 +279,7 @@ fn pkgfs_tu_std_from_env() {
 	return ""
 }
 
-fn pkgfs_path_has_slash(s) {
+func pkgfs_path_has_slash(s) {
 	i = 0
 	n = std.len(s)
 	while i < n {
@@ -222,13 +291,7 @@ fn pkgfs_path_has_slash(s) {
 	return false
 }
 
-fn pkgfs_resolve_std_dir(pkg_path) {
-	if pkgfs_mode == PKGFS_MODE_EMBED {
-		if pkgfs_stdroot == null {
-			return ""
-		}
-		return embed_resolve_repo_dir(pkgfs_stdroot, pkg_path)
-	}
+func pkgfs_resolve_std_dir(pkg_path) {
 	if pkgfs_mode == PKGFS_MODE_TU_STD {
 		if disk_resolve_repo_root(pkgfs_tu_std, pkg_path) != "" {
 			return pkgfs_repo_std_dir(pkg_path)
@@ -242,7 +305,7 @@ fn pkgfs_resolve_std_dir(pkg_path) {
 	return pkg_path
 }
 
-fn pkgfs_repo_std_dir(pkg_path) {
+func pkgfs_repo_std_dir(pkg_path) {
 	if disk_dir_has_tu(path_join(pkgfs_tu_std, "library/" + pkg_path)) {
 		return "library/" + pkg_path
 	}
@@ -253,7 +316,7 @@ fn pkgfs_repo_std_dir(pkg_path) {
 }
 
 // Absolute package root for tu.mod lookup (must not walk from process cwd).
-fn pkgfs_mode_root(pkg_path) {
+func pkgfs_mode_root(pkg_path) {
 	if pkgfs_mode == PKGFS_MODE_DISK {
 		abs = disk_resolve_copkg(pkg_path)
 		if abs != "" {
@@ -266,41 +329,12 @@ fn pkgfs_mode_root(pkg_path) {
 			return abs
 		}
 	}
-	if pkgfs_mode == PKGFS_MODE_EMBED && pkgfs_stdroot != null {
-		abs = embed_resolve_repo_dir(pkgfs_stdroot, pkg_path)
-		if abs != "" {
-			return abs
-		}
-	}
 	return ""
 }
 
-fn pkgfs_list_runtime_tu() i32 {
+func pkgfs_list_runtime_tu() {
 	out = []
 	want = overlay_runtime_name(pkgfs_target)
-	if pkgfs_mode == PKGFS_MODE_EMBED {
-		if embed_list_filtered(null, "runtime", 0) != 0 {
-			pkgfs_list_cache = []
-			return 1
-		}
-		raw = pkgfs_list_cache
-		for name : raw {
-			if name == "linux.tu" || name == "darwin.tu" || name == "windows.tu" {
-				continue
-			}
-			if pkgfs_target != TARGET_WINDOWS && pkgfs_is_windows_runtime_aux(name) != 0 {
-				continue
-			}
-			out[] = name
-		}
-		out[] = want
-		if pkgfs_target == TARGET_WINDOWS {
-			for n : pkgfs_windows_runtime_aux() {
-				out[] = n
-			}
-		}
-		return pkgfs_list_finish(out)
-	}
 	// TU_STD repo tree and flat copkg: same target-aware filter + inject.
 	// Disk keeps platform/ under copkg so cross --target works without re-overlay.
 	rt_abs = ""
@@ -346,17 +380,9 @@ fn pkgfs_list_runtime_tu() i32 {
 	return pkgfs_list_finish(out)
 }
 
-fn pkgfs_list_netio_sys_tu(std_dir) i32 {
-	err<i32> = 0
+func pkgfs_list_netio_sys_tu(std_dir) {
 	raw = []
-	if pkgfs_mode == PKGFS_MODE_EMBED {
-		if embed_list_filtered(pkgfs_stdroot, std_dir, 0) != 0 {
-			pkgfs_list_cache = []
-			return 1
-		}
-		raw = pkgfs_list_cache
-		err = 0
-	} else if pkgfs_mode == PKGFS_MODE_TU_STD {
+	if pkgfs_mode == PKGFS_MODE_TU_STD {
 		abs = path_join(pkgfs_tu_std, std_dir)
 		raw = disk_list_tu(abs)
 	} else {
@@ -405,7 +431,7 @@ fn pkgfs_list_netio_sys_tu(std_dir) i32 {
 	return pkgfs_list_finish(out)
 }
 
-fn pkgfs_list_package_tu(pkg_path) i32 {
+func pkgfs_list_package_tu(pkg_path) {
 	if pkg_path == "runtime" {
 		return pkgfs_list_runtime_tu()
 	}
@@ -416,16 +442,6 @@ fn pkgfs_list_package_tu(pkg_path) i32 {
 	}
 	if std_dir == "packages/netio/sys" {
 		return pkgfs_list_netio_sys_tu(std_dir)
-	}
-	if pkgfs_mode == PKGFS_MODE_EMBED {
-		err<i32> = embed_list_filtered(pkgfs_stdroot, std_dir, 1)
-		if err != 0 {
-			return 1
-		}
-		if std.len(pkgfs_list_cache) <= 0 {
-			return 1
-		}
-		return 0
 	}
 	if pkgfs_mode == PKGFS_MODE_TU_STD {
 		abs = path_join(pkgfs_tu_std, std_dir)
@@ -458,14 +474,14 @@ fn pkgfs_list_package_tu(pkg_path) i32 {
 }
 
 // Root of a disk-backed std tree: TU_STD path or flat copkg (includes platform/).
-fn pkgfs_disk_tree_root() {
+func pkgfs_disk_tree_root() {
 	if pkgfs_mode == PKGFS_MODE_TU_STD && pkgfs_tu_std != "" {
 		return pkgfs_tu_std
 	}
 	return copkg_dir()
 }
 
-fn pkgfs_disk_source_path(std_dir, pkg_path, basename) {
+func pkgfs_disk_source_path(std_dir, pkg_path, basename) {
 	if pkg_path == "runtime" {
 		tree = pkgfs_disk_tree_root()
 		if basename == "darwin.tu" {
@@ -561,207 +577,21 @@ fn pkgfs_disk_source_path(std_dir, pkg_path, basename) {
 	return path_join(abs, basename)
 }
 
-// Materialize one embed source into workdir so Parser can open a real path.
-fn pkgfs_materialize_embed(std_dir, pkg_path, basename) {
-	rerr<i32>, buf<i8*>, sz<i32> = pkgfs_read_package_file(std_dir, pkg_path, basename)
-	if rerr != 0 || buf == 0 || sz <= 0 {
-		return ""
-	}
-	rel = ".pkgfs/" + std_dir + "/" + basename
-	out = pathInWorkdir(rel)
-	dir = path_dirname(out)
-	host_mkdir_p(dir)
-	fp<i64> = std.fopen(*out, *"w")
-	if fp < 0 {
-		return ""
-	}
-	wn<i64> = std.fwrite(buf, 1.(u64), sz.(u64), fp)
-	std.fclose(fp)
-	if wn != sz.(i64) && wn != sz.(u64) {
-		// fwrite returns bytes written; tolerate platform width.
-	}
-	return out
-}
 
-fn pkgfs_logical_path(std_dir, basename) {
+func pkgfs_logical_path(std_dir, basename) {
 	return std_dir + "/" + basename
 }
 
-fn pkgfs_read_runtime(basename) (i32, i8*, i32) {
-	want = overlay_runtime_name(pkgfs_target)
-	if basename == want {
-		if pkgfs_mode == PKGFS_MODE_EMBED {
-			if pkgfs_target == TARGET_DARWIN {
-				return embed_read_path(pkgfs_stdroot, "platform/darwin/runtime_os.tu")
-			}
-			if pkgfs_target == TARGET_WINDOWS {
-				return embed_read_path(pkgfs_stdroot, "platform/windows/runtime_os.tu")
-			}
-			return embed_read_path(pkgfs_stdroot, "runtime/linux.tu")
-		}
-		if pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK {
-			tree = pkgfs_disk_tree_root()
-			ov = path_join(tree, "runtime/" + basename)
-			if std.is_file(ov) {
-				return disk_read_file(ov)
-			}
-			if pkgfs_target == TARGET_DARWIN {
-				return disk_read_file(path_join(tree, "platform/darwin/runtime_os.tu"))
-			}
-			if pkgfs_target == TARGET_WINDOWS {
-				return disk_read_file(path_join(tree, "platform/windows/runtime_os.tu"))
-			}
-			return disk_read_file(path_join(tree, "runtime/linux.tu"))
-		}
-		return disk_read_file(path_join(disk_resolve_copkg("runtime"), basename))
-	}
-	if pkgfs_is_windows_runtime_aux(basename) != 0 {
-		if pkgfs_mode == PKGFS_MODE_EMBED {
-			return embed_read_path(pkgfs_stdroot, "platform/windows/" + basename)
-		}
-		if pkgfs_mode == PKGFS_MODE_TU_STD || pkgfs_mode == PKGFS_MODE_DISK {
-			tree = pkgfs_disk_tree_root()
-			ov = path_join(tree, "runtime/" + basename)
-			if std.is_file(ov) {
-				return disk_read_file(ov)
-			}
-			return disk_read_file(path_join(tree, "platform/windows/" + basename))
-		}
-		return disk_read_file(path_join(disk_resolve_copkg("runtime"), basename))
-	}
-	if pkgfs_mode == PKGFS_MODE_EMBED {
-		return embed_read_path(pkgfs_stdroot, "runtime/" + basename)
-	}
-	if pkgfs_mode == PKGFS_MODE_TU_STD {
-		return disk_read_file(path_join(pkgfs_tu_std, "runtime/" + basename))
-	}
-	return disk_read_file(path_join(disk_resolve_copkg("runtime"), basename))
-}
 
-fn pkgfs_disk_pkg_dir(pkg_path) {
-	return disk_resolve_copkg(pkg_path)
-}
 
-fn pkgfs_read_netio_sys(basename) (i32, i8*, i32) {
-	std_dir = "packages/netio/sys"
-	if pkgfs_mode == PKGFS_MODE_EMBED {
-		if basename == "platform.tu" {
-			if pkgfs_target == TARGET_DARWIN {
-				return embed_read_path(pkgfs_stdroot, "platform/darwin/netio_platform.tu")
-			}
-			if pkgfs_target == TARGET_WINDOWS {
-				return embed_read_path(pkgfs_stdroot, "platform/windows/netio_platform.tu")
-			}
-		}
-		read_name = basename
-		if pkgfs_target == TARGET_DARWIN {
-			if basename == "epoll.tu" {
-				read_name = "kqueue.tu"
-			} else if basename == "waker.tu" {
-				read_name = "waker_kqueue.tu"
-			}
-		}
-		return embed_read_path(pkgfs_stdroot, pkgfs_logical_path(std_dir, read_name))
-	}
-	if pkgfs_mode == PKGFS_MODE_TU_STD {
-		if basename == "platform.tu" {
-			ov = path_join(pkgfs_tu_std, "packages/netio/sys/platform.tu")
-			if std.is_file(ov) {
-				return disk_read_file(ov)
-			}
-			if pkgfs_target == TARGET_DARWIN {
-				return disk_read_file(path_join(pkgfs_tu_std, "platform/darwin/netio_platform.tu"))
-			}
-			if pkgfs_target == TARGET_WINDOWS {
-				return disk_read_file(path_join(pkgfs_tu_std, "platform/windows/netio_platform.tu"))
-			}
-		}
-		read_name = basename
-		if pkgfs_target == TARGET_DARWIN {
-			if basename == "epoll.tu" {
-				ov = path_join(pkgfs_tu_std, "packages/netio/sys/epoll.tu")
-				if std.is_file(ov) {
-					return disk_read_file(ov)
-				}
-				read_name = "kqueue.tu"
-			} else if basename == "waker.tu" {
-				ov = path_join(pkgfs_tu_std, "packages/netio/sys/waker.tu")
-				if std.is_file(ov) {
-					return disk_read_file(ov)
-				}
-				read_name = "waker_kqueue.tu"
-			}
-		}
-		return disk_read_file(path_join(path_join(pkgfs_tu_std, std_dir), read_name))
-	}
-	// Flat copkg: netio/sys + platform/ for cross --target without re-overlay.
-	nsys = path_join(copkg_dir(), "netio/sys")
-	if basename == "platform.tu" {
-		ov = path_join(nsys, "platform.tu")
-		if std.is_file(ov) {
-			return disk_read_file(ov)
-		}
-		if pkgfs_target == TARGET_DARWIN {
-			return disk_read_file(path_join(copkg_dir(), "platform/darwin/netio_platform.tu"))
-		}
-		if pkgfs_target == TARGET_WINDOWS {
-			return disk_read_file(path_join(copkg_dir(), "platform/windows/netio_platform.tu"))
-		}
-	}
-	read_name = basename
-	if pkgfs_target == TARGET_DARWIN {
-		if basename == "epoll.tu" {
-			ov = path_join(nsys, "epoll.tu")
-			if std.is_file(ov) {
-				return disk_read_file(ov)
-			}
-			read_name = "kqueue.tu"
-		} else if basename == "waker.tu" {
-			ov = path_join(nsys, "waker.tu")
-			if std.is_file(ov) {
-				return disk_read_file(ov)
-			}
-			read_name = "waker_kqueue.tu"
-		}
-	}
-	return disk_read_file(path_join(nsys, read_name))
-}
 
-fn pkgfs_read_package_file(std_dir, pkg_path, basename) (i32, i8*, i32) {
-	if pkg_path == "runtime" {
-		return pkgfs_read_runtime(basename)
-	}
-	if std_dir == "packages/netio/sys" {
-		return pkgfs_read_netio_sys(basename)
-	}
-	if std_dir == "library/os" && basename == "signal.tu" {
-		if pkgfs_target == TARGET_DARWIN {
-			if pkgfs_mode == PKGFS_MODE_EMBED {
-				return embed_read_path(pkgfs_stdroot, "platform/darwin/os_signal.tu")
-			}
-			if pkgfs_mode == PKGFS_MODE_TU_STD {
-				plat = path_join(pkgfs_tu_std, "platform/darwin/os_signal.tu")
-				if std.is_file(plat) {
-					return disk_read_file(plat)
-				}
-			}
-		}
-	}
-	if pkgfs_mode == PKGFS_MODE_EMBED {
-		return embed_read_path(pkgfs_stdroot, pkgfs_logical_path(std_dir, basename))
-	}
-	if pkgfs_mode == PKGFS_MODE_TU_STD {
-		return disk_read_file(path_join(path_join(pkgfs_tu_std, std_dir), basename))
-	}
-	return disk_read_file(path_join(disk_resolve_copkg(pkg_path), basename))
-}
 
-fn pkgfs_scan_filepath(std_dir, basename) {
+func pkgfs_scan_filepath(std_dir, basename) {
 	return pkgfs_logical_path(std_dir, basename)
 }
 
 // Syscall .s tree for link: embed/TU_STD materialize first, else prefix coasm*.
-fn pkgfs_coasm_dir() {
+func pkgfs_coasm_dir() {
 	if pkgfs_target == TARGET_DARWIN {
 		v = env_get("CO_DARWIN_COASM")
 		if v != null && v != "" {
@@ -798,7 +628,7 @@ fn pkgfs_coasm_dir() {
 }
 
 // Nostd entry stubs: embed platform/{darwin,windows}/stub_*.s, else prefix costub/copeff.
-fn pkgfs_stub_dir() {
+func pkgfs_stub_dir() {
 	if pkgfs_mode == PKGFS_MODE_TU_STD && pkgfs_tu_std != null && pkgfs_tu_std != "" {
 		sub = ""
 		if pkgfs_target == TARGET_DARWIN {

@@ -10,15 +10,19 @@ use fmt
 use string
 
 func is_windows_host() {
-	if runtime.host_os() == 2 {
-		return true
+	unsafe {
+		if runtime.host_os() == 2 {
+			return true
+		}
 	}
 	return false
 }
 
 func is_darwin_host() {
-	if runtime.host_os() == 1 {
-		return true
+	unsafe {
+		if runtime.host_os() == 1 {
+			return true
+		}
 	}
 	return false
 }
@@ -40,10 +44,9 @@ func norm_slash(path) {
 	out = ""
 	i = 0
 	n = std.len(path)
-	bs = char1(92.(i8))
 	while i < n {
 		c = path[i]
-		if c == bs {
+		if c == '\\' {
 			out += "/"
 		} else {
 			out += c
@@ -53,72 +56,126 @@ func norm_slash(path) {
 	return out
 }
 
-// Run a host command; returns the child exit code (unix os.shell path
-// reports 0 because sh status is not surfaced; callers check artifacts).
+// Run a host command; returns the child exit code (128+signal if killed on
+// unix, -1 if it could not be spawned).
 func host_run(cmd) {
 	if is_windows_host() {
 		return win_run(cmd)
 	}
-	os.shell(cmd)
-	return 0
+	return os.shell(cmd)
 }
 
 // CreateProcessA + WaitForSingleObject + GetExitCodeProcess.
 func win_run(cmd) {
-	si<i8*> = new 112
-	sib<u64> = si
-	std.memset(sib, 0, 112)
-	p32<u32*> = si
-	*p32 = 104
-	pi<i8*> = new 32
-	pib<u64> = pi
-	std.memset(pib, 0, 32)
-	ok<i32> = os.win_create_process(*cmd, si, pi)
-	if ok == 0 {
-		fmt.printf("[tu] CreateProcess failed: %s\n", cmd)
-		return -1
+	unsafe {
+		si<i8*> = new 112
+		sib<u64> = si
+		std.memset(sib, 0, 112)
+		p32<u32*> = si
+		*p32 = 104
+		pi<i8*> = new 32
+		pib<u64> = pi
+		std.memset(pib, 0, 32)
+		ok<i32> = os.win_create_process(*cmd, si, pi)
+		if ok == 0 {
+			fmt.printf("[tu] CreateProcess failed: %s\n", cmd)
+			return -1
+		}
+		hp<u64*> = pi
+		h<u64> = *hp
+		htp<u64*> = pi + 8
+		ht<u64> = *htp
+		os.win_wait_object(h)
+		code<i32> = -1
+		os.win_exit_code(h, &code)
+		os.win_close_handle(h)
+		os.win_close_handle(ht)
+		return int(code)
 	}
-	hp<u64*> = pi
-	h<u64> = *hp
-	htp<u64*> = pi + 8
-	ht<u64> = *htp
-	os.win_wait_object(h)
-	code<i32> = -1
-	os.win_exit_code(h, &code)
-	os.win_close_handle(h)
-	os.win_close_handle(ht)
-	return int(code)
 }
 
 // Binary file copy via std fds. Returns 0 on success.
 func copy_file(src, dst) {
-	sfd<i32> = std.fopen(*src, *"r")
-	if sfd <= 0 {
-		return -1
-	}
-	dfd<i32> = std.fopen(*dst, *"w+")
-	if dfd <= 0 {
-		std.fclose(sfd)
-		return -1
-	}
-	buf<u64*> = new 65536
-	sz<i64> = 65536
-	loop {
-		n<i64> = std.read(sfd, buf, sz)
-		if n <= 0 {
-			break
+	unsafe {
+		sfd<i32> = std.fopen(*src, *"r")
+		if sfd <= 0 {
+			return -1
 		}
-		one<i8> = 1
-		std.fwrite(buf, n, one, dfd)
+		dfd<i32> = std.fopen(*dst, *"w+")
+		if dfd <= 0 {
+			std.fclose(sfd)
+			return -1
+		}
+		buf<u64*> = new 65536
+		sz<i64> = 65536
+		loop {
+			n<i64> = std.read(sfd, buf, sz)
+			if n <= 0 {
+				break
+			}
+			one<i8> = 1
+			std.fwrite(buf, n, one, dfd)
+		}
+		std.fclose(sfd)
+		std.fclose(dfd)
+		return 0
 	}
-	std.fclose(sfd)
-	std.fclose(dfd)
-	return 0
+}
+
+// Writes a dyn string (may hold NUL bytes) to path, truncating. Returns true on success.
+func host_write_file(path, body) {
+	f = new std.File(path, "w")
+	if !f.IsOpen() {
+		return false
+	}
+	ok = f.Write(body)
+	f.Close()
+	return ok
+}
+
+// Renames src to dst. Returns true only when the OS reports success (a non-empty
+// existing dst makes it fail; Windows currently reports unsupported).
+func host_rename(src, dst) {
+	ok = false
+	unsafe {
+		rc<i32> = sys.rename(*src, *dst)
+		if rc == 0 {
+			ok = true
+		}
+	}
+	return ok
+}
+
+// Recursively deletes dir and everything under it (no symlinks expected: callers
+// only pass trees they wrote themselves). Returns true when dir is gone.
+func host_remove_tree(dir) {
+	if !std.is_dir(dir) {
+		return !std.is_file(dir)
+	}
+	for name : list_dir_basenames(dir) {
+		if name == "." || name == ".." {
+			continue
+		}
+		p = path_join(dir, name)
+		if std.is_dir(p) {
+			host_remove_tree(p)
+		} else {
+			unsafe {
+				sys.unlink(*p)
+			}
+		}
+	}
+	unsafe {
+		sys.rmdir(*dir)
+	}
+	return !std.is_dir(dir)
 }
 
 // mkdir one level (0777); ok if it already exists.
 func host_mkdir(dir) {
-	sys.mkdir(*dir, 511.(i64))
+	unsafe {
+		sys.mkdir(*dir, 511.(i64))
+	}
 	return std.is_dir(dir)
 }
 
@@ -137,13 +194,17 @@ func host_mkdir_p(dir) {
 		if c == '/' && i > 0 {
 			// Skip drive roots like "C:/" and the leading "/".
 			if !std.is_dir(cur) {
-				sys.mkdir(*cur, 511.(i64))
+				unsafe {
+					sys.mkdir(*cur, 511.(i64))
+				}
 			}
 		}
 		i += 1
 	}
 	if !std.is_dir(cur) {
-		sys.mkdir(*cur, 511.(i64))
+		unsafe {
+			sys.mkdir(*cur, 511.(i64))
+		}
 	}
 	return std.is_dir(dir)
 }
@@ -165,7 +226,9 @@ func remove_files_ext(dir, ext) {
 		}
 		if string.sub(name, flen - extlen) == ext {
 			fp = path_join(dir, name)
-			sys.unlink(*fp)
+			unsafe {
+				sys.unlink(*fp)
+			}
 		}
 	}
 	return true
@@ -221,7 +284,6 @@ func list_dir_basenames(dir) {
 		pat = ""
 		i = 0
 		dn = std.len(dir)
-		bs = char1(92.(i8))
 		while i < dn {
 			c = dir[i]
 			if c == '/' {
@@ -233,27 +295,29 @@ func list_dir_basenames(dir) {
 		}
 		if dn > 0 {
 			last = pat[std.len(pat) - 1]
-			if last != bs {
+			if last != '\\' {
 				pat = pat + "\\"
 			}
 		}
 		pat = pat + "*"
-		h<u64> = os.win_find_first(*pat)
-		if h == 0 {
+		unsafe {
+			h<u64> = os.win_find_first(*pat)
+			if h == 0 {
+				return out
+			}
+			loop {
+				np<i8*> = os.win_find_name()
+				# Copy out of the shared win_find_name buffer before FindNext.
+				nm = "" + string.new(np)
+				out[] = nm
+				rc<i32> = os.win_find_next(h)
+				if rc == 0 {
+					break
+				}
+			}
+			os.win_find_close(h)
 			return out
 		}
-		loop {
-			np<i8*> = os.win_find_name()
-			# Copy out of the shared win_find_name buffer before FindNext.
-			nm = "" + string.new(np)
-			out[] = nm
-			rc<i32> = os.win_find_next(h)
-			if rc == 0 {
-				break
-			}
-		}
-		os.win_find_close(h)
-		return out
 	}
 	fd = std.opendir(dir)
 	if !fd {
@@ -270,7 +334,7 @@ func list_dir_basenames(dir) {
 }
 
 // First matching KEY=value from os.envs(); empty if unset (static helper).
-fn env_get(name) {
+func env_get(name) {
 	for (ek, ev : os.envs()) {
 		arr = string.split(ev, "=")
 		if std.len(arr) >= 2 && arr[0] == name && arr[1] != "" {
@@ -283,19 +347,23 @@ fn env_get(name) {
 // Absolute path of this tu/tuc process. Windows: GetModuleFileNameA.
 // Unix: runtime.self_path (/proc/self/exe or argv[0]).
 func exe_path() {
-	if is_windows_host() {
-		buf<i8*> = new 260
-		n<i32> = os.win_exe_path(buf, 260.(i32))
-		if n > 0 {
-			return norm_slash(string.new(buf))
+	s = ""
+	unsafe {
+		if is_windows_host() {
+			buf<i8*> = new 260
+			n<i32> = os.win_exe_path(buf, 260.(i32))
+			if n > 0 {
+				s = string.new(buf)
+			}
+		} else {
+			p<i8*> = runtime.self_path
+			if p != null {
+				s = string.new(p)
+			}
 		}
 	}
-	p<i8*> = runtime.self_path
-	if p != null {
-		s = string.new(p)
-		if s != "" {
-			return norm_slash(s)
-		}
+	if s != "" {
+		return norm_slash(s)
 	}
 	return ""
 }

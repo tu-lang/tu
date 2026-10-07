@@ -1,5 +1,5 @@
 use std
-fn quick_sort(arr,cmper){
+func quick_sort(arr,cmper){
     if std.len(arr) < 1 return []
     first = arr[0]
     left = []
@@ -18,7 +18,7 @@ fn quick_sort(arr,cmper){
     return _qsort_merge(left,right)
 }
 
-fn _qsort_merge(arr1,arr2){
+func _qsort_merge(arr1,arr2){
     arr = []
     std.merge(arr,arr1)
     std.merge(arr,arr2)
