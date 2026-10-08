@@ -61,7 +61,40 @@ func test_chain_multiret_mixed(){
 	if n != 10 os.die("static_chain_caller != 10")
 	fmt.println("mixed chain multiret test success")
 }
+// Static fn hands back dynamic closures; call suffixes run on both sides.
+mem CBox {
+	i32 base
+}
+fn cbox_closure(box<CBox>) {
+	b = int(box.base)
+	return func(){ return b + 1 }
+}
+fn cbox_nested(box<CBox>) {
+	b = int(box.base)
+	return func(){
+		k = b
+		return func(){ return k * 3 }
+	}
+}
+fn static_call_suffix(box<CBox>) {
+	fs = [cbox_closure(box)]
+	r = fs[0]() + cbox_nested(box)()()
+	return r
+}
+func test_call_suffix_mixed(){
+	box<CBox> = new CBox{base: 4}
+	if cbox_closure(box)() != 5 { os.die("cbox_closure(box)() failed") }
+	if cbox_nested(box)()() != 12 { os.die("cbox_nested(box)()() failed") }
+	r = static_call_suffix(box)
+	if r != 17 { os.die("static_call_suffix failed") }
+	s = 0
+	for i = 0; i < 200; i += 1 { s += cbox_closure(box)() }
+	if s != 1000 { os.die("call suffix loop mixed failed") }
+	fmt.println("call suffix mixed test success")
+}
+
 func main(){
 	test_chain()
 	test_chain_multiret_mixed()
+	test_call_suffix_mixed()
 }

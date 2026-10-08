@@ -19,6 +19,7 @@ SPID=""
 cleanup(){
     ex_kill "${SPID:-}"
     rm -f "$SERVER_LOG"
+    ex_cleanup_tmp
 }
 trap cleanup EXIT
 

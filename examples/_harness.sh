@@ -34,6 +34,14 @@ ex_use_tuc(){
 
 ex_setup_toolchain
 
+# Per-run scratch dir for build workdirs and binaries; nothing is left in the
+# source tree. test.sh cleanup must call ex_cleanup_tmp.
+EX_TMP="$(mktemp -d "${TMPDIR:-/tmp}/tu-examples.XXXXXX")"
+
+ex_cleanup_tmp(){
+    [ -n "${EX_TMP:-}" ] && rm -rf "$EX_TMP"
+}
+
 ex_log(){
     echo -e "\033[32m$1\033[0m" >&2
 }
@@ -42,42 +50,35 @@ ex_fail(){
     exit 1
 }
 
-# Build main.tu in $1 (example dir name under examples/) → a.out path on stdout only.
+# Build main.tu in $1 (example dir name under examples/) → binary path on stdout only.
+# The binary lives in $EX_TMP/<name>; the copy `build` drops next to main.tu
+# is removed so the source tree stays clean.
 ex_build(){
     local name="$1"
     local src="$EX_DIR/$name/main.tu"
     local demo_dir="$EX_DIR/$name"
     [ -f "$src" ] || ex_fail "missing $src"
 
+    local driver=tu
     if ex_use_tuc; then
-        local ERR OUT
-        ERR=$(mktemp)
-        if ! (cd "$demo_dir" && tuc build main.tu >"$ERR" 2>&1); then
-            cat "$ERR" >&2
-            rm -f "$ERR"
-            ex_fail "tuc build failed: $src"
-        fi
-        cat "$ERR" >&2
-        rm -f "$ERR"
-        OUT="$demo_dir/main"
-        [ -f "$OUT" ] || ex_fail "missing binary $OUT (tuc build)"
-        chmod 755 "$OUT" || ex_fail "chmod failed: $OUT"
-        echo "$OUT"
-        return
+        driver=tuc
     fi
+    local work="$EX_TMP/$name"
+    mkdir -p "$work" || ex_fail "mkdir failed: $work"
 
     local ERR OUT
-    ERR=$(mktemp)
-    # Default embed: tu build pulls std+coasm (no prefix colib).
-    if ! (cd "$demo_dir" && tu build main.tu --workdir-cwd >"$ERR" 2>&1); then
+    ERR="$work/build.log"
+    # Default embed: build pulls std+coasm (no prefix colib).
+    if ! (cd "$demo_dir" && "$driver" build main.tu --workdir "$work" >"$ERR" 2>&1); then
         cat "$ERR" >&2
-        rm -f "$ERR"
-        ex_fail "tu build failed: $src"
+        rm -f "$demo_dir/main" "$demo_dir/main.exe"
+        ex_fail "$driver build failed: $src"
     fi
     cat "$ERR" >&2
-    rm -f "$ERR"
-    OUT="$demo_dir/a.out"
-    [ -f "$OUT" ] || ex_fail "missing binary $OUT (tu build)"
+    rm -f "$demo_dir/main" "$demo_dir/main.exe"
+    OUT="$work/a.out"
+    [ -f "$OUT" ] || OUT="$work/a.exe"
+    [ -f "$OUT" ] || ex_fail "missing binary in $work ($driver build)"
     chmod 755 "$OUT" || ex_fail "chmod failed: $OUT"
     echo "$OUT"
 }
