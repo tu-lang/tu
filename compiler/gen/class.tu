@@ -269,7 +269,10 @@ MemberCallExpr::static_compile(ctx,s,load){
     // bytes before reclaiming the receiver slot.
     call.compile(ctx,load)
     shift = 0
-    if !load && call.fcs != null && call.fcs.mcount > 1 {
+    // An async callee outside asyncgen only builds the leaf (future in %rax,
+    // no return block on stack), so the multi-return shift must not run.
+    futureOnly = call.fcs != null && !call.asyncgen && call.fcs.isasync()
+    if !load && call.fcs != null && call.fcs.mcount > 1 && !futureOnly {
         shift = call.fcs.mcount - 1
     }
     for i = shift - 1 ; i >= 0 ; i -= 1 {

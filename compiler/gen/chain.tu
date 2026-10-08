@@ -99,6 +99,12 @@ ChainExpr::objgen(ctx,load)
 				return expr.compile(ctx, load)
 			}else
 				return expr.compile(ctx, true)
+		}else if i > 0 && type(expr) == type(FunCallExpr) {
+			// Mid-chain call suffix f()() / mkobj()().v: call the previous hop
+			// (stack top), keep the first return and feed it to the next node.
+			fc = expr
+			fc.compile2(ctx,true,ast.ChainCall,null)
+			compile.Push()
 		}else{
 			expr.compile(ctx,true)
 			compile.Push()

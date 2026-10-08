@@ -320,6 +320,9 @@ FunCallExpr::compile2(ctx, load, ty, obj){
 	match ty {
     	ast.ChainCall: {
 			this.fcs = defaultfunc
+			// The previous chain hop is both in %rax and on the stack top; consume
+			// the stack copy so later positional runtime calls see a balanced stack.
+			compile.Pop("%rax")
             internal.get_func_value()
 			ty = ast.ClosureCall
     	}
@@ -507,8 +510,19 @@ FunCallExpr::getFutureStruct(){
     return s
 }
 
-FunCallExpr::gennewawait(){
-	s = this.getFutureStruct()
+// Builds the leaf future for an async callee already resolved by dispatch
+// (var annotation, .(T) assertion, previous chain hop or Type::), so the leaf
+// comes from the callee itself instead of re-deriving it from the package var.
+FunCallExpr::gennewawait(callee){
+	s = null
+	if callee != null {
+		s = callee.asyncst
+		if s == null && callee.st != null {
+			r = callee.st.resolveAsyncMember(callee.name)
+			if r != null s = r.asyncst
+		}
+	}
+	if s == null s = this.getFutureStruct()
 	if s == null {
 		this.check(false,"await function not found when gen await")
 	}
@@ -518,9 +532,14 @@ FunCallExpr::gennewawait(){
 	newsvar.init.pkgname = s.pkg
     newsvar.init.name = s.name
 
+	// A receiver parked on the stack by static_compile (ArgsPosExpr) is at a
+	// different depth while the leaf is built; fill null and let call() store it.
+	recvOnStack = std.len(this.args) > 0 && type(this.args[0]) == type(gen.ArgsPosExpr)
 	for i = 1 ; i < std.len(s.member) ; i += 1 {
 		m = s.member[i]
-		if i <= std.len(this.args) {
+		if i == 1 && recvOnStack {
+			newsvar.init.fields[m.name] = new gen.NullExpr(0,0)
+		}else if i <= std.len(this.args) {
 			newsvar.init.fields[m.name] = this.args[i - 1]
 		}else {
 			newsvar.init.fields[m.name] = new gen.NullExpr(0,0)

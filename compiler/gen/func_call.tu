@@ -15,7 +15,17 @@ FunCallExpr::call(ctx,fc,free,apicall)
 		if this.hasawait {
 			this.check(false,"unsupport future execute without in future env")
 		}
-		return this.gennewawait().compile(ctx,free)
+		leaf = this.gennewawait(fc)
+		leaf.compile(ctx,free)
+		// The receiver parked by static_compile is still at (%rsp); store it
+		// into the leaf receiver slot (member[1]). static_compile frees the slot.
+		if std.len(this.args) > 0 && type(this.args[0]) == type(gen.ArgsPosExpr) {
+			ls = leaf.getStruct()
+			this.check(std.len(ls.member) > 1,"async member leaf missing receiver slot")
+			compile.writeln("    mov (%%rsp), %%rdi")
+			compile.writeln("    mov %%rdi, %d(%%rax)", ls.member[1].offset)
+		}
+		return leaf
 	}
 
 	this.is_dyn = false

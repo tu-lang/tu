@@ -268,11 +268,11 @@ test_dev:
 # Toolchain self-tests (compiler/asmer/linker) run as peer targets so `make tests -j`
 # overlaps them with tests/* instead of waiting until every suite finishes.
 # examples runs serially after parallel suites (avoids stdroot embed races under -j).
-parallel_cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio pkgmode pkgmode_negative
+parallel_cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio pkgmode pkgmode_negative async_negative
 toolchain_cases = toolchain_compiler toolchain_asmer toolchain_linker
 cases = $(toolchain_cases) $(parallel_cases) examples
 
-.PHONY: toolchain_compiler toolchain_asmer toolchain_linker examples pkgmode_negative
+.PHONY: toolchain_compiler toolchain_asmer toolchain_linker examples pkgmode_negative async_negative
 toolchain_compiler:
 	@sh compiler/test.sh
 	@echo "compiler tests passed"
@@ -293,6 +293,9 @@ examples:
 pkgmode_negative:
 	@bash tests/pkgmode/negative/run.sh
 	@echo "pkgmode negative tests passed"
+async_negative:
+	@bash tests/async/negative/run.sh
+	@echo "async negative tests passed"
 
 # make test -j9
 tests_cases: $(cases)
