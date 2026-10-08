@@ -7,6 +7,11 @@ use compiler.utils
 use runtime
 use compiler.gen
 
+// True when e or its subtree holds an await site.
+func hasAwaitDeep(e){
+    return e != null && (e.hasawait || gen.exprContainsAwait(e))
+}
+
 AsyncBlock::parseIfStmt(ifstmt){
     this.push(ifstmt)
 
@@ -53,7 +58,7 @@ AsyncBlock::parseIfStmt2(ifstmt){
 
         ifs = new gen.IfStmt(0,0)
         ifc = new gen.IfCaseExpr(0,0)
-        if(ifcase.cond.hasawait){
+        if(hasAwaitDeep(ifcase.cond)){
            ifc.cond = this.genawait(ifcase.cond,null) 
         }else{
             ifc.cond = ifcase.cond
@@ -100,7 +105,7 @@ AsyncBlock::parseWhileStmt(stmt){
     newblock.stmts[] = new gen.LabelExpr(loopstartid,0,0)
     if(stmt.cond != null){
         ifs = new gen.IfStmt(0,0)
-        if(stmt.cond.hasawait)
+        if(hasAwaitDeep(stmt.cond))
             ifs.hasawait = true
         ifc = new gen.IfCaseExpr(0,0)
         ifc.cond = stmt.cond
@@ -140,14 +145,14 @@ AsyncBlock::parseForTriStmt(stmt){
 
     stmt.breakid = endid
     stmt.continueid = loopstartid
-    if(stmt.after.hasawait){
+    if(hasAwaitDeep(stmt.after)){
         stmt.continueid = continueid
     }
     newctx = new AsyncBlock(this.fc,this.root)
-    if(stmt.init.hasawait){
+    if(hasAwaitDeep(stmt.init)){
         stmt.init = this.genawait(stmt.init,null)
     }
-    if(stmt.cond.hasawait){
+    if(hasAwaitDeep(stmt.cond)){
         cond = stmt.cond
         newcond = new gen.BoolExpr(0,0)
         newcond.lit = true
@@ -170,7 +175,7 @@ AsyncBlock::parseForTriStmt(stmt){
         newctx.parse(ifs)
     }
     newctx.parse(stmt.block)
-    if(stmt.after.hasawait){
+    if(hasAwaitDeep(stmt.after)){
         newctx.push( 
             new gen.LabelExpr(continueid,0,0)
         )
@@ -206,7 +211,7 @@ AsyncBlock::parseForRangeStmt(stmt){
     stmt.continueid = loopstartid
 
     newblock = new gen.BlockStmt()
-    if(stmt.obj.hasawait){
+    if(hasAwaitDeep(stmt.obj)){
         stmt.obj = this.genawait(stmt.obj,null)
     }
 
@@ -233,12 +238,15 @@ AsyncBlock::parseMatchStmt(stmt){
     stmt.breakid = endid
 
     if type(stmt.cond) != type(gen.VarExpr) {
-        if stmt.cond.hasawait {
-            recvs = new gen.MultiAssignStmt(0,0)
-            recvs.opt = ast.ASSIGN
-            recvs.ls[] = stmt.condrecv
-            recvs.rs[] = stmt.condrecv
-            this.genawait(stmt.cond,recvs)
+        if hasAwaitDeep(stmt.cond) {
+            // Await site itself or nested in args / chain / literal / binary: lift,
+            // then assign to condrecv (inferFromInit, typed from the lifted rhs).
+            assignExpr = new gen.AssignExpr(0, 0)
+            assignExpr.opt = ast.ASSIGN
+            assignExpr.lhs = stmt.condrecv
+            assignExpr.rhs = this.lift(stmt.cond)
+            stmt.condrecv.inferExpr = assignExpr.rhs
+            this.push(assignExpr)
         }else{
             assignExpr = new gen.AssignExpr(0, 0)
             assignExpr.opt = ast.ASSIGN
@@ -247,7 +255,7 @@ AsyncBlock::parseMatchStmt(stmt){
             this.push(assignExpr)
         }
         stmt.cond = stmt.condrecv
-    }else if stmt.cond.hasawait {
+    }else if hasAwaitDeep(stmt.cond) {
         stmt.cond = this.genawait(stmt.cond,null)
     }    
 
@@ -271,7 +279,7 @@ AsyncBlock::parseMatchStmt(stmt){
             cond = be
         }
 
-        if(cond.hasawait){
+        if(hasAwaitDeep(cond)){
            ifc.cond = this.genawait(cond,null) 
         }else{
             ifc.cond = cond
@@ -316,8 +324,9 @@ AsyncBlock::parseMultiAssignStmt(stmt){
             assignExpr.opt = stmt.opt
             assignExpr.lhs = lexpr
             assignExpr.rhs = rexpr
-            if(rexpr.hasawait || gen.expressionHasAwait(rexpr)){
-                this.genawait(assignExpr,null)
+            if(rexpr.hasawait || gen.expressionHasAwait(rexpr) || gen.exprContainsAwait(rexpr)){
+                this.liftChildren(assignExpr)
+                this.push(assignExpr)
             }else {
                 this.push(assignExpr)
             }
@@ -326,8 +335,15 @@ AsyncBlock::parseMultiAssignStmt(stmt){
     }
 
     rs = stmt.rs[0]
-    if(rs.hasawait || gen.expressionHasAwait(rs)){
+    if gen.isAwaitSite(rs) {
         this.genawait(rs,stmt)
+    }else if type(rs) == type(gen.BinaryExpr) && gen.exprContainsAwait(rs) && std.len(stmt.ls) == 1 {
+        // sum = a.await + b.await receiver (see genawait)
+        this.genawait(rs,stmt)
+    }else if gen.exprContainsAwait(rs) {
+        // a, b = obj.m(f().await): lift nested awaits, keep the multi-return assign
+        stmt.rs[0] = this.lift(rs)
+        this.push(stmt)
     }else{
         this.push(stmt)
     }

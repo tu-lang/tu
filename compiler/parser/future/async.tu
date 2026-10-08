@@ -71,6 +71,18 @@ class AsyncBlock {
     func genretvarForLeaf(s){
         retvarname = "fut.r." + this.topid()
         retvar = new gen.VarExpr(retvarname,0,0)
+        // Untyped async fn (not a hand-written poll): defer typing to codegen, the
+        // callee may not be parsed yet in this FunctionPhase round.
+        if s != null && s.isasync && !this.isRuntimeFutureStruct(s) {
+            dpoll = s.getPoll()
+            if dpoll != null && dpoll.isasync() && std.len(dpoll.returnTypes) == 0 {
+                retvar.size = 8
+                retvar.inferFromInit = true
+                retvar.inferLeaf = s
+                this.fc.InsertLocalVar(-1,retvar)
+                return retvar
+            }
+        }
         if s == null || !s.isasync || this.isRuntimeFutureStruct(s) ||
            this.leafAwaitValueDynamic(s) {
             retvar.size = 8

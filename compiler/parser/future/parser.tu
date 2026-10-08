@@ -59,7 +59,7 @@ AsyncBlock::parse( stmt ) {
                     first = false
                     continue
                 }
-                if(r.hasawait || gen.expressionHasAwait(r)){
+                if(r.hasawait || gen.expressionHasAwait(r) || gen.exprContainsAwait(r)){
                     ret[] = this.genawait(r,null)
                 }else{
                     ret[] = r
@@ -77,9 +77,19 @@ AsyncBlock::parse( stmt ) {
     }else if(type(stmt) == type(gen.GotoStmt)){
         this.push(stmt)
     }else {
-        stmt1 = stmt
-        if stmt.hasawait || gen.expressionHasAwait(stmt1) {
-            this.genawait(stmt1,null)
+        e = stmt
+        if stmt.hasawait || gen.expressionHasAwait(e) || gen.exprContainsAwait(e) {
+            if gen.isAwaitSite(e) {
+                // Bare f().await / x.await statement: suspend and drop the result
+                this.genawait(e,null)
+            }else if type(e) == type(gen.AssignExpr) {
+                // a = ...await... / a += ...await...: lift rhs (and lhs index) awaits, keep the assignment
+                this.liftChildren(e)
+                this.push(e)
+            }else{
+                // f(g().await) etc.: lift nested awaits, keep the statement
+                this.push(this.lift(e))
+            }
             return null
         }
         this.push(stmt)
