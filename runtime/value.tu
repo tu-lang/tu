@@ -15,7 +15,9 @@ fn value_is_intish(v<Value>) i32 {
     if v.type == Int || v.type == Char || v.type == Bool return 1
     return 0
 }
-// Future* as Value*: type overlays virf; asyncsize > 0 (same idea as dynfuturenew).
+// Future* as Value*: type overlays virf.
+// Async-fn futures carry asyncsize > 0 (same idea as dynfuturenew); hand-written
+// mem:async leaves carry the fixed poll(self, ctx) table with asyncsize == 0.
 // No align check: class virt virf may be unaligned; x86 allows the load.
 fn value_is_future(v<Value>) i32 {
     if v == null return 0
@@ -25,11 +27,25 @@ fn value_is_future(v<Value>) i32 {
     vf<VObjFunc> = bits.(VObjFunc)
     if vf == null return 0
     if vf.entry == 0.(u64) return 0
-    if vf.asyncsize <= 0 return 0
+    if vf.asyncsize == 0 {
+        return value_is_leaf_poll(vf)
+    }
+    if vf.asyncsize < 0 return 0
     if vf.asyncsize > 1048576 return 0
     if vf.asyncargs > 0.(u64) && vf.asyncsize < vf.asyncargs.(i32) * 8 {
         return 0
     }
+    return 1
+}
+// Poll table emitted for a hand-written mem:async leaf: no hash id, two
+// non-variadic params (self, ctx), no async frame / init entry.
+fn value_is_leaf_poll(vf<VObjFunc>) i32 {
+    if vf.hid != 0.(u64) return 0
+    if vf.isvarf != 0 return 0
+    if vf.argsize != 2 return 0
+    if vf.argstack != 16 return 0
+    if vf.asyncargs != 0.(u64) return 0
+    if vf.retsize < 1 return 0
     return 1
 }
 fn value_is_nullish(v<Value>) i32 {

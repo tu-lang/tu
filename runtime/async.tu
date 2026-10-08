@@ -44,6 +44,15 @@ fn block(p<Future>){
     }
 }
 
+// Validates a dynamic .await operand (compiler ABI: runtime_await_value).
+// Dies on null / non-future values; returns the operand as a Future unchanged.
+fn await_value(v<Value>) Future {
+    if value_is_nullish(v) dief(*"[await] await on null value")
+    if value_is_future(v) == 0 dief(*"[await] await on non-future value")
+    bits<u64> = v
+    return bits.(Future)
+}
+
 // internal call
 // @return Future
 fn dynfuturenew(obj<Value> , callid<u64>, args<i64*>...) {
