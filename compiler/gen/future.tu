@@ -2,16 +2,136 @@
 // Also: propagate untyped locals from RHS mem/leaf/Future for static member-async await.
 use compiler.ast
 use compiler.compile
+use compiler.parser
 use compiler.parser.package
 use std
+
+// Whether awaiting leaf s yields a dynamic Value. Declared value types decide
+// first; untyped async fns use async_value_dynamic, then follow the leaves they
+// awaited in async_value_deps (a cycle resolves to static). Only final once all
+// functions are parsed, i.e. at codegen.
+func asyncLeafValueDynamic(s){
+    return asyncLeafValueDynamicIn(s, {})
+}
+func asyncLeafValueDynamicIn(s, visiting){
+    if s == null || !s.isasync return true
+    if s.name == "Future" {
+        if s.pkg == "runtime" return true
+        if (s.pkg == "" || s.pkg == null) && s.parser != null && s.parser.getpkgname() == "runtime"
+            return true
+    }
+    poll = s.getPoll()
+    if poll == null return true
+    if std.len(poll.returnTypes) >= 2 {
+        vty = poll.returnTypes[1]
+        if vty != null && vty.baseType() && vty.base >= ast.I8 && vty.base <= ast.F64
+            return false
+        if vty != null && vty.memType()
+            return false
+        return true
+    }
+    if std.len(poll.returnTypes) == 1 {
+        vty = poll.returnTypes[0]
+        if vty != null && vty.baseType() && vty.base >= ast.I8 && vty.base <= ast.F64
+            return false
+    }
+    if poll.async_value_dynamic return true
+    key = s.name
+    if s.parser != null key = s.futurepollname()
+    if visiting[key] != null return false
+    visiting[key] = true
+    for d : poll.async_value_deps {
+        if d != s && asyncLeafValueDynamicIn(d, visiting) return true
+    }
+    return false
+}
 
 func expressionHasAwait(e){
     if e == null return false
     if e.hasawait return true
+    if type(e) == type(AwaitExpr) return true
     if type(e) == type(MemberCallExpr) {
         mc = e
         return mc.call != null && mc.call.hasawait
     }
+    return false
+}
+
+// Explicit postfix .await on a non-call/non-var operand: chain call result,
+// field, index, paren expr or another await result. Only appears as a chain
+// head; lowered away by AsyncBlock.lift inside async bodies.
+class AwaitExpr : ast.Ast {
+    expr = null // awaited operand; must evaluate to a future
+    func init(expr,line,column){
+        super.init(line,column)
+        this.expr = expr
+    }
+}
+AwaitExpr::toString(){
+    if this.expr == null return "AwaitExpr(null.await)"
+    return "AwaitExpr(" + this.expr.toString() + ".await)"
+}
+// Reaching codegen means .await appeared outside an async body.
+AwaitExpr::compile(ctx,load){
+    this.check(false,"await: .await used outside async function")
+    return null
+}
+// No static type before lowering; parse-time type probes must not error here.
+AwaitExpr::getType(ctx){
+    return ast.ILLEGAL
+}
+
+// True when e itself suspends on lift: AwaitExpr, or FunCall / Var / MemberCall
+// carrying the .await mark. Composite nodes' hasawait only means "subtree has one".
+func isAwaitSite(e){
+    if e == null return false
+    if type(e) == type(AwaitExpr) return true
+    if type(e) == type(FunCallExpr) return e.hasawait
+    if type(e) == type(VarExpr) return e.hasawait
+    if type(e) == type(MemberCallExpr) {
+        mc = e
+        return mc.call != null && mc.call.hasawait
+    }
+    return false
+}
+
+func structInitContainsAwait(init){
+    if init == null return false
+    for k, v : init.fields {
+        if exprContainsAwait(v) return true
+    }
+    return false
+}
+
+func listContainsAwait(arr){
+    for a : arr {
+        if exprContainsAwait(a) return true
+    }
+    return false
+}
+
+// Deep check for an await site anywhere in e's subtree. Mirrors the child set
+// walked by AsyncBlock.liftChildren; closure bodies are separate functions.
+func exprContainsAwait(e){
+    if e == null return false
+    if isAwaitSite(e) return true
+    t = type(e)
+    if t == type(ClosureExpr) return false
+    if t == type(FunCallExpr) return listContainsAwait(e.args)
+    if t == type(MemberCallExpr) return exprContainsAwait(e.call)
+    if t == type(ChainExpr) return listContainsAwait(e.fields)
+    if t == type(BinaryExpr) return exprContainsAwait(e.lhs) || exprContainsAwait(e.rhs)
+    if t == type(AssignExpr) return exprContainsAwait(e.lhs) || exprContainsAwait(e.rhs)
+    if t == type(IndexExpr) return exprContainsAwait(e.index)
+    if t == type(ArrayExpr) return listContainsAwait(e.lit)
+    if t == type(MapExpr) return listContainsAwait(e.lit)
+    if t == type(KVExpr) return exprContainsAwait(e.key) || exprContainsAwait(e.value)
+    if t == type(NewClassExpr) return listContainsAwait(e.args)
+    if t == type(NewStructExpr) return structInitContainsAwait(e.init)
+    if t == type(StructInitExpr) return structInitContainsAwait(e)
+    if t == type(BuiltinFuncExpr) return exprContainsAwait(e.expr)
+    if t == type(AddrExpr) return exprContainsAwait(e.expr)
+    if t == type(DelRefExpr) return exprContainsAwait(e.expr)
     return false
 }
 
@@ -339,7 +459,7 @@ func propagateVarMemTypeFromRhs(lhs, rhs){
         return null
     if compile.currentFunc == null
         return null
-    if expressionHasAwait(rhs)
+    if exprContainsAwait(rhs)
         return null
 
     if type(rhs) == type(NewClassExpr) {
@@ -510,7 +630,7 @@ func callExprIsAwaitable(e){
 
 func exprIsUnaWaitedAwaitable(e){
     if e == null return false
-    if expressionHasAwait(e)
+    if isAwaitSite(e) || expressionHasAwait(e)
         return false
     if type(e) == type(VarExpr)
         return varIsAwaitable(e)
@@ -560,7 +680,7 @@ func rejectUnaWaitedAwaitableOperand(e, other, opt){
 
 IfStmt::checkawait(){
     for it : this.cases {
-        if it.cond.hasawait {
+        if it.cond.hasawait || exprContainsAwait(it.cond) {
             this.hasawait = true
             break
         }
@@ -578,7 +698,7 @@ IfStmt::checkawait(){
 
 ChainExpr::checkawait() {
     for it : this.fields {
-        if expressionHasAwait(it) {
+        if exprContainsAwait(it) {
             this.hasawait = true
             return true
         }
@@ -586,10 +706,10 @@ ChainExpr::checkawait() {
 }
 
 BinaryExpr::checkawait(){
-    if expressionHasAwait(this.lhs) {
+    if exprContainsAwait(this.lhs) {
         this.hasawait = true
     }
-    if this.rhs != null && expressionHasAwait(this.rhs) {
+    if this.rhs != null && exprContainsAwait(this.rhs) {
         this.hasawait = true
     }
     rejectUnaWaitedAwaitableOperand(this.lhs, this.rhs, this.opt)
@@ -598,13 +718,14 @@ BinaryExpr::checkawait(){
 }
 
 AssignExpr::checkawait(){
-	if this.lhs.hasawait {
+	if this.lhs.hasawait || exprContainsAwait(this.lhs) {
 		this.hasawait = true
 	}
     if type(this.lhs) == type(VarExpr) && this.rhs != null {
         propagateVarMemTypeFromRhs(this.lhs, this.rhs)
+        parser.asyncNoteLocalAssign(this.lhs, this.rhs, this.opt)
     }
-	if expressionHasAwait(this.rhs) {
+	if exprContainsAwait(this.rhs) {
 		this.hasawait = true
 	}
     if this.opt != ast.ASSIGN && this.rhs != null {

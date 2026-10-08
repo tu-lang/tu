@@ -72,6 +72,32 @@ StructInitExpr::compile_field(ctx,load,s,value,field){
 
 	if s.asyncfn != null {
 		utils.debugf("asyncfn struct compile: filed:%s",s.asyncfn.name)
+		// Fields mirror the async fn params (field name = param name); typed params
+		// get the same conversion as a sync call's argCast (literal 1 -> native 1).
+		pv = null
+		for p : s.asyncfn.params_order_var {
+			if p.varname == field.name {
+				pv = p
+				break
+			}
+		}
+		if pv != null && pv.structtype {
+			if type(value) == type(NullExpr) {
+				compile.writeln("    mov $0, %%rax")
+				if field.pointer return ast.U64
+				return field.type
+			}
+			if ast.isbase(pv.type) && (pv.structname == "" || pv.structname == null) && !pv.pointer {
+				op = new OperatorHelper()
+				op.ltoken = pv.type
+				op.opt    = ast.ILLEGAL_END
+				op.ctx    = ctx
+				op.lstruct = null
+				op.staticCompile(value)
+				compile.Cast(op.rtoken,pv.type)
+				return pv.type
+			}
+		}
 		if exprIsMtype(value,ctx) {
 			rtok = value.getType(ctx)
 		}

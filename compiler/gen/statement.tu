@@ -101,14 +101,18 @@ ReturnStmt::genExpr(ctx , i){
     cur = i - 1
     stackpointer = fc.ret_stack
 
-    ty = expr.getType(ctx)
+    // Only static exprs need a concrete type (xmm vs rax); dynamic values are
+    // Value pointers, and map / closure / new class have no static type at all.
+    ismem = exprIsMtype(expr,ctx)
+    ty = ast.I64
+    if ismem ty = expr.getType(ctx)
     if fType != null && (fType.baseType() || fType.pointer) {
         ty = fType.abiToken()
     }
     compile.writeln(" mov %d(%%rbp) , %%rdi",stackpointer)
     if fType != null && ( fType.base == ast.F32 || fType.base == ast.F64){
         compile.PushfDst(ty,"%rdi", cur * 8)
-    }else if exprIsMtype(expr,ctx) && ast.isfloattk(ty) {
+    }else if ismem && ast.isfloattk(ty) {
         compile.PushfDst(ty,"%rdi",cur * 8)
     }else{
         compile.writeln(" mov %%rax , %d(%%rdi)",cur * 8)
