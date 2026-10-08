@@ -85,6 +85,91 @@ func arkVarStruct(p, v){
     return s
 }
 
+// Mem struct named by an assert / field annotation.
+func arkTypeStruct(p, pkg, name){
+    if name == null || name == "" return null
+    s = null
+    if p.pkg != null {
+        opkg = p.pkg.getPackage(pkg)
+        if opkg != null s = opkg.getStruct(name)
+    }
+    if s == null s = p.getStruct(pkg, name)
+    if s == null s = package.getStruct(pkg, name)
+    return s
+}
+
+func arkAssertStruct(p, ta){
+    if ta == null || !ta.memType() return null
+    if ta.st != null return ta.st
+    return arkTypeStruct(p, ta.pkg, ta.name)
+}
+
+// Mem struct of a field on owner, or null when not a mem field.
+func arkMemberStruct(p, owner, member){
+    if owner == null return null
+    m = owner.getMember(member)
+    if m == null || !m.isstruct return null
+    if m.structref != null return m.structref
+    s = null
+    if m.structpkg != null && m.structpkg != "" s = arkTypeStruct(p, m.structpkg, m.structname)
+    if s == null s = package.getStruct(owner.pkg, m.structname)
+    return s
+}
+
+// Walks a chain tracking the receiver's static type (a node's .(T) types that
+// node's receiver and may retype a dynamic prefix). Only chains retyped by an
+// assert and ending in a member call are classified here.
+// Returns [handled, kind].
+func arkChainTail(p, ce, awaited, deps){
+    n = std.len(ce.fields)
+    if n < 2 || ce.tyassert != null return false, ARK_UNKNOWN
+    last = ce.fields[n - 1]
+    if type(last) != type(gen.MemberCallExpr) return false, ARK_UNKNOWN
+    cur = null
+    asserted = false
+    first = ce.fields[0]
+    if type(first) == type(gen.StructMemberExpr) {
+        owner = null
+        if first.tyassert != null {
+            owner = arkAssertStruct(p, first.tyassert)
+            asserted = true
+        }else if first.var != null {
+            owner = arkVarStruct(p, first.var)
+        }
+        cur = arkMemberStruct(p, owner, first.member)
+    }else if type(first) == type(gen.MemberExpr) {
+        owner = null
+        if first.tyassert != null {
+            owner = arkAssertStruct(p, first.tyassert)
+            asserted = true
+        }else if first.varname != null && first.varname != "" {
+            rk, rv = arkRecv(p, first.varname)
+            if rk == ARK_STATIC owner = arkVarStruct(p, rv)
+        }
+        cur = arkMemberStruct(p, owner, first.membername)
+    }
+    for i = 1; i + 1 < n; i += 1 {
+        f = ce.fields[i]
+        if type(f) != type(gen.MemberExpr) {
+            cur = null
+            continue
+        }
+        owner = cur
+        if f.tyassert != null {
+            owner = arkAssertStruct(p, f.tyassert)
+            asserted = true
+        }
+        cur = arkMemberStruct(p, owner, f.membername)
+    }
+    if last.tyassert != null {
+        cur = arkAssertStruct(p, last.tyassert)
+        asserted = true
+    }
+    // Plain static chains keep the head-based rule
+    if !asserted || cur == null return false, ARK_UNKNOWN
+    return true, arkStructMember(cur, last.membername, awaited, deps)
+}
+
 func arkDynOrUnknown(k){
     if k == ARK_DYN return ARK_DYN
     return ARK_UNKNOWN
@@ -92,7 +177,15 @@ func arkDynOrUnknown(k){
 
 func arkClassify(p, e, deps){
     if e == null return ARK_UNKNOWN
-    if e.tyassert != null return ARK_STATIC
+    if e.tyassert != null {
+        // obj.(T).m(): the assert types the receiver, not the result
+        if type(e) == type(gen.FunCallExpr) && e.package != null && e.package != "" {
+            rk, rv = arkRecv(p, e.package)
+            if rk != ARK_UNKNOWN
+                return arkStructMember(arkAssertStruct(p, e.tyassert), e.funcname, e.hasawait, deps)
+        }
+        return ARK_STATIC
+    }
     t = type(e)
     if t == type(gen.IntExpr) || t == type(gen.FloatExpr) || t == type(gen.StringExpr) ||
        t == type(gen.BoolExpr) || t == type(gen.NullExpr)
@@ -122,6 +215,10 @@ func arkClassify(p, e, deps){
     }
     if t == type(gen.AwaitExpr) {
         // chain / field / index then .await: a dynamic operand yields a dynamic result
+        if e.expr != null && type(e.expr) == type(gen.ChainExpr) {
+            handled, tk = arkChainTail(p, e.expr, true, deps)
+            if handled return tk
+        }
         k = arkClassify(p, e.expr, deps)
         if k == ARK_DYN || k == ARK_LIT return ARK_DYN
         return ARK_UNKNOWN
@@ -188,6 +285,8 @@ func arkClassify(p, e, deps){
     if t == type(gen.ChainExpr) {
         // a chain on a dynamic receiver is dynamically dispatched end to end
         if std.len(e.fields) == 0 return ARK_UNKNOWN
+        handled, tk = arkChainTail(p, e, false, deps)
+        if handled return tk
         head = e.fields[0]
         if head.tyassert == null && type(head) == type(gen.VarExpr) && !head.hasawait {
             if head.structtype return ARK_UNKNOWN

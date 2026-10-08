@@ -29,23 +29,16 @@ AsyncBlock::getstruct(expr){
     curf = this.root.fc
     if type(expr) == type(gen.FunCallExpr) {
         fc = expr
-        if fc.package != null && fc.package != "" {
-            var = ast.GP().getGlobalVar("",fc.package)
-            if var == null {
-                var = curf.FindLocalVar(fc.package)
+        // Instance receiver obj.m().await: type resolved once (assert first)
+        isRecv, rs = this.recvStruct(fc)
+        if isRecv {
+            // Dynamic receiver: caller falls back to await_value
+            if rs == null return null
+            asyncfn = rs.resolveAsyncMember(fc.funcname)
+            if asyncfn == null || asyncfn.fntype != ast.AsyncFunc {
+                expr.check(false,"gen await: func not async in parse ")
             }
-            if var != null {
-                if !var.structtype || var.structname == "" {
-                    return null
-                }
-                s = p.pkg.getPackage(var.structpkg).getStruct(var.structname)
-                if s == null expr.check(false,"gen await static struct not exist")
-                asyncfn = s.resolveAsyncMember(fc.funcname)
-                if asyncfn == null || asyncfn.fntype != ast.AsyncFunc {
-                    expr.check(false,"gen await: func not async")
-                }
-                return asyncfn.asyncst
-            }
+            return asyncfn.asyncst
         }
         parent = p.getStruct("", fc.package)
         if parent != null {
@@ -208,29 +201,17 @@ AsyncBlock::genawait(stmt , recvs){
         // Lift awaits in call args left-to-right first: f(g().await, 1).await
         this.liftChildren(fc)
         // Instance sync factory: obj.method() as FunCall(package=obj, funcname=method)
-        if fc.package != null && fc.package != "" {
-            var = ast.GP().getGlobalVar("", fc.package)
-            if var == null {
-                var = this.root.fc.FindLocalVar(fc.package)
-            }
-            if var != null && var.structtype && var.structname != "" {
-                parent = null
-                opkg = this.root.curp.pkg.getPackage(var.structpkg)
-                if opkg != null
-                    parent = opkg.getStruct(var.structname)
-                if parent == null
-                    parent = package.getStruct(var.structpkg, var.structname)
-                if parent != null {
-                    asyncfn = parent.resolveAsyncMember(fc.funcname)
-                    if asyncfn == null || asyncfn.fntype != ast.AsyncFunc {
-                        memfn = parent.getFunc(fc.funcname)
-                        leaf = this.awaitableFromReturnTypes(memfn)
-                        if leaf == null && parent.syncFactoryLeaves[fc.funcname] != null
-                            leaf = parent.syncFactoryLeaves[fc.funcname]
-                        if leaf != null
-                            return this.leafawait(fc, leaf, recvs)
-                    }
-                }
+        // Receiver type may come from a .(T) assert: m.(XM).leaf(5).await
+        isRecv, parent = this.recvStruct(fc)
+        if parent != null {
+            asyncfn = parent.resolveAsyncMember(fc.funcname)
+            if asyncfn == null || asyncfn.fntype != ast.AsyncFunc {
+                memfn = parent.getFunc(fc.funcname)
+                leaf = this.awaitableFromReturnTypes(memfn)
+                if leaf == null && parent.syncFactoryLeaves[fc.funcname] != null
+                    leaf = parent.syncFactoryLeaves[fc.funcname]
+                if leaf != null
+                    return this.leafawait(fc, leaf, recvs)
             }
         }
         leaf = this.pkgCallAwaitableLeaf(fc)
@@ -579,6 +560,28 @@ AsyncBlock::typeInfoStruct(ta){
     return this.resolveStructAnnot(ta.pkg, ta.name)
 }
 
+// Static receiver type of obj.m() parsed as FunCall(package=obj).
+// Returns isRecv (package names a variable) and its mem struct: the .(T)
+// assert wins over the variable annotation; null struct = dynamic receiver.
+AsyncBlock::recvStruct(fc){
+    if fc == null || fc.package == null || fc.package == "" return false, null
+    var = ast.GP().getGlobalVar("", fc.package)
+    if var == null
+        var = this.root.fc.FindLocalVar(fc.package)
+    if var == null return false, null
+    if fc.tyassert != null {
+        s = this.typeInfoStruct(fc.tyassert)
+        if s == null
+            fc.check(false,"await: receiver type assertion is not a mem struct: " + fc.tyassert.name)
+        return true, s
+    }
+    if !var.structtype || var.structname == null || var.structname == "" return true, null
+    s = this.resolveStructAnnot(var.structpkg, var.structname)
+    if s == null
+        fc.check(false,"gen await static class not exist:" + var.structpkg + "." + var.structname)
+    return true, s
+}
+
 // Mem struct of a member field; empty member pkg resolves relative to the parent.
 AsyncBlock::memberStruct(parent, m){
     if m == null || !m.isstruct return null
@@ -698,44 +701,68 @@ AsyncBlock::chainStaticLeaf(ch){
     // Single-field chains only accept a mem field itself (this.leaf / g.leaf)
     if n < 2 && type(first) != type(gen.StructMemberExpr) return none
 
-    // 1. Head must be static mem: StructMemberExpr or a mem-annotated local
+    // Walk the chain tracking the static type of the running value (cur).
+    // cur == null means a dynamic prefix (class member, index, call result);
+    // any later .(T) on a node retypes the chain. A node's tyassert asserts
+    // that node's receiver (the previous hop), as in memgen:
+    //   b.m.(XM).seven(), a[0].(XM).seven(), this.m.(XM).f.seven()
+    // 1. Head: StructMemberExpr, mem-annotated local, or v.(T).f
     cur = null
     if type(first) == type(gen.StructMemberExpr) {
-        if first.var == null return none
-        owner = null
-        if first.tyassert != null
-            owner = this.typeInfoStruct(first.tyassert)
-        else
-            owner = this.resolveStructAnnot(first.var.structpkg, first.var.structname)
-        if owner == null return none
-        cur = this.memberStruct(owner, owner.getMember(first.member))
+        if first.var != null {
+            owner = null
+            if first.tyassert != null
+                owner = this.typeInfoStruct(first.tyassert)
+            else
+                owner = this.resolveStructAnnot(first.var.structpkg, first.var.structname)
+            if owner != null
+                cur = this.memberStruct(owner, owner.getMember(first.member))
+        }
     }else if type(first) == type(gen.VarExpr) {
         rv = this.fc.FindLocalVar(first.varname)
-        if rv == null || !rv.structtype || rv.structname == null || rv.structname == "" return none
-        cur = this.resolveStructAnnot(rv.structpkg, rv.structname)
+        if rv != null && rv.structtype && rv.structname != null && rv.structname != ""
+            cur = this.resolveStructAnnot(rv.structpkg, rv.structname)
+    }else if type(first) == type(gen.MemberExpr) {
+        owner = null
+        if first.tyassert != null {
+            owner = this.typeInfoStruct(first.tyassert)
+        }else if first.varname != null && first.varname != "" {
+            rv = this.fc.FindLocalVar(first.varname)
+            if rv != null && rv.structtype && rv.structname != null && rv.structname != ""
+                owner = this.resolveStructAnnot(rv.structpkg, rv.structname)
+        }
+        if owner != null
+            cur = this.memberStruct(owner, owner.getMember(first.membername))
     }
-    if cur == null return none
     // this.leaf.await: the field type itself is the leaf
     if n == 1 {
         if this.isAwaitableStruct(cur) return [cur, null]
         return none
     }
 
-    // 2. Middle nodes must be field accesses, drilling into mem field types
+    // 2. Middle nodes: mem fields drill down; other nodes yield dynamic values
     for i = 1; i + 1 < n; i += 1 {
         f = ch.fields[i]
-        if type(f) != type(gen.MemberExpr) return none
+        if type(f) != type(gen.MemberExpr) {
+            cur = null
+            continue
+        }
+        owner = cur
         if f.tyassert != null
-            cur = this.typeInfoStruct(f.tyassert)
+            owner = this.typeInfoStruct(f.tyassert)
+        if owner != null
+            cur = this.memberStruct(owner, owner.getMember(f.membername))
         else
-            cur = this.memberStruct(cur, cur.getMember(f.membername))
-        if cur == null return none
+            cur = null
     }
 
     // 3. Tail: async member / sync factory / awaitable field
     last = ch.fields[n - 1]
     if type(last) == type(gen.MemberCallExpr) {
-        if last.tyassert != null return none
+        // x.(T).m(): receiver typed by the assert, else by the walked prefix
+        if last.tyassert != null
+            cur = this.typeInfoStruct(last.tyassert)
+        if cur == null return none
         call = last.call
         if call == null return none
         asyncfn = cur.resolveAsyncMember(last.membername)
@@ -767,11 +794,13 @@ AsyncBlock::chainStaticLeaf(ch){
         return [leaf, null]
     }
     if type(last) == type(gen.MemberExpr) {
-        st = null
+        // x.(T).leaf: the assert types the receiver, the field type is the leaf
+        owner = cur
         if last.tyassert != null
-            st = this.typeInfoStruct(last.tyassert)
-        else
-            st = this.memberStruct(cur, cur.getMember(last.membername))
+            owner = this.typeInfoStruct(last.tyassert)
+        st = null
+        if owner != null
+            st = this.memberStruct(owner, owner.getMember(last.membername))
         if this.isAwaitableStruct(st) return [st, null]
     }
     return none
