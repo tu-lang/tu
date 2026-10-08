@@ -1,3 +1,4 @@
+// expect: await: operand is not awaitable
 // A statically typed native value cannot be awaited.
 use runtime
 

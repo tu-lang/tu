@@ -1,3 +1,4 @@
+// expect: await on non-future value
 // A dynamic package func returning a plain value cannot be awaited.
 use runtime
 

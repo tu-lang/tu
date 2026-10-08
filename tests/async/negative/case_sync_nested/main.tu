@@ -1,3 +1,4 @@
+// expect: .await used outside async function
 // A nested .await inside a sync function body must be rejected at compile time.
 use fmt
 

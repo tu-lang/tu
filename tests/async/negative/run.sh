@@ -1,13 +1,18 @@
 #!/bin/bash
 # Negative .await tests: each case_*/main.tu must FAIL (compile or run) and
-# print the substring stored in case_*/expect.
+# print the diagnostic named on its first line: `// expect: <substring>`.
 # TU_RUN selects the driver (tu by default; the mother suite passes tuc).
 set -u
 cd "$(dirname "$0")"
 runner="${TU_RUN:-tu}"
 fail=0
 for d in case_*/; do
-    want=$(cat "$d/expect")
+    want=$(sed -n '1s|^// expect: ||p' "$d/main.tu")
+    if [ -z "$want" ]; then
+        echo "NEG-FAIL(missing '// expect:' header): $d"
+        fail=1
+        continue
+    fi
     out=$(cd "$d" && "$runner" run main.tu 2>&1)
     rc=$?
     if [ "$rc" -eq 0 ]; then

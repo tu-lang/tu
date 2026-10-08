@@ -1,3 +1,4 @@
+// expect: await on non-future value
 // A sync member returning a plain int cannot be awaited.
 use runtime
 

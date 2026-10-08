@@ -191,6 +191,7 @@ func xdyn(a, b){ return a + b }
 // Dynamic receiver used from both class and mem bodies.
 class XC {
     hits = 0
+    xm      // XM held untyped; retyped with .(XM) at await sites
     func init(){}
     // Sync members handing back a dynamic leaf / an async-member future.
     func leaf(v){ return xdpend(v) }
@@ -295,6 +296,19 @@ async XM::syncs(d){
     return r
 }
 
+// Dynamic body: async member of a mem reached through a .(XM) assertion.
+async XC::viaAssert(m){
+    this.xm = m
+    r = int(m.(XM).seven().await) + int(this.xm.(XM).mixa(1, 1.0).await)
+    if this.xm.(XM).seven().await == 7 { r += 100 }
+    return r
+}
+// Static body: mem async member reached through a dynamic holder + assertion.
+async XM::viaDyn(d){
+    r = int(d.xm.(XM).seven().await) * 10
+    return r + int(this.base)
+}
+
 func x_check(name, got, want){
     if got != want {
         os.dief("%s want %d got %d", name, want, got)
@@ -325,6 +339,9 @@ fn test_cross_await_values() {
     x_check("fromc", runtime.block(m.fromc(c)), 10)
     x_check("fromc2", runtime.block(m.fromc2(c)), 18)
     x_check("msyncs", runtime.block(m.syncs(c)), 114)
+    // seven 7 + mixa(1) 5 + 100
+    x_check("viaAssert", runtime.block(c.viaAssert(m)), 112)
+    x_check("viaDyn", runtime.block(m.viaDyn(c)), 74)
     fmt.println("test_cross_await_values success")
 }
 

@@ -1,3 +1,4 @@
+// expect: .await used outside async function
 // A postfix-after-.await chain inside a sync function body must be rejected.
 use fmt
 

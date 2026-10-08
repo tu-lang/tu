@@ -201,6 +201,32 @@ async SOut::litargs(){
     return r * 100 + o1 * 10 + o2
 }
 
+// Receiver stored as raw u64 bits and retyped with .(T) before the async call.
+mem SRaw {
+    u64 bits    // SInner heap pointer
+    i32 hits
+}
+// Sync member handing back a typed pending leaf.
+SInner::pend(n<i32>) SPend { return spend(1, n + this.base) }
+async SRaw::viaField(){ return this.bits.(SInner).plus(3.(i32)).await }
+async SRaw::viaLocal(){
+    b<u64> = this.bits
+    r<i32> = b.(SInner).seven().await
+    r += b.(SInner).pend(2).await
+    return r
+}
+async SRaw::shapes(){
+    b<u64> = this.bits
+    s<i32> = sadd(b.(SInner).plus(1.(i32)).await, 1)
+    if b.(SInner).seven().await == 7 && this.bits.(SInner).plus(0).await == 10 {
+        s += 100
+    }
+    s += this.bits.(SInner).mix(1, 2.(i64)).await * 1000
+    return s
+}
+// Static fn returning the un-awaited future of an asserted receiver.
+fn sraw_fut(b<u64>) { return b.(SInner).plus(5.(i32)) }
+
 fn s_check(name<i8*>, got<i64>, want<i64>){
     if got != want {
         os.dief("%s want %d got %d", name, want, got)
@@ -229,5 +255,10 @@ fn main(){
     s_check(*"sdouble", runtime.block(sdouble(-21)), -42)
     g<i64> = runtime.block(sf32(0.5))
     s_check(*"sf32", g, 1)
+    r<SRaw> = new SRaw{bits: i, hits: 0}
+    s_check(*"assert field", runtime.block(r.viaField()), 13)
+    s_check(*"assert local", runtime.block(r.viaLocal()), 19)
+    s_check(*"assert shapes", runtime.block(r.shapes()), 13112)
+    s_check(*"assert fut", runtime.block(sraw_fut(r.bits)), 15)
     fmt.println("test await expr static success")
 }

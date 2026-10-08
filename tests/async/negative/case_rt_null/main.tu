@@ -1,3 +1,4 @@
+// expect: await on null value
 // Awaiting a null dynamic value dies at run time.
 use runtime
 

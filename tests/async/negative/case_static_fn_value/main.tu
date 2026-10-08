@@ -1,3 +1,4 @@
+// expect: static value without awaitable type
 // A static fn returning a native value is not awaitable.
 use runtime
 

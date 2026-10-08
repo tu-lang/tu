@@ -1,3 +1,4 @@
+// expect: await on non-future value
 // A sync member returning a string cannot be awaited (call-arg position).
 use runtime
 use fmt

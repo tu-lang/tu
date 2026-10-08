@@ -578,8 +578,84 @@ func aw_check(name, got, want){
     fmt.println("await expr", name, "ok")
 }
 
+// Receiver retyped by .(T): the async member must be found on the asserted
+// mem type even though the caller holds an untyped dynamic value.
+mem AwRL: async {
+    i32 v
+}
+AwRL::poll(ctx) i32, i32 { return runtime.PollReady, this.v }
+mem AwRM {
+    i32 base
+}
+async AwRM::seven(){ return this.base + 7 }
+// Async member returning a dynamic value.
+async AwRM::dynv(){ return int(this.base) + 10 }
+// Sync member handing back a leaf future.
+AwRM::leaf(n<i32>) AwRL { return new AwRL{v: this.base + n} }
+// Mem holder: the hop after an asserted head has a static type.
+mem AwRH {
+    AwRM* m
+}
+class AwRBox {
+    m
+    func init(m){ this.m = m }
+}
+class AwRC {
+    m
+}
+async AwRC::viaAssert(m){ return int(m.(AwRM).seven().await) + 1 }
+async AwRC::viaThis(m){
+    this.m = m
+    return int(this.m.(AwRM).seven().await) + 2
+}
+async aw_rpkg(m){ return int(m.(AwRM).seven().await) }
+async aw_rchain(b){ return int(b.m.(AwRM).seven().await) }
+async aw_rarr(a){ return int(a[0].(AwRM).seven().await) }
+async aw_rmid(h){ return int(h.(AwRH).m.seven().await) }
+async aw_rleaf(m){ return int(m.(AwRM).leaf(5).await) }
+// Dynamic-valued async member: result stays dynamic through return.
+async aw_rdyn(b){
+    v = b.m.(AwRM).dynv().await
+    return v
+}
+async aw_rdyn2(m){ return m.(AwRM).dynv().await }
+// Sync func returning the un-awaited asserted future.
+func aw_rmkfut(b){ return b.m.(AwRM).seven() }
+
+// Asserted receivers across expression shapes (base 1: seven = 8).
+async aw_assertrecv(){
+    m<AwRM> = new AwRM{base: 1}
+    b = new AwRBox(m)
+    h<AwRH> = new AwRH{m: m}
+    c = new AwRC()
+    s = c.viaAssert(m).await + c.viaThis(m).await          // 9 + 10
+    s += aw_rpkg(m).await + aw_rchain(b).await             // 8 + 8
+    s += aw_rarr([m]).await + aw_rmid(h).await             // 8 + 8
+    s += aw_rleaf(m).await                                 // 6
+    s += aw_rdyn(b).await + aw_rdyn2(m).await              // 11 + 11
+    f = aw_rmkfut(b)
+    s += int(f.await)                                      // 8
+    s += awplus(int(b.m.(AwRM).seven().await), 1)          // 9
+    if b.m.(AwRM).seven().await == 8 && aw_rpkg(m).await == 8 { s += 100 }
+    s += int(b.m.(AwRM).leaf(2).await) * 10                // 30
+    return s
+}
+
+// Chained call suffix () next to .await in async bodies.
+async aw_callsuffix(){
+    w = new AwW(10)
+    arr = [func(){ return 5 }, func(){ return w.seven() }]
+    s = arr[0]() + w.seven().await                         // 12
+    s += arr[1]().await                                    // 7
+    m = {"f": arr[0]}
+    s += m["f"]() * w.seven().await                        // 35
+    return s
+}
+
 fn main(){
     fmt.println("test await expr dyn")
+    aw_check("assertrecv", runtime.block(aw_assertrecv()), 226)
+    aw_check("callsuffix", runtime.block(aw_callsuffix()), 54)
     aw_check("args", runtime.block(aw_args()), 74)
     aw_check("literals", runtime.block(aw_literals()), 821)
     aw_check("contexts", runtime.block(aw_contexts()), 71238)

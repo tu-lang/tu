@@ -1,3 +1,4 @@
+// expect: await on non-future value
 // Awaiting a dynamic value that is not a future dies at run time.
 use runtime
 

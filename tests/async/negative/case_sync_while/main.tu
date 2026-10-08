@@ -1,3 +1,4 @@
+// expect: .await used outside async function
 // .await inside a while condition of a sync function is rejected.
 use fmt
 

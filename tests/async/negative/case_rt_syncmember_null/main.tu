@@ -1,3 +1,4 @@
+// expect: await on null value
 // A sync member returning null cannot be awaited (condition position).
 use runtime
 

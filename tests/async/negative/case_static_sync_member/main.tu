@@ -1,3 +1,4 @@
+// expect: func not async
 // A sync mem method returning a native value is not awaitable.
 use runtime
 
