@@ -59,6 +59,8 @@ class Function {
     returns   = []
     returnTypes = []
     async_value_dynamic = false
+    // Leaves whose awaited value decides this async result's dynamism
+    async_value_deps = []
     constdef  = false
     iterid    = 0
     //clousure

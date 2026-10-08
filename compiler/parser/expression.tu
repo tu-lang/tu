@@ -18,6 +18,8 @@ Parser::parseChainExpr(first){
     chainExpr.fields[] = first
     var = null
     is_gmvar = false
+    // false once ret wraps the chain (*p / &x heads): .await can't follow those
+    retIsChain = true
 
     if type(first) == type(gen.DelRefExpr) {
         dr = first
@@ -26,6 +28,7 @@ Parser::parseChainExpr(first){
         chainExpr.fields[0] = dr.expr
         dr.expr = chainExpr
         ret = dr
+        retIsChain = false
     }else if type(first) == type(gen.AddrExpr) {
         ae = first
         
@@ -36,6 +39,7 @@ Parser::parseChainExpr(first){
         chainExpr.fields[0] = sm
         ae.expr = chainExpr
         ret = ae
+        retIsChain = false
     }else if type(first) == type(gen.VarExpr) {
         var = first
         if var.package != "" {
@@ -64,6 +68,18 @@ Parser::parseChainExpr(first){
                     // assert followed by member access a.b.(T).x: eat the . and continue
                     reader.scan()
                 }
+                // expr.await / expr.(T).await on the accumulated chain value
+                if reader.curToken == ast.AWAIT {
+                    if ta != null chainExpr.tyassert = ta
+                    reader.scan()
+                    this.check(retIsChain, "await: unsupported .await operand")
+                    this.markAwait()
+                    chainExpr = this.wrapAwaitChain(chainExpr)
+                    ret = chainExpr
+                    is_gmvar = false
+                    var = null
+                    break
+                }
                 this.expect(ast.VAR)
                 membername = reader.curLex
                 reader.scan()
@@ -81,6 +97,16 @@ Parser::parseChainExpr(first){
                         if ta == null this.bindChainRecv(mc)
                         chainExpr.fields[] = mc
                     }
+                    // a.b.m().await awaits the whole chain's call result, not bare m()
+                    if mc.call.hasawait {
+                        mc.call.hasawait = false
+                        mc.hasawait = false
+                        this.check(retIsChain, "await: unsupported .await operand")
+                        chainExpr = this.wrapAwaitChain(chainExpr)
+                        ret = chainExpr
+                        is_gmvar = false
+                        var = null
+                    }
                 }else{
                     if(is_gmvar){
                         is_gmvar = false
@@ -97,38 +123,83 @@ Parser::parseChainExpr(first){
                     }
                 }
             }
-            ast.LPAREN :   chainExpr.fields[] = this.parseFuncallExpr("")
+            ast.LPAREN : {
+                anon = this.parseFuncallExpr("")
+                chainExpr.fields[] = anon
+                // a.b(...)(...).await: same as above, await applies to the whole chain
+                if anon.hasawait && std.len(chainExpr.fields) > 1 {
+                    anon.hasawait = false
+                    this.check(retIsChain, "await: unsupported .await operand")
+                    chainExpr = this.wrapAwaitChain(chainExpr)
+                    ret = chainExpr
+                    is_gmvar = false
+                    var = null
+                }
+            }
             ast.LBRACKET : chainExpr.fields[] = this.parseIndexExpr("")
             _ : break
         }
     }
+    fin = this.finishChain(chainExpr)
+    if type(fin) != type(gen.ChainExpr) return fin
+    return ret
+}
+
+// Closes a chain: collapses single-field forms and propagates await marks.
+// Returns the collapsed node or the chain itself.
+Parser::finishChain(ch){
     // Single scalar + chain-end assert: write back and collapse.
-    // VarExpr: pkg.fn.(u64) matches bare fn.(u64).
+    // VarExpr: pkg.fn.(u64) matches bare fn.(u64); but x.await.(T) asserts the
+    // await result, so a marked VarExpr keeps the ChainExpr carrier.
     // BinaryExpr: (0 - x).(i32) avoids fake Chain entering memgen.
     // Multi-field / member-chain nodes keep ChainExpr as assert carrier.
-    if std.len(chainExpr.fields) == 1 {
-        only = chainExpr.fields[0]
-        if chainExpr.tyassert != null && type(only) == type(gen.VarExpr) {
+    if std.len(ch.fields) == 1 {
+        only = ch.fields[0]
+        if ch.tyassert != null && type(only) == type(gen.VarExpr) && !only.hasawait {
             if only.tyassert == null {
-                only.tyassert = chainExpr.tyassert
+                only.tyassert = ch.tyassert
             }
             return only
         }
-        if chainExpr.tyassert != null && type(only) == type(gen.BinaryExpr) {
+        if ch.tyassert != null && type(only) == type(gen.BinaryExpr) {
             if only.tyassert == null {
-                only.tyassert = chainExpr.tyassert
+                only.tyassert = ch.tyassert
             }
             return only
         }
-        if chainExpr.tyassert == null {
+        if ch.tyassert == null {
             if type(only) == type(gen.MemberCallExpr) {
                 only.checkawait()
             }
             return only
         }
     }
-    chainExpr.checkawait()
-    return ret
+    ch.checkawait()
+    return ch
+}
+
+// Wraps the accumulated chain into an AwaitExpr and starts a new chain headed
+// by it, so .field / .m() / [i] / .(T) / .await may follow the await.
+Parser::wrapAwaitChain(ch){
+    operand = this.finishChain(ch)
+    aw = new gen.AwaitExpr(operand, this.line, this.column)
+    aw.hasawait = true
+    nch = new gen.ChainExpr(this.line, this.column)
+    nch.fields[] = aw
+    return nch
+}
+
+// Validates a consumed .await suffix: rejected inside block-level unsafe and
+// outside async bodies. Only checked in FunctionPhase, when async member
+// function shapes are final.
+Parser::markAwait(){
+    if this.unsafe_stmt_depth > 0 {
+        this.panic("pkgmode: .await not allowed inside unsafe block; use unsafe func or export async")
+    }
+    if compile.phase != compile.FunctionPhase return null
+    if this.currentFunc == null || !this.currentFunc.isasync() {
+        this.panic("await: .await used outside async function")
+    }
 }
 
 Parser::parseExpression(oldPriority)
@@ -207,6 +278,14 @@ Parser::parseUnaryExpr()
         val.lhs = this.parseUnaryExpr()
         if this.ischain() {
             val.lhs = this.parseChainExpr(val.lhs)
+        }
+        // Negation -expr lowers to 0 - expr (native sub / runtime binary op / await
+        // lowering alike); literal -5 is produced by the scanner and never gets here.
+        if val.opt == ast.SUB {
+            zero = new gen.IntExpr(val.line,val.column)
+            zero.lit = "0"
+            val.rhs = val.lhs
+            val.lhs = zero
         }
         val.checkawait()
         return val
@@ -624,11 +703,11 @@ Parser::parseVarExpr(var)
             }
 
             if reader.curToken == ast.AWAIT {
-                if this.unsafe_stmt_depth > 0 {
-                    this.panic("pkgmode: .await not allowed inside unsafe block; use unsafe func or export async")
-                }
+                this.markAwait()
                 gvar = new gen.VarExpr(package,this.line,this.column)
                 gvar.hasawait = true
+                // keep x.(T).await's assert: lowering picks the leaf from it
+                gvar.tyassert = ta
                 reader.scan()
                 return gvar
             }
@@ -860,9 +939,7 @@ Parser::parseFuncallExpr(callname)
         tx = reader.transaction()
         reader.scan()
         if reader.curToken == ast.AWAIT {
-            if this.unsafe_stmt_depth > 0 {
-                this.panic("pkgmode: .await not allowed inside unsafe block; use unsafe func or export async")
-            }
+            this.markAwait()
             val.hasawait = true
             reader.scan()
         }else{

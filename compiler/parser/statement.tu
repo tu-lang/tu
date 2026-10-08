@@ -5,6 +5,272 @@ use compiler.compile
 use compiler.parser.package
 use std
 
+// Value-side classification of an untyped async return (decides whether the
+// caller's await result slot is dynamic or static).
+//   ARK_STATIC  provably native / mem pointer (type assert, mem local, typed fn ...)
+//   ARK_DYN     provably dynamic Value (untyped param, class object, dynamic call ...)
+//   ARK_LIT     bare scalar literal: dynamic alone, follows the other side in binary ops
+//   ARK_UNKNOWN cannot tell -> keep the static default (or follow recorded deps)
+ARK_UNKNOWN = 0
+ARK_STATIC  = 1
+ARK_DYN     = 2
+ARK_LIT     = 3
+
+// Classifies a variable by name: param -> local -> global.
+// Untyped locals / globals count as dynamic only in dyn packages.
+func arkVar(p, name, deps){
+    f = p.currentFunc
+    dynmode = p.pkg != null && p.pkg.pkg_mode == PkgModeDyn
+    if f != null && f.params_var[name] != null {
+        v = f.params_var[name]
+        if v.structtype return ARK_STATIC
+        return ARK_DYN
+    }
+    if f != null && std.exist(name, f.params_var) return ARK_DYN
+    v = null
+    if f != null v = f.FindLocalVar(name)
+    if v == null v = p.getGlobalVar("", name)
+    if v == null return ARK_UNKNOWN
+    if v.structtype return ARK_STATIC
+    // class identity recorded by propagateVarMemTypeFromRhs on `x = new C()`
+    if v.structname != null && v.structname != "" return ARK_DYN
+    // assignment sources seen in this function (asyncNoteLocalAssign)
+    if (v.arkAssign & 2) != 0 return ARK_STATIC
+    if (v.arkAssign & 1) != 0 return ARK_DYN
+    if std.len(v.arkDeps) > 0 {
+        std.merge(deps, v.arkDeps)
+        return ARK_UNKNOWN
+    }
+    if dynmode return ARK_DYN
+    return ARK_UNKNOWN
+}
+
+// Resolves a receiver variable (obj.m() / obj.f / obj[i] / obj.await).
+// Returns [kind, var]: non-mem receivers dispatch dynamically (ARK_DYN).
+func arkRecv(p, name){
+    f = p.currentFunc
+    v = null
+    if f != null v = f.params_var[name]
+    if v == null && f != null v = f.FindLocalVar(name)
+    if v == null v = p.getGlobalVar("", name)
+    if v == null return ARK_UNKNOWN, null
+    if v.structtype return ARK_STATIC, v
+    return ARK_DYN, v
+}
+
+// Member call on a mem receiver: awaited -> record the async leaf dep;
+// sync -> static when the callee declares return types.
+func arkStructMember(parent, member, awaited, deps){
+    if parent == null return ARK_UNKNOWN
+    if awaited {
+        af = parent.resolveAsyncMember(member)
+        if af != null && af.fntype == ast.AsyncFunc && af.asyncst != null
+            deps[] = af.asyncst
+        return ARK_UNKNOWN
+    }
+    mf = parent.getFunc(member)
+    if mf != null && std.len(mf.returnTypes) > 0 return ARK_STATIC
+    return ARK_UNKNOWN
+}
+
+// Struct definition behind a mem-typed variable, or null.
+func arkVarStruct(p, v){
+    if v == null || !v.structtype || v.structname == null || v.structname == "" return null
+    s = null
+    if p.pkg != null {
+        opkg = p.pkg.getPackage(v.structpkg)
+        if opkg != null s = opkg.getStruct(v.structname)
+    }
+    if s == null s = package.getStruct(v.structpkg, v.structname)
+    return s
+}
+
+func arkDynOrUnknown(k){
+    if k == ARK_DYN return ARK_DYN
+    return ARK_UNKNOWN
+}
+
+func arkClassify(p, e, deps){
+    if e == null return ARK_UNKNOWN
+    if e.tyassert != null return ARK_STATIC
+    t = type(e)
+    if t == type(gen.IntExpr) || t == type(gen.FloatExpr) || t == type(gen.StringExpr) ||
+       t == type(gen.BoolExpr) || t == type(gen.NullExpr)
+        return ARK_LIT
+    if t == type(gen.CharExpr) return ARK_STATIC
+    if t == type(gen.ArrayExpr) || t == type(gen.MapExpr) || t == type(gen.ClosureExpr) ||
+       t == type(gen.NewClassExpr)
+        return ARK_DYN
+    if t == type(gen.NewStructExpr) || t == type(gen.StructInitExpr) || t == type(gen.NewExpr) ||
+       t == type(gen.AddrExpr)
+        return ARK_STATIC
+    if t == type(gen.BuiltinFuncExpr) {
+        if e.funcname == "sizeof" || e.funcname == "inter_get_bp" || e.funcname == "inter_get_sp"
+            return ARK_STATIC
+        if e.funcname == "embed" return ARK_UNKNOWN
+        return ARK_DYN
+    }
+    if t == type(gen.VarExpr) {
+        if e.structtype return ARK_STATIC
+        if !e.hasawait return arkVar(p, e.varname, deps)
+        // fut.await: mem / leaf receiver records a dep, otherwise a dynamic await
+        rk, rv = arkRecv(p, e.varname)
+        if rk != ARK_STATIC return ARK_DYN
+        s = arkVarStruct(p, rv)
+        if s != null && s.isasync deps[] = s
+        return ARK_UNKNOWN
+    }
+    if t == type(gen.AwaitExpr) {
+        // chain / field / index then .await: a dynamic operand yields a dynamic result
+        k = arkClassify(p, e.expr, deps)
+        if k == ARK_DYN || k == ARK_LIT return ARK_DYN
+        return ARK_UNKNOWN
+    }
+    if t == type(gen.FunCallExpr) {
+        awaited = e.hasawait
+        if e.package != null && e.package != "" {
+            // obj.method(): receiver is a variable
+            rk, rv = arkRecv(p, e.package)
+            if rk == ARK_DYN return ARK_DYN
+            if rk == ARK_STATIC
+                return arkStructMember(arkVarStruct(p, rv), e.funcname, awaited, deps)
+            // Type::method(): package names the type
+            parent = p.getStruct("", e.package)
+            if parent != null && !parent.isasync
+                return arkStructMember(parent, e.funcname, awaited, deps)
+        }
+        // Package-level function: map the import alias back to the package name
+        pkgname = e.package
+        if pkgname == null pkgname = ""
+        if pkgname != "" && p.pkg != null && p.pkg.imports[pkgname] != null
+            pkgname = p.pkg.imports[pkgname]
+        if pkgname == "" pkgname = p.getpkgname()
+        callee = null
+        if package.packages[pkgname] != null
+            callee = package.packages[pkgname].getFunc(e.funcname, false)
+        if awaited {
+            s = p.getStruct(e.package, e.funcname)
+            if s != null && s.isasync {
+                deps[] = s
+                return ARK_UNKNOWN
+            }
+            // plain func returning a future: awaited as a dynamic value
+            if callee != null && callee.isDynamicDef() && std.len(callee.returnTypes) == 0
+                return ARK_DYN
+            return ARK_UNKNOWN
+        }
+        if callee == null return ARK_UNKNOWN
+        if std.len(callee.returnTypes) > 0 return ARK_STATIC
+        // an un-awaited async call yields a future object (dynamic); func returns dynamic
+        if callee.isasync() || callee.isDynamicDef() return ARK_DYN
+        return ARK_UNKNOWN
+    }
+    if t == type(gen.MemberCallExpr) {
+        awaited = e.call != null && e.call.hasawait
+        if e.staticCall != null
+            return arkStructMember(e.staticCall, e.membername, awaited, deps)
+        if e.obj != null {
+            if !e.obj.structtype {
+                rk, rv = arkRecv(p, e.obj.varname)
+                if rk != ARK_STATIC return ARK_DYN
+                return arkStructMember(arkVarStruct(p, rv), e.membername, awaited, deps)
+            }
+            return arkStructMember(arkVarStruct(p, e.obj), e.membername, awaited, deps)
+        }
+        if e.varname != null && e.varname != "" {
+            rk, rv = arkRecv(p, e.varname)
+            if rk == ARK_DYN return ARK_DYN
+            if rk == ARK_STATIC
+                return arkStructMember(arkVarStruct(p, rv), e.membername, awaited, deps)
+        }
+        return ARK_UNKNOWN
+    }
+    if t == type(gen.ChainExpr) {
+        // a chain on a dynamic receiver is dynamically dispatched end to end
+        if std.len(e.fields) == 0 return ARK_UNKNOWN
+        head = e.fields[0]
+        if head.tyassert == null && type(head) == type(gen.VarExpr) && !head.hasawait {
+            if head.structtype return ARK_UNKNOWN
+            rk, rv = arkRecv(p, head.varname)
+            return arkDynOrUnknown(rk)
+        }
+        hk = arkClassify(p, head, deps)
+        if hk == ARK_DYN || hk == ARK_LIT return ARK_DYN
+        return ARK_UNKNOWN
+    }
+    if t == type(gen.MemberExpr) {
+        rk, rv = arkRecv(p, e.varname)
+        return arkDynOrUnknown(rk)
+    }
+    if t == type(gen.IndexExpr) {
+        if e.varname == null || e.varname == "" || e.is_pkgcall return ARK_UNKNOWN
+        rk, rv = arkRecv(p, e.varname)
+        return arkDynOrUnknown(rk)
+    }
+    if t == type(gen.BinaryExpr) {
+        // mirrors BinaryExpr codegen: any static side -> native op; else dynamic op
+        ld = []
+        rd = []
+        kl = arkClassify(p, e.lhs, ld)
+        kr = arkClassify(p, e.rhs, rd)
+        if kl == ARK_STATIC || kr == ARK_STATIC return ARK_STATIC
+        if kl == ARK_DYN || kr == ARK_DYN return ARK_DYN
+        if kl == ARK_LIT && kr == ARK_LIT return ARK_DYN
+        // one side unknown: that side decides; carry its deps
+        std.merge(deps, ld)
+        std.merge(deps, rd)
+        return ARK_UNKNOWN
+    }
+    return ARK_UNKNOWN
+}
+
+// Records the classification of an async return value on the current function:
+// dynamic -> async_value_dynamic; unknown -> deps. In dyn packages an unknown
+// value with no deps is dynamic too (no static value source exists there).
+func arkRecord(p, retexpr){
+    // GlobalPhase function nodes are replaced on FunctionPhase re-parse and local
+    // type propagation is incomplete then
+    if compile.phase != compile.FunctionPhase return
+    f = p.currentFunc
+    deps = []
+    k = arkClassify(p, retexpr, deps)
+    if k == ARK_DYN || k == ARK_LIT {
+        f.async_value_dynamic = true
+        return
+    }
+    if k != ARK_UNKNOWN return
+    if std.len(deps) == 0 {
+        if p.pkg != null && p.pkg.pkg_mode == PkgModeDyn
+            f.async_value_dynamic = true
+        return
+    }
+    std.merge(f.async_value_deps, deps)
+}
+
+// Tracks what an untyped async local is assigned from, so arkVar can tell
+// whether reading it yields a dynamic or a static value.
+func asyncNoteLocalAssign(lhs, rhs, opt){
+    p = compile.currentParser
+    if lhs == null || rhs == null || p == null return
+    if compile.phase != compile.FunctionPhase return
+    f = p.currentFunc
+    if f == null || !f.isasync() return
+    if lhs.structtype return
+    if lhs.package != null && lhs.package != "" return
+    if std.exist(lhs.varname, f.params_var) return
+    canon = f.FindLocalVar(lhs.varname)
+    if canon == null || canon.structtype return
+    deps = []
+    k = arkClassify(p, rhs, deps)
+    // `x = 1` makes x dynamic; a compound `x += 1` keeps x's existing kind
+    if k == ARK_DYN || (k == ARK_LIT && opt == ast.ASSIGN)
+        canon.arkAssign = canon.arkAssign | 1
+    else if k == ARK_STATIC
+        canon.arkAssign = canon.arkAssign | 2
+    else if k == ARK_UNKNOWN
+        std.merge(canon.arkDeps, deps)
+}
+
 Parser::parseStatement()
 {
     utils.debug("parser.Parser::parseStatement()")
@@ -182,7 +448,7 @@ Parser::parseForStmt()
             node.block = this.parseBlock(false,true)
             this.ctx.destroy()
 
-            if node.obj.hasawait   node.hasawait = true
+            if node.obj.hasawait || gen.exprContainsAwait(node.obj) node.hasawait = true
             if node.block.hasawait node.hasawait = true
             return node
         }
@@ -206,7 +472,8 @@ Parser::parseForStmt()
     node.block = this.parseBlock(false,true)
     this.ctx.destroy()
 
-    if node.init.hasawait || node.cond.hasawait || node.after.hasawait || node.block.hasawait {
+    if gen.exprContainsAwait(node.init) || gen.exprContainsAwait(node.cond) || gen.exprContainsAwait(node.after) ||
+       node.init.hasawait || node.cond.hasawait || node.after.hasawait || node.block.hasawait {
         node.hasawait = true
     }
     return node
@@ -219,11 +486,16 @@ Parser::parseMatchSmt(){
     this.ctx.top().breakto = ms
 
     ms.cond = this.parseExpression(1)
-    if ms.cond.hasawait
+    if ms.cond.hasawait || gen.exprContainsAwait(ms.cond)
         ms.hasawait = true
     
     ms.condrecv = this.currentFunc.getMatchcondVar()
-    if type(ms.cond) != type(gen.VarExpr) {
+    // A cond containing await must not be typed here: exprIsMtype/getType would
+    // cache call dispatch that async lowering rewrites later. The lowered rhs
+    // assigned to condrecv decides its slot at the first codegen assignment.
+    if type(ms.cond) != type(gen.VarExpr) && ms.hasawait {
+        ms.condrecv.inferFromInit = true
+    }else if type(ms.cond) != type(gen.VarExpr) {
         if gen.exprIsMtype(ms.cond,this.ctx) {
             condrecv = ms.condrecv
             tk = ms.cond.getType(this.ctx)
@@ -272,7 +544,7 @@ Parser::parseMatchCase(cond)
     reader.scan()
     cs.block = this.parseBlock(false,false)
 
-    if cs.cond.hasawait
+    if cs.cond.hasawait || gen.exprContainsAwait(cs.cond)
         cs.hasawait = true
     if cs.block.hasawait
         cs.hasawait = true
@@ -288,17 +560,11 @@ Parser::parseWhileStmt(dead) {
 
     node.dead = dead
     if !dead {
-        if reader.curToken == ast.LPAREN {
-            reader.scan()
-        }
-        
+        // Like if: no separate outer-paren stripping, so `while (a || b) && c {`
+        // parses as one expression; `while (cond) {` is a paren expr as well.
         node.cond = this.parseExpression(1)
-        if node.cond.hasawait
+        if node.cond.hasawait || gen.exprContainsAwait(node.cond)
             node.hasawait = true
-        
-        if reader.curToken == ast.RPAREN {
-            reader.scan()
-        }
     } 
     
     node.block = this.parseBlock(false,true)
@@ -332,21 +598,13 @@ Parser::parseReturnStmt(ret_line) {
         retexpr = this.parseExpression(1)
         if retexpr != null{
             ret[] = retexpr
-            if retexpr.hasawait || gen.expressionHasAwait(retexpr) {
+            if retexpr.hasawait || gen.expressionHasAwait(retexpr) || gen.exprContainsAwait(retexpr) {
                 node.hasawait = true
             }
-            // Untyped async value returns: bare int/array → dynamic await slot
-            if this.currentFunc.isasync() && retexpr.tyassert == null {
-                if type(retexpr) == type(gen.IntExpr) ||
-                   type(retexpr) == type(gen.FloatExpr) ||
-                   type(retexpr) == type(gen.StringExpr) ||
-                   type(retexpr) == type(gen.BoolExpr) ||
-                   type(retexpr) == type(gen.ArrayExpr) ||
-                   type(retexpr) == type(gen.MapExpr) ||
-                   type(retexpr) == type(gen.NullExpr) {
-                    this.currentFunc.async_value_dynamic = true
-                }
-            }
+            // Untyped async: classify the value side (first returned expr only;
+            // reliable once FunctionPhase local type propagation is done)
+            if this.currentFunc.isasync() && std.len(ret) == 2
+                arkRecord(this, retexpr)
         }
 
         if reader.curToken != ast.COMMA
@@ -499,7 +757,7 @@ Parser::parseMultiAssignStmt(firstv){
     }
     loop {
         p = this.parseExpression()
-        if p.hasawait || gen.expressionHasAwait(p)
+        if p.hasawait || gen.expressionHasAwait(p) || gen.exprContainsAwait(p)
             stmt.hasawait = true
         stmt.rs[] = p
         if reader.curToken != ast.COMMA 

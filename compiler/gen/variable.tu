@@ -40,6 +40,17 @@ class VarExpr : ast.Ast {
     isparam = false
     onmem   = false
     imut    = false
+    // Async-lowering temp slot (fut.l.N): typed from its first assigned rhs
+    inferFromInit = false
+    inferred      = false
+    // Typing source fixed at lowering time (typed on first touch, read or write)
+    inferExpr     = null
+    // Awaited leaf of an untyped async result slot (typed at codegen)
+    inferLeaf     = null
+    // Async local assignment sources: bit0 dynamic rhs, bit1 static rhs
+    arkAssign     = 0
+    // Leaves an untyped async local was assigned from via await
+    arkDeps       = []
     func init(varname,line,column){
         super.init(line,column)
     }
@@ -131,6 +142,20 @@ VarExpr::_getVarType(ctx)
     if this.package == "" {
         this.ret = ctx.getLocalVar(this.varname)
         if this.ret != null {
+            rv = this.ret
+            // Lowering slots with a typing source are typed on first touch.
+            if rv.inferFromInit && !rv.inferred && rv.inferExpr != null
+                inferSlotTypeOf(rv, null, rv.inferExpr, ctx)
+            // Untyped async await result: all parsing is done, ask the callee.
+            if rv.inferFromInit && !rv.inferred && rv.inferLeaf != null {
+                rv.inferred = true
+                if !asyncLeafValueDynamic(rv.inferLeaf) {
+                    rv.structtype = true
+                    rv.type = ast.U64
+                    rv.size = 8
+                    rv.isunsigned = true
+                }
+            }
             if this.ret.structtype
                 return ast.Var_Local_Static
             return ast.Var_Local
@@ -247,6 +272,9 @@ VarExpr::assign(ctx , opt , rhs){
             if this.ret.stack && type(rhs) == type(ArrayExpr) {
                 return this.stack_assign(ctx,opt,rhs)
             }
+            if this.ret.inferFromInit && !this.ret.inferred {
+                inferSlotTypeOf(ctx.getLocalVar(this.varname), this.ret, rhs, ctx)
+            }
             if this.ret.isMemtype(ctx) {
                 oh = new OperatorHelper(ctx,this,rhs,opt)
                 oh.var = this.ret
@@ -299,7 +327,40 @@ VarExpr::clone(){
     nvar.funcname = this.funcname
     nvar.isparam = this.isparam
     nvar.onmem = this.onmem
+    nvar.inferFromInit = this.inferFromInit
+    nvar.inferExpr = this.inferExpr
+    nvar.inferLeaf = this.inferLeaf
+    nvar.inferred = this.inferred
     return nvar
+}
+
+// Types an inferFromInit slot once from init: static init -> 8-byte native slot
+// (ints widened to 64 bit, floats to f64); dynamic init keeps a dynamic slot.
+// Writes both the canonical local and the current clone (either may be null).
+func inferSlotTypeOf(canon, cur, init, ctx){
+    targets = [canon, cur]
+    // Mark first so a self-reference inside init does not re-enter typing.
+    for t : targets {
+        if t != null t.inferred = true
+    }
+    ismem = exprIsMtype(init,ctx)
+    tk = ast.ILLEGAL
+    if ismem tk = init.getType(ctx)
+    for t : targets {
+        if t == null || !ismem continue
+        t.structtype = true
+        t.size = 8
+        if tk == ast.F32 || tk == ast.F64 {
+            t.type = ast.F64
+            t.isunsigned = false
+        }else if tk >= ast.I8 && tk <= ast.U64 && !ast.type_isunsigned(tk) {
+            t.type = ast.I64
+            t.isunsigned = false
+        }else{
+            t.type = ast.U64
+            t.isunsigned = true
+        }
+    }
 }
 
 VarExpr::getStackSize(p){

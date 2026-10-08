@@ -16,6 +16,9 @@ Parser::parseBlock(insertsuper,hasctx)
     if(reader.curToken != ast.LBRACE){
         stmt = this.parseStatement()
         node = new gen.BlockStmt()
+        // Single-statement bodies must forward await so the outer stmt is lowered.
+        if stmt != null && stmt.hasawait
+            node.hasawait = true
         if !this.currentFunc.isasync() || stmt.hasawait || type(stmt) != type(gen.ReturnStmt) {
             node.stmts[] = stmt
         }else{
@@ -38,7 +41,7 @@ Parser::parseBlock(insertsuper,hasctx)
     stmts = []
     while( (p = this.parseStatement()) != null )
     {
-        if p.hasawait node.hasawait = true
+        if p.hasawait || gen.exprContainsAwait(p) node.hasawait = true
 
         if this.currentFunc.isasync() && !p.hasawait && type(p) == type(gen.ReturnStmt) {
             endstate = new gen.AssignExpr(0,0)
