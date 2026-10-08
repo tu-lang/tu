@@ -710,6 +710,91 @@ fn test_passargs(){
 
     fmt.println("test passargs success")
 }
+
+// .await nested in arguments, static mem chains, postfix casts and && / ||
+// on mem receivers.
+mem AwInner {
+    i32 base
+}
+async AwInner::seven(){ return 7.(i8) }
+
+// Typed leaf: poll declares its value type, so the await slot is native i8.
+// polls counts how often the leaf was awaited (short-circuit checks).
+mem AwTyped: async {
+    i8  val
+    i32 polls
+}
+AwTyped::poll(ctx) i32, i8 {
+    this.polls += 1
+    return runtime.PollReady, this.val
+}
+
+mem AwOuter {
+    AwInner* in2
+    AwTyped* leaf
+    AwTyped* yes
+    AwTyped* no
+    i32      hits
+}
+fn awsplus(a<i32>, b<i32>) i32 { return a + b }
+AwOuter::sadd(a<i32>, b<i32>) i32 { return a + b }
+async AwOuter::seven(){ return 7.(i8) }
+
+async AwOuter::args(){
+    r1<i32> = awsplus(this.seven().await, 1)
+    r2<i32> = this.sadd(this.seven().await, 2)
+    r3<i32> = awsplus(awsplus(this.seven().await, 1), this.seven().await)
+    r4<i32> = this.in2.seven().await
+    r5<i32> = awsplus(this.in2.seven().await, 3)
+    r6<i32> = this.leaf.await.(i32) + 1
+    // 8 + 9 + 15 + 7 + 10 + 8
+    return r1 + r2 + r3 + r4 + r5 + r6
+}
+
+// Short-circuit over typed (native) await results; polls prove the rhs await
+// only runs when the lhs needs it.
+async AwOuter::logic(){
+    z<i32> = 0
+    if z && this.yes.await {
+        os.die("static && evaluated rhs await")
+    }
+    o<i32> = 1
+    if o || this.yes.await {} else {
+        os.die("static || with true lhs must be true")
+    }
+    if this.yes.polls != 0 {
+        os.dief("static short-circuit want 0 polls got %d", this.yes.polls)
+    }
+    if o && this.yes.await {} else {
+        os.die("static 1 && true must be true")
+    }
+    if this.no.await && this.yes.await {
+        os.die("static false && x must be false")
+    }
+    if this.no.await || this.yes.await {} else {
+        os.die("static false || true must be true")
+    }
+    // yes: 1 + 1, no: 2
+    return this.yes.polls + this.no.polls
+}
+
+fn test_await_expr_static(){
+    fmt.println("test await expr static")
+    i<AwInner> = new AwInner{base: 1}
+    t<AwTyped> = new AwTyped{val: 7, polls: 0}
+    y<AwTyped> = new AwTyped{val: 1, polls: 0}
+    n<AwTyped> = new AwTyped{val: 0, polls: 0}
+    o<AwOuter> = new AwOuter{in2: i, leaf: t, yes: y, no: n, hits: 0}
+    r<i32> = runtime.block(o.args())
+    if r != 57 {
+        os.dief("static await args want 57 got %d", int(r))
+    }
+    h<i32> = runtime.block(o.logic())
+    if h != 4 {
+        os.dief("static await logic want 4 got %d", int(h))
+    }
+    fmt.println("test await expr static success")
+}
 fn main(){
     fmt.println("test async static member")
     test_case1()
@@ -720,5 +805,6 @@ fn main(){
     test_blockon()
     test_rtblockon()
     test_common2()
+    test_await_expr_static()
     fmt.println("test async static member success")
 }

@@ -911,10 +911,8 @@ func chain_async_callee(){
 async chain_await_in_args(){
     h = new ChainHolder()
     j = new TestCase(1,10,20,30)
-    v = j.work_seven().await
-    a, b = h.cur.addpair(v)
-    v2 = j.work_seven().await
-    c, d = h.cur.addpair(v2 - 7)
+    a, b = h.cur.addpair(j.work_seven().await)
+    c, d = h.cur.addpair(j.work_seven().await - 7)
     // c == 6, d == 0
     return a * 100 + b + c * 10000 + d
 }
