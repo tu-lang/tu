@@ -8,8 +8,8 @@ use os
 use string
 use fmt
 
-// RFC110: package mode from tu.mod; only dyn|static. Default dyn when absent.
-// Tags live in parent compiler.parser (parser.tu); reference as parser.PkgMode*.
+// RFC110: package mode from the nearest tu.mod (dyn|static|mixed); no manifest => dyn.
+// mixed is explicit-only (test suites). Tags live in parent compiler.parser (parser.tu).
 
 class Package {
     parsers = {} // parsers map[filepath + name] = parser
@@ -30,7 +30,7 @@ class Package {
     embeds = []
 
     cfgs    = new ast.ConfigOpts()
-    // RFC110: nearest-ancestor tu.mod; migration default Mixed (no pkgmode checks).
+    // RFC110: Mixed until loadMode runs (unchecked internal packages); loadMode sets the real mode.
     pkg_mode = parser.PkgModeMixed
 }
 
@@ -49,7 +49,7 @@ Package::init(name , path , multi) {
 
     this.gc_moudles = "gc." + this.full_package + ".ms"
     this.fparser = null
-    // RFC110: migration default Mixed; explicit tu.mod overrides.
+    // RFC110: Mixed until loadMode runs; loadMode sets the real mode.
     this.pkg_mode = parser.PkgModeMixed
 
 }
@@ -83,11 +83,6 @@ func cwd_pkg_usable(dir, pkg_path) {
     return true
 }
 
-// RFC110 migration: no tu.mod => Mixed (no checks). static/dyn only via explicit manifest.
-func pkgmode_engine_default(pkgpath) {
-    return parser.PkgModeMixed
-}
-
 func pkgmode_push_tok(toks, cur) {
     if cur != "" && cur != null {
         toks[] = cur
@@ -102,7 +97,7 @@ func pkgmode_next_tok(toks, idx) {
     return v, idx + 1
 }
 
-// RFC110: parse tu.mod manifest; migration accepts mixed; final state dyn|static only (Step5).
+// RFC110: parse tu.mod manifest: dyn | static | mixed (mixed is explicit-only, unchecked).
 func parseTuMod(file) {
     if !std.is_file(file) {
         ast.parse_err("pkgmode: cannot open manifest %s\n", file)
@@ -190,9 +185,9 @@ func parseTuMod(file) {
     return m
 }
 
-// RFC110: nearest tu.mod wins; absent manifest stays Mixed (no checks).
+// RFC110: nearest tu.mod wins; no manifest on any ancestor => dyn.
+// Stdlib trees (source, embed stdroot, installed copkg) always carry tu.mod.
 Package::loadMode(abpath) {
-    this.pkg_mode = parser.PkgModeMixed
     depth = 1
     for i = 0; i < std.len(this.path); i += 1 {
         if this.path[i] == '/' {
@@ -210,10 +205,7 @@ Package::loadMode(abpath) {
         dir = utils.path_dirname(dir)
         if dir == "" || dir == "/" break
     }
-    eng = pkgmode_engine_default(this.path)
-    if eng != parser.PkgModeMixed {
-        this.pkg_mode = eng
-    }
+    this.pkg_mode = parser.PkgModeDyn
 }
 
 Package::parse()

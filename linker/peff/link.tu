@@ -178,3 +178,8 @@ unsafe fn link_objects(files, outfile) i32 {
     }
     return 0
 }
+
+// Dyn-ABI facade for dyn drivers (tu): links files into outfile; boxed 0 on success.
+export func link_files(files, outfile) {
+    return int(link_objects(files, outfile))
+}

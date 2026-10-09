@@ -49,6 +49,16 @@ Asmer::close(){
         this.out = 0
     }
 }
+
+// Dyn-ABI facade for dyn drivers (tu): assembles one .s file and returns the
+// generated object path (a dynamic string).
+export func assemble_file(path) {
+    eng<Asmer> = new Asmer(path)
+    eng.execute()
+    eng.close()
+    outp = eng.parser.outname
+    return outp
+}
 //start
 Asmer::execute() {
     utils.debug("Asmer::execute".(i8))

@@ -8,7 +8,6 @@ use asmer.asm
 use linker.link
 use linker.darwin
 use linker.peff
-use runtime
 // Prefix for coasm / copkg / copeff. Overridden by CO_PREFIX / TU_PREFIX / CO_PKG.
 root = "/usr/local/lib"
 printlat = false
@@ -76,7 +75,7 @@ class Compiler {
     // Keep .s/.o after build when --work is set
     flag_work = false
     // -1 unset (follow env); 0 embed; 1 disk. Explicit --stdlib= overrides TU_STDLIB.
-    stdlib_mode<i32> = -1
+    stdlib_mode = -1
 }
 func arg_after_prefix(arg, n) {
     out = ""
@@ -204,8 +203,10 @@ Compiler::commadparse(){
             }
             "-d"  : {
                 compile.trace = true          // trace mode && print log
-                asm.trace     = true  
-                link.trace    = true
+                unsafe {
+                    asm.trace  = 1
+                    link.trace = 1
+                }
             }
             "-g"   : compile.debug    = true
             "-std" : compile.nostd = false
@@ -215,7 +216,9 @@ Compiler::commadparse(){
             }
             "-gcc" : this.flag_gcc = true
             "-strip-pcln-file" : {
-                link.strip_pcln_file = 1
+                unsafe {
+                    link.strip_pcln_file = 1
+                }
             }
             "-lat" : printlat = true
             "--workdir-cwd" : this.workdir_cwd = true
@@ -343,11 +346,9 @@ Compiler::compiler(file){
                 // RFC-107: default embed materialize → syscall/{,darwin,windows}/.
                 src = utils.pkgfs_coasm_dir()
                 probe = utils.path_join(src, "asm_amd64.s")
-                fp<i32> = std.fopen(*probe, *"r")
-                if fp <= 0 {
+                if !std.is_file(probe) {
                     utils.error("missing coasm asm_amd64.s at " + src)
                 }
-                std.close(fp)
                 utils.copy_dir_ext(src, wd, ".s")
             }
             this.scandir(wd,".s")
@@ -392,7 +393,7 @@ Compiler::compiler(file){
     ))
     // `tu run`: execute linked binary
     if this.flag_exec {
-        if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS || runtime.host_os() == 2 {
+        if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS || utils.is_windows_host() {
             cmd = exe
             for a : this.args {
                 cmd += " " + a
@@ -421,11 +422,9 @@ Compiler::asmer(){
     i = 1
     for f : this.code_files {
 	    utils.smsg("[ " + i + "/" + total +"]","Compiling asm file " + f)
-        eng<asm.Asmer> = new asm.Asmer(f)
-        eng.execute()
-        eng.close()
+        outname = asm.assemble_file(f)
 	    utils.smsg("[ " + i + "/" + total +"]",
-            fmt.sprintf("Generate %s Passed" ,eng.parser.outname)
+            fmt.sprintf("Generate %s Passed" ,outname)
         )
         i += 1
     }
@@ -446,7 +445,7 @@ Compiler::linker(){
     fmt.printf("[tu] outfile: %s\n", this.out)
 
     if utils.target_parse(asm.get_requested_target()) == utils.TARGET_DARWIN {
-        rc<i32> = darwin.link_objects(this.code_files, this.out)
+        rc = darwin.link_files(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
         }
@@ -454,7 +453,7 @@ Compiler::linker(){
         return
     }
     if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS {
-        rc<i32> = peff.link_objects(this.code_files, this.out)
+        rc = peff.link_files(this.code_files, this.out)
         if rc != 0 {
             utils.error("Generate " + this.out + " Failed")
         }
