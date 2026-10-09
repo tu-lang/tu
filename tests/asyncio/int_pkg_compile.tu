@@ -31,8 +31,6 @@ use asyncio.sync.mpsc as mpsc
 use asyncio.task
 use asyncio.time as atime
 use asyncio.util
-use asyncio.wrapper as awrap
-use asyncio.wrapper.types as awtypes
 
 use netio
 use netio.event as nevent

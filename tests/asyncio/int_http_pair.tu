@@ -1,4 +1,4 @@
-// Temporary HTTP loopback over asyncio.net.tcp (not asyncio.wrapper HTTP).
+// Temporary HTTP loopback over asyncio.net.tcp (HTTP bytes stay in this test, not in asyncio).
 // Formal http package is out of scope; this only exercises asyncio IO with
 // inline request/response bytes.
 

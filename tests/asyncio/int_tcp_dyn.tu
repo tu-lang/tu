@@ -1,15 +1,17 @@
-// Bridge test: asyncio.wrapper dyn OOP API (Listener/Stream methods).
+// Dynamic export facade over TCP: asyncio.net.tcp listen / dialTo factories,
+// Listener / Stream class methods, driven by the root asyncio.blockOnCt.
 
 use fmt
 use os
-use asyncio.wrapper as asyncio
+use asyncio
+use asyncio.net.tcp
 
 async tcpEchoBody(addr) {
-    err, lis = asyncio.listen(addr)
+    err, lis = tcp.listen(addr)
     if err != 0 {
         return err
     }
-    cerr, client = asyncio.dialTo(addr).await
+    cerr, client = tcp.dialTo(addr).await
     if cerr != 0 {
         return cerr
     }
@@ -55,5 +57,5 @@ fn main() {
     if val != 0 {
         os.die("asyncio.blockOnCt failed")
     }
-    fmt.println("int_wrapper_tcp passed")
+    fmt.println("int_tcp_dyn passed")
 }
