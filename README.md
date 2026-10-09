@@ -99,7 +99,7 @@ make examples
 
 ### Asyncio — 原生异步库
 
-`asyncio` 覆盖定时器、网络、fs / process / signal，以及 mpsc channel、Mutex / Notify 等同步原语，还有 `select` / `join`。应用侧可走 `asyncio.wrapper` 动态 OOP 门面；下面以 HTTP 为例：
+`asyncio` 覆盖定时器、网络、fs / process / signal，以及 mpsc channel、Mutex / Notify 等同步原语，还有 `select` / `join`。动态代码直接 `use asyncio` / `use asyncio.net.tcp`,下面以 HTTP 为例：
 
 ```bash
 tu run examples/httpserver/main.tu   # 终端 1
@@ -111,7 +111,8 @@ tu run examples/httpclient/main.tu   # 终端 2
 ```
 use fmt
 use os
-use asyncio.wrapper as asyncio
+use asyncio
+use asyncio.net.tcp
 
 okResp = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
 okResp += "Content-Length: 13\r\nConnection: close\r\n\r\nHello, world!"
@@ -128,7 +129,7 @@ class HttpServer {
 }
 
 async HttpServer::run() {
-    err, lis = asyncio.listen("127.0.0.1:18080")
+    err, lis = tcp.listen("127.0.0.1:18080")
     if err != 0 {
         return err
     }
@@ -146,7 +147,7 @@ fn main() {
 }
 ```
 
-客户端同形：`asyncio.dialTo(addr).await` → `sendStr` → `recvStr`。完整源码见 [`examples/`](./examples/)；更多集成测见 `tests/asyncio/`。
+客户端同形：`tcp.dialTo(addr).await` → `sendStr` → `recvStr`。完整源码见 [`examples/`](./examples/)；更多集成测见 `tests/asyncio/`。
 
 ### Try / defer — 同步路径上的异常与清理
 

@@ -1,9 +1,11 @@
 // Persistent HTTP/1.1 server for load testing (not a formal http package).
-// Pure dynamic OOP demo via asyncio.wrapper — multi_thread + per-conn spawn.
+// Pure dynamic OOP demo over the asyncio / asyncio.net.tcp export facades —
+// multi_thread + per-conn go.
 
 use fmt
 use os
-use asyncio.wrapper as asyncio
+use asyncio
+use asyncio.net.tcp
 
 okResp = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\nConnection: close\r\n\r\nHello, world!"
 
@@ -25,7 +27,7 @@ class HttpServer {
 
 async HttpServer::run() {
     addr = "127.0.0.1:18080"
-    err, lis = asyncio.listen(addr)
+    err, lis = tcp.listen(addr)
     if err != 0 {
         return err
     }
@@ -38,7 +40,7 @@ async HttpServer::run() {
         if st == null {
             continue
         }
-        asyncio.spawn(serveOne(st))
+        asyncio.go(serveOne(st))
     }
 }
 

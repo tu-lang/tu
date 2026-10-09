@@ -1,11 +1,13 @@
-// HTTP/1.1 client via asyncio.wrapper — pure dynamic OOP surface.
+// HTTP/1.1 client over the asyncio / asyncio.net.tcp export facades — pure
+// dynamic OOP surface.
 
 use fmt
 use os
-use asyncio.wrapper as asyncio
+use asyncio
+use asyncio.net.tcp
 
 async getHello(addr) {
-    cerr, c = asyncio.dialTo(addr).await
+    cerr, c = tcp.dialTo(addr).await
     if cerr != 0 {
         return cerr
     }

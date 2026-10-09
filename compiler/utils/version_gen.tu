@@ -3,7 +3,7 @@
 
 use fmt
 
-TU_TOOL_VERSION = "1.2.53"
+TU_TOOL_VERSION = "1.2.54"
 
 func tool_version() {
 	return TU_TOOL_VERSION
@@ -24,6 +24,6 @@ func print_version_report(target_os) {
 	fmt.printf("Library       : %s\n", "1.2.16")
 	fmt.printf("\n")
 	fmt.printf("Packages\n")
-	fmt.printf("  asyncio     : %s\n", "1.2.7")
+	fmt.printf("  asyncio     : %s\n", "1.2.8")
 	fmt.printf("  netio       : %s\n", "1.2.6")
 }
