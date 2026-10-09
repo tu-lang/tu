@@ -1,10 +1,13 @@
-// Runtime blockOn / spawn entry for asyncio.wrapper (camelCase public API).
-// Public surface is export func; engine Builder stays internal.
+// Dynamic facade of the root package: block on / spawn for dyn callers.
+// `use asyncio` then asyncio.blockOnCt / blockOnMt / go; dyn inputs and outputs.
 
 use asyncio.runtime as rt
-use asyncio.task as task
+use asyncio.task
+use asyncio.util
 
-fn runtime_block_on(kind<i32>, workers<u32>, io_on<i32>, time_on<i32>, fut_bits<u64>) (i32, i64) {
+// Builds a runtime (kind 1 = multi_thread, else current_thread) and blocks on
+// the future bits. Returns (runtime err, async body result).
+fn dyn_block_on(kind<i32>, workers<u32>, io_on<i32>, time_on<i32>, fut_bits<u64>) (i32, i64) {
     b<rt.Builder> = null
     if kind == 1 {
         b = rt.Builder::new_multi_thread()
@@ -30,7 +33,7 @@ fn runtime_block_on(kind<i32>, workers<u32>, io_on<i32>, time_on<i32>, fut_bits<
 // Returns a dynamic int: runtime err, or the async body result.
 export func blockOnCt(fut) {
     bits<u64> = fut.(u64)
-    err<i32>, val<i64> = runtime_block_on(0, 1.(u32), 1, 1, bits)
+    err<i32>, val<i64> = dyn_block_on(0, 1.(u32), 1, 1, bits)
     if err != 0 {
         out = err
         return out
@@ -42,13 +45,13 @@ export func blockOnCt(fut) {
 // Block on fut with multi_thread(workers) + enable_all.
 // Returns a dynamic int: runtime err, or the async body result.
 export func blockOnMt(workers, fut) {
-    w_i<i32> = dyn_i32(workers)
+    w_i<i32> = util.dyn_i32(workers)
     if w_i <= 0 {
         w_i = 1
     }
     w<u32> = w_i.(u32)
     bits<u64> = fut.(u64)
-    err<i32>, val<i64> = runtime_block_on(1, w, 1, 1, bits)
+    err<i32>, val<i64> = dyn_block_on(1, w, 1, 1, bits)
     if err != 0 {
         out = err
         return out
@@ -57,10 +60,10 @@ export func blockOnMt(workers, fut) {
     return out
 }
 
-// Schedule fut on the current runtime Handle.
-// Detach the JoinHandle immediately — Tu has no Drop; discarding the handle
-// without detach leaks task refs and wedges long-lived servers (ab n=50k).
-export func spawn(fut) {
+// Spawn fut on the current runtime and detach it (fire and forget).
+// Tu has no Drop: an undetached JoinHandle leaks task refs and wedges
+// long-lived servers. Returns 0, or the runtime err outside a runtime.
+export func go(fut) {
     err<i32>, h<rt.Handle> = rt.Handle::current()
     if err != 0 {
         return err

@@ -1,6 +1,5 @@
-// Dyn string / buffer helpers used across wrapper modules (internal).
-// Examples pass dynamic strings/ints; convert to mem types here.
-// Dyn params require unsafe fn (static package ModeCheck).
+// Dyn value <-> mem conversions shared by the package export facades
+// (asyncio/export.tu, asyncio/net/tcp/export.tu). Dyn params need unsafe fn.
 
 use io
 use std
@@ -24,7 +23,7 @@ unsafe fn dyn_string(v) string.String {
     }
 }
 
-// Dynamic int → i32 (Value.data holds the integer payload).
+// Dynamic int -> i32 (Value.data holds the integer payload).
 unsafe fn dyn_i32(v) i32 {
     if v == null {
         return 0
@@ -48,7 +47,7 @@ unsafe fn dyn_buf(v) io.Buf {
     return b
 }
 
-// Copy filled buffer bytes into a dynamic string.
+// Copy the first n filled bytes of buf into a dynamic string.
 fn buf_to_dyn_string(buf<io.Buf>, n<u64>) {
     n_i<i32> = n.(i32)
     alloc_n<i32> = n_i + 1
