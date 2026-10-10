@@ -65,7 +65,6 @@ class Compiler {
     // compiler || asmer || linker  
     // default compiler
     type = "compiler"
-    flag_gcc  = false
     flag_nostd_explicit = false
     //default executeable name
     out       = "a.out"
@@ -129,7 +128,7 @@ Compiler::print_help(){
         "  -c   <file.s|dir>          汇编为可重定位目标文件（.o）\n" +
         "  -o   <file.o|dir>          链接目标文件生成可执行程序\n" +
         "  -d                         开启 trace 日志\n" +
-        "  -gcc                       使用 gcc 链接\n" +
+        "  -nostd                     不编也不链 std 包，只链最小 stub（platform/<os>/stub_*.s）\n" +
         "  -strip-pcln-file           pclntab 不写入文件名\n" +
         "  -std                       同时编译 runtime/std 内置库\n" +
         "  --workdir DIR              中间产物写到 DIR（.s/.o/a.out）\n" +
@@ -214,7 +213,6 @@ Compiler::commadparse(){
                 compile.nostd = true
                 this.flag_nostd_explicit = true
             }
-            "-gcc" : this.flag_gcc = true
             "-strip-pcln-file" : {
                 unsafe {
                     link.strip_pcln_file = 1
@@ -301,11 +299,8 @@ Compiler::compiler(file){
     utils.msg2(10,"Compiling",fmt.sprintf(
         "%s v0.0.0",file
     ))
-    if compile.nostd && !this.flag_gcc {
-        compile.nostd = true
-    }
     // run/build: compile std+coasm from embed (or disk) unless user passed -nostd.
-    // Linux no longer defaults to prefix colib; -nostd still links colib when present.
+    // -nostd links only the platform/<os> stubs, the same on every target.
     if this.flag_link && !this.flag_nostd_explicit {
         compile.nostd = false
     }
@@ -323,48 +318,41 @@ Compiler::compiler(file){
         exe_name = "a.exe"
     }
     if this.flag_link {
-        if utils.target_parse(asm.get_requested_target()) == utils.TARGET_DARWIN && this.flag_gcc {
-            utils.error("-gcc is linux-only; use the self-hosted darwin linker")
-        }
-        if utils.target_parse(asm.get_requested_target()) == utils.TARGET_WINDOWS && this.flag_gcc {
-            utils.error("-gcc is not supported for --target=windows; use the self-hosted peff linker")
-        }
-        //By Gcc Link
-        if this.flag_gcc {
-            compile.gcclink()
-            if !this.flag_work {
-                utils.remove_files_ext(wd, ".s")
-            }
-            if utils.target_parse(asm.get_requested_target()) != utils.TARGET_WINDOWS {
-                os.shell("chmod 777 '" + utils.pathInWorkdir(exe_name) + "'")
-            }
-        }else {
         // Self asmer+linker: copy coasm .s into workdir (embed stdroot or disk
         // prefix). Never write .o back into prefix coasm*.
-            this.code_files = []
-            if !compile.nostd {
-                // RFC-107: default embed materialize → syscall/{,darwin,windows}/.
-                src = utils.pkgfs_coasm_dir()
-                probe = utils.path_join(src, "asm_amd64.s")
-                if !std.is_file(probe) {
-                    utils.error("missing coasm asm_amd64.s at " + src)
+        this.code_files = []
+        if !compile.nostd {
+            // RFC-107: default embed materialize → syscall/{,darwin,windows}/.
+            src = utils.pkgfs_coasm_dir()
+            probe = utils.path_join(src, "asm_amd64.s")
+            if !std.is_file(probe) {
+                utils.error("missing coasm asm_amd64.s at " + src)
+            }
+            utils.copy_dir_ext(src, wd, ".s")
+        } else if utils.target_parse(asm.get_requested_target()) == utils.TARGET_LINUX {
+            // The ELF linker has no stub collection (darwin/peff linkers add their
+            // own), so the Linux -nostd stubs are assembled from the workdir.
+            sdir = utils.pkgfs_stub_dir()
+            for n : ["stub_entry", "stub_runtime"] {
+                stub = utils.path_join(sdir, n + ".s")
+                if !std.is_file(stub) {
+                    utils.error("missing Linux -nostd stub " + stub)
                 }
-                utils.copy_dir_ext(src, wd, ".s")
+                if utils.copy_file(stub, utils.path_join(wd, "colinux_" + n + ".s")) != 0 {
+                    utils.error("failed to copy Linux -nostd stub " + stub)
+                }
             }
-            this.scandir(wd,".s")
-            this.asmer()
+        }
+        this.scandir(wd,".s")
+        this.asmer()
 
-            this.code_files = []
-            if compile.nostd && utils.target_parse(asm.get_requested_target()) != utils.TARGET_DARWIN && utils.target_parse(asm.get_requested_target()) != utils.TARGET_WINDOWS {
-                utils.copy_dir_ext(root + "/colib", wd, ".o")
-            }
-            this.scandir(wd,".o")
-            this.out = utils.pathInWorkdir(exe_name)
-            this.linker()
-            if !this.flag_work {
-                utils.remove_files_ext(wd, ".o")
-                utils.remove_files_ext(wd, ".s")
-            }
+        this.code_files = []
+        this.scandir(wd,".o")
+        this.out = utils.pathInWorkdir(exe_name)
+        this.linker()
+        if !this.flag_work {
+            utils.remove_files_ext(wd, ".o")
+            utils.remove_files_ext(wd, ".s")
         }
         if utils.target_parse(asm.get_requested_target()) != utils.TARGET_WINDOWS {
             os.shell("chmod 777 '" + utils.pathInWorkdir(exe_name) + "'")

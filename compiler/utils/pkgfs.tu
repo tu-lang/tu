@@ -627,21 +627,19 @@ func pkgfs_coasm_dir() {
 	return lib + "/coasm"
 }
 
-// Nostd entry stubs: embed platform/{darwin,windows}/stub_*.s, else prefix costub/copeff.
+// Nostd entry stubs: embed platform/<os>/stub_*.s, else prefix costub-darwin/copeff/costub-linux.
 func pkgfs_stub_dir() {
 	if pkgfs_mode == PKGFS_MODE_TU_STD && pkgfs_tu_std != null && pkgfs_tu_std != "" {
-		sub = ""
+		sub = "platform/linux"
 		if pkgfs_target == TARGET_DARWIN {
 			sub = "platform/darwin"
 		} else if pkgfs_target == TARGET_WINDOWS {
 			sub = "platform/windows"
 		}
-		if sub != "" {
-			d = path_join(pkgfs_tu_std, sub)
-			probe = path_join(d, "stub_entry.s")
-			if std.is_file(probe) {
-				return d
-			}
+		d = path_join(pkgfs_tu_std, sub)
+		probe = path_join(d, "stub_entry.s")
+		if std.is_file(probe) {
+			return d
 		}
 	}
 	lib = lib_root()
@@ -651,5 +649,5 @@ func pkgfs_stub_dir() {
 	if pkgfs_target == TARGET_WINDOWS {
 		return lib + "/copeff"
 	}
-	return ""
+	return lib + "/costub-linux"
 }

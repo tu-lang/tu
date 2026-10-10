@@ -619,6 +619,7 @@ Parser::parseExtra() {
     
     reader.scan()
     cl = reader.curLex 
+    // #:link args are recorded only; the self-hosted asmer+linker does not consume them.
     if cl == "link"{
         lines = reader.consumeLine()
         lines = lines.substr(0,std.len(lines))

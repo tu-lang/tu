@@ -1,36 +1,5 @@
 prefix = /usr/local
 TIMEFORMAT = "\nTime elapsed: %E"
-# Build stdlib/runtime/coasm objects into $TMPDIR, pack tulang.a, then wipe WD.
-# Stub a.tu.s is dropped on purpose: gc.ms.entry belongs to each user main, not colib.
-BUILD_LIBA = build_install_liba() {                              	\
-    if [ ! -d $(prefix)/lib/colib ]; then                        	\
-        mkdir -p $(prefix)/lib/colib;                            	\
-    fi;                                                     	 	\
-	rm -rf $(prefix)/lib/colib/*;									\
-	WD=$$(mktemp -d "$${TMPDIR:-/tmp}/tu-build-liba-XXXXXX");		\
-	echo "[build-liba] workdir=$$WD";								\
-	printf '%s\n'													\
-		'use fmt	use os	use string	use std'					\
-		'use std.map	use std.atomic	use std.regex'				\
-		'use runtime	use runtime.debug	use time'					\
-		> "$$WD/a.tu";												\
-	if ! tu -s "$$WD/a.tu" -std --workdir "$$WD"; then				\
-		echo "[build-liba] tu -s failed; refusing incomplete colib" >&2; \
-		rm -rf "$$WD";												\
-		return 1;													\
-	fi;																\
-	rm -f "$$WD/a.tu" "$$WD/a.tu.s";								\
-	cp $(prefix)/lib/coasm/*.s "$$WD"/;								\
-	if ! tu -c "$$WD"; then											\
-		echo "[build-liba] tu -c failed; refusing incomplete colib" >&2; \
-		rm -rf "$$WD";												\
-		return 1;													\
-	fi;																\
-	rm -f release/tulang.a;											\
-	ar -rc release/tulang.a "$$WD"/*.o;								\
-	cp "$$WD"/*.o $(prefix)/lib/colib/;								\
-	rm -rf "$$WD";													\
-}
 CLEAN_ALL = clean_all() {											\
     if [ -d $(prefix)/lib/colib ]; then                        		\
         rm -rf $(prefix)/lib/colib;                            		\
@@ -52,8 +21,8 @@ DEFAULT_TARGET := linux
 endif
 TARGET ?= $(DEFAULT_TARGET)
 
-# Copkg sources for TARGET only. No colib, no tu binary, no coasm, no ar.
-# Cross-bootstrap on Darwin must not `ar -x` a Linux tulang.a or copy ELF tu.
+# Copkg sources for TARGET only. No tu binary, no coasm.
+# Cross-bootstrap on Darwin must not copy the ELF tu.
 .PHONY: overlay-copkg
 overlay-copkg:
 	@mkdir -p $(prefix)/lib/copkg
@@ -105,36 +74,19 @@ TEST_COMPILER = test_compiler() {									\
 .PHONY: install-coasm-all
 install-coasm-all:
 	@mkdir -p $(prefix)/lib/coasm $(prefix)/lib/coasm-darwin $(prefix)/lib/coasm-windows \
-		$(prefix)/lib/costub-darwin $(prefix)/lib/copeff
+		$(prefix)/lib/costub-linux $(prefix)/lib/costub-darwin $(prefix)/lib/copeff
 	@rm -f $(prefix)/lib/coasm/* $(prefix)/lib/coasm-darwin/* $(prefix)/lib/coasm-windows/*
 	@for f in syscall/*.s; do cp "$$f" $(prefix)/lib/coasm/; done
 	@cp syscall/darwin/*.s $(prefix)/lib/coasm-darwin/
 	@cp syscall/windows/*.s $(prefix)/lib/coasm-windows/
+	@cp platform/linux/stub_entry.s platform/linux/stub_runtime.s $(prefix)/lib/costub-linux/
 	@cp platform/darwin/stub_entry.s platform/darwin/stub_runtime.s $(prefix)/lib/costub-darwin/
 	@cp platform/windows/stub_entry.s platform/windows/stub_runtime.s $(prefix)/lib/copeff/
-	@echo "install-coasm-all: coasm + coasm-darwin + coasm-windows + costub-darwin + copeff"
+	@echo "install-coasm-all: coasm + coasm-darwin + coasm-windows + costub-linux + costub-darwin + copeff"
 
-.PHONY: build-liba
-build-liba:
-	@$(BUILD_LIBA); build_install_liba
-	@echo "install liba  to $(prefix)/lib/colib success"
-
-# Directory release/ exists; must be .PHONY or `make release` is a no-op.
-.PHONY: release
-# Recreate tulang.a from scratch. ar -r keeps stale members when asmer
-# output names change (co_*.tu.o vs tu_*.o) and install would mix both.
-# Needs install-full (copkg + coasm) before build-liba.
-release:
-	rm -f release/tulang.a
-	$(MAKE) install-full
-	$(MAKE) build-liba
-	$(MAKE) install-full
-	@echo "release tu liba success"
-	@echo "release bin lib success"
-
-# Cross-publish self-hosted tu for linux + darwin + windows, then rebuild
-# linux tulang.a and install this host. Windows PE is linked by the host tu
-# (peff), not mother tul / lld-link. See scripts/dev_release.sh.
+# Cross-publish self-hosted tu for linux + darwin + windows (embedded stdroot),
+# then install this host binary. Windows PE is linked by the host tu (peff),
+# not mother tul / lld-link. See scripts/dev_release.sh.
 .PHONY: dev_release
 dev_release:
 	@prefix="$(prefix)" bash scripts/dev_release.sh
@@ -170,8 +122,8 @@ else
 	fi
 endif
 
-# Legacy full prefix: copkg overlay + coasm/stubs + colib (Linux) + binary.
-# Required for --stdlib=disk / TU_STDLIB=disk, self-host disk consumers, build-liba.
+# Full disk prefix: copkg overlay + coasm/stubs + binary.
+# Required for --stdlib=disk / TU_STDLIB=disk and self-host disk consumers.
 .PHONY: install-full
 install-full:
 ifeq ($(TARGET),darwin)
@@ -180,25 +132,10 @@ else ifeq ($(TARGET),windows)
 	@$(MAKE) install-windows
 else
 	@$(MAKE) overlay-copkg TARGET=linux
-	@mkdir -p $(prefix)/lib/colib $(prefix)/bin
-	@if [ -f release/tulang.a ]; then \
-		if [ "$(UNAME_S)" = "Linux" ]; then \
-			XD=$$(mktemp -d "$${TMPDIR:-/tmp}/tu-extract-liba-XXXXXX"); \
-			(cd "$$XD" && ar -x "$(CURDIR)/release/tulang.a"); \
-			mv "$$XD"/*.o $(prefix)/lib/colib/; \
-			rm -rf "$$XD"; \
-			if ls $(prefix)/lib/colib/co_* >/dev/null 2>&1 && \
-			   ls $(prefix)/lib/colib/tu_* >/dev/null 2>&1; then \
-				echo "[install-full] mixed co_/tu_ objects in colib; stale tulang.a — run: rm -f release/tulang.a && make release" >&2; \
-				exit 1; \
-			fi; \
-		else \
-			echo "[install-full] skip extracting tulang.a on $(UNAME_S)"; \
-		fi; \
-	fi
+	@mkdir -p $(prefix)/bin
 	@$(MAKE) install-coasm-all
 	@$(MAKE) install TARGET=linux
-	@echo "tu env installed (full: copkg + coasm + colib + bin)"
+	@echo "tu env installed (full: copkg + coasm + stubs + bin)"
 endif
 
 # Darwin: full disk tree + binary. Prefer `make install` (bin only) for embed.
@@ -264,7 +201,7 @@ test_dev:
 	@$(TEST_COMPILER); test_compiler
 	@echo "test compiler success"
 
-# Directory-level suites. dirs with tests/<dir>/.make_tests only run allowlisted files.
+# Directory-level suites: every *.tu under tests/<dir> runs (no allowlist).
 # Toolchain self-tests (compiler/asmer/linker) run as peer targets so `make tests -j`
 # overlaps them with tests/* instead of waiting until every suite finishes.
 # examples runs serially after parallel suites (avoids stdroot embed races under -j).
@@ -286,6 +223,7 @@ toolchain_linker:
 	@bash linker/darwin/cases/check_execute.sh
 	@bash linker/darwin/cases/check_dyld_import.sh
 	@bash linker/darwin/cases/check_pclntab.sh
+	@bash linker/linux/cases/check_nostd.sh
 	@echo "linker tests passed"
 examples:
 	@bash examples/test.sh

@@ -48,26 +48,6 @@ func compile(){
         p.compile()
     }
 }
-func gcclink(){
-    utils.debug("compile.gcclink()")
-    sglob = utils.pathInWorkdir("*.s")
-    outfile = utils.pathInWorkdir("a.out")
-    links = ""
-    if debug 
-        links = "gcc  " + sglob + " /usr/local/lib/colib/*.o -rdynamic -static -nostdlib -e main -o " + outfile
-    else 
-        links = "gcc -g " + sglob + " /usr/local/lib/colib/*.o -rdynamic -static -nostdlib -e main -o " + outfile
-    for(pkg : package.packages){
-        for(p : pkg.parsers){
-            //add external library
-            for(l : p.links){
-                links += " " + l
-            }
-        }
-    }
-    utils.debug(links)
-    os.shell(links)
-}
 func registerMain()
 {
     utils.debug("compile.registerMain()")
