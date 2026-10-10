@@ -3,7 +3,7 @@
 #
 # Self-hosted only: an existing host `tu` (release/tu or PATH) rebuilds
 # tulang for linux / darwin / windows. Never call mother tuc/tua/tul here.
-# Linux host also rebuilds tulang.a; Darwin/Windows compile std from embed.
+# Every target compiles std from the embedded stdroot; no prebuilt archive.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -73,8 +73,8 @@ make_tu() {
 # Package parse uses getcwd(); embed() uses dirname(tulang.tu). Keeping
 # stdroot under bin/ means cwd/runtime is absent → copkg overlays win
 # (overlay-copkg), while embed still sees the full unfiltered tree.
-# Cross-compile never runs `make install TARGET=…` (that extracts
-# tulang.a / copies a host-mismatched tu binary).
+# Cross-compile never runs `make install TARGET=…` (that would copy a
+# host-mismatched tu binary).
 stage="$(mktemp -d "${TMPDIR:-/tmp}/tu-devrel-stage-XXXXXX")"
 cleanup() { rm -rf "$stage"; }
 on_err() {
@@ -101,7 +101,7 @@ for d in library packages runtime syscall platform; do
 done
 echo "[dev_release] embed stdroot → stage/bin/{library,packages,runtime,syscall,platform}"
 
-# Copkg sources for the compile --target. Does not smash colib/coasm/tu.
+# Copkg sources for the compile --target. Does not touch coasm/stubs or the tu binary.
 install_overlay() {
     case "$1" in
     linux|darwin|windows)
@@ -199,23 +199,16 @@ else
     bootstrap_one windows tu-windows "$HOST_TU"
 fi
 
-# Restore this host's copkg overlay (disk/bootstrap) and install the host binary.
-echo "[dev_release] restore host overlay TARGET=$HOST_TARGET + install bin"
+# Restore this host's disk tree (copkg overlay + coasm/stubs for --stdlib=disk)
+# and install the host binary.
+echo "[dev_release] restore host overlay TARGET=$HOST_TARGET + coasm/stubs + install bin"
 make_tu overlay-copkg TARGET="$HOST_TARGET"
+make_tu install-coasm-all
 make_tu install TARGET="$HOST_TARGET"
-
-# Linux colib archive (Darwin/Windows compile std from embed; no .a required for run).
-if [ "$HOST_TARGET" = "linux" ]; then
-    echo "[dev_release] rebuild linux tulang.a"
-    make_tu build-liba
-    make_tu install-full TARGET=linux
-else
-    echo "[dev_release] skip tulang.a on $HOST_TARGET (no colib; std from embed)"
-fi
 
 echo
 echo "[dev_release] published:"
-ls -l "$ROOT/release"/tu "$ROOT/release"/tu-darwin "$ROOT/release"/tu-windows "$ROOT/release"/tulang.a 2>/dev/null || true
+ls -l "$ROOT/release"/tu "$ROOT/release"/tu-darwin "$ROOT/release"/tu-windows 2>/dev/null || true
 if [ ! -f "$ROOT/release/tu-windows" ]; then
     echo "[dev_release] note: release/tu-windows missing"
 fi
