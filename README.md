@@ -64,7 +64,7 @@ cd tu
 sudo make install
 ```
 
-`make install` 按当前系统选择运行时覆盖层，并装上对应的 `release/tu` 或 `release/tu-darwin`。
+`make install` 只安装当前平台的二进制（`release/tu` 或 `release/tu-darwin`），标准库已嵌入二进制。
 
 **Windows**
 

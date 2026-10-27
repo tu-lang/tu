@@ -213,4 +213,4 @@ if [ ! -f "$ROOT/release/tu-windows" ]; then
     echo "[dev_release] note: release/tu-windows missing"
 fi
 echo "[dev_release] install bin: make install   | disk tree: make install-full"
-echo "[dev_release] Windows: install-windows.cmd (bin) / install-windows-full.cmd (disk)"
+echo "[dev_release] Windows: install-windows.cmd (bin only)"

@@ -7,7 +7,6 @@
 #   materialize_tu_mod.sh <repo_root> <copkg_root>
 #
 # Linux/Darwin: invoked from Makefile overlay-copkg.
-# Windows: invoke from install-windows-full.cmd after robocopy (or mark待验).
 
 set -euo pipefail
 
