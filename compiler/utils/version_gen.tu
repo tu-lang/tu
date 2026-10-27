@@ -4,6 +4,7 @@
 use fmt
 
 TU_TOOL_VERSION = "1.2.55"
+TU_BUILD_DATE = "2026-10-27 07:07 UTC"
 
 func tool_version() {
 	return TU_TOOL_VERSION
@@ -13,6 +14,7 @@ func tool_version() {
 func print_version_report(target_os) {
 	fmt.printf("tu-lang version: %s\n", TU_TOOL_VERSION)
 	fmt.printf("Target         : x86_64 %s\n", target_os)
+	fmt.printf("Build          : %s\n", TU_BUILD_DATE)
 	fmt.printf("\n")
 	fmt.printf("Toolchain\n")
 	fmt.printf("  compiler    : %s\n", "1.2.33")

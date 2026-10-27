@@ -23,6 +23,10 @@ read_ver() {
 
 TOOL_VER="$(read_ver "$VER_FILE")"
 
+# Build stamp: dev_release.sh runs this right before rebuilding the release
+# binaries, so generation time == build time of the distributed binaries.
+BUILD_DATE="$(date -u '+%Y-%m-%d %H:%M UTC')"
+
 OUT_TU="$ROOT/compiler/utils/version_gen.tu"
 {
     echo "// Auto-generated from tu/VERSION + scripts/version_manifest.txt — do not edit."
@@ -31,6 +35,7 @@ OUT_TU="$ROOT/compiler/utils/version_gen.tu"
     echo "use fmt"
     echo ""
     echo "TU_TOOL_VERSION = \"$TOOL_VER\""
+    echo "TU_BUILD_DATE = \"$BUILD_DATE\""
     echo ""
     # compiler/ is RFC-110 dyn: emit func (not fn) so ModeCheck accepts version_gen.tu.
     echo "func tool_version() {"
@@ -41,6 +46,7 @@ OUT_TU="$ROOT/compiler/utils/version_gen.tu"
     echo "func print_version_report(target_os) {"
     echo "	fmt.printf(\"tu-lang version: %s\\n\", TU_TOOL_VERSION)"
     echo "	fmt.printf(\"Target         : x86_64 %s\\n\", target_os)"
+    echo "	fmt.printf(\"Build          : %s\\n\", TU_BUILD_DATE)"
     prev_section=""
     while IFS='|' read -r section name relpath _comment; do
         [[ -z "${section:-}" || "$section" == \#* ]] && continue
@@ -83,6 +89,7 @@ if [ -d "$CO_ROOT" ]; then
         echo "#include <stdio.h>"
         echo ""
         echo "#define TU_VERSION \"$TOOL_VER\""
+        echo "#define TU_BUILD_DATE \"$BUILD_DATE\""
         echo ""
         echo "static inline void tu_print_version_report(const char* target_os) {"
         echo "    printf(\"tuc-lang version: %s\\n\", TU_VERSION);"

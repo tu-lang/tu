@@ -20,7 +20,7 @@
 
 ---
 
-Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态/ 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现；异步侧原生支持多线程协程调度。Linux、Windows 与 macOS 共用同一份语言与标准库表面；本机 `make install`（Windows：`install-windows.cmd`）只装二进制，标准库已嵌在 `tu` 内。
+Tu（凸）是一门面向系统与应用的编译型语言：没有强制 runtime 绑架，动态语法写起来像脚本，静态/ 原生类型又能落到可预测的机器码。一份源码里两种气质可以并肩出现；异步侧原生支持多线程协程调度。Linux、Windows 与 macOS 共用同一份语言与标准库表面；安装产物就是一个二进制，编译器、汇编器、链接器和标准库全部内嵌其中。
 
 ```
 Usage: tu <command|option> [arguments]
@@ -52,25 +52,26 @@ tu run hello.tu
 ![gif](./assets/tulang.gif)
 ## Install
 
-
-```bash
-git clone https://github.com/tu-lang/tu.git
-cd tu
-```
+安装产物只有一个二进制：`tu` 内嵌编译器、汇编器、链接器和全部标准库，零依赖、拷走即用，三端同理。
 
 **Linux / macOS（x86_64）**
 
 ```bash
-sudo make install
+git clone https://github.com/tu-lang/tu.git
+cd tu
+sudo make install        # release/tu（或 tu-darwin）→ /usr/local/bin/tu
 ```
-
-`make install` 只安装当前平台的二进制（`release/tu` 或 `release/tu-darwin`），标准库已嵌入二进制。
 
 **Windows**
 
-双击或在资源管理器运行 `install-windows.cmd`（装到 `%LOCALAPPDATA%\tu` 并写入用户 PATH）。
+双击 `install-windows.cmd`：装到 `%LOCALAPPDATA%\tu\bin\tu.exe` 并写入用户 PATH，开个新终端即用。
 
-Windows 与 Linux / macOS 一样：安装后的 `tu` 自己完成编译、汇编、链接，无需外部任何依赖，已100%自举
+验证：
+
+```bash
+tu -v             # 版本 / 目标平台 / 构建日期
+tu run hello.tu   # 编译、汇编、链接、运行一步到位
+```
 
 ## Tests
 
