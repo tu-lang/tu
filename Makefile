@@ -33,8 +33,9 @@ overlay-copkg:
 	# Keep platform/ so --stdlib=disk can resolve --target overlays without
 	# flipping the host runtime/ tree (linux host → windows/darwin cross).
 	@cp -R platform $(prefix)/lib/copkg/
-	# Flat copkg: never leave a root tu.mod (would force runtime/packages static).
-	@rm -f $(prefix)/lib/copkg/tu.mod
+	# RFC-114: single project manifest — the flat copkg carries one root tu.mod.
+	# copkg only ever holds stdlib packages (all static), so the manifest is fixed.
+	@printf 'package {\n    mode static\n}\n' > $(prefix)/lib/copkg/tu.mod
 ifeq ($(TARGET),darwin)
 	@rm -f $(prefix)/lib/copkg/runtime/linux.tu $(prefix)/lib/copkg/runtime/windows.tu
 	@cp platform/darwin/runtime_os.tu $(prefix)/lib/copkg/runtime/darwin.tu
@@ -60,9 +61,7 @@ else
 	@rm -f $(prefix)/lib/copkg/runtime/pipe.tu
 	# Keep netio kqueue* sources so disk+darwin cross can resolve without re-overlay.
 endif
-	# RFC-110: flat copkg drops library/packages ancestors; materialize nearest tu.mod
-	@bash scripts/materialize_tu_mod.sh "$(CURDIR)" "$(prefix)/lib/copkg"
-	@echo "overlay-copkg: TARGET=$(TARGET) (sources only + tu.mod materialize)"
+	@echo "overlay-copkg: TARGET=$(TARGET) (sources only + root tu.mod)"
 TEST_COMPILER = test_compiler() {									\
 	sh compiler/test.sh;											\
 	sh asmer/test.sh;												\
@@ -205,11 +204,11 @@ test_dev:
 # Toolchain self-tests (compiler/asmer/linker) run as peer targets so `make tests -j`
 # overlaps them with tests/* instead of waiting until every suite finishes.
 # examples runs serially after parallel suites (avoids stdroot embed races under -j).
-parallel_cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio pkgmode pkgmode_negative pkgmode_default async_negative
+parallel_cases = async mixed class common datastruct internalpkg memory native operator runtime statement asyncio pkgmode pkgmode_negative pkgmode_default pkgmode_manifest async_negative
 toolchain_cases = toolchain_compiler toolchain_asmer toolchain_linker
 cases = $(toolchain_cases) $(parallel_cases) examples
 
-.PHONY: toolchain_compiler toolchain_asmer toolchain_linker examples pkgmode_negative pkgmode_default async_negative
+.PHONY: toolchain_compiler toolchain_asmer toolchain_linker examples pkgmode_negative pkgmode_default pkgmode_manifest async_negative
 toolchain_compiler:
 	@sh compiler/test.sh
 	@echo "compiler tests passed"
@@ -234,6 +233,9 @@ pkgmode_negative:
 pkgmode_default:
 	@bash tests/pkgmode/default/run.sh
 	@echo "pkgmode default tests passed"
+pkgmode_manifest:
+	@bash tests/pkgmode/manifest/run.sh
+	@echo "pkgmode manifest tests passed"
 async_negative:
 	@bash tests/async/negative/run.sh
 	@echo "async negative tests passed"
