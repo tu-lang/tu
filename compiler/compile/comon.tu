@@ -47,7 +47,8 @@ func genast(filename)
     }
     main_dir = utils.path_dirname(main_ab)
     if main_dir == "" main_dir = utils.pwd()
-    mpkg.loadMode(main_dir)
+    // RFC114: main package is user-side -> enforce the single manifest rule
+    mpkg.loadMode(main_dir, true)
     main_parser = new parser.Parser(filename,mpkg)
 
     main_parser.fileno = fileno

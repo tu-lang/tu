@@ -119,7 +119,9 @@ func pkgfs_materialize_stdroot() {
 		return ""
 	}
 	files = []
-	shared = path_join(host_tmpdir(), "tu-stdroot-" + pkgfs_stdroot_key(names, files))
+	// RFC-114: prefix bumped so stdroots materialized by older tu binaries
+	// (no root manifest inside) are never reused — stdlib would fall to dyn.
+	shared = path_join(host_tmpdir(), "tu-stdroot-r114-" + pkgfs_stdroot_key(names, files))
 	if pkgfs_stdroot_complete(shared) {
 		return shared
 	}
@@ -132,6 +134,9 @@ func pkgfs_materialize_stdroot() {
 		host_mkdir_p(path_dirname(out))
 		host_write_file(out, f[1])
 	}
+	// RFC-114: the stdroot is a pure stdlib universe (all static); the
+	// materializer writes its root manifest instead of embedding the repo one.
+	host_write_file(path_join(root, "tu.mod"), "package {\n    mode static\n}\n")
 	pkgfs_apply_target_overlay(root)
 	host_write_file(path_join(root, PKGFS_STDROOT_MARK), "ok\n")
 	if host_rename(root, shared) && pkgfs_stdroot_complete(shared) {

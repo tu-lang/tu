@@ -97,7 +97,64 @@ func pkgmode_next_tok(toks, idx) {
     return v, idx + 1
 }
 
-// RFC110: parse tu.mod manifest: dyn | static | mixed (mixed is explicit-only, unchecked).
+// RFC114: mod subtree path validation. Legal: [A-Za-z0-9_-] segments joined
+// by '/'; no empty segment (leading/trailing '/' or "//"), no "." or "..".
+func pkgmode_valid_path(p) {
+    if p == null || p == "" {
+        return false
+    }
+    seg = 0
+    i = 0
+    n = std.len(p)
+    while i < n {
+        c = p[i]
+        if c == '/' {
+            if seg == 0 {
+                return false
+            }
+            seg = 0
+            i += 1
+            continue
+        }
+        ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+        ok = ok || (c >= '0' && c <= '9') || c == '_' || c == '-'
+        if !ok {
+            return false
+        }
+        seg += 1
+        i += 1
+    }
+    if seg == 0 {
+        return false
+    }
+    return true
+}
+
+// RFC114: one manifest object per tu.mod — default mode + mod overrides.
+class TuModManifest {
+    def  = 0
+    mods = {} // subtree prefix (relative to manifest dir) -> mode
+}
+
+// RFC114: parse mode value; unknown values are hard errors.
+func pkgmode_parse_mode(file, val) {
+    if val == "dyn" {
+        return parser.PkgModeDyn
+    }
+    if val == "static" {
+        return parser.PkgModeStatic
+    }
+    // mixed only via explicit declaration (test suites); never checked.
+    if val == "mixed" {
+        return parser.PkgModeMixed
+    }
+    ast.parse_err("pkgmode: manifest %s unknown mode '%s'\n", file, val)
+    return parser.PkgModeMixed
+}
+
+// RFC114: parse one tu.mod manifest (the single project-root manifest).
+// Grammar: package { mode X } followed by 0..n top-level mod <path> { mode X }.
+// Strict: unknown attrs/values, bad paths, duplicates, trailing tokens all fail.
 func parseTuMod(file) {
     if !std.is_file(file) {
         ast.parse_err("pkgmode: cannot open manifest %s\n", file)
@@ -154,58 +211,150 @@ func parseTuMod(file) {
     if tok != "{" {
         ast.parse_err("pkgmode: manifest %s expect '{' after 'package'\n", file)
     }
-    m = parser.PkgModeMixed
+    mf = new TuModManifest()
     has_mode = false
+    // package block: only the mode attribute, up to this block's '}'
     loop {
         tok, idx = pkgmode_next_tok(toks, idx)
         if tok == "}" break
         if tok == "mode" {
             val = ""
             val, idx = pkgmode_next_tok(toks, idx)
-            if val == "dyn" {
-                m = parser.PkgModeDyn
-            } else if val == "static" {
-                m = parser.PkgModeStatic
-            } else if val == "mixed" {
-                m = parser.PkgModeMixed
-            } else {
-                ast.parse_err("pkgmode: manifest %s unknown mode '%s'\n", file, val)
-            }
+            mf.def = pkgmode_parse_mode(file, val)
             has_mode = true
         } else {
             ast.parse_err("pkgmode: manifest %s unknown attribute '%s'\n", file, tok)
         }
     }
-    if idx < std.len(toks) {
-        ast.parse_err("pkgmode: manifest %s trailing tokens after '}'\n", file)
-    }
     if !has_mode {
         ast.parse_err("pkgmode: manifest %s missing 'mode'\n", file)
     }
-    return m
-}
-
-// RFC110: nearest tu.mod wins; no manifest on any ancestor => dyn.
-// Stdlib trees (source, embed stdroot, installed copkg) always carry tu.mod.
-Package::loadMode(abpath) {
-    depth = 1
-    for i = 0; i < std.len(this.path); i += 1 {
-        if this.path[i] == '/' {
-            depth += 1
+    // RFC114: 0..n top-level mod blocks; a manifest may end with a mod block.
+    while idx < std.len(toks) {
+        tok, idx = pkgmode_next_tok(toks, idx)
+        if tok != "mod" {
+            ast.parse_err("pkgmode: manifest %s trailing tokens after '}'\n", file)
+        }
+        mpath = ""
+        mpath, idx = pkgmode_next_tok(toks, idx)
+        if !pkgmode_valid_path(mpath) {
+            ast.parse_err("pkgmode: manifest %s invalid module path '%s'\n", file, mpath)
+        }
+        if utils.has(mpath, mf.mods) {
+            ast.parse_err("pkgmode: manifest %s duplicate module '%s'\n", file, mpath)
+        }
+        tok, idx = pkgmode_next_tok(toks, idx)
+        if tok != "{" {
+            ast.parse_err("pkgmode: manifest %s expect '{' after module '%s'\n", file, mpath)
+        }
+        has_mmode = false
+        loop {
+            tok, idx = pkgmode_next_tok(toks, idx)
+            if tok == "}" break
+            if tok == "mode" {
+                val = ""
+                val, idx = pkgmode_next_tok(toks, idx)
+                mf.mods[mpath] = pkgmode_parse_mode(file, val)
+                has_mmode = true
+            } else {
+                ast.parse_err("pkgmode: manifest %s unknown module attribute '%s'\n", file, tok)
+            }
+        }
+        if !has_mmode {
+            ast.parse_err("pkgmode: manifest %s module '%s' missing 'mode'\n", file, mpath)
         }
     }
-    if depth < 8 depth = 8
-    dir = abpath
-    for i = 0; i < depth; i += 1 {
+    return mf
+}
+
+// RFC114: manifest cache keyed by absolute manifest path — parsed once per compile.
+tumod_cache = {}
+
+// RFC114: longest-prefix hit — exact match first, then strip trailing segments;
+// no hit anywhere -> manifest default. mods keys are non-empty, rel=="" falls through.
+func pkgmode_resolve(mf, rel) {
+    r = rel
+    loop {
+        if utils.has(r, mf.mods) {
+            return mf.mods[r]
+        }
+        pos = -1
+        i = 0
+        n = std.len(r)
+        while i < n {
+            if r[i] == '/' {
+                pos = i
+            }
+            i += 1
+        }
+        if pos < 0 break
+        // r[0..pos] (string.sub is start-index only, so build the prefix here)
+        head = ""
+        j = 0
+        while j < pos {
+            head = head + r[j]
+            j += 1
+        }
+        r = head
+    }
+    return mf.def
+}
+
+// RFC114: single-manifest rule — walking up from the anchor, any manifest found
+// above is a hard error. User side only (main package / cwd-resolved packages);
+// the stdroot universe is exempt so old per-package installs keep working.
+func pkgmode_single_check(anchor) {
+    dir = anchor
+    for i = 0; i < 24; i += 1 {
+        dir = utils.path_dirname(dir)
+        if dir == "" || dir == "/" break
         f = utils.path_join(dir, "tu.mod")
         if std.is_file(f) {
-            this.pkg_mode = parseTuMod(f)
-            return
+            ast.parse_err("pkgmode: only one tu.mod per project: %s/tu.mod nested under %s/tu.mod\n", anchor, dir)
+        }
+    }
+}
+
+// RFC114: the project anchor is the nearest tu.mod walking up (cap 24); its
+// manifest governs the whole subtree via longest-prefix mod matching.
+// enforce_single=false skips the nested-manifest check (stdroot resolution).
+Package::loadMode(abpath, enforce_single) {
+    dir = abpath
+    anchor = ""
+    found = false
+    for i = 0; i < 24; i += 1 {
+        f = utils.path_join(dir, "tu.mod")
+        if std.is_file(f) {
+            anchor = dir
+            found = true
+            break
         }
         dir = utils.path_dirname(dir)
         if dir == "" || dir == "/" break
     }
-    this.pkg_mode = parser.PkgModeDyn
+    if !found {
+        this.pkg_mode = parser.PkgModeDyn
+        return
+    }
+    if enforce_single {
+        pkgmode_single_check(anchor)
+    }
+    key = utils.path_join(anchor, "tu.mod")
+    mf = null
+    if utils.has(key, tumod_cache) {
+        mf = tumod_cache[key]
+    } else {
+        mf = parseTuMod(key)
+        tumod_cache[key] = mf
+    }
+    // Subtree path of this package relative to the anchor (walked up from it)
+    rel = ""
+    alen = std.len(anchor)
+    nlen = std.len(abpath)
+    if nlen > alen && utils.str_starts_with(abpath, anchor) && abpath[alen] == '/' {
+        rel = string.sub(abpath, alen + 1)
+    }
+    this.pkg_mode = pkgmode_resolve(mf, rel)
 }
 
 Package::parse()
@@ -216,7 +365,9 @@ Package::parse()
     utils.debugf("found import.start parser.. %s",abpath)
 
     if cwd_pkg_usable(abpath, this.path) {
-        this.loadMode(abpath)
+        // RFC114: cwd-resolved packages are user-side -> enforce the single
+        // project manifest rule.
+        this.loadMode(abpath, true)
         utils.notice("start scan the package:%s",abpath)
         names = utils.list_dir_basenames(abpath)
         if std.len(names) <= 0 {
@@ -274,7 +425,9 @@ Package::parse()
     if mode_root == "" {
         mode_root = std_dir
     }
-    this.loadMode(mode_root)
+    // RFC114: stdroot universe (embed stdroot / copkg / TU_STD) is exempt from
+    // the single-manifest check so old per-package installs keep working.
+    this.loadMode(mode_root, false)
     utils.notice("start scan pkgfs package:%s dir:%s",this.path,std_dir)
     for name : names {
         scan_path = utils.pkgfs_scan_filepath(std_dir, name)

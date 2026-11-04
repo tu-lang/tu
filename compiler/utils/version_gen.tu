@@ -4,7 +4,7 @@
 use fmt
 
 TU_TOOL_VERSION = "1.2.55"
-TU_BUILD_DATE = "2026-10-27 07:07 UTC"
+TU_BUILD_DATE = "2026-11-03 15:41 UTC"
 
 func tool_version() {
 	return TU_TOOL_VERSION

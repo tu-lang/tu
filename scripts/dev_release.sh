@@ -88,10 +88,15 @@ trap on_err ERR
 echo "[dev_release] stage=$stage prefix=$prefix host=$HOST_TARGET"
 mkdir -p "$stage/bin"
 cp "$ROOT/tulang.tu" "$stage/bin/"
-if [ -f "$ROOT/tu.mod" ]; then
-    cp "$ROOT/tu.mod" "$stage/bin/tu.mod"
-fi
 cp -a "$ROOT/compiler" "$ROOT/asmer" "$ROOT/linker" "$stage/"
+# RFC-114: the repo root tu.mod governs in-repo compiles only. It is never
+# copied into the stage: a root manifest here would hard-error nested-manifest
+# checks (new tu) and, worse, any `mod` block is unparseable by an older
+# self-host tu driving this first bootstrap. Mode info travels as per-tree
+# manifests for the static toolchain trees instead (dyn is the default, so
+# compiler/ and bin/tulang.tu need no manifest).
+printf 'package {\n    mode static\n}\n' > "$stage/asmer/tu.mod"
+printf 'package {\n    mode static\n}\n' > "$stage/linker/tu.mod"
 for d in library packages runtime syscall platform; do
     if [ ! -d "$ROOT/$d" ]; then
         echo "[dev_release] ERROR: missing $ROOT/$d (needed for embed stdroot)" >&2
